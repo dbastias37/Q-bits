@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const createGame = require('./game-harness.cjs');
 const near = (actual, expected, tolerance=1e-9) => assert(Math.abs(actual-expected)<tolerance, `${actual} != ${expected}`);
 
-test('T-bit hulls use a common edge length, congruent joining faces and true mass centroids', () => {
+test('T-bit hulls are centroid-correct cuts of one cube with exact modular volumes', () => {
   const {t}=createGame();
   for(const [shape,vertices,faces] of [['tetra',4,4],['pyramid',5,5]]){
     const profile=t.unitProfile(shape);
@@ -23,8 +23,20 @@ test('T-bit hulls use a common edge length, congruent joining faces and true mas
     }
     assert(volume>0);near(center.norm()/volume,0);
     near(t.unitGroundHeight(shape),-Math.min(...profile.vertices.map(v=>v.y)));
-    for(const [a,b] of profile.edges)near(profile.vertices[a].distanceTo(profile.vertices[b]),.09);
-    if(shape==='pyramid'){near(extents[0],.09);near(extents[1],.09/Math.sqrt(2));near(extents[2],.09);}
+    near(extents[0],.09);near(extents[1],.045);near(extents[2],.09);
+    near(volume,.09**3/(shape==='pyramid'?6:12),1e-12);
+    const lengths=profile.edges.map(([a,b])=>profile.vertices[a].distanceTo(profile.vertices[b])).sort((a,b)=>a-b);
+    const side=.09*Math.sqrt(3)/2;
+    const expected=(shape==='pyramid'?[side,side,side,side,.09,.09,.09,.09]:[side,side,side,.09,.09,.09*Math.SQRT2]).sort((a,b)=>a-b);
+    lengths.forEach((length,i)=>near(length,expected[i]));
+    const faceLengths=profile.faces.map(face=>face.map((v,i)=>profile.vertices[v].distanceTo(profile.vertices[face[(i+1)%face.length]])).sort((a,b)=>a-b));
+    if(shape==='tetra') {
+      const categories=[[.09,.09,.09*Math.SQRT2],[side,side,.09],[side,side,.09],[side,side,.09*Math.SQRT2]];
+      faceLengths.forEach((lengths,i)=>lengths.forEach((length,j)=>near(length,categories[i][j])));
+    } else {
+      faceLengths[0].forEach(length=>near(length,.09));
+      faceLengths.slice(1).forEach(lengths=>lengths.forEach((length,i)=>near(length,[side,side,.09][i])));
+    }
   }
 });
 
@@ -33,12 +45,12 @@ test('T-bit picking and overlap use solid faces, leaving the empty corners of th
   for(const shape of ['tetra','pyramid'])for(const turned of [false,true]){
     const q=t.Q();if(turned)q.setFromEuler(.41,.7,-.23);
     const pose={shape,p:t.V(2,1,-1),q},toWorld=v=>pose.p.vadd(q.vmult(v));
-    const top=Math.max(...t.unitProfile(shape).vertices.map(v=>v.y));
+    const top=Math.max(...t.unitProfile(shape).vertices.map(v=>v.y)),edgeX=Math.max(...t.unitProfile(shape).vertices.map(v=>v.x))-.002;
     const ray=q.vmult(t.V(0,0,-1));
     assert(t.rayPart(toWorld(t.V(0,0,.2)),ray,pose,1),'a center ray hits a sloped face');
-    assert.equal(t.rayPart(toWorld(t.V(.04,top-.005,.2)),ray,pose,1),null,'a ray through a bounding-box corner misses');
+    assert.equal(t.rayPart(toWorld(t.V(edgeX,top-.003,.2)),ray,pose,1),null,'a ray through a bounding-box corner misses');
     assert.equal(t.rayPart(toWorld(t.V(0,0,.2)),ray,pose,.05),null,'max distance is respected');
-    const empty={p:toWorld(t.V(.04,top-.005,0)),q,half:t.V(.002,.002,.002)};
+    const empty={p:toWorld(t.V(edgeX,top-.003,0)),q,half:t.V(.002,.002,.002)};
     const filled={p:toWorld(t.V(0,0,0)),q,half:t.V(.002,.002,.002)};
     assert.equal(t.obbOverlap(pose,empty),false);assert.equal(t.obbOverlap(empty,pose),false);
     assert.equal(t.obbOverlap(pose,filled),true);assert.equal(t.obbOverlap(filled,pose),true);

@@ -409,7 +409,7 @@ const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 function normalizeUnitShape(shape){return shape==='tetra'||shape==='pyramid'?shape:'cube';}
 function unitShape(value){return normalizeUnitShape(typeof value==='string'?value:value?.part?.shape||value?.shape);}
 function isTBit(value){return unitShape(value)!=='cube';}
-function makeUnitProfile(points,faces){
+function makeUnitProfile(points,faces,faceKinds){
  const vertices=points.map(p=>V(...p).scale(CUBE_SIZE)),faceNormals=[],faceCenters=[],edges=[],seen=new Set();
  faces=faces.map(indices=>{
   const face=[...indices],center=V();for(const i of face)center.vadd(mul(vertices[i],1/face.length),center);
@@ -418,18 +418,19 @@ function makeUnitProfile(points,faces){
   for(let i=0;i<face.length;i++){const a=face[i],b=face[(i+1)%face.length],key=Math.min(a,b)+','+Math.max(a,b);if(!seen.has(key)){seen.add(key);edges.push([a,b]);}}
   return face;
  });
- return {vertices,faces,faceNormals,faceCenters,edges};
+ return {vertices,faces,faceNormals,faceCenters,edges,faceKinds};
 }
-const tetraHeight=Math.sqrt(2/3),tetraRadius=Math.sqrt(3)/3,pyramidHeight=Math.SQRT1_2;
+// A common cube partition, not three independently scaled Platonic solids.
+// Six square pyramids meet at the cube center; each splits into two tetrahedra.
+// Local coordinates are centered on each solid's true volume centroid.
 const UNIT_PROFILES={
- cube:makeUnitProfile([[-.5,-.5,-.5],[.5,-.5,-.5],[.5,-.5,.5],[-.5,-.5,.5],[-.5,.5,-.5],[.5,.5,-.5],[.5,.5,.5],[-.5,.5,.5]],[[0,1,2,3],[4,7,6,5],[0,4,5,1],[1,5,6,2],[2,6,7,3],[3,7,4,0]]),
- tetra:makeUnitProfile([[-.5,-tetraHeight/4,-tetraRadius/2],[.5,-tetraHeight/4,-tetraRadius/2],[0,-tetraHeight/4,tetraRadius],[0,tetraHeight*3/4,0]],[[0,1,2],[0,3,1],[1,3,2],[2,3,0]]),
- // All edges are one Q-bit side: square base + four equilateral triangles.
- pyramid:makeUnitProfile([[-.5,-pyramidHeight/4,-.5],[.5,-pyramidHeight/4,-.5],[.5,-pyramidHeight/4,.5],[-.5,-pyramidHeight/4,.5],[0,pyramidHeight*3/4,0]],[[0,1,2,3],[0,4,1],[1,4,2],[2,4,3],[3,4,0]])
+ cube:makeUnitProfile([[-.5,-.5,-.5],[.5,-.5,-.5],[.5,-.5,.5],[-.5,-.5,.5],[-.5,.5,-.5],[.5,.5,-.5],[.5,.5,.5],[-.5,.5,.5]],[[0,1,2,3],[4,7,6,5],[0,4,5,1],[1,5,6,2],[2,6,7,3],[3,7,4,0]],Array(6).fill('square')),
+ tetra:makeUnitProfile([[-.625,-.125,-.375],[.375,-.125,-.375],[.375,-.125,.625],[-.125,.375,.125]],[[0,1,2],[0,3,1],[1,3,2],[2,3,0]],['half-square','slope','slope','diagonal']),
+ pyramid:makeUnitProfile([[-.5,-.125,-.5],[.5,-.125,-.5],[.5,-.125,.5],[-.5,-.125,.5],[0,.375,0]],[[0,1,2,3],[0,4,1],[1,4,2],[2,4,3],[3,4,0]],['square','slope','slope','slope','slope'])
 };
 function unitProfile(shape){return UNIT_PROFILES[unitShape(shape)];}
 function unitGroundHeight(shape){return -Math.min(...unitProfile(shape).vertices.map(v=>v.y));}
-function unitFaces(pose){const profile=unitProfile(pose);return profile.faces.map((face,index)=>({index,vertices:face.map(i=>add(pose.p,pose.q.vmult(profile.vertices[i]))),center:add(pose.p,pose.q.vmult(profile.faceCenters[index])),normal:pose.q.vmult(profile.faceNormals[index])}));}
+function unitFaces(pose){const profile=unitProfile(pose);return profile.faces.map((face,index)=>({index,kind:profile.faceKinds[index],vertices:face.map(i=>add(pose.p,pose.q.vmult(profile.vertices[i]))),center:add(pose.p,pose.q.vmult(profile.faceCenters[index])),normal:pose.q.vmult(profile.faceNormals[index])}));}
 const settings={mass:1,unitShape:'cube',gravity:9.8,bounce:.12,force:60,friction:.38,damping:.12,speed:.32,guide:'ghost',line:'dashed',maxCarry:16,maxSelect:32,rotationSpeed:2.8,grip:.95,cargoSide:4,cargoRequired:8,cargoColor:'#f4f4f1',haulSpeed:.2,haulForce:2};
 const groups=[],cargos=[];
 const alphaSettings={maxRest:180,coolSeconds:35,capacity:4,blueprintRange:1.5,exitEnergy:.5,glow:.6,coolingOn:true,allowPuzzleSpawn:false};
@@ -896,9 +897,9 @@ function initUnitRadial(){
  if(unitRadial)return;
  if(!window.QBitsRadial)throw new Error('No se pudo preparar el selector de piezas.');
  const entries=[
-  {id:'cube',title:'Q-bit',subtitle:'Cubo',description:'Caras cuadradas de 9 cm. Encaja con otros Q-bits y con la base cuadrada de un T-bit.',color:[43,46,49]},
-  {id:'tetra',title:'T-bit',subtitle:'Triangular',description:'Cuatro triángulos iguales de 9 cm por lado. Encaja con las caras triangulares de otros T-bits.',color:[135,140,143]},
-  {id:'pyramid',title:'T-bit',subtitle:'Base cuadrada',description:'Base de 9 × 9 cm para unirse al Q-bit. Sus cuatro caras triangulares encajan con otros T-bits.',color:[135,140,143]}
+  {id:'cube',title:'Q-bit',subtitle:'Cubo',description:'Módulo de 9 × 9 × 9 cm. Seis pirámides o doce T-bits triangulares completan este volumen.',color:[43,46,49]},
+  {id:'tetra',title:'T-bit',subtitle:'Triangular',description:'Media pirámide. Une dos por su corte diagonal para completarla; doce forman un cubo.',color:[135,140,143]},
+  {id:'pyramid',title:'T-bit',subtitle:'Base cuadrada',description:'Base de 9 × 9 cm y altura de 4,5 cm. Seis encajan por sus caras, con las puntas al centro del cubo.',color:[135,140,143]}
  ];
  unitRadial=window.QBitsRadial.create({profiles:entries.map(entry=>{
   const profile=unitProfile(entry.id);
@@ -1002,30 +1003,77 @@ function touchingUnitFaces(a,b,tolerance=.00005){
 }
 function facesCoincide(a,b,tolerance=.00005){
  const n=a.vertices.length;
+ if(a.kind&&b.kind&&a.kind!==b.kind)return false;
  if(n!==b.vertices.length||a.normal.dot(b.normal)>-.99999||a.center.distanceTo(b.center)>tolerance)return false;
  for(let start=0;start<n;start++)if(a.vertices.every((v,i)=>v.distanceTo(b.vertices[(start-i+n)%n])<=tolerance))return true;
  return false;
 }
+function mergeHalfSquareFaces(a,b,tolerance=.00005){
+ if(a.kind!=='half-square'||b.kind!=='half-square'||a.members[0]===b.members[0]||a.normal.dot(b.normal)<.99999||Math.abs(sub(a.center,b.center).dot(a.normal))>tolerance)return null;
+ // The shared edge must be the full diagonal, not a leg, point or partial edge.
+ const shared=a.vertices.filter(v=>b.vertices.some(w=>v.distanceTo(w)<=tolerance));
+ if(shared.length!==2||Math.abs(shared[0].distanceTo(shared[1])-CUBE_SIZE*Math.SQRT2)>tolerance)return null;
+ const vertices=a.vertices.map(v=>v.clone());
+ for(const vertex of b.vertices)if(!vertices.some(v=>v.distanceTo(vertex)<=tolerance))vertices.push(vertex.clone());
+ if(vertices.length!==4)return null;
+ const center=vertices.reduce((sum,v)=>add(sum,mul(v,.25)),V()),normal=a.normal.clone();
+ const tangent=sub(vertices[0],center);tangent.normalize();const across=normal.cross(tangent);
+ vertices.sort((v,w)=>Math.atan2(sub(v,center).dot(across),sub(v,center).dot(tangent))-Math.atan2(sub(w,center).dot(across),sub(w,center).dot(tangent)));
+ for(let i=0;i<4;i++){
+  if(Math.abs(vertices[i].distanceTo(vertices[(i+1)%4])-CUBE_SIZE)>tolerance||Math.abs(vertices[i].distanceTo(vertices[(i+2)%4])-CUBE_SIZE*Math.SQRT2)>tolerance)return null;
+ }
+ return {kind:'square',vertices,center,normal,members:[a.members[0],b.members[0]],composite:true};
+}
+function assemblyFaceSets(parts){
+ const faces=parts.flatMap((part,index)=>unitFaces(part).map(face=>({...face,members:[index],composite:false}))),halves=faces.filter(face=>face.kind==='half-square');
+ for(let i=0;i<halves.length;i++)for(let j=i+1;j<halves.length;j++){
+  if(halves[i].center.distanceTo(halves[j].center)>CUBE_SIZE)continue;
+  const square=mergeHalfSquareFaces(halves[i],halves[j]);if(square)faces.push(square);
+ }
+ return faces;
+}
+function assemblyConnections(parts){
+ const links=parts.map(()=>new Set()),faces=assemblyFaceSets(parts);
+ for(let i=0;i<faces.length;i++)for(let j=i+1;j<faces.length;j++){
+  const a=faces[i],b=faces[j];
+  if(a.kind!==b.kind||a.members.some(index=>b.members.includes(index))||!facesCoincide(a,b))continue;
+  // A complete composite contact binds every contributor. Removing a half
+  // rebuilds this graph, so its formerly full-square joint cannot survive.
+  for(const ai of a.members)for(const bi of b.members){links[ai].add(bi);links[bi].add(ai);}
+ }
+ return links;
+}
+function assembliesTouch(a,b){
+ const aFaces=assemblyFaceSets(a),bFaces=assemblyFaceSets(b);
+ return aFaces.some(fa=>bFaces.some(fb=>facesCoincide(fa,fb)));
+}
+function groupJoinFaces(g){
+ if(g.joinFaceCache?.parts===g.parts)return g.joinFaceCache;
+ // Part offsets/orientations are immutable for a group. Weld and separation
+ // create new groups; moving/rolling a body only transforms this cached mesh.
+ const faces=assemblyFaceSets(g.parts.map(part=>({shape:part.shape,p:part.offset,q:part.q}))),squares=faces.filter(face=>face.kind==='square');
+ return g.joinFaceCache={parts:g.parts,squares,hasComposite:squares.some(face=>face.composite)};
+}
 function assemblyValid(parts){
  if(!parts.length)return false;
- const links=parts.map(()=>[]);
  for(let i=0;i<parts.length;i++)for(let j=i+1;j<parts.length;j++){
   if(parts[i].p.distanceTo(parts[j].p)>CUBE_SIZE*2+.00005)continue;
   if(obbOverlap(parts[i],parts[j],.000001))return false;
-  if(touchingUnitFaces(parts[i],parts[j])){links[i].push(j);links[j].push(i);}
  }
+ const links=assemblyConnections(parts);
  const reached=new Set([0]),queue=[0];
  for(let i=0;i<queue.length;i++)for(const next of links[queue[i]])if(!reached.has(next)){reached.add(next);queue.push(next);}
  return reached.size===parts.length;
 }
-// Precompute the legal orientations once: 3 triangle phases or 4 square phases.
+// Precompute legal orientations for each connector family. Triangle corners
+// have distinct roles: only the rotations that preserve their edge lengths fit.
 // Opposing winding is essential: normals face each other and vertices coincide.
 const faceJoinCache=new Map();
 function faceJoinOptions(sourceShape,targetShape){
  const key=unitShape(sourceShape)+':'+unitShape(targetShape);if(faceJoinCache.has(key))return faceJoinCache.get(key);
  const a=unitProfile(sourceShape),b=unitProfile(targetShape),options=[];
  for(let sourceFace=0;sourceFace<a.faces.length;sourceFace++)for(let targetFace=0;targetFace<b.faces.length;targetFace++){
-  const af=a.faces[sourceFace],bf=b.faces[targetFace],n=af.length;if(n!==bf.length)continue;
+  const af=a.faces[sourceFace],bf=b.faces[targetFace],n=af.length;if(n!==bf.length||a.faceKinds[sourceFace]!==b.faceKinds[targetFace])continue;
   const align=Q();align.setFromVectors(a.faceNormals[sourceFace],mul(b.faceNormals[targetFace],-1));align.normalize();
   const tangent=align.vmult(sub(a.vertices[af[1]],a.vertices[af[0]]));tangent.normalize();
   for(let start=0;start<n;start++){
@@ -1039,10 +1087,10 @@ function faceJoinOptions(sourceShape,targetShape){
  faceJoinCache.set(key,options);return options;
 }
 function makeFragments(parts,reference,velocity=V(),spin=V()){
- const remaining=new Set(parts),created=[];
+ const links=assemblyConnections(parts),remaining=new Set(parts.map((_,index)=>index)),created=[];
  while(remaining.size){const first=remaining.values().next().value,component=[first];remaining.delete(first);
-  for(let i=0;i<component.length;i++)for(const part of [...remaining])if(touchingUnitFaces(component[i],part)){component.push(part);remaining.delete(part);}
-  created.push(makeGroup(component,reference,velocity,spin));
+  for(let i=0;i<component.length;i++)for(const index of links[component[i]])if(remaining.delete(index))component.push(index);
+  created.push(makeGroup(component.map(index=>parts[index]),reference,velocity,spin));
  }return created;
 }
 function detachPart(hit,all=false){
@@ -1085,6 +1133,30 @@ function findConvexSnap(source,part,target,t,limit){
  candidates.sort((a,b)=>a.score-b.score);
  return candidates.find(c=>validPose(source,c.position,c.quaternion))||null;
 }
+function findCompoundSquareSnap(source,target,limit){
+ if(source.body.position.distanceTo(target.body.position)>source.body.boundingRadius+target.body.boundingRadius+limit)return null;
+ const src=groupJoinFaces(source),dst=groupJoinFaces(target);
+ if(!src.hasComposite&&!dst.hasComposite)return null;
+ const targetFaces=dst.squares.map(face=>({...face,center:add(target.body.position,target.body.quaternion.vmult(face.center)),normal:target.body.quaternion.vmult(face.normal),vertices:face.vertices.map(v=>add(target.body.position,target.body.quaternion.vmult(v)))})),candidates=[];
+ for(const local of src.squares){
+  const currentCenter=add(source.body.position,source.body.quaternion.vmult(local.center));
+  for(const face of targetFaces){
+   if(!local.composite&&!face.composite||currentCenter.distanceTo(face.center)>limit||sub(currentCenter,face.center).dot(face.normal)<-.015)continue;
+   const align=Q();align.setFromVectors(local.normal,mul(face.normal,-1));align.normalize();
+   const tangent=align.vmult(sub(local.vertices[1],local.vertices[0]));tangent.normalize();
+   for(let start=0;start<4;start++){
+    const along=sub(face.vertices[(start+3)%4],face.vertices[start]);along.normalize();
+    const twist=Q();twist.setFromAxisAngle(face.normal,Math.atan2(face.normal.dot(tangent.cross(along)),tangent.dot(along)));
+    const quaternion=twist.mult(align);quaternion.normalize();const position=sub(face.center,quaternion.vmult(local.center));
+    if(!local.vertices.every((vertex,i)=>add(position,quaternion.vmult(vertex)).distanceTo(face.vertices[(start-i+4)%4])<.00005))continue;
+    const score=currentCenter.distanceTo(face.center)+(1-qSimilarity(quaternion,source.body.quaternion))*.025;if(score>=limit)continue;
+    candidates.push({source,target,position,quaternion,score,wholeFace:true,face:{p:face.center,normal:face.normal,vertices:face.vertices,q:target.body.quaternion,axis:0}});
+   }
+  }
+ }
+ candidates.sort((a,b)=>a.score-b.score);
+ return candidates.find(candidate=>validPose(source,candidate.position,candidate.quaternion))||null;
+}
 function findSnap(){
  if(!held||!shiftDown()||(held.items&&held.items.length>1))return null;
  const source=held.g,part=partPose(source,held.part);let candidate=null,best=.055;
@@ -1094,6 +1166,7 @@ function findSnap(){
    if(blockCandidate&&(!candidate||blockCandidate.score<candidate.score)){candidate=blockCandidate;best=blockCandidate.score;}
    continue;
   }
+  const composite=findCompoundSquareSnap(source,target,best);if(composite){candidate=composite;best=composite.score;}
   for(const t of poses(target)){
    if(isTBit(part.part)||isTBit(t.part)){
     const convex=findConvexSnap(source,part,target,t,best);if(convex){candidate=convex;best=convex.score;}continue;
@@ -1116,7 +1189,7 @@ function weld(candidate){
  if(!validPose(source,position,quaternion))return null;
  const sourceParts=poses(source,position,quaternion),targetParts=poses(target);
  if(sourceParts.some(a=>targetParts.some(b=>obbOverlap(a,b,.000001))))return null;
- if(!sourceParts.some(a=>targetParts.some(b=>touchingUnitFaces(a,b,.00005))))return null;
+ if(!assembliesTouch(sourceParts,targetParts))return null;
  const parts=sourceParts.map(o=>({id:o.part.id,weight:o.part.weight,shape:o.part.shape,p:o.p,q:o.q,mood:copyMood(o.part.mood)})).concat(worldParts(target));
  const ref=target.body.quaternion.clone();removeGroup(source);removeGroup(target);const joined=makeGroup(parts,ref);
  selected={g:joined,part:joined.parts[0]};queueSpeech(joined,'happy',{kind:'joined',indices:[7,9,15,17]});announce('Unidos · '+joined.parts.length+' '+groupUnitLabel(joined)+' · '+totalWeight(joined)+' u');return joined;
@@ -2421,7 +2494,7 @@ function persistShapes(){try{window.localStorage.setItem('qbits.shapes.v1',JSON.
 function saveShape(g){
  if(!g||!groups.includes(g))return;if(savedShapes.length>=32){announce('Hay 32 formas guardadas. Exporta o elimina una antes de añadir otra.');return;}
  if(!assemblyValid(poses(g))){announce('Esta forma tiene caras incompatibles. Desármala y vuelve a encajar las piezas.');return;}
- const bb=bounds(g,V(),Q()),origin=V(bb.center.x,bb.min.y,bb.center.z),shape={name:'Forma '+(savedShapes.length+1),geometryVersion:2,parts:poses(g,V(),Q()).map(o=>({shape:normalizeUnitShape(o.part.shape),p:[o.p.x-origin.x,o.p.y-origin.y,o.p.z-origin.z].map(n=>+n.toFixed(5)),q:[o.q.x,o.q.y,o.q.z,o.q.w].map(n=>+n.toFixed(7))}))};
+ const bb=bounds(g,V(),Q()),origin=V(bb.center.x,bb.min.y,bb.center.z),shape={name:'Forma '+(savedShapes.length+1),geometryVersion:3,parts:poses(g,V(),Q()).map(o=>({shape:normalizeUnitShape(o.part.shape),p:[o.p.x-origin.x,o.p.y-origin.y,o.p.z-origin.z].map(n=>+n.toFixed(5)),q:[o.q.x,o.q.y,o.q.z,o.q.w].map(n=>+n.toFixed(7))}))};
  savedShapes.push(shape);const durable=persistShapes();updateAlphaPanel();announce(shape.name+' guardada · '+shape.parts.length+' unidades'+(durable?'':' · solo en esta sesión; exporta una copia'));
 }
 function blueprintTargets(bp){return bp.shape.parts.map(part=>{const q=Q();q.set(...part.q);return {shape:normalizeUnitShape(part.shape),p:add(bp.p,bp.q.vmult(V(...part.p))),q:bp.q.mult(q)};}).sort((a,b)=>a.p.y-b.p.y||a.p.x-b.p.x||a.p.z-b.p.z);}

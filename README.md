@@ -89,23 +89,25 @@ Mantén **Q** para abrir el selector radial de vidrio: apunta a una figura y sue
 
 También en **P → Piezas → Tipo de pieza** se elige entre el Q-bit cúbico y dos T-bits grises. El botón Crear y el atajo N usan esa elección. Las nuevas formas se crean en el banco libre.
 
-| Pieza | Proporciones respecto al lado del Q-bit |
+Las tres piezas proceden de una misma partición del cubo. Igualar todas las aristas no basta para cerrar construcciones: las piezas regulares anteriores podían unirse de dos en dos y aun así dejar un hueco al cerrar una cadena.
+
+| Pieza | Geometría modular |
 | --- | --- |
-| T-bit triangular | Tetraedro regular: cada arista mide un lado del Q-bit. |
-| T-bit de base cuadrada | Base de 1 × 1 lados y altura de 1/√2 lados; sus cuatro caras laterales son triángulos equiláteros. |
+| Q-bit | Cubo de 9 × 9 × 9 cm. |
+| T-bit de base cuadrada | Pirámide de base 9 × 9 cm y altura 4,5 cm; volumen de 1/6 de Q-bit. |
+| T-bit triangular | Mitad de esa pirámide, cortada por una diagonal de la base y la punta; volumen de 1/12 de Q-bit. No es un tetraedro regular. |
 
-Todas las aristas de las tres piezas miden 9 cm. El encaje requiere caras completas del mismo tamaño, normales opuestas y todas las esquinas coincidentes. El ajuste automático usa únicamente las tres orientaciones de cada cara triangular o las cuatro de cada cara cuadrada.
+**Dos triangulares completan una pirámide; seis pirámides o doce triangulares completan un cubo**, con las puntas en el centro. Esto describe ensamblajes concretos, no que cualquier cadena arbitraria cierre. El encaje exige caras completas compatibles, normales opuestas y todas las esquinas coincidentes. Solo se permiten giros que conserven las longitudes y el papel de cada esquina.
 
-| Unión | Regla |
+| Cara | Conexión compatible |
 | --- | --- |
-| Q-bit ↔ Q-bit | Cara cuadrada con cara cuadrada. |
-| Q-bit ↔ T-bit de base cuadrada | Solo la base cuadrada de la pirámide. |
-| T-bit triangular ↔ T-bit de base cuadrada | Cualquiera de las caras triangulares laterales. |
-| T-bit triangular ↔ T-bit triangular | Cara triangular completa. |
-| Pirámide de base cuadrada ↔ otra igual | Base con base o triángulo con triángulo. |
-| Q-bit ↔ T-bit triangular | Incompatible: un triángulo no cubre una cara cuadrada. |
+| Cuadrada | Cara de Q-bit, base de pirámide o base completa formada por dos triangulares. |
+| Triangular lateral | Otra lateral de pirámide o de T-bit triangular. |
+| Media base triangular | Otra media base de la misma forma. |
+| Corte diagonal interno | Otro corte diagonal; dos triangulares completan así una pirámide. |
+| Triángulo frente a cuadrado | Incompatible si no hay una segunda mitad que complete el cuadrado. |
 
-Las uniones se vuelven a validar al soltar: si una pieza se movió o el espacio quedó ocupado, no se unen. Los blueprints obedecen las mismas reglas; las formas antiguas incompatibles se conservan para exportar, pero deben rearmarse para volver a construirlas. Las nuevas formas guardadas usan `geometryVersion: 2`.
+Las piezas mantienen su identidad al formar una cara compuesta y pueden desarmarse. Al quitar una mitad, su cara cuadrada incompleta deja de sostener esa unión. Las uniones se vuelven a validar al soltar: si una pieza se movió o el espacio quedó ocupado, no se unen. Los blueprints obedecen las mismas reglas; las formas antiguas incompatibles se conservan para exportar, pero deben rearmarse para volver a construirlas. Las nuevas formas guardadas usan `geometryVersion: 3`.
 
 Tienen colisiones según sus caras reales, peso ajustable, agarre, giro, recorrido, estados, energía y enfriamiento. Se unen entre sí y con Q-bits acercando sus caras y soltando con Shift; Alt permite separar una pieza o desarmar la estructura. Duplicar, guardar formas y volver al banco conservan cada tipo. Los blueprints requieren piezas de la forma correcta y siguen aceptando las formas cúbicas guardadas anteriormente.
 

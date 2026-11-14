@@ -11,13 +11,18 @@ function units(t, shapes, x=0, z=0) {
 function cubePyramidTetra(t) {
   const cube={id:1200,shape:'cube',weight:1,p:t.V(0,.045,0),q:t.Q()};
   const pyramid={id:1201,shape:'pyramid',weight:1,p:t.V(0,.09+t.unitGroundHeight('pyramid'),0),q:t.Q()};
-  const face=t.unitFaces(pyramid)[1],profile=t.unitProfile('tetra'),indices=profile.faces[0];
-  const align=t.Q();align.setFromVectors(profile.faceNormals[0],face.normal.scale(-1));align.normalize();
+  const face=t.unitFaces(pyramid)[1],profile=t.unitProfile('tetra'),faceIndex=1,indices=profile.faces[faceIndex];
+  const align=t.Q();align.setFromVectors(profile.faceNormals[faceIndex],face.normal.scale(-1));align.normalize();
   const from=align.vmult(profile.vertices[indices[1]].vsub(profile.vertices[indices[0]]));from.normalize();
-  const to=face.vertices.at(-1).vsub(face.vertices[0]);to.normalize();
-  const twist=t.Q();twist.setFromAxisAngle(face.normal,Math.atan2(face.normal.dot(from.cross(to)),from.dot(to)));
-  const q=twist.mult(align);q.normalize();
-  const tetra={id:1202,shape:'tetra',weight:1,p:face.center.vsub(q.vmult(profile.faceCenters[0])),q};
+  let tetra;
+  for(let start=0;start<face.vertices.length;start++) {
+    const to=face.vertices[(start-1+face.vertices.length)%face.vertices.length].vsub(face.vertices[start]);to.normalize();
+    const twist=t.Q();twist.setFromAxisAngle(face.normal,Math.atan2(face.normal.dot(from.cross(to)),from.dot(to)));
+    const q=twist.mult(align);q.normalize();
+    const p=face.center.vsub(q.vmult(profile.faceCenters[faceIndex]));
+    if(indices.every(index=>face.vertices.some(v=>p.vadd(q.vmult(profile.vertices[index])).distanceTo(v)<1e-9))) {tetra={id:1202,shape:'tetra',weight:1,p,q};break;}
+  }
+  assert(tetra,'the blueprint bridge requires a matching lateral triangle');
   assert(t.touchingUnitFaces(cube,pyramid));assert(t.touchingUnitFaces(pyramid,tetra));
   assert(!t.obbOverlap(cube,tetra));
   return t.makeGroup([cube,pyramid,tetra]);
@@ -51,7 +56,7 @@ test('saved mixed forms retain unit types while older cube forms remain compatib
   const g=cubePyramidTetra(t);t.saveShape(g);
   const saved=JSON.parse(JSON.stringify(t.savedShapes.at(-1)));
   assert.deepEqual(saved.parts.map(p=>p.shape),['cube','pyramid','tetra']);assert(t.savedShapeValid(saved));
-  assert.equal(saved.geometryVersion,2);
+  assert.equal(saved.geometryVersion,3);
   assert.equal(t.importShapesData({version:1,shapes:[saved]}),1);
   const bp={shape:t.savedShapes[0],p:t.V(-1,0,-1),q:t.Q(),slots:[]};
   assert.deepEqual(Array.from(t.blueprintTargets(bp),p=>p.shape).sort(),['cube','pyramid','tetra']);
@@ -65,7 +70,7 @@ test('saved mixed forms retain unit types while older cube forms remain compatib
 test('blueprints recruit the requested T-bit type and retain it through completed assembly', () => {
   const game=createGame(),{t}=game;t.clearNarrativeScene();
   const tetra=units(t,['tetra'],-.45,0),cube=units(t,['cube'],-.3,0),pyramid=units(t,['pyramid'],-.6,0);
-  const shape={name:'Solo tetra',parts:[{shape:'tetra',p:[0,.01837,0],q:[0,0,0,1]}]};
+  const shape={name:'Solo tetra',parts:[{shape:'tetra',p:[0,t.unitGroundHeight('tetra'),0],q:[0,0,0,1]}]};
   const bp=t.placeBlueprint(shape,t.V(0,0,0));assert(bp);
   assert.deepEqual(Array.from(t.nearBlueprint(bp)),[tetra]);
   t.activateBlueprint(bp);t.updateBlueprints(0);

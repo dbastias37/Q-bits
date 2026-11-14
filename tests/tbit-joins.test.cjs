@@ -4,16 +4,26 @@ const createGame = require('./game-harness.cjs');
 
 // Build a known exact join independently of the snap search: oppose the normals,
 // reverse the boundary winding, then make the polygon centers coincide.
-function attachedPart(t, shape, sourceFaceIndex, targetFace, id, { gap = 0, twist = 0, slide = 0 } = {}) {
+function attachedPart(t, shape, sourceFaceIndex, targetFace, id, { gap = 0, twist = 0, slide = 0, allowMismatch = false } = {}) {
   const profile = t.unitProfile(shape), indices = profile.faces[sourceFaceIndex];
   const align = t.Q();align.setFromVectors(profile.faceNormals[sourceFaceIndex], targetFace.normal.scale(-1));align.normalize();
   const tangent = align.vmult(profile.vertices[indices[1]].vsub(profile.vertices[indices[0]]));tangent.normalize();
-  const along = targetFace.vertices[0].vsub(targetFace.vertices[1]);along.normalize();
-  const angle = Math.atan2(targetFace.normal.dot(tangent.cross(along)), tangent.dot(along));
-  const rotation = t.Q();rotation.setFromAxisAngle(targetFace.normal, angle + twist);
-  const q = rotation.mult(align);q.normalize();
-  const p = targetFace.center.vsub(q.vmult(profile.faceCenters[sourceFaceIndex]))
-    .vadd(targetFace.normal.scale(gap)).vadd(along.scale(slide));
+  let reference;
+  for(let start=0;start<targetFace.vertices.length;start++) {
+    const along=targetFace.vertices[(start-1+targetFace.vertices.length)%targetFace.vertices.length].vsub(targetFace.vertices[start]);along.normalize();
+    const angle=Math.atan2(targetFace.normal.dot(tangent.cross(along)),tangent.dot(along));
+    const rotation=t.Q();rotation.setFromAxisAngle(targetFace.normal,angle);
+    const q=rotation.mult(align);q.normalize();
+    const p=targetFace.center.vsub(q.vmult(profile.faceCenters[sourceFaceIndex]));
+    const exact=indices.length===targetFace.vertices.length && indices.every(index=>targetFace.vertices.some(v=>p.vadd(q.vmult(profile.vertices[index])).distanceTo(v)<1e-9));
+    if(exact || allowMismatch && !reference)reference={q,p,along};
+    if(exact)break;
+  }
+  assert(reference,`reference face ${shape}[${sourceFaceIndex}] must be congruent`);
+  const perturb=t.Q();perturb.setFromAxisAngle(targetFace.normal,twist);
+  const q=perturb.mult(reference.q);q.normalize();
+  const p=targetFace.center.vsub(q.vmult(profile.faceCenters[sourceFaceIndex]))
+    .vadd(targetFace.normal.scale(gap)).vadd(reference.along.scale(slide));
   return {id,shape,weight:1,q,p};
 }
 function exactSharedFaces(t, a, b, tolerance = 1e-8) {
@@ -27,7 +37,8 @@ function exactSharedFaces(t, a, b, tolerance = 1e-8) {
 function hold(t, source) { t.setHeld({g:source,part:source.parts[0],items:[{g:source}]});t.keys.add('ShiftLeft'); }
 const compatible = [
   ['cube',1,'cube',0], ['cube',1,'pyramid',0], ['pyramid',0,'cube',1],
-  ['tetra',1,'tetra',0], ['tetra',1,'pyramid',1], ['pyramid',1,'tetra',0],
+  ['tetra',1,'tetra',2], ['tetra',1,'pyramid',1], ['pyramid',1,'tetra',1],
+  ['tetra',0,'tetra',0], ['tetra',3,'tetra',3],
   ['pyramid',0,'pyramid',0], ['pyramid',1,'pyramid',1]
 ];
 
@@ -65,7 +76,7 @@ test('triangle-to-square contacts cannot snap or be welded in either direction',
   for(const [targetShape,sourceShape] of [['cube','tetra'],['tetra','cube']]) {
     const {t}=createGame();t.clearNarrativeScene();
     const target=t.makeGroup([{id:100,shape:targetShape,weight:1,p:t.V(0,1,0),q:t.Q()}]);
-    const source=t.makeGroup([attachedPart(t,sourceShape,0,t.unitFaces(t.worldParts(target)[0])[1],101,{gap:.005})]);
+    const source=t.makeGroup([attachedPart(t,sourceShape,0,t.unitFaces(t.worldParts(target)[0])[1],101,{gap:.005,allowMismatch:true})]);
     hold(t,source);assert(t.findSnap()===null,`${sourceShape} must not fit ${targetShape}`);t.setHeld(null);
     const before=t.groups.length;
     assert(!t.weld({source,target,position:source.body.position.clone(),quaternion:source.body.quaternion.clone()}));
@@ -74,8 +85,23 @@ test('triangle-to-square contacts cannot snap or be welded in either direction',
   }
 });
 
+test('different triangular face families cannot be treated as matching connectors', () => {
+  for(const [targetShape,targetFaceIndex,sourceShape,sourceFaceIndex] of [
+    ['tetra',0,'tetra',1],['tetra',0,'tetra',3],['tetra',1,'tetra',3],
+    ['pyramid',1,'tetra',0],['pyramid',1,'tetra',3]
+  ]) {
+    const {t}=createGame();t.clearNarrativeScene();
+    const target=t.makeGroup([{id:100,shape:targetShape,weight:1,p:t.V(0,1,0),q:t.Q()}]);
+    const sourcePart=attachedPart(t,sourceShape,sourceFaceIndex,t.unitFaces(t.worldParts(target)[0])[targetFaceIndex],101,{allowMismatch:true});
+    const source=t.makeGroup([sourcePart]);
+    assert.equal(t.touchingUnitFaces(t.worldParts(source)[0],t.worldParts(target)[0]),false);
+    assert(!t.weld({source,target,position:source.body.position.clone(),quaternion:source.body.quaternion.clone()}),'triangle count alone cannot authorize a weld');
+    assert.equal(t.groups.length,2);
+  }
+});
+
 test('coplanar partial faces, arbitrary twists and edge contacts are not structural connections', () => {
-  for(const [shape,sourceFaceIndex,targetFaceIndex] of [['cube',0,1],['tetra',0,1],['pyramid',0,0],['pyramid',1,1]]) {
+  for(const [shape,sourceFaceIndex,targetFaceIndex] of [['cube',0,1],['tetra',0,0],['tetra',1,2],['tetra',3,3],['pyramid',0,0],['pyramid',1,1]]) {
     const {t}=createGame();t.clearNarrativeScene();
     const a={id:100,shape,weight:1,p:t.V(0,1,0),q:t.Q()},face=t.unitFaces(a)[targetFaceIndex];
     const aligned=attachedPart(t,shape,sourceFaceIndex,face,101);
@@ -97,7 +123,7 @@ test('removing the pyramid bridge separates a cube and tetra while a full-face p
   const {t}=createGame();t.clearNarrativeScene();
   const a={id:100,shape:'cube',weight:1,p:t.V(0,1,0),q:t.Q()};
   const b=attachedPart(t,'pyramid',0,t.unitFaces(a)[3],101);
-  const c=attachedPart(t,'tetra',0,t.unitFaces(b)[1],102);
+  const c=attachedPart(t,'tetra',1,t.unitFaces(b)[1],102);
   assert(t.touchingUnitFaces(a,b));assert(t.touchingUnitFaces(b,c));assert(!t.touchingUnitFaces(a,c));
   const joined=t.makeGroup([a,b,c]);
   t.detachPart({g:joined,part:joined.parts.find(p=>p.id===101)});
