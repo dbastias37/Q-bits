@@ -6,7 +6,7 @@ Versión actualizada el 14 de noviembre de 2026: prólogo, 12 niveles y laborato
 
 ## Jugar
 
-La apertura comienza en negro con «Un juego imaginado por Diego Bastías», fundido a negro y el título Q-bits. Después aparece el progreso de carga y, al terminar, **Jugar**. El prólogo conserva el botón **Despertar**.
+La apertura comienza en negro con «Un juego imaginado por Diego Bastías», fundido a negro y el título Q-bits. Después aparece el progreso de carga y, al terminar, **Jugar**. El prólogo comienza todavía a oscuras: «En el inicio no había nada…», seguido de «Y un ser todopoderoso dijo: “Hágase la luz”». Solo al terminar esa frase aparece **Despertar**, sin contenedor. Pulsarlo o presionar E abre los ojos y continúa el encuentro con el Q-bit.
 
 El porcentaje se obtiene de tareas completadas: carga del motor, código del juego, construcción de la escena inicial, primer dibujo en la GPU y descarga/validación de las pistas configuradas. Los tiempos de la presentación no hacen avanzar el porcentaje. El botón no se habilita si falla un recurso requerido. Los demás niveles son procedurales y se construyen al entrar a ellos.
 
@@ -100,7 +100,7 @@ Los desintegradores tienen una superficie de portal animada con fondo negro opac
 | `assets/audio/music/README.md` | Instrucciones para subir los archivos de música. |
 | `tests/` | Pruebas de carga, música, escenas, colisiones y rutas. |
 | `README.md` | Instalación, publicación, campaña y controles. |
-| `THIRD_PARTY_NOTICES.md` | Aviso de licencia del motor de físicas incluido. |
+| `THIRD_PARTY_NOTICES.md` | Avisos del motor de físicas y las fuentes incluidas. |
 | `.nojekyll` | Configuración para servir archivos estáticos en GitHub Pages. |
 | `.gitignore` | Exclusiones de archivos temporales y paquetes ZIP. |
 
@@ -108,9 +108,10 @@ Para modificar la interfaz y los estilos, edita `index.html`; para la lógica, e
 
 ## Tipografía y artefactos
 
-- **Spaceman**: título Q-bits, opciones de menú y nombres de unidades. Las descripciones pequeñas conservan una fuente de lectura.
-- **Parisienne**: diálogos, subtítulos, saludos y burbujas emocionales. Se usa exactamente la fuente del ZIP aportado, con fallback para signos que no incluye.
-- Ambas fuentes están alojadas dentro del repositorio y se comprueba su carga antes de habilitar Jugar. Los originales y sus avisos están en `assets/fonts/` y `THIRD_PARTY_NOTICES.md`.
+- **LED Calculator**: exclusivamente el título Q-bits de la presentación y del menú principal.
+- **Spaceman**, nueva versión aportada: menús, nombres de unidades y demás textos de interfaz. Incluye las minúsculas acentuadas, ñ/Ñ y ¿/¡; los caracteres sin dibujo en el archivo usan la fuente de respaldo mediante `unicode-range`, incluidos algunos signos y las vocales mayúsculas acentuadas.
+- **Tengoku**: diálogos, subtítulos, saludos y burbujas emocionales.
+- Las tres fuentes están alojadas dentro del repositorio, conservadas sin modificar, y se comprueba su carga antes de habilitar Jugar. Los originales y sus avisos están en `assets/fonts/` y `THIRD_PARTY_NOTICES.md`. Parisienne y la Spaceman anterior se conservan como archivos históricos y ya no se cargan.
 - Las opciones de menú son texto sin cajas ni fondos, con subrayado al señalar y foco de teclado visible.
 - El desintegrador transporta líquido negro hasta formar los nuevos Q-bits. Los artefactos conservan sus volúmenes y colisiones, con acabados blancos y grafito y detalles discretos.
 

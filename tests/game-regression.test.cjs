@@ -73,11 +73,11 @@ test('real preparation builds the prologue and does not advance it before Play',
   for (let i = 0; i < 20 && !done; i++) { game.frame(); await Promise.resolve(); await Promise.resolve(); }
   await promise;
   assert.equal(progress.at(-1), 1); assert(progress.every((n, i) => !i || n >= progress[i - 1]));
-  assert.equal(t.story.scene, 'intro'); assert.equal(t.story.phase, 'asleep'); assert.equal(t.story.mode, 'boot');
+  assert.equal(t.story.scene, 'intro'); assert.equal(t.story.phase, 'invocation'); assert.equal(t.story.mode, 'boot');
   assert(t.groups.length > 0); const elapsed = t.story.elapsed;
   for (let i = 0; i < 20; i++) game.frame(performance.now() + i * 17);
   assert.equal(t.story.elapsed, elapsed); assert.equal(t.story.started, false);
-  api.play(); assert.equal(t.story.mode, 'playing'); assert.equal(t.story.phase, 'asleep'); assert.equal(t.story.started, true);
+  api.play(); assert.equal(t.story.mode, 'playing'); assert.equal(t.story.phase, 'invocation'); assert.equal(t.story.started, true);
 });
 
 test('cargo planning completes asynchronously and cancellation releases crew and searches', () => {

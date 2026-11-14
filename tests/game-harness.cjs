@@ -62,9 +62,10 @@ module.exports = function createGame() {
   const hook = `window.__testGame={beginCampaignLevel,beginIntro,showMain,hideStoryDialogue,
     planRoute,planCargoPath,startRoute,stopRoute,stepPhysics,groups,cargos,V,Q,world,story,bounds,
     poses,corners,drawQubits,drawStoryWorld,drawStoryGlass,updateTarget,updateSpeech,updateStoryMarker,
+    measureEncounterBubbles,placeEncounterBubble,addEncounterBubble,encounterBubbles,
     makeGroup,worldParts,addQubit,removeGroup,orientations,clearNarrativeScene,rollGeometry,beginHaul,stopHaul,assignCrew,
     navigationJobs,runNavigationJobs,updatePosture,handleKey,handleWheel,grabQubit,releaseQubit,
-    posture,position,keys,canvas,storyWorld,EYE_HEIGHT,frame,sceneFade,tickSceneFade,tickStory,storyInput,getHeld:()=>held,
+    posture,position,keys,canvas,storyWorld,EYE_HEIGHT,frame,sceneFade,tickSceneFade,tickStory,storyInput,wakeUp,renderDialogue,advanceDialogue,resumeGame,openPauseMenu,storyLookAllowed,getHeld:()=>held,
     setRunning:value=>{running=value}};`;
   scripts = scripts.map(source => {
     if (!source.includes('function beginCampaignLevel(')) return source;

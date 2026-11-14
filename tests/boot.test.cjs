@@ -23,7 +23,7 @@ function environment({ autoFonts = true } = {}) {
     click() { this.dispatchEvent(new Event('click')); }
   }
   const nodes = new Map();
-  for (const selector of ['#boot-screen', '#boot-loading', '#boot-message', '#boot-percent', '#boot-progress', '#boot-play', '#boot-retry', '#boot-title', '#wake-button', '#main-screen', '#pause-screen', '#main-screen h1']) nodes.set(selector, new Element());
+  for (const selector of ['#boot-screen', '#boot-loading', '#boot-message', '#boot-percent', '#boot-progress', '#boot-play', '#boot-retry', '#boot-title', '#room', '#wake-button', '#main-screen', '#pause-screen', '#main-screen h1']) nodes.set(selector, new Element());
   nodes.get('#boot-play').hidden = true;
   nodes.get('#boot-play').disabled = true;
   nodes.get('#boot-retry').hidden = true;
@@ -33,7 +33,7 @@ function environment({ autoFonts = true } = {}) {
   const scripts = [], events = [], errors = [], timers = new Map();
   let now = 0, nextTimer = 0, reloads = 0, sceneProgress, musicProgress;
   const gameReady = deferred(), musicReady = deferred();
-  const fontsReady = { Parisienne: deferred(), Spaceman: deferred() };
+  const fontsReady = { Tengoku: deferred(), 'Spaceman UI': deferred(), 'LED Calculator': deferred() };
   const fontRequests = [];
   if (autoFonts) for (const [family, pending] of Object.entries(fontsReady)) pending.resolve([{ family }]);
   const document = {
@@ -100,7 +100,7 @@ function environment({ autoFonts = true } = {}) {
   };
 }
 
-test('both font faces must finish before the title and Jugar can appear', async () => {
+test('all three font faces, including the LED title, must finish before the title and Jugar can appear', async () => {
   const e = environment({ autoFonts: false });
   await e.loadScripts();
   e.gameReady.resolve();
@@ -108,12 +108,20 @@ test('both font faces must finish before the title and Jugar can appear', async 
   await e.advance(10000);
   assertBlocked(e);
   assert.equal(e.nodes.get('#boot-screen').dataset.stage, 'black');
-  assert.deepEqual(e.fontRequests.map(request => request.font), ['28px Parisienne', '14px Spaceman']);
-  e.fontsReady.Parisienne.resolve([{ family: 'Parisienne' }]);
+  assert.deepEqual(e.fontRequests, [
+    { font: '20px Tengoku', text: '¿Cómo estás, Q-bit?' },
+    { font: '14px "Spaceman UI"', text: '¿Qué? ¡Sí! Q-bits' },
+    { font: '90px "LED Calculator"', text: 'Q-bits' }
+  ]);
+  e.fontsReady.Tengoku.resolve([{ family: 'Tengoku' }]);
   await flush();
   assertBlocked(e);
   assert.equal(e.nodes.get('#boot-screen').dataset.stage, 'black');
-  e.fontsReady.Spaceman.resolve([{ family: 'Spaceman' }]);
+  e.fontsReady['Spaceman UI'].resolve([{ family: 'Spaceman UI' }]);
+  await flush();
+  assertBlocked(e);
+  assert.equal(e.nodes.get('#boot-screen').dataset.stage, 'black', 'the title must not flash a fallback while LED Calculator is pending');
+  e.fontsReady['LED Calculator'].resolve([{ family: 'LED Calculator' }]);
   await flush();
   assert.equal(e.nodes.get('#boot-screen').dataset.stage, 'title');
   assert.equal(e.nodes.get('#boot-play').hidden, true);
@@ -122,15 +130,17 @@ test('both font faces must finish before the title and Jugar can appear', async 
   assert.equal(e.nodes.get('#boot-percent').textContent, '100%');
 });
 
-for (const failure of ['rejected', 'empty']) {
-  test(failure + ' font load blocks completion and offers retry', async () => {
+for (const family of ['Tengoku', 'Spaceman UI', 'LED Calculator']) for (const failure of ['rejected', 'empty']) {
+  test(failure + ' ' + family + ' load blocks completion and offers retry', async () => {
     const e = environment({ autoFonts: false });
     await e.loadScripts();
     e.gameReady.resolve();
     e.musicReady.resolve();
-    e.fontsReady.Parisienne.resolve([{ family: 'Parisienne' }]);
-    if (failure === 'rejected') e.fontsReady.Spaceman.reject(new Error('Missing font'));
-    else e.fontsReady.Spaceman.resolve([]);
+    for (const [name, pending] of Object.entries(e.fontsReady)) {
+      if (name !== family) pending.resolve([{ family: name }]);
+      else if (failure === 'rejected') pending.reject(new Error('Missing ' + family));
+      else pending.resolve([]);
+    }
     await flush();
     await e.advance(10000);
     assertBlocked(e);
@@ -212,7 +222,8 @@ test('ready assets wait for the cinematic; the click starts audio synchronously 
   assert.equal(e.events.filter(event => event === 'game.play').length, 1);
   await e.advance(850);
   assert.equal(e.nodes.get('#boot-screen').hidden, true);
-  assert.equal(e.nodes.get('#wake-button').focused, true);
+  assert.equal(e.nodes.get('#room').focused, true);
+  assert.notEqual(e.nodes.get('#wake-button').focused, true, 'boot must not focus the prologue wake button early');
 });
 
 for (const failure of ['script', 'music', 'scene']) {

@@ -37,7 +37,7 @@
   function loadScript(path) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = path + '?v=20261114-2';
+      script.src = path + '?v=20261114-3';
       script.onload = resolve;
       script.onerror = () => reject(new Error('No se pudo cargar ' + path));
       document.head.append(script);
@@ -46,8 +46,9 @@
   async function loadTypography() {
     if (!document.fonts) throw new Error('Este navegador no puede preparar las fuentes del juego.');
     const faces = await Promise.all([
-      document.fonts.load('28px Parisienne', 'Cómo estás, Q-bit'),
-      document.fonts.load('14px Spaceman', 'Q-bits Jugar')
+      document.fonts.load('20px Tengoku', '¿Cómo estás, Q-bit?'),
+      document.fonts.load('14px "Spaceman UI"', '¿Qué? ¡Sí! Q-bits'),
+      document.fonts.load('90px "LED Calculator"', 'Q-bits')
     ]);
     if (faces.some(list => !list.length)) throw new Error('No se pudieron cargar las fuentes del juego.');
     update('fonts', 1);
@@ -89,7 +90,7 @@
     QBitsMusic.start();
     document.body.dataset.booting = 'false';
     QBitsGame.play();screen.classList.add('leaving');
-    setTimeout(() => {screen.hidden = true;document.querySelector('#wake-button').focus({preventScroll:true});}, 850);
+    setTimeout(() => {screen.hidden = true;document.querySelector('#room').focus({preventScroll:true});}, 850);
   });
   const typographyReady = loadTypography();
   presentation().catch(fail);

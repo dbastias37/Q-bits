@@ -323,7 +323,7 @@ function resize() {
 }
 
 async function captureMouse() {
-  if(story.ready&&!story.allowTransitionCapture&&(story.mode!=='playing'||['asleep','choice','repeat'].includes(story.phase)))return;
+  if(story.ready&&!story.allowTransitionCapture&&(story.mode!=='playing'||['asleep','invocation','choice','repeat'].includes(story.phase)))return;
   if (document.pointerLockElement === canvas || lockPending) return;
   panel.hidden = true;
   menu.hidden = true; detachChoice = null; closeCommandMenu(false);
@@ -358,7 +358,7 @@ document.addEventListener('pointerlockchange', () => {
   else { const expected=story.intentionalUnlock;story.intentionalUnlock=false;
     if(story.ready&&!expected&&story.mode==='playing'&&panel.hidden&&commandMenu.hidden&&menu.hidden){openPauseMenu();}
     if(!story.preserveGrip)releaseQubit();
-    if((!story.ready||story.mode==='playing')&&panel.hidden&&menu.hidden&&commandMenu.hidden&&!['asleep','choice','repeat'].includes(story.phase))showHint(pausedHint);else hint.hidden=true;
+    if((!story.ready||story.mode==='playing')&&panel.hidden&&menu.hidden&&commandMenu.hidden&&!['asleep','invocation','choice','repeat'].includes(story.phase))showHint(pausedHint);else hint.hidden=true;
   }
 });
 document.addEventListener('pointerlockerror', lockFailed);
@@ -2604,14 +2604,14 @@ function storyWalkAllowed(){return !story.ready||story.scene!=='intro'||['delive
 function storyLookAllowed(){return !story.ready||story.mode==='playing'&&!['asleep','invocation','opening'].includes(story.phase);}
 function storyActionAllowed(){return !story.ready||story.mode==='playing'&&!story.transition&&!encounterLocksActions()&&(story.scene!=='intro'||['pickup','carry','deliver','cooling','cooled'].includes(story.phase));}
 function storyObjective(text){ui.objective.textContent=text;ui.objective.hidden=!text;}
-function say(text,{after=null,hold=false,mysterious=false,choices=null}={}){
- story.dialogue={text,time:0,count:-1,after,hold,choices,done:false};ui.text.textContent='';ui.text.classList.add('typing');ui.dialogue.hidden=false;ui.dialogue.classList.toggle('mysterious',mysterious);ui.speaker.textContent=mysterious?'UNA VOZ…':'Q-BIT';ui.choices.hidden=true;ui.choices.replaceChildren();ui.cooling.hidden=true;document.querySelector('#dialogue-hint').textContent=after?'E · continuar':choices?'Elige una respuesta':'';
+function say(text,{after=null,hold=false,mysterious=false,choices=null,onComplete=null}={}){
+ story.dialogue={text,time:0,count:-1,after,hold,choices,onComplete,done:false};ui.text.textContent='';ui.text.classList.add('typing');ui.dialogue.hidden=false;ui.dialogue.classList.toggle('mysterious',mysterious);ui.speaker.textContent=mysterious?'UNA VOZ…':'Q-BIT';ui.choices.hidden=true;ui.choices.replaceChildren();ui.cooling.hidden=true;document.querySelector('#dialogue-hint').textContent=after?'E · continuar':choices?'Elige una respuesta':'';
 }
 function hideStoryDialogue(){story.dialogue=null;ui.dialogue.hidden=true;ui.choices.hidden=true;ui.cooling.hidden=true;}
 function advanceDialogue(){const d=story.dialogue;if(!d||story.mode!=='playing'||!panel.hidden)return;const end=d.text.length/34;if(d.time<end){d.time=end;renderDialogue(0);return;}if(d.after){const after=d.after;d.after=null;after();}}
 function renderDialogue(dt){
  const d=story.dialogue;if(!d)return;d.time+=dt;const count=Math.min(d.text.length,Math.floor(d.time*34));if(count!==d.count){ui.text.textContent=d.text.slice(0,count);d.count=count;ui.text.classList.toggle('typing',count<d.text.length);}
- if(count===d.text.length&&!d.done){d.done=true;if(d.choices){ui.choices.hidden=false;for(const choice of d.choices){const button=document.createElement('button');button.textContent=choice.label;button.addEventListener('click',choice.run);ui.choices.appendChild(button);}document.querySelector('#dialogue-hint').textContent='Elige una respuesta';story.intentionalUnlock=true;pause(false);ui.choices.querySelector('button')?.focus({preventScroll:true});}}
+ if(count===d.text.length&&!d.done){d.done=true;if(d.choices){ui.choices.hidden=false;for(const choice of d.choices){const button=document.createElement('button');button.textContent=choice.label;button.addEventListener('click',choice.run);ui.choices.appendChild(button);}document.querySelector('#dialogue-hint').textContent='Elige una respuesta';story.intentionalUnlock=true;pause(false);ui.choices.querySelector('button')?.focus({preventScroll:true});}if(d.onComplete){const complete=d.onComplete;d.onComplete=null;complete();}}
  if(!d.hold&&d.after&&d.time>d.text.length/34+2.6){const after=d.after;d.after=null;after();}
 }
 function sceneFade(action,{out=.65,black=1.8,inTime=.8,loading=true,kind='travel'}={}){
@@ -2632,10 +2632,19 @@ function tickSceneFade(dt){
  if(story.scene==='intro'&&['asleep','invocation'].includes(story.phase))ui.veil.style.opacity='1';
  if(v===1){story.transition=null;document.body.dataset.transitioning='false';if(story.phase==='asleep')showWakeButton();}
 }
-function showWakeButton(){document.querySelector('#wake-screen').hidden=false;document.querySelector('#wake-button').focus({preventScroll:true});story.intentionalUnlock=true;pause(false);}
+function showWakeButton(){if(story.scene!=='intro'||story.mode!=='playing'||story.phase!=='asleep'||story.transition)return;document.querySelector('#wake-screen').hidden=false;document.querySelector('#wake-button').focus({preventScroll:true});story.intentionalUnlock=true;pause(false);}
 function wakeUp(){
- if(story.phase!=='asleep'||story.transition)return;document.querySelector('#wake-screen').hidden=true;story.phase='invocation';story.phaseTime=0;captureMouse();
- say('Y un ser todopoderoso dijo: «Hágase la luz».',{mysterious:true,after:()=>{story.phase='opening';story.phaseTime=0;hideStoryDialogue();}});
+ if(story.scene!=='intro'||story.mode!=='playing'||story.phase!=='asleep'||story.transition||!panel.hidden||document.hidden)return;
+ document.querySelector('#wake-screen').hidden=true;story.phase='opening';story.phaseTime=0;hideStoryDialogue();captureMouse();
+}
+function beginCreationNarration(){
+ // The opening lines play in darkness. The player's gesture creates the light.
+ story.phase='invocation';document.querySelector('#wake-screen').hidden=true;
+ say('En el inicio no había nada…',{mysterious:true,after:()=>{
+  say('Y un ser todopoderoso dijo: «Hágase la luz».',{mysterious:true,hold:true,onComplete:()=>{
+   story.phase='asleep';story.phaseTime=0;document.querySelector('#dialogue-hint').textContent='';showWakeButton();
+  }});
+ }});
 }
 function storyWall(p,half,{glass=false,color=[.91,.935,.92],door=false}={}){
  const body=new CANNON.Body({mass:0});body.addShape(new CANNON.Box(half));body.position.copy(p);body.collisionFilterMask=-1;world.addBody(body);const wall={p,half,body,min:sub(p,half),max:add(p,half),glass,color,door,initialY:p.y};storyWorld.walls.push(wall);return wall;
@@ -2679,10 +2688,10 @@ function storyGuide(){return groups.find(g=>g.parts.some(p=>p.id===story.guideId
 function spawnGuide(floating=true){const g=addQubit(floating?[0,1.49,2.45]:[-.85,HALF+.004,.3],1);story.guideId=g.parts[0].id;g.parts[0].mood.name='Q-bit';g.storyFloat=floating;if(floating){g.body.type=CANNON.Body.KINEMATIC;g.body.updateMassProperties();const m=g.parts[0].mood;m.energy=.12;m.state='restless';m.reason='acalorado';m.restLeft=120;m.agitation=.8;}return g;}
 function ensureTutorialCooler(){if(!story.cooler||!coolers.includes(story.cooler)){story.cooler=createCooler(V(-1.05,0,2.28));if(story.cooler){story.cooler.coolSeconds=4.5;story.cooler.capacity=1;story.cooler.storyOwned=true;}}}
 function beginIntro(replay=false){
- rememberLab();clearNarrativeScene();applyStageDefaults();gameScene('intro');gameMode('playing');story.phase=replay?'pickup':'asleep';story.elapsed=0;story.started=true;story.moved=false;story.guideSeen=0;story.cooler=null;spawnGuide();ensureTutorialCooler();position.splice(0,3,0,EYE_HEIGHT,1.3);yaw=replay?Math.PI:0;pitch=replay?-.16:0;camera.splice(0,3,...position);story.moveOrigin=null;document.querySelector('#notice').textContent='';
+ rememberLab();clearNarrativeScene();applyStageDefaults();gameScene('intro');gameMode('playing');story.phase=replay?'pickup':'invocation';story.elapsed=0;story.started=true;story.moved=false;story.guideSeen=0;story.cooler=null;spawnGuide();ensureTutorialCooler();position.splice(0,3,0,EYE_HEIGHT,1.3);yaw=replay?Math.PI:0;pitch=replay?-.16:0;camera.splice(0,3,...position);story.moveOrigin=null;document.querySelector('#notice').textContent='';
  buildWhiteRooms();
  if(replay){ui.veil.style.opacity='0';askPickup('Va de nuevo. Esta vez sin crear el universo: apunta hacia mí y haz clic para tomarme.');}
- else{ui.veil.style.opacity='1';ui.top.style.height='52%';ui.bottom.style.height='52%';hideStoryDialogue();if(!story.transition)showWakeButton();}
+ else{ui.veil.style.opacity='1';ui.top.style.height='52%';ui.bottom.style.height='52%';beginCreationNarration();}
  updatePanel();
 }
 function askPickup(text='Hola. ¿Cómo estás? Soy un Q-bit. Apunta hacia mí y haz clic izquierdo para tomarme.'){
@@ -2716,7 +2725,7 @@ function enterLab(capture=true){
 }
 function showMain(){document.querySelector('#wake-screen').hidden=true;gameMode('menu');pause(false);panel.hidden=true;document.querySelector('#main-continue').hidden=!story.started;ui.veil.style.opacity='0';ui.top.style.height='0';ui.bottom.style.height='0';canvas.style.filter='none';document.querySelector('#main-play').focus({preventScroll:true});}
 function openPauseMenu(){if(!story.ready||story.mode!=='playing'||story.transition)return;document.querySelector('#wake-screen').hidden=true;gameMode('pause');pause(false);panel.hidden=true;document.querySelector('#pause-chapter').textContent=story.scene==='intro'?'Prólogo · El primer encuentro':story.scene==='campaign'?'Nivel '+story.level+' · '+chapters[story.level][1]:'Banco de pruebas';document.querySelector('#pause-resume').focus({preventScroll:true});}
-function resumeGame(){if(story.phase==='complete'){gameMode('complete');return;}if(story.phase==='asleep'){gameMode('playing');ui.veil.style.opacity='1';showWakeButton();return;}gameMode('playing');if(story.scene==='intro'&&story.phase==='invocation'){ui.veil.style.opacity='1';ui.top.style.height='52%';ui.bottom.style.height='52%';}if(story.phase==='choice'||story.phase==='repeat')return;captureMouse();}
+function resumeGame(){if(story.phase==='complete'){gameMode('complete');return;}gameMode('playing');if(story.scene==='intro'&&['asleep','invocation'].includes(story.phase)){ui.veil.style.opacity='1';ui.top.style.height='52%';ui.bottom.style.height='52%';ui.dialogue.hidden=!story.dialogue;if(story.phase==='asleep')showWakeButton();else{document.querySelector('#wake-screen').hidden=true;canvas.focus({preventScroll:true});}return;}if(story.phase==='choice'||story.phase==='repeat')return;captureMouse();}
 function restartCurrent(){sceneFade(()=>{if(story.scene==='intro')beginIntro();else if(story.scene==='campaign')beginCampaignLevel(story.level);else if(puzzle.active)startPuzzle();else{clearNarrativeScene();gameScene('intro');enterLab(false);}});captureForTransition();}
 function showLevelSelector(){story.returnMode=story.mode;gameMode('levels');pause(false);panel.hidden=true;const list=document.querySelector('#level-list');list.replaceChildren();for(let i=0;i<chapters.length;i++){const row=document.createElement('button');row.disabled=false;const number=document.createElement('span'),info=document.createElement('span'),name=document.createElement('strong'),detail=document.createElement('small');number.className='level-number';number.textContent=chapters[i][0];name.textContent=chapters[i][1];detail.textContent=(i===0?story.progress.intro:story.progress['level'+i])?'Completado · volver a jugar':chapters[i][2];info.append(name,detail);row.append(number,info);row.addEventListener('click',()=>{sceneFade(()=>i===0?beginIntro():beginCampaignLevel(i));captureForTransition();});list.appendChild(row);}document.querySelector('#levels-back').focus({preventScroll:true});}
 function backFromLevels(){gameMode(story.returnMode||'menu');if(story.mode==='playing')resumeGame();}
@@ -2742,7 +2751,7 @@ function tickStory(dt){
   if(['asleep','invocation'].includes(story.phase))ui.veil.style.opacity='1';
   if(story.phase==='opening'){
    const t=clamp(story.phaseTime/2.8,0,1),u=t*t*(3-2*t);ui.veil.style.opacity=String(1-u);ui.top.style.height=(52*(1-u))+'%';ui.bottom.style.height=(52*(1-u))+'%';canvas.style.filter='blur('+((1-u)*13).toFixed(2)+'px)';
-   if(t===1){story.phase='light';canvas.style.filter='none';say('Y en el inicio no había nada. Solamente luz…',{after:()=>say('…',{after:()=>say('Bueno, era broma. Estoy acá atrás. Detrás tuyo.',{after:()=>{story.phase='look';storyObjective('Mueve el mouse para mirar detrás de ti.\nPor ahora, solo puedes mirar.');}})})});}
+   if(t===1){story.phase='light';canvas.style.filter='none';say('Bueno, era broma. Estoy acá atrás. Detrás tuyo.',{after:()=>{story.phase='look';storyObjective('Mueve el mouse para mirar detrás de ti.\nPor ahora, solo puedes mirar.');}});}
   }
   let g=storyGuide();if(!g){story.lost+=dt;if(story.lost>1){spawnGuide();story.lost=0;askPickup('Volví. Las herramientas de prueba hacen cosas curiosas. Tómame otra vez.');}return;}story.lost=0;
   if(story.phase==='look'){
@@ -3109,10 +3118,30 @@ function beginTeamTalk(){
 function addEncounterBubble(id,text,duration=3){
  if(encounterBubbles.length>=3){encounterBubbles[0].node.remove();encounterBubbles.shift();}const node=document.createElement('div');node.className='encounter-bubble';node.textContent=text;document.querySelector('#encounter-bubbles').appendChild(node);encounterBubbles.push({id,text,node,left:duration});
 }
+function measureEncounterBubbles(bubbles,width,height){
+ // Fonts are ready before play. Read each bubble only on creation or a viewport resize.
+ for(const b of bubbles)if(!b.size||b.size.viewportWidth!==width||b.size.viewportHeight!==height){
+  b.size={width:b.node.offsetWidth,height:b.node.offsetHeight,viewportWidth:width,viewportHeight:height};
+ }
+}
+function placeEncounterBubble(p,size,placed,width,height){
+ if(size.width>width-24||size.height>height-24)return null;
+ const inset=12,gap=8,x=clamp(p.x,size.width/2+inset,width-size.width/2-inset),left=x-size.width/2,right=x+size.width/2;
+ const maxTop=Math.max(inset,height-size.height-inset),preferred=p.y-15-size.height;
+ const candidates=[preferred,p.y+15,inset,maxTop];
+ for(const other of placed)candidates.push(other.top-size.height-gap,other.bottom+gap);
+ const overlap=top=>placed.reduce((sum,other)=>sum+Math.max(0,Math.min(right+gap,other.right)-Math.max(left-gap,other.left))*Math.max(0,Math.min(top+size.height+gap,other.bottom)-Math.max(top-gap,other.top)),0);
+ let top=inset,bestOverlap=Infinity,bestDistance=Infinity;
+ for(const candidate of candidates){const y=clamp(candidate,inset,maxTop),area=overlap(y),distance=Math.abs(y-preferred);if(area<bestOverlap||(area===bestOverlap&&distance<bestDistance)){top=y;bestOverlap=area;bestDistance=distance;}}
+ return bestOverlap?null:{left,right,top,bottom:top+size.height,x};
+}
 function layoutEncounterBubbles(){
- const layer=document.querySelector('#encounter-bubbles');layer.hidden=!encounterBubbles.length||story.mode!=='playing'||!panel.hidden;const placed=[];
- for(const b of encounterBubbles){const g=groups.find(g=>g.parts.some(p=>p.id===b.id)),p=g?project(add(g.body.position,V(0,.11,0))):null;b.node.hidden=!p||p.x<10||p.x>canvas.clientWidth-10||p.y<60||p.y>canvas.clientHeight-80;
-  if(!b.node.hidden){let y=p.y-15;for(const other of placed)if(Math.abs(p.x-other.x)<190&&Math.abs(y-other.y)<55)y=other.y-58;placed.push({x:p.x,y});b.node.style.left=clamp(p.x,105,canvas.clientWidth-105)+'px';b.node.style.top=y+'px';}}
+ const layer=document.querySelector('#encounter-bubbles');layer.hidden=!encounterBubbles.length||story.mode!=='playing'||!panel.hidden;if(layer.hidden)return;
+ const width=canvas.clientWidth,height=canvas.clientHeight,visible=[],placed=[];
+ for(const b of encounterBubbles){const g=groups.find(g=>g.parts.some(p=>p.id===b.id)),p=g?project(add(g.body.position,V(0,.11,0))):null;const hidden=!p||p.x<10||p.x>width-10||p.y<60||p.y>height-80;if(b.node.hidden!==hidden)b.node.hidden=hidden;if(!hidden){b.anchor=p;visible.push(b);}}
+ // Batch visibility writes, then measurements, then positions: no per-frame size reads.
+ measureEncounterBubbles(visible,width,height);
+ for(const b of visible){const rect=placeEncounterBubble(b.anchor,b.size,placed,width,height);if(!rect){b.node.hidden=true;continue;}placed.push(rect);b.node.style.left=rect.x+'px';b.node.style.top=rect.bottom+'px';}
 }
 function startCareLesson(){
  const e=story.encounter;e.phase='care';const g=encounterPatient();if(g){const m=g.parts[0].mood;m.state='neutral';m.energy=.04;beginMoodEpisode(m,'agotado');m.restLeft=24;m.restTotal=24;}
