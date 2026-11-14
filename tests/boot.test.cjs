@@ -77,6 +77,7 @@ function environment({ autoFonts = true } = {}) {
   async function loadScripts() {
     await scriptResult('cannon.min.js');
     await scriptResult('radial-menu.js');
+    await scriptResult('rotor-power.js');
     await scriptResult('game.js');
     await scriptResult('music.js');
   }
@@ -158,13 +159,14 @@ function assertBlocked(e) {
   assert.notEqual(e.nodes.get('#boot-percent').textContent, '100%');
 }
 
-test('a missing radial selector module blocks game preparation, 100 percent and Jugar even when music is ready', async () => {
+for(const module of ['radial-menu.js','rotor-power.js'])test(`a missing ${module} blocks game preparation, 100 percent and Jugar even when music is ready`, async () => {
   const e=environment();
   await e.scriptResult('cannon.min.js');
+  if(module==='rotor-power.js')await e.scriptResult('radial-menu.js');
   assert.equal(e.events.includes('game.prepare'),false,'the game waits for the selector dependency');
-  await e.scriptResult('radial-menu.js',false);
+  await e.scriptResult(module,false);
   assert.equal(e.events.includes('game.prepare'),false);
-  assert.ok(e.errors.some(values=>values.some(value=>/radial-menu\.js/.test(value?.message||''))),'the failed dependency is reported');
+  assert.ok(e.errors.some(values=>values.some(value=>(value?.message||'').includes(module))),'the failed dependency is reported');
   assert.equal(e.nodes.get('#boot-retry').hidden,false);
   await e.scriptResult('music.js');
   e.musicProgress(1);e.musicReady.resolve();e.gameReady.resolve();

@@ -10,8 +10,11 @@ function setup() {
 function gap(t, rotor) {
   return t.couplerTip(t.rotorPart(rotor.aId)).point.distanceTo(t.couplerTip(t.rotorPart(rotor.bId)).point);
 }
+// These ten-second fixtures isolate continuous mechanical stress. Battery
+// depletion and automatic cutoffs are exercised separately in energy tests.
+function supplyBench(t,rotor){for(const id of [rotor.aId,rotor.bId])t.rotorPart(id).part.mood.energy=1;}
 function horizontalArm(t, count) {
-  const rotor = t.spawnRotor(t.V(0, 2, 0), { rpm: 120, moving: 'b' });
+  const rotor = t.spawnRotor(t.V(0, 2, 0), { rpm: 120, moving: 'b', mount:'fixed', maxTorque:4, capacity:128 });
   assert(rotor);
   const turn = t.Q();turn.setFromAxisAngle(t.V(0, 0, 1), Math.PI / 2);
   const pivot = t.couplerTip(t.rotorPart(rotor.aId)).point;
@@ -37,6 +40,7 @@ for (const count of [4, 12]) test(`a horizontal rotor keeps its axle closed unde
   t.configureRotor(rotor, { enabled: true });
   let greatestGap = 0, greatestSpeed = 0;
   for (let i = 0; i < 2400; i++) {
+    supplyBench(t,rotor);
     t.stepPhysics(1 / 240);
     greatestGap = Math.max(greatestGap, gap(t, rotor));
     greatestSpeed = Math.max(greatestSpeed, moving.body.velocity.norm());
@@ -47,13 +51,15 @@ for (const count of [4, 12]) test(`a horizontal rotor keeps its axle closed unde
   assert(greatestSpeed < 6.001, 'large arm must obey the physics travel ceiling');
   assert(rotor.effectiveRpm <= rotor.rpm);
   const axis = t.couplerTip(t.rotorPart(rotor.bId)).axis;
-  assert(moving.body.angularVelocity.dot(axis) > rotor.effectiveRpm * Math.PI * 2 / 60 * .85);
+  assert(Number.isFinite(rotor.actualRpm));
+  assert(rotor.actualTorque<=rotor.maxTorque+1e-8, 'heavy arms cannot draw unlimited torque to meet their requested RPM');
+  assert(Math.abs(rotor.actualRpm)<rotor.effectiveRpm*.85, 'this heavy arm exceeds the available motor torque');
   assert(t.world.constraints.every(c => t.world.bodies.includes(c.bodyA) && t.world.bodies.includes(c.bodyB)));
 });
 
 test('a rotating arm stalls against its own fixed-side support without penetrating or tearing the axle', () => {
   const { t } = setup();t.settings.gravity = 0;t.world.gravity.set(0, 0, 0);
-  const rotor = t.spawnRotor(t.V(0, 1, 0), { rpm: 120, moving: 'b' });
+  const rotor = t.spawnRotor(t.V(0, 1, 0), { rpm: 120, moving: 'b', mount:'fixed', maxTorque:4, capacity:128 });
   const a = t.rotorPart(rotor.aId), b = t.rotorPart(rotor.bId);
   const aCenter = a.p.vadd(a.q.vmult(t.V(0, -.09 * 5 / 56, 0)));
   const bCenter = b.p.vadd(b.q.vmult(t.V(0, -.09 * 5 / 56, 0)));
@@ -68,6 +74,7 @@ test('a rotating arm stalls against its own fixed-side support without penetrati
   t.refreshRotors();t.configureRotor(rotor, { enabled: true, direction: -1 });
   let greatestGap = 0, greatestSpin = 0, blocked = false;
   for (let i = 0; i < 2400; i++) {
+    supplyBench(t,rotor);
     t.stepPhysics(1 / 240);
     greatestGap = Math.max(greatestGap, gap(t, rotor));
     greatestSpin = Math.max(greatestSpin, moving.body.angularVelocity.norm());

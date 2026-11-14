@@ -34,7 +34,7 @@ test('one coupler saves as Enganche and restores as one rigid mechanism with fre
 });
 
 test('saved Rotor preserves rigid attachments, motor choices and real joint after motor stepping',()=>{
-  const game=setup(),{t}=game,r=rotor(game);
+  const game=setup(),{t}=game,r=rotor(game,{mount:'fixed'});
   attachCube(t,r,1);t.configureRotor(r,{rpm:42,direction:-1,moving:'b',enabled:true});
   for(let i=0;i<480;i++)t.stepPhysics(1/240);
   const record=t.saveMechanism(r);assert(record,'a running mechanism remains saveable');
@@ -84,6 +84,9 @@ test('invalid imports are atomic and reject malformed references, values, geomet
     s=>{s.joints[0].a=127;},s=>{s.joints[0].b=s.joints[0].a;},
     s=>{s.joints[0].rpm=Infinity;},s=>{s.joints[0].rpm=121;},s=>{s.joints[0].direction=0;},
     s=>{s.joints[0].moving='both';},s=>{s.joints[0].enabled='true';},
+    ...['up',null,1].map(value=>s=>{s.joints[0].mount=value;}),
+    ...[NaN,Infinity,.019,4.001,null,'0.4'].map(value=>s=>{s.joints[0].maxTorque=value;}),
+    ...[NaN,Infinity,1.99,128.01,null,'16'].map(value=>s=>{s.joints[0].capacity=value;}),
     s=>{s.groups[0].parts[0].p[0]=NaN;},s=>{s.groups[0].parts[0].q=[0,0,0,2];},
     s=>{s.groups[0].parts[0].shape='wheel';},s=>{s.groups[0].parts[0].weight=-1;},
     s=>{s.groups[1].parts[0].p[1]+=.03;},
@@ -154,4 +157,61 @@ test('campaign spawning cannot obtain free construction pieces through a saved m
   assert.match(sandbox.document.querySelector('#notice').textContent,/banco de pruebas/);
   const bare=clone(record);for(const group of bare.groups)group.parts=group.parts.filter(part=>part.shape==='coupler');
   assert(t.savedMechanismValid(bare));assert(t.spawnSavedMechanism(bare,t.V(3,0,3)),'unlocked bare rotor remains available');
+});
+
+
+test('drive limits survive saving, duplication, export/import and laboratory restoration',()=>{
+  const game=setup(),{t}=game,r=rotor(game,{mount:'fixed',maxTorque:.75,capacity:9,rpm:23,moving:'a'});
+  const a=t.rotorPart(r.aId),b=t.rotorPart(r.bId),freshEnergy=a.part.mood.energy;a.part.mood.energy=.61;b.part.mood.energy=.43;
+  const record=t.saveMechanism(r);assert(record);
+  const check=drive=>{assert.equal(drive.mount,'fixed');assert.equal(drive.maxTorque,.75);assert.equal(drive.capacity,9);};
+  check(record.joints[0]);check(t.serializeRotorState()[0]);
+  const payload=clone(t.mechanismsExportData());assert.equal(t.importMechanismsData(payload),1);check(t.savedMechanisms[0].joints[0]);
+  const spawned=t.spawnSavedMechanism(record,t.V(3,0,1));assert(spawned);check(spawned);
+  assert.equal(t.rotorPart(spawned.aId).part.mood.energy,freshEnergy,'a template creates fresh units');
+  const snapshot=t.saveLab();check(snapshot.rotors[0]);
+  t.clearNarrativeScene();t.story.scene='campaign';t.story.lab=snapshot;t.enterLab(false);
+  const restored=t.rotors.find(other=>other.aId===r.aId);assert(restored);check(restored);
+  assert.equal(t.rotorPart(restored.aId).part.mood.energy,.61);assert.equal(t.rotorPart(restored.bId).part.mood.energy,.43);
+  const group=t.rotorGroups(restored)[0];t.setSelected({g:group,part:group.parts.find(part=>part.id===restored.aId)});
+  assert(t.duplicateSelection());check(t.rotors.at(-1));
+});
+
+test('older mechanism and lab records receive explicit safe wheel drive defaults',()=>{
+  const game=setup(),{t}=game,r=rotor(game),record=clone(t.mechanismSnapshot(r));
+  for(const joint of record.joints)for(const key of ['mount','maxTorque','capacity'])delete joint[key];
+  assert(t.savedMechanismValid(record));assert.equal(t.importMechanismsData({version:1,mechanisms:[record]}),1);
+  const check=drive=>{assert.equal(drive.mount,'wheel');assert.equal(drive.maxTorque,.4);assert.equal(drive.capacity,16);};
+  check(t.savedMechanisms[0].joints[0]);const made=t.spawnSavedMechanism(record,t.V(3,0,2));assert(made);check(made);
+  const snapshot=t.saveLab();for(const state of snapshot.rotors)for(const key of ['mount','maxTorque','capacity'])delete state[key];
+  delete snapshot.mechanismDefaults;
+  t.clearNarrativeScene();t.story.scene='campaign';t.story.lab=snapshot;t.enterLab(false);
+  t.rotors.forEach(check);check(t.saveLab().mechanismDefaults);
+});
+
+test('damaged laboratory drive settings cannot inject invalid controls or unsupported keys',()=>{
+  const game=setup(),{t}=game;rotor(game);
+  const snapshot=t.saveLab();snapshot.mechanismDefaults={rpm:NaN,direction:0,moving:'both',mount:'ceiling',maxTorque:Infinity,capacity:-5,injected:123};
+  t.clearNarrativeScene();t.story.scene='campaign';t.story.lab=snapshot;t.enterLab(false);
+  const defaults=t.saveLab().mechanismDefaults;
+  assert.equal(defaults.rpm,30);assert.equal(defaults.direction,1);assert.equal(defaults.moving,'b');assert.equal(defaults.mount,'wheel');assert.equal(defaults.maxTorque,.4);assert.equal(defaults.capacity,16);assert.equal(defaults.injected,undefined);
+  const state=t.serializeRotorState();state[0].capacity=Infinity;
+  assert.equal(t.restoreRotorState(state).length,0);assert.equal(t.rotors.length,0);
+});
+
+test('a saved chassis accepts simultaneous wheel motors but rejects conflicting fixed mounts',()=>{
+  const game=setup(),{t}=game,r=rotor(game),first=t.rotorGroups(r)[0],pose=t.rotorPart(r.aId),id=t.allocateUnitId(),parts=t.worldParts(first);
+  parts.push({id,shape:'coupler',weight:1,p:pose.p.vadd(t.V(.09,0,0)),q:t.Q()});
+  t.removeGroup(first);t.makeGroup(parts);t.refreshRotors();
+  const flip=t.Q();flip.setFromAxisAngle(t.V(0,0,1),Math.PI);
+  const end=t.makeGroup([{id:t.allocateUnitId(),shape:'coupler',weight:1,p:pose.p.vadd(t.V(.09,2*.09*51/56,0)),q:flip}]);
+  assert(t.connectRotorTips(id,end.parts[0].id));
+  const record=t.mechanismSnapshot(r);assert(record);assert.equal(record.joints.length,2);
+  for(const joint of record.joints){joint.mount='wheel';joint.enabled=true;}
+  assert(t.savedMechanismValid(record));
+  const made=t.spawnSavedMechanism(record,t.V(3,0,2));assert(made);
+  const joints=t.rotors.filter(other=>t.mechanismGroups(made).includes(t.rotorGroups(other)[0]));
+  assert.equal(joints.length,2);assert(joints.every(other=>other.enabled));
+  record.joints[0].mount='fixed';assert.equal(t.savedMechanismValid(record),false);
+  record.joints[1].enabled=false;assert(t.savedMechanismValid(record),'one fixed motor is valid while the other is off');
 });

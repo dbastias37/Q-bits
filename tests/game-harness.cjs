@@ -89,7 +89,7 @@ module.exports = function createGame() {
   if (fs.existsSync(gameFile)) {
     const wheelFile=path.join(root,'assets/js/radial-menu.js');
     scripts = [fs.readFileSync(path.join(root, 'assets/js/cannon.min.js'), 'utf8'),
-      ...(fs.existsSync(wheelFile)?[fs.readFileSync(wheelFile,'utf8')]:[]), fs.readFileSync(gameFile, 'utf8')];
+      ...(fs.existsSync(wheelFile)?[fs.readFileSync(wheelFile,'utf8')]:[]), fs.readFileSync(path.join(root,'assets/js/rotor-power.js'),'utf8'), fs.readFileSync(gameFile, 'utf8')];
   } else {
     scripts = [...fs.readFileSync(path.join(root, 'index.html'), 'utf8').matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
   }
@@ -100,7 +100,7 @@ module.exports = function createGame() {
     poses,corners,drawQubits,drawStoryWorld,drawStoryGlass,updateTarget,updateSpeech,updateStoryMarker,
     measureEncounterBubbles,placeEncounterBubble,addEncounterBubble,encounterBubbles,
     findSnap,weld,makeFragments,detachPart,validPose,settings,spawnQubit,creationShape,updateAlphaHUD,
-    rotors,rotorPart,couplerTip,rotorForGroup,rotorForPart,rotorGroups,rotorConnectedGroups,connectRotorTips,configureRotor,disconnectRotor,refreshRotors,spawnRotor,findRotorSnap,updateRotorMotors,allocateUnitId,
+    rotors,rotorPart,couplerTip,rotorForGroup,rotorForPart,rotorGroups,rotorConnectedGroups,connectRotorTips,configureRotor,disconnectRotor,refreshRotors,spawnRotor,findRotorSnap,updateRotorMotors,allocateUnitId,rotorPowerState,prepareRotorPower,updateRotorPower,updateMoods,mechanismDefaults,
     unitProfile,unitFaces,unitGroundHeight,isTBit,normalizeUnitShape,rayPart,obbOverlap,drawUnitMesh,drawUnitOutline,
     touchingUnitFaces,findConvexSnap,duplicateSelection,saveLab,enterLab,rememberLab,updateCooling,createCooler,
     rollPoseAt,updateRoutes,makeRollSegment,savedShapeValid,saveShape,savedShapes,blueprintTargets,

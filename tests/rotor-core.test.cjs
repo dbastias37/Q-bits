@@ -44,7 +44,7 @@ test('the normal Shift release joins two tips with a hinge and keeps separate ri
 for(const moving of ['a','b'])for(const direction of [1,-1])test(`motor ${moving}/${direction} turns only the chosen side at requested RPM`,()=>{
  const {t}=setup(),r=create(t),pair=t.rotorGroups(r),movingGroup=pair[moving==='a'?0:1],base=pair[moving==='a'?1:0];
  const p=base.body.position.clone(),q=base.body.quaternion.clone();
- assert(t.configureRotor(r,{moving,direction,rpm:30,enabled:true}));step(t,2);
+ assert(t.configureRotor(r,{moving,direction,rpm:30,mount:'fixed',enabled:true}));step(t,2);
  const endpoint=t.rotorPart(moving==='a'?r.aId:r.bId),axis=t.couplerTip(endpoint).axis;
  near(movingGroup.body.angularVelocity.dot(axis),direction*Math.PI,.025);near(base.body.position.distanceTo(p),0);
  near(Math.abs(base.body.quaternion.dot?base.body.quaternion.dot(q):base.body.quaternion.x*q.x+base.body.quaternion.y*q.y+base.body.quaternion.z*q.z+base.body.quaternion.w*q.w),1);
@@ -86,14 +86,14 @@ test('ordinary welding cannot close a rigid loop through an existing rotor',()=>
  assert.equal(t.groups.length,2);assert.equal(t.rotors.length,1);
 });
 
-test('a shared rigid base permits only one powered motor at a time',()=>{
+test('a shared rigid base permits only one fixed motor at a time',()=>{
  const {t}=setup(),r=create(t),a=t.rotorGroups(r)[0],aPose=t.rotorPart(r.aId),nextId=t.allocateUnitId();
  const parts=t.worldParts(a);parts.push({id:nextId,shape:'coupler',weight:1,p:aPose.p.vadd(t.V(C,0,0)),q:t.Q()});
  t.removeGroup(a);const shared=t.makeGroup(parts);t.refreshRotors();
  const flip=t.Q();flip.setFromAxisAngle(t.V(0,0,1),Math.PI);
  const endpoint=t.makeGroup([{id:t.allocateUnitId(),shape:'coupler',weight:1,p:aPose.p.vadd(t.V(C,2*C*51/56,0)),q:flip}]);
  const second=t.connectRotorTips(nextId,endpoint.parts[0].id);assert(second);assert.equal(t.rotors.length,2);
- t.configureRotor(r,{enabled:true});t.configureRotor(second,{enabled:true});
+ t.configureRotor(r,{mount:'fixed',enabled:true});t.configureRotor(second,{mount:'fixed',enabled:true});
  assert.equal(r.enabled,false);assert.equal(second.enabled,true);assert.equal(shared.body.type,4);
  t.disconnectRotor(second);assert.equal(shared.body.type,1);assert.equal(t.rotors.length,1);
 });

@@ -159,9 +159,13 @@ El **Enganche** es una sola pieza con base cúbica de 9 cm y punta piramidal. Su
 El banco de pruebas ofrece ambos mecanismos desde el inicio, debajo de las figuras en el menú Q. En campaña se desbloquean al completar el nivel 5, **La primera unión**. El clic posterior a elegir crea el enganche o el rotor. El menú Q usa cristal con cantos y grosor y una transición suave del FOV al abrir y cerrar.
 
 - **Clic derecho → Rotación:** horario, antihorario o detener. El sentido se observa desde el lado móvil, mirando hacia su punta.
-- **Elegir lado que gira:** A o B; el otro lado queda fijo como base mientras funciona el motor. Las piezas añadidas a cada mitad se mueven con esa mitad.
-- **P → Mecanismos:** velocidad de 1 a 120 rpm, elección del lado, creación y guardado. El arranque es gradual; las estructuras de gran radio muestran su velocidad máxima efectiva. Un obstáculo detiene el giro sin romper el eje. Al tomar un rotor, se detiene y se transportan sus dos mitades juntas.
-- **Guardar mecanismo:** una mitad se guarda como Enganche; una pareja articulada se guarda como Rotor, conservando piezas, articulación, lado, sentido y velocidad. Se pueden crear copias, exportar e importar desde la misma pestaña. Los diseños guardados con Q-bits o T-bits añadidos se crean en el banco, para conservar los recursos de la campaña.
+- **Elegir lado que gira:** A o B. Las piezas añadidas a cada mitad se mueven con ella. El montaje predeterminado **Rueda libre** deja ambas mitades físicas: el contacto con el suelo puede mover el conjunto. **Eje fijo** ancla la base para pruebas estacionarias. Se pueden accionar varios rotores de rueda en un mismo chasis; un eje fijo excluye otros motores encendidos de ese conjunto.
+- **P → Mecanismos:** velocidad objetivo de 1 a 120 rpm, torque máximo de 0.02 a 4 N·m y capacidad de 2 a 128 u. Los valores iniciales son 30 rpm, 0.4 N·m y 16 u. El arranque es gradual y la velocidad real depende del esfuerzo. El panel muestra rpm reales, torque utilizado, carga y consumo. Al tomar un rotor se detiene y se transporta el mecanismo conectado.
+- **Rodar en el piso:** coloca el eje horizontal y añade la rueda al lado móvil. Una rueda hecha de cubos levanta su eje al pasar sobre las aristas; no se convierte en un círculo. Usa suficiente torque y evita que el soporte invada su recorrido. El eje permanece unido frente a obstáculos, que pueden frenar o bloquear el giro.
+- **Carga y energía:** la capacidad suma el peso de todas las piezas conectadas, incluidos ambos enganches (un Q-bit normal pesa 1 u). Superarla corta el motor. Ambos enganches alimentan sus barras de energía; las piezas añadidas no aportan batería. Consumen al estar encendidos, por trabajo y por calentamiento durante un atasco. Apagados recuperan energía con el sistema de descanso existente; no se reinician solos al agotarse. Pausar o abrir Q congela el consumo.
+- **Guardar mecanismo:** una mitad se guarda como Enganche; una pareja articulada se guarda como Rotor, conservando piezas, articulación, lado, sentido, montaje, velocidad, torque y capacidad. Se pueden crear copias, exportar e importar desde la misma pestaña. Los diseños guardados con Q-bits o T-bits añadidos se crean en el banco, para conservar los recursos de la campaña.
+
+La calibración energética de juego usa 20 J por enganche, 0.06 W de consumo base, eficiencia 0.72 y pérdida térmica de 5·torque² W. `assets/js/rotor-power.js` concentra estos parámetros. El consumo utiliza torque y velocidad relativa medidos, con corriente de retención al bloquearse; no pretende representar un motor comercial concreto.
 - **Separar enganches:** desconecta el eje sin borrar las piezas. Las caras de la punta no admiten soldaduras rígidas; usa las caras cuadradas para construir la rueda o el soporte.
 
 ## Música
@@ -182,6 +186,7 @@ node --check assets/js/game.js
 node --check assets/js/boot.js
 node --check assets/js/music.js
 node --check assets/js/radial-menu.js
+node --check assets/js/rotor-power.js
 ```
 
 Las pruebas automatizadas cubren lógica y coordinación de la carga; no sustituyen una prueba visual de WebGL ni una medición de FPS en el equipo del jugador.
