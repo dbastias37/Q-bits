@@ -81,6 +81,7 @@ function environment({ autoFonts = true } = {}) {
     await scriptResult('campaign-reconfiguration.js');
     await scriptResult('progression.js');
     await scriptResult('campaign-automation.js');
+    await scriptResult('campaign-production.js');
     await scriptResult('game.js');
     await scriptResult('music.js');
   }
@@ -162,7 +163,7 @@ function assertBlocked(e) {
   assert.notEqual(e.nodes.get('#boot-percent').textContent, '100%');
 }
 
-const dependencies=['radial-menu.js','rotor-power.js','campaign-reconfiguration.js','progression.js','campaign-automation.js'];
+const dependencies=['radial-menu.js','rotor-power.js','campaign-reconfiguration.js','progression.js','campaign-automation.js','campaign-production.js'];
 for(const module of dependencies)test(`a missing ${module} blocks game preparation, 100 percent and Jugar even when music is ready`, async () => {
   const e=environment();
   await e.scriptResult('cannon.min.js');

@@ -4,7 +4,7 @@ Continúa el videojuego Q-bits del repositorio `dbastias37/Q-bits`. Inspecciona 
 
 ## Estado y alcance
 
-La base revisada tiene prólogo y doce misiones: movimiento, órdenes, botones, unión, formas, transporte, descanso y transformación de materia en compañeros. El primer incremento de esta propuesta añade los niveles 13–15, una cámara de reconfiguración y un catálogo con blueprints. El bloque IV añade los niveles 16–18 con bancos físicos de giro, carga y transferencia, validación de autonomía y certificaciones Torque I–III. Las misiones 19–24, el posjuego, la construcción ligera, la coordinación avanzada y la temperatura siguen pendientes. El estado operativo se mantiene en `ESTADO_PROYECTO.md`.
+La base revisada tiene prólogo y doce misiones: movimiento, órdenes, botones, unión, formas, transporte, descanso y transformación de materia en compañeros. El primer incremento de esta propuesta añade los niveles 13–15, una cámara de reconfiguración y un catálogo con blueprints. El bloque IV añade los niveles 16–18 con bancos físicos de giro, carga y transferencia, validación de autonomía y certificaciones Torque I–III. El bloque V añade los niveles 19–20: dosificación ordenada, reserva finita, cámara de empaquetado y recepción física de seis paquetes. Las misiones 21–24, el posjuego, la construcción ligera, la coordinación avanzada y la temperatura siguen pendientes. El estado operativo se mantiene en `ESTADO_PROYECTO.md`.
 
 La experiencia principal será aprender a construir mecanismos y coordinarlos para completar encargos de producción. La campaña llevará gradualmente desde ejercicios breves hasta problemas abiertos. Después, desafíos de dominio y encargos variables mantendrán útiles los inventos del jugador.
 
@@ -56,15 +56,21 @@ Explica gradualmente qué son los personajes, por qué comparten materia, cómo 
 
 Los tres bancos fijan Torque I para que los certificados del perfil no cambien la prueba.
 
+### Bloque V implementado; calibración de jugador pendiente
+
+19. **Una pieza cada vez.** Línea guiada con tres medias unidades de materia inerte en orden A, B, A. El jugador configura el dosificador y pone en marcha el lote. El receptor valida llegada física, orden e identidad.
+20. **Los primeros seis paquetes.** La reserva contiene doce medias unidades. La cámara reúne A con B, conserva ambas identidades y forma seis paquetes. Una cinta accionada por el rotor los lleva al receptor. El lote completo debe cumplir autonomía y presupuesto, sin reunir entregas de intentos distintos.
+
+La materia inerte no es un compañero Q-bit y no recibe estados de ánimo ni órdenes de recorrido. Reiniciar el ensayo restaura un único lote de prueba explícito; no concede recursos acumulables. La cinta usa tracción aplicada a cuerpos físicos y la estación cobra energía adicional de las baterías. Esta es una instalación guiada y configurable, no todavía un editor abierto de líneas.
+
 ### Bloques siguientes, sujetos a prototipos comprobados
-19. **Una pieza cada vez.** Introducir dosificación y separación de flujos. El producto correcto debe llegar en la cantidad y secuencia pedidas.
-20. **Los primeros seis paquetes.** Encargo completo de obtención, transformación, formación y entrega. El primer objetivo es un sistema funcional; luego se busca autonomía.
+
 21. **Una línea que se sostiene.** Producción continua con energía y temperatura estables. La máquina no puede ganar simplemente por estar encendida y vacía.
 22. **Materiales en orden.** Variar materiales, cantidades o destinos, con recursos finitos y errores recuperables.
 23. **Menos piezas, mismo encargo.** Optimización: elegir entre soluciones con diferentes costos. No exigir simultáneamente extremos incompatibles.
 24. **La instalación despierta.** Integrar varios sistemas ya conocidos y activar la instalación central. Encargo abierto, sin solución guiada; el catálogo sigue disponible. El cierre reconoce al equipo y abre desafíos posteriores.
 
-Los números 19–24 son un orden de diseño, no una obligación de añadir nueve niveles vacíos. Combina o divide misiones según las pruebas. Retira la ayuda paso a paso de manera gradual; ofrece relectura de lo aprendido y pistas opcionales antes de los desafíos finales.
+Los números 21–24 son un orden de diseño, no una obligación de añadir niveles vacíos. Combina o divide misiones según las pruebas. Retira la ayuda paso a paso de manera gradual; ofrece relectura de lo aprendido y pistas opcionales antes de los desafíos finales.
 
 ## Catálogo y blueprints
 

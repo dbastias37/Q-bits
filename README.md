@@ -2,7 +2,7 @@
 
 Juego de puzles en primera persona, ambientado en salas blancas minimalistas. Mueve y une Q-bits, organiza al equipo, activa circuitos y transforma materia para abrir nuevas rutas.
 
-Versión actualizada el 14 de noviembre de 2026: prólogo, 18 niveles y laboratorio de pruebas.
+Versión actualizada el 14 de noviembre de 2026: prólogo, 20 niveles y laboratorio de pruebas.
 
 ## Jugar
 
@@ -57,6 +57,8 @@ Referencia: [configurar la publicación en GitHub Pages](https://docs.github.com
 | 16 | El acuerdo del eje | Hacer girar un rotor del banco durante 6 segundos útiles sin intervenir. |
 | 17 | La fuerza tiene un precio | Mantener una carga de 4 unidades durante 8 segundos dentro del presupuesto de energía. |
 | 18 | La primera entrega autónoma | Llevar el extremo de un brazo articulado hasta el receptor con movimiento físico real. |
+| 19 | Una pieza cada vez | Dosificar tres medias unidades y recibirlas en orden A, B, A. |
+| 20 | Los primeros seis paquetes | Reunir doce medias unidades en seis paquetes A+B y entregarlos autónomamente. |
 
 El menú permite seleccionar niveles, reiniciar, pausar y entrar al laboratorio. Las transiciones incluyen fundidos, una carga de transición deliberada de al menos 1,8 segundos para dar una pausa entre escenas, y pantalla de final de nivel. Esa pausa es independiente de la precarga real inicial.
 
@@ -139,7 +141,7 @@ El proceso dura cuatro segundos de simulación y se congela al pausar, consultar
 
 El NPC introduce cada experimento con diálogos que avanzan con E. J abre el catálogo; también está disponible desde los menús. Los descubrimientos se conservan en el progreso existente. Los planos de referencia de un cubo formado por seis pirámides y de una pirámide formada por dos triangulares se añaden a **Formas guardadas**. Para colocar uno: clic derecho en el suelo → Formas guardadas. Para construirlo: reúne piezas compatibles y activa **Integrar cercanos** sobre el blueprint. Guardar un plano no concede cuerpos ni recursos.
 
-El [prompt maestro de campaña](docs/PROMPT_MAESTRO_CAMPANA.md) reúne el lore, el tono del guía, la secuencia posterior, la autonomía, los desafíos y la progresión propuesta. Los niveles 16–18 y las certificaciones Torque I–III están implementados. Las misiones 19–24, construcción ligera, coordinación avanzada, temperatura y posjuego siguen pendientes. La [revisión del bloque](docs/REVISION_BLOQUE_III.md) detalla qué se comprobó y qué queda pendiente.
+El [prompt maestro de campaña](docs/PROMPT_MAESTRO_CAMPANA.md) reúne el lore, el tono del guía, la secuencia posterior, la autonomía, los desafíos y la progresión propuesta. Los niveles 16–20 y las certificaciones Torque I–III están implementados. Las misiones 21–24, construcción ligera, coordinación avanzada, temperatura y posjuego siguen pendientes. La [revisión del bloque](docs/REVISION_BLOQUE_III.md) detalla qué se comprobó y qué queda pendiente.
 
 ## Archivos y desarrollo
 
@@ -219,10 +221,20 @@ La licencia MIT de Cannon.js se conserva en el código y en `THIRD_PARTY_NOTICES
 
 ## Automatización inicial y perfil
 
-Los niveles 16–18 usan un banco montado para aprender a configurar el movimiento antes de encargar líneas completas de producción. La prueba requiere giro físico útil, carga original y continuidad sin intervención. El objetivo muestra tiempo, energía consumida, presupuesto y rpm reales. El nivel 18 mueve un compañero unido al extremo del brazo hasta un receptor; al recibirlo, detiene el motor. No es todavía una cinta ni un sistema de empaquetado.
+Los niveles 16–18 usan un banco montado para aprender a configurar el movimiento antes de encargar líneas completas de producción. La prueba requiere giro físico útil, carga original y continuidad sin intervención. El objetivo muestra tiempo, energía consumida, presupuesto y rpm reales. El nivel 18 mueve un compañero unido al extremo del brazo hasta un receptor; al recibirlo, detiene el motor. Este ejercicio utiliza un brazo; la cinta y el empaquetado se introducen en los niveles 19–20.
 
 Tomar o reorganizar piezas y cambiar órdenes o parámetros reinicia el tramo autónomo. La pausa, el panel de parámetros, el catálogo y la pestaña oculta congelan el reloj. La puerta se habilita tras registrar la prueba y el jugador puede cruzar dejando el banco en su sitio.
 
 Completar el nivel 16 desbloquea Torque II y completar el 18 desbloquea Torque III. En **P → Mecanismos → Certificación de torque** se elige el nivel autorizado: I hasta 0,40 N·m, II hasta 0,65 N·m y III hasta 1,00 N·m. Subir de certificación no aumenta automáticamente el ajuste de un rotor. Son valores iniciales de equilibrio; pedir más fuerza conserva su costo energético real. Los ejercicios 16–18 fijan Torque I aunque el perfil tenga mejoras, y el laboratorio mantiene hasta 4 N·m.
 
 Las comprobaciones automatizadas se describen en la [revisión del bloque IV](docs/REVISION_BLOQUE_IV.md). Sigue pendiente una partida visual para ajustar legibilidad, ritmo y equilibrio.
+
+## Dosificación y primer pedido
+
+Los niveles 19–20 añaden una línea guiada con depósito finito, dosificador, cámara de empaquetado y receptor. La materia de trabajo se distingue de los compañeros: las medias unidades A y B son recursos sin estados de ánimo. El dosificador espera espacio antes de retirar una unidad del depósito.
+
+En el nivel 19 se reciben tres unidades en orden A, B, A. En el 20, cada paquete requiere una media unidad A y una B; doce medias unidades producen los seis paquetes pedidos conservando masa e identidades. El receptor cuenta llegadas físicas únicas.
+
+**Apunta a la estación y pulsa E** para elegir el intervalo y comenzar o reiniciar el lote. La cinta aplica fuerzas a los cuerpos según el giro real del rotor y el consumo incluye trabajo de la estación. Mirar y caminar no intervienen en el ensayo. Manipular piezas o cambiar parámetros invalida el intento autónomo; reiniciar prepara nuevamente un solo lote de prueba, sin acumular entregas anteriores.
+
+El tiempo de trabajo útil se acumula dentro de un único lote sin intervención; las pausas entre operaciones o una salida obstruida no añaden tiempo. Son ejercicios de configuración de una instalación existente. La construcción abierta de líneas y los desafíos finales siguen pendientes. La [revisión del bloque V](docs/REVISION_BLOQUE_V.md) registra las verificaciones y los ajustes que deberá confirmar una partida con jugador.
