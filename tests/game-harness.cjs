@@ -89,11 +89,12 @@ module.exports = function createGame() {
   if (fs.existsSync(gameFile)) {
     const wheelFile=path.join(root,'assets/js/radial-menu.js');
     scripts = [fs.readFileSync(path.join(root, 'assets/js/cannon.min.js'), 'utf8'),
-      ...(fs.existsSync(wheelFile)?[fs.readFileSync(wheelFile,'utf8')]:[]), fs.readFileSync(path.join(root,'assets/js/rotor-power.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/campaign-reconfiguration.js'),'utf8'), fs.readFileSync(gameFile, 'utf8')];
+      ...(fs.existsSync(wheelFile)?[fs.readFileSync(wheelFile,'utf8')]:[]), fs.readFileSync(path.join(root,'assets/js/rotor-power.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/campaign-reconfiguration.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/progression.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/campaign-automation.js'),'utf8'), fs.readFileSync(gameFile, 'utf8')];
   } else {
     scripts = [...fs.readFileSync(path.join(root, 'index.html'), 'utf8').matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
   }
   const hook = `window.__testGame={
+    setupAutomation,tickAutomation,automationObjective,automationIntervention,tickCampaign,campaignTorqueCap,
     chapters,LEVELS,beginReconfiguration,reconfigurationInput,tickReconfiguration,setupReconfiguration,reconfigurationObjective,showCodex,closeCodex,catalogueRecipe,rememberCatalogueRecipe,groupWorkUnits,showCampaignResults,
     savedMechanisms,mechanismSnapshot,mechanismGroups,mechanismPartCount,savedMechanismValid,saveMechanism,spawnSavedMechanism,persistMechanisms,loadSavedMechanisms,mechanismsExportData,importMechanismsData,serializeRotorState,restoreRotorState,clearPuzzleScene,leavePuzzle,
     beginCampaignLevel,beginIntro,showMain,hideStoryDialogue,

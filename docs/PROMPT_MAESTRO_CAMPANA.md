@@ -4,7 +4,7 @@ Continúa el videojuego Q-bits del repositorio `dbastias37/Q-bits`. Inspecciona 
 
 ## Estado y alcance
 
-La base revisada tiene prólogo y doce misiones: movimiento, órdenes, botones, unión, formas, transporte, descanso y transformación de materia en compañeros. El primer incremento de esta propuesta añade los niveles 13–15, una cámara de reconfiguración y un catálogo con blueprints. Las misiones 16–24, el posjuego y las mejoras de perfil descritas abajo son la siguiente fase de desarrollo; no deben presentarse como disponibles hasta implementarse y probarse.
+La base revisada tiene prólogo y doce misiones: movimiento, órdenes, botones, unión, formas, transporte, descanso y transformación de materia en compañeros. El primer incremento de esta propuesta añade los niveles 13–15, una cámara de reconfiguración y un catálogo con blueprints. El bloque IV añade los niveles 16–18 con bancos físicos de giro, carga y transferencia, validación de autonomía y certificaciones Torque I–III. Las misiones 19–24, el posjuego, la construcción ligera, la coordinación avanzada y la temperatura siguen pendientes. El estado operativo se mantiene en `ESTADO_PROYECTO.md`.
 
 La experiencia principal será aprender a construir mecanismos y coordinarlos para completar encargos de producción. La campaña llevará gradualmente desde ejercicios breves hasta problemas abiertos. Después, desafíos de dominio y encargos variables mantendrán útiles los inventos del jugador.
 
@@ -48,11 +48,15 @@ Explica gradualmente qué son los personajes, por qué comparten materia, cómo 
 14. **La segunda escala.** El jugador divide un cubo y subdivide una pirámide. Comprende la equivalencia entre cinco pirámides más dos triangulares y un cubo. Se muestra el límite de subdivisión.
 15. **Seguimos siendo nosotros.** Dos triangulares vuelven a formar una pirámide y seis pirámides recuperan el cubo original. La cámara rechaza partes faltantes, repetidas o de otro origen. Se introduce la diferencia narrativa entre recomposición, unión rígida y articulación.
 
-### Siguiente bloque, sujeto a prueba del mecanismo
+### Bloque IV implementado; calibración de jugador pendiente
 
-16. **Un acuerdo que gira.** Dos enganches forman un rotor. Identificar base, lado móvil, dirección y carga; hacer girar una estructura útil.
-17. **La fuerza tiene un costo.** Comparar configuraciones sobre una misma carga. Leer energía, torque y bloqueo. Enseñar mediante resultados medibles.
-18. **El camino de la materia.** Construir y probar un transporte corto hasta una estación. Aceptar distintas soluciones compatibles con las físicas.
+16. **El acuerdo del eje.** Banco montado de dos enganches: mantener giro físico útil durante seis segundos. Enseña lado móvil, dirección y límite de torque.
+17. **La fuerza tiene un precio.** Banco con brazo y carga total de cuatro unidades: mantener ocho segundos útiles dentro del presupuesto energético. Enseña carga, consumo y bloqueo.
+18. **La primera entrega autónoma.** Un brazo articulado de seis unidades transporta su extremo hasta un receptor, tras al menos dos segundos de giro continuo. La transferencia se detecta por posición física y detiene el motor. Es un ejercicio de configuración; la construcción abierta queda para los siguientes encargos.
+
+Los tres bancos fijan Torque I para que los certificados del perfil no cambien la prueba.
+
+### Bloques siguientes, sujetos a prototipos comprobados
 19. **Una pieza cada vez.** Introducir dosificación y separación de flujos. El producto correcto debe llegar en la cantidad y secuencia pedidas.
 20. **Los primeros seis paquetes.** Encargo completo de obtención, transformación, formación y entrega. El primer objetivo es un sistema funcional; luego se busca autonomía.
 21. **Una línea que se sostiene.** Producción continua con energía y temperatura estables. La máquina no puede ganar simplemente por estar encendida y vacía.
@@ -60,7 +64,7 @@ Explica gradualmente qué son los personajes, por qué comparten materia, cómo 
 23. **Menos piezas, mismo encargo.** Optimización: elegir entre soluciones con diferentes costos. No exigir simultáneamente extremos incompatibles.
 24. **La instalación despierta.** Integrar varios sistemas ya conocidos y activar la instalación central. Encargo abierto, sin solución guiada; el catálogo sigue disponible. El cierre reconoce al equipo y abre desafíos posteriores.
 
-Los números 16–24 son un orden de diseño, no una obligación de añadir nueve niveles vacíos. Combina o divide misiones según las pruebas. Retira la ayuda paso a paso de manera gradual; ofrece relectura de lo aprendido y pistas opcionales antes de los desafíos finales.
+Los números 19–24 son un orden de diseño, no una obligación de añadir nueve niveles vacíos. Combina o divide misiones según las pruebas. Retira la ayuda paso a paso de manera gradual; ofrece relectura de lo aprendido y pistas opcionales antes de los desafíos finales.
 
 ## Catálogo y blueprints
 
@@ -72,7 +76,7 @@ Un blueprint conserva una construcción y sus configuraciones, nunca concede mat
 
 La progresión debe hacer útil aprender, experimentar y mejorar diseños. Propón certificados de dominio obtenidos mediante desafíos distintos, con recompensas otorgadas una sola vez. Evita recompensar el mismo tutorial indefinidamente.
 
-- **Torque I–III:** amplía el límite de torque de equipos concretos. Parte del valor actual de 0,4 N·m; los valores de los siguientes niveles se calibran con cargas y consumo reales. Mayor torque disponible no supone menor gasto ni debe cambiar un diseño guardado sin avisar.
+- **Torque I–III:** amplía el límite de torque de equipos concretos. Implementado con límites provisionales 0,4/0,65/1 N·m y desbloqueos al completar 16/18. La selección es explícita y el banco sigue libre. Estos valores requieren calibración con jugador. Mayor torque disponible no supone menor gasto ni debe cambiar un diseño guardado sin avisar.
 - **Construcción ligera:** reduce masa solo mediante una modificación explícita, con costo y contrapartida comprobada, por ejemplo menor estabilidad o capacidad de carga. Las divisiones ordinarias siempre conservan masa. No implementes esta rama hasta medir sus efectos en tracción y colisiones.
 - **Coordinación I–III:** añade programación de esperas, turnos, relevos y secuencias entre equipos. Las rutas básicas ya deben evitar obstáculos correctamente. La progresión amplía lo que el jugador puede organizar.
 - **Gestión térmica y energética:** añade herramientas para medir, programar descansos y sostener el trabajo. Antes de ofrecerla como mejora, implementa un modelo temporal de temperatura; la potencia disipada actual por sí sola no equivale a un sistema de sobrecalentamiento.

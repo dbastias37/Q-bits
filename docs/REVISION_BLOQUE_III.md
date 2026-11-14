@@ -12,11 +12,11 @@ Base revisada: `ded75fe98fbebc5293fdb82acdd3c5ad0a96e5c9`. Alcance: niveles 13�
 | Capacidad de trabajo | Las subdivisiones reparten la fuerza de arrastre; no multiplican trabajadores por dividir | Probado |
 | Catálogo | Planos compatibles con las caras existentes, sin otorgar piezas y sin duplicar el guardado | Probado |
 | Campaña previa | Los 15 niveles construyen, simulan y ejecutan sus rutinas de dibujo; cuerpos y buffers estables tras recargas | Probado con DOM/GPU simulados |
-| Continuidad | El nivel 12 permite avanzar; el 15 es el último nivel de esta entrega | Probado |
+| Continuidad | El nivel 12 permite avanzar; el último nivel configurado oculta Siguiente (el bloque IV extiende la campaña hasta 18) | Probado |
 | Gráficos | Compilación/enlace real de shaders y fixture GLES de enfoque | Probado; no equivale a una partida visual |
 | Partida de principio a fin y legibilidad en navegador | Chromium local no pudo iniciarse por una restricción de sockets; el navegador remoto no accede al servidor local | Pendiente |
 | Equilibrio y ritmo del NPC | Revisión editorial y lógica de avance manual | Pendiente prueba con jugador |
 
 Comandos de verificación: `node --test tests/*.test.cjs`, `node --check assets/js/game.js`, `node --check assets/js/campaign-reconfiguration.js` y `python3 tests/validate-focus-gles.py`. Se corrigió además una excepción previa al colocar blueprints contra paredes de campaña sin un cuaternión explícito.
 
-Antes de integrar en producción: jugar las tres misiones, comprobar lectura y selección de piezas pequeñas, colocación y despeje de bandejas, acceso con E/clic derecho/J, recuperación del cursor al cerrar el catálogo y transporte de todo el equipo por la puerta. Evaluar si la primera cámara necesita más orientación espacial. No considerar calibradas todavía la autonomía, la temperatura o la progresión de torque: pertenecen al siguiente bloque.
+Pendiente de revisión visual después de integrar en GitHub: jugar las tres misiones, comprobar lectura y selección de piezas pequeñas, colocación y despeje de bandejas, acceso con E/clic derecho/J, recuperación del cursor al cerrar el catálogo y transporte de todo el equipo por la puerta. Evaluar si la primera cámara necesita más orientación espacial. El bloque IV implementa autonomía y certificados de torque; su equilibrio sigue pendiente de partida visual. La temperatura temporal aún no está implementada.
