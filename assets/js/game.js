@@ -907,7 +907,7 @@ function validPose(g,pos,quat,exclude=[]){
  return !groups.some(other=>other!==g&&!exclude.includes(other)&&boundsOverlap(bb,bounds(other))&&poses(other).some(b=>src.some(a=>obbOverlap(a,b))));
 }
 function mechanismsUnlocked(){return Object.keys(story.progress).some(key=>/^level\d+$/.test(key)&&Number(key.slice(5))>=5&&story.progress[key]);}
-function mechanismsAvailable(){return !puzzle.active&&(story.scene==='lab'||story.scene==='campaign'&&mechanismsUnlocked());}
+function mechanismsAvailable(){return !certifiedAutomation()&&!puzzle.active&&(story.scene==='lab'||story.scene==='campaign'&&mechanismsUnlocked());}
 function isMechanismChoice(id){return id==='coupler'||id==='rotor';}
 function normalizeCreationChoice(id){return id==='rotor'?'rotor':normalizeUnitShape(id);}
 function creationChoiceAllowed(id){return ['cube','tetra','pyramid','coupler','rotor'].includes(id)&&(isMechanismChoice(id)?mechanismsAvailable():story.scene==='lab'&&!puzzle.active);}
@@ -963,6 +963,7 @@ function handleKeyUp(event){
  if(event.code==='KeyQ'&&radialOpen()){event.preventDefault();closeUnitRadial(true);}
 }
 function spawnQubit(){
+ automationIntervention();
  const shape=creationShape();if(puzzleBlockedEdit(isMechanismChoice(shape)?'mechanism':'qubit'))return;
  if(isMechanismChoice(shape)&&!mechanismsAvailable()){announce('Completa La primera unión para desbloquear los mecanismos.');return;}
  if(shape==='rotor'){
@@ -1012,6 +1013,7 @@ function grabQubit(hitOverride=null){
  for(const rotor of rotors)if(rotorGroups(rotor).some(g=>list.includes(g)))configureRotor(rotor,{enabled:false});
  undockCampaignGroup(hit.g);
  selected=hit;const rootPoint=hit.point.clone();
+ automationIntervention('Tomaste una pieza: ensayo reiniciado.');
  const ordered=[hit.g,...list.filter(g=>g!==hit.g)],items=[];
  for(const g of ordered){
   if(g.blueprintJob){const slot=g.blueprintJob;releaseBlueprintSlot(slot);slot.bp.slots=slot.bp.slots.filter(s=>s!==slot);}
@@ -1135,6 +1137,7 @@ function makeFragments(parts,reference,velocity=V(),spin=V()){
  }return created;
 }
 function detachPart(hit,all=false){
+ automationIntervention();
  if(!hit||!groups.includes(hit.g))return;
  const g=hit.g;if(g.parts.length===1){announce('Este '+unitLabel(hit.part)+' ya está separado.');return;}
  if(held&&(held.items||[held]).some(item=>item.g===g))releaseQubit();const parts=worldParts(g),velocity=g.body.velocity.clone(),spin=g.body.angularVelocity.clone(),ref=g.body.quaternion.clone();
@@ -1189,6 +1192,7 @@ function noteAssemblyShake(dx,dy,time){
  if(shake.turns>=4&&shake.travel>=240&&now-shake.start>=120)dismantleHeldAssembly();
 }
 function deleteQubit(hit){
+ automationIntervention();
  if(puzzleBlockedEdit())return;
  if(!hit||!groups.includes(hit.g)){announce('Apunta a una pieza para borrarla.');return;}
  const g=hit.g;if(held&&(held.items||[held]).some(item=>item.g===g))releaseQubit();const rest=worldParts(g).filter(p=>p.id!==hit.part.id),ref=g.body.quaternion.clone();removeGroup(g);
@@ -1274,6 +1278,7 @@ function connectRotorTips(aId,bId,options={}){
  if(aId===bId||rotorForPart(aId)||rotorForPart(bId)||!rotorTipsCompatible(a,b)||rotorConnectedGroups([a.g]).includes(b.g))return null;
  if(poses(a.g).some(pa=>poses(b.g).some(pb=>obbOverlap(pa,pb,.000001))))return null;
  if(options.rpm!==undefined&&!Number.isFinite(options.rpm)||options.direction!==undefined&&![1,-1].includes(options.direction)||options.moving!==undefined&&!['a','b'].includes(options.moving)||options.mount!==undefined&&!['wheel','fixed'].includes(options.mount)||options.maxTorque!==undefined&&!Number.isFinite(options.maxTorque)||options.capacity!==undefined&&!Number.isFinite(options.capacity))return null;
+ if(story.scene==='campaign')options={...options,maxTorque:Math.min(options.maxTorque??.4,campaignTorqueCap())};
  const rotor={id:++rotorSerial,aId,bId,rpm:clamp(options.rpm??30,1,120),direction:options.direction??1,moving:options.moving??'b',mount:options.mount??'wheel',maxTorque:clamp(options.maxTorque??.4,.02,4),capacity:clamp(options.capacity??16,2,128),enabled:false,constraint:null,pin:null};
  stopRoute(a.g);stopRoute(b.g);leaveHaul(a.g);leaveHaul(b.g);rotors.push(rotor);for(const [part,label]of [[a.part,'A'],[b.part,'B']])if(/^Enganche (?:\d+|[AB] · \d+)$/.test(part.mood.name))part.mood.name='Enganche '+label+' · '+part.id;refreshRotors();
  if(options.enabled)configureRotor(rotor,{enabled:true});return rotor;
@@ -1298,8 +1303,11 @@ function refreshRotors(){
  const powered=new Map();for(const rotor of rotors)if(rotor.enabled){const component=rotorConnectedGroups(rotorGroups(rotor));if(component.some(g=>powered.has(g)&&(rotor.mount==='fixed'||powered.get(g)==='fixed'))){rotor.enabled=false;rotor.constraint?.disableMotor();unpinRotor(rotor);}else for(const g of component)powered.set(g,rotor.mount);}
 }
 function configureRotor(rotor,patch={}){
+ if(!rotor||!rotors.includes(rotor))return false;
+ patch={...patch};if(story.scene==='campaign')patch.maxTorque=Math.min(patch.maxTorque??rotor.maxTorque,campaignTorqueCap());
  if(!rotors.includes(rotor)||patch.rpm!==undefined&&!Number.isFinite(patch.rpm)||patch.direction!==undefined&&![1,-1].includes(patch.direction)||patch.moving!==undefined&&!['a','b'].includes(patch.moving)||patch.mount!==undefined&&!['wheel','fixed'].includes(patch.mount)||patch.maxTorque!==undefined&&!Number.isFinite(patch.maxTorque)||patch.capacity!==undefined&&!Number.isFinite(patch.capacity))return false;
  refreshRotors();if(!rotors.includes(rotor))return false;
+ automationIntervention('Motor ajustado: ensayo reiniciado.');
  const connected=rotorConnectedGroups(rotorGroups(rotor));
  if(patch.enabled&&(held?.items||[]).some(item=>connected.includes(item.g))){announce('Suelta el rotor antes de accionarlo.');return false;}
  if(patch.moving&&patch.moving!==rotor.moving||patch.mount&&patch.mount!==rotor.mount)unpinRotor(rotor);
@@ -1412,6 +1420,7 @@ function stabilizeRotors(){
  }
 }
 function spawnRotor(p=null,options={}){
+ if(certifiedAutomation()){announce('Ensayo certificado: usa el mecanismo del banco.');return null;}
  if(groups.reduce((n,g)=>n+g.parts.length,0)+2>MAX_QUBITS){announce('No hay capacidad para dos enganches.');return null;}
  const positions=p?[p]:Array.from({length:6},(_,row)=>[0,1,-1,2,-2,3,-3].map(col=>V(position[0]-Math.sin(yaw)*(.95+row*.3)+Math.cos(yaw)*col*.3,0,position[2]-Math.cos(yaw)*(.95+row*.3)-Math.sin(yaw)*col*.3))).flat();
  const flip=Q();flip.setFromAxisAngle(V(0,0,1),Math.PI);
@@ -1463,6 +1472,7 @@ function findSnap(){
  }return candidate;
 }
 function weld(candidate){
+ automationIntervention();
  if(!candidate)return null;
  const {source,target,position,quaternion}=candidate;
  if(source===target||!groups.includes(source)||!groups.includes(target)||!position||!quaternion||!['x','y','z'].every(k=>Number.isFinite(position[k]))||!['x','y','z','w'].every(k=>Number.isFinite(quaternion[k]))||Math.abs(quaternion.x**2+quaternion.y**2+quaternion.z**2+quaternion.w**2-1)>1e-5)return null;
@@ -1657,6 +1667,7 @@ function stopRoute(g,clearPin=true){
  if(clearPin){g.pin=null;g.pendingMoodOrder=null;}
 }
 function startRoute(g,goal,quiet=false){
+ if(!quiet)automationIntervention();
  if(!g||!groups.includes(g))return false;
  if(rotorForGroup(g)){if(!quiet)announce('Separa el rotor antes de asignar un recorrido.');return false;}
  const wasBlocked=g.pendingMoodOrder?.reason==='bloqueo',changed=!!g.route;
@@ -1762,7 +1773,7 @@ function stepPhysics(dt){
  // their normal collision response. A hand cannot push its attachment underground.
  if(held)for(const item of held.items||[held]){const b=item.g.body,low=bounds(item.g).min.y;if(low<.001){b.position.y+=.001-low;if(b.velocity.y<0)b.velocity.y=0;b.aabbNeedsUpdate=true;}if(item.floorLocked)b.angularVelocity.set(0,0,0);}
  for(const c of cargos){c.body.velocity.y=0;c.body.position.y=(c.dimensions?.y||c.size)/2;c.body.quaternion.set(0,0,0,1);c.body.angularVelocity.set(0,0,0);c.body.aabbNeedsUpdate=true;}
- updateCooling(dt);updateMoods(dt);updateBlueprints(dt);updatePuzzle(dt);
+ updateCooling(dt);updateMoods(dt);updateBlueprints(dt);updatePuzzle(dt);tickAutomation(dt);
 }
 function updatePanel(){
  if(selected&&!groups.includes(selected.g))selected=null;
@@ -1778,7 +1789,8 @@ function updatePanel(){
 }
 function openPanel(){closeCommandMenu(false);selectedCargo=aimCargo(4)?.cargo||selectedCargo;selected=held?{g:held.g,part:held.part}:aimQubit()||selected;pause();panel.hidden=false;updatePanel();}
 for(const name of ['mass','gravity','bounce','force','friction','damping','speed','maxCarry','maxSelect','rotationSpeed','grip'])document.querySelector('#'+name).addEventListener('input',event=>{
- settings[name]=Number(event.target.value);
+ if(story.scene==='campaign'&&story.campaign?.automation){announce('Ensayo certificado: masa y físicas permanecen fijas. Ajusta el motor.');updatePanel();return;}
+ automationIntervention();settings[name]=Number(event.target.value);
  if(name==='mass'&&puzzle.active){settings.mass=1;updatePanel();return;}
  if(name==='mass'&&selected){
   const old=selected.g,id=selected.part.id,parts=worldParts(old),ref=old.body.quaternion.clone();parts.find(p=>p.id===id).weight=settings.mass;
@@ -2193,6 +2205,7 @@ function assignCrew(c,team){
  return added;
 }
 function beginHaul(c,team,goal){
+ automationIntervention();
  if(!cargos.includes(c)||c.intake!==undefined&&c.intake!==null)return false;team=[...new Set(team.filter(g=>groups.includes(g)))];if(!team.length){announce('Selecciona primero los Q-bits que trabajarán.');return false;}
  stopHaul(c);const job={cargo:c,goal:goal.clone(),path:[],index:0,slots:[],activeCount:0,nextCrewPlan:0,phase:'planning',lastProgress:simTime,lastPosition:c.body.position.clone(),nextRouteCheck:0};c.job=job;c.pin={point:V(goal.x,0,goal.z),arrived:false};assignCrew(c,team);
  if(!job.slots.length){stopHaul(c,'Sin espacio para el equipo');announce('No hay espacio accesible para colocar el equipo.');return false;}
@@ -2306,6 +2319,7 @@ function updateCargoPanel(){
  document.querySelector('#cargoColor').value=selectedCargo?.color||settings.cargoColor;
 }
 for(const name of ['cargoSide','cargoRequired','haulSpeed','haulForce'])document.querySelector('#'+name).addEventListener('input',e=>{
+ if(certifiedAutomation()){updateCargoPanel();return;}
  if(name==='cargoRequired'&&puzzle.active)return;
  const value=Number(e.target.value);settings[name]=value;
  if(name==='cargoRequired'&&selectedCargo){stopHaul(selectedCargo);selectedCargo.required=Math.round(value);}updateCargoPanel();
@@ -2457,6 +2471,11 @@ function updateMechanismPanel(){
  document.querySelector('#rotor-side').value=rotor?.moving??mechanismDefaults.moving;
  document.querySelector('#rotor-mount').value=rotor?.mount??mechanismDefaults.mount;
  const torque=rotor?.maxTorque??mechanismDefaults.maxTorque,capacity=rotor?.capacity??mechanismDefaults.capacity;
+ const tier=QBitsProgression.effectiveTier(Number(story.progress.torqueTier||1),story.progress),availableTier=QBitsProgression.availableTier(story.progress);
+ document.querySelector('#rotor-tier-row').hidden=story.scene==='lab';document.querySelector('#rotor-tier').value=certifiedAutomation()?1:tier;document.querySelector('#rotor-tier').disabled=certifiedAutomation();
+ for(const option of document.querySelector('#rotor-tier').children)option.disabled=Number(option.value)>availableTier;
+ document.querySelector('#rotor-tier-status').textContent=story.scene==='lab'?'Banco libre · hasta 4 N·m':story.campaign?.automation?'Ensayo certificado · torque I, máximo 0,40 N·m':'Certificación '+tier+' · máximo '+campaignTorqueCap().toFixed(2)+' N·m. II: nivel 16; III: nivel 18.';
+ document.querySelector('#rotor-torque').max=story.scene==='campaign'?campaignTorqueCap():4;
  document.querySelector('#rotor-torque').value=torque;document.querySelector('#rotor-torque-value').textContent=torque.toFixed(2)+' N·m';
  document.querySelector('#rotor-capacity').value=capacity;document.querySelector('#rotor-capacity-value').textContent=capacity+' u';
  document.querySelector('#rotor-power-readout').textContent=rotor?rotorPowerDescription(rotor):'Ajusta los valores de los próximos rotores o selecciona uno para ver su consumo y carga.';
@@ -2473,6 +2492,7 @@ function updateMechanismPanel(){
 function createMechanismChoice(kind){if(!mechanismsAvailable())return;settings.unitShape=kind;spawnQubit();updatePanel();}
 document.querySelector('#create-coupler').addEventListener('click',()=>createMechanismChoice('coupler'));
 document.querySelector('#create-rotor').addEventListener('click',()=>createMechanismChoice('rotor'));
+document.querySelector('#rotor-tier').addEventListener('change',event=>{if(certifiedAutomation()){updateMechanismPanel();return;}const tier=QBitsProgression.effectiveTier(Number(event.target.value),story.progress);story.progress.torqueTier=tier;try{localStorage.setItem('qbits.campaign.v1',JSON.stringify(story.progress));}catch{}if(story.scene==='campaign'){for(const r of rotors)if(r.maxTorque>campaignTorqueCap())configureRotor(r,{maxTorque:campaignTorqueCap()});mechanismDefaults.maxTorque=Math.min(mechanismDefaults.maxTorque,campaignTorqueCap());}updateMechanismPanel();});
 document.querySelector('#rotor-rpm').addEventListener('input',event=>{const value=Number(event.target.value);if(!Number.isFinite(value))return;mechanismDefaults.rpm=clamp(value,1,120);const rotor=selectedRotor();if(rotor)configureRotor(rotor,{rpm:mechanismDefaults.rpm});updateMechanismPanel();});
 document.querySelector('#rotor-side').addEventListener('change',event=>{if(!['a','b'].includes(event.target.value))return;mechanismDefaults.moving=event.target.value;const rotor=selectedRotor();if(rotor)configureRotor(rotor,{moving:mechanismDefaults.moving});updateMechanismPanel();});
 document.querySelector('#rotor-mount').addEventListener('change',event=>{if(!['wheel','fixed'].includes(event.target.value))return;mechanismDefaults.mount=event.target.value;const rotor=selectedRotor();if(rotor)configureRotor(rotor,{mount:mechanismDefaults.mount});updateMechanismPanel();});
@@ -2564,7 +2584,7 @@ document.addEventListener('keyup',event=>{if(event.code.startsWith('Alt'))routeI
 // The first puzzle lives in the laboratory. Its previous contents are restored
 // when leaving the challenge; rewards and deliveries use a single transaction.
 const puzzleConfig={frameSeconds:12,energySeconds:8};
-function puzzleBlockedEdit(kind='edit'){if(kind==='mechanism'&&mechanismsAvailable())return false;if(story.ready&&story.scene==='campaign'&&panel.hidden){announce('La materia genera nuevos Q-bits. P abre el banco de herramientas de prueba.');return true;}if(!puzzle.active||kind==='qubit'&&alphaSettings.allowPuzzleSpawn)return false;announce('Puzle activo · los recursos se obtienen en los portales. P → Puzle para volver al banco.');return true;}
+function puzzleBlockedEdit(kind='edit'){if(certifiedAutomation()){announce('Ensayo certificado: usa las piezas del banco. Reinicia el nivel para restaurarlas.');return true;}if(kind==='mechanism'&&mechanismsAvailable())return false;if(story.ready&&story.scene==='campaign'&&panel.hidden){announce('La materia genera nuevos Q-bits. P abre el banco de herramientas de prueba.');return true;}if(!puzzle.active||kind==='qubit'&&alphaSettings.allowPuzzleSpawn)return false;announce('Puzle activo · los recursos se obtienen en los portales. P → Puzle para volver al banco.');return true;}
 function saveLab(){return {mechanismDefaults:typeof mechanismDefaults==='undefined'?null:{...mechanismDefaults},rotors:serializeRotorState(),alphaScene:alphaSceneSnapshot(),settings:{...settings},moodSettings:{...moodSettings},position:[...position],yaw,pitch,groups:groups.map(g=>({parts:worldParts(g),q:g.body.quaternion.clone(),v:g.body.velocity.clone(),w:g.body.angularVelocity.clone()})),cargos:cargos.map(c=>({p:c.body.position.clone(),side:c.side,required:c.required,color:c.color}))};}
 function clearPuzzleScene(){
  clearAlphaScene();releaseQubit();closeCommandMenu(false);closeDetachMenu(false);pendingCargo=null;moveChoice=null;routeInspection=null;multiSelection=[];selected=null;selectedCargo=null;
@@ -2866,12 +2886,13 @@ function updateMoodSelection(){
 }
 function updateMoodPanel(){
  for(const key of ['drain','recovery','idleSeconds']){document.querySelector('#mood-'+key).value=moodSettings[key];document.querySelector('#mood-'+key+'Value').textContent=key==='idleSeconds'?moodSettings[key]+' s':Math.round(moodSettings[key]*1000)/10+' % / '+(key==='drain'?'m':'s');}
- for(const key of ['tired','rested'])document.querySelector('#mood-test-'+key).disabled=!selected||puzzle.active;
+ for(const key of ['tired','rested'])document.querySelector('#mood-test-'+key).disabled=!selected||puzzle.active||certifiedAutomation();
 }
 function testMood(tired){
+ if(certifiedAutomation()){announce('La energía del ensayo solo se recupera con descanso.');return;}
  if(puzzle.active||!selected)return;const m=selected.part.mood;m.energy=tired?.01:1;m.agitation=tired?.75:0;m.state=tired?'restless':'neutral';m.reason=tired?'agotado':'';m.restLeft=tired?3:0;m.fullTime=0;m.calm=tired?0:1;updateMoodPanel();
 }
-for(const key of ['drain','recovery','idleSeconds'])document.querySelector('#mood-'+key).addEventListener('input',e=>{const value=Number(e.target.value);if(Number.isFinite(value))moodSettings[key]=clamp(value,...({drain:[.005,.08],recovery:[.02,.15],idleSeconds:[45,180]}[key]));updateMoodPanel();});
+for(const key of ['drain','recovery','idleSeconds'])document.querySelector('#mood-'+key).addEventListener('input',e=>{if(certifiedAutomation()){updateMoodPanel();return;}const value=Number(e.target.value);if(Number.isFinite(value))moodSettings[key]=clamp(value,...({drain:[.005,.08],recovery:[.02,.15],idleSeconds:[45,180]}[key]));updateMoodPanel();});
 document.querySelector('#mood-test-tired').addEventListener('click',()=>testMood(true));
 document.querySelector('#mood-test-rested').addEventListener('click',()=>testMood(false));
 
@@ -2898,6 +2919,7 @@ function alphaSupport(g,center,q){
  }return level;
 }
 function createCooler(p){
+ if(certifiedAutomation()){announce('El ensayo usa las estaciones existentes.');return null;}
  if(coolers.length>=6){announce('Máximo de seis enfriadores en esta sala.');return null;}
  if(!p||Math.max(Math.abs(p.x),Math.abs(p.z))>13.4||!cargoPlacementClear(p,.84)||coolers.some(c=>c.p.distanceTo(p)<.9)){announce('Busca un espacio libre para el enfriador.');return null;}
  const c={id:++alphaSerial,p:V(p.x,0,p.z),capacity:alphaSettings.capacity,enabled:true,bodies:[],entries:new Map(),occupants:0};coolers.push(c);
@@ -3055,6 +3077,7 @@ function saveMechanism(subject,name=null){
  savedMechanisms.push(record);const durable=persistMechanisms();updateAlphaPanel();announce(record.name+' guardado · '+mechanismPartCount(record)+' piezas'+(durable?'':' · solo en esta sesión'));return record;
 }
 function spawnSavedMechanism(record,point){
+ automationIntervention();
  if(puzzleBlockedEdit('mechanism')||typeof mechanismsAvailable==='function'&&!mechanismsAvailable())return null;
  if(!savedMechanismValid(record)||!point||![point.x,point.y,point.z].every(Number.isFinite)){announce('El mecanismo guardado no es válido.');return null;}
  if(story.scene==='campaign'&&record.groups.some(group=>group.parts.some(part=>part.shape!=='coupler'))){announce('Los mecanismos con Q-bits o T-bits añadidos se crean solo en el banco de pruebas. En campaña, monta esas piezas con los recursos del nivel.');return null;}
@@ -3101,6 +3124,7 @@ function saveShape(g){
 function blueprintTargets(bp){return bp.shape.parts.map(part=>{const q=Q();q.set(...part.q);return {shape:normalizeUnitShape(part.shape),p:add(bp.p,bp.q.vmult(V(...part.p))),q:bp.q.mult(q)};}).sort((a,b)=>a.p.y-b.p.y||a.p.x-b.p.x||a.p.z-b.p.z);}
 function blueprintBox(bp){const pts=blueprintTargets(bp).flatMap(corners),min=V(Infinity,Infinity,Infinity),max=V(-Infinity,-Infinity,-Infinity);for(const p of pts)for(const k of ['x','y','z']){min[k]=Math.min(min[k],p[k]);max[k]=Math.max(max[k],p[k]);}return {...alphaBox(mul(add(min,max),.5),mul(sub(max,min),.5)),size:sub(max,min)};}
 function placeBlueprint(shape,p){
+ automationIntervention();
  if(!savedShapeValid(shape)||!p||blueprints.length>=6){announce('No se puede colocar otro blueprint aquí.');return null;}
  const bp={id:++alphaSerial,shape:JSON.parse(JSON.stringify(shape)),p:V(p.x,.002,p.z),q:Q(),slots:[],active:false,nextScan:0,status:'Esperando unidades'};const box=blueprintBox(bp);
  if(!assemblyValid(blueprintTargets(bp))){announce('La forma guardada tiene caras incompatibles con las medidas actuales. Se conserva para exportarla; vuelve a armarla.');return null;}
@@ -3231,8 +3255,8 @@ document.querySelector('#save-shape').addEventListener('click',()=>saveShape(sel
 document.querySelector('#place-cooler').addEventListener('click',()=>{const p=floorAim()||V(position[0]-Math.sin(yaw)*1.3,0,position[2]-Math.cos(yaw)*1.3);createCooler(p);});
 document.querySelector('#export-shapes').addEventListener('click',exportShapes);
 document.querySelector('#import-shapes').addEventListener('change',async e=>{try{const file=e.target.files?.[0];if(!file)return;if(file.size>1000000)throw new Error('Archivo demasiado grande');const count=importShapesData(JSON.parse(await file.text()));announce(count+' formas importadas');}catch(error){announce('No se pudo importar: '+error.message);}e.target.value='';});
-for(const key of ['maxRest','coolSeconds','capacity','blueprintRange','exitEnergy','glow'])document.querySelector('#alpha-'+key).addEventListener('input',e=>{const n=Number(e.target.value),ranges={maxRest:[15,180],coolSeconds:[5,60],capacity:[1,8],blueprintRange:[.5,3],exitEnergy:[.25,.75],glow:[0,1]};if(Number.isFinite(n))alphaSettings[key]=clamp(n,...ranges[key]);updateAlphaPanel();});
-for(const key of ['coolingOn','allowPuzzleSpawn'])document.querySelector('#alpha-'+key).addEventListener('change',e=>{alphaSettings[key]=!!e.target.checked;updatePuzzlePanel();updateAlphaPanel();});
+for(const key of ['maxRest','coolSeconds','capacity','blueprintRange','exitEnergy','glow'])document.querySelector('#alpha-'+key).addEventListener('input',e=>{if(certifiedAutomation()){updateAlphaPanel();return;}const n=Number(e.target.value),ranges={maxRest:[15,180],coolSeconds:[5,60],capacity:[1,8],blueprintRange:[.5,3],exitEnergy:[.25,.75],glow:[0,1]};if(Number.isFinite(n))alphaSettings[key]=clamp(n,...ranges[key]);updateAlphaPanel();});
+for(const key of ['coolingOn','allowPuzzleSpawn'])document.querySelector('#alpha-'+key).addEventListener('change',e=>{if(certifiedAutomation()){updateAlphaPanel();return;}alphaSettings[key]=!!e.target.checked;updatePuzzlePanel();updateAlphaPanel();});
 document.querySelector('#completion-continue').addEventListener('click',()=>{document.querySelector('#completion-panel').hidden=true;captureMouse();});
 document.querySelector('#completion-restart').addEventListener('click',()=>{document.querySelector('#completion-panel').hidden=true;startPuzzle();captureMouse();});
 document.querySelector('#completion-lab').addEventListener('click',()=>{document.querySelector('#completion-panel').hidden=true;leavePuzzle();panel.hidden=false;switchPanelTab('puzzle');});
@@ -3781,11 +3805,12 @@ function beginCampaignLevel(number){
  });
  for(let i=0;i<definition.count;i++){const x=definition.count===1?-.85:(i%3-1)*.30,z=.55+Math.floor(i/3)*.3,g=carry?.[i]?makeGroup([{...carry[i],p:V(x,HALF+.004,z),q:Q()}]):addQubit([x,HALF+.004,z],1);c.crew.push(g.parts[0].id);g.parts[0].mood.name='Q-bit '+(i+1);if(i===0)story.guideId=g.parts[0].id;}
  if(number<=2)c.gates[0].targets.forEach((t,i)=>t.assigned=c.crew[i]);makeButtonPhysics(storyWorld.buttons);storyWorld.door=c.gates[0].door;storyWorld.doorProgress=0;world.broadphase.dirty=true;
- setupBlockTwo(c);setupReconfiguration(c);updateCampaignObjective();if(number===9)beginEncounter();else if(definition.lines)chapterDialogue(definition.lines);else say(definition.line,{after:hideStoryDialogue});updatePanel();
+ setupBlockTwo(c);setupReconfiguration(c);setupAutomation(c);updateCampaignObjective();if(number===9)beginEncounter();else if(definition.lines)chapterDialogue(definition.lines);else say(definition.line,{after:hideStoryDialogue});updatePanel();
 }
 function updateCampaignObjective(){
  const c=story.campaign;if(!c)return;const gate=c.gates[c.stage],part=c.gates.length>1?'Sala '+(c.stage+1)+' / '+c.gates.length+' · ':'';let text='';
  if(c.reconfiguration){storyObjective(reconfigurationObjective(c));return;}
+ if(c.automation){storyObjective(automationObjective(c));return;}
  if(gate.solved){text=c.number>=5?'Puerta abierta. Retira y reutiliza los Q-bits.\nCruza para continuar.':'Puerta abierta. Cruza para continuar.';}
  else if(gate.kind==='routes')text=gate.targets.length===1?'Lleva al Q-bit al círculo de luz.\nClic derecho · seleccionar y elegir destino':'Un Q-bit en cada destino.\nDales órdenes por separado: 1 → A, 2 → B.';
  else if(gate.kind==='generation')text='Entrega materia al desintegrador '+(gate.index+1)+'.\n'+gate.generatedRequired+' unidades → '+gate.generatedRequired+' Q-bits.\nApunta al material y pulsa E para asignar un equipo.';
@@ -3797,7 +3822,8 @@ function tickCampaign(dt){
  const c=story.campaign;if(!c||['complete','finishing'].includes(story.phase))return;const gate=c.gates[c.stage];
  for(const g of c.gates)moveCampaignDoor(g,dt);
  let active=false;
- if(gate.kind==='reconfiguration')active=reconfigurationSatisfied(c);
+ if(gate.kind==='automation')active=!!c.automation?.run.complete;
+ else if(gate.kind==='reconfiguration')active=reconfigurationSatisfied(c);
  else if(gate.kind==='routes'){
   for(const t of gate.targets){const g=groups.find(g=>g.parts.length===1&&g.parts[0].id===t.assigned);t.ready=!!g&&c.ordered.has(t.assigned)&&!g.route&&held?.g!==g&&bounds(g).min.y<.035&&Math.hypot(g.body.position.x-t.p.x,g.body.position.z-t.p.z)<.21;}
   active=gate.targets.every(t=>t.ready);
@@ -3806,11 +3832,12 @@ function tickCampaign(dt){
  if(!gate.solved){
   if(gate.pipe){gate.flow=clamp(gate.flow+dt*(active?1/(gate.seconds||9):-1/5.5),0,1);if(gate.flow>=1)gate.solved=true;}
   else{gate.hold=active?Math.min(1,gate.hold+dt/1.1):0;if(gate.hold>=1)gate.solved=true;}
-  if(gate.solved){updateCampaignObjective();if(!story.dialogue)say(c.reconfiguration?'Seguimos siendo nosotros. Solo cambió la forma de trabajar. El catálogo ya guarda el descubrimiento; reúne todas las piezas y crucemos.':gate.pipe?'Llegó. La puerta queda abierta. Ahora puedes retirarnos.':'Listo. Puedes recuperar las piezas; esta puerta ya queda abierta.',{after:hideStoryDialogue});}
+  if(gate.solved){updateCampaignObjective();if(!story.dialogue)say(c.automation?'Ensayo registrado. El banco se queda aquí; tú puedes cruzar. Ya tenemos una máquina que sabe trabajar sola.':c.reconfiguration?'Seguimos siendo nosotros. Solo cambió la forma de trabajar. El catálogo ya guarda el descubrimiento; reúne todas las piezas y crucemos.':gate.pipe?'Llegó. La puerta queda abierta. Ahora puedes retirarnos.':'Listo. Puedes recuperar las piezas; esta puerta ya queda abierta.',{after:hideStoryDialogue});}
  }
  storyWorld.door=gate.door;storyWorld.doorProgress=gate.open;
  if(gate.solved&&gate.open>.98&&position[2]<gate.z-.85){
   if(c.stage<c.gates.length-1){c.stage++;story.dockCandidate=null;updateCampaignObjective();const next=c.gates[c.stage];say(next.kind==='generation'?'La siguiente estación está más adelante. La materia debe llegar hasta su entrada.':next.kind==='combo'?'Dos en el botón y cuatro en la pared. Esta vez necesitamos a todo el equipo.':next.socket?'La siguiente forma es '+next.socket.form.name+'. Reorganiza las mismas piezas.':'Seguimos. Uno a cada lado.',{after:hideStoryDialogue});}
+  else if(c.automation)finishCampaignLevel();
   else if(c.number===8||c.number>=9){const missing=c.crew.filter(id=>!groups.some(g=>g.parts.some(p=>p.id===id)&&partPose(g,g.parts.find(p=>p.id===id)).p.z<gate.z-.35));if(!missing.length)finishCampaignLevel();else storyObjective('Faltan '+missing.length+' Q-bits al otro lado.\nReúne al equipo y tráelo contigo.');}
   else finishCampaignLevel();
  }
@@ -3821,10 +3848,10 @@ function finishCampaignLevel(){
 }
 function showCampaignResults(){
  const n=story.level;saveStoryProgress('level'+n);story.phase='complete';hideStoryDialogue();storyObjective('');gameMode('complete');pause(false);
- document.querySelector('#complete-eyebrow').textContent=String(n).padStart(2,'0')+' / '+chapters[n][1].toUpperCase();document.querySelector('#complete-title').textContent=n===12?'Cada pieza cuenta.':n===8?'Salimos juntos.':'Una puerta más.';document.querySelector('#complete-description').textContent=n===12?'Dos bloques completos. Todos los compañeros han cruzado contigo.':n===8?'Primer bloque completado. Al otro lado te espera el equipo.':'Nivel '+n+' completado. El siguiente encuentro te espera.';if(n===5)document.querySelector('#complete-description').textContent+=' Mecanismo desbloqueado: Enganche y Rotor. Mantén Q para encontrarlos.';if(n===12)document.querySelector('#complete-description').textContent='Dos bloques completos. Al otro lado empieza la reconfiguración.';if(n>=13){document.querySelector('#complete-title').textContent=n===15?'Seguimos siendo nosotros.':'La materia recuerda.';document.querySelector('#complete-description').textContent=n===15?'Has recuperado las dos escalas de división y su recomposición. Tus descubrimientos y planos quedan en el catálogo.':'Descubrimiento registrado. J abre el catálogo durante la partida.';}document.querySelector('#complete-next').hidden=n===LEVELS.length-1;document.querySelector(n===LEVELS.length-1?'#complete-repeat':'#complete-next').focus({preventScroll:true});
+ document.querySelector('#complete-eyebrow').textContent=String(n).padStart(2,'0')+' / '+chapters[n][1].toUpperCase();document.querySelector('#complete-title').textContent=n===12?'Cada pieza cuenta.':n===8?'Salimos juntos.':'Una puerta más.';document.querySelector('#complete-description').textContent=n===12?'Dos bloques completos. Todos los compañeros han cruzado contigo.':n===8?'Primer bloque completado. Al otro lado te espera el equipo.':'Nivel '+n+' completado. El siguiente encuentro te espera.';if(n===5)document.querySelector('#complete-description').textContent+=' Mecanismo desbloqueado: Enganche y Rotor. Mantén Q para encontrarlos.';if(n===12)document.querySelector('#complete-description').textContent='Dos bloques completos. Al otro lado empieza la reconfiguración.';if(n>=13&&n<=15){document.querySelector('#complete-title').textContent=n===15?'Seguimos siendo nosotros.':'La materia recuerda.';document.querySelector('#complete-description').textContent=n===15?'Has recuperado las dos escalas de división y su recomposición. Tus descubrimientos y planos quedan en el catálogo.':'Descubrimiento registrado. J abre el catálogo durante la partida.';}if(n>=16){document.querySelector('#complete-title').textContent=n===18?'La primera entrega autónoma.':'Una máquina, un acuerdo.';document.querySelector('#complete-description').textContent='Ensayo certificado con torque I · '+(story.campaign?.automation?.run.joules||0).toFixed(2)+' J consumidos.'+(n===16?' Torque II desbloqueado para tus mecanismos.':n===18?' Torque III desbloqueado. Has completado el bloque de automatización inicial.':'');}document.querySelector('#complete-next').hidden=n===LEVELS.length-1;document.querySelector(n===LEVELS.length-1?'#complete-repeat':'#complete-next').focus({preventScroll:true});
 }
 function drawCampaignOpaque(){
- const c=story.campaign;if(!c)return;drawSourcesOpaque();drawReconfiguration();gl.uniform1f(uniforms.uTime,simTime);drawAlphaButtons(storyWorld.buttons);
+ const c=story.campaign;if(!c)return;drawSourcesOpaque();drawReconfiguration();drawAutomation();gl.uniform1f(uniforms.uTime,simTime);drawAlphaButtons(storyWorld.buttons);
  for(const gate of c.gates){
   for(const t of gate.targets){drawAsset(storyTargetMesh,t.p,Q(),V(.25,1,.25),t.ready?[.22,.77,.50,1]:[.42,.67,.62,1],3);drawRing(add(t.p,V(0,.003,0)),.28,.8);}
   const s=gate.socket;if(s){for(const p of s.targets){const size=V(CUBE_SIZE-.005,CUBE_SIZE-.005,.003);drawBox(add(p,V(0,0,-.069)),Q(),size,[.21,.40,.34,1]);}
@@ -3842,7 +3869,7 @@ function drawCampaignTransparent(){
 const campaignLabels=[];
 function updateCampaignLabels(){
  const layer=document.querySelector('#campaign-labels'),c=story.campaign,visible=story.scene==='campaign'&&story.mode==='playing'&&panel.hidden&&!story.transition;layer.hidden=!visible;if(!visible||!c)return;
- const gate=c.gates[c.stage],labels=blockTwoLabels().concat(reconfigurationLabels());
+ const gate=c.gates[c.stage],labels=blockTwoLabels().concat(reconfigurationLabels(),automationLabels());
  for(const t of gate.targets)labels.push({p:add(t.p,V(0,.10,0)),text:(t.index===0?'A':'B')+' · '+(t.ready?'listo':'Q-bit '+(t.index+1))});
  if(gate.kind==='routes')for(const [i,id] of c.crew.entries()){const g=groups.find(g=>g.parts.some(p=>p.id===id));if(g)labels.push({p:add(g.body.position,V(0,.14,0)),text:String(i+1)});}
  for(const b of gate.pads)labels.push({p:add(b.p,V(0,.19,0)),text:Math.min(b.required,Math.round(b.load))+' / '+b.required+' Q-bits'});
@@ -4072,6 +4099,61 @@ function campaignAmbientAllowed(){return story.scene==='campaign'&&story.mode===
 // is committed only when the complete output tray is clear.
 chapters.push(...QBitsReconfiguration.chapters);
 LEVELS.push(...QBitsReconfiguration.levels);
+// Chapter IV: certified rotor benches measured from real physical motion.
+chapters.push(...QBitsAutomation.chapters);
+LEVELS.push(...QBitsAutomation.levels);
+function certifiedAutomation(){return story.scene==='campaign'&&!!story.campaign?.automation;}
+function campaignTorqueCap(){return story.campaign?.automation?.certified?.maxTorque??QBitsProgression.capFor(QBitsProgression.effectiveTier(Number(story.progress.torqueTier||1),story.progress));}
+function automationIntervention(reason){
+ const s=story.scene==='campaign'&&story.campaign?.automation;
+ if(!s||s.internal||s.run.complete)return;
+ s.run=QBitsAutomation.reset(s.run,reason);updateCampaignObjective();
+}
+function setupAutomation(c){
+ const goal=c.definition.automation;if(!goal)return;
+ Object.assign(settings,{bounce:.12,friction:.38,damping:.12});world.defaultContactMaterial.friction=.38;world.defaultContactMaterial.restitution=.12;
+ const guide=storyGuide();guide.body.position.set(.8,HALF+.004,.8);
+ storyWall(V(-.6,.06,-.8),V(.08,.06,.08),{color:[.77,.81,.79]});
+ const rotor=spawnRotor(V(-.6,.12,-.8),{mount:'fixed',moving:'b',rpm:30,maxTorque:.4,capacity:goal.load});
+ if(!rotor)return;
+ const moving=rotorPart(rotor.bId),parts=worldParts(moving.g),center=add(moving.p,moving.q.vmult(V(0,-CUBE_SIZE*5/56,0)));
+ for(let i=1;i<=goal.arm;i++)parts.push({id:allocateUnitId(),shape:'cube',weight:1,p:add(center,moving.q.vmult(V(i*CUBE_SIZE,0,0))),q:moving.q.clone()});
+ if(goal.arm){removeGroup(moving.g);makeGroup(parts);refreshRotors();}
+ const endpoint=parts[parts.length-1],from=endpoint.p.clone(),pivot=couplerTip(rotorPart(rotor.aId)).point,to=V(2*pivot.x-from.x,from.y,2*pivot.z-from.z);
+ c.automation={goal,rotor,ids:rotorGroups(rotor).flatMap(g=>g.parts.map(p=>p.id)),movingIds:rotorGroups(rotor)[1].parts.map(p=>p.id),endpoint:endpoint.id,origin:from,target:to,pivot:pivot.clone(),certified:{maxTorque:.4},run:QBitsAutomation.create(),internal:false,lastUi:-1};
+ // An actual low separator makes the first transfer a lift across a barrier.
+ if(goal.delivery){storyWall(V(pivot.x,.06,pivot.z),V(.025,.06,.45),{color:[.72,.78,.75]});storyWall(add(to,V(0,-HALF-.016,0)),V(.09,.012,.09),{color:[.62,.74,.69]});}
+ for(const id of [rotor.aId,rotor.bId])rotorPart(id).part.mood.energy=.8;
+ selected={g:rotorPart(rotor.aId).g,part:rotorPart(rotor.aId).part};
+}
+function automationObjective(c){
+ const s=c.automation,g=s.goal,r=s.rotor,run=s.run;
+ if(c.gates[c.stage].solved)return 'Ensayo registrado · puerta abierta.\nCruza; el mecanismo permanece en el banco.';
+ return (g.delivery?'Entrega al RECEPTOR':'Giro continuo: '+g.seconds+' s')+' · carga '+g.load+' u · torque I\n'+Math.min(g.seconds,run.seconds).toFixed(1)+' / '+g.seconds+' s autónomos · '+run.joules.toFixed(2)+' / '+g.budget+' J · '+Math.abs(r.actualRpm||0).toFixed(0)+' rpm reales\n'+run.reason+' · Clic derecho: Rotación';
+}
+function tickAutomation(dt){
+ const c=story.scene==='campaign'&&story.campaign,s=c?.automation;
+ if(!s||story.mode!=='playing'||storySuspended()||story.transition||s.run.complete||dt<=0)return;
+ const r=s.rotor,pair=rotorGroups(r),parts=pair.filter(Boolean).flatMap(g=>g.parts),valid=rotors.includes(r)&&pair.length===2&&pair.every(Boolean)&&parts.length===s.ids.length&&s.ids.every(id=>parts.some(p=>p.id===id&&p.weight===1));
+ const at=valid?couplerTip(rotorPart(r.aId)).point:null,endpoint=valid?rotorPart(s.endpoint):null;
+ const fixed=valid&&s.movingIds.every(id=>pair[1].parts.some(p=>p.id===id))&&at.distanceTo(s.pivot)<.035&&r.mount==='fixed'&&r.moving==='b'&&r.maxTorque<=.4+1e-8&&r.capacity===s.goal.load;
+ const productive=fixed&&r.enabled&&!r.stalled&&Math.abs(r.actualRpm||0)>=s.goal.minRpm&&!held?.items?.some(item=>pair.includes(item.g));
+ const delivered=!!endpoint&&endpoint.g===pair[1]&&endpoint.p.distanceTo(s.target)<.07;
+ const previous=s.run;s.run=QBitsAutomation.advance(previous,{productive,delivered,powered:r.enabled,joules:r.powerActive?(r.power?.drainPerSide||0)*QBitsRotorPower.MODEL.joulesPerSide*2:0,reason:!fixed?'Conserva el banco original, base fija, lado B y capacidad '+s.goal.load+' u.':!r.enabled?'Enciende el rotor.':r.stalled?'Rotor bloqueado: revisa fuerza y espacio.':'Alcanza '+s.goal.minRpm+' rpm reales.'},dt,s.goal);
+ if(s.run.failed&&!previous.failed){s.internal=true;configureRotor(r,{enabled:false});s.internal=false;announce('Presupuesto superado · detención automática. Ajusta el motor para repetir.');}
+ if(s.run.complete&&!previous.complete){s.internal=true;configureRotor(r,{enabled:false});s.internal=false;saveStoryProgress('lore.rotor'+c.number);announce(s.goal.delivery?'Entrega recibida · motor detenido':'Ensayo registrado · motor detenido');}
+ const tenth=Math.floor(s.run.seconds*10);if(tenth!==s.lastUi||previous.reason!==s.run.reason){s.lastUi=tenth;updateCampaignObjective();}
+}
+function drawAutomation(){
+ const s=story.campaign?.automation;if(!s)return;
+ const points=s.goal.delivery?[[s.origin,[.42,.6,.7,1]],[s.target,s.run.complete?[.2,.85,.5,1]:[.3,.7,.5,1]]]:[[s.pivot,[.35,.6,.53,1]]];
+ for(const [p,color]of points){drawAsset(storyTargetMesh,V(p.x,.004,p.z),Q(),V(.15,1,.15),color,3);drawRing(V(p.x,.007,p.z),.16,.7);}
+
+}
+function automationLabels(){
+ const s=story.campaign?.automation;if(!s)return [];
+ return s.goal.delivery?[{p:add(s.origin,V(0,.17,0)),text:'ORIGEN'},{p:add(s.target,V(0,.17,0)),text:s.run.complete?'RECIBIDO':'RECEPTOR'}]:[{p:add(s.pivot,V(0,.3,0)),text:'BANCO · '+s.goal.load+' u · 0,40 N·m'}];
+}
 function groupWorkUnits(g){return g.parts.reduce((n,p)=>n+(p.mood?.matter?p.weight/p.mood.matter.rootWeight:1),0);}
 function chapterMatterParts(c=story.campaign){return groups.flatMap(g=>worldParts(g)).filter(p=>p.mood?.matter?.root===c?.reconfiguration?.root);}
 function chapterDialogue(lines){
@@ -4200,9 +4282,10 @@ function catalogueRecipe(kind){
  const min=Math.min(...parts.flatMap(corners).map(v=>v.y));
  return {name:kind==='cube'?'Cubo · seis pirámides':'Pirámide · dos triangulares',catalogueId:kind,geometryVersion:3,parts:parts.map(p=>({shape:p.shape,p:[p.p.x,p.p.y-min,p.p.z],q:[p.q.x,p.q.y,p.q.z,p.q.w]}))};
 }
-function catalogueKnown(key){const lesson=QBitsReconfiguration.lessons[key];return !!story.progress['lore.'+key]||story.scene==='campaign'&&story.level>=lesson.level;}
+const catalogueLessons={...QBitsReconfiguration.lessons,...QBitsAutomation.lessons};
+function catalogueKnown(key){const lesson=catalogueLessons[key];return !!story.progress['lore.'+key]||story.scene==='campaign'&&story.level>=lesson.level;}
 function rememberCatalogueRecipe(kind){
- const entry=Object.entries(QBitsReconfiguration.lessons).find(([,value])=>value.recipe===kind);
+ const entry=Object.entries(catalogueLessons).find(([,value])=>value.recipe===kind);
  if(!entry||!catalogueKnown(entry[0]))return false;
  if(savedShapes.some(shape=>shape.catalogueId===kind)){announce('Ese plano ya está entre tus formas guardadas.');return true;}
  if(savedShapes.length>=32){announce('Libera un espacio entre tus formas guardadas.');return false;}
@@ -4213,13 +4296,13 @@ function showCodex(){
  if(story.transition||!story.ready)return;story.codexReturn=story.mode==='codex'?story.codexReturn:story.mode;
  closeCommandMenu(false);gameMode('codex');pause(false);panel.hidden=true;
  const list=document.querySelector('#codex-entries');list.replaceChildren();
- for(const [key,entry]of Object.entries(QBitsReconfiguration.lessons)){
+ for(const [key,entry]of Object.entries(catalogueLessons)){
   const article=document.createElement('article'),title=document.createElement('h3'),text=document.createElement('p'),known=catalogueKnown(key);
   title.textContent=entry.title;text.textContent=known?entry.text:'Se descubre en el nivel '+entry.level+'.';article.append(title,text);
   if(known&&entry.recipe){const button=document.createElement('button');button.textContent='Guardar blueprint · '+(entry.recipe==='cube'?'cubo de seis pirámides':'pirámide de dos triangulares');button.addEventListener('click',()=>rememberCatalogueRecipe(entry.recipe));article.appendChild(button);}list.appendChild(article);
  }
- const learned=Object.keys(QBitsReconfiguration.lessons).filter(key=>story.progress['lore.'+key]).length;
- document.querySelector('#codex-progress').textContent=learned+' / 3 descubrimientos registrados · materia';document.querySelector('#codex-back').focus({preventScroll:true});
+ const learned=Object.keys(catalogueLessons).filter(key=>story.progress['lore.'+key]).length;
+ document.querySelector('#codex-progress').textContent=learned+' / '+Object.keys(catalogueLessons).length+' descubrimientos registrados · materia y mecanismos';document.querySelector('#codex-back').focus({preventScroll:true});
 }
 function closeCodex(){gameMode(story.codexReturn||'menu');if(story.mode==='playing')resumeGame();}
 

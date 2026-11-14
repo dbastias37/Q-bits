@@ -10,7 +10,7 @@
   <link rel="preload" href="assets/fonts/tengoku/Tengoku.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="preload" href="assets/fonts/spaceman/Spaceman-Regular.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="preload" href="assets/fonts/led-calculator/LEDCalculator.ttf" as="font" type="font/ttf" crossorigin>
-  <link rel="stylesheet" href="assets/css/radial-menu.css?v=20261114-12">
+  <link rel="stylesheet" href="assets/css/radial-menu.css?v=20261114-13">
   <style>
     * { box-sizing: border-box; }
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000; }
@@ -389,6 +389,8 @@ input,select,textarea{font-family:var(--font-menu);}
       <p id="rotor-status"></p>
       <label>Montaje<select id="rotor-mount"><option value="wheel">Rueda libre · el conjunto puede moverse</option><option value="fixed">Eje fijo · base anclada al banco</option></select></label>
       <label>Velocidad objetivo <output id="rotor-rpm-value">30 rpm</output><input id="rotor-rpm" type="range" min="1" max="120" step="1" value="30"></label>
+      <label id="rotor-tier-row">Certificación de torque<select id="rotor-tier"><option value="1">I · 0.40 N·m</option><option value="2">II · 0.65 N·m</option><option value="3">III · 1.00 N·m</option></select></label>
+      <p id="rotor-tier-status"></p>
       <label>Torque máximo <output id="rotor-torque-value">0.40 N·m</output><input id="rotor-torque" type="range" min="0.02" max="4" step="0.02" value="0.4"></label>
       <label>Capacidad de carga <output id="rotor-capacity-value">16 u</output><input id="rotor-capacity" type="range" min="2" max="128" step="1" value="16"></label>
       <label>Lado que gira<select id="rotor-side"><option value="a">Lado A · lado B como base</option><option value="b">Lado B · lado A como base</option></select></label>
@@ -448,6 +450,6 @@ input,select,textarea{font-family:var(--font-menu);}
     <div class="actions"><button id="create" type="button">Crear Q-bit</button><button id="remove" type="button">Borrar pieza</button><button id="split" type="button">Desarmar estructura</button></div>
     <button id="resume" type="button">Volver a la sala</button>
   </section>
-  <script src="assets/js/boot.js?v=20261114-12" defer></script>
+  <script src="assets/js/boot.js?v=20261114-13" defer></script>
 </body>
 </html>

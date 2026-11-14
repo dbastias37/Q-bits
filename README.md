@@ -2,7 +2,7 @@
 
 Juego de puzles en primera persona, ambientado en salas blancas minimalistas. Mueve y une Q-bits, organiza al equipo, activa circuitos y transforma materia para abrir nuevas rutas.
 
-Versión actualizada el 14 de noviembre de 2026: prólogo, 15 niveles y laboratorio de pruebas.
+Versión actualizada el 14 de noviembre de 2026: prólogo, 18 niveles y laboratorio de pruebas.
 
 ## Jugar
 
@@ -54,8 +54,13 @@ Referencia: [configurar la publicación en GitHub Pages](https://docs.github.com
 | 13 | La primera división | Reconfigurar un Q-bit en seis pirámides conservando su materia. |
 | 14 | La segunda escala | Subdividir una pirámide en dos triangulares complementarios. |
 | 15 | Seguimos siendo nosotros | Recomponer los triangulares y recuperar el cubo original. |
+| 16 | El acuerdo del eje | Hacer girar un rotor del banco durante 6 segundos útiles sin intervenir. |
+| 17 | La fuerza tiene un precio | Mantener una carga de 4 unidades durante 8 segundos dentro del presupuesto de energía. |
+| 18 | La primera entrega autónoma | Llevar el extremo de un brazo articulado hasta el receptor con movimiento físico real. |
 
 El menú permite seleccionar niveles, reiniciar, pausar y entrar al laboratorio. Las transiciones incluyen fundidos, una carga de transición deliberada de al menos 1,8 segundos para dar una pausa entre escenas, y pantalla de final de nivel. Esa pausa es independiente de la precarga real inicial.
+
+El [estado del proyecto](docs/ESTADO_PROYECTO.md) concentra lo terminado y el siguiente bloque para retomar el trabajo sin reconstruir las conversaciones.
 
 ## Controles principales
 
@@ -134,7 +139,7 @@ El proceso dura cuatro segundos de simulación y se congela al pausar, consultar
 
 El NPC introduce cada experimento con diálogos que avanzan con E. J abre el catálogo; también está disponible desde los menús. Los descubrimientos se conservan en el progreso existente. Los planos de referencia de un cubo formado por seis pirámides y de una pirámide formada por dos triangulares se añaden a **Formas guardadas**. Para colocar uno: clic derecho en el suelo → Formas guardadas. Para construirlo: reúne piezas compatibles y activa **Integrar cercanos** sobre el blueprint. Guardar un plano no concede cuerpos ni recursos.
 
-El [prompt maestro de campaña](docs/PROMPT_MAESTRO_CAMPANA.md) reúne el lore, el tono del guía, la secuencia posterior, la autonomía, los desafíos y la progresión propuesta. Las misiones 16–24 y las mejoras Torque I–III, construcción ligera, coordinación y gestión térmica son trabajo futuro; no están activadas por este incremento. La [revisión del bloque](docs/REVISION_BLOQUE_III.md) detalla qué se comprobó y qué queda pendiente.
+El [prompt maestro de campaña](docs/PROMPT_MAESTRO_CAMPANA.md) reúne el lore, el tono del guía, la secuencia posterior, la autonomía, los desafíos y la progresión propuesta. Los niveles 16–18 y las certificaciones Torque I–III están implementados. Las misiones 19–24, construcción ligera, coordinación avanzada, temperatura y posjuego siguen pendientes. La [revisión del bloque](docs/REVISION_BLOQUE_III.md) detalla qué se comprobó y qué queda pendiente.
 
 ## Archivos y desarrollo
 
@@ -211,3 +216,13 @@ En Linux con EGL/GLES (por ejemplo Mesa), `python tests/validate-focus-gles.py` 
 El progreso y las formas del nombre anterior se recuperan cuando están disponibles en el almacenamiento del mismo navegador y origen.
 
 La licencia MIT de Cannon.js se conserva en el código y en `THIRD_PARTY_NOTICES.md`; corresponde a ese componente.
+
+## Automatización inicial y perfil
+
+Los niveles 16–18 usan un banco montado para aprender a configurar el movimiento antes de encargar líneas completas de producción. La prueba requiere giro físico útil, carga original y continuidad sin intervención. El objetivo muestra tiempo, energía consumida, presupuesto y rpm reales. El nivel 18 mueve un compañero unido al extremo del brazo hasta un receptor; al recibirlo, detiene el motor. No es todavía una cinta ni un sistema de empaquetado.
+
+Tomar o reorganizar piezas y cambiar órdenes o parámetros reinicia el tramo autónomo. La pausa, el panel de parámetros, el catálogo y la pestaña oculta congelan el reloj. La puerta se habilita tras registrar la prueba y el jugador puede cruzar dejando el banco en su sitio.
+
+Completar el nivel 16 desbloquea Torque II y completar el 18 desbloquea Torque III. En **P → Mecanismos → Certificación de torque** se elige el nivel autorizado: I hasta 0,40 N·m, II hasta 0,65 N·m y III hasta 1,00 N·m. Subir de certificación no aumenta automáticamente el ajuste de un rotor. Son valores iniciales de equilibrio; pedir más fuerza conserva su costo energético real. Los ejercicios 16–18 fijan Torque I aunque el perfil tenga mejoras, y el laboratorio mantiene hasta 4 N·m.
+
+Las comprobaciones automatizadas se describen en la [revisión del bloque IV](docs/REVISION_BLOQUE_IV.md). Sigue pendiente una partida visual para ajustar legibilidad, ritmo y equilibrio.
