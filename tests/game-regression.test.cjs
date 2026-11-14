@@ -54,9 +54,9 @@ test('long blocked searches yield, can be canceled and cannot overwrite a newer 
   t.clearNarrativeScene(); assert.equal(t.navigationJobs.size, 0);
 });
 
-test('all 12 levels step and draw, with stable bodies and GPU buffer ownership after reloads', () => {
+test('all campaign levels step and draw, with stable bodies and GPU buffer ownership after reloads', () => {
   const { t, buffers } = createGame(), counts = [];
-  for (let cycle = 0; cycle < 3; cycle++) for (let level = 1; level <= 12; level++) {
+  for (let cycle = 0; cycle < 3; cycle++) for (let level = 1; level < t.LEVELS.length; level++) {
     t.beginCampaignLevel(level); t.hideStoryDialogue(); t.story.encounter = null;
     for (let i = 0; i < 10; i++) t.stepPhysics(1 / 60);
     t.drawStoryWorld(); t.drawQubits(); t.drawStoryGlass(); t.updateTarget(); t.updateSpeech(); t.updateStoryMarker();
