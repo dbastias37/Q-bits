@@ -6,7 +6,7 @@ Actualizado: 14 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
 Implementar por bloques pequeños, jugables y publicados en GitHub. Este archivo concentra el contexto operativo; el prompt maestro conserva el diseño completo. Cada entrega debe actualizar ambos cuando cambie una decisión, indicar pruebas reales y dejar un siguiente paso concreto. No convertir todo el diseño futuro en una única modificación difícil de revisar.
 
-La revisión de experiencia y equilibrio se hará cuando el usuario pruebe las misiones; las comprobaciones de lógica, físicas e inventario deben completarse en cada entrega. Al cerrar la jornada del 14 de noviembre, el usuario indicó que el taller y el sensor serían el último bloque jugable por ahora: esta actualización solo registra la dirección futura. No continuar creando etapas a partir de la autorización anterior para avanzar por bloques.
+La revisión de experiencia y equilibrio se hará cuando el usuario pruebe las misiones; las comprobaciones de lógica, físicas e inventario deben completarse en cada entrega. Tras registrar la dirección futura el 14 de noviembre, el usuario autorizó un último bloque de integración y síntesis de lo existente, con atención a lógica y errores. Ese cierre corrige continuidad entre sistemas; las nuevas etapas y el giro narrativo siguen como diseño pendiente.
 
 ## Bloques
 
@@ -17,6 +17,7 @@ La revisión de experiencia y equilibrio se hará cuando el usuario pruebe las m
 | IV | Niveles 16–18: rotor, esfuerzo, transporte físico autónomo y certificaciones de torque | Integrado en main mediante PR #2 |
 | V | Niveles 19–20: dosificación y primer encargo de seis paquetes | Integrado en main mediante PR #3 |
 | Taller y sensor | Dispositivo de contacto, investigación pagada y calibraciones de batería/masa/movimiento | Implementado y verificado: 256 pruebas completas |
+| Integración | Continuidad de sensores, enfriadores con baterías mejoradas y reinicio de lotes con material tomado | Implementado y verificado: 263 pruebas completas |
 | Campaña amplia | Alrededor de diez misiones grandes en galpones, después de enseñar las mecánicas y materiales necesarios | Dirección registrada; sin etapas ni numeración definitivas |
 | Giro narrativo | Cooperación manipulada para producir cubos, explotación revelada y fuga final | Solo registro de diseño; sin cambios de diálogos, IA o etapas |
 | Posjuego | Desafíos posteriores, mejores marcas y progresión de coordinación | Pendiente |
@@ -55,7 +56,9 @@ Mantener la identidad y las reservas al unir/separar, impedir clonación de mejo
 
 El taller está disponible en el banco de pruebas: apuntar a la mesa y pulsar E. El sensor se conecta desde su menú de clic derecho y necesita que su cara activa toque una pared a menos de 3 m del rotor. Varios sensores del mismo rotor comparten una sola señal hasta que todos se separan. La investigación se guarda en el navegador; las adaptaciones se conservan al recuperar la escena del laboratorio, pero deben retirarse antes de exportar una plantilla de mecanismo.
 
-La suite actual pasa **256 pruebas, sin fallos**: ocho del modelo de taller, nueve de integración de mesa/guardado, ocho de contactos, nueve de baterías y dos nuevas comprobaciones de carga, además de las 220 anteriores. Incluye colisiones reales de cubos y triángulos, inversión física de un eje apoyado en el suelo, contactos escalonados, borrado de enlaces, conservación de energía/materia y compras únicas. Sintaxis y `git diff --check` aprobados. Ver `REVISION_TALLER_SENSOR.md`; sigue pendiente la evaluación visual y de equilibrio con jugador.
+Al cerrar el taller pasaron **256 pruebas, sin fallos**: ocho del modelo de taller, nueve de integración de mesa/guardado, ocho de contactos, nueve de baterías y dos nuevas comprobaciones de carga, además de las 220 anteriores. Incluyen colisiones reales de cubos y triángulos, inversión física de un eje apoyado en el suelo, contactos escalonados, borrado de enlaces, conservación de energía/materia y compras únicas. Ver `REVISION_TALLER_SENSOR.md`.
+
+El cierre de integración conserva el bloqueo de contacto en las instantáneas del laboratorio y lo restaura al volver desde campaña o puzzle: cambiar de escena no crea otra pulsación. El enfriador mantiene su porcentaje de salida y tarda ×1/×1,5/×2 para baterías de 20/30/40 J, con espera correcta en el HUD. El reinicio interno del lote libera la materia sujeta antes de retirar sus cuerpos y conserva los agarres ajenos; el menú ya soltaba la mano. La suite completa pasa **263 pruebas, sin fallos**, con siete regresiones nuevas; sintaxis y `git diff --check` aprobados. La [síntesis de integración](SINTESIS_INTEGRACION.md) es la referencia compacta para estado, verificación y recuperación. Sigue pendiente la evaluación visual y de equilibrio con jugador.
 
 ## Dirección futura: misiones grandes en galpones
 
