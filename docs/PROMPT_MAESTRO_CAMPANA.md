@@ -4,7 +4,7 @@ Continúa el videojuego Q-bits del repositorio `dbastias37/Q-bits`. Inspecciona 
 
 ## Estado y alcance
 
-La base revisada tiene prólogo y doce misiones: movimiento, órdenes, botones, unión, formas, transporte, descanso y transformación de materia en compañeros. El primer incremento de esta propuesta añade los niveles 13–15, una cámara de reconfiguración y un catálogo con blueprints. El bloque IV añade los niveles 16–18 con bancos físicos de giro, carga y transferencia, validación de autonomía y certificaciones Torque I–III. El bloque V añade los niveles 19–20: dosificación ordenada, reserva finita, cámara de empaquetado y recepción física de seis paquetes. El taller transversal incorpora sensor de contacto y calibraciones pagadas de batería, estructura ligera y movimiento. Las misiones 21–24, el posjuego, la coordinación avanzada y la temperatura siguen pendientes. El estado operativo se mantiene en `ESTADO_PROYECTO.md`.
+La base revisada tiene prólogo y doce misiones: movimiento, órdenes, botones, unión, formas, transporte, descanso y transformación de materia en compañeros. El primer incremento de esta propuesta añade los niveles 13–15, una cámara de reconfiguración y un catálogo con blueprints. El bloque IV añade los niveles 16–18 con bancos físicos de giro, carga y transferencia, validación de autonomía y certificaciones Torque I–III. El bloque V añade los niveles 19–20: dosificación ordenada, reserva finita, cámara de empaquetado y recepción física de seis paquetes. El taller transversal incorpora sensor de contacto y calibraciones pagadas de batería, estructura ligera y movimiento. La dirección futura acordada es una campaña de unas diez misiones grandes en galpones después del aprendizaje; todavía no se crean esas etapas. La propuesta numerada 21–24 deja de fijar el siguiente bloque y el cierre. El posjuego, la coordinación avanzada y la temperatura siguen pendientes. El estado operativo se mantiene en `ESTADO_PROYECTO.md`.
 
 La experiencia principal será aprender a construir mecanismos y coordinarlos para completar encargos de producción. La campaña llevará gradualmente desde ejercicios breves hasta problemas abiertos. Después, desafíos de dominio y encargos variables mantendrán útiles los inventos del jugador.
 
@@ -63,14 +63,21 @@ Los tres bancos fijan Torque I para que los certificados del perfil no cambien l
 
 La materia inerte no es un compañero Q-bit y no recibe estados de ánimo ni órdenes de recorrido. Reiniciar el ensayo restaura un único lote de prueba explícito; no concede recursos acumulables. La cinta usa tracción aplicada a cuerpos físicos y la estación cobra energía adicional de las baterías. Esta es una instalación guiada y configurable, no todavía un editor abierto de líneas.
 
-### Bloques siguientes, sujetos a prototipos comprobados
+### Misiones grandes en galpones
 
-21. **Una línea que se sostiene.** Producción continua con energía y temperatura estables. La máquina no puede ganar simplemente por estar encendida y vacía.
-22. **Materiales en orden.** Variar materiales, cantidades o destinos, con recursos finitos y errores recuperables.
-23. **Menos piezas, mismo encargo.** Optimización: elegir entre soluciones con diferentes costos. No exigir simultáneamente extremos incompatibles.
-24. **La instalación despierta.** Integrar varios sistemas ya conocidos y activar la instalación central. Encargo abierto, sin solución guiada; el catálogo sigue disponible. El cierre reconoce al equipo y abre desafíos posteriores.
+**Registro del 14 de noviembre de 2026. Solo diseño futuro; no implementar ahora las etapas.** El usuario aún no ha podido probar los bloques existentes y cierra por ahora el desarrollo jugable con el taller y el sensor.
 
-Los números 21–24 son un orden de diseño, no una obligación de añadir niveles vacíos. Combina o divide misiones según las pruebas. Retira la ayuda paso a paso de manera gradual; ofrece relectura de lo aprendido y pistas opcionales antes de los desafíos finales.
+La secuencia deseada es aprendizaje mediante tutoriales y eventos, dominio de los elementos y materiales, misiones grandes de automatización y, después, desafíos de optimización. Antes de exigir un sistema en un encargo grande, sus reglas deben estar implementadas, comprobadas y enseñadas. No hace falta añadir una pieza o tutorial por cada encargo.
+
+Se propone **alrededor de diez misiones grandes de campaña**, con escenarios tipo galpón semejantes al banco de pruebas, posiblemente más largos. Su espacio debe permitir organizar varias máquinas y construir los mecanismos que las hagan trabajar coordinadamente. El foco será poner en funcionamiento una instalación mediante automatización, en vez de avanzar por el laberinto habitual de salas y puertas. No se han decidido dimensiones, decoración ni distribuciones definitivas.
+
+La base actual permite estudiar combinaciones de transformación, transporte, rotores, dosificación, empaquetado, energía y sensores. Eso es un punto de partida para futuros prototipos; no significa que ya exista un editor abierto de líneas ni una solución completa para diez encargos. El jugador debería poder preparar, conectar, poner a prueba y ajustar sus mecanismos hasta conseguir trabajo útil sin intervención durante la validación. El catálogo y los blueprints seguirán disponibles, con menos ayuda paso a paso.
+
+Las misiones deben distinguirse por el trabajo que exigen y la organización de sus máquinas, no solo por pedir más unidades o esperar más tiempo. Cantidad y composición de entregas, destinos, recursos, energía y número de piezas pueden combinarse como restricciones, siempre con soluciones verificadas. Cantidad final de misiones, numeración, objetivos, duración, máquinas y equilibrio quedan abiertos hasta probar lo existente. Los galpones forman parte de la campaña; los desafíos repetibles del posjuego vienen después.
+
+La antigua propuesta 21–24 conserva cuatro temas útiles: producción sostenida, materiales en orden, eficiencia con menos piezas y reactivación de la instalación. Son temas reutilizables dentro de la nueva estructura, no cuatro niveles adicionales ni un cierre obligatorio en el nivel 24. El sobrecalentamiento solo podrá exigirse cuando exista y se haya probado su modelo temporal.
+
+Al retomar, recoger primero las pruebas del jugador y revisar la cobertura de mecánicas. Antes de construir escenarios definitivos, comprobar en el banco una instalación con varias máquinas, al menos dos soluciones y recuperación de un fallo esperable. Conservar la materia, energía, identidades y límites físicos ya establecidos. Este registro no autoriza a dar por disponibles las misiones futuras.
 
 ## Catálogo y blueprints
 
