@@ -209,7 +209,7 @@ body[data-booting='true'] > :not(#boot-screen):not(script){visibility:hidden;poi
 @font-face{font-family:"LED Calculator";src:url('assets/fonts/led-calculator/LEDCalculator.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap;}
 @font-face{font-family:Tengoku;src:url('assets/fonts/tengoku/Tengoku.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap;}
 @font-face{font-family:"Spaceman UI";src:url('assets/fonts/spaceman/Spaceman-Regular.ttf') format('truetype');unicode-range:U+20-21, U+27-29, U+2B-3B, U+3D, U+3F-5C, U+5F-7B, U+7D, U+A0-A1, U+B4, U+BF, U+D1, U+E1, U+E4, U+E9, U+ED, U+F1, U+F3, U+F6-F7, U+FA, U+FC, U+2010, U+2014, U+201C-201D;font-weight:400;font-style:normal;font-display:swap;}
-:root{--font-menu:"Spaceman UI",system-ui,sans-serif;--font-npc:Tengoku,system-ui,sans-serif;--font-title:"LED Calculator",system-ui,sans-serif;}
+:root{--font-menu:"Spaceman UI",system-ui,sans-serif;--font-npc:Tengoku,system-ui,sans-serif;--font-title:"LED Calculator",system-ui,sans-serif;--font-info:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;}
 .game-screen h1.game-title{font:400 clamp(72px,14vw,150px)/1.2 var(--font-title);letter-spacing:.02em;padding:0;margin:12px 0 16px;max-width:95%;color:#18201c;font-synthesis:none;}
 #boot-title .game-title{font:400 clamp(72px,14vw,145px)/1.2 var(--font-title);text-align:center;margin:0;color:#e4eee8;letter-spacing:.02em;font-synthesis:none;}
 .game-screen h2,#panel h2,#completion-panel h2{font-family:var(--font-menu);font-weight:400;font-synthesis:none;letter-spacing:0;line-height:1.5;text-align:center;max-width:min(720px,90vw);overflow-wrap:anywhere;}
@@ -291,6 +291,15 @@ input,select,textarea{font-family:var(--font-menu);}
 #wake-button:hover,#wake-button:focus-visible{text-decoration-color:currentColor;}
 @media(max-width:620px){#story-objective{font-size:9px;max-width:72vw;}#story-dialogue.mysterious #story-text{font-size:17px;}#wake-screen{top:62%;}.menu-foot{font-size:8px;}#alpha-census{left:max(18px,env(safe-area-inset-left));bottom:max(18px,env(safe-area-inset-bottom));font-size:10px;}}
 @media(max-width:300px){.game-screen h1.game-title,#boot-title .game-title{font-size:22vw;}}
+/* Quiet measurements and state descriptions, separate from names and menus. */
+#callout-count,#callout-weight,#mood-state-description,#mood-energy-label,#mood-group-count,
+#cooling-track span,#route-readout,#target,#detach-title,#panel output,#panel label,#panel p,
+.campaign-label:not([data-voice='npc']){
+ font-family:var(--font-info);font-size:11px;font-weight:400;line-height:1.5;letter-spacing:0;
+ font-variant-numeric:tabular-nums;color:#737d7a;
+}
+#mood-energy-label,#mood-group-count,#cooling-track span{font-size:10px;}
+#callout-count{color:#59625f;}
 </style>
 </head>
 <body data-game-mode="boot" data-game-scene="lab" data-booting="true">
