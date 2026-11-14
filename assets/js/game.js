@@ -392,7 +392,32 @@ const CUBE_SIZE=.09, HALF=.045, MAX_QUBITS=128, FIXED_STEP=1/240;
 const V=(x=0,y=0,z=0)=>new CANNON.Vec3(x,y,z), Q=()=>new CANNON.Quaternion();
 const add=(a,b)=>a.vadd(b), sub=(a,b)=>a.vsub(b), mul=(a,s)=>a.scale(s);
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-const settings={mass:1,gravity:9.8,bounce:.12,force:60,friction:.38,damping:.12,speed:.32,guide:'ghost',line:'dashed',maxCarry:16,maxSelect:32,rotationSpeed:2.8,grip:.95,cargoSide:4,cargoRequired:8,cargoColor:'#f4f4f1',haulSpeed:.2,haulForce:2};
+// Unit profiles share one scale with the Q-bit. Pyramid origins are their mass
+// centroids, so their collision hulls and visible surfaces balance together.
+function normalizeUnitShape(shape){return shape==='tetra'||shape==='pyramid'?shape:'cube';}
+function unitShape(value){return normalizeUnitShape(typeof value==='string'?value:value?.part?.shape||value?.shape);}
+function isTBit(value){return unitShape(value)!=='cube';}
+function makeUnitProfile(points,faces){
+ const vertices=points.map(p=>V(...p).scale(CUBE_SIZE)),faceNormals=[],faceCenters=[],edges=[],seen=new Set();
+ faces=faces.map(indices=>{
+  const face=[...indices],center=V();for(const i of face)center.vadd(mul(vertices[i],1/face.length),center);
+  let normal=sub(vertices[face[1]],vertices[face[0]]).cross(sub(vertices[face[2]],vertices[face[0]]));normal.normalize();
+  if(normal.dot(center)<0){face.reverse();normal=mul(normal,-1);}faceNormals.push(normal);faceCenters.push(center);
+  for(let i=0;i<face.length;i++){const a=face[i],b=face[(i+1)%face.length],key=Math.min(a,b)+','+Math.max(a,b);if(!seen.has(key)){seen.add(key);edges.push([a,b]);}}
+  return face;
+ });
+ return {vertices,faces,faceNormals,faceCenters,edges};
+}
+const tetraHeight=Math.sqrt(2/3),tetraRadius=Math.sqrt(3)/3;
+const UNIT_PROFILES={
+ cube:makeUnitProfile([[-.5,-.5,-.5],[.5,-.5,-.5],[.5,-.5,.5],[-.5,-.5,.5],[-.5,.5,-.5],[.5,.5,-.5],[.5,.5,.5],[-.5,.5,.5]],[[0,1,2,3],[4,7,6,5],[0,4,5,1],[1,5,6,2],[2,6,7,3],[3,7,4,0]]),
+ tetra:makeUnitProfile([[-.5,-tetraHeight/4,-tetraRadius/2],[.5,-tetraHeight/4,-tetraRadius/2],[0,-tetraHeight/4,tetraRadius],[0,tetraHeight*3/4,0]],[[0,1,2],[0,3,1],[1,3,2],[2,3,0]]),
+ pyramid:makeUnitProfile([[-.5,-.25,-.4],[.5,-.25,-.4],[.5,-.25,.4],[-.5,-.25,.4],[0,.75,0]],[[0,1,2,3],[0,4,1],[1,4,2],[2,4,3],[3,4,0]])
+};
+function unitProfile(shape){return UNIT_PROFILES[unitShape(shape)];}
+function unitGroundHeight(shape){return -Math.min(...unitProfile(shape).vertices.map(v=>v.y));}
+function unitFaces(pose){const profile=unitProfile(pose);return profile.faces.map((face,index)=>({index,vertices:face.map(i=>add(pose.p,pose.q.vmult(profile.vertices[i]))),center:add(pose.p,pose.q.vmult(profile.faceCenters[index])),normal:pose.q.vmult(profile.faceNormals[index])}));}
+const settings={mass:1,unitShape:'cube',gravity:9.8,bounce:.12,force:60,friction:.38,damping:.12,speed:.32,guide:'ghost',line:'dashed',maxCarry:16,maxSelect:32,rotationSpeed:2.8,grip:.95,cargoSide:4,cargoRequired:8,cargoColor:'#f4f4f1',haulSpeed:.2,haulForce:2};
 const groups=[],cargos=[];
 const alphaSettings={maxRest:180,coolSeconds:35,capacity:4,blueprintRange:1.5,exitEnergy:.5,glow:.6,coolingOn:true,allowPuzzleSpawn:false};
 const coolers=[],blueprints=[],savedShapes=[],buttonBodies=[];let alphaSerial=0;
@@ -783,21 +808,21 @@ function altDown(){return keys.has('AltLeft')||keys.has('AltRight');}
 function totalWeight(g){return g.parts.reduce((n,p)=>n+p.weight,0);}
 function partPose(g,p,pos=g.body.position,quat=g.body.quaternion){return {p:add(pos,quat.vmult(p.offset)),q:quat.mult(p.q),part:p,g};}
 function poses(g,pos,quat){return g.parts.map(p=>partPose(g,p,pos,quat));}
-function worldParts(g){return poses(g).map(o=>({id:o.part.id,weight:o.part.weight,p:o.p,q:o.q,mood:copyMood(o.part.mood)}));}
+function worldParts(g){return poses(g).map(o=>({id:o.part.id,weight:o.part.weight,shape:unitShape(o),p:o.p,q:o.q,mood:copyMood(o.part.mood)}));}
 function makeGroup(parts,reference=Q(),velocity=V(),spin=V()) {
  const weight=parts.reduce((n,p)=>n+p.weight,0),center=V();
  for(const p of parts)center.vadd(mul(p.p,p.weight/weight),center);
  const inv=reference.inverse(),body=new CANNON.Body({mass:weight*.25,allowSleep:true,sleepSpeedLimit:.025,sleepTimeLimit:.6});
  body.collisionFilterMask=-1;body.position.copy(center);body.quaternion.copy(reference);body.velocity.copy(velocity);body.angularVelocity.copy(spin);
  body.linearDamping=.03;body.angularDamping=settings.damping;
- const local=parts.map(p=>({id:p.id,weight:p.weight,offset:inv.vmult(sub(p.p,center)),q:inv.mult(p.q),mood:newMood(p.id,p.mood)}));
- for(const p of local)body.addShape(cubeShape(),p.offset,p.q);
+ const local=parts.map(p=>{const shape=unitShape(p),mood=newMood(p.id,p.mood);if(!p.mood&&shape!=='cube')mood.name='T-bit '+p.id;return {id:p.id,weight:p.weight,shape,offset:inv.vmult(sub(p.p,center)),q:inv.mult(p.q),mood};});
+ for(const p of local){const profile=unitProfile(p),shape=isTBit(p)?new CANNON.ConvexPolyhedron(profile.vertices.map(v=>v.clone()),profile.faces.map(f=>f.slice())):cubeShape();body.addShape(shape,p.offset,p.q);}
  body.updateMassProperties();world.addBody(body);
  const g={body,parts:local,route:null,pin:null};body.qubitGroup=g;g.block=analyzeBlock(g);groups.push(g);registerSpeechGroup(g);return g;
 }
-function addQubit(p,weight=settings.mass){return makeGroup([{id:++serial,weight,p:V(...p),q:Q()}]);}
+function addQubit(p,weight=settings.mass,shape='cube'){return makeGroup([{id:++serial,weight,shape:normalizeUnitShape(shape),p:V(...p),q:Q()}]);}
 function removeGroup(g){undockCampaignGroup(g);removeSpeechGroup(g);leaveHaul(g);stopRoute(g);world.removeBody(g.body);const i=groups.indexOf(g);if(i>=0)groups.splice(i,1);if(selected?.g===g)selected=null;multiSelection=multiSelection.filter(item=>item!==g);}
-function corners(pose){const out=[],half=pose.half||V(HALF,HALF,HALF);for(const x of [-half.x,half.x])for(const y of [-half.y,half.y])for(const z of [-half.z,half.z])out.push(add(pose.p,pose.q.vmult(V(x,y,z))));return out;}
+function corners(pose){if(isTBit(pose))return unitProfile(pose).vertices.map(v=>add(pose.p,pose.q.vmult(v)));const out=[],half=pose.half||V(HALF,HALF,HALF);for(const x of [-half.x,half.x])for(const y of [-half.y,half.y])for(const z of [-half.z,half.z])out.push(add(pose.p,pose.q.vmult(V(x,y,z))));return out;}
 function bounds(g,pos=g.body.position,quat=g.body.quaternion){
  // The absolute rotation matrix gives the exact same AABB as eight corners.
  // Reuse an unchanged body's bounds, but return owned vectors: callers move them.
@@ -807,6 +832,7 @@ function bounds(g,pos=g.body.position,quat=g.body.quaternion){
  const min=V(Infinity,Infinity,Infinity),max=V(-Infinity,-Infinity,-Infinity);
  for(const part of g.parts){
   const center=add(pos,quat.vmult(part.offset)),q=quat.mult(part.q),x=q.x,y=q.y,z=q.z,w=q.w;
+  if(isTBit(part)){for(const local of unitProfile(part).vertices){const v=add(center,q.vmult(local));min.x=Math.min(min.x,v.x);min.y=Math.min(min.y,v.y);min.z=Math.min(min.z,v.z);max.x=Math.max(max.x,v.x);max.y=Math.max(max.y,v.y);max.z=Math.max(max.z,v.z);}continue;}
   const ex=HALF*(Math.abs(w*w+x*x-y*y-z*z)+Math.abs(2*(x*y-w*z))+Math.abs(2*(x*z+w*y)));
   const ey=HALF*(Math.abs(2*(x*y+w*z))+Math.abs(w*w-x*x+y*y-z*z)+Math.abs(2*(y*z-w*x)));
   const ez=HALF*(Math.abs(2*(x*z-w*y))+Math.abs(2*(y*z+w*x))+Math.abs(w*w-x*x-y*y+z*z));
@@ -819,12 +845,27 @@ function bounds(g,pos=g.body.position,quat=g.body.quaternion){
 }
 function boundsOverlap(a,b){return a.min.x<=b.max.x&&a.max.x>=b.min.x&&a.min.y<=b.max.y&&a.max.y>=b.min.y&&a.min.z<=b.max.z&&a.max.z>=b.min.z;}
 function obbOverlap(a,b,epsilon=.0005){
+ if(isTBit(a)||isTBit(b))return convexUnitOverlap(a,b,epsilon);
  const aa=axes.map(v=>a.q.vmult(v)),bb=axes.map(v=>b.q.vmult(v)),delta=sub(a.p,b.p);
  for(const axis of [...aa,...bb,...aa.flatMap(x=>bb.map(y=>x.cross(y)))]){
   if(axis.norm2()<1e-10)continue;axis.normalize();
   const ah=a.half||V(HALF,HALF,HALF),bh=b.half||V(HALF,HALF,HALF),ks=['x','y','z'];
   const extent=aa.reduce((s,x,i)=>s+ah[ks[i]]*Math.abs(x.dot(axis)),0)+bb.reduce((s,x,i)=>s+bh[ks[i]]*Math.abs(x.dot(axis)),0);
   if(Math.abs(delta.dot(axis))>=extent-epsilon)return false;
+ }return true;
+}
+function convexPoseGeometry(pose){
+ const profile=unitProfile(pose),vertices=corners(pose),normals=(isTBit(pose)?profile.faceNormals:axes).map(n=>pose.q.vmult(n));
+ // Box corner ordering differs from profile indexing; its three axes suffice.
+ const edges=isTBit(pose)?profile.edges.map(([a,b])=>sub(vertices[b],vertices[a])):axes.map(n=>pose.q.vmult(n));
+ return {vertices,normals,edges};
+}
+function convexUnitOverlap(a,b,epsilon=.0005){
+ const aa=convexPoseGeometry(a),bb=convexPoseGeometry(b);
+ for(const axis of [...aa.normals,...bb.normals,...aa.edges.flatMap(x=>bb.edges.map(y=>x.cross(y)))]){
+  if(axis.norm2()<1e-14)continue;axis.normalize();let amin=Infinity,amax=-Infinity,bmin=Infinity,bmax=-Infinity;
+  for(const v of aa.vertices){const d=v.dot(axis);amin=Math.min(amin,d);amax=Math.max(amax,d);}for(const v of bb.vertices){const d=v.dot(axis);bmin=Math.min(bmin,d);bmax=Math.max(bmax,d);}
+  if(amax<=bmin+epsilon||bmax<=amin+epsilon)return false;
  }return true;
 }
 function validPose(g,pos,quat,exclude=[]){
@@ -834,18 +875,32 @@ function validPose(g,pos,quat,exclude=[]){
  if(cargos.some(c=>boundsOverlap(bb,cargoBounds(c))&&src.some(a=>obbOverlap(a,cargoPose(c)))))return false;
  return !groups.some(other=>other!==g&&!exclude.includes(other)&&boundsOverlap(bb,bounds(other))&&poses(other).some(b=>src.some(a=>obbOverlap(a,b))));
 }
+function creationShape(){return story.scene==='lab'&&!puzzle.active?normalizeUnitShape(settings.unitShape):'cube';}
+function unitLabel(part){return isTBit(part)?'T-bit':'Q-bit';}
+function groupUnitLabel(g){const t=g.parts.filter(isTBit).length;return t===g.parts.length?'T-bit'+(t===1?'':'s'):t?'piezas':'Q-bit'+(g.parts.length===1?'':'s');}
+function syncUnitControls(){const shape=creationShape();document.querySelector('#unit-shape').value=shape;document.querySelector('#unit-shape').disabled=story.scene!=='lab'||puzzle.active;document.querySelector('#create').textContent=shape==='cube'?'Crear Q-bit':'Crear T-bit';}
 function spawnQubit(){
  if(puzzleBlockedEdit('qubit'))return;
- if(groups.reduce((s,g)=>s+g.parts.length,0)>=MAX_QUBITS){announce('Máximo de '+MAX_QUBITS+' Q-bits en la sala.');return;}
+ const shape=creationShape();
+ if(groups.reduce((s,g)=>s+g.parts.length,0)>=MAX_QUBITS){announce('Máximo de '+MAX_QUBITS+' piezas en la sala.');return;}
  for(let row=0;row<6;row++)for(const col of [0,1,-1,2,-2,3,-3]){
-  const p=V(position[0]-Math.sin(yaw)*(.95+row*.16)+Math.cos(yaw)*col*.16,HALF+.002,position[2]-Math.cos(yaw)*(.95+row*.16)-Math.sin(yaw)*col*.16);
+  const p=V(position[0]-Math.sin(yaw)*(.95+row*.16)+Math.cos(yaw)*col*.16,unitGroundHeight(shape)+.002,position[2]-Math.cos(yaw)*(.95+row*.16)-Math.sin(yaw)*col*.16);
   if(Math.max(Math.abs(p.x),Math.abs(p.z))>13.9)continue;
-  if(groups.some(g=>poses(g).some(o=>obbOverlap({p,q:Q()},o,-.012))))continue;
-  const g=addQubit([p.x,p.y,p.z]);selected={g,part:g.parts[0]};multiSelection=[];announce('Q-bit creado · '+settings.mass+' u');return g;
+  if(groups.some(g=>poses(g).some(o=>obbOverlap({p,q:Q(),shape},o,-.012))))continue;
+  const g=addQubit([p.x,p.y,p.z],settings.mass,shape);selected={g,part:g.parts[0]};multiSelection=[];announce(unitLabel(g.parts[0])+' creado · '+settings.mass+' u');return g;
  }announce('No hay espacio delante. Muévete y vuelve a intentarlo.');
 }
 function rayPart(origin,dir,pose,max=40,half=pose.half?.x||HALF){
  const inv=pose.q.inverse(),o=inv.vmult(sub(origin,pose.p)),d=inv.vmult(dir);let near=0,far=max,normal=V();
+ if(isTBit(pose)){
+  const profile=unitProfile(pose);
+  for(let i=0;i<profile.faces.length;i++){
+   const n=profile.faceNormals[i],distance=n.dot(profile.faceCenters[i])-n.dot(o),denominator=n.dot(d);
+   if(Math.abs(denominator)<1e-9){if(distance<0)return null;continue;}
+   const t=distance/denominator;if(denominator<0){if(t>near){near=t;normal=n;}}else far=Math.min(far,t);if(near>far)return null;
+  }
+  return {distance:near,point:add(origin,mul(dir,near)),normal:pose.q.vmult(normal)};
+ }
  for(const k of ['x','y','z']){
   if(Math.abs(d[k])<1e-9){if(Math.abs(o[k])>half)return null;continue;}
   let a=(-half-o[k])/d[k],b=(half-o[k])/d[k],sign=-1;if(a>b){[a,b]=[b,a];sign=1;}
@@ -889,29 +944,46 @@ function releaseQubit(join=false){
  else for(const item of items){item.g.body.velocity.set(0,0,0);item.g.body.wakeUp();}
  held=null;snap=null;tryDockCampaign(g,dock);
 }
+function touchingUnitFaces(a,b,tolerance=.002){
+ // Preserve the established cube grid; convex units connect through real faces.
+ if(!isTBit(a.shape)&&!isTBit(b.shape))return Math.abs(a.p.distanceTo(b.p)-CUBE_SIZE)<tolerance;
+ for(const fa of unitFaces(a))for(const fb of unitFaces(b)){
+  if(fa.normal.dot(fb.normal)>-.999||Math.abs(sub(fb.center,fa.center).dot(fa.normal))>=tolerance)continue;
+  let overlaps=true;
+  for(const face of [fa,fb])for(let i=0;i<face.vertices.length;i++){
+   const edge=sub(face.vertices[(i+1)%face.vertices.length],face.vertices[i]),axis=fa.normal.cross(edge);axis.normalize();
+   let amin=Infinity,amax=-Infinity,bmin=Infinity,bmax=-Infinity;
+   for(const p of fa.vertices){const d=p.dot(axis);amin=Math.min(amin,d);amax=Math.max(amax,d);}
+   for(const p of fb.vertices){const d=p.dot(axis);bmin=Math.min(bmin,d);bmax=Math.max(bmax,d);}
+   if(Math.min(amax,bmax)-Math.max(amin,bmin)<.0005){overlaps=false;break;}
+  }
+  if(overlaps)return true;
+ }
+ return false;
+}
 function makeFragments(parts,reference,velocity=V(),spin=V()){
  const remaining=new Set(parts),created=[];
  while(remaining.size){const first=remaining.values().next().value,component=[first];remaining.delete(first);
-  for(let i=0;i<component.length;i++)for(const part of [...remaining])if(Math.abs(component[i].p.distanceTo(part.p)-CUBE_SIZE)<.002){component.push(part);remaining.delete(part);}
+  for(let i=0;i<component.length;i++)for(const part of [...remaining])if(touchingUnitFaces(component[i],part)){component.push(part);remaining.delete(part);}
   created.push(makeGroup(component,reference,velocity,spin));
  }return created;
 }
 function detachPart(hit,all=false){
  if(!hit||!groups.includes(hit.g))return;
- const g=hit.g;if(g.parts.length===1){announce('Este Q-bit ya está separado.');return;}
+ const g=hit.g;if(g.parts.length===1){announce('Este '+unitLabel(hit.part)+' ya está separado.');return;}
  if(held&&(held.items||[held]).some(item=>item.g===g))releaseQubit();const parts=worldParts(g),velocity=g.body.velocity.clone(),spin=g.body.angularVelocity.clone(),ref=g.body.quaternion.clone();
  removeGroup(g);
  if(all){for(const part of parts)makeGroup([part],part.q,velocity,spin);announce('Estructura desarmada');}
  else {
   const one=parts.find(p=>p.id===hit.part.id),rest=parts.filter(p=>p.id!==hit.part.id);
-  makeFragments(rest,ref,velocity,spin);const detached=makeGroup([one],one.q,velocity,spin);selected={g:detached,part:detached.parts[0]};announce('Q-bit separado');
+  makeFragments(rest,ref,velocity,spin);const detached=makeGroup([one],one.q,velocity,spin);selected={g:detached,part:detached.parts[0]};announce(unitLabel(one)+' separado');
  }
 }
 function deleteQubit(hit){
  if(puzzleBlockedEdit())return;
- if(!hit||!groups.includes(hit.g)){announce('Apunta a un Q-bit para borrarlo.');return;}
+ if(!hit||!groups.includes(hit.g)){announce('Apunta a una pieza para borrarla.');return;}
  const g=hit.g;if(held&&(held.items||[held]).some(item=>item.g===g))releaseQubit();const rest=worldParts(g).filter(p=>p.id!==hit.part.id),ref=g.body.quaternion.clone();removeGroup(g);
- if(rest.length)makeFragments(rest,ref);announce('Q-bit borrado');
+ if(rest.length)makeFragments(rest,ref);announce(unitLabel(hit.part)+' borrado');
 }
 // All 24 orientations of a cube are used for magnetic alignment and rolling.
 const orientations=[];
@@ -921,6 +993,34 @@ for(let x=0;x<4;x++)for(let y=0;y<4;y++)for(let z=0;z<4;z++){
 }
 function orientationIndex(q){let index=0,best=-1;orientations.forEach((o,i)=>{const d=qSimilarity(o,q);if(d>best){best=d;index=i;}});return index;}
 function nearestRelative(reference,current){let best=reference,bestScore=-1;for(const o of orientations){const q=reference.mult(o),score=qSimilarity(q,current);if(score>bestScore){best=q;bestScore=score;}}return best;}
+function findConvexSnap(source,part,target,t,limit){
+ if(part.p.distanceTo(t.p)>CUBE_SIZE*2+limit)return null;
+ const profile=unitProfile(part.part.shape),candidates=[];
+ for(const face of unitFaces(t)){
+  if(sub(part.p,face.center).dot(face.normal)<-.015)continue;
+  for(let index=0;index<profile.faces.length;index++){
+   const align=Q();align.setFromVectors(part.q.vmult(profile.faceNormals[index]),mul(face.normal,-1));align.normalize();
+   const base=align.mult(part.q),faceIndices=profile.faces[index],edge=sub(profile.vertices[faceIndices[1]],profile.vertices[faceIndices[0]]);
+   const tangent=base.vmult(edge);tangent.normalize();
+   let edgeAligned=base,edgeScore=-1;
+   // A second candidate aligns a polygon edge; keep the closest such rotation.
+   for(let i=0;i<face.vertices.length;i++)for(const sign of [-1,1]){
+    const along=mul(sub(face.vertices[(i+1)%face.vertices.length],face.vertices[i]),sign);along.normalize();
+    const twist=Q();twist.setFromAxisAngle(face.normal,Math.atan2(face.normal.dot(tangent.cross(along)),tangent.dot(along)));
+    const q=twist.mult(base),score=qSimilarity(q,part.q);if(score>edgeScore){edgeScore=score;edgeAligned=q;}
+   }
+   for(const partQ of qSimilarity(base,edgeAligned)>.99999?[base]:[base,edgeAligned]){
+    const center=sub(face.center,partQ.vmult(profile.faceCenters[index])),distance=center.distanceTo(part.p);
+    const score=distance+(1-qSimilarity(partQ,part.q))*.015;if(score>=limit)continue;
+    const quaternion=partQ.mult(part.part.q.inverse()),position=sub(center,quaternion.vmult(part.part.offset));
+    candidates.push({source,target,position,quaternion,score,face:{p:face.center,normal:face.normal,vertices:face.vertices,q:t.q,axis:0}});
+   }
+  }
+ }
+ // Most frames need one scene collision check, regardless of the number of faces.
+ candidates.sort((a,b)=>a.score-b.score);
+ return candidates.find(c=>validPose(source,c.position,c.quaternion))||null;
+}
 function findSnap(){
  if(!held||!shiftDown()||(held.items&&held.items.length>1))return null;
  const source=held.g,part=partPose(source,held.part);let candidate=null,best=.055;
@@ -930,21 +1030,26 @@ function findSnap(){
    if(blockCandidate&&(!candidate||blockCandidate.score<candidate.score)){candidate=blockCandidate;best=blockCandidate.score;}
    continue;
   }
-  for(const t of poses(target))for(let axis=0;axis<3;axis++)for(const sign of [-1,1]){
+  for(const t of poses(target)){
+   if(isTBit(part.part)||isTBit(t.part)){
+    const convex=findConvexSnap(source,part,target,t,best);if(convex){candidate=convex;best=convex.score;}continue;
+   }
+   for(let axis=0;axis<3;axis++)for(const sign of [-1,1]){
    const normal=t.q.vmult(mul(axes[axis],sign)),center=add(t.p,mul(normal,CUBE_SIZE)),distance=center.distanceTo(part.p);
    if(distance>=best)continue;
    const partQ=nearestRelative(t.q,part.q),delta=partQ.mult(part.q.inverse()),quaternion=delta.mult(source.body.quaternion);
    const position=sub(center,quaternion.vmult(held.part.offset));
    if(!validPose(source,position,quaternion))continue;
    best=distance;candidate={source,target,position,quaternion,score:distance,face:{p:add(t.p,mul(normal,HALF+.001)),normal,q:t.q,axis}};
+   }
   }
  }return candidate;
 }
 function weld(candidate){
  const {source,target,position,quaternion}=candidate;
- const parts=poses(source,position,quaternion).map(o=>({id:o.part.id,weight:o.part.weight,p:o.p,q:o.q,mood:copyMood(o.part.mood)})).concat(worldParts(target));
+ const parts=poses(source,position,quaternion).map(o=>({id:o.part.id,weight:o.part.weight,shape:o.part.shape,p:o.p,q:o.q,mood:copyMood(o.part.mood)})).concat(worldParts(target));
  const ref=target.body.quaternion.clone();removeGroup(source);removeGroup(target);const joined=makeGroup(parts,ref);
- selected={g:joined,part:joined.parts[0]};queueSpeech(joined,'happy',{kind:'joined',indices:[7,9,15,17]});announce('Unidos · '+joined.parts.length+' Q-bits · '+totalWeight(joined)+' u');return joined;
+ selected={g:joined,part:joined.parts[0]};queueSpeech(joined,'happy',{kind:'joined',indices:[7,9,15,17]});announce('Unidos · '+joined.parts.length+' '+groupUnitLabel(joined)+' · '+totalWeight(joined)+' u');return joined;
 }
 function applyOrientation(g,desired,strength=160){
  const b=g.body;let error=desired.mult(b.quaternion.inverse());if(error.w<0)error.set(-error.x,-error.y,-error.z,-error.w);
@@ -1091,7 +1196,10 @@ function* planRoute(g,goal){
  };
  const tolerance=HALF*Math.SQRT2+.003;
  const heuristic=(x,z)=>Math.max(0,Math.abs(origin.x+x*HALF-goal.x)+Math.abs(origin.z+z*HALF-goal.z)-tolerance*Math.SQRT2);
- const keyOf=(x,z,o)=>Math.round(x)+','+Math.round(z)+','+o;
+ // Convex T-bits roll by their actual support edge, not a cube's half-cell stride.
+ // Keep their sub-cell positions distinct while retaining the original cube grid.
+ const convex=g.parts.some(p=>isTBit(p)),precision=convex?1000:1;
+ const keyOf=(x,z,o)=>Math.round(x*precision)+','+Math.round(z*precision)+','+o;
  const start={x:0,z:0,o:oi,g:0,h:heuristic(0,0),parent:null};start.f=start.h;
  const startBox=at(0,0,oi);
  if(!sweepClear(initial,startBox,Math.max(initial.size.y,startBox.size.y),obstacleBounds))return null;
@@ -1123,7 +1231,7 @@ function startRoute(g,goal,quiet=false){
  if(!g||!groups.includes(g))return false;
  const wasBlocked=g.pendingMoodOrder?.reason==='bloqueo',changed=!!g.route;
  if(held&&(held.items||[held]).some(item=>item.g===g)){announce('Suelta la estructura antes de marcar su recorrido.');return false;}
- const bb=bounds(g);if(bb.min.y>.025){if(!quiet)announce('Deja el Q-bit en el piso antes de darle un destino.');return false;}
+ const bb=bounds(g);if(bb.min.y>.025){if(!quiet)announce('Deja la pieza en el piso antes de darle un destino.');return false;}
  if(!groupWilling(g)){queueMoodRoute(g,goal);if(!quiet)announce('Necesita descansar · la orden queda pendiente.');return true;}
  stopRoute(g);goal=goal.clone();const source=g.body.position.clone(),sourceQ=g.body.quaternion.clone();
  const pending={goal,reason:'planning',nextTry:Infinity};g.pendingMoodOrder=pending;g.pin={point:goal.clone(),arrived:false};
@@ -1188,7 +1296,8 @@ function stepPhysics(dt){
 }
 function updatePanel(){
  if(selected&&!groups.includes(selected.g))selected=null;
- document.querySelector('#editing').textContent=selected?'Q-bit '+selected.part.id+' · estructura de '+selected.g.parts.length+' · '+totalWeight(selected.g)+' u en total.':'Selecciona con clic derecho para ajustar una pieza.';
+ syncUnitControls();
+ document.querySelector('#editing').textContent=selected?unitLabel(selected.part)+' '+selected.part.id+' · estructura de '+selected.g.parts.length+' · '+totalWeight(selected.g)+' u en total.':'Selecciona con clic derecho para ajustar una pieza.';
  for(const name of ['mass','gravity','bounce','force','friction','damping','speed','maxCarry','maxSelect','rotationSpeed','grip']){
   const input=document.querySelector('#'+name);input.value=name==='mass'&&selected?selected.part.weight:settings[name];
   document.querySelector('#'+name+'Value').textContent=Number(input.value).toFixed(name==='mass'?2:2)+({mass:' u',gravity:' m/s²',force:' N',speed:' m/s',maxCarry:' u',maxSelect:' piezas',rotationSpeed:' rad/s'}[name]||'');
@@ -1214,6 +1323,7 @@ for(const name of ['cube','route','cargo','puzzle','alpha'])document.querySelect
  for(const tab of ['cube','route','cargo','puzzle','alpha']){document.querySelector('#page-'+tab).hidden=tab!==name;document.querySelector('#tab-'+tab).setAttribute('aria-selected',String(tab===name));}
 });
 document.querySelector('#create').addEventListener('click',()=>{spawnQubit();updatePanel();});
+document.querySelector('#unit-shape').addEventListener('change',event=>{settings.unitShape=normalizeUnitShape(event.target.value);syncUnitControls();});
 document.querySelector('#remove').addEventListener('click',()=>{deleteQubit(selected);updatePanel();});
 document.querySelector('#split').addEventListener('click',()=>{detachPart(selected,true);updatePanel();});
 document.querySelector('#stop').addEventListener('click',()=>{if(selectedCargo)stopHaul(selectedCargo);for(const g of selectedTeam()){leaveHaul(g);stopRoute(g);}});
@@ -1272,6 +1382,14 @@ face([[.5,-.5,-.5],[-.5,-.5,-.5],[-.5,.5,-.5],[.5,.5,-.5]],[0,0,-1]);
 face([[-.5,-.5,.5],[.5,-.5,.5],[.5,.5,.5],[-.5,.5,.5]],[0,0,1]);
 function buffer(data){const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);return b;}
 const cubeGeometry=buffer(vertices.slice(roomVertexCount));vertices.length=roomVertexCount;
+const unitMeshes={cube:{buffer:cubeGeometry,count:36}};
+for(const shape of ['tetra','pyramid']){
+ const profile=unitProfile(shape),data=[],edges=[];
+ for(let i=0;i<profile.faces.length;i++){const f=profile.faces[i],n=profile.faceNormals[i];for(let j=1;j<f.length-1;j++)for(const k of [f[0],f[j],f[j+1]]){const v=profile.vertices[k];data.push(v.x/CUBE_SIZE,v.y/CUBE_SIZE,v.z/CUBE_SIZE,n.x,n.y,n.z);}}
+ for(const edge of profile.edges)for(const k of edge){const v=profile.vertices[k];edges.push(v.x/CUBE_SIZE,v.y/CUBE_SIZE,v.z/CUBE_SIZE,0,1,0);}
+ unitMeshes[shape]={buffer:buffer(data),count:data.length/6,edgeBuffer:buffer(edges),edgeCount:edges.length/6};
+}
+const faceGuideGeometry=gl.createBuffer();
 face([[-.5,0,-.5],[.5,0,-.5],[.5,0,.5],[-.5,0,.5]],[0,1,0]);
 const shadowGeometry=buffer(vertices.slice(roomVertexCount));vertices.length=roomVertexCount;
 const ringVertices=[];for(let i=0;i<48;i++)for(const n of [i,i+1]){const t=n/48*Math.PI*2;ringVertices.push(Math.cos(t),0,Math.sin(t),0,1,0);}
@@ -1284,6 +1402,13 @@ function setPose(pos,q=Q(),dimensions=V(CUBE_SIZE,CUBE_SIZE,CUBE_SIZE)){
 }
 function tint(r,g,b,a){gl.uniform4f(uniforms.uTint,r,g,b,a);}
 function drawBox(pos,q,dimensions,color){bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,3);setPose(pos,q,dimensions);tint(...color);gl.drawArrays(gl.TRIANGLES,0,36);}
+function drawUnitMesh(pose,color=null,kind=null){const shape=unitShape(pose),mesh=unitMeshes[shape];bindGeometry(mesh.buffer);gl.uniform1f(uniforms.uKind,kind??(shape==='cube'?1:5));setPose(pose.p,pose.q);if(color)tint(...color);else if(shape!=='cube')tint(.48,.48,.48,1);gl.drawArrays(gl.TRIANGLES,0,mesh.count);}
+function drawUnitFaceGuide(face){
+ const points=face.vertices.map(p=>add(p,mul(face.normal,.0007))),data=[];
+ for(let i=1;i<points.length-1;i++)for(const p of [points[0],points[i],points[i+1]])data.push(p.x,p.y,p.z,face.normal.x,face.normal.y,face.normal.z);
+ gl.bindBuffer(gl.ARRAY_BUFFER,faceGuideGeometry);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.DYNAMIC_DRAW);bindGeometry(faceGuideGeometry);gl.uniform1f(uniforms.uKind,3);setPose(V(),Q(),V(1,1,1));tint(.12,.64,.67,.4);gl.drawArrays(gl.TRIANGLES,0,data.length/6);
+ drawLines(points.flatMap((p,i)=>[p,points[(i+1)%points.length]]),[.18,.67,.69,.95]);
+}
 function drawRing(pos,radius,alpha,color=[.12,.36,.36]){bindGeometry(ringGeometry);gl.uniform1f(uniforms.uKind,3);setPose(pos,Q(),V(radius,1,radius));tint(...color,alpha);gl.drawArrays(gl.LINES,0,96);}
 function drawLines(points,color){
  if(!points.length)return;const data=[];for(const p of points)data.push(p.x,p.y,p.z,0,1,0);
@@ -1296,14 +1421,13 @@ function drawGuides(){
   drawRing(add(p,V(0,.006,0)),.065+breath*.004,.35+breath*.2);
   drawBox(add(p,V(0,.08,0)),Q(),V(.0025,.145,.0025),[.12,.36,.36,.3+breath*.18]);
  }
- if(snap){const f=snap.face,dims=f.dimensions?mul(f.dimensions,.985):V(.087,.087,.087);dims[['x','y','z'][f.axis]]=.001;
-  drawBox(f.p,f.q,dims,[.12,.64,.67,.58]);drawOutline(f.p,f.q,dims,.95,true);
+ if(snap){const f=snap.face;if(f.vertices)drawUnitFaceGuide(f);else{const dims=f.dimensions?mul(f.dimensions,.985):V(.087,.087,.087);dims[['x','y','z'][f.axis]]=.001;
+  drawBox(f.p,f.q,dims,[.12,.64,.67,.58]);drawOutline(f.p,f.q,dims,.95,true);}
  }
  if(held&&ctrlDown()){
   const g=held.g,delta=Math.max(...(held.items||[held]).map(item=>landingProjection(item.g).delta));
   const projection={delta,position:add(g.body.position,V(0,delta+.002,0))},ghostBounds=bounds(g,projection.position),base=ghostBounds.center;base.y=ghostBounds.min.y+.003;
-  if(settings.guide==='ghost'){bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,4);tint(.14,.3,.31,.18);
-   for(const item of held.items||[held])for(const p of poses(item.g,add(item.g.body.position,V(0,projection.delta+.002,0)))){setPose(p.p,p.q);gl.drawArrays(gl.TRIANGLES,0,36);}}
+  if(settings.guide==='ghost')for(const item of held.items||[held])for(const p of poses(item.g,add(item.g.body.position,V(0,projection.delta+.002,0))))drawUnitMesh(p,[.14,.3,.31,.18],4);
   if(settings.guide==='dot')drawBox(base,Q(),V(.012,.001,.012),[.1,.3,.31,.55]);
   if(settings.guide==='x'){const r=.025;drawLines([add(base,V(-r,0,-r)),add(base,V(r,0,r)),add(base,V(-r,0,r)),add(base,V(r,0,-r))],[.1,.3,.31,.55]);}
   if(settings.line!=='none'){
@@ -1321,8 +1445,8 @@ function drawQubits(){
   const height=Math.max(0,p.p.y-HALF),scale=.23+Math.min(height,2)*.18;
   setPose(V(p.p.x,.001,p.p.z),Q(),V(scale,scale,scale));gl.uniform1f(uniforms.uScale,scale);gl.uniform1f(uniforms.uShadow,.22/(1+height*3));gl.drawArrays(gl.TRIANGLES,0,6);
  }
- gl.depthMask(true);gl.disable(gl.BLEND);bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,1);
- for(const g of groups){if(g.block){const p=moodVisualPose(g,blockPose(g));setPose(p.p,p.q,p.size);gl.drawArrays(gl.TRIANGLES,0,36);}else for(const p of poses(g)){setPose(p.p,p.q);gl.drawArrays(gl.TRIANGLES,0,36);}}
+ gl.depthMask(true);gl.disable(gl.BLEND);
+ for(const g of groups){if(g.block){const p=moodVisualPose(g,blockPose(g));bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,1);setPose(p.p,p.q,p.size);gl.drawArrays(gl.TRIANGLES,0,36);}else for(const p of poses(g))drawUnitMesh(g.parts.length===1?{...moodVisualPose(g,p),part:p.part}:p);}
  drawCargos();drawPuzzle();drawAlpha();drawStructureOutlines();drawGuides();drawTaskGuides();
 }
 addQubit([position[0]-Math.sin(yaw)*1.25,HALF+.003,position[2]-Math.cos(yaw)*1.25]);
@@ -1332,6 +1456,7 @@ function formatWeight(n){return Number(n.toFixed(2)).toLocaleString('es-CL');}
 // A regular block has every exterior grid cell filled. Interior voids (26/27)
 // are allowed; irregular/open silhouettes never get an invented bounding box.
 function analyzeBlock(g){
+ if(g.parts.some(isTBit))return null;
  const bb=bounds(g,V(),Q()),counts=['x','y','z'].map(k=>Math.round(bb.size[k]/CUBE_SIZE));
  if(counts.some(n=>n<1)||['x','y','z'].some((k,i)=>Math.abs(bb.size[k]-counts[i]*CUBE_SIZE)>.001))return null;
  const [nx,ny,nz]=counts,outer=nx*ny*nz-Math.max(0,nx-2)*Math.max(0,ny-2)*Math.max(0,nz-2);
@@ -1395,12 +1520,12 @@ function updateMarquee(event){
 function finishMarquee(cancel=false){if(!marquee)return;const m=marquee;marquee=null;selectionRect.hidden=true;if(!cancel&&Math.hypot(m.x-m.x0,m.y-m.y0)>=6)selectRectangle({left:Math.min(m.x0,m.x),right:Math.max(m.x0,m.x),top:Math.min(m.y0,m.y),bottom:Math.max(m.y0,m.y)});}
 function openDetachMenu(hit){
  if(!hit||!groups.includes(hit.g))return;
- if(hit.g.parts.length===1){announce('Este Q-bit ya es una pieza independiente.');return;}
+ if(hit.g.parts.length===1){announce('Este '+unitLabel(hit.part)+' ya es una pieza independiente.');return;}
  closeCommandMenu(false);detachChoice={g:hit.g,part:hit.part};selected=hit;pause();stopRoute(hit.g);panel.hidden=true;
  const projected=project(partPose(hit.g,hit.part).p)||{x:canvas.clientWidth/2,y:canvas.clientHeight/2};
  const right=projected.x<canvas.clientWidth/2;
  menu.style.left=clamp(projected.x+(right?30:-218),12,Math.max(12,canvas.clientWidth-214))+'px';menu.style.top=clamp(projected.y-30,12,Math.max(12,canvas.clientHeight-160))+'px';
- menu.style.transformOrigin=right?'left center':'right center';document.querySelector('#detach-title').textContent=hit.g.parts.length+' Q-bits · '+formatWeight(totalWeight(hit.g))+' u';
+ menu.style.transformOrigin=right?'left center':'right center';document.querySelector('#detach-title').textContent=hit.g.parts.length+' '+groupUnitLabel(hit.g)+' · '+formatWeight(totalWeight(hit.g))+' u';
  connectMenu(menu,partPose(hit.g,hit.part).p);
 }
 function closeDetachMenu(resume=false){menu.hidden=true;detachChoice=null;if(menuConnector?.element===menu){menuConnector=null;document.querySelector('#menu-link').style.opacity='0';}if(resume)captureMouse();}
@@ -1415,7 +1540,7 @@ function duplicateSelection(){
  const hit=aimQubit()||selected;if(!hit){announce('Selecciona una figura para duplicarla con V.');return;}
  const originals=multiSelection.includes(hit.g)&&multiSelection.length>1?multiSelection.filter(g=>groups.includes(g)):[hit.g];
  const count=originals.reduce((n,g)=>n+g.parts.length,0),population=groups.reduce((n,g)=>n+g.parts.length,0);
- if(count+population>MAX_QUBITS){announce('No caben más copias: límite de '+MAX_QUBITS+' Q-bits.');return;}
+ if(count+population>MAX_QUBITS){announce('No caben más copias: límite de '+MAX_QUBITS+' piezas.');return;}
  const originalParts=originals.map(g=>worldParts(g));const pts=originalParts.flat(),min=V(Infinity,Infinity,Infinity),max=V(-Infinity,-Infinity,-Infinity);
  for(const group of originals){const b=bounds(group);for(const k of ['x','y','z']){min[k]=Math.min(min[k],b.min[k]);max[k]=Math.max(max[k],b.max[k]);}}
  const center=mul(add(min,max),.5),spacing=Math.max(max.x-min.x,max.z-min.z)+.14;
@@ -1425,7 +1550,7 @@ function duplicateSelection(){
   const all=copies.flat();if(all.some(p=>corners(p).some(v=>v.y<0||v.y>ROOM_HEIGHT||Math.max(Math.abs(v.x),Math.abs(v.z))>13.99)))continue;
   if(groups.some(g=>poses(g).some(o=>all.some(p=>obbOverlap(p,o,-.005)))))continue;
   const made=copies.map((parts,i)=>makeGroup(parts.map(p=>({...p,id:++serial,mood:null})),originals[i].body.quaternion));
-  multiSelection=made;selected={g:made[0],part:made[0].parts[0]};announce('Duplicado · '+count+' Q-bits');return made;
+  multiSelection=made;selected={g:made[0],part:made[0].parts[0]};announce('Duplicado · '+count+' '+groupUnitLabel({parts:made.flatMap(g=>g.parts)}));return made;
  }announce('No hay espacio libre delante para la copia.');
 }
 const callout=document.querySelector('#callout'),calloutPath=document.querySelector('#callout-path'),calloutText=document.querySelector('#callout-text');
@@ -1456,7 +1581,7 @@ function updateCallout(){
  if(length<d1){const f=length/d1;path+=' L '+(anchor.x+(elbow.x-anchor.x)*f)+' '+(anchor.y+(elbow.y-anchor.y)*f);}
  else path+=' L '+elbow.x+' '+elbow.y+' L '+(elbow.x+(end.x-elbow.x)*clamp((length-d1)/Math.max(.001,d2),0,1))+' '+y;
  calloutPath.setAttribute('d',path);calloutText.style.left=textX+'px';calloutText.style.top=(y-7)+'px';calloutText.style.opacity=String(clamp((progress-.8)/.2,0,1));
- document.querySelector('#callout-count').textContent=g.parts.length+' Q-bit'+(g.parts.length===1?'':'s');
+ document.querySelector('#callout-count').textContent=g.parts.length+' '+groupUnitLabel(g);
  document.querySelector('#callout-weight').textContent='Peso '+formatWeight(totalWeight(g))+' u';callout.style.opacity='1';
 }
 // Stronger outer edges for regular blocks; never draw a box around an L-shape.
@@ -1468,11 +1593,15 @@ const edgeGeometry=buffer(edgeData);
 function drawOutline(p,q,size,alpha=.85,selectedOutline=false){
  bindGeometry(edgeGeometry);gl.uniform1f(uniforms.uKind,3);setPose(p,q,add(size,V(.0009,.0009,.0009)));tint(selectedOutline ? .38 : .48,selectedOutline ? .56 : .51,selectedOutline ? .57 : .54,alpha);gl.drawArrays(gl.LINES,0,24);
 }
+function drawUnitOutline(pose,alpha=.7,selectedOutline=true){
+ if(!isTBit(pose)){drawOutline(pose.p,pose.q,V(CUBE_SIZE,CUBE_SIZE,CUBE_SIZE),alpha,selectedOutline);return;}
+ const mesh=unitMeshes[unitShape(pose)];bindGeometry(mesh.edgeBuffer);gl.uniform1f(uniforms.uKind,3);setPose(pose.p,pose.q,V(CUBE_SIZE+.0006,CUBE_SIZE+.0006,CUBE_SIZE+.0006));tint(selectedOutline?.38:.48,selectedOutline?.56:.51,selectedOutline?.57:.54,alpha);gl.drawArrays(gl.LINES,0,mesh.edgeCount);
+}
 function drawStructureOutlines(){
  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
  for(const g of groups){const chosen=multiSelection.includes(g);
   if(g.block){const p=moodVisualPose(g,blockPose(g));drawOutline(p.p,p.q,p.size,.88,chosen);}
-  else if(chosen)for(const pose of poses(g))drawOutline(pose.p,pose.q,V(CUBE_SIZE,CUBE_SIZE,CUBE_SIZE),.7,true);
+  else if(chosen)for(const pose of poses(g))drawUnitOutline(pose,.7,true);
  }
  gl.depthMask(true);gl.disable(gl.BLEND);
 }
@@ -1768,7 +1897,7 @@ function openFloorOrders(point){
  items.push({label:'Formas guardadas',run:()=>showSavedShapes(point)});
  items.push({label:'Colocar enfriador',run:()=>{createCooler(point);captureMouse();}});
  items.push({label:'Cerrar',run:()=>captureMouse()});
- openCommandMenu(point,pendingCargo?'Destino de la carga':count?count+' Q-bit'+(count===1?'':'s')+' seleccionados':'Suelo',items);
+ openCommandMenu(point,pendingCargo?'Destino de la carga':count?count+' '+groupUnitLabel({parts:team.flatMap(g=>g.parts)}):'Suelo',items);
 }
 function handleSecondary(event){
  const rect=canvas.getBoundingClientRect();
@@ -1789,13 +1918,13 @@ function handleSecondary(event){
   selectedCargo=null;pendingCargo=null;selected=hit;if(!multiSelection.includes(hit.g))multiSelection=[];
   if(event.altKey||altDown()){openDetachMenu(hit);return;}
   const team=selectedTeam(),count=team.reduce((n,g)=>n+g.parts.length,0);
-  const items=[{label:team.length>1?'Tomar selección':'Tomar Q-bit',disabled:!canCarry(team)||hit.distance>2.8,run:()=>takeSelection(hit)},
+  const items=[{label:team.length>1?'Tomar selección':'Tomar '+unitLabel(hit.part),disabled:!canCarry(team)||hit.distance>2.8,run:()=>takeSelection(hit)},
    {label:'Elegir destino en el suelo',run:()=>{captureMouse();announce('Clic derecho en el suelo → Ir a este punto.');}},
    {label:'Guardar forma',run:()=>{saveShape(hit.g);captureMouse();}},
-   {label:'Nombrar Q-bit',run:()=>openAlphaPanel(hit)}];
+   {label:'Nombrar '+unitLabel(hit.part),run:()=>openAlphaPanel(hit)}];
   if(hit.g.parts.length>1)items.push({label:'Separar…',run:()=>openDetachMenu(hit)});
   items.push({label:'Deseleccionar',run:()=>{clearSelection();captureMouse();}});
-  items.push({label:'Cerrar',run:()=>captureMouse()});openCommandMenu(partPose(hit.g,hit.part).p,count+' Q-bit'+(count===1?'':'s')+' seleccionados',items);return;
+  items.push({label:'Cerrar',run:()=>captureMouse()});openCommandMenu(partPose(hit.g,hit.part).p,count+' '+groupUnitLabel({parts:team.flatMap(g=>g.parts)}),items);return;
  }
  const point=floorAim(dir);if(point)openFloorOrders(point);
 }
@@ -2204,37 +2333,37 @@ function updateCooling(dt){
   for(const [id] of c.entries)if(!seen.has(id))c.entries.delete(id);c.occupants=count;
  }
 }
-function savedShapeValid(shape){return shape&&typeof shape.name==='string'&&shape.name.length<=40&&Array.isArray(shape.parts)&&shape.parts.length>0&&shape.parts.length<=MAX_QUBITS&&shape.parts.every(p=>Array.isArray(p.p)&&p.p.length===3&&p.p.every(Number.isFinite)&&p.p.every(n=>Math.abs(n)<6)&&Array.isArray(p.q)&&p.q.length===4&&p.q.every(Number.isFinite)&&Math.abs(Math.hypot(...p.q)-1)<.01);}
+function savedShapeValid(shape){return shape&&typeof shape.name==='string'&&shape.name.length<=40&&Array.isArray(shape.parts)&&shape.parts.length>0&&shape.parts.length<=MAX_QUBITS&&shape.parts.every(p=>(p.shape===undefined||['cube','tetra','pyramid'].includes(p.shape))&&Array.isArray(p.p)&&p.p.length===3&&p.p.every(Number.isFinite)&&p.p.every(n=>Math.abs(n)<6)&&Array.isArray(p.q)&&p.q.length===4&&p.q.every(Number.isFinite)&&Math.abs(Math.hypot(...p.q)-1)<.01);}
 function loadSavedShapes(){try{const list=JSON.parse(readQbitsStorage('qbits.shapes.v1')||'[]');if(Array.isArray(list))savedShapes.push(...list.filter(savedShapeValid).slice(0,32));}catch{} }
 function persistShapes(){try{window.localStorage.setItem('qbits.shapes.v1',JSON.stringify(savedShapes));return true;}catch{announce('Forma guardada en esta sesión · Exportar formas permite conservar una copia.');return false;}}
 function saveShape(g){
  if(!g||!groups.includes(g))return;if(savedShapes.length>=32){announce('Hay 32 formas guardadas. Exporta o elimina una antes de añadir otra.');return;}
- const bb=bounds(g,V(),Q()),origin=V(bb.center.x,bb.min.y,bb.center.z),shape={name:'Forma '+(savedShapes.length+1),parts:poses(g,V(),Q()).map(o=>({p:[o.p.x-origin.x,o.p.y-origin.y,o.p.z-origin.z].map(n=>+n.toFixed(5)),q:[o.q.x,o.q.y,o.q.z,o.q.w].map(n=>+n.toFixed(7))}))};
+ const bb=bounds(g,V(),Q()),origin=V(bb.center.x,bb.min.y,bb.center.z),shape={name:'Forma '+(savedShapes.length+1),parts:poses(g,V(),Q()).map(o=>({shape:normalizeUnitShape(o.part.shape),p:[o.p.x-origin.x,o.p.y-origin.y,o.p.z-origin.z].map(n=>+n.toFixed(5)),q:[o.q.x,o.q.y,o.q.z,o.q.w].map(n=>+n.toFixed(7))}))};
  savedShapes.push(shape);const durable=persistShapes();updateAlphaPanel();announce(shape.name+' guardada · '+shape.parts.length+' unidades'+(durable?'':' · solo en esta sesión; exporta una copia'));
 }
-function blueprintTargets(bp){return bp.shape.parts.map(part=>{const q=Q();q.set(...part.q);return {p:add(bp.p,bp.q.vmult(V(...part.p))),q:bp.q.mult(q)};}).sort((a,b)=>a.p.y-b.p.y||a.p.x-b.p.x||a.p.z-b.p.z);}
+function blueprintTargets(bp){return bp.shape.parts.map(part=>{const q=Q();q.set(...part.q);return {shape:normalizeUnitShape(part.shape),p:add(bp.p,bp.q.vmult(V(...part.p))),q:bp.q.mult(q)};}).sort((a,b)=>a.p.y-b.p.y||a.p.x-b.p.x||a.p.z-b.p.z);}
 function blueprintBox(bp){const pts=blueprintTargets(bp).flatMap(corners),min=V(Infinity,Infinity,Infinity),max=V(-Infinity,-Infinity,-Infinity);for(const p of pts)for(const k of ['x','y','z']){min[k]=Math.min(min[k],p[k]);max[k]=Math.max(max[k],p[k]);}return {...alphaBox(mul(add(min,max),.5),mul(sub(max,min),.5)),size:sub(max,min)};}
 function placeBlueprint(shape,p){
  if(!savedShapeValid(shape)||!p||blueprints.length>=6){announce('No se puede colocar otro blueprint aquí.');return null;}
- const bp={id:++alphaSerial,shape:JSON.parse(JSON.stringify(shape)),p:V(p.x,.002,p.z),q:Q(),slots:[],active:false,nextScan:0,status:'Esperando Q-bits'};const box=blueprintBox(bp);
+ const bp={id:++alphaSerial,shape:JSON.parse(JSON.stringify(shape)),p:V(p.x,.002,p.z),q:Q(),slots:[],active:false,nextScan:0,status:'Esperando unidades'};const box=blueprintBox(bp);
  if(box.min.y<-.001||box.max.y>ROOM_HEIGHT||Math.max(Math.abs(box.min.x),Math.abs(box.max.x),Math.abs(box.min.z),Math.abs(box.max.z))>13.85||cargos.some(c=>obbOverlap(box,cargoPose(c)))||puzzleObstacleBounds().some(w=>obbOverlap(box,w))||alphaObstacles().some(w=>obbOverlap(box,w))||blueprints.some(other=>obbOverlap(box,blueprintBox(other)))){announce('La forma necesita más espacio libre.');return null;}
  blueprints.push(bp);announce(shape.name+' · clic derecho en el blueprint para integrar');return bp;
 }
-function nearBlueprint(bp){return groups.filter(g=>g.parts.length===1&&!g.route&&!g.pendingMoodOrder&&!g.haulJob&&!g.blueprintJob&&!g.cooler&&!(held?.items||[]).some(i=>i.g===g)&&groupWilling(g)&&bounds(g).min.y<.03&&Math.hypot(g.body.position.x-bp.p.x,g.body.position.z-bp.p.z)<=alphaSettings.blueprintRange).sort((a,b)=>a.body.position.distanceTo(bp.p)-b.body.position.distanceTo(bp.p));}
-function activateBlueprint(bp){bp.active=true;bp.nextScan=0;const missing=bp.shape.parts.length-bp.slots.length-nearBlueprint(bp).length;announce(missing>0?'Faltan '+missing+' Q-bits sueltos en el radio de '+alphaSettings.blueprintRange+' m. Acércalos al blueprint.':'Integrando Q-bits cercanos');}
+function nearBlueprint(bp){const used=new Set(bp.slots.map(s=>s.index)),needed=new Set(blueprintTargets(bp).filter((_,i)=>!used.has(i)).map(t=>t.shape));return groups.filter(g=>g.parts.length===1&&needed.has(normalizeUnitShape(g.parts[0].shape))&&!g.route&&!g.pendingMoodOrder&&!g.haulJob&&!g.blueprintJob&&!g.cooler&&!(held?.items||[]).some(i=>i.g===g)&&groupWilling(g)&&bounds(g).min.y<.03&&Math.hypot(g.body.position.x-bp.p.x,g.body.position.z-bp.p.z)<=alphaSettings.blueprintRange).sort((a,b)=>a.body.position.distanceTo(bp.p)-b.body.position.distanceTo(bp.p));}
+function activateBlueprint(bp){bp.active=true;bp.nextScan=0;const used=new Set(bp.slots.map(s=>s.index)),available=nearBlueprint(bp).map(g=>normalizeUnitShape(g.parts[0].shape));let missing=0;for(const [i,target] of blueprintTargets(bp).entries()){if(used.has(i))continue;const j=available.indexOf(target.shape);if(j<0)missing++;else available.splice(j,1);}announce(missing>0?'Faltan '+missing+' unidades de la forma indicada en el radio de '+alphaSettings.blueprintRange+' m. Acércalas al blueprint.':'Integrando unidades cercanas');}
 function releaseBlueprintSlot(s){const g=s.g;if(!groups.includes(g))return;stopRoute(g);g.blueprintJob=null;g.body.type=CANNON.Body.DYNAMIC;g.body.collisionResponse=true;g.body.updateMassProperties();g.body.velocity.set(0,0,0);g.body.angularVelocity.set(0,0,0);g.body.wakeUp();}
 function cancelBlueprint(bp){for(const s of bp.slots)releaseBlueprintSlot(s);blueprints.splice(blueprints.indexOf(bp),1);}
 function updateBlueprints(dt){
  for(const bp of [...blueprints]){
   bp.slots=bp.slots.filter(s=>groups.includes(s.g)&&s.g.blueprintJob===s);if(!bp.active)continue;const targets=blueprintTargets(bp),box=blueprintBox(bp);
   if(bp.slots.length<targets.length&&simTime>=bp.nextScan){bp.nextScan=simTime+.25;const g=nearBlueprint(bp)[0];
-   if(g){const used=new Set(bp.slots.map(s=>s.index)),index=targets.findIndex((_,i)=>!used.has(i)),angle=index*2.399,radius=Math.max(box.size.x,box.size.z)/2+.25+Math.floor(index/10)*.15,stage=V(bp.p.x+Math.cos(angle)*radius,0,bp.p.z+Math.sin(angle)*radius);
-    if(startRoute(g,stage,true)){const slot={g,bp,index,target:targets[index],stage,state:'walking',t:0};g.blueprintJob=slot;bp.slots.push(slot);}
+   if(g){const used=new Set(bp.slots.map(s=>s.index)),index=targets.findIndex((target,i)=>!used.has(i)&&target.shape===normalizeUnitShape(g.parts[0].shape)),angle=index*2.399,radius=Math.max(box.size.x,box.size.z)/2+.25+Math.floor(index/10)*.15,stage=V(bp.p.x+Math.cos(angle)*radius,0,bp.p.z+Math.sin(angle)*radius);
+    if(index>=0&&startRoute(g,stage,true)){const pose=targets[index],q=pose.q.mult(g.parts[0].q.inverse()),target={shape:pose.shape,p:sub(pose.p,q.vmult(g.parts[0].offset)),q},slot={g,bp,index,target,stage,state:'walking',t:0};g.blueprintJob=slot;bp.slots.push(slot);}
    }
   }
   let assembling=bp.slots.some(s=>s.state==='assembly');
   for(const slot of bp.slots){const g=slot.g,b=g.body;
-   if(slot.state==='walking'&&!g.route&&!g.pendingMoodOrder&&groupWilling(g)&&Math.hypot(b.position.x-slot.stage.x,b.position.z-slot.stage.z)<.10&&!assembling&&bp.slots.filter(s=>s.index<slot.index).every(s=>s.state==='placed')&&bp.slots.some(s=>s.index===0)){
+   if(slot.state==='walking'&&!g.route&&!g.pendingMoodOrder&&groupWilling(g)&&Math.hypot(b.position.x-slot.stage.x,b.position.z-slot.stage.z)<.10&&!assembling&&targets.slice(0,slot.index).every((_,i)=>bp.slots.some(s=>s.index===i&&s.state==='placed'))){
     slot.state='assembly';slot.fromP=b.position.clone();slot.fromQ=b.quaternion.clone();slot.height=box.max.y+.16;slot.legs=[V(b.position.x,slot.height,b.position.z),V(slot.target.p.x,slot.height,slot.target.p.z),slot.target.p.clone()];slot.leg=0;slot.legStart=b.position.clone();slot.t=0;b.type=CANNON.Body.KINEMATIC;b.velocity.set(0,0,0);b.angularVelocity.set(0,0,0);b.updateMassProperties();assembling=true;
    }
    if(slot.state==='assembly'){
@@ -2244,7 +2373,7 @@ function updateBlueprints(dt){
    }
   }
   const done=bp.slots.filter(s=>s.state==='placed').length;bp.status=done+' / '+targets.length+' integrados · radio '+alphaSettings.blueprintRange+' m';
-  if(done===targets.length){const parts=bp.slots.flatMap(s=>worldParts(s.g));for(const s of bp.slots){s.g.blueprintJob=null;removeGroup(s.g);}const g=makeGroup(parts,bp.q);blueprints.splice(blueprints.indexOf(bp),1);selected={g,part:g.parts[0]};multiSelection=[g];queueSpeech(g,'happy',{kind:'built'});announce(bp.shape.name+' construida · '+parts.length+' Q-bits');}
+  if(done===targets.length){const parts=bp.slots.flatMap(s=>worldParts(s.g));for(const s of bp.slots){s.g.blueprintJob=null;removeGroup(s.g);}const g=makeGroup(parts,bp.q);blueprints.splice(blueprints.indexOf(bp),1);selected={g,part:g.parts[0]};multiSelection=[g];queueSpeech(g,'happy',{kind:'built'});announce(bp.shape.name+' construida · '+parts.length+' unidades');}
  }
 }
 function alphaSceneSnapshot(){return {coolers:coolers.map(c=>({p:[c.p.x,c.p.z],capacity:c.capacity,enabled:c.enabled})),blueprints:blueprints.map(b=>({shape:b.shape,p:[b.p.x,b.p.z]}))};}
@@ -2266,7 +2395,7 @@ function alphaSecondary(dir=direction()){
  else {const c=hit.cooler;openCommandMenu(hit.point,'Enfriador · '+c.occupants+' / '+c.capacity,[{label:c.enabled?'Desactivar':'Activar',run:()=>{c.enabled=!c.enabled;captureMouse();}},{label:'Retirar enfriador',run:()=>{removeCooler(c);captureMouse();}},{label:'Cerrar',run:()=>captureMouse()}]);}return true;
 }
 function openAlphaPanel(hit=null){pause();panel.hidden=false;if(hit)selected=hit;updatePanel();switchPanelTab('alpha');updateAlphaPanel();}
-function renameQubit(){if(!selected||!groups.includes(selected.g))return;const input=document.querySelector('#qubit-name'),name=String(input.value||'').replace(/[\u0000-\u001f]/g,'').trim().slice(0,24);selected.part.mood.name=name||'Q-bit '+selected.part.id;input.value=selected.part.mood.name;announce('Nombre guardado');}
+function renameQubit(){if(!selected||!groups.includes(selected.g))return;const input=document.querySelector('#qubit-name'),name=String(input.value||'').replace(/[\u0000-\u001f]/g,'').trim().slice(0,24);selected.part.mood.name=name||unitLabel(selected.part)+' '+selected.part.id;input.value=selected.part.mood.name;announce('Nombre guardado');}
 function updateAlphaPanel(){
  document.querySelector('#qubit-name').value=selected?.part.mood.name||'';document.querySelector('#qubit-name').disabled=!selected;
  document.querySelector('#rename-qubit').disabled=!selected;document.querySelector('#save-shape').disabled=!selected;
@@ -2281,9 +2410,8 @@ function showPuzzleComplete(){
  pause();panel.hidden=true;document.querySelector('#completion-panel').hidden=false;document.querySelector('#completion-detail').textContent='Tres materiales entregados · '+puzzle.earned+' nuevos Q-bits. La última recompensa te espera al volver a la sala.';
 }
 function updateAlphaHUD(){
- const used=new Set(),cooling=new Set();for(const g of groups){if(g.route||g.pendingMoodOrder||g.haulJob||g.blueprintJob||g.moodDuty)for(const p of g.parts)used.add(p.id);if(g.cooler)for(const p of g.parts)cooling.add(p.id);}
- const selectedCount=moodSummary(held?held.items.map(i=>i.g):selectedTeam()).total,total=groups.reduce((n,g)=>n+g.parts.length,0);
- document.querySelector('#alpha-census-text').textContent='× '+total+' · seleccionados '+selectedCount+' · ocupados '+used.size+(cooling.size?' · enfriando '+cooling.size:'');
+ let qCount=0,tCount=0;for(const g of groups)for(const part of g.parts){if(isTBit(part))tCount++;else qCount++;}
+ document.querySelector('#alpha-census-text').textContent='× '+qCount+' Q'+(tCount?' · '+tCount+' T':'');
  if(!panel.hidden||!commandMenu.hidden||held)return;const h=alphaHit(5);if(!h)return;
  if(h.bp)targetLabel.textContent=h.bp.shape.name+' · '+h.bp.status+' · clic derecho';
  if(h.cooler){const c=h.cooler,values=[...c.entries.values()],remaining=values.length?Math.ceil(Math.max(...values.map(v=>alphaSettings.coolSeconds-v.elapsed))):alphaSettings.coolSeconds;targetLabel.textContent='Enfriador · '+c.occupants+'/'+c.capacity+' · '+(!c.enabled||!alphaSettings.coolingOn?'apagado':values.length&&remaining===0?'listos · energía '+Math.round(alphaSettings.exitEnergy*100)+' %':remaining+' s');}
@@ -2332,7 +2460,7 @@ function drawNeonPath(points,color=[.28,.68,.73]){
 function drawAlpha(){
  for(const c of coolers){drawAsset(coolerBodyMesh,c.p,Q(),V(1,1,1),[.93,.94,.94,1]);drawAsset(coolerTrayMesh,c.p,Q(),V(1,1,1),[.24,.27,.28,1]);drawAsset(coolerBaseMesh,c.p,Q(),V(1,1,1),[.23,.25,.26,1]);drawAsset(coolerRimMesh,c.p,Q(),V(1,1,1),[.35,.38,.39,1]);drawAsset(coolerAccentMesh,c.p,Q(),V(1,1,1),c.enabled&&alphaSettings.coolingOn?[.53,.75,.79,1]:[.4,.43,.44,1]);}
  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
- for(const bp of blueprints){const occupied=new Set(bp.slots.filter(s=>s.state==='placed').map(s=>s.index));const targets=blueprintTargets(bp);for(let i=0;i<targets.length;i++){if(occupied.has(i))continue;const t=targets[i];drawBox(t.p,t.q,V(.088,.088,.088),[.27,.67,.73,.07]);drawOutline(t.p,t.q,V(.09,.09,.09),.4,true);}const bb=blueprintBox(bp);drawRing(V(bp.p.x,.007,bp.p.z),Math.max(.1,Math.min(.65,Math.max(bb.size.x,bb.size.z)/2+.08)),.35);}
+ for(const bp of blueprints){const occupied=new Set(bp.slots.filter(s=>s.state==='placed').map(s=>s.index));const targets=blueprintTargets(bp);for(let i=0;i<targets.length;i++){if(occupied.has(i))continue;const t=targets[i];if(isTBit(t)){drawUnitMesh(t,[.27,.67,.73,.07],4);drawUnitOutline(t,.4,true);}else{drawBox(t.p,t.q,V(.088,.088,.088),[.27,.67,.73,.07]);drawOutline(t.p,t.q,V(.09,.09,.09),.4,true);}}const bb=blueprintBox(bp);drawRing(V(bp.p.x,.007,bp.p.z),Math.max(.1,Math.min(.65,Math.max(bb.size.x,bb.size.z)/2+.08)),.35);}
  for(const c of coolers)if(c.enabled&&alphaSettings.coolingOn){bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,7);setPose(add(c.p,V(0,.002,0)),Q(),V(1.15,.001,1.15));tint(.2,.63,.73,.13*alphaSettings.glow);gl.drawArrays(gl.TRIANGLES,0,36);}
  gl.depthMask(true);gl.disable(gl.BLEND);
 }

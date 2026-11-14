@@ -71,6 +71,7 @@ El menú permite seleccionar niveles, reiniciar, pausar y entrar al laboratorio.
 | Dar órdenes y elegir un destino | Menú de clic derecho sobre la pieza y después sobre el suelo |
 | Tomar un grupo seleccionado | Clic derecho → Tomar selección |
 | Duplicar selección en el laboratorio | V |
+| Crear la pieza elegida en el laboratorio | N, o P → Piezas → Crear |
 | Detener una orden | R |
 | Avanzar o completar el texto del diálogo | E o Espacio |
 | Asignar un equipo al material señalado | E, cuando no hay diálogo activo |
@@ -80,6 +81,19 @@ El menú permite seleccionar niveles, reiniciar, pausar y entrar al laboratorio.
 | Pantalla completa | Botón de pantalla completa |
 
 El panel de pruebas incluye controles adicionales y ajustes del laboratorio. En campaña, las herramientas de creación requieren abrir ese panel.
+
+## T-bits en el banco de pruebas
+
+En **P → Piezas → Tipo de pieza** se elige entre el Q-bit cúbico y dos T-bits grises. El botón Crear y el atajo N usan esa elección. Las nuevas formas se crean en el banco libre.
+
+| Pieza | Proporciones respecto al lado del Q-bit |
+| --- | --- |
+| T-bit triangular | Tetraedro regular: cada arista mide un lado del Q-bit. |
+| T-bit rectangular | Base de 1 × 0,8 lados y altura de 1 lado. |
+
+Tienen colisiones según sus caras reales, peso ajustable, agarre, giro, recorrido, estados, energía y enfriamiento. Se unen entre sí y con Q-bits acercando sus caras y soltando con Shift; Alt permite separar una pieza o desarmar la estructura. Duplicar, guardar formas y volver al banco conservan cada tipo. Los blueprints requieren piezas de la forma correcta y siguen aceptando las formas cúbicas guardadas anteriormente.
+
+El contador inferior izquierdo muestra únicamente el icono negro y las existencias Q/T. Los atajos visibles se reducen a P · N · B; las órdenes y ajustes siguen disponibles en sus menús.
 
 ## Transformación de materia
 
@@ -108,9 +122,9 @@ Para modificar la interfaz y los estilos, edita `index.html`; para la lógica, e
 
 ## Tipografía y artefactos
 
-- **LED Calculator**: exclusivamente el título Q-bits de la presentación y del menú principal.
+- **LED Calculator**: exclusivamente el título Q-bits de la presentación y del menú principal, ampliado y adaptable a la pantalla.
 - **Spaceman**, nueva versión aportada: menús, nombres de unidades y demás textos de interfaz. Incluye las minúsculas acentuadas, ñ/Ñ y ¿/¡; los caracteres sin dibujo en el archivo usan la fuente de respaldo mediante `unicode-range`, incluidos algunos signos y las vocales mayúsculas acentuadas.
-- **Tengoku**: diálogos, subtítulos, saludos y burbujas emocionales.
+- **Tengoku**: diálogos, subtítulos, saludos y burbujas emocionales, con tamaño compacto (16 px en diálogos y 15 px en burbujas; 15/14 px en móvil).
 - Las tres fuentes están alojadas dentro del repositorio, conservadas sin modificar, y se comprueba su carga antes de habilitar Jugar. Los originales y sus avisos están en `assets/fonts/` y `THIRD_PARTY_NOTICES.md`. Parisienne y la Spaceman anterior se conservan como archivos históricos y ya no se cargan.
 - Las opciones de menú son texto sin cajas ni fondos, con subrayado al señalar y foco de teclado visible.
 - El desintegrador transporta líquido negro hasta formar los nuevos Q-bits. Los artefactos conservan sus volúmenes y colisiones, con acabados blancos y grafito y detalles discretos.
