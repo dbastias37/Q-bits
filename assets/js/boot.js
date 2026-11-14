@@ -37,7 +37,7 @@
   function loadScript(path) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = path + '?v=20261114-13';
+      script.src = path + '?v=20261114-14';
       script.onload = resolve;
       script.onerror = () => reject(new Error('No se pudo cargar ' + path));
       document.head.append(script);
@@ -103,6 +103,7 @@
       await loadScript('assets/js/campaign-reconfiguration.js');
       await loadScript('assets/js/progression.js');
       await loadScript('assets/js/campaign-automation.js');
+      await loadScript('assets/js/campaign-production.js');
       await loadScript('assets/js/game.js');update('code', 1);
       if (!window.QBitsGame) throw new Error('El motor no pudo iniciarse.');
       await QBitsGame.prepare(value => update('scene', value));
