@@ -92,7 +92,20 @@ También en **P → Piezas → Tipo de pieza** se elige entre el Q-bit cúbico y
 | Pieza | Proporciones respecto al lado del Q-bit |
 | --- | --- |
 | T-bit triangular | Tetraedro regular: cada arista mide un lado del Q-bit. |
-| T-bit rectangular | Base de 1 × 0,8 lados y altura de 1 lado. |
+| T-bit de base cuadrada | Base de 1 × 1 lados y altura de 1/√2 lados; sus cuatro caras laterales son triángulos equiláteros. |
+
+Todas las aristas de las tres piezas miden 9 cm. El encaje requiere caras completas del mismo tamaño, normales opuestas y todas las esquinas coincidentes. El ajuste automático usa únicamente las tres orientaciones de cada cara triangular o las cuatro de cada cara cuadrada.
+
+| Unión | Regla |
+| --- | --- |
+| Q-bit ↔ Q-bit | Cara cuadrada con cara cuadrada. |
+| Q-bit ↔ T-bit de base cuadrada | Solo la base cuadrada de la pirámide. |
+| T-bit triangular ↔ T-bit de base cuadrada | Cualquiera de las caras triangulares laterales. |
+| T-bit triangular ↔ T-bit triangular | Cara triangular completa. |
+| Pirámide de base cuadrada ↔ otra igual | Base con base o triángulo con triángulo. |
+| Q-bit ↔ T-bit triangular | Incompatible: un triángulo no cubre una cara cuadrada. |
+
+Las uniones se vuelven a validar al soltar: si una pieza se movió o el espacio quedó ocupado, no se unen. Los blueprints obedecen las mismas reglas; las formas antiguas incompatibles se conservan para exportar, pero deben rearmarse para volver a construirlas. Las nuevas formas guardadas usan `geometryVersion: 2`.
 
 Tienen colisiones según sus caras reales, peso ajustable, agarre, giro, recorrido, estados, energía y enfriamiento. Se unen entre sí y con Q-bits acercando sus caras y soltando con Shift; Alt permite separar una pieza o desarmar la estructura. Duplicar, guardar formas y volver al banco conservan cada tipo. Los blueprints requieren piezas de la forma correcta y siguen aceptando las formas cúbicas guardadas anteriormente.
 

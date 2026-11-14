@@ -420,11 +420,12 @@ function makeUnitProfile(points,faces){
  });
  return {vertices,faces,faceNormals,faceCenters,edges};
 }
-const tetraHeight=Math.sqrt(2/3),tetraRadius=Math.sqrt(3)/3;
+const tetraHeight=Math.sqrt(2/3),tetraRadius=Math.sqrt(3)/3,pyramidHeight=Math.SQRT1_2;
 const UNIT_PROFILES={
  cube:makeUnitProfile([[-.5,-.5,-.5],[.5,-.5,-.5],[.5,-.5,.5],[-.5,-.5,.5],[-.5,.5,-.5],[.5,.5,-.5],[.5,.5,.5],[-.5,.5,.5]],[[0,1,2,3],[4,7,6,5],[0,4,5,1],[1,5,6,2],[2,6,7,3],[3,7,4,0]]),
  tetra:makeUnitProfile([[-.5,-tetraHeight/4,-tetraRadius/2],[.5,-tetraHeight/4,-tetraRadius/2],[0,-tetraHeight/4,tetraRadius],[0,tetraHeight*3/4,0]],[[0,1,2],[0,3,1],[1,3,2],[2,3,0]]),
- pyramid:makeUnitProfile([[-.5,-.25,-.4],[.5,-.25,-.4],[.5,-.25,.4],[-.5,-.25,.4],[0,.75,0]],[[0,1,2,3],[0,4,1],[1,4,2],[2,4,3],[3,4,0]])
+ // All edges are one Q-bit side: square base + four equilateral triangles.
+ pyramid:makeUnitProfile([[-.5,-pyramidHeight/4,-.5],[.5,-pyramidHeight/4,-.5],[.5,-pyramidHeight/4,.5],[-.5,-pyramidHeight/4,.5],[0,pyramidHeight*3/4,0]],[[0,1,2,3],[0,4,1],[1,4,2],[2,4,3],[3,4,0]])
 };
 function unitProfile(shape){return UNIT_PROFILES[unitShape(shape)];}
 function unitGroundHeight(shape){return -Math.min(...unitProfile(shape).vertices.map(v=>v.y));}
@@ -895,9 +896,9 @@ function initUnitRadial(){
  if(unitRadial)return;
  if(!window.QBitsRadial)throw new Error('No se pudo preparar el selector de piezas.');
  const entries=[
-  {id:'cube',title:'Q-bit',subtitle:'Cubo',description:'Seis caras, muchas posibilidades. Tómalo, únelo y sepáralo para construir.',color:[43,46,49]},
-  {id:'tetra',title:'T-bit',subtitle:'Triangular',description:'Cuatro caras triangulares. Una nueva forma de encajar, con la misma vida que un Q-bit.',color:[135,140,143]},
-  {id:'pyramid',title:'T-bit',subtitle:'Rectangular',description:'Base rectangular y caras inclinadas. Únelo a otras piezas y desarma cuando quieras.',color:[135,140,143]}
+  {id:'cube',title:'Q-bit',subtitle:'Cubo',description:'Caras cuadradas de 9 cm. Encaja con otros Q-bits y con la base cuadrada de un T-bit.',color:[43,46,49]},
+  {id:'tetra',title:'T-bit',subtitle:'Triangular',description:'Cuatro triángulos iguales de 9 cm por lado. Encaja con las caras triangulares de otros T-bits.',color:[135,140,143]},
+  {id:'pyramid',title:'T-bit',subtitle:'Base cuadrada',description:'Base de 9 × 9 cm para unirse al Q-bit. Sus cuatro caras triangulares encajan con otros T-bits.',color:[135,140,143]}
  ];
  unitRadial=window.QBitsRadial.create({profiles:entries.map(entry=>{
   const profile=unitProfile(entry.id);
@@ -919,7 +920,7 @@ function closeUnitRadial(commit=false){
  const choice=unitRadial.hovered;
  const valid=commit&&unitRadialAllowed()&&['cube','tetra','pyramid'].includes(choice);
  unitRadial.close();document.body.dataset.unitRadial='closed';keys.clear();accumulator=0;
- if(valid){settings.unitShape=choice;syncUnitControls();announce((choice==='cube'?'Q-bit':choice==='tetra'?'T-bit triangular':'T-bit rectangular')+' · N para crear');}
+ if(valid){settings.unitShape=choice;syncUnitControls();announce((choice==='cube'?'Q-bit':choice==='tetra'?'T-bit triangular':'T-bit de base cuadrada')+' · N para crear');}
  redraw=true;return valid;
 }
 function handleKeyUp(event){
@@ -987,26 +988,55 @@ function releaseQubit(join=false){
  if(!held)return;
  const g=held.g,items=held.items||[held],dock=story.dockCandidate;
  for(const item of items){if(item.joint)world.removeConstraint(item.joint);if(item.anchorBody)world.removeBody(item.anchorBody);item.g.body.angularDamping=settings.damping;item.g.body.fixedRotation=false;item.g.body.updateMassProperties();}
- if(items.length===1&&join&&snap&&snap.source===g&&groups.includes(snap.target)&&validPose(g,snap.position,snap.quaternion))weld(snap);
- else for(const item of items){item.g.body.velocity.set(0,0,0);item.g.body.wakeUp();}
+ let joined=null;
+ if(items.length===1&&join&&snap&&snap.source===g&&groups.includes(snap.target))joined=weld(snap);
+ if(!joined)for(const item of items){item.g.body.velocity.set(0,0,0);item.g.body.wakeUp();}
  held=null;snap=null;tryDockCampaign(g,dock);
 }
-function touchingUnitFaces(a,b,tolerance=.002){
- // Preserve the established cube grid; convex units connect through real faces.
- if(!isTBit(a.shape)&&!isTBit(b.shape))return Math.abs(a.p.distanceTo(b.p)-CUBE_SIZE)<tolerance;
+function touchingUnitFaces(a,b,tolerance=.00005){
+ // Equal planes alone are not a joint: every corner of the full face must match.
  for(const fa of unitFaces(a))for(const fb of unitFaces(b)){
-  if(fa.normal.dot(fb.normal)>-.999||Math.abs(sub(fb.center,fa.center).dot(fa.normal))>=tolerance)continue;
-  let overlaps=true;
-  for(const face of [fa,fb])for(let i=0;i<face.vertices.length;i++){
-   const edge=sub(face.vertices[(i+1)%face.vertices.length],face.vertices[i]),axis=fa.normal.cross(edge);axis.normalize();
-   let amin=Infinity,amax=-Infinity,bmin=Infinity,bmax=-Infinity;
-   for(const p of fa.vertices){const d=p.dot(axis);amin=Math.min(amin,d);amax=Math.max(amax,d);}
-   for(const p of fb.vertices){const d=p.dot(axis);bmin=Math.min(bmin,d);bmax=Math.max(bmax,d);}
-   if(Math.min(amax,bmax)-Math.max(amin,bmin)<.0005){overlaps=false;break;}
-  }
-  if(overlaps)return true;
+  if(facesCoincide(fa,fb,tolerance))return true;
  }
  return false;
+}
+function facesCoincide(a,b,tolerance=.00005){
+ const n=a.vertices.length;
+ if(n!==b.vertices.length||a.normal.dot(b.normal)>-.99999||a.center.distanceTo(b.center)>tolerance)return false;
+ for(let start=0;start<n;start++)if(a.vertices.every((v,i)=>v.distanceTo(b.vertices[(start-i+n)%n])<=tolerance))return true;
+ return false;
+}
+function assemblyValid(parts){
+ if(!parts.length)return false;
+ const links=parts.map(()=>[]);
+ for(let i=0;i<parts.length;i++)for(let j=i+1;j<parts.length;j++){
+  if(parts[i].p.distanceTo(parts[j].p)>CUBE_SIZE*2+.00005)continue;
+  if(obbOverlap(parts[i],parts[j],.000001))return false;
+  if(touchingUnitFaces(parts[i],parts[j])){links[i].push(j);links[j].push(i);}
+ }
+ const reached=new Set([0]),queue=[0];
+ for(let i=0;i<queue.length;i++)for(const next of links[queue[i]])if(!reached.has(next)){reached.add(next);queue.push(next);}
+ return reached.size===parts.length;
+}
+// Precompute the legal orientations once: 3 triangle phases or 4 square phases.
+// Opposing winding is essential: normals face each other and vertices coincide.
+const faceJoinCache=new Map();
+function faceJoinOptions(sourceShape,targetShape){
+ const key=unitShape(sourceShape)+':'+unitShape(targetShape);if(faceJoinCache.has(key))return faceJoinCache.get(key);
+ const a=unitProfile(sourceShape),b=unitProfile(targetShape),options=[];
+ for(let sourceFace=0;sourceFace<a.faces.length;sourceFace++)for(let targetFace=0;targetFace<b.faces.length;targetFace++){
+  const af=a.faces[sourceFace],bf=b.faces[targetFace],n=af.length;if(n!==bf.length)continue;
+  const align=Q();align.setFromVectors(a.faceNormals[sourceFace],mul(b.faceNormals[targetFace],-1));align.normalize();
+  const tangent=align.vmult(sub(a.vertices[af[1]],a.vertices[af[0]]));tangent.normalize();
+  for(let start=0;start<n;start++){
+   const along=sub(b.vertices[bf[(start-1+n)%n]],b.vertices[bf[start]]);along.normalize();
+   const twist=Q(),normal=b.faceNormals[targetFace];twist.setFromAxisAngle(normal,Math.atan2(normal.dot(tangent.cross(along)),tangent.dot(along)));
+   const rotation=twist.mult(align);rotation.normalize();const offset=sub(b.faceCenters[targetFace],rotation.vmult(a.faceCenters[sourceFace]));
+   if(!af.every((index,i)=>add(offset,rotation.vmult(a.vertices[index])).distanceTo(b.vertices[bf[(start-i+n)%n]])<1e-8))continue;
+   options.push({sourceFace,targetFace,rotation,offset});
+  }
+ }
+ faceJoinCache.set(key,options);return options;
 }
 function makeFragments(parts,reference,velocity=V(),spin=V()){
  const remaining=new Set(parts),created=[];
@@ -1042,27 +1072,14 @@ function orientationIndex(q){let index=0,best=-1;orientations.forEach((o,i)=>{co
 function nearestRelative(reference,current){let best=reference,bestScore=-1;for(const o of orientations){const q=reference.mult(o),score=qSimilarity(q,current);if(score>bestScore){best=q;bestScore=score;}}return best;}
 function findConvexSnap(source,part,target,t,limit){
  if(part.p.distanceTo(t.p)>CUBE_SIZE*2+limit)return null;
- const profile=unitProfile(part.part.shape),candidates=[];
- for(const face of unitFaces(t)){
+ const candidates=[],faces=unitFaces(t);
+ for(const option of faceJoinOptions(part,t)){
+  const face=faces[option.targetFace];
   if(sub(part.p,face.center).dot(face.normal)<-.015)continue;
-  for(let index=0;index<profile.faces.length;index++){
-   const align=Q();align.setFromVectors(part.q.vmult(profile.faceNormals[index]),mul(face.normal,-1));align.normalize();
-   const base=align.mult(part.q),faceIndices=profile.faces[index],edge=sub(profile.vertices[faceIndices[1]],profile.vertices[faceIndices[0]]);
-   const tangent=base.vmult(edge);tangent.normalize();
-   let edgeAligned=base,edgeScore=-1;
-   // A second candidate aligns a polygon edge; keep the closest such rotation.
-   for(let i=0;i<face.vertices.length;i++)for(const sign of [-1,1]){
-    const along=mul(sub(face.vertices[(i+1)%face.vertices.length],face.vertices[i]),sign);along.normalize();
-    const twist=Q();twist.setFromAxisAngle(face.normal,Math.atan2(face.normal.dot(tangent.cross(along)),tangent.dot(along)));
-    const q=twist.mult(base),score=qSimilarity(q,part.q);if(score>edgeScore){edgeScore=score;edgeAligned=q;}
-   }
-   for(const partQ of qSimilarity(base,edgeAligned)>.99999?[base]:[base,edgeAligned]){
-    const center=sub(face.center,partQ.vmult(profile.faceCenters[index])),distance=center.distanceTo(part.p);
-    const score=distance+(1-qSimilarity(partQ,part.q))*.015;if(score>=limit)continue;
-    const quaternion=partQ.mult(part.part.q.inverse()),position=sub(center,quaternion.vmult(part.part.offset));
-    candidates.push({source,target,position,quaternion,score,face:{p:face.center,normal:face.normal,vertices:face.vertices,q:t.q,axis:0}});
-   }
-  }
+  const partQ=t.q.mult(option.rotation),center=add(t.p,t.q.vmult(option.offset)),distance=center.distanceTo(part.p);
+  const score=distance+(1-qSimilarity(partQ,part.q))*.025;if(score>=limit)continue;
+  const quaternion=partQ.mult(part.part.q.inverse()),position=sub(center,quaternion.vmult(part.part.offset));
+  candidates.push({source,target,position,quaternion,score,face:{p:face.center,normal:face.normal,vertices:face.vertices,q:t.q,axis:0}});
  }
  // Most frames need one scene collision check, regardless of the number of faces.
  candidates.sort((a,b)=>a.score-b.score);
@@ -1093,8 +1110,14 @@ function findSnap(){
  }return candidate;
 }
 function weld(candidate){
+ if(!candidate)return null;
  const {source,target,position,quaternion}=candidate;
- const parts=poses(source,position,quaternion).map(o=>({id:o.part.id,weight:o.part.weight,shape:o.part.shape,p:o.p,q:o.q,mood:copyMood(o.part.mood)})).concat(worldParts(target));
+ if(source===target||!groups.includes(source)||!groups.includes(target)||!position||!quaternion||!['x','y','z'].every(k=>Number.isFinite(position[k]))||!['x','y','z','w'].every(k=>Number.isFinite(quaternion[k]))||Math.abs(quaternion.x**2+quaternion.y**2+quaternion.z**2+quaternion.w**2-1)>1e-5)return null;
+ if(!validPose(source,position,quaternion))return null;
+ const sourceParts=poses(source,position,quaternion),targetParts=poses(target);
+ if(sourceParts.some(a=>targetParts.some(b=>obbOverlap(a,b,.000001))))return null;
+ if(!sourceParts.some(a=>targetParts.some(b=>touchingUnitFaces(a,b,.00005))))return null;
+ const parts=sourceParts.map(o=>({id:o.part.id,weight:o.part.weight,shape:o.part.shape,p:o.p,q:o.q,mood:copyMood(o.part.mood)})).concat(worldParts(target));
  const ref=target.body.quaternion.clone();removeGroup(source);removeGroup(target);const joined=makeGroup(parts,ref);
  selected={g:joined,part:joined.parts[0]};queueSpeech(joined,'happy',{kind:'joined',indices:[7,9,15,17]});announce('Unidos · '+joined.parts.length+' '+groupUnitLabel(joined)+' · '+totalWeight(joined)+' u');return joined;
 }
@@ -2397,7 +2420,8 @@ function loadSavedShapes(){try{const list=JSON.parse(readQbitsStorage('qbits.sha
 function persistShapes(){try{window.localStorage.setItem('qbits.shapes.v1',JSON.stringify(savedShapes));return true;}catch{announce('Forma guardada en esta sesión · Exportar formas permite conservar una copia.');return false;}}
 function saveShape(g){
  if(!g||!groups.includes(g))return;if(savedShapes.length>=32){announce('Hay 32 formas guardadas. Exporta o elimina una antes de añadir otra.');return;}
- const bb=bounds(g,V(),Q()),origin=V(bb.center.x,bb.min.y,bb.center.z),shape={name:'Forma '+(savedShapes.length+1),parts:poses(g,V(),Q()).map(o=>({shape:normalizeUnitShape(o.part.shape),p:[o.p.x-origin.x,o.p.y-origin.y,o.p.z-origin.z].map(n=>+n.toFixed(5)),q:[o.q.x,o.q.y,o.q.z,o.q.w].map(n=>+n.toFixed(7))}))};
+ if(!assemblyValid(poses(g))){announce('Esta forma tiene caras incompatibles. Desármala y vuelve a encajar las piezas.');return;}
+ const bb=bounds(g,V(),Q()),origin=V(bb.center.x,bb.min.y,bb.center.z),shape={name:'Forma '+(savedShapes.length+1),geometryVersion:2,parts:poses(g,V(),Q()).map(o=>({shape:normalizeUnitShape(o.part.shape),p:[o.p.x-origin.x,o.p.y-origin.y,o.p.z-origin.z].map(n=>+n.toFixed(5)),q:[o.q.x,o.q.y,o.q.z,o.q.w].map(n=>+n.toFixed(7))}))};
  savedShapes.push(shape);const durable=persistShapes();updateAlphaPanel();announce(shape.name+' guardada · '+shape.parts.length+' unidades'+(durable?'':' · solo en esta sesión; exporta una copia'));
 }
 function blueprintTargets(bp){return bp.shape.parts.map(part=>{const q=Q();q.set(...part.q);return {shape:normalizeUnitShape(part.shape),p:add(bp.p,bp.q.vmult(V(...part.p))),q:bp.q.mult(q)};}).sort((a,b)=>a.p.y-b.p.y||a.p.x-b.p.x||a.p.z-b.p.z);}
@@ -2405,6 +2429,7 @@ function blueprintBox(bp){const pts=blueprintTargets(bp).flatMap(corners),min=V(
 function placeBlueprint(shape,p){
  if(!savedShapeValid(shape)||!p||blueprints.length>=6){announce('No se puede colocar otro blueprint aquí.');return null;}
  const bp={id:++alphaSerial,shape:JSON.parse(JSON.stringify(shape)),p:V(p.x,.002,p.z),q:Q(),slots:[],active:false,nextScan:0,status:'Esperando unidades'};const box=blueprintBox(bp);
+ if(!assemblyValid(blueprintTargets(bp))){announce('La forma guardada tiene caras incompatibles con las medidas actuales. Se conserva para exportarla; vuelve a armarla.');return null;}
  if(box.min.y<-.001||box.max.y>ROOM_HEIGHT||Math.max(Math.abs(box.min.x),Math.abs(box.max.x),Math.abs(box.min.z),Math.abs(box.max.z))>13.85||cargos.some(c=>obbOverlap(box,cargoPose(c)))||puzzleObstacleBounds().some(w=>obbOverlap(box,w))||alphaObstacles().some(w=>obbOverlap(box,w))||blueprints.some(other=>obbOverlap(box,blueprintBox(other)))){announce('La forma necesita más espacio libre.');return null;}
  blueprints.push(bp);announce(shape.name+' · clic derecho en el blueprint para integrar');return bp;
 }
@@ -2432,7 +2457,9 @@ function updateBlueprints(dt){
    }
   }
   const done=bp.slots.filter(s=>s.state==='placed').length;bp.status=done+' / '+targets.length+' integrados · radio '+alphaSettings.blueprintRange+' m';
-  if(done===targets.length){const parts=bp.slots.flatMap(s=>worldParts(s.g));for(const s of bp.slots){s.g.blueprintJob=null;removeGroup(s.g);}const g=makeGroup(parts,bp.q);blueprints.splice(blueprints.indexOf(bp),1);selected={g,part:g.parts[0]};multiSelection=[g];queueSpeech(g,'happy',{kind:'built'});announce(bp.shape.name+' construida · '+parts.length+' unidades');}
+  if(done===targets.length){const parts=bp.slots.flatMap(s=>worldParts(s.g));
+   if(!assemblyValid(parts)){cancelBlueprint(bp);announce('Montaje cancelado: las caras ya no coinciden. Las piezas se mantienen separadas.');continue;}
+   for(const s of bp.slots){s.g.blueprintJob=null;removeGroup(s.g);}const g=makeGroup(parts,bp.q);blueprints.splice(blueprints.indexOf(bp),1);selected={g,part:g.parts[0]};multiSelection=[g];queueSpeech(g,'happy',{kind:'built'});announce(bp.shape.name+' construida · '+parts.length+' unidades');}
  }
 }
 function alphaSceneSnapshot(){return {coolers:coolers.map(c=>({p:[c.p.x,c.p.z],capacity:c.capacity,enabled:c.enabled})),blueprints:blueprints.map(b=>({shape:b.shape,p:[b.p.x,b.p.z]}))};}

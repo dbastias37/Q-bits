@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const createGame = require('./game-harness.cjs');
 const near = (actual, expected, tolerance=1e-9) => assert(Math.abs(actual-expected)<tolerance, `${actual} != ${expected}`);
 
-test('T-bit hulls match the reference solids at Q-bit scale with outward faces and true mass centroids', () => {
+test('T-bit hulls use a common edge length, congruent joining faces and true mass centroids', () => {
   const {t}=createGame();
   for(const [shape,vertices,faces] of [['tetra',4,4],['pyramid',5,5]]){
     const profile=t.unitProfile(shape);
@@ -23,8 +23,8 @@ test('T-bit hulls match the reference solids at Q-bit scale with outward faces a
     }
     assert(volume>0);near(center.norm()/volume,0);
     near(t.unitGroundHeight(shape),-Math.min(...profile.vertices.map(v=>v.y)));
-    if(shape==='tetra')for(const [a,b] of profile.edges)near(profile.vertices[a].distanceTo(profile.vertices[b]),.09);
-    else {near(extents[0],.09);near(extents[1],.09);near(extents[2],.072);}
+    for(const [a,b] of profile.edges)near(profile.vertices[a].distanceTo(profile.vertices[b]),.09);
+    if(shape==='pyramid'){near(extents[0],.09);near(extents[1],.09/Math.sqrt(2));near(extents[2],.09);}
   }
 });
 

@@ -7,6 +7,21 @@ function units(t, shapes, x=0, z=0) {
   g.body.position.y-=t.bounds(g).min.y;
   return g;
 }
+// Build the reference bridge from complete matching faces, independently of snap.
+function cubePyramidTetra(t) {
+  const cube={id:1200,shape:'cube',weight:1,p:t.V(0,.045,0),q:t.Q()};
+  const pyramid={id:1201,shape:'pyramid',weight:1,p:t.V(0,.09+t.unitGroundHeight('pyramid'),0),q:t.Q()};
+  const face=t.unitFaces(pyramid)[1],profile=t.unitProfile('tetra'),indices=profile.faces[0];
+  const align=t.Q();align.setFromVectors(profile.faceNormals[0],face.normal.scale(-1));align.normalize();
+  const from=align.vmult(profile.vertices[indices[1]].vsub(profile.vertices[indices[0]]));from.normalize();
+  const to=face.vertices.at(-1).vsub(face.vertices[0]);to.normalize();
+  const twist=t.Q();twist.setFromAxisAngle(face.normal,Math.atan2(face.normal.dot(from.cross(to)),from.dot(to)));
+  const q=twist.mult(align);q.normalize();
+  const tetra={id:1202,shape:'tetra',weight:1,p:face.center.vsub(q.vmult(profile.faceCenters[0])),q};
+  assert(t.touchingUnitFaces(cube,pyramid));assert(t.touchingUnitFaces(pyramid,tetra));
+  assert(!t.obbOverlap(cube,tetra));
+  return t.makeGroup([cube,pyramid,tetra]);
+}
 
 test('T-bit and mixed routes use real support vertices and match every displayed step', () => {
   const {t}=createGame();
@@ -33,9 +48,10 @@ test('T-bit and mixed routes use real support vertices and match every displayed
 
 test('saved mixed forms retain unit types while older cube forms remain compatible', () => {
   const {t}=createGame();t.clearNarrativeScene();
-  const g=units(t,['tetra','pyramid','cube']);t.saveShape(g);
+  const g=cubePyramidTetra(t);t.saveShape(g);
   const saved=JSON.parse(JSON.stringify(t.savedShapes.at(-1)));
-  assert.deepEqual(saved.parts.map(p=>p.shape),['tetra','pyramid','cube']);assert(t.savedShapeValid(saved));
+  assert.deepEqual(saved.parts.map(p=>p.shape),['cube','pyramid','tetra']);assert(t.savedShapeValid(saved));
+  assert.equal(saved.geometryVersion,2);
   assert.equal(t.importShapesData({version:1,shapes:[saved]}),1);
   const bp={shape:t.savedShapes[0],p:t.V(-1,0,-1),q:t.Q(),slots:[]};
   assert.deepEqual(Array.from(t.blueprintTargets(bp),p=>p.shape).sort(),['cube','pyramid','tetra']);
@@ -66,14 +82,82 @@ test('blueprints recruit the requested T-bit type and retain it through complete
 
 test('a T-bit waits for missing lower blueprint pieces before mounting', () => {
   const game=createGame(),{t}=game;t.clearNarrativeScene();
-  const tetra=units(t,['tetra'],-.45,0);
+  const pyramid=units(t,['pyramid'],-.45,0);
   const bp=t.placeBlueprint({name:'Base y pirámide',parts:[
     {shape:'cube',p:[0,.045,0],q:[0,0,0,1]},
-    {shape:'tetra',p:[0,.10837,0],q:[0,0,0,1]}
+    {shape:'pyramid',p:[0,.09+t.unitGroundHeight('pyramid'),0],q:[0,0,0,1]}
   ]},t.V(0,0,0));assert(bp);
   t.activateBlueprint(bp);t.updateBlueprints(0);assert.equal(bp.slots[0].index,1);
-  game.navigationUntilIdle();t.stopRoute(tetra);
-  const slot=bp.slots[0];tetra.body.position.copy(slot.stage);tetra.body.position.y-=t.bounds(tetra).min.y;
+  game.navigationUntilIdle();t.stopRoute(pyramid);
+  const slot=bp.slots[0];pyramid.body.position.copy(slot.stage);pyramid.body.position.y-=t.bounds(pyramid).min.y;
   t.updateBlueprints(.1);
   assert.equal(slot.state,'walking','missing cube base must arrive before the T-bit rises into its slot');
+});
+
+test('legacy incompatible forms stay available for export but cannot become blueprints', () => {
+  const {t,sandbox}=createGame();t.clearNarrativeScene();
+  const legacy={name:'Triángulo sobre cubo antiguo',parts:[
+    {shape:'cube',p:[0,.045,0],q:[0,0,0,1]},
+    {shape:'tetra',p:[0,.09+t.unitGroundHeight('tetra'),0],q:[0,0,0,1]}
+  ]};
+  assert(t.savedShapeValid(legacy),'older files remain syntactically accepted');
+  assert.equal(t.importShapesData({version:1,shapes:[legacy]}),1);
+  assert.deepEqual(JSON.parse(JSON.stringify(t.savedShapes[0])),legacy,'the original data remains intact for export');
+  assert.equal(t.placeBlueprint(t.savedShapes[0],t.V(0,0,0)),null,'a triangle cannot attach to a square face');
+  assert.equal(t.blueprints.length,0);
+  assert(sandbox.document.querySelector('#notice').textContent.length>0,'placement explains the incompatible shape');
+  assert.deepEqual(JSON.parse(JSON.stringify(t.savedShapes[0])),legacy,'a rejected placement does not erase the old form');
+});
+
+test('overlapping and disconnected compounds cannot be saved or placed as blueprints', () => {
+  const {t}=createGame();t.clearNarrativeScene();
+  for(const x of [.04,.18]) {
+    const shape={name:'Encaje inválido',parts:[
+      {shape:'cube',p:[0,.045,0],q:[0,0,0,1]},
+      {shape:'cube',p:[x,.045,0],q:[0,0,0,1]}
+    ]};
+    assert(t.savedShapeValid(shape));assert.equal(t.placeBlueprint(shape,t.V(0,0,0)),null);
+    const g=t.makeGroup(shape.parts.map((p,i)=>({shape:p.shape,id:1300+i,weight:1,p:t.V(...p.p),q:t.Q()})));
+    const count=t.savedShapes.length;t.saveShape(g);
+    assert.equal(t.savedShapes.length,count,'invalid connections cannot enter the new shape catalogue');
+    t.removeGroup(g);
+  }
+});
+
+test('a connected legacy solid cube blueprint remains accepted', () => {
+  const {t}=createGame();t.clearNarrativeScene();
+  const shape={name:'Cubo 2×2×2 anterior',parts:[]};
+  for(let x=0;x<2;x++)for(let y=0;y<2;y++)for(let z=0;z<2;z++)shape.parts.push({p:[x*.09,.045+y*.09,z*.09],q:[0,0,0,1]});
+  assert(t.savedShapeValid(shape));
+  const bp=t.placeBlueprint(shape,t.V(-1,0,-1));assert(bp);
+  assert.equal(t.blueprintTargets(bp).length,8);
+  assert(t.blueprintTargets(bp).every(p=>p.shape==='cube'));
+});
+
+test('completed blueprint assembly rechecks live face contact before joining the pieces', () => {
+  for(const shifted of [false,true]) {
+    const {t,sandbox}=createGame();t.clearNarrativeScene();
+    const shape={name:'Base y pirámide',parts:[
+      {shape:'cube',p:[0,.045,0],q:[0,0,0,1]},
+      {shape:'pyramid',p:[0,.09+t.unitGroundHeight('pyramid'),0],q:[0,0,0,1]}
+    ]};
+    const bp=t.placeBlueprint(shape,t.V(0,0,0));assert(bp);bp.active=true;
+    bp.slots=Array.from(t.blueprintTargets(bp),(pose,index)=>{
+      const g=t.makeGroup([{id:1400+index,shape:pose.shape,weight:1,p:pose.p,q:pose.q}]);
+      const slot={g,bp,index,state:'placed'};g.blueprintJob=slot;
+      if(shifted&&index===1)g.body.position.x+=.004;
+      return slot;
+    });
+    const originalGroups=bp.slots.map(s=>s.g);t.updateBlueprints(0);
+    assert.equal(t.blueprints.length,0);
+    if(shifted) {
+      assert.equal(t.groups.length,2,'misaligned live parts must not become a rigid compound');
+      assert(originalGroups.every(g=>t.groups.includes(g)&&g.blueprintJob===null));
+      assert.match(sandbox.document.querySelector('#notice').textContent,/cancelado|coinciden/i);
+    } else {
+      assert.equal(t.groups.length,1);
+      assert.deepEqual(Array.from(t.groups[0].parts,p=>p.shape),['cube','pyramid']);
+      assert(t.touchingUnitFaces(...t.worldParts(t.groups[0])));
+    }
+  }
 });
