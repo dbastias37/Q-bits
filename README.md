@@ -141,7 +141,7 @@ El proceso dura cuatro segundos de simulación y se congela al pausar, consultar
 
 El NPC introduce cada experimento con diálogos que avanzan con E. J abre el catálogo; también está disponible desde los menús. Los descubrimientos se conservan en el progreso existente. Los planos de referencia de un cubo formado por seis pirámides y de una pirámide formada por dos triangulares se añaden a **Formas guardadas**. Para colocar uno: clic derecho en el suelo → Formas guardadas. Para construirlo: reúne piezas compatibles y activa **Integrar cercanos** sobre el blueprint. Guardar un plano no concede cuerpos ni recursos.
 
-El [prompt maestro de campaña](docs/PROMPT_MAESTRO_CAMPANA.md) reúne el lore, el tono del guía, la secuencia posterior, la autonomía, los desafíos y la progresión propuesta. Los niveles 16–20 y las certificaciones Torque I–III están implementados. Las misiones 21–24, construcción ligera, coordinación avanzada, temperatura y posjuego siguen pendientes. La [revisión del bloque](docs/REVISION_BLOQUE_III.md) detalla qué se comprobó y qué queda pendiente.
+El [prompt maestro de campaña](docs/PROMPT_MAESTRO_CAMPANA.md) reúne el lore, el tono del guía, la secuencia posterior, la autonomía, los desafíos y la progresión propuesta. Los niveles 16–20 y las certificaciones Torque I–III están implementados. Las misiones 21–24, coordinación avanzada, temperatura y posjuego siguen pendientes. El taller incorpora calibraciones de batería, estructura ligera y movimiento para las piezas del banco. La [revisión del bloque](docs/REVISION_BLOQUE_III.md) detalla qué se comprobó y qué queda pendiente.
 
 ## Archivos y desarrollo
 
@@ -238,3 +238,17 @@ En el nivel 19 se reciben tres unidades en orden A, B, A. En el 20, cada paquete
 **Apunta a la estación y pulsa E** para elegir el intervalo y comenzar o reiniciar el lote. La cinta aplica fuerzas a los cuerpos según el giro real del rotor y el consumo incluye trabajo de la estación. Mirar y caminar no intervienen en el ensayo. Manipular piezas o cambiar parámetros invalida el intento autónomo; reiniciar prepara nuevamente un solo lote de prueba, sin acumular entregas anteriores.
 
 El tiempo de trabajo útil se acumula dentro de un único lote sin intervención; las pausas entre operaciones o una salida obstruida no añaden tiempo. Son ejercicios de configuración de una instalación existente. La construcción abierta de líneas y los desafíos finales siguen pendientes. La [revisión del bloque V](docs/REVISION_BLOQUE_V.md) registra las verificaciones y los ajustes que deberá confirmar una partida con jugador.
+
+## Mesa de trabajo y sensor de contacto
+
+Entra al **Banco de pruebas**. La mesa está a la izquierda, cerca de la entrada. Apunta a ella y pulsa **E** para investigar; deja una pieza sobre la mesa y suéltala para adaptar esa misma pieza. Los ejercicios certificados de campaña mantienen sus configuraciones.
+
+Cada primera finalización de un nivel otorga **12 créditos**. El taller reconoce también las misiones ya guardadas y no vuelve a pagarlas al repetirlas. La investigación se compra una vez; aplicar una calibración investigada no vuelve a consumir créditos. El taller II cuesta 24 créditos y requiere completar el nivel 8; el III cuesta 48 y requiere el nivel 16. El sensor cuesta 8 créditos; las tres ramas II cuestan 20 cada una y las III, 32 cada una, con su nivel anterior como requisito.
+
+El sensor es un módulo en un Q-bit o T-bit existente, conservando su identidad. Instálalo en la mesa, móntalo con las uniones de caras habituales y usa **clic derecho → Sensor → Conectar punta** para elegir el rotor. La marca de la punta indica su cara activa y se vuelve verde al conectarla; gira la pieza para hacerla mirar a la pared. El enlace alcanza 3 m. Un contacto válido invierte el rotor encendido una vez. Si hay varios sensores vinculados, todos deben separarse antes de una nueva inversión. El suelo y los contactos de piezas vecinas no son pulsaciones del sensor.
+
+Las baterías pasan de 20 a 30 y 40 J. Adaptarlas conserva los julios actuales: una batería mayor puede mostrar menor porcentaje sin haber perdido energía. Una batería menor debe poder contener la carga antes de instalarse. La estructura ligera reduce masa a 90/80 %, con menor agarre y capacidad de trabajo; la materia retirada queda registrada como reserva de esa identidad en la mesa. El movimiento aumenta 10/20 % y eleva su gasto 15/35 %. Las mejoras no alteran la corrección del planificador de rutas.
+
+Las adaptaciones se conservan al unir, separar y recuperar la escena del banco. Retíralas antes de dividir la materia, duplicar piezas o guardar una plantilla de mecanismo; las reservas y enlaces pertenecen a las identidades originales. Los planos geométricos habituales siguen funcionando con piezas existentes. La investigación permanece desbloqueada.
+
+La [revisión del taller y sensor](docs/REVISION_TALLER_SENSOR.md) documenta costes, pruebas y límites. Esta es una primera economía completa y alcanzable; su duración y dificultad todavía requieren prueba con jugador. No añade niveles para alargar artificialmente la campaña.
