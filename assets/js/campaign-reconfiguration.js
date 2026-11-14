@@ -52,7 +52,7 @@
   }
   function eligible(parts) {
     return Array.isArray(parts) && parts.length>0 && parts.every(p =>
-      Number.isSafeInteger(p.id) && Number.isFinite(p.weight) && p.weight>0 &&
+      p && Number.isSafeInteger(p.id) && Number.isFinite(p.weight) && p.weight>0 &&
       p.mood?.matter && Number.isSafeInteger(p.mood.matter.root) &&
       Number.isFinite(p.mood.matter.rootWeight) && p.mood.matter.rootWeight>0 &&
       typeof p.mood.matter.path==='string' && Number.isFinite(p.mood.energy) && p.mood.energy>=0 && p.mood.energy<=1) &&
@@ -67,8 +67,8 @@
       shape='pyramid';paths=['0','1','2','3','4','5'];
     }else if(action==='subdivide' && parts.length===1 && first.shape==='pyramid' && /^[0-5]$/.test(origin.path)){
       shape='tetra';paths=[origin.path+'a',origin.path+'b'];
-    }else if(action==='pyramid' && parts.length===2 && parts.every(p=>p.shape==='tetra') &&
-      /^[0-5][ab]$/.test(origin.path) && new Set(parts.map(p=>p.mood.matter.path)).size===2 &&
+    }else if(action==='pyramid' && parts.length===2 && parts.every(p=>p.shape==='tetra' && /^[0-5][ab]$/.test(p.mood.matter.path)) &&
+      new Set(parts.map(p=>p.mood.matter.path)).size===2 &&
       parts.every(p=>p.mood.matter.path[0]===origin.path[0])){
       shape='pyramid';paths=[origin.path[0]];
     }else if(action==='cube' && parts.length===6 && parts.every(p=>p.shape==='pyramid' && /^[0-5]$/.test(p.mood.matter.path)) &&
@@ -85,13 +85,14 @@
       // Recombination cannot erase exhaustion, agitation or an active rest episode.
       for(const key of ['restLeft','restTotal','agitation','severity','strikes'])p.mood[key]=Math.max(...parts.map(part=>part.mood[key]||0));
       const resting=parts.find(part=>part.mood.state==='restless');
-      if(resting){p.mood.state='restless';p.mood.reason=resting.mood.reason;p.mood.blend=[...resting.mood.blend];}
+      if(resting){p.mood.state='restless';p.mood.reason=resting.mood.reason;p.mood.blend=[...(resting.mood.blend||[0,0,1])];}
       return p;
     });
     return {action,inputs:parts.map(p=>p.id),outputs,weight,energy};
   }
   function complete(kind, stats) {
-    return kind==='division'?stats.divide>0:kind==='subdivision'?stats.divide>0&&stats.subdivide>0:stats.pyramid>0&&stats.cube>0;
+    if(!stats)return false;
+    return kind==='division'?stats.divide>0:kind==='subdivision'?stats.divide>0&&stats.subdivide>0:kind==='reunion'&&stats.pyramid>0&&stats.cube>0;
   }
   return Object.freeze({chapters,levels,lessons,actions,identify,plan,complete});
 });

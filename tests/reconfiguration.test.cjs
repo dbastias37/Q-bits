@@ -29,6 +29,19 @@ test('missing, duplicate, foreign and modified material is rejected without crea
  const wrong=structuredClone(pyramids);wrong[0].weight=1;assert(model.plan('cube',wrong).error);
  const pair=ids(model.plan('subdivide',[pyramids[0]]).outputs);pair[1].mood.matter.path='1b';assert(model.plan('pyramid',pair).error);
 });
+test('malformed material and non-complementary lineage cannot reconstitute a missing half',()=>{
+ for(const parts of [null,[],[null],[undefined],[{}]])assert(model.plan('divide',parts).error);
+ const pyramid=ids(model.plan('divide',[seed()]).outputs)[0];
+ const pair=ids(model.plan('subdivide',[pyramid]).outputs);
+ for(const path of ['0a','0c','0aa','0b-extra','1b','']){
+  const invalid=structuredClone(pair);invalid[1].mood.matter.path=path;
+  assert(model.plan('pyramid',invalid).error,`invalid lineage ${path} must not replace the missing 0b half`);
+  assert(model.plan('pyramid',invalid.reverse()).error,'validity cannot depend on which piece enters first');
+ }
+ assert.equal(model.plan('pyramid',pair).outputs.length,1);
+ assert.equal(model.complete('unknown',{pyramid:1,cube:1}),false);
+ assert.equal(model.complete('division',null),false);
+});
 test('recombination weights unequal energy and preserves active exhaustion',()=>{
  const halves=ids(model.plan('subdivide',[ids(model.plan('divide',[seed()]).outputs)[0]]).outputs);
  halves[0].mood.energy=.1;halves[1].mood.energy=.9;Object.assign(halves[0].mood,{state:'restless',reason:'agotado',restLeft:15,blend:[0,0,1]});
@@ -72,10 +85,29 @@ test('catalogue templates are real compatible assemblies, consume existing parts
  assert.equal(t.savedShapes.length,2);assert.equal(t.groups.length,2,'saving a plan never grants bodies');
  t.showCodex();assert.equal(t.story.mode,'codex');t.closeCodex();assert.equal(t.story.mode,'playing');
 });
-test('old final results now continue to 13, while the new final result ends at 15',()=>{
+test('chamber is reachable by looking and pressing E; menu clicks transform and catalogue returns to play',()=>{
+ const {t,sandbox}=setup(13),doc=sandbox.document,s=t.story.campaign.reconfiguration;
+ t.canvas.requestPointerLock=()=>{doc.pointerLockElement=t.canvas;doc.dispatchEvent({type:'pointerlockchange'});};
+ t.position.splice(0,3,s.p.x,t.EYE_HEIGHT,1.1);t.frame(0);
+ t.canvas.requestPointerLock();
+ const look=t.getLook(),target=t.V(s.p.x,.4,s.p.z+.2),dx=target.x-look.camera[0],dy=target.y-look.camera[1],dz=target.z-look.camera[2];
+ const pitch=Math.atan2(dy,Math.hypot(dx,dz)),yaw=Math.atan2(-dx,-dz);
+ doc.dispatchEvent({type:'mousemove',movementX:(look.yaw-yaw)/.002,movementY:(look.pitch-pitch)/.002});
+ deposit(t,matter(t));t.storyInput({code:'KeyE',repeat:false,preventDefault(){}});
+ assert.equal(doc.querySelector('#command-menu').hidden,false);assert.equal(doc.pointerLockElement,null);
+ doc.querySelector('#command-actions').children[0].dispatchEvent({type:'click'});
+ assert(s.job);assert.equal(doc.querySelector('#command-menu').hidden,true);assert.equal(doc.pointerLockElement,t.canvas);
+ t.storyInput({code:'KeyJ',repeat:false,preventDefault(){}});assert.equal(t.story.mode,'codex');
+ t.tickReconfiguration(5);near(s.job.time,0);
+ t.storyInput({code:'Escape',repeat:false,preventDefault(){}});assert.equal(t.story.mode,'playing');assert.equal(doc.pointerLockElement,t.canvas);
+ finish(t);assert.equal(matter(t).length,6);
+});
+test('campaign results continue across blocks and only the final configured level hides Next',()=>{
  const {t,sandbox}=setup(12);t.showCampaignResults();assert.equal(sandbox.document.querySelector('#complete-next').hidden,false);
- t.beginCampaignLevel(15);t.showCampaignResults();assert.equal(sandbox.document.querySelector('#complete-next').hidden,true);
- assert.equal(t.chapters.length,t.LEVELS.length);assert.equal(t.LEVELS.length,16);
+ assert.equal(t.LEVELS[13].reconfiguration,'division');
+ t.beginCampaignLevel(15);t.showCampaignResults();assert.equal(sandbox.document.querySelector('#complete-next').hidden,15===t.LEVELS.length-1);
+ t.beginCampaignLevel(t.LEVELS.length-1);t.showCampaignResults();assert.equal(sandbox.document.querySelector('#complete-next').hidden,true);
+ assert.equal(t.chapters.length,t.LEVELS.length);assert(t.LEVELS.length>=16);
 });
 test('restarting during conversion discards the old transaction and never leaks bodies into the next scene',()=>{
  const {t}=setup(13);deposit(t,matter(t));assert(t.beginReconfiguration('divide'));t.tickReconfiguration(2);
