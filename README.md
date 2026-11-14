@@ -2,13 +2,15 @@
 
 Juego de puzles en primera persona, ambientado en salas blancas minimalistas. Mueve y une Q-bits, organiza al equipo, activa circuitos y transforma materia para abrir nuevas rutas.
 
-Este paquete contiene la versión completa del 14 de noviembre de 2026: prólogo, 12 niveles y laboratorio de pruebas.
+Versión actualizada el 14 de noviembre de 2026: prólogo, 12 niveles y laboratorio de pruebas.
 
 ## Jugar
 
-Descomprime el paquete y abre `index.html` en un navegador de escritorio con WebGL activado. Haz clic en **Jugar** y después en **Despertar** para iniciar el prólogo.
+La apertura comienza en negro con «Un juego imaginado por Diego Bastías», fundido a negro y el título Q-bits. Después aparece el progreso de carga y, al terminar, **Jugar**. El prólogo conserva el botón **Despertar**.
 
-El juego incluye su código, estilos, gráficos procedurales y motor de físicas dentro de `index.html`. No requiere npm, compilación, descargas de recursos ni un servidor de aplicación.
+El porcentaje se obtiene de tareas completadas: carga del motor, código del juego, construcción de la escena inicial, primer dibujo en la GPU y descarga/validación de las pistas configuradas. Los tiempos de la presentación no hacen avanzar el porcentaje. El botón no se habilita si falla un recurso requerido. Los demás niveles son procedurales y se construyen al entrar a ellos.
+
+Sirve la carpeta completa por HTTP/HTTPS (GitHub Pages, un sitio estático o un servidor local). No requiere npm, compilación ni un servidor de aplicación. La lista de música se lee con `fetch`, por lo que no se debe abrir mediante `file://`.
 
 Para trabajar con un servidor local, abre una terminal en esta carpeta y ejecuta, si tienes Python instalado:
 
@@ -88,15 +90,41 @@ Los desintegradores tienen una superficie de portal animada con fondo negro opac
 
 | Archivo | Contenido |
 | --- | --- |
-| `index.html` | Juego completo y código fuente editable. |
+| `index.html` | Interfaz, estilos y apertura en negro. |
+| `assets/js/boot.js` | Presentación y progreso de precarga real. |
+| `assets/js/game.js` | Lógica, físicas, gráficos procedurales y campaña. |
+| `assets/js/cannon.min.js` | Motor Cannon.js incluido, sin dependencia de CDN. |
+| `assets/js/music.js` | Música ambiental, volumen, silenciamiento y precarga. |
+| `assets/audio/music/playlist.json` | Lista de temas que se reproducen en orden. |
+| `assets/audio/music/README.md` | Instrucciones para subir los archivos de música. |
+| `tests/` | Pruebas de carga, música, escenas, colisiones y rutas. |
 | `README.md` | Instalación, publicación, campaña y controles. |
 | `THIRD_PARTY_NOTICES.md` | Aviso de licencia del motor de físicas incluido. |
 | `.nojekyll` | Configuración para servir archivos estáticos en GitHub Pages. |
 | `.gitignore` | Exclusiones de archivos temporales y paquetes ZIP. |
 
-Para modificar el juego, edita `index.html`: contiene las secciones de interfaz y estilos, el motor de físicas incorporado y la lógica del juego. Los comentarios `Campaign prologue`, `Eight complete campaign levels` y `Chapter II` identifican las secciones de narrativa y campaña.
+Para modificar la interfaz y los estilos, edita `index.html`; para la lógica, edita `assets/js/game.js`. Los comentarios `Campaign prologue`, `Eight complete campaign levels` y `Chapter II` identifican las secciones de narrativa y campaña.
 
-Esta entrega conserva el juego del archivo original `Q-bits_Sala_Blanca.html`, renombrado como `index.html` para su publicación. Está preparado para teclado y mouse; la comprobación final de jugabilidad debe hacerse en un navegador con WebGL.
+## Música
+
+Sube tus MP3/OGG a [`assets/audio/music/`](assets/audio/music/) y añádelos a `playlist.json`. La [guía de esa carpeta](assets/audio/music/README.md) contiene el formato exacto. La lista inicial está vacía: el juego funciona en silencio hasta añadir tus temas. No se incluyen audios de ejemplo.
+
+Todas las pistas configuradas se descargan y se comprueba que sean reproducibles antes del 100%. Se conservan como archivos comprimidos en memoria, sin decodificar una lista completa a PCM. La reproducción comienza con el clic en **Jugar**; los controles de volumen y música aparecen en los menús cuando hay pistas. Se pausa al pausar el juego o cambiar de pestaña.
+
+## Rendimiento y comprobación
+
+Las búsquedas de rutas se reparten entre fotogramas y se cancelan si cambia la orden o la escena. Se conservan los límites de búsqueda, la resolución, antialiasing, efectos, materiales y frecuencia de la física. También se reutilizan límites geométricos, datos de previsualización y enlaces de atributos de WebGL.
+
+Pruebas locales (Node.js, sin dependencias):
+
+```sh
+node --test tests/*.test.cjs
+node --check assets/js/game.js
+node --check assets/js/boot.js
+node --check assets/js/music.js
+```
+
+Las pruebas automatizadas cubren lógica y coordinación de la carga; no sustituyen una prueba visual de WebGL ni una medición de FPS en el equipo del jugador.
 
 El progreso y las formas del nombre anterior se recuperan cuando están disponibles en el almacenamiento del mismo navegador y origen.
 
