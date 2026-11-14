@@ -293,6 +293,7 @@ function showHint(message) {
 }
 
 function lockFailed() {
+  closeUnitRadial(false);
   clearTimeout(lockTimeout);
   lockPending = false;
   if (document.pointerLockElement === canvas) return;
@@ -904,11 +905,11 @@ function initUnitRadial(){
  })});
 }
 function unitRadialAllowed(){
- return story.ready&&story.mode==='playing'&&story.scene==='lab'&&!puzzle.active&&!story.transition&&!document.hidden&&document.body.dataset.booting!=='true'&&panel.hidden&&menu.hidden&&commandMenu.hidden&&!held&&!marquee&&!pendingPickup&&!moveChoice&&!pendingCargo&&!editableTarget(document.activeElement);
+ return running&&document.pointerLockElement===canvas&&story.ready&&story.mode==='playing'&&story.scene==='lab'&&!puzzle.active&&!story.transition&&!document.hidden&&document.body.dataset.booting!=='true'&&panel.hidden&&menu.hidden&&commandMenu.hidden&&!held&&!marquee&&!pendingPickup&&!moveChoice&&!pendingCargo&&!editableTarget(document.activeElement);
 }
 function openUnitRadial(){
  if(radialOpen()||!unitRadialAllowed())return false;
- initUnitRadial();keys.clear();routeInspection=null;
+ initUnitRadial();keys.clear();routeInspection=null;accumulator=0;
  unitRadial.open(creationShape(),{virtualPointer:document.pointerLockElement===canvas});
  document.body.dataset.unitRadial='open';hint.hidden=true;redraw=true;
  return true;
@@ -917,7 +918,7 @@ function closeUnitRadial(commit=false){
  if(!radialOpen())return false;
  const choice=unitRadial.hovered;
  const valid=commit&&unitRadialAllowed()&&['cube','tetra','pyramid'].includes(choice);
- unitRadial.close();document.body.dataset.unitRadial='closed';keys.clear();
+ unitRadial.close();document.body.dataset.unitRadial='closed';keys.clear();accumulator=0;
  if(valid){settings.unitShape=choice;syncUnitControls();announce((choice==='cube'?'Q-bit':choice==='tetra'?'T-bit triangular':'T-bit rectangular')+' · N para crear');}
  redraw=true;return valid;
 }
@@ -3382,6 +3383,10 @@ function frame(time) {
   const dt = Math.min(Math.max((time - previousTime) / 1000, 0), 0.05);
   let distance = 0;
   previousTime = time;
+  if(radialOpen()){
+    accumulator=0;if(!unitRadialAllowed())closeUnitRadial(false);
+    requestAnimationFrame(frame);return;
+  }
   tickStory(dt);
   const frozen=storySuspended()||!!story.transition;
   const active=document.pointerLockElement===canvas&&!document.hidden&&!frozen;

@@ -42,7 +42,9 @@ function create({profiles}){
   const outline=document.createElementNS('http://www.w3.org/2000/svg','path');outline.classList.add('radial-outline');svg.appendChild(outline);
   const label=document.createElement('div');label.className='radial-label';label.setAttribute('aria-hidden','true');const title=document.createElement('strong'),sub=document.createElement('small');title.textContent=profile.title;sub.textContent=profile.subtitle;label.append(title,sub);
   stage.appendChild(panel);stage.appendChild(label);
-  return {profile,panel,outline,label,index,angle:index*.65+.4,speed:.34,x:0,y:0};
+  const center=[0,1,2].map(axis=>(Math.min(...profile.vertices.map(v=>v[axis]))+Math.max(...profile.vertices.map(v=>v[axis])))/2);
+  const vertices=profile.vertices.map(v=>v.map((n,axis)=>n-center[axis]));
+  return {profile,vertices,panel,outline,label,index,angle:index*.65+.4,speed:.34,x:0,y:0};
  });
  svg.appendChild(connector);stage.append(models,svg,cancel,detail,cursor);root.append(head,stage,help);document.body.appendChild(root);
  function updateLayout(){
@@ -71,9 +73,9 @@ function create({profiles}){
  function moveTo(x,y){if(!opened)return;pointer.x=clamp(x,0,g.width);pointer.y=clamp(y,0,g.height);positionCursor();setHover(hitTest(pointer.x,pointer.y,g.width,g.height,profiles.length));}
  function chooseNext(delta){if(!opened)return;const index=hover<0?(delta<0?items.length-1:0):(hover+delta+items.length)%items.length;const item=items[index];moveTo(item.x,item.y);}
  function renderModel(item,dt){
-  const active=item.index===hover,target=active?1.75:.34;item.speed+=(target-item.speed)*(1-Math.exp(-dt*7));if(!reduced.matches)item.angle+=item.speed*dt;
+  const active=item.index===hover,target=active?1.75:.34;item.speed+=(target-item.speed)*(1-Math.exp(-dt*7));if(!reduced.matches)item.angle=(item.angle+item.speed*dt)%(PI*2);
   const scale=g.radius*.23,ca=Math.cos(item.angle),sa=Math.sin(item.angle),tilt=.30,ct=Math.cos(tilt),st=Math.sin(tilt);
-  const vertices=item.profile.vertices.map(v=>{const x=(ca*v[0]+sa*v[2])/commonSize,z=(-sa*v[0]+ca*v[2])/commonSize,y=v[1]/commonSize;return [x,ct*y-st*z,st*y+ct*z];});
+  const vertices=item.vertices.map(v=>{const x=(ca*v[0]+sa*v[2])/commonSize,z=(-sa*v[0]+ca*v[2])/commonSize,y=v[1]/commonSize;return [x,ct*y-st*z,st*y+ct*z];});
   const faces=item.profile.faces.map(face=>({face,z:face.reduce((sum,k)=>sum+vertices[k][2],0)/face.length})).sort((a,b)=>a.z-b.z);
   const supplied=item.profile.color||[.24,.26,.27],color=supplied.map(c=>c<=1?c*255:c);
   context.save();context.translate(item.x,item.y);context.shadowColor='rgba(18,25,22,.09)';context.shadowBlur=9;context.shadowOffsetY=4;
@@ -105,10 +107,11 @@ function create({profiles}){
   void root.offsetWidth;root.classList.add('visible');if(!frameId)frameId=requestAnimationFrame(render);
  }
  function close(){if(!opened)return;opened=false;root.classList.remove('visible');root.setAttribute('aria-hidden','true');hideAt=performance.now()+(reduced.matches?0:CLOSE_MS);if(!frameId)frameId=requestAnimationFrame(render);}
- window.addEventListener('resize',()=>{if(opened){updateLayout();setHover(hitTest(pointer.x,pointer.y,g.width,g.height,profiles.length));}});
+ window.addEventListener('resize',()=>{if(opened){updateLayout();moveTo(g.cx,g.cy-g.inner*.25);}});
  root.addEventListener('pointermove',event=>{if(opened&&!virtual)moveTo(event.clientX,event.clientY);});
  root.addEventListener('contextmenu',event=>event.preventDefault());
- return {open,close,moveTo,moveBy(dx,dy){moveTo(pointer.x+dx,pointer.y+dy);},chooseNext,get hovered(){return hover<0?null:profiles[hover].id;},get isOpen(){return opened;}};
+ return {open,close,moveTo,moveBy(dx=0,dy=0){moveTo(pointer.x+(Number.isFinite(dx)?dx:0),pointer.y+(Number.isFinite(dy)?dy:0));},chooseNext,get hovered(){return hover<0?null:profiles[hover].id;},get isOpen(){return opened;},
+   getState:()=>({open:opened,hovered:hover<0?null:profiles[hover].id,x:pointer.x,y:pointer.y,figures:items.map(item=>({id:item.profile.id,angle:item.angle,speed:item.speed,x:item.x,y:item.y}))})};
 }
 window.QBitsRadial={create,hitTest,layout};
 })();

@@ -85,7 +85,7 @@ El panel de pruebas incluye controles adicionales y ajustes del laboratorio. En 
 
 ## T-bits en el banco de pruebas
 
-Mantén **Q** para abrir el selector radial de vidrio: apunta a una figura y suelta Q para elegirla. El centro y Esc cancelan. **N** crea la pieza elegida. Las figuras giran suavemente y aceleran al señalarlas; la descripción aparece con la misma línea animada del Q-bit. Las flechas también permiten recorrer las opciones. Mientras está abierto, la escena se detiene y el mouse controla el selector sin mover la cámara. Se cierra sin elegir al pausar o cambiar de pestaña. Abre el selector con las manos libres, en el banco sin puzzle activo.
+Mantén **Q** para abrir el selector radial de vidrio: apunta a una figura y suelta Q para elegirla. El centro y Esc cancelan. **N** crea la pieza elegida. Las figuras giran suavemente y aceleran al señalarlas; la descripción aparece con la misma línea animada del Q-bit. Las flechas también permiten recorrer las opciones. Mientras está abierto, la escena se detiene y el mouse controla el selector sin mover la cámara. Se cierra sin elegir al pausar o cambiar de pestaña; cambiar el tamaño de la ventana cancela la opción resaltada. Abre el selector con el mouse capturado y las manos libres, en el banco sin puzzle activo.
 
 También en **P → Piezas → Tipo de pieza** se elige entre el Q-bit cúbico y dos T-bits grises. El botón Crear y el atajo N usan esa elección. Las nuevas formas se crean en el banco libre.
 
@@ -111,6 +111,8 @@ Los desintegradores tienen una superficie de portal animada con fondo negro opac
 | `index.html` | Interfaz, estilos y apertura en negro. |
 | `assets/js/boot.js` | Presentación y progreso de precarga real. |
 | `assets/js/game.js` | Lógica, físicas, gráficos procedurales y campaña. |
+| `assets/js/radial-menu.js` | Selector Q, figuras con las geometrías reales y descripciones animadas. |
+| `assets/css/radial-menu.css` | Paneles de cristal, fundido, desenfoque y adaptación del selector. |
 | `assets/js/cannon.min.js` | Motor Cannon.js incluido, sin dependencia de CDN. |
 | `assets/js/music.js` | Música ambiental, volumen, silenciamiento y precarga. |
 | `assets/audio/music/playlist.json` | Lista de temas que se reproducen en orden. |
@@ -130,7 +132,7 @@ Para modificar la interfaz y los estilos, edita `index.html`; para la lógica, e
 - **Fuente de sistema**: información secundaria de peso, enfriamiento, estado de ánimo, energía, distancia, metros y tiempo, en gris discreto y 10–11 px. Las mediciones del panel y las anotaciones de mecanismos usan el mismo estilo.
 - **Tengoku**: diálogos, subtítulos, saludos y burbujas emocionales, con tamaño compacto (16 px en diálogos y 15 px en burbujas; 15/14 px en móvil).
 - Las tres fuentes están alojadas dentro del repositorio, conservadas sin modificar, y se comprueba su carga antes de habilitar Jugar. Los originales y sus avisos están en `assets/fonts/` y `THIRD_PARTY_NOTICES.md`. Parisienne y la Spaceman anterior se conservan como archivos históricos y ya no se cargan.
-- Las opciones de menú son texto sin cajas ni fondos, con subrayado al señalar y foco de teclado visible.
+- Las opciones de menú son texto sin cajas ni fondos, con subrayado al señalar y foco de teclado visible. El selector Q usa tres paneles de cristal translúcido y respeta la preferencia de movimiento reducido.
 - El desintegrador transporta líquido negro hasta formar los nuevos Q-bits. Los artefactos conservan sus volúmenes y colisiones, con acabados blancos y grafito y detalles discretos.
 
 ## Música
@@ -150,6 +152,7 @@ node --test tests/*.test.cjs
 node --check assets/js/game.js
 node --check assets/js/boot.js
 node --check assets/js/music.js
+node --check assets/js/radial-menu.js
 ```
 
 Las pruebas automatizadas cubren lógica y coordinación de la carga; no sustituyen una prueba visual de WebGL ni una medición de FPS en el equipo del jugador.

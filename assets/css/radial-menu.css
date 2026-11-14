@@ -1,7 +1,7 @@
 /* Translucent matter: the selector keeps the room visible behind its panels. */
-body[data-unit-radial='open'] #crosshair,body[data-unit-radial='open'] #callout,body[data-unit-radial='open'] #target,body[data-unit-radial='open'] #notice,body[data-unit-radial='open'] #qbit-dialogues,body[data-unit-radial='open'] #mood-held-labels,body[data-unit-radial='open'] #route-readout,body[data-unit-radial='open'] #menu-link{visibility:hidden;}
+body[data-unit-radial='open'] #crosshair,body[data-unit-radial='open'] #tools,body[data-unit-radial='open'] #callout,body[data-unit-radial='open'] #target,body[data-unit-radial='open'] #notice,body[data-unit-radial='open'] #qbit-dialogues,body[data-unit-radial='open'] #mood-held-labels,body[data-unit-radial='open'] #route-readout,body[data-unit-radial='open'] #menu-link{visibility:hidden;}
 #unit-radial{position:fixed;inset:0;z-index:46;isolation:isolate;opacity:0;filter:blur(12px);transform:scale(.975);transition:opacity .24s ease,filter .28s ease,transform .28s cubic-bezier(.2,.7,.2,1);background:radial-gradient(ellipse at 50% 48%,#f3f6f331,#e9eeeb16 65%,transparent);color:#323b36;pointer-events:none;font-family:var(--font-info,system-ui,sans-serif);}
-#unit-radial.visible{opacity:1;filter:blur(0);transform:scale(1);pointer-events:auto;}
+#unit-radial.visible{opacity:1;filter:none;transform:scale(1);pointer-events:auto;}
 #unit-radial.virtual-pointer{cursor:none;}
 #unit-radial .radial-heading{position:absolute;left:50%;transform:translateX(-50%);font:400 10px/1.5 var(--font-menu,system-ui,sans-serif);letter-spacing:.14em;color:#707c74;text-shadow:0 1px 12px #fff;}
 #unit-radial .radial-stage{position:absolute;inset:0;}

@@ -158,6 +158,23 @@ function assertBlocked(e) {
   assert.notEqual(e.nodes.get('#boot-percent').textContent, '100%');
 }
 
+test('a missing radial selector module blocks game preparation, 100 percent and Jugar even when music is ready', async () => {
+  const e=environment();
+  await e.scriptResult('cannon.min.js');
+  assert.equal(e.events.includes('game.prepare'),false,'the game waits for the selector dependency');
+  await e.scriptResult('radial-menu.js',false);
+  assert.equal(e.events.includes('game.prepare'),false);
+  assert.ok(e.errors.some(values=>values.some(value=>/radial-menu\.js/.test(value?.message||''))),'the failed dependency is reported');
+  assert.equal(e.nodes.get('#boot-retry').hidden,false);
+  await e.scriptResult('music.js');
+  e.musicProgress(1);e.musicReady.resolve();e.gameReady.resolve();
+  await e.advance(10000);
+  assertBlocked(e);
+  e.nodes.get('#boot-play').click();
+  assert.equal(e.events.includes('music.start'),false);assert.equal(e.events.includes('game.play'),false);
+  e.nodes.get('#boot-retry').click();assert.equal(e.reloads,1);
+});
+
 test('cinematic and reported progress cannot unlock a pending scene preparation', async () => {
   const e = environment();
   await e.loadScripts();

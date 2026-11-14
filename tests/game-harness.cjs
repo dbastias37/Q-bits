@@ -5,20 +5,25 @@ const path = require('node:path');
 const vm = require('node:vm');
 module.exports = function createGame() {
   const root = path.join(__dirname, '..');
-  let nextBuffer = 0, nextFrame = 0, seed = 731;
-  const buffers = new Set(), frames = new Map(), elements = new Map();
-  function eventTarget(target) {
+  let nextBuffer = 0, nextFrame = 0, seed = 731, nextTimer=0, timerTime=0;
+  const buffers = new Set(), frames = new Map(), elements = new Map(), timers=new Map();
+  function events(target) {
     const listeners = new Map();
-    target.addEventListener = (type, fn) => {
-      if (!listeners.has(type)) listeners.set(type, new Set());
-      listeners.get(type).add(fn);
+    target.addEventListener = (type, callback, options = {}) => {
+      if (!listeners.has(type)) listeners.set(type, []);
+      listeners.get(type).push({callback, once:options?.once === true});
     };
-    target.removeEventListener = (type, fn) => listeners.get(type)?.delete(fn);
+    target.removeEventListener = (type, callback) => {
+      listeners.set(type, (listeners.get(type) || []).filter(item => item.callback !== callback));
+    };
     target.dispatchEvent = event => {
-      event.target ??= target;
-      event.preventDefault ??= function () { this.defaultPrevented = true; };
-      event.stopPropagation ??= () => {};
-      for (const fn of [...(listeners.get(event.type) || [])]) fn(event);
+      event.target ||= target;event.currentTarget = target;
+      event.preventDefault ||= function(){this.defaultPrevented=true;};
+      event.stopPropagation ||= function(){};
+      for (const item of [...(listeners.get(event.type) || [])]) {
+        if(item.once)target.removeEventListener(event.type,item.callback);
+        item.callback.call(target,event);
+      }
       return !event.defaultPrevented;
     };
     return target;
@@ -30,71 +35,61 @@ module.exports = function createGame() {
     deleteBuffer: id => buffers.delete(id), createShader: () => ({}), createProgram: () => ({}),
     isContextLost: () => false
   }, { get: (o, key) => key in o ? o[key] : /^[A-Z_]+$/.test(key) ? 0 : () => {} });
+  const canvas2d = new Proxy({}, { get: (target,key) => key in target ? target[key] : () => {} });
   function element(key = '') {
     if (elements.has(key)) return elements.get(key);
-    const el = {
+    if(key.startsWith('#')){
+      const created=[...elements.values()].find(el=>el.id===key.slice(1));
+      if(created)return created;
+    }
+    const attributes = new Map(), classes = new Set();
+    const el = events({
       id: key, style: { setProperty() {} }, dataset: {},
-      classList: { add() {}, remove() {}, toggle() {} }, value: 1, hidden: true,
+      classList: { add(...names){names.forEach(name=>classes.add(name));}, remove(...names){names.forEach(name=>classes.delete(name));}, contains:name=>classes.has(name), toggle(name,force){const enabled=force??!classes.has(name);if(enabled)classes.add(name);else classes.delete(name);return enabled;} }, value: 1, hidden: true,
       checked: false, clientWidth: 1280, clientHeight: 720, offsetWidth: 150, offsetHeight: 30,
-      children: [], getContext: () => gl, addEventListener() {}, removeEventListener() {},
-      setAttribute() {}, getAttribute: () => '', append(...items) { this.children.push(...items); },
-      appendChild(item) { this.children.push(item); return item; },
-      replaceChildren(...items) { this.children = items; }, remove() {}, focus() {}, blur() {},
+      children: [], getContext: type => type==='2d'?canvas2d:gl,
+      setAttribute(name,value) { attributes.set(name,String(value)); }, getAttribute:name=>attributes.get(name)??null,
+      removeAttribute(name) { attributes.delete(name); },
+      append(...items) { for(const item of items)this.appendChild(item); },
+      appendChild(item) { item.parentNode?.removeChild(item);this.children.push(item);item.parentNode=this;return item; },
+      removeChild(item) { const at=this.children.indexOf(item);if(at>=0)this.children.splice(at,1);item.parentNode=null;return item; },
+      replaceChildren(...items) { for(const item of this.children)item.parentNode=null;this.children=[];this.append(...items); },
+      remove() { this.parentNode?.removeChild(this); }, focus() {}, blur() {},
       querySelector: query => element(key + ' ' + query), querySelectorAll: () => [],
       contains: () => false, matches: () => false, closest: () => null,
       getBoundingClientRect: () => ({ x: 0, y: 0, left: 0, top: 0, right: 1280, bottom: 720, width: 1280, height: 720 })
-    };
-    eventTarget(el);elements.set(key, el); return el;
+    });
+    elements.set(key, el); return el;
   }
-  const document = {
+  const document = events({
     querySelector: element, querySelectorAll: () => [], getElementById: id => element('#' + id),
     createElement: tag => element(tag + ' ' + elements.size),
     createElementNS: (_, tag) => element(tag + ' ' + elements.size),
-    body: element('body'), documentElement: element('html'), addEventListener() {}, removeEventListener() {},
-    hidden: false, activeElement: null, pointerLockElement: null
-  };
-  eventTarget(document);
-  document.exitPointerLock = () => {
-    document.pointerLockElement = null;
-    document.dispatchEvent({ type: 'pointerlockchange' });
-  };
-  let radialInstance = null;
-  const radialStub = {
-    create({ profiles }) {
-      radialInstance = {
-        profiles, isOpen: false, hovered: null, openCalls: 0, closeCalls: 0, pointer: null,
-        open(selected, options) { this.isOpen = true;this.hovered = null;this.selected = selected;this.options = options;this.openCalls++; },
-        close() { this.isOpen = false;this.closeCalls++; },
-        moveBy(x, y) { this.pointer = { mode: 'relative', x, y }; },
-        moveTo(x, y) { this.pointer = { mode: 'absolute', x, y }; },
-        chooseNext(delta) {
-          const i = profiles.findIndex(profile => profile.id === this.hovered);
-          this.hovered = profiles[(i + delta + profiles.length) % profiles.length].id;
-        }
-      };
-      return radialInstance;
-    }
-  };
+    body: element('body'), documentElement: element('html'),
+    hidden: false, activeElement: null, pointerLockElement: null,
+    exitPointerLock(){this.pointerLockElement=null;this.dispatchEvent({type:'pointerlockchange'});}
+  });
   const seededMath = Object.create(Math);
   seededMath.random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
-  const sandbox = {
+  const sandbox = events({
     console, document, navigator: { userAgent: 'logic-test' }, performance, URL, Blob,
     Float32Array, Int32Array, Uint32Array, Uint16Array, Uint8Array, ArrayBuffer, Map, Set,
-    Math: seededMath, JSON, Promise, QBitsRadial: radialStub, localStorage: { getItem: () => null, setItem() {} },
+    Math: seededMath, JSON, Promise, localStorage: { getItem: () => null, setItem() {} },
     requestAnimationFrame(fn) { frames.set(++nextFrame, fn); return nextFrame; },
     cancelAnimationFrame(id) { frames.delete(id); },
-    setTimeout() {}, clearTimeout() {}, setInterval() {}, clearInterval() {},
-    addEventListener() {}, removeEventListener() {},
+    setTimeout(fn,delay=0,...args) { const id=++nextTimer;timers.set(id,{at:timerTime+Math.max(0,delay),fn,args});return id; },
+    clearTimeout(id) { timers.delete(id); }, setInterval() {}, clearInterval() {},
     matchMedia: () => ({ matches: false, addEventListener() {} }),
     innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1
-  };
-  eventTarget(sandbox);
+  });
   sandbox.window = sandbox; sandbox.self = sandbox;
   vm.createContext(sandbox);
   let scripts;
   const gameFile = path.join(root, 'assets/js/game.js');
   if (fs.existsSync(gameFile)) {
-    scripts = [fs.readFileSync(path.join(root, 'assets/js/cannon.min.js'), 'utf8'), fs.readFileSync(gameFile, 'utf8')];
+    const wheelFile=path.join(root,'assets/js/radial-menu.js');
+    scripts = [fs.readFileSync(path.join(root, 'assets/js/cannon.min.js'), 'utf8'),
+      ...(fs.existsSync(wheelFile)?[fs.readFileSync(wheelFile,'utf8')]:[]), fs.readFileSync(gameFile, 'utf8')];
   } else {
     scripts = [...fs.readFileSync(path.join(root, 'index.html'), 'utf8').matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
   }
@@ -108,10 +103,11 @@ module.exports = function createGame() {
     rollPoseAt,updateRoutes,makeRollSegment,savedShapeValid,saveShape,savedShapes,blueprintTargets,
     placeBlueprint,activateBlueprint,nearBlueprint,updateBlueprints,blueprints,importShapesData,drawAlpha,
     setHeld:value=>{held=value},setSelected:value=>{selected=value},getSelected:()=>selected,
+    puzzle,getLook:()=>({yaw,pitch,camera:[...camera]}),setMarquee:value=>{marquee=value},
+    initUnitRadial,openUnitRadial,closeUnitRadial,handleKeyUp,getUnitRadial:()=>unitRadial,
+    radialOpen,unitRadialAllowed,storySuspended,onCanvasMouseDown,onCanvasMouseUp,pause,getSimTime:()=>simTime,
     makeGroup,worldParts,addQubit,removeGroup,orientations,clearNarrativeScene,rollGeometry,beginHaul,stopHaul,assignCrew,
     navigationJobs,runNavigationJobs,updatePosture,handleKey,handleWheel,grabQubit,releaseQubit,
-    openUnitRadial,closeUnitRadial,handleKeyUp,radialOpen,unitRadialAllowed,storySuspended,
-    onCanvasMouseDown,onCanvasMouseUp,pause,puzzle,getLook:()=>({yaw,pitch}),getSimTime:()=>simTime,
     posture,position,keys,canvas,storyWorld,EYE_HEIGHT,frame,sceneFade,tickSceneFade,tickStory,storyInput,wakeUp,renderDialogue,advanceDialogue,resumeGame,openPauseMenu,storyLookAllowed,getHeld:()=>held,
     setRunning:value=>{running=value}};`;
   scripts = scripts.map(source => {
@@ -123,8 +119,17 @@ module.exports = function createGame() {
   for (const source of scripts) vm.runInContext(source, sandbox, { timeout: 10000 });
   return {
     t: sandbox.__testGame, api: sandbox.QBitsGame, sandbox, buffers,
-    get radial() { return radialInstance; },
+    get radial() { return sandbox.__testGame.getUnitRadial(); },
     frame(time = performance.now()) { const batch = [...frames.values()]; frames.clear(); for (const fn of batch) fn(time); },
+    advanceTimers(ms) {
+      const end=timerTime+ms;let count=0;
+      while(true){
+        const next=[...timers.entries()].filter(([,timer])=>timer.at<=end).sort((a,b)=>a[1].at-b[1].at)[0];
+        if(!next)break;if(count++>1000)throw new Error('Timer queue did not settle');
+        timers.delete(next[0]);timerTime=next[1].at;next[1].fn(...next[1].args);
+      }
+      timerTime=end;
+    },
     navigationUntilIdle(limit = 2000) {
       let turns = 0;
       while (sandbox.__testGame.navigationJobs.size && turns++ < limit) sandbox.__testGame.runNavigationJobs();
