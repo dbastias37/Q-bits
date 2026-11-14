@@ -7,6 +7,8 @@
   <meta name="description" content="Q-bits: Cuando la materia te habla y tambien te ayuda.">
   <title>Q-bits</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='white'/%3E%3C/svg%3E">
+  <link rel="preload" href="assets/fonts/parisienne/Parisienne.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="assets/fonts/spaceman/SPACEMAN.TTF" as="font" type="font/ttf" crossorigin>
   <style>
     * { box-sizing: border-box; }
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000; }
@@ -201,6 +203,65 @@ body[data-booting='true'] > :not(#boot-screen):not(script){visibility:hidden;poi
 @keyframes boot-reveal{from{opacity:0}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){#boot-credit,#boot-title,#boot-screen{transition-duration:.15s;}#boot-loading{animation:none;}}
 
+
+/* Supplied game typography: narration and interface each have their own voice. */
+@font-face{font-family:Parisienne;src:url('assets/fonts/parisienne/Parisienne.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:Spaceman;src:url('assets/fonts/spaceman/SPACEMAN.TTF') format('truetype');font-weight:400;font-style:normal;font-display:swap;}
+:root{--font-menu:Spaceman,system-ui,sans-serif;--font-npc:Parisienne,system-ui,sans-serif;}
+.game-screen h1.game-title{font:400 clamp(38px,7vw,78px)/1.2 var(--font-menu);letter-spacing:.02em;padding:0;margin:12px 0 16px;max-width:95%;color:#18201c;font-synthesis:none;}
+#boot-title .game-title{font:400 clamp(30px,7vw,72px)/1.2 var(--font-menu);text-align:center;margin:0;color:#e4eee8;letter-spacing:.02em;font-synthesis:none;}
+.game-screen h2,#panel h2,#completion-panel h2{font-family:var(--font-menu);font-weight:400;font-synthesis:none;letter-spacing:0;line-height:1.5;text-align:center;max-width:min(720px,90vw);overflow-wrap:anywhere;}
+.game-screen h2{font-size:clamp(18px,3vw,28px);}
+.menu-actions{width:min(340px,100%);gap:10px;}
+.game-screen button,#panel button,#completion-panel button,#command-menu button,#detach-menu button,#story-choices button,#wake-button,#boot-screen button,#skip-encounter{
+ font-family:var(--font-menu);font-size:13px;font-weight:400;line-height:1.55;font-synthesis:none;letter-spacing:0;
+ border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;color:inherit;
+}
+.game-screen button:hover,#panel button:hover,#completion-panel button:hover,#command-menu button:hover,#detach-menu button:hover,#story-choices button:hover,#wake-button:hover,#boot-screen button:hover,#skip-encounter:hover{background:none!important;box-shadow:none!important;text-decoration:underline;text-underline-offset:6px;}
+.game-screen button:focus-visible,#panel button:focus-visible,#completion-panel button:focus-visible,#command-menu button:focus-visible,#detach-menu button:focus-visible,#story-choices button:focus-visible,#wake-button:focus-visible,#boot-screen button:focus-visible,#skip-encounter:focus-visible{outline:1px dashed currentColor;outline-offset:5px;text-decoration:underline;text-underline-offset:6px;}
+.game-screen .primary,.game-screen .primary:hover{color:var(--ink);}
+#chapter-complete button,#chapter-complete .primary,#chapter-complete .primary:hover{color:#dce9e0;}
+#story-choices button,#story-choices button:first-child{color:inherit;padding:9px 0;margin-right:22px;}
+#boot-screen button{color:#e3ece6;text-align:center;}
+#boot-screen button span{display:none;}#wake-button{color:#ecf3ef;padding:15px 32px;}
+#level-list{width:100%;column-gap:32px;}
+#level-list button{min-width:0;padding:12px 0;gap:14px;align-items:flex-start;}
+#level-list button>span:last-child{min-width:0;}
+#level-list strong{font-family:var(--font-menu);font-size:11px;font-weight:400;line-height:1.7;overflow-wrap:anywhere;}
+#level-list .level-number{font:400 13px/1.6 var(--font-menu);min-width:38px;}
+#level-list small,.menu-subtitle,.menu-foot,#story-objective,#dialogue-hint,#mood-state-description,#mood-energy-label,#mood-group-count,.music-settings label{font-family:system-ui,sans-serif;}
+#panel .tabs{flex-wrap:wrap;}#panel .tabs button{flex:1 1 40%;font-size:10px;}
+#panel [aria-selected='true']{text-decoration:underline;text-underline-offset:5px;}
+#panel #resume{color:var(--ink);}
+#chapter-name,#story-speaker,#mood-unit-name,.mood-held-item,#qubit-name{font-family:var(--font-menu);font-weight:400;font-synthesis:none;}
+#chapter-name{font-size:11px;line-height:1.7;display:block;max-width:min(420px,65vw);}
+#story-speaker{font-size:10px;letter-spacing:0;}#mood-unit-name{display:block;font-size:10px;line-height:1.6;}
+#mood-state-description{display:block;font-size:10px;line-height:1.5;}
+.mood-held-item{font-size:10px;line-height:1.6;max-width:130px;min-width:60px;}
+#story-text,.qbit-speech,.encounter-bubble,#title-greeting,.campaign-label[data-voice='npc']{font-family:var(--font-npc);font-weight:400;font-synthesis:none;letter-spacing:0;}
+#story-text{font-size:28px;line-height:1.2;}
+.qbit-speech{font-size:24px;line-height:1.15;max-width:min(242px,calc(100vw - 32px));padding:9px 12px;}
+.encounter-bubble{font-size:24px;line-height:1.15;max-width:240px;}
+#title-greeting{font-size:24px;line-height:1.15;max-width:270px;}
+.campaign-label[data-voice='npc']{font-size:24px;line-height:1.2;}
+#skip-encounter{font-size:10px;}
+#command-menu,#detach-menu{width:280px;max-width:calc(100vw - 40px);}
+#command-menu button,#detach-menu button{font-size:11px;line-height:1.7;}
+.game-screen .music-settings button{font-size:10px;padding:7px 0;}
+body[data-transitioning='true'] #scene-veil{z-index:110;pointer-events:auto;background:#000;}
+body[data-transitioning='true'] #scene-loading{z-index:111;}
+#scene-loading{width:min(290px,70vw);color:#bbc5bf;gap:21px;}
+#scene-loading>span{font:400 10px/1.7 var(--font-menu);text-align:center;letter-spacing:0;}
+#scene-loading i{background:#c7d3cc;width:12px;height:12px;}
+.transition-track{height:1px;width:100%;background:#ffffff1c;overflow:hidden;}
+.transition-track b{display:block;height:100%;width:0;background:#c7d3cc;}
+@media(max-width:620px){
+ #story-text{font-size:24px;}.qbit-speech,.encounter-bubble{font-size:22px;max-width:210px;}
+ .menu-actions{width:min(320px,100%);} .game-screen button{font-size:12px;}
+ #level-list button{padding:10px 0;}#chapter-name{font-size:9px;}#chapter-label{max-width:68vw;}
+ #story-objective{top:96px;}#story-speaker{font-size:9px;}#story-choices button{font-size:11px;}
+}
+
   </style>
 </head>
 <body data-game-mode="boot" data-game-scene="lab" data-booting="true">
@@ -218,7 +279,7 @@ body[data-booting='true'] > :not(#boot-screen):not(script){visibility:hidden;poi
   <div id="scene-veil" aria-hidden="true"></div><div id="eye-top" aria-hidden="true"></div><div id="eye-bottom" aria-hidden="true"></div>
   <section id="main-screen" class="game-screen" hidden aria-label="Menú principal">
     <button id="title-qbit" class="title-emblem" aria-label="Saludar al Q-bit"><div class="portrait-cube"><i></i><i></i><i></i><i></i><i></i><i></i></div></button><div id="title-greeting" hidden role="status"></div>
-    <p class="eyebrow">CADA PIEZA CUENTA</p><h1 aria-label="Q-bits" class="led-title"><svg viewBox="0 0 36 7" aria-hidden="true"><rect x="1" y="0" width=".88" height=".88" rx=".03"/><rect x="2" y="0" width=".88" height=".88" rx=".03"/><rect x="3" y="0" width=".88" height=".88" rx=".03"/><rect x="0" y="1" width=".88" height=".88" rx=".03"/><rect x="4" y="1" width=".88" height=".88" rx=".03"/><rect x="0" y="2" width=".88" height=".88" rx=".03"/><rect x="4" y="2" width=".88" height=".88" rx=".03"/><rect x="0" y="3" width=".88" height=".88" rx=".03"/><rect x="4" y="3" width=".88" height=".88" rx=".03"/><rect x="0" y="4" width=".88" height=".88" rx=".03"/><rect x="2" y="4" width=".88" height=".88" rx=".03"/><rect x="4" y="4" width=".88" height=".88" rx=".03"/><rect x="0" y="5" width=".88" height=".88" rx=".03"/><rect x="3" y="5" width=".88" height=".88" rx=".03"/><rect x="1" y="6" width=".88" height=".88" rx=".03"/><rect x="2" y="6" width=".88" height=".88" rx=".03"/><rect x="4" y="6" width=".88" height=".88" rx=".03"/><rect x="7" y="3" width=".88" height=".88" rx=".03"/><rect x="8" y="3" width=".88" height=".88" rx=".03"/><rect x="9" y="3" width=".88" height=".88" rx=".03"/><rect x="12" y="0" width=".88" height=".88" rx=".03"/><rect x="13" y="0" width=".88" height=".88" rx=".03"/><rect x="14" y="0" width=".88" height=".88" rx=".03"/><rect x="15" y="0" width=".88" height=".88" rx=".03"/><rect x="12" y="1" width=".88" height=".88" rx=".03"/><rect x="16" y="1" width=".88" height=".88" rx=".03"/><rect x="12" y="2" width=".88" height=".88" rx=".03"/><rect x="16" y="2" width=".88" height=".88" rx=".03"/><rect x="12" y="3" width=".88" height=".88" rx=".03"/><rect x="13" y="3" width=".88" height=".88" rx=".03"/><rect x="14" y="3" width=".88" height=".88" rx=".03"/><rect x="15" y="3" width=".88" height=".88" rx=".03"/><rect x="12" y="4" width=".88" height=".88" rx=".03"/><rect x="16" y="4" width=".88" height=".88" rx=".03"/><rect x="12" y="5" width=".88" height=".88" rx=".03"/><rect x="16" y="5" width=".88" height=".88" rx=".03"/><rect x="12" y="6" width=".88" height=".88" rx=".03"/><rect x="13" y="6" width=".88" height=".88" rx=".03"/><rect x="14" y="6" width=".88" height=".88" rx=".03"/><rect x="15" y="6" width=".88" height=".88" rx=".03"/><rect x="19" y="0" width=".88" height=".88" rx=".03"/><rect x="20" y="0" width=".88" height=".88" rx=".03"/><rect x="21" y="0" width=".88" height=".88" rx=".03"/><rect x="20" y="1" width=".88" height=".88" rx=".03"/><rect x="20" y="2" width=".88" height=".88" rx=".03"/><rect x="20" y="3" width=".88" height=".88" rx=".03"/><rect x="20" y="4" width=".88" height=".88" rx=".03"/><rect x="20" y="5" width=".88" height=".88" rx=".03"/><rect x="19" y="6" width=".88" height=".88" rx=".03"/><rect x="20" y="6" width=".88" height=".88" rx=".03"/><rect x="21" y="6" width=".88" height=".88" rx=".03"/><rect x="24" y="0" width=".88" height=".88" rx=".03"/><rect x="25" y="0" width=".88" height=".88" rx=".03"/><rect x="26" y="0" width=".88" height=".88" rx=".03"/><rect x="27" y="0" width=".88" height=".88" rx=".03"/><rect x="28" y="0" width=".88" height=".88" rx=".03"/><rect x="26" y="1" width=".88" height=".88" rx=".03"/><rect x="26" y="2" width=".88" height=".88" rx=".03"/><rect x="26" y="3" width=".88" height=".88" rx=".03"/><rect x="26" y="4" width=".88" height=".88" rx=".03"/><rect x="26" y="5" width=".88" height=".88" rx=".03"/><rect x="26" y="6" width=".88" height=".88" rx=".03"/><rect x="32" y="0" width=".88" height=".88" rx=".03"/><rect x="33" y="0" width=".88" height=".88" rx=".03"/><rect x="34" y="0" width=".88" height=".88" rx=".03"/><rect x="35" y="0" width=".88" height=".88" rx=".03"/><rect x="31" y="1" width=".88" height=".88" rx=".03"/><rect x="31" y="2" width=".88" height=".88" rx=".03"/><rect x="32" y="3" width=".88" height=".88" rx=".03"/><rect x="33" y="3" width=".88" height=".88" rx=".03"/><rect x="34" y="3" width=".88" height=".88" rx=".03"/><rect x="35" y="4" width=".88" height=".88" rx=".03"/><rect x="35" y="5" width=".88" height=".88" rx=".03"/><rect x="31" y="6" width=".88" height=".88" rx=".03"/><rect x="32" y="6" width=".88" height=".88" rx=".03"/><rect x="33" y="6" width=".88" height=".88" rx=".03"/><rect x="34" y="6" width=".88" height=".88" rx=".03"/></svg></h1><p class="menu-subtitle">Todo comienza con un encuentro.</p>
+    <p class="eyebrow">CADA PIEZA CUENTA</p><h1 aria-label="Q-bits" class="game-title">Q-bits</h1><p class="menu-subtitle">Todo comienza con un encuentro.</p>
     <div class="menu-actions"><button id="main-play" class="primary">Jugar <span class="menu-arrow" aria-hidden="true"></span></button><button id="main-continue" hidden>Continuar</button><button id="main-levels">Seleccionar nivel</button><button id="main-lab">Banco de pruebas</button></div>
     <small class="menu-foot">Versión de pruebas · Teclado y mouse<br>P abre las herramientas en cualquier momento</small>
   </section>
@@ -233,7 +294,7 @@ body[data-booting='true'] > :not(#boot-screen):not(script){visibility:hidden;poi
   <section id="chapter-complete" class="game-screen frosted" hidden role="dialog" aria-modal="true" aria-label="Nivel completado"><p id="complete-eyebrow" class="eyebrow">01 / PRIMER CONTACTO</p><h2 id="complete-title">Una puerta más.</h2><p id="complete-description" class="menu-subtitle"></p><div class="menu-actions"><button id="complete-next" class="primary">Siguiente nivel <span class="menu-arrow" aria-hidden="true"></span></button><button id="complete-repeat">Volver a jugar <span class="menu-arrow" aria-hidden="true"></span></button><button id="complete-levels">Seleccionar nivel</button><button id="complete-lab">Banco de pruebas</button><button id="complete-main">Menú principal</button></div></section>
 
 <section id="wake-screen" hidden aria-label="Despertar"><span>TODO ESTÁ EN SILENCIO</span><button id="wake-button">Despertar</button><small>E · abrir los ojos</small></section>
-<div id="scene-loading" hidden role="status"><i></i><span>Preparando el encuentro…</span></div>
+<div id="scene-loading" hidden role="status"><i aria-hidden="true"></i><span>Preparando el encuentro…</span><div class="transition-track" aria-hidden="true"><b></b></div></div>
 <div id="encounter-bubbles" hidden aria-live="off"></div><button id="skip-encounter" hidden>O · omitir presentación</button>
 
   <canvas id="room" tabindex="0" aria-label="Habitación blanca en primera persona"></canvas>
@@ -246,7 +307,7 @@ body[data-booting='true'] > :not(#boot-screen):not(script){visibility:hidden;poi
   <div id="command-menu" hidden role="dialog" aria-label="Órdenes"><div id="command-title"></div><div id="command-actions"></div></div>
   <div id="route-readout" hidden></div>
   <div id="selection-rect" hidden aria-hidden="true"></div>
-  <div id="callout"><svg aria-hidden="true"><path id="callout-path" d=""/></svg><div id="callout-text"><span id="callout-count"></span><small id="callout-weight"></small><div id="mood-callout" hidden><span id="mood-name"></span><div id="mood-energy-track" role="progressbar" aria-label="Energía del Q-bit" aria-valuemin="0" aria-valuemax="100"><i id="mood-energy-fill"></i></div><span id="mood-energy-label"></span><span id="mood-group-count"></span></div></div></div>
+  <div id="callout"><svg aria-hidden="true"><path id="callout-path" d=""/></svg><div id="callout-text"><span id="callout-count"></span><small id="callout-weight"></small><div id="mood-callout" hidden><span id="mood-name"><span id="mood-unit-name"></span><span id="mood-state-description"></span></span><div id="mood-energy-track" role="progressbar" aria-label="Energía del Q-bit" aria-valuemin="0" aria-valuemax="100"><i id="mood-energy-fill"></i></div><span id="mood-energy-label"></span><span id="mood-group-count"></span></div></div></div>
   <div id="detach-menu" hidden role="dialog" aria-label="Separar estructura"><div id="detach-title"></div><button id="detach-one" type="button">Sacar esta pieza</button><button id="detach-all" type="button">Desarmar todo</button><button id="detach-cancel" type="button">Cancelar</button></div>
   <div id="puzzle-status" hidden></div><div id="alpha-census"><span class="mini-cube" aria-hidden="true"><i class="front"></i><i class="back"></i><i class="right"></i><i class="left"></i><i class="top"></i><i class="bottom"></i></span><span id="alpha-census-text"></span></div>
   <section id="completion-panel" hidden role="dialog" aria-modal="true" aria-labelledby="completion-title"><h2 id="completion-title">Puzle 01 completado</h2><p>Buen trabajo, equipo.</p><p id="completion-detail"></p><div><button id="completion-continue" type="button">Seguir en la sala</button><button id="completion-restart" type="button">Reintentar</button><button id="completion-lab" type="button">Volver al banco</button></div></section>
@@ -323,10 +384,10 @@ body[data-booting='true'] > :not(#boot-screen):not(script){visibility:hidden;poi
       <label><input id="alpha-allowPuzzleSpawn" type="checkbox"> Permitir crear Q-bits durante el puzle</label><p>Actívalo para usar N o Crear Q-bit sin salir del desafío.</p>
       <label>Brillo sutil <output id="alpha-glowValue"></output><input id="alpha-glow" type="range" min="0" max="1" step="0.05" value="0.6"></label>
     </div>
-    <details><summary>Controles</summary><p>Clic sin selección: tomar. Con las manos libres, mantener Shift: agacharse; Shift + rueda: ajustar altura (abajo baja, arriba sube). Soltar Shift: levantarse. Al tomar una pieza agachado se conserva la altura hasta soltarla. Con una pieza en la mano, Shift + WASD: girar sin caminar. Shift + soltar junto a una cara: unir. Arrastrar con clic izquierdo desde un espacio vacío: seleccionar varias piezas visibles, hasta 4 m. Clic izquierdo con una selección activa: deseleccionar. Clic derecho en la selección → Tomar selección: levantar el conjunto; clic para soltar. Alt, apuntando a una estructura: opciones de separación. C: duplicar selección. Supr: borrar pieza. Ctrl: guía de caída. Clic derecho en el suelo → Ir a este punto: recorrido individual o en grupo. R: detener. Esc: liberar mouse.<br>La selección para órdenes respeta el límite de piezas; el peso máximo se aplica al agarre manual. La orden en el suelo mueve todas las estructuras seleccionadas. Alt cerca del pin muestra el camino y las mediciones. B crea un cuerpo que solo puede arrastrar un equipo. Máximo de 128 Q-bits en la sala.</p></details>
+    <details><summary>Controles</summary><p>Clic sin selección: tomar. Mantener C: agacharse, con las manos libres o sosteniendo una pieza. C + rueda: ajustar altura (abajo baja, arriba sube). Soltar C: levantarse. Tomar o unir piezas no cambia la postura. Con una pieza en la mano, Shift + WASD: girar sin caminar. Shift + soltar junto a una cara: unir. Arrastrar con clic izquierdo desde un espacio vacío: seleccionar varias piezas visibles, hasta 4 m. Clic izquierdo con una selección activa: deseleccionar. Clic derecho en la selección → Tomar selección: levantar el conjunto; clic para soltar. Alt, apuntando a una estructura: opciones de separación. V: duplicar selección. Supr: borrar pieza. Ctrl: guía de caída. Clic derecho en el suelo → Ir a este punto: recorrido individual o en grupo. R: detener. Esc: liberar mouse.<br>La selección para órdenes respeta el límite de piezas; el peso máximo se aplica al agarre manual. La orden en el suelo mueve todas las estructuras seleccionadas. Alt cerca del pin muestra el camino y las mediciones. B crea un cuerpo que solo puede arrastrar un equipo. Máximo de 128 Q-bits en la sala.</p></details>
     <div class="actions"><button id="create" type="button">Crear Q-bit</button><button id="remove" type="button">Borrar pieza</button><button id="split" type="button">Desarmar estructura</button></div>
     <button id="resume" type="button">Volver a la sala</button>
   </section>
-  <script src="assets/js/boot.js?v=20261114-1" defer></script>
+  <script src="assets/js/boot.js?v=20261114-2" defer></script>
 </body>
 </html>

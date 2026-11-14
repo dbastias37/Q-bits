@@ -2,7 +2,7 @@
 
 ## Cannon.js 0.6.2
 
-Motor de físicas incorporado en `index.html`.
+Motor de físicas incorporado en `assets/js/cannon.min.js`.
 
 Proyecto: <https://github.com/schteppe/cannon.js>
 
@@ -30,3 +30,18 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
+
+
+## Parisienne — Jeffrey Visser, 2015
+
+Fuente aportada por el usuario, conservada sin modificar en `assets/fonts/parisienne/Parisienne.ttf`, junto a los archivos `license.txt` y `readme.txt` originales.
+
+El archivo suministrado declara **Creative Commons Attribution Non-commercial No Derivatives 3.0**. Sus condiciones corresponden a esta fuente y no a Cannon.js ni al código del juego.
+
+Autor: Jeffrey Visser. Fuente: <http://fontstruct.com/fontstructions/show/1133995>. Licencia declarada: <http://creativecommons.org/licenses/by-nc-nd/3.0/>.
+
+## Spaceman — Dirk Schaechter, 2001
+
+Fuente aportada por el usuario, conservada sin modificar en `assets/fonts/spaceman/SPACEMAN.TTF`.
+
+Atribución incluida en sus metadatos: `copyright dirk schaechter 2001 - www.designsalon.de`. El ZIP recibido no contiene un archivo de licencia; esta inclusión no atribuye a la fuente una licencia distinta ni derechos adicionales.

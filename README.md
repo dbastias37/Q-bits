@@ -52,7 +52,7 @@ Referencia: [configurar la publicación en GitHub Pages](https://docs.github.com
 | 11 | Dos rutas | Elegir entre materiales y organizar el equipo de transporte. |
 | 12 | La instalación | Utilizar tres estaciones y reunir al equipo completo en la salida. |
 
-El menú permite seleccionar niveles, reiniciar, pausar y entrar al laboratorio. Las transiciones incluyen fundidos, carga breve y pantalla de final de nivel.
+El menú permite seleccionar niveles, reiniciar, pausar y entrar al laboratorio. Las transiciones incluyen fundidos, una carga de transición deliberada de al menos 1,8 segundos para dar una pausa entre escenas, y pantalla de final de nivel. Esa pausa es independiente de la precarga real inicial.
 
 ## Controles principales
 
@@ -62,14 +62,15 @@ El menú permite seleccionar niveles, reiniciar, pausar y entrar al laboratorio.
 | Mirar | Mouse |
 | Tomar y soltar una pieza en campaña | Clic izquierdo |
 | Ajustar la distancia de una pieza sostenida | Rueda del mouse |
-| Agacharse con las manos libres | Mantener Shift |
-| Ajustar la altura al agacharse | Shift + rueda |
+| Agacharse, también sosteniendo piezas | Mantener C (soltar para levantarse) |
+| Ajustar la altura al agacharse | C + rueda |
 | Girar una pieza sostenida | Shift + WASD |
 | Unir piezas | Acercar sus caras y soltar manteniendo Shift |
 | Opciones de separación | Alt, apuntando a una estructura |
 | Seleccionar varias piezas | Arrastrar con clic izquierdo desde un espacio vacío |
 | Dar órdenes y elegir un destino | Menú de clic derecho sobre la pieza y después sobre el suelo |
 | Tomar un grupo seleccionado | Clic derecho → Tomar selección |
+| Duplicar selección en el laboratorio | V |
 | Detener una orden | R |
 | Avanzar o completar el texto del diálogo | E o Espacio |
 | Asignar un equipo al material señalado | E, cuando no hay diálogo activo |
@@ -104,6 +105,14 @@ Los desintegradores tienen una superficie de portal animada con fondo negro opac
 | `.gitignore` | Exclusiones de archivos temporales y paquetes ZIP. |
 
 Para modificar la interfaz y los estilos, edita `index.html`; para la lógica, edita `assets/js/game.js`. Los comentarios `Campaign prologue`, `Eight complete campaign levels` y `Chapter II` identifican las secciones de narrativa y campaña.
+
+## Tipografía y artefactos
+
+- **Spaceman**: título Q-bits, opciones de menú y nombres de unidades. Las descripciones pequeñas conservan una fuente de lectura.
+- **Parisienne**: diálogos, subtítulos, saludos y burbujas emocionales. Se usa exactamente la fuente del ZIP aportado, con fallback para signos que no incluye.
+- Ambas fuentes están alojadas dentro del repositorio y se comprueba su carga antes de habilitar Jugar. Los originales y sus avisos están en `assets/fonts/` y `THIRD_PARTY_NOTICES.md`.
+- Las opciones de menú son texto sin cajas ni fondos, con subrayado al señalar y foco de teclado visible.
+- El desintegrador transporta líquido negro hasta formar los nuevos Q-bits. Los artefactos conservan sus volúmenes y colisiones, con acabados blancos y grafito y detalles discretos.
 
 ## Música
 

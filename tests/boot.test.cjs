@@ -12,7 +12,7 @@ function deferred() {
   return { promise, resolve, reject };
 }
 async function flush() { for (let n = 0; n < 12; n++) await Promise.resolve(); }
-function environment() {
+function environment({ autoFonts = true } = {}) {
   class Element extends EventTarget {
     constructor() { super(); this.children = []; this.hidden = false; this.disabled = false; this.dataset = {}; this.style = {}; this.attributes = {}; this.textContent = ''; this.classes = new Set(); this.classList = { add: value => this.classes.add(value) }; }
     append(...nodes) { this.children.push(...nodes); }
@@ -23,7 +23,7 @@ function environment() {
     click() { this.dispatchEvent(new Event('click')); }
   }
   const nodes = new Map();
-  for (const selector of ['#boot-screen', '#boot-loading', '#boot-message', '#boot-percent', '#boot-progress', '#boot-play', '#boot-retry', '#boot-title', '#wake-button', '#main-screen', '#pause-screen', '#main-screen h1 svg']) nodes.set(selector, new Element());
+  for (const selector of ['#boot-screen', '#boot-loading', '#boot-message', '#boot-percent', '#boot-progress', '#boot-play', '#boot-retry', '#boot-title', '#wake-button', '#main-screen', '#pause-screen', '#main-screen h1']) nodes.set(selector, new Element());
   nodes.get('#boot-play').hidden = true;
   nodes.get('#boot-play').disabled = true;
   nodes.get('#boot-retry').hidden = true;
@@ -33,12 +33,21 @@ function environment() {
   const scripts = [], events = [], errors = [], timers = new Map();
   let now = 0, nextTimer = 0, reloads = 0, sceneProgress, musicProgress;
   const gameReady = deferred(), musicReady = deferred();
+  const fontsReady = { Parisienne: deferred(), Spaceman: deferred() };
+  const fontRequests = [];
+  if (autoFonts) for (const [family, pending] of Object.entries(fontsReady)) pending.resolve([{ family }]);
   const document = {
     body: { dataset: { booting: 'true' } },
     head: { append: script => scripts.push(script) },
     querySelector: selector => { if (!nodes.has(selector)) throw new Error('Unexpected selector ' + selector); return nodes.get(selector); },
     getElementById: id => nodes.get('#' + id),
-    createElement: () => new Element()
+    createElement: () => new Element(),
+    fonts: { load: (font, text) => {
+      fontRequests.push({ font, text });
+      const family = Object.keys(fontsReady).find(name => font.includes(name));
+      assert.ok(family, 'only declared typography is requested');
+      return fontsReady[family].promise;
+    } }
   };
   const context = Object.assign(new EventTarget(), {
     document,
@@ -84,11 +93,52 @@ function environment() {
     now = end;
     await flush();
   }
-  return { nodes, events, errors, document, context, gameReady, musicReady, loadScripts, scriptResult, advance,
+  return { nodes, events, errors, document, context, gameReady, musicReady, fontsReady, fontRequests, loadScripts, scriptResult, advance,
     sceneProgress: value => sceneProgress(value),
     musicProgress: value => musicProgress({ progress: value }),
     get reloads() { return reloads; }
   };
+}
+
+test('both font faces must finish before the title and Jugar can appear', async () => {
+  const e = environment({ autoFonts: false });
+  await e.loadScripts();
+  e.gameReady.resolve();
+  e.musicReady.resolve();
+  await e.advance(10000);
+  assertBlocked(e);
+  assert.equal(e.nodes.get('#boot-screen').dataset.stage, 'black');
+  assert.deepEqual(e.fontRequests.map(request => request.font), ['28px Parisienne', '14px Spaceman']);
+  e.fontsReady.Parisienne.resolve([{ family: 'Parisienne' }]);
+  await flush();
+  assertBlocked(e);
+  assert.equal(e.nodes.get('#boot-screen').dataset.stage, 'black');
+  e.fontsReady.Spaceman.resolve([{ family: 'Spaceman' }]);
+  await flush();
+  assert.equal(e.nodes.get('#boot-screen').dataset.stage, 'title');
+  assert.equal(e.nodes.get('#boot-play').hidden, true);
+  await e.advance(1600);
+  assert.equal(e.nodes.get('#boot-play').hidden, false);
+  assert.equal(e.nodes.get('#boot-percent').textContent, '100%');
+});
+
+for (const failure of ['rejected', 'empty']) {
+  test(failure + ' font load blocks completion and offers retry', async () => {
+    const e = environment({ autoFonts: false });
+    await e.loadScripts();
+    e.gameReady.resolve();
+    e.musicReady.resolve();
+    e.fontsReady.Parisienne.resolve([{ family: 'Parisienne' }]);
+    if (failure === 'rejected') e.fontsReady.Spaceman.reject(new Error('Missing font'));
+    else e.fontsReady.Spaceman.resolve([]);
+    await flush();
+    await e.advance(10000);
+    assertBlocked(e);
+    assert.equal(e.nodes.get('#boot-retry').hidden, false);
+    assert.equal(e.nodes.get('#boot-screen').dataset.stage, 'loading');
+    e.nodes.get('#boot-play').click();
+    assert.equal(e.events.includes('game.play'), false);
+  });
 }
 
 function assertBlocked(e) {

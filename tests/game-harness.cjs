@@ -63,7 +63,9 @@ module.exports = function createGame() {
     planRoute,planCargoPath,startRoute,stopRoute,stepPhysics,groups,cargos,V,Q,world,story,bounds,
     poses,corners,drawQubits,drawStoryWorld,drawStoryGlass,updateTarget,updateSpeech,updateStoryMarker,
     makeGroup,worldParts,addQubit,removeGroup,orientations,clearNarrativeScene,rollGeometry,beginHaul,stopHaul,assignCrew,
-    navigationJobs,runNavigationJobs,setRunning:value=>{running=value}};`;
+    navigationJobs,runNavigationJobs,updatePosture,handleKey,handleWheel,grabQubit,releaseQubit,
+    posture,position,keys,canvas,storyWorld,EYE_HEIGHT,frame,sceneFade,tickSceneFade,tickStory,storyInput,getHeld:()=>held,
+    setRunning:value=>{running=value}};`;
   scripts = scripts.map(source => {
     if (!source.includes('function beginCampaignLevel(')) return source;
     const at = source.lastIndexOf('})();');
