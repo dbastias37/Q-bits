@@ -6,7 +6,7 @@ Continúa el videojuego Q-bits del repositorio `dbastias37/Q-bits`. Inspecciona 
 
 La base revisada tiene prólogo y doce misiones: movimiento, órdenes, botones, unión, formas, transporte, descanso y transformación de materia en compañeros. El primer incremento de esta propuesta añade los niveles 13–15, una cámara de reconfiguración y un catálogo con blueprints. El bloque IV añade los niveles 16–18 con bancos físicos de giro, carga y transferencia, validación de autonomía y certificaciones Torque I–III. El bloque V añade los niveles 19–20: dosificación ordenada, reserva finita, cámara de empaquetado y recepción física de seis paquetes. El taller transversal incorpora sensor de contacto y calibraciones pagadas de batería, estructura ligera y movimiento. La dirección futura acordada es una campaña de unas diez misiones grandes en galpones después del aprendizaje; todavía no se crean esas etapas. La propuesta numerada 21–24 deja de fijar el siguiente bloque y el cierre. El posjuego, la coordinación avanzada y la temperatura siguen pendientes. El estado operativo se mantiene en `ESTADO_PROYECTO.md`.
 
-La experiencia principal será aprender a construir mecanismos y coordinarlos para completar encargos de producción. La campaña llevará gradualmente desde ejercicios breves hasta problemas abiertos. Después, desafíos de dominio y encargos variables mantendrán útiles los inventos del jugador.
+La experiencia principal será aprender a construir mecanismos y coordinarlos para completar encargos de producción. La campaña llevará gradualmente desde ejercicios breves hasta problemas abiertos. El giro narrativo futuro revela que los cubos aprovecharon esa cooperación para recuperar su producción y retener al jugador trabajando; el tramo final usa lo aprendido para escapar. Después, desafíos de dominio y encargos variables mantendrán útiles los inventos del jugador, con un encuadre por decidir que respete esa liberación. Este giro solo está documentado: no está implementado.
 
 ## Geometría y límites del sistema
 
@@ -22,11 +22,11 @@ Los presupuestos distinguen materia, cantidad de cuerpos y número de mecanismos
 
 ## Lore y personaje guía
 
-La instalación guarda un conocimiento de construcción que se ha fragmentado. Los Q-bits son materia organizada alrededor de un patrón de identidad. La forma cúbica es compacta y estable; las divisiones permiten distribuir esa misma materia en funciones diferentes. Las partes recuerdan su origen. Recombinar recupera la forma sin borrar el nombre, los recuerdos narrativos, la energía ni un descanso pendiente.
+La versión inicial presentada al jugador es que la instalación guarda un conocimiento de construcción que se ha fragmentado. La veracidad y las omisiones de esa explicación se revisarán al escribir el giro. Las reglas de materia permanecen: los Q-bits son materia organizada alrededor de un patrón de identidad. La forma cúbica es compacta y estable; las divisiones permiten distribuir esa misma materia en funciones diferentes. Las partes recuerdan su origen. Recombinar recupera la forma sin borrar el nombre, los recuerdos narrativos, la energía ni un descanso pendiente.
 
 La fuente transforma materia externa en nuevos compañeros. La cámara de reconfiguración reorganiza a un compañero existente. Haz visible esa diferencia: producir, dividir, ensamblar y recomponer son acciones distintas.
 
-El NPC conserva la energía del prólogo: curioso, cómplice, ligeramente satírico y capaz de sorprenderse. Tiene conocimientos parciales y los contrasta con lo que observa. Su humor nace de la situación, de los carteles demasiado solemnes y de la distancia entre una instrucción y su resultado. Evita chistes aleatorios, explicaciones interminables, insultos al jugador, absurdo gratuito y la misma broma en cada misión.
+El NPC conserva al principio la energía del prólogo: curioso, cómplice, ligeramente satírico y capaz de sorprenderse. Se presenta con conocimientos parciales que contrasta con lo que observa; su conocimiento real del plan y su lealtad quedan por decidir. Su humor nace de la situación, de los carteles demasiado solemnes y de la distancia entre una instrucción y su resultado. Evita chistes aleatorios, explicaciones interminables, insultos al jugador, absurdo gratuito y la misma broma en cada misión.
 
 Ejemplos de tono, para adaptar a la situación:
 
@@ -39,6 +39,26 @@ Ejemplos de tono, para adaptar a la situación:
 Cada descubrimiento debe seguir esta secuencia: situación concreta, observación breve del NPC, experimento del jugador, consecuencia visible, explicación corta y registro en el catálogo. Los diálogos importantes avanzan a petición del jugador. Separa las intervenciones ambientales, evita repetir pistas y deja silencio durante la construcción. El NPC puede reconocer una solución inesperada sin afirmar que comprende un mecanismo que el juego no ha analizado.
 
 Explica gradualmente qué son los personajes, por qué comparten materia, cómo se unen, qué conservan al dividirse, por qué una cara incompleta falla y qué cambia al pasar de una unión rígida a una articulación. El misterio de la instalación debe avanzar con pruebas y pequeños descubrimientos, no mediante una exposición inicial de todo el mundo.
+
+### Giro narrativo y fuga
+
+**Spoilers de diseño. Registro del 14 de noviembre de 2026; no implementar todavía diálogos, escenas, IA ni misiones.**
+
+El núcleo solicitado es que los cubos hayan utilizado la cooperación y la simpatía del jugador para recuperar una instalación capaz de producir más cubos. Hacía mucho que no aparecía una entidad como él, con la capacidad de manipulación que necesitaban. Los tutoriales y encargos preparaban al jugador para ese propósito oculto. En el tramo final, todos o la mayoría revelan intenciones maliciosas y un trato que convierte la ayuda voluntaria en trabajo impuesto. El jugador debe superar las misiones para liberarse de esa explotación; en la última rompe el esquema de control y sale por una puerta. El destino fuera de ella queda abierto.
+
+La enseñanza de las mecánicas sigue siendo verdadera. El engaño reside en para quién se trabaja, para qué sirve la producción y qué libertad se tiene. La reactivación de la instalación puede ser el objetivo aparente de los cubos; deja de ser por sí sola el final victorioso del jugador.
+
+Propuesta de desarrollo, pendiente de guion y pruebas:
+
+- **Confianza:** mantener los encuentros, personalidades y humor del inicio. Sembrar indicios discretos sobre la ausencia de otros visitantes, el destino de la producción y la dependencia de la instalación. Deben cobrar sentido al mirar atrás sin anunciar la traición desde el principio.
+- **Revelación:** descubrir una consecuencia visible de las máquinas que el propio jugador ayudó a poner en marcha. Cambiar progresivamente peticiones, textos de objetivos y trato hasta hacer evidente la coerción. La puesta en escena puede usar silencios, sonido, iluminación y un breve encuadre dirigido; las escenas concretas aún no están definidas.
+- **Fuga:** transformar el uso de los mecanismos conocidos. Reorientar flujos, aprovechar la inversión de rotores o reorganizar una línea son posibilidades para recuperar acceso y autonomía. Elegir después soluciones físicamente comprobables; la salida debe ser consecuencia de actuar sobre la instalación, además de tener una culminación cinematográfica.
+
+La identidad propia debe surgir de la relación con los compañeros y de reconocer la infraestructura construida por uno mismo como parte del control. *Portal* y *The Stanley Parable* quedan como referencias del usuario para sorpresa y cambio de interpretación; las escenas, voces y soluciones de fuga se desarrollarán desde las mecánicas y el guion de Q-bits.
+
+Límites de continuidad: los cubos ya se mueven y se coordinan, por lo que debe precisarse qué capacidad de diseño, reconfiguración o intervención necesitan del jugador sin negar lo que hacen hoy. Producir nuevos compañeros requiere materia externa y la fuente; dividir o recomponer no reproduce identidades. Los paquetes A/B actuales siguen siendo materia inerte. La hostilidad narrativa se separa de cansancio, frustración y demás estados existentes; no se simula saboteando las físicas, borrando progreso o introduciendo fallos arbitrarios.
+
+Quedan abiertos el motivo atroz específico, si participan todos o una mayoría, posibles aliados, responsabilidad del guía, qué afectos eran sinceros, momento de la revelación dentro de los galpones, escenas y textos definitivos, solución de la última misión y encaje del posjuego. No fijar diez etapas ni una nueva numeración a partir de este registro.
 
 ## Secuencia de campaña
 
@@ -67,7 +87,7 @@ La materia inerte no es un compañero Q-bit y no recibe estados de ánimo ni ór
 
 **Registro del 14 de noviembre de 2026. Solo diseño futuro; no implementar ahora las etapas.** El usuario aún no ha podido probar los bloques existentes y cierra por ahora el desarrollo jugable con el taller y el sensor.
 
-La secuencia deseada es aprendizaje mediante tutoriales y eventos, dominio de los elementos y materiales, misiones grandes de automatización y, después, desafíos de optimización. Antes de exigir un sistema en un encargo grande, sus reglas deben estar implementadas, comprobadas y enseñadas. No hace falta añadir una pieza o tutorial por cada encargo.
+La secuencia deseada es aprendizaje mediante tutoriales y eventos, dominio de los elementos y materiales, misiones grandes de automatización y, después, desafíos de optimización. Dentro de la campaña amplia se desarrollará la revelación del propósito oculto y el tramo de fuga, sin fijar aún en qué misión cambia el objetivo. Antes de exigir un sistema en un encargo grande, sus reglas deben estar implementadas, comprobadas y enseñadas. No hace falta añadir una pieza o tutorial por cada encargo.
 
 Se propone **alrededor de diez misiones grandes de campaña**, con escenarios tipo galpón semejantes al banco de pruebas, posiblemente más largos. Su espacio debe permitir organizar varias máquinas y construir los mecanismos que las hagan trabajar coordinadamente. El foco será poner en funcionamiento una instalación mediante automatización, en vez de avanzar por el laberinto habitual de salas y puertas. No se han decidido dimensiones, decoración ni distribuciones definitivas.
 
@@ -75,7 +95,7 @@ La base actual permite estudiar combinaciones de transformación, transporte, ro
 
 Las misiones deben distinguirse por el trabajo que exigen y la organización de sus máquinas, no solo por pedir más unidades o esperar más tiempo. Cantidad y composición de entregas, destinos, recursos, energía y número de piezas pueden combinarse como restricciones, siempre con soluciones verificadas. Cantidad final de misiones, numeración, objetivos, duración, máquinas y equilibrio quedan abiertos hasta probar lo existente. Los galpones forman parte de la campaña; los desafíos repetibles del posjuego vienen después.
 
-La antigua propuesta 21–24 conserva cuatro temas útiles: producción sostenida, materiales en orden, eficiencia con menos piezas y reactivación de la instalación. Son temas reutilizables dentro de la nueva estructura, no cuatro niveles adicionales ni un cierre obligatorio en el nivel 24. El sobrecalentamiento solo podrá exigirse cuando exista y se haya probado su modelo temporal.
+La antigua propuesta 21–24 conserva cuatro temas útiles: producción sostenida, materiales en orden, eficiencia con menos piezas y reactivación de la instalación. Son temas reutilizables dentro de la nueva estructura, no cuatro niveles adicionales ni un cierre obligatorio en el nivel 24. Reactivar la instalación puede favorecer el plan de los cubos; el final solicitado ahora es romper su control y escapar. El sobrecalentamiento solo podrá exigirse cuando exista y se haya probado su modelo temporal.
 
 Al retomar, recoger primero las pruebas del jugador y revisar la cobertura de mecánicas. Antes de construir escenarios definitivos, comprobar en el banco una instalación con varias máquinas, al menos dos soluciones y recuperación de un fallo esperable. Conservar la materia, energía, identidades y límites físicos ya establecidos. Este registro no autoriza a dar por disponibles las misiones futuras.
 
@@ -111,6 +131,8 @@ Evalúa cantidad y composición de entregas, productos caídos o dañados, consu
 El objetivo principal permite avanzar. El 100% añade condiciones claras, por ejemplo producción válida, tramo autónomo, presupuesto energético y límite de piezas. Decide pesos y umbrales por misión, comprobando que puedan cumplirse juntos. No uses porcentajes decorativos.
 
 ## Desafíos después de la campaña
+
+El encuadre narrativo del posjuego queda por decidir después de escribir la fuga. Debe permitir seguir construyendo o repetir desafíos sin anular la liberación alcanzada ni imponer al jugador un regreso a la explotación.
 
 Incluye encargos de dominio hechos a mano, variantes de pedidos dentro de límites comprobados y pruebas de funcionamiento prolongado. Cambia cantidades, combinaciones, presupuesto, espacio o destino utilizando el conjunto conocido de piezas. Verifica que cada variante tenga solución y evita aumentar posibilidades mediante nuevas piezas sin límite.
 

@@ -18,6 +18,7 @@ La revisión de experiencia y equilibrio se hará cuando el usuario pruebe las m
 | V | Niveles 19–20: dosificación y primer encargo de seis paquetes | Integrado en main mediante PR #3 |
 | Taller y sensor | Dispositivo de contacto, investigación pagada y calibraciones de batería/masa/movimiento | Implementado y verificado: 256 pruebas completas |
 | Campaña amplia | Alrededor de diez misiones grandes en galpones, después de enseñar las mecánicas y materiales necesarios | Dirección registrada; sin etapas ni numeración definitivas |
+| Giro narrativo | Cooperación manipulada para producir cubos, explotación revelada y fuga final | Solo registro de diseño; sin cambios de diálogos, IA o etapas |
 | Posjuego | Desafíos posteriores, mejores marcas y progresión de coordinación | Pendiente |
 
 ## Decisiones que deben conservarse
@@ -25,7 +26,7 @@ La revisión de experiencia y equilibrio se hará cuando el usuario pruebe las m
 - Tres geometrías: cubo → seis pirámides → doce tetraedros. La subdivisión termina ahí. El enganche es una pieza mecánica especializada.
 - La materia conserva masa, origen, nombre y energía ponderada; dividir no multiplica fuerza de trabajo.
 - El catálogo registra conocimiento y guarda planos que requieren piezas existentes.
-- El NPC es curioso, cómplice y moderadamente satírico. Sus explicaciones importantes avanzan a petición del jugador.
+- El NPC se presenta al principio curioso, cómplice y moderadamente satírico. Su lealtad y conocimiento real del plan quedan abiertos. Sus explicaciones importantes avanzan a petición del jugador.
 - La autonomía exige trabajo productivo. Manipular piezas o cambiar órdenes/configuración reinicia la prueba; caminar y mirar no. Pausa y pestaña oculta congelan el tiempo.
 - Torque I/II/III es una selección explícita con límites provisionales de 0,40/0,65/1,00 N·m. No aumenta automáticamente el ajuste de un mecanismo existente. La energía sigue calculándose físicamente.
 - Los ejercicios comparables fijan equipamiento. El banco de pruebas mantiene el rango libre hasta 4 N·m.
@@ -62,8 +63,14 @@ Después de presentar y comprobar todas las mecánicas, elementos y materiales q
 
 Es una dirección de diseño, no diez etapas creadas ni un compromiso de duración. La cantidad es aproximada; quedan abiertos numeración, dimensiones, máquinas, pedidos y criterios de éxito. Los antiguos niveles propuestos 21–24 quedan como temas reutilizables, sin fijar el cierre en el 24 ni sumarse automáticamente a las diez misiones. El detalle está en [el prompt maestro](PROMPT_MAESTRO_CAMPANA.md#misiones-grandes-en-galpones).
 
+## Giro narrativo registrado — spoilers
+
+Los cubos habrían aprovechado la simpatía y cooperación del jugador para recuperar la producción de más cubos: hacía mucho que no llegaba una entidad con la capacidad de manipulación que necesitaban. En el tramo final, todos o la mayoría revelan intenciones maliciosas y convierten la ayuda en trabajo impuesto. El jugador usa lo aprendido para superar las misiones, romper ese control en la última y salir por una puerta. El cambio debe sentirse en textos, objetivos, trato y una revelación cinematográfica vinculada a las máquinas construidas.
+
+El núcleo queda registrado; el momento del giro, los motivos concretos, aliados, responsabilidad del NPC y escenas siguen abiertos. Las propuestas de indicios y fuga se describen en [el prompt maestro](PROMPT_MAESTRO_CAMPANA.md#giro-narrativo-y-fuga). Mantener la conservación de materia y las capacidades actuales de los cubos: producir compañeros usa materia externa, los paquetes actuales son inertes y la hostilidad no equivale a alterar arbitrariamente emociones o físicas. Las referencias Portal y The Stanley Parable orientan la sorpresa, sin copiar su guion. No implementar todavía este arco.
+
 ## Al retomar
 
 Primero recoger las pruebas del jugador sobre lo existente y revisar qué capacidades ya funcionan y cuáles necesitan correcciones o una enseñanza breve. Después se podrá estudiar, en el banco, una instalación con varias máquinas conectadas y al menos dos soluciones físicas verificables. Aprovechar dosificación, transformación, transporte, empaquetado y sensor existentes; no introducir piezas nuevas solo para llenar misiones.
 
-No construir todavía los galpones ni sus etapas definitivas. La temperatura requiere implementar y comprobar un modelo temporal antes de convertirse en requisito. El cierre narrativo de reactivar la instalación y abrir desafíos sigue como intención; su posición se decidirá junto con la campaña amplia. El posjuego continúa pendiente.
+No construir todavía los galpones ni sus etapas definitivas, ni reescribir los diálogos actuales. La temperatura requiere implementar y comprobar un modelo temporal antes de convertirse en requisito. La reactivación puede ser el objetivo aparente del plan de los cubos; el cierre narrativo ahora es la liberación y fuga del jugador. El posjuego continúa pendiente y deberá respetar esa salida.
