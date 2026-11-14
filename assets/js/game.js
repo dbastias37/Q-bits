@@ -8,6 +8,8 @@ function readQbitsStorage(key){
  return previous;
 }
 const story={ready:false,mode:'menu',scene:'lab',phase:'idle',started:false,elapsed:0,phaseTime:0,dialogue:null,transition:null,intentionalUnlock:false,preserveGrip:false,progress:{},lab:null,guideId:null,dropAligned:false};
+let unitRadial=null;
+function radialOpen(){return !!unitRadial?.isOpen;}
 const storyWorld={walls:[],details:[],door:null,target:null,doorProgress:0};
 const ROOM_SIZE = 28; // Ancho y largo; las cuatro paredes se alejan del centro.
 const ROOM_HEIGHT = 14;
@@ -301,6 +303,7 @@ function lockFailed() {
 }
 
 function pause(release=true) {
+  closeUnitRadial(false);
   if(story.ready){story.preserveGrip=!release;if(document.pointerLockElement===canvas)story.intentionalUnlock=true;}
   pendingPickup=null;
   finishMarquee(true);
@@ -323,6 +326,7 @@ function resize() {
 }
 
 async function captureMouse() {
+  if(radialOpen())return;
   if(story.ready&&!story.allowTransitionCapture&&(story.mode!=='playing'||['asleep','invocation','choice','repeat'].includes(story.phase)))return;
   if (document.pointerLockElement === canvas || lockPending) return;
   panel.hidden = true;
@@ -353,6 +357,7 @@ document.addEventListener('pointerlockchange', () => {
   clearTimeout(lockTimeout);
   lockPending = false;
   locked = document.pointerLockElement === canvas;
+  if(!locked)closeUnitRadial(false);
   keys.clear();
   if (locked) { story.intentionalUnlock=false;story.preserveGrip=false;hint.hidden=true;completePendingPickup(); }
   else { const expected=story.intentionalUnlock;story.intentionalUnlock=false;
@@ -363,6 +368,11 @@ document.addEventListener('pointerlockchange', () => {
 });
 document.addEventListener('pointerlockerror', lockFailed);
 document.addEventListener('mousemove', event => {
+  if(radialOpen()){
+    if(document.pointerLockElement===canvas)unitRadial.moveBy(event.movementX,event.movementY);
+    else unitRadial.moveTo(event.clientX,event.clientY);
+    return;
+  }
   // Never simulate capture by merely hiding the cursor.
   if (document.pointerLockElement !== canvas || !storyLookAllowed()) return;
   if (marquee) { updateMarquee(event); return; }
@@ -373,7 +383,7 @@ document.addEventListener('mousemove', event => {
   redraw = true;
 });
 document.addEventListener('keydown', handleKey);
-document.addEventListener('keyup', event => keys.delete(event.code));
+document.addEventListener('keyup', handleKeyUp);
 window.addEventListener('blur',()=>{if(story.ready&&story.mode==='playing')openPauseMenu();else pause();});
 document.addEventListener('visibilitychange', () => {
   if(document.hidden){if(story.ready&&story.mode==='playing')openPauseMenu();else pause();}
@@ -381,6 +391,7 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('resize', resize);
 canvas.addEventListener('webglcontextlost', event => {
   event.preventDefault();
+  closeUnitRadial(false);
   running = false;
   releaseQubit();
   keys.clear();
@@ -879,6 +890,41 @@ function creationShape(){return story.scene==='lab'&&!puzzle.active?normalizeUni
 function unitLabel(part){return isTBit(part)?'T-bit':'Q-bit';}
 function groupUnitLabel(g){const t=g.parts.filter(isTBit).length;return t===g.parts.length?'T-bit'+(t===1?'':'s'):t?'piezas':'Q-bit'+(g.parts.length===1?'':'s');}
 function syncUnitControls(){const shape=creationShape();document.querySelector('#unit-shape').value=shape;document.querySelector('#unit-shape').disabled=story.scene!=='lab'||puzzle.active;document.querySelector('#create').textContent=shape==='cube'?'Crear Q-bit':'Crear T-bit';}
+function initUnitRadial(){
+ if(unitRadial)return;
+ if(!window.QBitsRadial)throw new Error('No se pudo preparar el selector de piezas.');
+ const entries=[
+  {id:'cube',title:'Q-bit',subtitle:'Cubo',description:'Seis caras, muchas posibilidades. Tómalo, únelo y sepáralo para construir.',color:[43,46,49]},
+  {id:'tetra',title:'T-bit',subtitle:'Triangular',description:'Cuatro caras triangulares. Una nueva forma de encajar, con la misma vida que un Q-bit.',color:[135,140,143]},
+  {id:'pyramid',title:'T-bit',subtitle:'Rectangular',description:'Base rectangular y caras inclinadas. Únelo a otras piezas y desarma cuando quieras.',color:[135,140,143]}
+ ];
+ unitRadial=window.QBitsRadial.create({profiles:entries.map(entry=>{
+  const profile=unitProfile(entry.id);
+  return {...entry,vertices:profile.vertices.map(v=>[v.x/CUBE_SIZE,v.y/CUBE_SIZE,v.z/CUBE_SIZE]),faces:profile.faces};
+ })});
+}
+function unitRadialAllowed(){
+ return story.ready&&story.mode==='playing'&&story.scene==='lab'&&!puzzle.active&&!story.transition&&!document.hidden&&document.body.dataset.booting!=='true'&&panel.hidden&&menu.hidden&&commandMenu.hidden&&!held&&!marquee&&!pendingPickup&&!moveChoice&&!pendingCargo&&!editableTarget(document.activeElement);
+}
+function openUnitRadial(){
+ if(radialOpen()||!unitRadialAllowed())return false;
+ initUnitRadial();keys.clear();routeInspection=null;
+ unitRadial.open(creationShape(),{virtualPointer:document.pointerLockElement===canvas});
+ document.body.dataset.unitRadial='open';hint.hidden=true;redraw=true;
+ return true;
+}
+function closeUnitRadial(commit=false){
+ if(!radialOpen())return false;
+ const choice=unitRadial.hovered;
+ const valid=commit&&unitRadialAllowed()&&['cube','tetra','pyramid'].includes(choice);
+ unitRadial.close();document.body.dataset.unitRadial='closed';keys.clear();
+ if(valid){settings.unitShape=choice;syncUnitControls();announce((choice==='cube'?'Q-bit':choice==='tetra'?'T-bit triangular':'T-bit rectangular')+' · N para crear');}
+ redraw=true;return valid;
+}
+function handleKeyUp(event){
+ keys.delete(event.code);
+ if(event.code==='KeyQ'&&radialOpen()){event.preventDefault();closeUnitRadial(true);}
+}
 function spawnQubit(){
  if(puzzleBlockedEdit('qubit'))return;
  const shape=creationShape();
@@ -1331,6 +1377,7 @@ document.querySelector('#resume').addEventListener('click',()=>{panel.hidden=tru
 canvas.addEventListener('mousedown',onCanvasMouseDown);
 document.addEventListener('mouseup',onCanvasMouseUp);
 function handleWheel(event){
+ if(radialOpen()){event.preventDefault();return;}
  if(document.pointerLockElement!==canvas)return;
  if(keys.has('KeyC')){
   event.preventDefault();posture.crouchHeight=clamp(posture.crouchHeight-Math.sign(event.deltaY)*.08,.42,1.15);redraw=true;return;
@@ -1340,6 +1387,15 @@ function handleWheel(event){
 }
 canvas.addEventListener('wheel',handleWheel,{passive:false});
 function handleKey(event){
+ if(radialOpen()){
+  event.preventDefault();
+  if(event.code==='Escape')closeUnitRadial(false);
+  else if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.code))unitRadial.chooseNext(event.code==='ArrowLeft'||event.code==='ArrowUp'?-1:1);
+  return;
+ }
+ if(event.code==='KeyQ'&&!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&unitRadialAllowed()){
+  event.preventDefault();openUnitRadial();return;
+ }
  if(storyInput(event))return;
  speech.lastInput=simTime;
  if(event.code==='Escape'){closeCommandMenu(false);moveChoice=null;pendingCargo=null;routeInspection=null;if(!menu.hidden)closeDetachMenu(false);finishMarquee(true);pause();return;}
@@ -1855,6 +1911,7 @@ function clearSelection(){
  speech.nextHud=0;document.querySelector('#selection').textContent='';
 }
 function onCanvasMouseDown(event){
+ if(radialOpen()){event.preventDefault();return;}
  if(event.button!==0&&event.button!==2)return;
  if(!storyActionAllowed())return;
  if(story.scene==='intro'&&event.button===2)return;
@@ -1868,6 +1925,7 @@ function onCanvasMouseDown(event){
  grabQubit();
 }
 function onCanvasMouseUp(event){
+ if(radialOpen()){event.preventDefault();return;}
  if(event.button!==0||held?.reward||held?.latched)return;
  if(marquee)finishMarquee();else releaseQubit(shiftDown());
 }
@@ -2725,9 +2783,9 @@ document.addEventListener('webkitfullscreenchange',syncFullscreenButton);
 // Campaign prologue. Scene state, narrative timers and test tools share one clock.
 const chapters=[['00','El primer encuentro','Prólogo · tomar, mover y enfriar'],['01','Primer contacto','Llevar un Q-bit a un destino'],['02','Cada uno por su camino','Dos destinos independientes'],['03','Dos lados','Dos botones simultáneos'],['04','Juntos pesamos más','Dos Q-bits en un botón'],['05','La primera unión','Dos piezas · circuito de líquido'],['06','Cambiar de forma','Tres puertas · L, cuadrado y T'],['07','Seis piezas','Rectángulo y escalera'],['08','Salimos juntos','Seis compañeros · fin del primer bloque'],['09','La fuente','Conocer al equipo · transformar materia'],['10','El camino de vuelta','Dos estaciones · transporte y descanso'],['11','Dos rutas','Elegir materia y organizar al equipo'],['12','La instalación','Tres estaciones · el equipo completo']];
 const ui={main:document.querySelector('#main-screen'),pause:document.querySelector('#pause-screen'),levels:document.querySelector('#levels-screen'),complete:document.querySelector('#chapter-complete'),dialogue:document.querySelector('#story-dialogue'),text:document.querySelector('#story-text'),speaker:document.querySelector('#story-speaker'),choices:document.querySelector('#story-choices'),objective:document.querySelector('#story-objective'),veil:document.querySelector('#scene-veil'),top:document.querySelector('#eye-top'),bottom:document.querySelector('#eye-bottom'),cooling:document.querySelector('#cooling-track'),marker:document.querySelector('#world-label')};
-function gameMode(mode){story.mode=mode;window.QBitsMusic?.setPaused(mode!=='playing');document.body.dataset.gameMode=mode;for(const [key,el] of [['menu',ui.main],['pause',ui.pause],['levels',ui.levels],['complete',ui.complete]])el.hidden=mode!==key;document.querySelector('#pause-button').hidden=mode!=='playing';hint.hidden=true;redraw=true;}
+function gameMode(mode){if(mode!=='playing')closeUnitRadial(false);story.mode=mode;window.QBitsMusic?.setPaused(mode!=='playing');document.body.dataset.gameMode=mode;for(const [key,el] of [['menu',ui.main],['pause',ui.pause],['levels',ui.levels],['complete',ui.complete]])el.hidden=mode!==key;document.querySelector('#pause-button').hidden=mode!=='playing';hint.hidden=true;redraw=true;}
 function gameScene(scene){story.scene=scene;document.body.dataset.gameScene=scene;const label=document.querySelector('#chapter-label');label.hidden=scene==='lab';document.querySelector('#chapter-number').textContent=scene==='intro'?'PRÓLOGO / 00':'NIVEL / '+String(story.level||1).padStart(2,'0');document.querySelector('#chapter-name').textContent=scene==='intro'?'El primer encuentro':chapters[story.level||1][1];}
-function storySuspended(){return story.ready&&(story.mode!=='playing'||!panel.hidden||document.hidden);}
+function storySuspended(){return radialOpen()||story.ready&&(story.mode!=='playing'||!panel.hidden||document.hidden);}
 function storyWalkAllowed(){return !story.ready||story.scene!=='intro'||['deliver','cooling','cooled','choice','repeat'].includes(story.phase);}
 function storyLookAllowed(){return !story.ready||story.mode==='playing'&&!['asleep','invocation','opening'].includes(story.phase);}
 function storyActionAllowed(){return !story.ready||story.mode==='playing'&&!story.transition&&!encounterLocksActions()&&(story.scene!=='intro'||['pickup','carry','deliver','cooling','cooled'].includes(story.phase));}
@@ -2808,6 +2866,7 @@ function drawStoryGlass(){
 }
 const storyTargetMesh=buildLathe([[.88,.006],[1,.006]],72);
 function clearNarrativeScene(){
+ closeUnitRadial(false);
  releaseQubit();story.preserveGrip=false;clearCampaign();clearStoryWalls();clearPuzzleScene();puzzle.active=false;puzzle.savedLab=null;puzzle.delivery=null;clearSelection();speech.queue.length=0;for(const slot of speech.slots)clearSpeechSlot(slot);hideStoryDialogue();storyObjective('');ui.marker.hidden=true;story.guideId=null;story.phaseTime=0;story.dropAligned=false;story.lost=0;story.arrival=0;story.routeIssued=false;story.phase='idle';ui.top.style.height='0';ui.bottom.style.height='0';canvas.style.filter='none';document.querySelector('#notice').textContent='';document.querySelector('#wake-screen').hidden=true;
 }
 function rememberLab(){if(story.scene==='lab'){story.lab=puzzle.active?puzzle.savedLab:saveLab();story.labAlpha={...alphaSettings};}}
@@ -3369,7 +3428,7 @@ const nextPaint=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimat
 window.QBitsGame={
   async prepare(onProgress=()=>{}){
     if(gamePrepared)return;
-    initStory();resize();onProgress(.25);
+    initUnitRadial();initStory();resize();onProgress(.25);
     await nextPaint();
     // Build the actual prologue before Jugar, retaining its bodies and GPU assets.
     beginIntro();gameMode('boot');story.started=false;

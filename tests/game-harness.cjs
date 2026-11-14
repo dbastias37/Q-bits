@@ -7,6 +7,22 @@ module.exports = function createGame() {
   const root = path.join(__dirname, '..');
   let nextBuffer = 0, nextFrame = 0, seed = 731;
   const buffers = new Set(), frames = new Map(), elements = new Map();
+  function eventTarget(target) {
+    const listeners = new Map();
+    target.addEventListener = (type, fn) => {
+      if (!listeners.has(type)) listeners.set(type, new Set());
+      listeners.get(type).add(fn);
+    };
+    target.removeEventListener = (type, fn) => listeners.get(type)?.delete(fn);
+    target.dispatchEvent = event => {
+      event.target ??= target;
+      event.preventDefault ??= function () { this.defaultPrevented = true; };
+      event.stopPropagation ??= () => {};
+      for (const fn of [...(listeners.get(event.type) || [])]) fn(event);
+      return !event.defaultPrevented;
+    };
+    return target;
+  }
   const gl = new Proxy({
     getShaderParameter: () => true, getProgramParameter: () => true,
     getAttribLocation: () => 0, getUniformLocation: () => 0,
@@ -28,7 +44,7 @@ module.exports = function createGame() {
       contains: () => false, matches: () => false, closest: () => null,
       getBoundingClientRect: () => ({ x: 0, y: 0, left: 0, top: 0, right: 1280, bottom: 720, width: 1280, height: 720 })
     };
-    elements.set(key, el); return el;
+    eventTarget(el);elements.set(key, el); return el;
   }
   const document = {
     querySelector: element, querySelectorAll: () => [], getElementById: id => element('#' + id),
@@ -37,12 +53,34 @@ module.exports = function createGame() {
     body: element('body'), documentElement: element('html'), addEventListener() {}, removeEventListener() {},
     hidden: false, activeElement: null, pointerLockElement: null
   };
+  eventTarget(document);
+  document.exitPointerLock = () => {
+    document.pointerLockElement = null;
+    document.dispatchEvent({ type: 'pointerlockchange' });
+  };
+  let radialInstance = null;
+  const radialStub = {
+    create({ profiles }) {
+      radialInstance = {
+        profiles, isOpen: false, hovered: null, openCalls: 0, closeCalls: 0, pointer: null,
+        open(selected, options) { this.isOpen = true;this.hovered = null;this.selected = selected;this.options = options;this.openCalls++; },
+        close() { this.isOpen = false;this.closeCalls++; },
+        moveBy(x, y) { this.pointer = { mode: 'relative', x, y }; },
+        moveTo(x, y) { this.pointer = { mode: 'absolute', x, y }; },
+        chooseNext(delta) {
+          const i = profiles.findIndex(profile => profile.id === this.hovered);
+          this.hovered = profiles[(i + delta + profiles.length) % profiles.length].id;
+        }
+      };
+      return radialInstance;
+    }
+  };
   const seededMath = Object.create(Math);
   seededMath.random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
   const sandbox = {
     console, document, navigator: { userAgent: 'logic-test' }, performance, URL, Blob,
     Float32Array, Int32Array, Uint32Array, Uint16Array, Uint8Array, ArrayBuffer, Map, Set,
-    Math: seededMath, JSON, Promise, localStorage: { getItem: () => null, setItem() {} },
+    Math: seededMath, JSON, Promise, QBitsRadial: radialStub, localStorage: { getItem: () => null, setItem() {} },
     requestAnimationFrame(fn) { frames.set(++nextFrame, fn); return nextFrame; },
     cancelAnimationFrame(id) { frames.delete(id); },
     setTimeout() {}, clearTimeout() {}, setInterval() {}, clearInterval() {},
@@ -50,6 +88,7 @@ module.exports = function createGame() {
     matchMedia: () => ({ matches: false, addEventListener() {} }),
     innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1
   };
+  eventTarget(sandbox);
   sandbox.window = sandbox; sandbox.self = sandbox;
   vm.createContext(sandbox);
   let scripts;
@@ -71,6 +110,8 @@ module.exports = function createGame() {
     setHeld:value=>{held=value},setSelected:value=>{selected=value},getSelected:()=>selected,
     makeGroup,worldParts,addQubit,removeGroup,orientations,clearNarrativeScene,rollGeometry,beginHaul,stopHaul,assignCrew,
     navigationJobs,runNavigationJobs,updatePosture,handleKey,handleWheel,grabQubit,releaseQubit,
+    openUnitRadial,closeUnitRadial,handleKeyUp,radialOpen,unitRadialAllowed,storySuspended,
+    onCanvasMouseDown,onCanvasMouseUp,pause,puzzle,getLook:()=>({yaw,pitch}),getSimTime:()=>simTime,
     posture,position,keys,canvas,storyWorld,EYE_HEIGHT,frame,sceneFade,tickSceneFade,tickStory,storyInput,wakeUp,renderDialogue,advanceDialogue,resumeGame,openPauseMenu,storyLookAllowed,getHeld:()=>held,
     setRunning:value=>{running=value}};`;
   scripts = scripts.map(source => {
@@ -82,6 +123,7 @@ module.exports = function createGame() {
   for (const source of scripts) vm.runInContext(source, sandbox, { timeout: 10000 });
   return {
     t: sandbox.__testGame, api: sandbox.QBitsGame, sandbox, buffers,
+    get radial() { return radialInstance; },
     frame(time = performance.now()) { const batch = [...frames.values()]; frames.clear(); for (const fn of batch) fn(time); },
     navigationUntilIdle(limit = 2000) {
       let turns = 0;

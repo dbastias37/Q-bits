@@ -10,6 +10,7 @@
   <link rel="preload" href="assets/fonts/tengoku/Tengoku.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="preload" href="assets/fonts/spaceman/Spaceman-Regular.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="preload" href="assets/fonts/led-calculator/LEDCalculator.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="assets/css/radial-menu.css?v=20261114-5">
   <style>
     * { box-sizing: border-box; }
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000; }
@@ -340,7 +341,7 @@ input,select,textarea{font-family:var(--font-menu);}
   <div id="qbit-dialogues" aria-live="off"></div>
   <div id="crosshair" aria-hidden="true"></div>
   <p id="hint" role="status">Clic para entrar · WASD para caminar · Esc para liberar el mouse</p>
-  <div id="tools" aria-label="P: herramientas · N: crear pieza · B: crear cuerpo">P · N · B<div id="selection"></div><div id="mood-selection" hidden><div id="mood-selection-label"></div><div class="mood-segments"><i id="mood-segment-neutral"></i><i id="mood-segment-excited"></i><i id="mood-segment-restless"></i></div></div></div><div id="mood-held-labels" aria-live="off"></div>
+  <div id="tools" aria-label="Q: selector de piezas · P: herramientas · N: crear pieza · B: crear cuerpo">Q · P · N · B<div id="selection"></div><div id="mood-selection" hidden><div id="mood-selection-label"></div><div class="mood-segments"><i id="mood-segment-neutral"></i><i id="mood-segment-excited"></i><i id="mood-segment-restless"></i></div></div></div><div id="mood-held-labels" aria-live="off"></div>
   <svg id="menu-link" aria-hidden="true"><path id="menu-link-path" d=""/></svg>
   <div id="command-menu" hidden role="dialog" aria-label="Órdenes"><div id="command-title"></div><div id="command-actions"></div></div>
   <div id="route-readout" hidden></div>
@@ -427,6 +428,6 @@ input,select,textarea{font-family:var(--font-menu);}
     <div class="actions"><button id="create" type="button">Crear Q-bit</button><button id="remove" type="button">Borrar pieza</button><button id="split" type="button">Desarmar estructura</button></div>
     <button id="resume" type="button">Volver a la sala</button>
   </section>
-  <script src="assets/js/boot.js?v=20261114-4" defer></script>
+  <script src="assets/js/boot.js?v=20261114-5" defer></script>
 </body>
 </html>

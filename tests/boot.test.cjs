@@ -76,6 +76,7 @@ function environment({ autoFonts = true } = {}) {
   }
   async function loadScripts() {
     await scriptResult('cannon.min.js');
+    await scriptResult('radial-menu.js');
     await scriptResult('game.js');
     await scriptResult('music.js');
   }

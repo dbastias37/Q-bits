@@ -71,6 +71,7 @@ El menú permite seleccionar niveles, reiniciar, pausar y entrar al laboratorio.
 | Dar órdenes y elegir un destino | Menú de clic derecho sobre la pieza y después sobre el suelo |
 | Tomar un grupo seleccionado | Clic derecho → Tomar selección |
 | Duplicar selección en el laboratorio | V |
+| Elegir Q-bit o T-bit en el laboratorio | Mantener Q, apuntar con el mouse y soltar Q; centro o Esc para cancelar |
 | Crear la pieza elegida en el laboratorio | N, o P → Piezas → Crear |
 | Detener una orden | R |
 | Avanzar o completar el texto del diálogo | E o Espacio |
@@ -84,7 +85,9 @@ El panel de pruebas incluye controles adicionales y ajustes del laboratorio. En 
 
 ## T-bits en el banco de pruebas
 
-En **P → Piezas → Tipo de pieza** se elige entre el Q-bit cúbico y dos T-bits grises. El botón Crear y el atajo N usan esa elección. Las nuevas formas se crean en el banco libre.
+Mantén **Q** para abrir el selector radial de vidrio: apunta a una figura y suelta Q para elegirla. El centro y Esc cancelan. **N** crea la pieza elegida. Las figuras giran suavemente y aceleran al señalarlas; la descripción aparece con la misma línea animada del Q-bit. Las flechas también permiten recorrer las opciones. Mientras está abierto, la escena se detiene y el mouse controla el selector sin mover la cámara. Se cierra sin elegir al pausar o cambiar de pestaña. Abre el selector con las manos libres, en el banco sin puzzle activo.
+
+También en **P → Piezas → Tipo de pieza** se elige entre el Q-bit cúbico y dos T-bits grises. El botón Crear y el atajo N usan esa elección. Las nuevas formas se crean en el banco libre.
 
 | Pieza | Proporciones respecto al lado del Q-bit |
 | --- | --- |
@@ -93,7 +96,7 @@ En **P → Piezas → Tipo de pieza** se elige entre el Q-bit cúbico y dos T-bi
 
 Tienen colisiones según sus caras reales, peso ajustable, agarre, giro, recorrido, estados, energía y enfriamiento. Se unen entre sí y con Q-bits acercando sus caras y soltando con Shift; Alt permite separar una pieza o desarmar la estructura. Duplicar, guardar formas y volver al banco conservan cada tipo. Los blueprints requieren piezas de la forma correcta y siguen aceptando las formas cúbicas guardadas anteriormente.
 
-El contador inferior izquierdo muestra únicamente el icono negro y las existencias Q/T. Los atajos visibles se reducen a P · N · B; las órdenes y ajustes siguen disponibles en sus menús.
+El contador inferior izquierdo muestra únicamente el icono negro y las existencias Q/T. Los atajos visibles se reducen a Q · P · N · B; las órdenes y ajustes siguen disponibles en sus menús.
 
 ## Transformación de materia
 
