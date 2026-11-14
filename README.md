@@ -132,7 +132,7 @@ Para modificar la interfaz y los estilos, edita `index.html`; para la lógica, e
 
 ## Música
 
-Sube tus MP3/OGG a [`assets/audio/music/`](assets/audio/music/) y añádelos a `playlist.json`. La [guía de esa carpeta](assets/audio/music/README.md) contiene el formato exacto. La lista inicial está vacía: el juego funciona en silencio hasta añadir tus temas. No se incluyen audios de ejemplo.
+La lista de [`assets/audio/music/`](assets/audio/music/) incluye seis MP3 aportados: **Latencia azul**, **Siete sobre cero**, **Materia tácita**, **Error de fase**, **El peso del aire** y **Nota fantasma**. La [guía de esa carpeta](assets/audio/music/README.md) muestra el orden, los archivos y cómo reemplazarlos o añadir pistas. Los archivos 01 y 05 recibidos son idénticos y se conservan hasta reemplazar el quinto.
 
 Todas las pistas configuradas se descargan y se comprueba que sean reproducibles antes del 100%. Se conservan como archivos comprimidos en memoria, sin decodificar una lista completa a PCM. La reproducción comienza con el clic en **Jugar**; los controles de volumen y música aparecen en los menús cuando hay pistas. Se pausa al pausar el juego o cambiar de pestaña.
 

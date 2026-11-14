@@ -1,6 +1,17 @@
 # Música de Q-bits
 
-Esta carpeta está conectada al juego. Aún no contiene canciones: la lista vacía es válida y el juego funciona en silencio.
+Esta carpeta está conectada al juego y contiene los seis archivos MP3 aportados. `playlist.json` define estos títulos y su orden de reproducción:
+
+| Pista | Archivo | Título |
+| --- | --- | --- |
+| 01 | `ambiente-01.mp3` | Latencia azul |
+| 02 | `ambiente-02.mp3` | Siete sobre cero |
+| 03 | `ambiente-03.mp3` | Materia tácita |
+| 04 | `ambiente-04.mp3` | Error de fase |
+| 05 | `ambiente-05.mp3` | El peso del aire |
+| 06 | `ambiente-06.mp3` | Nota fantasma |
+
+Los archivos 01 y 05 recibidos son idénticos. Ambos se conservan en la lista; para cambiar la quinta pista basta reemplazar `ambiente-05.mp3`. Los títulos de la lista no alteran los audios originales.
 
 ## Subir tus temas
 

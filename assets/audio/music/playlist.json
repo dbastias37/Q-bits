@@ -1,5 +1,12 @@
 {
   "volume": 0.3,
   "fadeSeconds": 3,
-  "tracks": []
+  "tracks": [
+    { "file": "ambiente-01.mp3", "title": "Latencia azul" },
+    { "file": "ambiente-02.mp3", "title": "Siete sobre cero" },
+    { "file": "ambiente-03.mp3", "title": "Materia tácita" },
+    { "file": "ambiente-04.mp3", "title": "Error de fase" },
+    { "file": "ambiente-05.mp3", "title": "El peso del aire" },
+    { "file": "ambiente-06.mp3", "title": "Nota fantasma" }
+  ]
 }
