@@ -19,6 +19,8 @@ const WALK_SPEED = 3.2;
 const posture = { height:EYE_HEIGHT, crouchHeight:.78 };
 // Inspection follows the wheel-driven hand distance, not the selection state.
 const heldFocus = { amount:0, target:0, focal:1.48256097, groups:[], active:false };
+const menuFocus={amount:0};
+const mechanismDefaults={rpm:30,direction:1,moving:'b'};
 
 function updatePosture(dt, active, crouching) {
   // C controls posture independently of grabbing, rotating and joining pieces.
@@ -416,7 +418,7 @@ const add=(a,b)=>a.vadd(b), sub=(a,b)=>a.vsub(b), mul=(a,s)=>a.scale(s);
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 // Unit profiles share one scale with the Q-bit. Pyramid origins are their mass
 // centroids, so their collision hulls and visible surfaces balance together.
-function normalizeUnitShape(shape){return shape==='tetra'||shape==='pyramid'?shape:'cube';}
+function normalizeUnitShape(shape){return shape==='tetra'||shape==='pyramid'||shape==='coupler'?shape:'cube';}
 function unitShape(value){return normalizeUnitShape(typeof value==='string'?value:value?.part?.shape||value?.shape);}
 function isTBit(value){return unitShape(value)!=='cube';}
 function makeUnitProfile(points,faces,faceKinds){
@@ -436,15 +438,18 @@ function makeUnitProfile(points,faces,faceKinds){
 const UNIT_PROFILES={
  cube:makeUnitProfile([[-.5,-.5,-.5],[.5,-.5,-.5],[.5,-.5,.5],[-.5,-.5,.5],[-.5,.5,-.5],[.5,.5,-.5],[.5,.5,.5],[-.5,.5,.5]],[[0,1,2,3],[4,7,6,5],[0,4,5,1],[1,5,6,2],[2,6,7,3],[3,7,4,0]],Array(6).fill('square')),
  tetra:makeUnitProfile([[-.625,-.125,-.375],[.375,-.125,-.375],[.375,-.125,.625],[-.125,.375,.125]],[[0,1,2],[0,3,1],[1,3,2],[2,3,0]],['half-square','slope','slope','diagonal']),
- pyramid:makeUnitProfile([[-.5,-.125,-.5],[.5,-.125,-.5],[.5,-.125,.5],[-.5,-.125,.5],[0,.375,0]],[[0,1,2,3],[0,4,1],[1,4,2],[2,4,3],[3,4,0]],['square','slope','slope','slope','slope'])
+ pyramid:makeUnitProfile([[-.5,-.125,-.5],[.5,-.125,-.5],[.5,-.125,.5],[-.5,-.125,.5],[0,.375,0]],[[0,1,2,3],[0,4,1],[1,4,2],[2,4,3],[3,4,0]],['square','slope','slope','slope','slope']),
+ // One convex, indivisible cube with a pointed cap; its true volume centroid
+ // sits 5/56 of a side above the cubic base center. Only square faces weld.
+ coupler:makeUnitProfile([[-.5,-33/56,-.5],[.5,-33/56,-.5],[.5,-33/56,.5],[-.5,-33/56,.5],[-.5,23/56,-.5],[.5,23/56,-.5],[.5,23/56,.5],[-.5,23/56,.5],[0,51/56,0]],[[0,1,2,3],[0,4,5,1],[1,5,6,2],[2,6,7,3],[3,7,4,0],[4,8,5],[5,8,6],[6,8,7],[7,8,4]],['square','square','square','square','square','coupler-cap','coupler-cap','coupler-cap','coupler-cap'])
 };
 function unitProfile(shape){return UNIT_PROFILES[unitShape(shape)];}
 function unitGroundHeight(shape){return -Math.min(...unitProfile(shape).vertices.map(v=>v.y));}
 function unitFaces(pose){const profile=unitProfile(pose);return profile.faces.map((face,index)=>({index,kind:profile.faceKinds[index],vertices:face.map(i=>add(pose.p,pose.q.vmult(profile.vertices[i]))),center:add(pose.p,pose.q.vmult(profile.faceCenters[index])),normal:pose.q.vmult(profile.faceNormals[index])}));}
 const settings={mass:1,unitShape:'cube',gravity:9.8,bounce:.12,force:60,friction:.38,damping:.12,speed:.32,guide:'ghost',line:'dashed',maxCarry:16,maxSelect:32,rotationSpeed:2.8,grip:.95,cargoSide:4,cargoRequired:8,cargoColor:'#f4f4f1',haulSpeed:.2,haulForce:2};
-const groups=[],cargos=[];
+const groups=[],cargos=[],rotors=[];let rotorSerial=0;
 const alphaSettings={maxRest:180,coolSeconds:35,capacity:4,blueprintRange:1.5,exitEnergy:.5,glow:.6,coolingOn:true,allowPuzzleSpawn:false};
-const coolers=[],blueprints=[],savedShapes=[],buttonBodies=[];let alphaSerial=0;
+const coolers=[],blueprints=[],savedShapes=[],savedMechanisms=[],buttonBodies=[];let alphaSerial=0;
 const moodSettings={drain:.035,recovery:.06,idleSeconds:90},moodLabels=[];
 
 // Dialogue catalogue v10: 253 approved lines + 20 close-up + 20 shaking + 20 impact reactions.
@@ -833,19 +838,21 @@ function totalWeight(g){return g.parts.reduce((n,p)=>n+p.weight,0);}
 function partPose(g,p,pos=g.body.position,quat=g.body.quaternion){return {p:add(pos,quat.vmult(p.offset)),q:quat.mult(p.q),part:p,g};}
 function poses(g,pos,quat){return g.parts.map(p=>partPose(g,p,pos,quat));}
 function worldParts(g){return poses(g).map(o=>({id:o.part.id,weight:o.part.weight,shape:unitShape(o),p:o.p,q:o.q,mood:copyMood(o.part.mood)}));}
+function allocateUnitId(){return ++serial;}
 function makeGroup(parts,reference=Q(),velocity=V(),spin=V()) {
+ serial=Math.max(serial,...parts.map(p=>p.id));
  const weight=parts.reduce((n,p)=>n+p.weight,0),center=V();
  for(const p of parts)center.vadd(mul(p.p,p.weight/weight),center);
  const inv=reference.inverse(),body=new CANNON.Body({mass:weight*.25,allowSleep:true,sleepSpeedLimit:.025,sleepTimeLimit:.6});
  body.collisionFilterMask=-1;body.position.copy(center);body.quaternion.copy(reference);body.velocity.copy(velocity);body.angularVelocity.copy(spin);
  body.linearDamping=.03;body.angularDamping=settings.damping;
- const local=parts.map(p=>{const shape=unitShape(p),mood=newMood(p.id,p.mood);if(!p.mood&&shape!=='cube')mood.name='T-bit '+p.id;return {id:p.id,weight:p.weight,shape,offset:inv.vmult(sub(p.p,center)),q:inv.mult(p.q),mood};});
+ const local=parts.map(p=>{const shape=unitShape(p),mood=newMood(p.id,p.mood);if(!p.mood&&shape!=='cube')mood.name=(shape==='coupler'?'Enganche ':'T-bit ')+p.id;return {id:p.id,weight:p.weight,shape,offset:inv.vmult(sub(p.p,center)),q:inv.mult(p.q),mood};});
  for(const p of local){const profile=unitProfile(p),shape=isTBit(p)?new CANNON.ConvexPolyhedron(profile.vertices.map(v=>v.clone()),profile.faces.map(f=>f.slice())):cubeShape();body.addShape(shape,p.offset,p.q);}
  body.updateMassProperties();world.addBody(body);
  const g={body,parts:local,route:null,pin:null};body.qubitGroup=g;g.block=analyzeBlock(g);groups.push(g);registerSpeechGroup(g);return g;
 }
 function addQubit(p,weight=settings.mass,shape='cube'){return makeGroup([{id:++serial,weight,shape:normalizeUnitShape(shape),p:V(...p),q:Q()}]);}
-function removeGroup(g){undockCampaignGroup(g);removeSpeechGroup(g);leaveHaul(g);stopRoute(g);world.removeBody(g.body);const i=groups.indexOf(g);if(i>=0)groups.splice(i,1);if(selected?.g===g)selected=null;multiSelection=multiSelection.filter(item=>item!==g);}
+function removeGroup(g){invalidateRotorBody(g);undockCampaignGroup(g);removeSpeechGroup(g);leaveHaul(g);stopRoute(g);world.removeBody(g.body);const i=groups.indexOf(g);if(i>=0)groups.splice(i,1);if(selected?.g===g)selected=null;multiSelection=multiSelection.filter(item=>item!==g);}
 function corners(pose){if(isTBit(pose))return unitProfile(pose).vertices.map(v=>add(pose.p,pose.q.vmult(v)));const out=[],half=pose.half||V(HALF,HALF,HALF);for(const x of [-half.x,half.x])for(const y of [-half.y,half.y])for(const z of [-half.z,half.z])out.push(add(pose.p,pose.q.vmult(V(x,y,z))));return out;}
 function bounds(g,pos=g.body.position,quat=g.body.quaternion){
  // The absolute rotation matrix gives the exact same AABB as eight corners.
@@ -899,29 +906,43 @@ function validPose(g,pos,quat,exclude=[]){
  if(cargos.some(c=>boundsOverlap(bb,cargoBounds(c))&&src.some(a=>obbOverlap(a,cargoPose(c)))))return false;
  return !groups.some(other=>other!==g&&!exclude.includes(other)&&boundsOverlap(bb,bounds(other))&&poses(other).some(b=>src.some(a=>obbOverlap(a,b))));
 }
-function creationShape(){return story.scene==='lab'&&!puzzle.active?normalizeUnitShape(settings.unitShape):'cube';}
-function unitLabel(part){return isTBit(part)?'T-bit':'Q-bit';}
-function groupUnitLabel(g){const t=g.parts.filter(isTBit).length;return t===g.parts.length?'T-bit'+(t===1?'':'s'):t?'piezas':'Q-bit'+(g.parts.length===1?'':'s');}
-function syncUnitControls(){const shape=creationShape();document.querySelector('#unit-shape').value=shape;document.querySelector('#unit-shape').disabled=story.scene!=='lab'||puzzle.active;document.querySelector('#create').textContent=shape==='cube'?'Crear Q-bit':'Crear T-bit';}
+function mechanismsUnlocked(){return [5,6,7,8,9,10,11,12].some(n=>!!story.progress['level'+n]);}
+function mechanismsAvailable(){return !puzzle.active&&(story.scene==='lab'||story.scene==='campaign'&&mechanismsUnlocked());}
+function isMechanismChoice(id){return id==='coupler'||id==='rotor';}
+function normalizeCreationChoice(id){return id==='rotor'?'rotor':normalizeUnitShape(id);}
+function creationChoiceAllowed(id){return ['cube','tetra','pyramid','coupler','rotor'].includes(id)&&(isMechanismChoice(id)?mechanismsAvailable():story.scene==='lab'&&!puzzle.active);}
+function creationTitle(id){return {cube:'Q-bit',tetra:'T-bit triangular',pyramid:'T-bit de base cuadrada',coupler:'Enganche',rotor:'Rotor'}[id]||'Q-bit';}
+function creationShape(){const id=normalizeCreationChoice(settings.unitShape);return creationChoiceAllowed(id)?id:'cube';}
+function unitLabel(part){return unitShape(part)==='coupler'?'Enganche':isTBit(part)?'T-bit':'Q-bit';}
+function groupUnitLabel(g){const c=g.parts.filter(p=>unitShape(p)==='coupler').length;if(c)return c===g.parts.length?'Enganche'+(c===1?'':'s'):'piezas';const t=g.parts.filter(isTBit).length;return t===g.parts.length?'T-bit'+(t===1?'':'s'):t?'piezas':'Q-bit'+(g.parts.length===1?'':'s');}
+function syncUnitControls(){const shape=creationShape(),select=document.querySelector('#unit-shape');select.value=shape;select.disabled=puzzle.active||story.scene!=='lab'&&!mechanismsAvailable();for(const option of select.querySelectorAll('option'))option.disabled=!creationChoiceAllowed(option.value);document.querySelector('#create').textContent='Crear '+creationTitle(shape);}
 function initUnitRadial(){
  if(unitRadial)return;
  if(!window.QBitsRadial)throw new Error('No se pudo preparar el selector de piezas.');
  const entries=[
   {id:'cube',title:'Q-bit',subtitle:'Cubo',description:'Módulo de 9 × 9 × 9 cm. Seis pirámides o doce T-bits triangulares completan este volumen.',color:[43,46,49]},
   {id:'tetra',title:'T-bit',subtitle:'Triangular',description:'Media pirámide. Une dos por su corte diagonal para completarla; doce forman un cubo.',color:[135,140,143]},
-  {id:'pyramid',title:'T-bit',subtitle:'Base cuadrada',description:'Base de 9 × 9 cm y altura de 4,5 cm. Seis encajan por sus caras, con las puntas al centro del cubo.',color:[135,140,143]}
+  {id:'pyramid',title:'T-bit',subtitle:'Base cuadrada',description:'Base de 9 × 9 cm y altura de 4,5 cm. Seis encajan por sus caras, con las puntas al centro del cubo.',color:[135,140,143]},
+  {id:'coupler',title:'Enganche',subtitle:'Una mitad del eje',section:'mechanisms',description:'Base cúbica y punta de conexión. Une dos puntas con Shift para crear un rotor; las caras cuadradas reciben tus piezas.',color:[94,110,113]},
+  {id:'rotor',title:'Rotor',subtitle:'Dos enganches unidos',section:'mechanisms',description:'Eje articulado. Clic derecho → Rotación: elige sentido y lado móvil. Guarda el conjunto como mecanismo.',color:[94,110,113]}
  ];
  unitRadial=window.QBitsRadial.create({profiles:entries.map(entry=>{
-  const profile=unitProfile(entry.id);
-  return {...entry,vertices:profile.vertices.map(v=>[v.x/CUBE_SIZE,v.y/CUBE_SIZE,v.z/CUBE_SIZE]),faces:profile.faces};
+  const profile=unitProfile(entry.id==='rotor'?'coupler':entry.id),locked=!creationChoiceAllowed(entry.id);
+  let vertices=profile.vertices.map(v=>[v.x/CUBE_SIZE,v.y/CUBE_SIZE,v.z/CUBE_SIZE]),faces=profile.faces.map(f=>f.slice());
+  if(entry.id==='rotor'){
+   const tip=Math.max(...vertices.map(v=>v[1])),half=vertices.length;
+   vertices=vertices.map(v=>[v[0],v[1]-tip,v[2]]).concat(vertices.map(v=>[v[0],tip-v[1],-v[2]]));
+   faces=faces.concat(faces.map(f=>f.map(i=>i+half)));
+  }
+  return {...entry,vertices,faces,locked,lockedDescription:isMechanismChoice(entry.id)?'Se desbloquea al completar el nivel 5: La primera unión. Disponible desde el inicio en el banco de pruebas.':'Las piezas de la campaña se obtienen dentro del nivel.'};
  })});
 }
 function unitRadialAllowed(){
- return running&&document.pointerLockElement===canvas&&story.ready&&story.mode==='playing'&&story.scene==='lab'&&!puzzle.active&&!story.transition&&!document.hidden&&document.body.dataset.booting!=='true'&&panel.hidden&&menu.hidden&&commandMenu.hidden&&!held&&!marquee&&!pendingPickup&&!moveChoice&&!pendingCargo&&!editableTarget(document.activeElement);
+ return running&&document.pointerLockElement===canvas&&story.ready&&story.mode==='playing'&&(story.scene==='lab'||story.scene==='campaign'&&mechanismsUnlocked())&&!puzzle.active&&!story.transition&&!document.hidden&&document.body.dataset.booting!=='true'&&panel.hidden&&menu.hidden&&commandMenu.hidden&&!held&&!marquee&&!pendingPickup&&!moveChoice&&!pendingCargo&&!editableTarget(document.activeElement);
 }
 function openUnitRadial(){
  if(radialOpen()||!unitRadialAllowed())return false;
- cancelUnitCreation();initUnitRadial();keys.clear();routeInspection=null;accumulator=0;
+ cancelUnitCreation();initUnitRadial();for(const id of ['cube','tetra','pyramid','coupler','rotor'])unitRadial.setLocked?.(id,!creationChoiceAllowed(id));keys.clear();routeInspection=null;accumulator=0;
  unitRadial.open(creationShape(),{virtualPointer:document.pointerLockElement===canvas});
  document.body.dataset.unitRadial='open';hint.hidden=true;redraw=true;
  return true;
@@ -930,9 +951,9 @@ function closeUnitRadial(commit=false){
  if(!commit)cancelUnitCreation();
  if(!radialOpen())return false;
  const choice=unitRadial.hovered;
- const valid=commit&&unitRadialAllowed()&&['cube','tetra','pyramid'].includes(choice);
+ const valid=commit&&unitRadialAllowed()&&creationChoiceAllowed(choice);
  unitRadial.close();document.body.dataset.unitRadial='closed';keys.clear();accumulator=0;
- if(valid){settings.unitShape=choice;pendingUnitCreation=choice;syncUnitControls();announce((choice==='cube'?'Q-bit':choice==='tetra'?'T-bit triangular':'T-bit de base cuadrada')+' · clic izquierdo para crear · Esc cancela');}
+ if(valid){settings.unitShape=choice;pendingUnitCreation=choice;syncUnitControls();announce(creationTitle(choice)+' · clic izquierdo para crear · Esc cancela');}
  redraw=true;return valid;
 }
 function cancelUnitCreation(){pendingUnitCreation=null;}
@@ -942,14 +963,18 @@ function handleKeyUp(event){
  if(event.code==='KeyQ'&&radialOpen()){event.preventDefault();closeUnitRadial(true);}
 }
 function spawnQubit(){
- if(puzzleBlockedEdit('qubit'))return;
- const shape=creationShape();
+ const shape=creationShape();if(puzzleBlockedEdit(isMechanismChoice(shape)?'mechanism':'qubit'))return;
+ if(isMechanismChoice(shape)&&!mechanismsAvailable()){announce('Completa La primera unión para desbloquear los mecanismos.');return;}
+ if(shape==='rotor'){
+  const rotor=spawnRotor(undefined,{...mechanismDefaults,enabled:false});if(!rotor){announce('No hay espacio libre para el rotor.');return;}
+  const g=rotorGroups(rotor)[0];cancelUnitCreation();selected={g,part:g.parts[0]};multiSelection=[];announce('Rotor creado · clic derecho → Rotación');return g;
+ }
  if(groups.reduce((s,g)=>s+g.parts.length,0)>=MAX_QUBITS){announce('Máximo de '+MAX_QUBITS+' piezas en la sala.');return;}
  for(let row=0;row<6;row++)for(const col of [0,1,-1,2,-2,3,-3]){
   const p=V(position[0]-Math.sin(yaw)*(.95+row*.16)+Math.cos(yaw)*col*.16,unitGroundHeight(shape)+.002,position[2]-Math.cos(yaw)*(.95+row*.16)-Math.sin(yaw)*col*.16);
   if(Math.max(Math.abs(p.x),Math.abs(p.z))>13.9)continue;
   if(groups.some(g=>poses(g).some(o=>obbOverlap({p,q:Q(),shape},o,-.012))))continue;
-  const g=addQubit([p.x,p.y,p.z],settings.mass,shape);cancelUnitCreation();selected={g,part:g.parts[0]};multiSelection=[];announce(unitLabel(g.parts[0])+' creado · '+settings.mass+' u');return g;
+  const g=addQubit([p.x,p.y,p.z],settings.mass,shape);if(!validPose(g,g.body.position,g.body.quaternion)){removeGroup(g);continue;}cancelUnitCreation();selected={g,part:g.parts[0]};multiSelection=[];announce(unitLabel(g.parts[0])+' creado · '+settings.mass+' u');return g;
  }announce('No hay espacio delante. Muévete y vuelve a intentarlo.');
 }
 function rayPart(origin,dir,pose,max=40,half=pose.half?.x||HALF){
@@ -974,8 +999,8 @@ function aimQubit(max=2.7,dir=direction()){
  for(const g of groups)for(const pose of poses(g)){const r=rayPart(origin,dir,pose,best);if(r&&r.distance<best){best=r.distance;hit={...r,g,part:pose.part};}}
  return hit;
 }
-function carrySet(hit){return multiSelection.includes(hit.g)&&multiSelection.length>1?multiSelection.filter(g=>groups.includes(g)):[hit.g];}
-function canCarry(list){return list.reduce((n,g)=>n+totalWeight(g),0)<=settings.maxCarry+.0001;}
+function carrySet(hit){return rotorConnectedGroups(multiSelection.includes(hit.g)&&multiSelection.length>1?multiSelection.filter(g=>groups.includes(g)):[hit.g]);}
+function canCarry(list){return rotorConnectedGroups(list).reduce((n,g)=>n+totalWeight(g),0)<=settings.maxCarry+.0001;}
 function grabQubit(hitOverride=null){
  resetAssemblyShake();
  if(document.pointerLockElement!==canvas||held||marquee)return;const hit=hitOverride||aimQubit();if(hit?.g?.storyEmerging)return;
@@ -984,6 +1009,7 @@ function grabQubit(hitOverride=null){
  const list=carrySet(hit),weight=list.reduce((n,g)=>n+totalWeight(g),0);
  if(!canCarry(list)){announce('Peso '+formatWeight(weight)+' u · capacidad '+formatWeight(settings.maxCarry)+' u. Ajustable en P.');return;}
  if(story.ready&&story.scene==='intro'&&hit.g===storyGuide()){hit.g.storyFloat=false;hit.g.body.type=CANNON.Body.DYNAMIC;hit.g.body.updateMassProperties();}
+ for(const rotor of rotors)if(rotorGroups(rotor).some(g=>list.includes(g)))configureRotor(rotor,{enabled:false});
  undockCampaignGroup(hit.g);
  selected=hit;const rootPoint=hit.point.clone();
  const ordered=[hit.g,...list.filter(g=>g!==hit.g)],items=[];
@@ -1018,7 +1044,7 @@ function touchingUnitFaces(a,b,tolerance=.00005){
 }
 function facesCoincide(a,b,tolerance=.00005){
  const n=a.vertices.length;
- if(a.kind&&b.kind&&a.kind!==b.kind)return false;
+ if(a.kind==='coupler-cap'||b.kind==='coupler-cap'||a.kind&&b.kind&&a.kind!==b.kind)return false;
  if(n!==b.vertices.length||a.normal.dot(b.normal)>-.99999||a.center.distanceTo(b.center)>tolerance)return false;
  for(let start=0;start<n;start++)if(a.vertices.every((v,i)=>v.distanceTo(b.vertices[(start-i+n)%n])<=tolerance))return true;
  return false;
@@ -1088,7 +1114,7 @@ function faceJoinOptions(sourceShape,targetShape){
  const key=unitShape(sourceShape)+':'+unitShape(targetShape);if(faceJoinCache.has(key))return faceJoinCache.get(key);
  const a=unitProfile(sourceShape),b=unitProfile(targetShape),options=[];
  for(let sourceFace=0;sourceFace<a.faces.length;sourceFace++)for(let targetFace=0;targetFace<b.faces.length;targetFace++){
-  const af=a.faces[sourceFace],bf=b.faces[targetFace],n=af.length;if(n!==bf.length||a.faceKinds[sourceFace]!==b.faceKinds[targetFace])continue;
+  const af=a.faces[sourceFace],bf=b.faces[targetFace],n=af.length;if(a.faceKinds[sourceFace]==='coupler-cap'||n!==bf.length||a.faceKinds[sourceFace]!==b.faceKinds[targetFace])continue;
   const align=Q();align.setFromVectors(a.faceNormals[sourceFace],mul(b.faceNormals[targetFace],-1));align.normalize();
   const tangent=align.vmult(sub(a.vertices[af[1]],a.vertices[af[0]]));tangent.normalize();
   for(let start=0;start<n;start++){
@@ -1215,10 +1241,159 @@ function findCompoundSquareSnap(source,target,limit){
  candidates.sort((a,b)=>a.score-b.score);
  return candidates.find(candidate=>validPose(source,candidate.position,candidate.quaternion))||null;
 }
+// Mechanical connections remain separate rigid bodies: stable unit IDs survive
+// ordinary weld/split operations, and the hinge is rebuilt before the next step.
+function rotorPart(id){for(const g of groups){const part=g.parts.find(p=>p.id===id);if(part)return {g,part,...partPose(g,part)};}return null;}
+function couplerTip(pose){return {point:add(pose.p,pose.q.vmult(V(0,CUBE_SIZE*51/56,0))),axis:pose.q.vmult(V(0,1,0))};}
+function rotorForPart(id){return rotors.find(r=>r.aId===id||r.bId===id)||null;}
+function rotorGroups(rotor){return [rotorPart(rotor.aId)?.g||null,rotorPart(rotor.bId)?.g||null];}
+function rotorForGroup(g){return rotors.find(r=>rotorGroups(r).includes(g))||null;}
+function rotorConnectedGroups(initial){
+ const result=[...new Set(initial.filter(g=>groups.includes(g)))];
+ for(let i=0;i<result.length;i++)for(const rotor of rotors){const pair=rotorGroups(rotor);if(pair.includes(result[i]))for(const g of pair)if(g&&!result.includes(g))result.push(g);}
+ return result;
+}
+function unpinRotor(rotor){
+ const pin=rotor.pin;if(!pin)return;const b=pin.body;b.type=pin.type;b.fixedRotation=pin.fixedRotation;b.updateMassProperties();b.velocity.set(0,0,0);b.angularVelocity.set(0,0,0);b.wakeUp();rotor.pin=null;
+}
+function invalidateRotorBody(g){
+ for(const rotor of rotors)if(rotor.constraint&&(rotor.constraint.bodyA===g.body||rotor.constraint.bodyB===g.body)){
+  world.removeConstraint(rotor.constraint);rotor.constraint=null;unpinRotor(rotor);
+ }
+}
+function disconnectRotor(rotor){
+ if(!rotors.includes(rotor))return false;
+ if(rotor.constraint)world.removeConstraint(rotor.constraint);rotor.constraint=null;unpinRotor(rotor);rotors.splice(rotors.indexOf(rotor),1);return true;
+}
+function rotorTipsCompatible(a,b,tolerance=.002){
+ if(!a||!b||unitShape(a)!=='coupler'||unitShape(b)!=='coupler'||a.g===b.g)return false;
+ const at=couplerTip(a),bt=couplerTip(b);return at.point.distanceTo(bt.point)<=tolerance&&at.axis.dot(bt.axis)<-.995;
+}
+function connectRotorTips(aId,bId,options={}){
+ const a=rotorPart(aId),b=rotorPart(bId);
+ if(aId===bId||rotorForPart(aId)||rotorForPart(bId)||!rotorTipsCompatible(a,b)||rotorConnectedGroups([a.g]).includes(b.g))return null;
+ if(poses(a.g).some(pa=>poses(b.g).some(pb=>obbOverlap(pa,pb,.000001))))return null;
+ if(options.rpm!==undefined&&!Number.isFinite(options.rpm)||options.direction!==undefined&&![1,-1].includes(options.direction)||options.moving!==undefined&&!['a','b'].includes(options.moving))return null;
+ const rotor={id:++rotorSerial,aId,bId,rpm:clamp(options.rpm??30,1,120),direction:options.direction??1,moving:options.moving??'b',enabled:false,constraint:null,pin:null};
+ stopRoute(a.g);stopRoute(b.g);leaveHaul(a.g);leaveHaul(b.g);rotors.push(rotor);for(const [part,label]of [[a.part,'A'],[b.part,'B']])if(/^Enganche (?:\d+|[AB] · \d+)$/.test(part.mood.name))part.mood.name='Enganche '+label+' · '+part.id;refreshRotors();
+ if(options.enabled)configureRotor(rotor,{enabled:true});return rotor;
+}
+function refreshRotors(){
+ for(const rotor of [...rotors]){
+  const a=rotorPart(rotor.aId),b=rotorPart(rotor.bId);
+  if(!a||!b||a.g===b.g||unitShape(a)!=='coupler'||unitShape(b)!=='coupler'){disconnectRotor(rotor);continue;}
+  if(rotor.constraint&&(rotor.constraint.bodyA!==a.g.body||rotor.constraint.bodyB!==b.g.body)){world.removeConstraint(rotor.constraint);rotor.constraint=null;unpinRotor(rotor);}
+  if(!rotor.constraint){
+   if(!rotorTipsCompatible(a,b,.004)){disconnectRotor(rotor);continue;}
+   const localTip=V(0,CUBE_SIZE*51/56,0);
+   rotor.constraint=new CANNON.HingeConstraint(a.g.body,b.g.body,{pivotA:add(a.part.offset,a.part.q.vmult(localTip)),pivotB:add(b.part.offset,b.part.q.vmult(localTip)),axisA:a.part.q.vmult(V(0,1,0)),axisB:b.part.q.vmult(V(0,-1,0)),maxForce:1000,collideConnected:true});
+   for(const equation of rotor.constraint.equations)equation.setSpookParams(1e10,4,FIXED_STEP);
+   world.addConstraint(rotor.constraint);
+  }
+ }
+ // Welding two previously independent networks must not leave competing motors.
+ const powered=new Set();for(const rotor of rotors)if(rotor.enabled){const component=rotorConnectedGroups(rotorGroups(rotor));if(component.some(g=>powered.has(g))){rotor.enabled=false;rotor.constraint?.disableMotor();unpinRotor(rotor);}else for(const g of component)powered.add(g);}
+}
+function configureRotor(rotor,patch={}){
+ if(!rotors.includes(rotor)||patch.rpm!==undefined&&!Number.isFinite(patch.rpm)||patch.direction!==undefined&&![1,-1].includes(patch.direction)||patch.moving!==undefined&&!['a','b'].includes(patch.moving))return false;
+ refreshRotors();if(!rotors.includes(rotor))return false;
+ const connected=rotorConnectedGroups(rotorGroups(rotor));
+ if(patch.enabled&&(held?.items||[]).some(item=>connected.includes(item.g))){announce('Suelta el rotor antes de accionarlo.');return false;}
+ if(patch.moving&&patch.moving!==rotor.moving)unpinRotor(rotor);
+ if(patch.rpm!==undefined)rotor.rpm=clamp(patch.rpm,1,120);
+ if(patch.direction!==undefined)rotor.direction=patch.direction;
+ if(patch.moving!==undefined)rotor.moving=patch.moving;
+ if(patch.enabled!==undefined)rotor.enabled=!!patch.enabled;
+ if(rotor.enabled)for(const other of rotors)if(other!==rotor&&rotorGroups(other).some(g=>connected.includes(g))){other.enabled=false;other.constraint?.disableMotor();unpinRotor(other);}
+ if(!rotor.enabled){rotor.constraint?.disableMotor();unpinRotor(rotor);for(const g of rotorGroups(rotor))if(g){g.body.angularVelocity.set(0,0,0);g.body.wakeUp();}}
+ updateRotorMotors();return true;
+}
+function rotorMovingFrame(rotor,moving){
+ if(rotor.frameCache?.parts===moving.parts&&rotor.frameCache.moving===rotor.moving)return rotor.frameCache;
+ const part=moving.parts.find(p=>p.id===(rotor.moving==='a'?rotor.aId:rotor.bId)),pivot=add(part.offset,part.q.vmult(V(0,CUBE_SIZE*51/56,0))),axis=part.q.vmult(V(0,1,0));let radius=0;
+ for(const pose of poses(moving,V(),Q()))for(const point of corners(pose)){const v=sub(point,pivot);radius=Math.max(radius,sub(v,mul(axis,v.dot(axis))).norm());}
+ return rotor.frameCache={parts:moving.parts,moving:rotor.moving,pivot,axis,radius:Math.max(.01,radius)};
+}
+function rotorProjectedPose(rotor,moving,base,quaternion=moving.body.quaternion){
+ const frame=rotorMovingFrame(rotor,moving),basePart=base.parts.find(p=>p.id===(rotor.moving==='a'?rotor.bId:rotor.aId)),tip=couplerTip(partPose(base,basePart));
+ const correction=Q();correction.setFromVectors(quaternion.vmult(frame.axis),mul(tip.axis,-1));correction.normalize();
+ const q=correction.mult(quaternion);q.normalize();return {p:sub(tip.point,q.vmult(frame.pivot)),q,pivot:tip.point,axis:mul(tip.axis,-1)};
+}
+function updateRotorMotors(dt=0){
+ for(const rotor of rotors){
+  const pair=rotorGroups(rotor),constraint=rotor.constraint;if(!constraint||pair.some(g=>!g))continue;
+  const moving=pair[rotor.moving==='a'?0:1],base=pair[rotor.moving==='a'?1:0],b=base.body,frame=rotorMovingFrame(rotor,moving);
+  // Respect the simulation's 6 m/s travel ceiling at the outermost point,
+  // rather than clipping only the center velocity and stretching a long arm.
+  rotor.effectiveRpm=Math.min(rotor.rpm,5/frame.radius*60/(2*Math.PI));rotor.speedLimited=rotor.effectiveRpm<rotor.rpm-.01;
+  if(!rotor.enabled){constraint.collideConnected=true;constraint.disableMotor();unpinRotor(rotor);rotor.driveVelocity=0;rotor.stalled=false;continue;}
+  // Coincident apex contact has no stable surface normal. While driven, the
+  // exact sweep/stall guard below handles mutual solid contact; ordinary
+  // Cannon contacts remain enabled against every other body.
+  constraint.collideConnected=false;
+  const component=rotorConnectedGroups(pair);
+  if((held?.items||[]).some(item=>component.includes(item.g))){rotor.enabled=false;constraint.disableMotor();unpinRotor(rotor);rotor.driveVelocity=0;continue;}
+  if(rotor.pin?.body!==b){unpinRotor(rotor);stopRoute(base);stopRoute(moving);leaveHaul(base);leaveHaul(moving);rotor.pin={body:b,type:b.type,fixedRotation:b.fixedRotation,p:b.position.clone(),q:b.quaternion.clone()};b.type=CANNON.Body.KINEMATIC;b.fixedRotation=true;b.updateMassProperties();rotor.driveVelocity=0;rotor.safePose={p:moving.body.position.clone(),q:moving.body.quaternion.clone()};}
+  b.position.copy(rotor.pin.p);b.quaternion.copy(rotor.pin.q);b.velocity.set(0,0,0);b.angularVelocity.set(0,0,0);b.force.set(0,0,0);b.torque.set(0,0,0);b.aabbNeedsUpdate=true;
+  if(moving.body.type!==CANNON.Body.DYNAMIC||moving.body.fixedRotation){moving.body.type=CANNON.Body.DYNAMIC;moving.body.fixedRotation=false;moving.body.updateMassProperties();}moving.body.wakeUp();
+  const target=rotor.direction*rotor.effectiveRpm*Math.PI*2/60,previous=rotor.driveVelocity||0;rotor.driveVelocity=previous+clamp(target-previous,-16*dt,16*dt);
+  const projected=rotorProjectedPose(rotor,moving,base),turn=Q();turn.setFromAxisAngle(projected.axis,rotor.driveVelocity*dt);
+  const next=rotorProjectedPose(rotor,moving,base,turn.mult(projected.q));
+  rotor.stalled=dt>0&&!validPose(moving,next.p,next.q);
+  if(rotor.stalled){rotor.driveVelocity=0;moving.body.velocity.set(0,0,0);moving.body.angularVelocity.set(0,0,0);}
+  const inertia=moving.body.inertia,bodyAxis=frame.axis,offset=mul(frame.pivot,-1),radial=sub(offset,mul(bodyAxis,offset.dot(bodyAxis))),hingeInertia=bodyAxis.x**2*inertia.x+bodyAxis.y**2*inertia.y+bodyAxis.z**2*inertia.z+moving.body.mass*radial.norm2();
+  const gravityTorque=Math.abs(sub(moving.body.position,projected.pivot).cross(mul(world.gravity,moving.body.mass)).dot(projected.axis));
+  constraint.enableMotor();constraint.setMotorMaxForce(Math.min(4,Math.max(.001,hingeInertia*8+gravityTorque*1.1)));
+  // Clockwise is viewed from the moving outer cube toward its own tip.
+  constraint.setMotorSpeed(rotor.driveVelocity);
+ }
+}
+function stabilizeRotors(){
+ for(const rotor of rotors){
+  if(!rotor.enabled||!rotor.pin)continue;const pair=rotorGroups(rotor);if(pair.some(g=>!g))continue;
+  const moving=pair[rotor.moving==='a'?0:1],base=pair[rotor.moving==='a'?1:0],b=moving.body,pose=rotorProjectedPose(rotor,moving,base);
+  // A hard mechanical axle must not stretch when iterative contacts fight a
+  // motor. Project its physical body onto the exact hinge, or stall at the last
+  // collision-free pose. Rendering and collision geometry always share this pose.
+  if(!rotor.stalled&&validPose(moving,pose.p,pose.q)){
+   b.position.copy(pose.p);b.quaternion.copy(pose.q);rotor.safePose={p:pose.p.clone(),q:pose.q.clone()};
+   const speed=b.angularVelocity.dot(pose.axis);b.angularVelocity.copy(mul(pose.axis,speed));b.velocity.copy(b.angularVelocity.cross(sub(b.position,pose.pivot)));
+  }else if(rotor.safePose){
+   b.position.copy(rotor.safePose.p);b.quaternion.copy(rotor.safePose.q);b.velocity.set(0,0,0);b.angularVelocity.set(0,0,0);rotor.driveVelocity=0;rotor.stalled=true;rotor.constraint.setMotorSpeed(0);
+  }
+  b.aabbNeedsUpdate=true;b.updateInertiaWorld(true);
+ }
+}
+function spawnRotor(p=null,options={}){
+ if(groups.reduce((n,g)=>n+g.parts.length,0)+2>MAX_QUBITS){announce('No hay capacidad para dos enganches.');return null;}
+ const positions=p?[p]:Array.from({length:6},(_,row)=>[0,1,-1,2,-2,3,-3].map(col=>V(position[0]-Math.sin(yaw)*(.95+row*.3)+Math.cos(yaw)*col*.3,0,position[2]-Math.cos(yaw)*(.95+row*.3)-Math.sin(yaw)*col*.3))).flat();
+ const flip=Q();flip.setFromAxisAngle(V(0,0,1),Math.PI);
+ for(const base of positions){
+  const ap=add(base,V(0,unitGroundHeight('coupler')+.002,0)),bp=add(ap,V(0,2*CUBE_SIZE*51/56,0));
+  const a=addQubit([ap.x,ap.y,ap.z],settings.mass,'coupler'),b=makeGroup([{id:allocateUnitId(),weight:settings.mass,shape:'coupler',p:bp,q:flip}]);
+  if(!validPose(a,a.body.position,a.body.quaternion)||!validPose(b,b.body.position,b.body.quaternion)){removeGroup(a);removeGroup(b);continue;}
+  const rotor=connectRotorTips(a.parts[0].id,b.parts[0].id,options);if(rotor){selected={g:a,part:a.parts[0]};multiSelection=[];announce('Rotor creado · clic derecho → Rotación');return rotor;}
+  removeGroup(a);removeGroup(b);
+ }
+ announce('No hay espacio libre para el rotor.');return null;
+}
+function findRotorSnap(source,target,limit){
+ let best=null;
+ for(const a of poses(source))if(unitShape(a)==='coupler'&&!rotorForPart(a.part.id))for(const b of poses(target))if(unitShape(b)==='coupler'&&!rotorForPart(b.part.id)){
+  const at=couplerTip(a),bt=couplerTip(b),distance=at.point.distanceTo(bt.point);if(distance>=limit)continue;
+  const delta=Q();delta.setFromVectors(at.axis,mul(bt.axis,-1));delta.normalize();const quaternion=delta.mult(source.body.quaternion);quaternion.normalize();
+  const local=add(a.part.offset,a.part.q.vmult(V(0,CUBE_SIZE*51/56,0))),position=sub(bt.point,quaternion.vmult(local));
+  const score=distance+(1-qSimilarity(quaternion,source.body.quaternion))*.025;
+  if(score>=limit||best&&score>=best.score||!validPose(source,position,quaternion))continue;
+  best={source,target,position,quaternion,score,rotorTip:true,aId:a.part.id,bId:b.part.id,face:{p:bt.point,q:b.q,axis:1,normal:bt.axis,dimensions:V(.018,.018,.018)}};
+ }return best;
+}
+
 function findSnap(){
  if(!held||held.shakeSeparated||!shiftDown()||(held.items&&held.items.length>1))return null;
  const source=held.g,part=partPose(source,held.part);let candidate=null,best=.055;
- for(const target of groups){if(target===source||target.route||target.haulJob)continue;
+ for(const target of groups){if(target===source||target.route||target.haulJob||rotorConnectedGroups([source]).includes(target))continue;
+  const tip=findRotorSnap(source,target,best);if(tip){candidate=tip;best=tip.score;}
   if(sameBlockShape(source,target)){
    const blockCandidate=findBlockSnap(source,target);
    if(blockCandidate&&(!candidate||blockCandidate.score<candidate.score)){candidate=blockCandidate;best=blockCandidate.score;}
@@ -1244,12 +1419,18 @@ function weld(candidate){
  if(!candidate)return null;
  const {source,target,position,quaternion}=candidate;
  if(source===target||!groups.includes(source)||!groups.includes(target)||!position||!quaternion||!['x','y','z'].every(k=>Number.isFinite(position[k]))||!['x','y','z','w'].every(k=>Number.isFinite(quaternion[k]))||Math.abs(quaternion.x**2+quaternion.y**2+quaternion.z**2+quaternion.w**2-1)>1e-5)return null;
- if(!validPose(source,position,quaternion))return null;
+ if(!validPose(source,position,quaternion)||rotorConnectedGroups([source]).includes(target))return null;
+ if(candidate.rotorTip){
+  const oldP=source.body.position.clone(),oldQ=source.body.quaternion.clone();source.body.position.copy(position);source.body.quaternion.copy(quaternion);source.body.aabbNeedsUpdate=true;
+  const rotor=connectRotorTips(candidate.aId,candidate.bId);
+  if(!rotor){source.body.position.copy(oldP);source.body.quaternion.copy(oldQ);source.body.aabbNeedsUpdate=true;return null;}
+  selected={g:source,part:source.parts.find(p=>p.id===candidate.aId)||source.parts[0]};announce('Rotor unido · clic derecho → Rotación');return source;
+ }
  const sourceParts=poses(source,position,quaternion),targetParts=poses(target);
  if(sourceParts.some(a=>targetParts.some(b=>obbOverlap(a,b,.000001))))return null;
  if(!assembliesTouch(sourceParts,targetParts))return null;
  const parts=sourceParts.map(o=>({id:o.part.id,weight:o.part.weight,shape:o.part.shape,p:o.p,q:o.q,mood:copyMood(o.part.mood)})).concat(worldParts(target));
- const ref=target.body.quaternion.clone();removeGroup(source);removeGroup(target);const joined=makeGroup(parts,ref);
+ const ref=target.body.quaternion.clone();removeGroup(source);removeGroup(target);const joined=makeGroup(parts,ref);refreshRotors();
  selected={g:joined,part:joined.parts[0]};queueSpeech(joined,'happy',{kind:'joined',indices:[7,9,15,17]});announce('Unidos · '+joined.parts.length+' '+groupUnitLabel(joined)+' · '+totalWeight(joined)+' u');return joined;
 }
 function applyOrientation(g,desired,strength=160){
@@ -1430,6 +1611,7 @@ function stopRoute(g,clearPin=true){
 }
 function startRoute(g,goal,quiet=false){
  if(!g||!groups.includes(g))return false;
+ if(rotorForGroup(g)){if(!quiet)announce('Separa el rotor antes de asignar un recorrido.');return false;}
  const wasBlocked=g.pendingMoodOrder?.reason==='bloqueo',changed=!!g.route;
  if(held&&(held.items||[held]).some(item=>item.g===g)){announce('Suelta la estructura antes de marcar su recorrido.');return false;}
  const bb=bounds(g);if(bb.min.y>.025){if(!quiet)announce('Deja la pieza en el piso antes de darle un destino.');return false;}
@@ -1485,10 +1667,10 @@ function landingProjection(g){
  return {position:add(g.body.position,V(0,delta+.002,0)),delta};
 }
 function stepPhysics(dt){
- simTime+=dt;tutorialFloat(dt);updateGrab(dt);updateRoutes(dt);updateHauling(dt);
+ simTime+=dt;refreshRotors();tutorialFloat(dt);updateGrab(dt);updateRoutes(dt);updateHauling(dt);
  // Bound substep travel to avoid tunnelling through a 9 cm piece.
  for(const g of groups){const b=g.body,speed=b.velocity.norm();if(speed>6)b.velocity.scale(6/speed,b.velocity);const spin=b.angularVelocity.norm();if(spin>30)b.angularVelocity.scale(30/spin,b.angularVelocity);}
- updateCampaignPressure(dt);updateButtonPhysics();world.step(dt);
+ updateCampaignPressure(dt);updateButtonPhysics();updateRotorMotors(dt);world.step(dt);stabilizeRotors();
  // Correct only tiny solver penetration of a hand-held shape; free bodies keep
  // their normal collision response. A hand cannot push its attachment underground.
  if(held)for(const item of held.items||[held]){const b=item.g.body,low=bounds(item.g).min.y;if(low<.001){b.position.y+=.001-low;if(b.velocity.y<0)b.velocity.y=0;b.aabbNeedsUpdate=true;}if(item.floorLocked)b.angularVelocity.set(0,0,0);}
@@ -1504,7 +1686,7 @@ function updatePanel(){
   document.querySelector('#'+name+'Value').textContent=Number(input.value).toFixed(name==='mass'?2:2)+({mass:' u',gravity:' m/s²',force:' N',speed:' m/s',maxCarry:' u',maxSelect:' piezas',rotationSpeed:' rad/s'}[name]||'');
  }
  for(const name of ['guide','line'])document.querySelector('#'+name).value=settings[name];
- updateCargoPanel();updatePuzzlePanel();updateMoodPanel();updateAlphaPanel();
+ updateCargoPanel();updatePuzzlePanel();updateMoodPanel();updateAlphaPanel();updateMechanismPanel();
  document.querySelector('#remove').disabled=puzzle.active||!selected;document.querySelector('#split').disabled=!selected||selected.g.parts.length===1;
 }
 function openPanel(){closeCommandMenu(false);selectedCargo=aimCargo(4)?.cargo||selectedCargo;selected=held?{g:held.g,part:held.part}:aimQubit()||selected;pause();panel.hidden=false;updatePanel();}
@@ -1520,11 +1702,11 @@ for(const name of ['mass','gravity','bounce','force','friction','damping','speed
  updatePanel();
 });
 for(const name of ['guide','line'])document.querySelector('#'+name).addEventListener('change',e=>settings[name]=e.target.value);
-for(const name of ['cube','route','cargo','puzzle','alpha'])document.querySelector('#tab-'+name).addEventListener('click',()=>{
- for(const tab of ['cube','route','cargo','puzzle','alpha']){document.querySelector('#page-'+tab).hidden=tab!==name;document.querySelector('#tab-'+tab).setAttribute('aria-selected',String(tab===name));}
+for(const name of ['cube','route','cargo','puzzle','alpha','mechanisms'])document.querySelector('#tab-'+name).addEventListener('click',()=>{
+ for(const tab of ['cube','route','cargo','puzzle','alpha','mechanisms']){document.querySelector('#page-'+tab).hidden=tab!==name;document.querySelector('#tab-'+tab).setAttribute('aria-selected',String(tab===name));}
 });
 document.querySelector('#create').addEventListener('click',()=>{spawnQubit();updatePanel();});
-document.querySelector('#unit-shape').addEventListener('change',event=>{settings.unitShape=normalizeUnitShape(event.target.value);syncUnitControls();});
+document.querySelector('#unit-shape').addEventListener('change',event=>{if(creationChoiceAllowed(event.target.value))settings.unitShape=normalizeCreationChoice(event.target.value);syncUnitControls();});
 document.querySelector('#remove').addEventListener('click',()=>{deleteQubit(selected);updatePanel();});
 document.querySelector('#split').addEventListener('click',()=>{detachPart(selected,true);updatePanel();});
 document.querySelector('#stop').addEventListener('click',()=>{if(selectedCargo)stopHaul(selectedCargo);for(const g of selectedTeam()){leaveHaul(g);stopRoute(g);}});
@@ -1574,10 +1756,10 @@ function updateTarget(){
  snap=findSnap();updateCallout();updateCargoCallout();updateMenuConnector();updateInspection();updatePuzzleHUD();updateMoodSelection();updateAlphaHUD();
  if(document.pointerLockElement!==canvas){targetLabel.textContent='';crosshair.classList.remove('ready');return;}
  const hit=held||aimQubit();crosshair.classList.toggle('ready',!!hit);
- if(pendingUnitCreation)targetLabel.textContent='Clic izquierdo · crear '+(pendingUnitCreation==='cube'?'Q-bit':'T-bit')+' · Esc / clic derecho · cancelar';
+ if(pendingUnitCreation)targetLabel.textContent='Clic izquierdo · crear '+creationTitle(pendingUnitCreation)+' · Esc / clic derecho · cancelar';
  else if(marquee)targetLabel.textContent='Suelta para seleccionar · hasta '+settings.maxSelect+' piezas';
  else if(held?.latched)targetLabel.textContent='Clic · soltar selección · Shift + WASD · girar'+(held.g.parts.length>1?' · Shift + sacudir · desarmar':' · rueda · enfocar');
- else if(held)targetLabel.textContent=snap?(snap.wholeFace?'Cara completa · suelta para unir':'Suelta para unir esta cara'):shiftDown()?'WASD · girar'+(held.g.parts.length>1?' · sacudir varias veces · desarmar':''):'Shift · girar / unir · rueda · enfocar · Ctrl · caída';
+ else if(held)targetLabel.textContent=snap?(snap.rotorTip?'Puntas alineadas · suelta para formar Rotor':snap.wholeFace?'Cara completa · suelta para unir':'Suelta para unir esta cara'):shiftDown()?'WASD · girar'+(held.g.parts.length>1?' · sacudir varias veces · desarmar':''):'Shift · girar / unir · rueda · enfocar · Ctrl · caída';
  else if(selectedTeam().length)targetLabel.textContent='Clic derecho en el suelo · dar destino | clic izquierdo · deseleccionar';
  else if(hit)targetLabel.textContent=totalWeight(hit.g)>settings.maxCarry?'Supera la capacidad de '+formatWeight(settings.maxCarry)+' u':'Clic · tomar | clic derecho · seleccionar';else targetLabel.textContent=aimCargo(4)?'Clic derecho · órdenes del cuerpo':'';
  if(pendingCargo)targetLabel.textContent='Clic derecho en el suelo · destino de la carga';
@@ -1596,7 +1778,7 @@ face([[-.5,-.5,.5],[.5,-.5,.5],[.5,.5,.5],[-.5,.5,.5]],[0,0,1]);
 function buffer(data){const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);return b;}
 const cubeGeometry=buffer(vertices.slice(roomVertexCount));vertices.length=roomVertexCount;
 const unitMeshes={cube:{buffer:cubeGeometry,count:36}};
-for(const shape of ['tetra','pyramid']){
+for(const shape of ['tetra','pyramid','coupler']){
  const profile=unitProfile(shape),data=[],edges=[];
  for(let i=0;i<profile.faces.length;i++){const f=profile.faces[i],n=profile.faceNormals[i];for(let j=1;j<f.length-1;j++)for(const k of [f[0],f[j],f[j+1]]){const v=profile.vertices[k];data.push(v.x/CUBE_SIZE,v.y/CUBE_SIZE,v.z/CUBE_SIZE,n.x,n.y,n.z);}}
  for(const edge of profile.edges)for(const k of edge){const v=profile.vertices[k];edges.push(v.x/CUBE_SIZE,v.y/CUBE_SIZE,v.z/CUBE_SIZE,0,1,0);}
@@ -1615,7 +1797,7 @@ function setPose(pos,q=Q(),dimensions=V(CUBE_SIZE,CUBE_SIZE,CUBE_SIZE)){
 }
 function tint(r,g,b,a){gl.uniform4f(uniforms.uTint,r,g,b,a);}
 function drawBox(pos,q,dimensions,color){bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,3);setPose(pos,q,dimensions);tint(...color);gl.drawArrays(gl.TRIANGLES,0,36);}
-function drawUnitMesh(pose,color=null,kind=null){const shape=unitShape(pose),mesh=unitMeshes[shape];bindGeometry(mesh.buffer);gl.uniform1f(uniforms.uKind,kind??(shape==='cube'?1:5));setPose(pose.p,pose.q);if(color)tint(...color);else if(shape!=='cube')tint(.48,.48,.48,1);gl.drawArrays(gl.TRIANGLES,0,mesh.count);}
+function drawUnitMesh(pose,color=null,kind=null){const shape=unitShape(pose),mesh=unitMeshes[shape];bindGeometry(mesh.buffer);gl.uniform1f(uniforms.uKind,kind??(shape==='cube'?1:5));setPose(pose.p,pose.q);if(shape==='coupler'&&!color&&kind===null){tint(.20,.23,.24,1);gl.drawArrays(gl.TRIANGLES,0,30);tint(.53,.59,.58,1);gl.drawArrays(gl.TRIANGLES,30,12);return;}if(color)tint(...color);else if(shape!=='cube')tint(.48,.48,.48,1);gl.drawArrays(gl.TRIANGLES,0,mesh.count);}
 function drawUnitFaceGuide(face){
  const points=face.vertices.map(p=>add(p,mul(face.normal,.0007))),data=[];
  for(let i=1;i<points.length-1;i++)for(const p of [points[0],points[i],points[i+1]])data.push(p.x,p.y,p.z,face.normal.x,face.normal.y,face.normal.z);
@@ -1755,6 +1937,7 @@ canvas.addEventListener('mouseleave',()=>hoverPointer=null);
 function duplicateSelection(){
  if(puzzleBlockedEdit())return;
  const hit=aimQubit()||selected;if(!hit){announce('Selecciona una figura para duplicarla con V.');return;}
+ if(typeof rotorForGroup==='function'&&rotorForGroup(hit.g))return duplicateMechanism(hit.g);
  const originals=multiSelection.includes(hit.g)&&multiSelection.length>1?multiSelection.filter(g=>groups.includes(g)):[hit.g];
  const count=originals.reduce((n,g)=>n+g.parts.length,0),population=groups.reduce((n,g)=>n+g.parts.length,0);
  if(count+population>MAX_QUBITS){announce('No caben más copias: límite de '+MAX_QUBITS+' piezas.');return;}
@@ -1904,7 +2087,7 @@ function crewSlotCandidates(c,crew){
 }
 function assignCrew(c,team){
  const job=c.job;if(!job)return 0;let added=0;const all=[...new Set(job.slots.map(s=>s.g).concat(team))],slots=crewSlotCandidates(c,all);
- for(const g of team){if(job.slots.some(s=>s.g===g)||!groups.includes(g))continue;
+ for(const g of team){if(job.slots.some(s=>s.g===g)||!groups.includes(g)||rotorForGroup(g))continue;
   if(held&&(held.items||[held]).some(i=>i.g===g))continue;
   const bb=bounds(g);if(bb.min.y>.04)continue;
   const q=orientations[orientationIndex(g.body.quaternion)],local=bounds(g,V(),q);
@@ -2148,12 +2331,64 @@ function handleSecondary(event){
    {label:'Elegir destino en el suelo',run:()=>{captureMouse();announce('Clic derecho en el suelo → Ir a este punto.');}},
    {label:'Guardar forma',run:()=>{saveShape(hit.g);captureMouse();}},
    {label:'Nombrar '+unitLabel(hit.part),run:()=>openAlphaPanel(hit)}];
+  const rotor=rotorForPart(hit.part.id)||rotorForGroup(hit.g);
+  if(rotor){items.splice(items.findIndex(item=>item.label==='Guardar forma'),1);items.unshift({label:'Rotación…',run:()=>showRotorRotation(rotor,partPose(hit.g,hit.part).p)});items.push({label:'Guardar mecanismo · Rotor',run:()=>{saveMechanism(rotor);captureMouse();}},{label:'Separar enganches del rotor',run:()=>{disconnectRotor(rotor);captureMouse();}});}
+  else if(hit.g.parts.some(part=>unitShape(part)==='coupler'))items.unshift({label:'Guardar mecanismo · Enganche',run:()=>{saveMechanism(hit.g);captureMouse();}},{label:'Enganche · une su punta con otra usando Shift',disabled:true,run:()=>{}});
   if(hit.g.parts.length>1)items.push({label:'Separar…',run:()=>openDetachMenu(hit)});
   items.push({label:'Deseleccionar',run:()=>{clearSelection();captureMouse();}});
-  items.push({label:'Cerrar',run:()=>captureMouse()});openCommandMenu(partPose(hit.g,hit.part).p,count+' '+groupUnitLabel({parts:team.flatMap(g=>g.parts)}),items);return;
+  items.push({label:'Cerrar',run:()=>captureMouse()});openCommandMenu(partPose(hit.g,hit.part).p,rotor?'Rotor · lado '+(rotorGroups(rotor)[0]===hit.g?'A':'B'):count+' '+groupUnitLabel({parts:team.flatMap(g=>g.parts)}),items);return;
  }
  const point=floorAim(dir);if(point)openFloorOrders(point);
 }
+
+function selectedRotor(){return selected?.g?(rotorForPart(selected.part?.id)||rotorForGroup(selected.g)):null;}
+function rotorMenuPoint(rotor){const members=rotorGroups(rotor);return members.length?members.reduce((v,g)=>add(v,mul(g.body.position,1/members.length)),V()):V(...camera);}
+function showRotorRotation(rotor,point=rotorMenuPoint(rotor)){
+ if(!rotors.includes(rotor)){announce('Ese rotor ya no está unido.');return;}
+ const run=direction=>{configureRotor(rotor,{direction,enabled:true});captureMouse();announce('Rotor · '+(direction===1?'horario':'antihorario')+' · '+rotor.rpm+' rpm · gira lado '+rotor.moving.toUpperCase());};
+ openCommandMenu(point,'Rotor · Rotación · lado '+rotor.moving.toUpperCase()+(rotor.stalled?' · bloqueado':''),[
+  {label:'Sentido horario',run:()=>run(1)},
+  {label:'Sentido antihorario',run:()=>run(-1)},
+  {label:'Detener rotación',run:()=>{configureRotor(rotor,{enabled:false});captureMouse();}},
+  {label:'Elegir lado que gira…',run:()=>showRotorSide(rotor,point)},
+  {label:'Velocidad · '+rotor.rpm+' rpm · ajustar',run:()=>{const g=rotorGroups(rotor)[rotor.moving==='a'?0:1];selected={g,part:g.parts[0]};panel.hidden=false;updatePanel();switchPanelTab('mechanisms');}},
+  {label:'Guardar mecanismo · Rotor',run:()=>{saveMechanism(rotor);captureMouse();}},
+  {label:'Cerrar',run:()=>captureMouse()}
+ ]);
+}
+function showRotorSide(rotor,point=rotorMenuPoint(rotor)){
+ openCommandMenu(point,'Elige el lado móvil · el otro será la base',[
+  ...['a','b'].map(side=>({label:(rotor.moving===side?'✓ ':'')+'Girar lado '+side.toUpperCase(),run:()=>{configureRotor(rotor,{moving:side});showRotorRotation(rotor,point);}})),
+  {label:'Volver a Rotación',run:()=>showRotorRotation(rotor,point)}
+ ]);
+}
+function updateMechanismPanel(){
+ const rotor=selectedRotor(),available=mechanismsAvailable(),rpm=rotor?.rpm??mechanismDefaults.rpm;
+ document.querySelector('#mechanism-unlock').textContent=story.scene==='lab'?'Disponibles en el banco. En campaña: completa el nivel 5, La primera unión.':mechanismsUnlocked()?'Enganche y Rotor desbloqueados.':'Completa el nivel 5, La primera unión, para desbloquearlos en campaña.';
+ document.querySelector('#rotor-status').textContent=rotor?'Rotor seleccionado · '+(rotor.stalled?'bloqueado: despeja el giro':rotor.enabled?'girando':'detenido')+' · lado '+rotor.moving.toUpperCase()+' móvil'+(rotor.speedLimited?' · hasta '+Math.round(rotor.effectiveRpm)+' rpm para esta estructura':''):'Clic derecho sobre un rotor para seleccionarlo. También puedes crear uno aquí.';
+ document.querySelector('#rotor-rpm').value=rpm;document.querySelector('#rotor-rpm-value').textContent=rpm+' rpm';
+ document.querySelector('#rotor-side').value=rotor?.moving??mechanismDefaults.moving;
+ for(const id of ['rotor-clockwise','rotor-counterclockwise','rotor-stop','rotor-disconnect'])document.querySelector('#'+id).disabled=!rotor;
+ document.querySelector('#rotor-save').disabled=!rotor&&!selected?.g?.parts.some(part=>unitShape(part)==='coupler');
+ for(const id of ['create-coupler','create-rotor'])document.querySelector('#'+id).disabled=!available;
+ const list=document.querySelector('#saved-mechanism-list');list.replaceChildren();
+ for(const mechanism of savedMechanisms){
+  const row=document.createElement('div'),create=document.createElement('button');create.type='button';create.textContent=mechanism.name+' · '+mechanismPartCount(mechanism)+' piezas';create.disabled=!available;
+  create.addEventListener('click',()=>{if(!mechanismsAvailable())return;const p=floorAim()||V(position[0]-Math.sin(yaw)*1.4,0,position[2]-Math.cos(yaw)*1.4);if(spawnSavedMechanism(mechanism,p)){panel.hidden=true;captureMouse();}else announce('No hay espacio libre para el mecanismo.');});
+  const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Eliminar '+mechanism.name);remove.addEventListener('click',()=>{savedMechanisms.splice(savedMechanisms.indexOf(mechanism),1);persistMechanisms();updateMechanismPanel();});row.append(create,remove);list.appendChild(row);
+ }
+}
+function createMechanismChoice(kind){if(!mechanismsAvailable())return;settings.unitShape=kind;spawnQubit();updatePanel();}
+document.querySelector('#create-coupler').addEventListener('click',()=>createMechanismChoice('coupler'));
+document.querySelector('#create-rotor').addEventListener('click',()=>createMechanismChoice('rotor'));
+document.querySelector('#rotor-rpm').addEventListener('input',event=>{const value=Number(event.target.value);if(!Number.isFinite(value))return;mechanismDefaults.rpm=clamp(value,1,120);const rotor=selectedRotor();if(rotor)configureRotor(rotor,{rpm:mechanismDefaults.rpm});updateMechanismPanel();});
+document.querySelector('#rotor-side').addEventListener('change',event=>{if(!['a','b'].includes(event.target.value))return;mechanismDefaults.moving=event.target.value;const rotor=selectedRotor();if(rotor)configureRotor(rotor,{moving:mechanismDefaults.moving});updateMechanismPanel();});
+for(const [id,direction] of [['rotor-clockwise',1],['rotor-counterclockwise',-1]])document.querySelector('#'+id).addEventListener('click',()=>{const rotor=selectedRotor();if(rotor){mechanismDefaults.direction=direction;configureRotor(rotor,{direction,enabled:true});updateMechanismPanel();}});
+document.querySelector('#rotor-stop').addEventListener('click',()=>{const rotor=selectedRotor();if(rotor)configureRotor(rotor,{enabled:false});updateMechanismPanel();});
+document.querySelector('#rotor-save').addEventListener('click',()=>{const rotor=selectedRotor();if(rotor||selected?.g?.parts.some(part=>unitShape(part)==='coupler'))saveMechanism(rotor||selected.g);updateMechanismPanel();});
+document.querySelector('#rotor-disconnect').addEventListener('click',()=>{const rotor=selectedRotor();if(rotor)disconnectRotor(rotor);updateMechanismPanel();});
+document.querySelector('#export-mechanisms').addEventListener('click',()=>exportMechanisms());
+document.querySelector('#import-mechanisms').addEventListener('change',async event=>{try{const file=event.target.files?.[0];if(!file)return;if(file.size>1000000)throw new Error('Archivo demasiado grande');const count=importMechanismsData(JSON.parse(await file.text()));announce(count+' mecanismos importados');updateMechanismPanel();}catch(error){announce('No se pudo importar: '+error.message);}event.target.value='';});
 
 function moveTeamTo(team,goal){
  team=team.filter(g=>groups.includes(g));if(!team.length)return 0;
@@ -2200,7 +2435,7 @@ function updateInspection(){
  if(info.pending){el.textContent=info.status+' · R cancela';return;}
  el.textContent=info.status+' · '+info.metres.toFixed(2)+' m restantes · '+(info.waiting?'~'+Math.ceil(info.seconds)+' s de arrastre después de reunir el equipo':'~'+Math.ceil(info.seconds)+' s');
 }
-function switchPanelTab(name){for(const tab of ['cube','route','cargo','puzzle','alpha']){document.querySelector('#page-'+tab).hidden=tab!==name;document.querySelector('#tab-'+tab).setAttribute('aria-selected',String(tab===name));}}
+function switchPanelTab(name){for(const tab of ['cube','route','cargo','puzzle','alpha','mechanisms']){document.querySelector('#page-'+tab).hidden=tab!==name;document.querySelector('#tab-'+tab).setAttribute('aria-selected',String(tab===name));}}
 function drawCargos(){
  for(const c of cargos){
   if(c.dimensions){drawMatter(c);continue;}
@@ -2235,10 +2470,11 @@ document.addEventListener('keyup',event=>{if(event.code.startsWith('Alt'))routeI
 // The first puzzle lives in the laboratory. Its previous contents are restored
 // when leaving the challenge; rewards and deliveries use a single transaction.
 const puzzleConfig={frameSeconds:12,energySeconds:8};
-function puzzleBlockedEdit(kind='edit'){if(story.ready&&story.scene==='campaign'&&panel.hidden){announce('La materia genera nuevos Q-bits. P abre el banco de herramientas de prueba.');return true;}if(!puzzle.active||kind==='qubit'&&alphaSettings.allowPuzzleSpawn)return false;announce('Puzle activo · los recursos se obtienen en los portales. P → Puzle para volver al banco.');return true;}
-function saveLab(){return {alphaScene:alphaSceneSnapshot(),settings:{...settings},moodSettings:{...moodSettings},position:[...position],yaw,pitch,groups:groups.map(g=>({parts:worldParts(g),q:g.body.quaternion.clone(),v:g.body.velocity.clone(),w:g.body.angularVelocity.clone()})),cargos:cargos.map(c=>({p:c.body.position.clone(),side:c.side,required:c.required,color:c.color}))};}
+function puzzleBlockedEdit(kind='edit'){if(kind==='mechanism'&&mechanismsAvailable())return false;if(story.ready&&story.scene==='campaign'&&panel.hidden){announce('La materia genera nuevos Q-bits. P abre el banco de herramientas de prueba.');return true;}if(!puzzle.active||kind==='qubit'&&alphaSettings.allowPuzzleSpawn)return false;announce('Puzle activo · los recursos se obtienen en los portales. P → Puzle para volver al banco.');return true;}
+function saveLab(){return {mechanismDefaults:typeof mechanismDefaults==='undefined'?null:{...mechanismDefaults},rotors:serializeRotorState(),alphaScene:alphaSceneSnapshot(),settings:{...settings},moodSettings:{...moodSettings},position:[...position],yaw,pitch,groups:groups.map(g=>({parts:worldParts(g),q:g.body.quaternion.clone(),v:g.body.velocity.clone(),w:g.body.angularVelocity.clone()})),cargos:cargos.map(c=>({p:c.body.position.clone(),side:c.side,required:c.required,color:c.color}))};}
 function clearPuzzleScene(){
  clearAlphaScene();releaseQubit();closeCommandMenu(false);closeDetachMenu(false);pendingCargo=null;moveChoice=null;routeInspection=null;multiSelection=[];selected=null;selectedCargo=null;
+ for(const r of (typeof rotors==='undefined'?[]:[...rotors]))disconnectRotor(r);
  for(const c of [...cargos])deleteCargo(c,true);for(const g of [...groups])removeGroup(g);
  for(const wall of puzzle.walls)world.removeBody(wall.body);puzzle.walls=[];puzzle.portals=[];puzzle.buttons=[];puzzle.pendingRewards=0;
 }
@@ -2264,7 +2500,7 @@ function startPuzzle(){
 }
 function leavePuzzle(){
  if(!puzzle.active)return;const saved=puzzle.savedLab;clearPuzzleScene();puzzle.active=false;puzzle.savedLab=null;
- if(saved){Object.assign(settings,saved.settings);if(saved.moodSettings)Object.assign(moodSettings,saved.moodSettings);position.splice(0,3,...saved.position);yaw=saved.yaw;pitch=saved.pitch;camera.splice(0,3,...position);for(const g of saved.groups)makeGroup(g.parts,g.q,g.v,g.w);for(const c of saved.cargos)newCargo(c.p,c.side,c.required,c.color);}
+ if(saved){Object.assign(settings,saved.settings);if(saved.moodSettings)Object.assign(moodSettings,saved.moodSettings);position.splice(0,3,...saved.position);yaw=saved.yaw;pitch=saved.pitch;camera.splice(0,3,...position);for(const g of saved.groups)makeGroup(g.parts,g.q,g.v,g.w);restoreLabMechanisms(saved);for(const c of saved.cargos)newCargo(c.p,c.side,c.required,c.color);}
  restoreAlphaScene(saved?.alphaScene);world.gravity.y=-settings.gravity;world.defaultContactMaterial.friction=settings.friction;world.defaultContactMaterial.restitution=settings.bounce;
  updatePuzzlePanel();updatePanel();announce('Banco de pruebas restaurado');
 }
@@ -2503,8 +2739,10 @@ function updateHeldFocus(dt,enabled=true){
  heldFocus.target=target;
  const previous=heldFocus.amount;heldFocus.amount+=(target-previous)*(1-Math.exp(-9*Math.max(0,Math.min(dt,.05))));
  if(heldFocus.amount<.0005&&target===0){heldFocus.amount=0;heldFocus.groups=[];}
- // 68° normally, 60° at the closest inspection distance. Every projection uses it.
- heldFocus.focal=1.48256097+(1/Math.tan(Math.PI/6)-1.48256097)*heldFocus.amount;
+ // 68° normally, 60° at close inspection and 58° inside Q. All projections agree.
+ const previousMenu=menuFocus.amount,menuTarget=radialOpen()?1:0;menuFocus.amount+=(menuTarget-menuFocus.amount)*(1-Math.exp(-10*Math.max(0,Math.min(dt,.05))));if(menuTarget===0&&menuFocus.amount<.0005)menuFocus.amount=0;
+ heldFocus.focal=1.48256097+(1/Math.tan(Math.PI/6)-1.48256097)*heldFocus.amount*(1-menuFocus.amount)+(1/Math.tan(29*Math.PI/180)-1.48256097)*menuFocus.amount;
+ if(Math.abs(previousMenu-menuFocus.amount)>.000001)redraw=true;
  if(Math.abs(previous-heldFocus.amount)>.000001)redraw=true;
  syncHeldFocusHUD();
 }
@@ -2587,10 +2825,161 @@ function updateCooling(dt){
   for(const [id] of c.entries)if(!seen.has(id))c.entries.delete(id);c.occupants=count;
  }
 }
-function savedShapeValid(shape){return shape&&typeof shape.name==='string'&&shape.name.length<=40&&Array.isArray(shape.parts)&&shape.parts.length>0&&shape.parts.length<=MAX_QUBITS&&shape.parts.every(p=>(p.shape===undefined||['cube','tetra','pyramid'].includes(p.shape))&&Array.isArray(p.p)&&p.p.length===3&&p.p.every(Number.isFinite)&&p.p.every(n=>Math.abs(n)<6)&&Array.isArray(p.q)&&p.q.length===4&&p.q.every(Number.isFinite)&&Math.abs(Math.hypot(...p.q)-1)<.01);}
+// Mechanisms retain rigid-body boundaries and hinge endpoints separately from shapes.
+function serializeRotorState(){
+ if(typeof rotors==='undefined')return [];
+ return rotors.filter(r=>rotorGroups(r).every(g=>g&&groups.includes(g))).map(r=>({aId:r.aId,bId:r.bId,rpm:r.rpm,direction:r.direction,moving:r.moving,enabled:r.enabled}));
+}
+function restoreRotorState(data){
+ if(typeof rotors==='undefined')return [];
+ for(const r of [...rotors])disconnectRotor(r);
+ if(!Array.isArray(data))return [];
+ const made=[];
+ for(const r of data){
+  if(!r||!Number.isSafeInteger(r.aId)||!Number.isSafeInteger(r.bId))continue;
+  const a=rotorPart(r.aId),b=rotorPart(r.bId);
+  if(a&&b&&a.g!==b.g){
+   const at=couplerTip(a),bt=couplerTip(b),network=rotorConnectedGroups([b.g]);
+   if(!network.includes(a.g)&&at.point.distanceTo(bt.point)<=.005&&at.axis.dot(bt.axis)<-.995){
+    const turn=Q();turn.setFromVectors(bt.axis,mul(at.axis,-1));turn.normalize();
+    for(const g of network){g.body.position.copy(add(at.point,turn.vmult(sub(g.body.position,bt.point))));g.body.quaternion.copy(turn.mult(g.body.quaternion));g.body.quaternion.normalize();g.body.velocity.copy(turn.vmult(g.body.velocity));g.body.angularVelocity.copy(turn.vmult(g.body.angularVelocity));g.body.aabbNeedsUpdate=true;}
+   }
+  }
+  const rotor=connectRotorTips(r.aId,r.bId,{...r,enabled:false});if(rotor)made.push([rotor,r]);
+ }
+ for(const [r,state]of made)configureRotor(r,state);
+ return made.map(([r])=>r);
+}
+function restoreLabMechanisms(saved){
+ if(saved?.mechanismDefaults&&typeof mechanismDefaults!=='undefined')Object.assign(mechanismDefaults,saved.mechanismDefaults);
+ return restoreRotorState(saved?.rotors);
+}
+function mechanismGroups(subject){
+ if(typeof rotors==='undefined')return [];
+ const first=rotors.includes(subject)?rotorGroups(subject):subject?.parts?[subject]:[];
+ const connected=new Set(first.filter(g=>g&&groups.includes(g)));let changed=true;
+ while(changed){changed=false;for(const r of rotors){const pair=rotorGroups(r);if(pair.some(g=>!g||!groups.includes(g))||!pair.some(g=>connected.has(g)))continue;for(const g of pair)if(!connected.has(g)){connected.add(g);changed=true;}}}
+ return [...connected];
+}
+function mechanismPartCount(record){return Array.isArray(record?.groups)?record.groups.reduce((n,g)=>n+(Array.isArray(g?.parts)?g.parts.length:0),0):0;}
+function mechanismRecordParts(record,origin=V()){
+ return record.groups.map(group=>group.parts.map(part=>{const q=Q();q.set(...part.q);q.normalize();return {key:part.key,shape:part.shape,weight:part.weight,p:add(origin,V(...part.p)),q};}));
+}
+function savedMechanismValid(record){
+ try{
+  if(!record||record.version!==1||!['rotor','coupler'].includes(record.type)||typeof record.name!=='string'||!record.name.trim()||record.name.length>40||/[\u0000-\u001f]/.test(record.name))return false;
+  if(!Array.isArray(record.groups)||record.groups.length<1||record.groups.length>MAX_QUBITS||!Array.isArray(record.joints)||record.joints.length>=record.groups.length)return false;
+  if(record.type==='coupler'&&(record.groups.length!==1||record.joints.length!==0)||record.type==='rotor'&&(record.groups.length<2||!record.joints.length))return false;
+  const keys=new Map(),owners=new Map();let count=0;
+  for(const [groupIndex,group]of record.groups.entries()){
+   if(!Array.isArray(group?.parts)||!group.parts.length)return false;
+   for(const part of group.parts){
+    if(++count>MAX_QUBITS||!part||!Number.isSafeInteger(part.key)||part.key<0||part.key>=MAX_QUBITS||keys.has(part.key)||!['cube','tetra','pyramid','coupler'].includes(part.shape))return false;
+    if(!Number.isFinite(part.weight)||part.weight<.25||part.weight>3||!Array.isArray(part.p)||part.p.length!==3||!part.p.every(n=>Number.isFinite(n)&&Math.abs(n)<14)||!Array.isArray(part.q)||part.q.length!==4||!part.q.every(Number.isFinite)||Math.abs(Math.hypot(...part.q)-1)>.0001)return false;
+    keys.set(part.key,part);owners.set(part.key,groupIndex);
+   }
+  }
+  if(![...keys.values()].some(part=>part.shape==='coupler')||record.joints.filter(j=>j?.enabled===true).length>1)return false;
+  const attached=new Set(),graph=record.groups.map(()=>new Set()),parents=record.groups.map((_,i)=>i),root=i=>parents[i]===i?i:parents[i]=root(parents[i]);
+  for(const joint of record.joints){
+   if(!joint||!Number.isSafeInteger(joint.a)||!Number.isSafeInteger(joint.b)||joint.a===joint.b||keys.get(joint.a)?.shape!=='coupler'||keys.get(joint.b)?.shape!=='coupler'||owners.get(joint.a)===owners.get(joint.b)||attached.has(joint.a)||attached.has(joint.b))return false;
+   if(!Number.isFinite(joint.rpm)||joint.rpm<1||joint.rpm>120||![1,-1].includes(joint.direction)||!['a','b'].includes(joint.moving)||typeof joint.enabled!=='boolean')return false;
+   const a=owners.get(joint.a),b=owners.get(joint.b);if(root(a)===root(b))return false;parents[root(a)]=root(b);graph[a].add(b);graph[b].add(a);attached.add(joint.a);attached.add(joint.b);
+  }
+  const reached=new Set([0]),queue=[0];for(let i=0;i<queue.length;i++)for(const n of graph[queue[i]])if(!reached.has(n)){reached.add(n);queue.push(n);}
+  if(reached.size!==record.groups.length||typeof couplerTip!=='function')return false;
+  const rigid=mechanismRecordParts(record),all=rigid.flat(),byKey=new Map(all.map(part=>[part.key,part]));
+  if(!rigid.every(assemblyValid))return false;
+  for(let i=0;i<all.length;i++)for(let j=i+1;j<all.length;j++)if(obbOverlap(all[i],all[j],.00001))return false;
+  for(const joint of record.joints){const a=couplerTip(byKey.get(joint.a)),b=couplerTip(byKey.get(joint.b));if(a.point.distanceTo(b.point)>.002||a.axis.dot(b.axis)>-.995)return false;}
+  return true;
+ }catch{return false;}
+}
+function copySavedMechanism(record){
+ return {version:1,type:record.type,name:record.name,groups:record.groups.map(g=>({parts:g.parts.map(p=>({key:p.key,shape:p.shape,weight:p.weight,p:[...p.p],q:[...p.q]}))})),joints:record.joints.map(j=>({a:j.a,b:j.b,rpm:j.rpm,direction:j.direction,moving:j.moving,enabled:j.enabled}))};
+}
+function alignMechanismSnapshot(record){
+ // A live hinge solver may leave millimetres of drift. Canonicalize only this
+ // saved copy; imports stay strict and live bodies are never repositioned here.
+ if(!record.joints.length)return true;
+ const rigid=mechanismRecordParts(record),parts=new Map(),owners=new Map();
+ rigid.forEach((group,i)=>group.forEach(part=>{parts.set(part.key,part);owners.set(part.key,i);}));
+ const reached=new Set([0]);let changed=true;
+ while(changed){changed=false;for(const joint of record.joints){
+  const ai=owners.get(joint.a),bi=owners.get(joint.b),knownA=reached.has(ai),knownB=reached.has(bi);
+  if(knownA===knownB)continue;
+  const parent=parts.get(knownA?joint.a:joint.b),child=parts.get(knownA?joint.b:joint.a),index=knownA?bi:ai;
+  const a=couplerTip(parent),b=couplerTip(child);
+  if(a.point.distanceTo(b.point)>.005||a.axis.dot(b.axis)>-.995)return false;
+  const rotation=Q();rotation.setFromVectors(b.axis,mul(a.axis,-1));rotation.normalize();
+  for(const part of rigid[index]){part.p=add(a.point,rotation.vmult(sub(part.p,b.point)));part.q=rotation.mult(part.q);part.q.normalize();}
+  reached.add(index);changed=true;
+ }}
+ if(reached.size!==rigid.length)return false;
+ const minY=Math.min(...rigid.flat().flatMap(corners).map(v=>v.y));
+ for(const group of record.groups)for(const part of group.parts){const pose=parts.get(part.key);part.p=[pose.p.x,pose.p.y-minY,pose.p.z].map(n=>+n.toFixed(8));part.q=[pose.q.x,pose.q.y,pose.q.z,pose.q.w].map(n=>+n.toFixed(10));}
+ return true;
+}
+function mechanismSnapshot(subject,name=null){
+ const connected=mechanismGroups(subject);if(!connected.length||!connected.some(g=>g.parts.some(p=>p.shape==='coupler')))return null;
+ const linked=rotors.filter(r=>rotorGroups(r).every(g=>connected.includes(g)));
+ const type=linked.length?'rotor':'coupler',defaultName=linked.length?'Rotor':'Enganche';
+ const min=V(Infinity,Infinity,Infinity),max=V(-Infinity,-Infinity,-Infinity);
+ for(const g of connected){const box=bounds(g);for(const axis of ['x','y','z']){min[axis]=Math.min(min[axis],box.min[axis]);max[axis]=Math.max(max[axis],box.max[axis]);}}
+ const origin=V((min.x+max.x)/2,min.y,(min.z+max.z)/2),keys=new Map();let key=0;
+ const record={version:1,type,name:String(name||defaultName).replace(/[\u0000-\u001f]/g,'').trim().slice(0,40)||defaultName,groups:connected.map(g=>({parts:worldParts(g).map(p=>{const current=key++;keys.set(p.id,current);return {key:current,shape:p.shape,weight:p.weight,p:[p.p.x-origin.x,p.p.y-origin.y,p.p.z-origin.z].map(n=>+n.toFixed(8)),q:[p.q.x,p.q.y,p.q.z,p.q.w].map(n=>+n.toFixed(10))};})})),joints:linked.map(r=>({a:keys.get(r.aId),b:keys.get(r.bId),rpm:r.rpm,direction:r.direction,moving:r.moving,enabled:r.enabled}))};
+ return alignMechanismSnapshot(record)&&savedMechanismValid(record)?record:null;
+}
+function loadSavedMechanisms(){
+ try{const data=JSON.parse(window.localStorage.getItem('qbits.mechanisms.v1')||'[]');if(Array.isArray(data))savedMechanisms.push(...data.slice(0,32).filter(savedMechanismValid).map(copySavedMechanism));}catch{}
+}
+function persistMechanisms(){
+ try{window.localStorage.setItem('qbits.mechanisms.v1',JSON.stringify(savedMechanisms));return true;}catch{announce('Mecanismo guardado en esta sesión · expórtalo para conservarlo');return false;}
+}
+function saveMechanism(subject,name=null){
+ if(savedMechanisms.length>=32){announce('Hay 32 mecanismos guardados. Exporta o elimina uno antes de añadir otro.');return null;}
+ const record=mechanismSnapshot(subject,name);if(!record){announce('No se puede guardar: revisa el encaje de las puntas del rotor.');return null;}
+ savedMechanisms.push(record);const durable=persistMechanisms();updateAlphaPanel();announce(record.name+' guardado · '+mechanismPartCount(record)+' piezas'+(durable?'':' · solo en esta sesión'));return record;
+}
+function spawnSavedMechanism(record,point){
+ if(puzzleBlockedEdit('mechanism')||typeof mechanismsAvailable==='function'&&!mechanismsAvailable())return null;
+ if(!savedMechanismValid(record)||!point||![point.x,point.y,point.z].every(Number.isFinite)){announce('El mecanismo guardado no es válido.');return null;}
+ if(story.scene==='campaign'&&record.groups.some(group=>group.parts.some(part=>part.shape!=='coupler'))){announce('Los mecanismos con Q-bits o T-bits añadidos se crean solo en el banco de pruebas. En campaña, monta esas piezas con los recursos del nivel.');return null;}
+ const count=mechanismPartCount(record);if(groups.reduce((sum,g)=>sum+g.parts.length,0)+count>MAX_QUBITS){announce('Máximo de '+MAX_QUBITS+' piezas en la sala.');return null;}
+ const data=mechanismRecordParts(record,V(point.x,point.y+.003,point.z)),ids=new Map(),made=[],joints=[];
+ try{
+  for(const parts of data){const created=parts.map(part=>{const id=typeof allocateUnitId==='function'?allocateUnitId():++serial;ids.set(part.key,id);return {id,shape:part.shape,weight:part.weight,p:part.p,q:part.q};});made.push(makeGroup(created));}
+  if(made.some(g=>!validPose(g,g.body.position,g.body.quaternion,made)))throw new Error('No hay espacio libre para el mecanismo.');
+  for(const joint of record.joints){const rotor=connectRotorTips(ids.get(joint.a),ids.get(joint.b),{...joint,enabled:false});if(!rotor)throw new Error('Las puntas del mecanismo ya no encajan.');joints.push(rotor);}
+  for(let i=0;i<joints.length;i++)configureRotor(joints[i],record.joints[i]);
+  multiSelection=made;selected={g:made[0],part:made[0].parts[0]};announce(record.name+' creado · '+count+' piezas');return joints[0]||made[0];
+ }catch(error){
+  for(const rotor of joints)disconnectRotor(rotor);for(const g of made)removeGroup(g);refreshRotors();announce(error.message||'No se pudo crear el mecanismo.');return null;
+ }
+}
+function duplicateMechanism(subject){
+ const record=mechanismSnapshot(subject);if(!record){announce('No se puede duplicar este mecanismo hasta ajustar sus puntas.');return null;}
+ if(groups.reduce((sum,g)=>sum+g.parts.length,0)+mechanismPartCount(record)>MAX_QUBITS){announce('No caben más copias: límite de '+MAX_QUBITS+' piezas.');return null;}
+ const vertices=mechanismRecordParts(record).flat().flatMap(corners),spacing=Math.max(...['x','z'].map(axis=>Math.max(...vertices.map(v=>v[axis]))-Math.min(...vertices.map(v=>v[axis]))))+.18;
+ for(let row=0;row<5;row++)for(const col of [0,1,-1,2,-2]){
+  const point=V(position[0]-Math.sin(yaw)*(1.2+row*spacing)+Math.cos(yaw)*col*spacing,0,position[2]-Math.cos(yaw)*(1.2+row*spacing)-Math.sin(yaw)*col*spacing);
+  const rotor=spawnSavedMechanism(record,point);if(rotor)return mechanismGroups(rotor);
+ }
+ announce('No hay espacio libre delante para la copia del rotor.');return null;
+}
+function mechanismsExportData(){return {version:1,mechanisms:savedMechanisms.map(copySavedMechanism)};}
+function exportMechanisms(){const blob=new Blob([JSON.stringify(mechanismsExportData(),null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Q-bits_mecanismos.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+function importMechanismsData(data){
+ const input=data?.version===1?data.mechanisms:null;
+ if(!Array.isArray(input)||input.length>32||!input.every(savedMechanismValid))throw new Error('Archivo de mecanismos inválido');
+ const normalized=input.map(copySavedMechanism);savedMechanisms.splice(0,savedMechanisms.length,...normalized);persistMechanisms();updateAlphaPanel();return normalized.length;
+}
+
+function savedShapeValid(shape){return shape&&typeof shape.name==='string'&&shape.name.length<=40&&Array.isArray(shape.parts)&&shape.parts.length>0&&shape.parts.length<=MAX_QUBITS&&shape.parts.every(p=>(p.shape===undefined||['cube','tetra','pyramid','coupler'].includes(p.shape))&&Array.isArray(p.p)&&p.p.length===3&&p.p.every(Number.isFinite)&&p.p.every(n=>Math.abs(n)<6)&&Array.isArray(p.q)&&p.q.length===4&&p.q.every(Number.isFinite)&&Math.abs(Math.hypot(...p.q)-1)<.01);}
 function loadSavedShapes(){try{const list=JSON.parse(readQbitsStorage('qbits.shapes.v1')||'[]');if(Array.isArray(list))savedShapes.push(...list.filter(savedShapeValid).slice(0,32));}catch{} }
 function persistShapes(){try{window.localStorage.setItem('qbits.shapes.v1',JSON.stringify(savedShapes));return true;}catch{announce('Forma guardada en esta sesión · Exportar formas permite conservar una copia.');return false;}}
 function saveShape(g){
+ if(g&&typeof rotorForGroup==='function'&&rotorForGroup(g))return saveMechanism(g);
  if(!g||!groups.includes(g))return;if(savedShapes.length>=32){announce('Hay 32 formas guardadas. Exporta o elimina una antes de añadir otra.');return;}
  if(!assemblyValid(poses(g))){announce('Esta forma tiene caras incompatibles. Desármala y vuelve a encajar las piezas.');return;}
  const bb=bounds(g,V(),Q()),origin=V(bb.center.x,bb.min.y,bb.center.z),shape={name:'Forma '+(savedShapes.length+1),geometryVersion:3,parts:poses(g,V(),Q()).map(o=>({shape:normalizeUnitShape(o.part.shape),p:[o.p.x-origin.x,o.p.y-origin.y,o.p.z-origin.z].map(n=>+n.toFixed(5)),q:[o.q.x,o.q.y,o.q.z,o.q.w].map(n=>+n.toFixed(7))}))};
@@ -2605,7 +2994,7 @@ function placeBlueprint(shape,p){
  if(box.min.y<-.001||box.max.y>ROOM_HEIGHT||Math.max(Math.abs(box.min.x),Math.abs(box.max.x),Math.abs(box.min.z),Math.abs(box.max.z))>13.85||cargos.some(c=>obbOverlap(box,cargoPose(c)))||puzzleObstacleBounds().some(w=>obbOverlap(box,w))||alphaObstacles().some(w=>obbOverlap(box,w))||blueprints.some(other=>obbOverlap(box,blueprintBox(other)))){announce('La forma necesita más espacio libre.');return null;}
  blueprints.push(bp);announce(shape.name+' · clic derecho en el blueprint para integrar');return bp;
 }
-function nearBlueprint(bp){const used=new Set(bp.slots.map(s=>s.index)),needed=new Set(blueprintTargets(bp).filter((_,i)=>!used.has(i)).map(t=>t.shape));return groups.filter(g=>g.parts.length===1&&needed.has(normalizeUnitShape(g.parts[0].shape))&&!g.route&&!g.pendingMoodOrder&&!g.haulJob&&!g.blueprintJob&&!g.cooler&&!(held?.items||[]).some(i=>i.g===g)&&groupWilling(g)&&bounds(g).min.y<.03&&Math.hypot(g.body.position.x-bp.p.x,g.body.position.z-bp.p.z)<=alphaSettings.blueprintRange).sort((a,b)=>a.body.position.distanceTo(bp.p)-b.body.position.distanceTo(bp.p));}
+function nearBlueprint(bp){const used=new Set(bp.slots.map(s=>s.index)),needed=new Set(blueprintTargets(bp).filter((_,i)=>!used.has(i)).map(t=>t.shape));return groups.filter(g=>g.parts.length===1&&!(typeof rotorForGroup==='function'&&rotorForGroup(g))&&needed.has(normalizeUnitShape(g.parts[0].shape))&&!g.route&&!g.pendingMoodOrder&&!g.haulJob&&!g.blueprintJob&&!g.cooler&&!(held?.items||[]).some(i=>i.g===g)&&groupWilling(g)&&bounds(g).min.y<.03&&Math.hypot(g.body.position.x-bp.p.x,g.body.position.z-bp.p.z)<=alphaSettings.blueprintRange).sort((a,b)=>a.body.position.distanceTo(bp.p)-b.body.position.distanceTo(bp.p));}
 function activateBlueprint(bp){bp.active=true;bp.nextScan=0;const used=new Set(bp.slots.map(s=>s.index)),available=nearBlueprint(bp).map(g=>normalizeUnitShape(g.parts[0].shape));let missing=0;for(const [i,target] of blueprintTargets(bp).entries()){if(used.has(i))continue;const j=available.indexOf(target.shape);if(j<0)missing++;else available.splice(j,1);}announce(missing>0?'Faltan '+missing+' unidades de la forma indicada en el radio de '+alphaSettings.blueprintRange+' m. Acércalas al blueprint.':'Integrando unidades cercanas');}
 function releaseBlueprintSlot(s){const g=s.g;if(!groups.includes(g))return;stopRoute(g);g.blueprintJob=null;g.body.type=CANNON.Body.DYNAMIC;g.body.collisionResponse=true;g.body.updateMassProperties();g.body.velocity.set(0,0,0);g.body.angularVelocity.set(0,0,0);g.body.wakeUp();}
 function cancelBlueprint(bp){for(const s of bp.slots)releaseBlueprintSlot(s);blueprints.splice(blueprints.indexOf(bp),1);}
@@ -2668,8 +3057,8 @@ function showPuzzleComplete(){
  pause();panel.hidden=true;document.querySelector('#completion-panel').hidden=false;document.querySelector('#completion-detail').textContent='Tres materiales entregados · '+puzzle.earned+' nuevos Q-bits. La última recompensa te espera al volver a la sala.';
 }
 function updateAlphaHUD(){
- let qCount=0,tCount=0;for(const g of groups)for(const part of g.parts){if(isTBit(part))tCount++;else qCount++;}
- document.querySelector('#alpha-census-text').textContent='× '+qCount+' Q'+(tCount?' · '+tCount+' T':'');
+ let qCount=0,tCount=0,mCount=0;for(const g of groups)for(const part of g.parts){if(unitShape(part)==='coupler')mCount++;else if(isTBit(part))tCount++;else qCount++;}
+ document.querySelector('#alpha-census-text').textContent='× '+qCount+' Q'+(tCount?' · '+tCount+' T':'')+(mCount?' · '+mCount+' M':'');
  if(!panel.hidden||!commandMenu.hidden||held)return;const h=alphaHit(5);if(!h)return;
  if(h.bp)targetLabel.textContent=h.bp.shape.name+' · '+h.bp.status+' · clic derecho';
  if(h.cooler){const c=h.cooler,values=[...c.entries.values()],remaining=values.length?Math.ceil(Math.max(...values.map(v=>alphaSettings.coolSeconds-v.elapsed))):alphaSettings.coolSeconds;targetLabel.textContent='Enfriador · '+c.occupants+'/'+c.capacity+' · '+(!c.enabled||!alphaSettings.coolingOn?'apagado':values.length&&remaining===0?'listos · energía '+Math.round(alphaSettings.exitEnergy*100)+' %':remaining+' s');}
@@ -2723,7 +3112,7 @@ function drawAlpha(){
  gl.depthMask(true);gl.disable(gl.BLEND);
 }
 function updateAccentLights(){const lights=[];if(puzzle.active)for(const p of puzzle.portals)lights.push({p:V(p.x,.8,p.z+.25),c:p.rgb.map(v=>v*p.frame*p.energy)});for(const c of coolers)if(c.enabled&&alphaSettings.coolingOn)lights.push({p:add(c.p,V(0,.3,0)),c:[.2,.65,.8]});lights.sort((a,b)=>a.p.distanceTo(V(...camera))-b.p.distanceTo(V(...camera)));const pos=[],colors=[];for(let i=0;i<4;i++){pos.push(...(lights[i]?[lights[i].p.x,lights[i].p.y,lights[i].p.z]:[0,-100,0]));colors.push(...(lights[i]?.c||[0,0,0]));}gl.uniform3fv(uniforms['uLightPos[0]'],pos);gl.uniform3fv(uniforms['uLightColor[0]'],colors);gl.uniform1f(uniforms.uGlow,alphaSettings.glow);}
-loadSavedShapes();
+loadSavedShapes();loadSavedMechanisms();
 document.querySelector('#rename-qubit').addEventListener('click',renameQubit);
 document.querySelector('#save-shape').addEventListener('click',()=>saveShape(selected?.g));
 document.querySelector('#place-cooler').addEventListener('click',()=>{const p=floorAim()||V(position[0]-Math.sin(yaw)*1.3,0,position[2]-Math.cos(yaw)*1.3);createCooler(p);});
@@ -3107,7 +3496,7 @@ function finishFirstLevel(){saveStoryProgress('level1');story.phase='complete';h
 function enterLab(capture=true){
  if(story.scene==='lab'){gameMode('playing');panel.hidden=true;if(capture)captureMouse();return;}
  clearNarrativeScene();gameScene('lab');gameMode('playing');story.started=true;const saved=story.lab;
- if(saved){Object.assign(settings,saved.settings);Object.assign(moodSettings,saved.moodSettings||{});Object.assign(alphaSettings,story.labAlpha||{});position.splice(0,3,...saved.position);yaw=saved.yaw;pitch=saved.pitch;camera.splice(0,3,...position);for(const g of saved.groups)makeGroup(g.parts,g.q,g.v,g.w);for(const c of saved.cargos)newCargo(c.p,c.side,c.required,c.color);restoreAlphaScene(saved.alphaScene);}else addQubit([0,HALF+.003,0]);
+ if(saved){Object.assign(settings,saved.settings);Object.assign(moodSettings,saved.moodSettings||{});Object.assign(alphaSettings,story.labAlpha||{});position.splice(0,3,...saved.position);yaw=saved.yaw;pitch=saved.pitch;camera.splice(0,3,...position);for(const g of saved.groups)makeGroup(g.parts,g.q,g.v,g.w);restoreLabMechanisms(saved);for(const c of saved.cargos)newCargo(c.p,c.side,c.required,c.color);restoreAlphaScene(saved.alphaScene);}else addQubit([0,HALF+.003,0]);
  world.gravity.y=-settings.gravity;world.defaultContactMaterial.friction=settings.friction;world.defaultContactMaterial.restitution=settings.bounce;world.broadphase.dirty=true;ui.veil.style.opacity='0';updatePanel();if(capture)captureMouse();
 }
 function showMain(){document.querySelector('#wake-screen').hidden=true;gameMode('menu');pause(false);panel.hidden=true;document.querySelector('#main-continue').hidden=!story.started;ui.veil.style.opacity='0';ui.top.style.height='0';ui.bottom.style.height='0';canvas.style.filter='none';document.querySelector('#main-play').focus({preventScroll:true});}
@@ -3317,7 +3706,7 @@ function finishCampaignLevel(){
 }
 function showCampaignResults(){
  const n=story.level;saveStoryProgress('level'+n);story.phase='complete';hideStoryDialogue();storyObjective('');gameMode('complete');pause(false);
- document.querySelector('#complete-eyebrow').textContent=String(n).padStart(2,'0')+' / '+chapters[n][1].toUpperCase();document.querySelector('#complete-title').textContent=n===12?'Cada pieza cuenta.':n===8?'Salimos juntos.':'Una puerta más.';document.querySelector('#complete-description').textContent=n===12?'Dos bloques completos. Todos los compañeros han cruzado contigo.':n===8?'Primer bloque completado. Al otro lado te espera el equipo.':'Nivel '+n+' completado. El siguiente encuentro te espera.';document.querySelector('#complete-next').hidden=n===12;document.querySelector(n===12?'#complete-repeat':'#complete-next').focus({preventScroll:true});
+ document.querySelector('#complete-eyebrow').textContent=String(n).padStart(2,'0')+' / '+chapters[n][1].toUpperCase();document.querySelector('#complete-title').textContent=n===12?'Cada pieza cuenta.':n===8?'Salimos juntos.':'Una puerta más.';document.querySelector('#complete-description').textContent=n===12?'Dos bloques completos. Todos los compañeros han cruzado contigo.':n===8?'Primer bloque completado. Al otro lado te espera el equipo.':'Nivel '+n+' completado. El siguiente encuentro te espera.';if(n===5)document.querySelector('#complete-description').textContent+=' Mecanismo desbloqueado: Enganche y Rotor. Mantén Q para encontrarlos.';document.querySelector('#complete-next').hidden=n===12;document.querySelector(n===12?'#complete-repeat':'#complete-next').focus({preventScroll:true});
 }
 function drawCampaignOpaque(){
  const c=story.campaign;if(!c)return;drawSourcesOpaque();gl.uniform1f(uniforms.uTime,simTime);drawAlphaButtons(storyWorld.buttons);

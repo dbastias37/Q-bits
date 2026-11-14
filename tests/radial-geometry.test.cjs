@@ -61,7 +61,7 @@ test('resizing clears stale hover and accepts native pixel movement at the new d
   key(game, 'keydown', 'KeyQ');hover(game, 0);
   sandbox.innerWidth=640;sandbox.innerHeight=480;
   sandbox.dispatchEvent({ type: 'resize' });
-  const g=sandbox.QBitsRadial.layout(640,480),state=game.radial.getState();
+  const state=game.radial.getState(),mechanisms=state.figures.filter(item=>item.section==='mechanisms').length,g=sandbox.QBitsRadial.layout(640,480,state.figures.length-mechanisms,mechanisms);
   assert.equal(game.radial.hovered,null);
   assert.equal(state.x,g.cx);assert.equal(state.y,g.cy-g.inner*.25);
   hover(game,2);key(game,'keyup','KeyQ');

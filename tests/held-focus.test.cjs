@@ -59,7 +59,9 @@ test('release, pause, loss of capture, and the Q menu remove held HUD and return
     assert(t.heldFocus.amount>0&&t.heldFocus.amount<.8,mode+' eases out');
     assert.equal(element(game,'mood-held-labels').hidden,true,mode);
     if(t.getHeld())assert.equal(element(game,'mood-energy-track').hidden,true,mode);
-    settle(t);assert.equal(t.heldFocus.amount,0,mode);assert.equal(t.heldFocus.focal,1.48256097);
+    settle(t);assert.equal(t.heldFocus.amount,0,mode);
+    if(mode==='radial'){assert(t.heldFocus.focal>1.8,'Q has its own close lens');t.closeUnitRadial(false);settle(t);}
+    assert.equal(t.heldFocus.focal,1.48256097);
   }
 });
 

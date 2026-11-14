@@ -10,7 +10,7 @@
   <link rel="preload" href="assets/fonts/tengoku/Tengoku.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="preload" href="assets/fonts/spaceman/Spaceman-Regular.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="preload" href="assets/fonts/led-calculator/LEDCalculator.ttf" as="font" type="font/ttf" crossorigin>
-  <link rel="stylesheet" href="assets/css/radial-menu.css?v=20261114-6">
+  <link rel="stylesheet" href="assets/css/radial-menu.css?v=20261114-10">
   <style>
     * { box-sizing: border-box; }
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000; }
@@ -353,9 +353,9 @@ input,select,textarea{font-family:var(--font-menu);}
   <div id="target"></div><div id="notice" role="status"></div>
   <section id="panel" hidden aria-label="Panel de pruebas">
     <h2>Q-bits · Panel de pruebas</h2><p id="editing"></p>
-    <div class="tabs" role="tablist"><button id="tab-cube" role="tab" aria-controls="page-cube" aria-selected="true">Piezas</button><button id="tab-route" role="tab" aria-controls="page-route" aria-selected="false">Recorrido</button><button id="tab-cargo" role="tab" aria-controls="page-cargo" aria-selected="false">Cuerpos</button><button id="tab-puzzle" role="tab" aria-controls="page-puzzle" aria-selected="false">Puzle</button><button id="tab-alpha" role="tab" aria-controls="page-alpha" aria-selected="false">Alfa</button></div>
+    <div class="tabs" role="tablist"><button id="tab-cube" role="tab" aria-controls="page-cube" aria-selected="true">Piezas</button><button id="tab-route" role="tab" aria-controls="page-route" aria-selected="false">Recorrido</button><button id="tab-cargo" role="tab" aria-controls="page-cargo" aria-selected="false">Cuerpos</button><button id="tab-puzzle" role="tab" aria-controls="page-puzzle" aria-selected="false">Puzle</button><button id="tab-mechanisms" role="tab" aria-controls="page-mechanisms" aria-selected="false">Mecanismos</button><button id="tab-alpha" role="tab" aria-controls="page-alpha" aria-selected="false">Alfa</button></div>
     <div id="page-cube" role="tabpanel">
-      <label>Tipo de pieza<select id="unit-shape"><option value="cube">Q-bit · cubo</option><option value="tetra">T-bit · pirámide triangular</option><option value="pyramid">T-bit · pirámide de base cuadrada</option></select></label>
+      <label>Tipo de pieza<select id="unit-shape"><option value="cube">Q-bit · cubo</option><option value="tetra">T-bit · pirámide triangular</option><option value="pyramid">T-bit · pirámide de base cuadrada</option><option value="coupler">Enganche · mitad del eje</option><option value="rotor">Rotor · dos enganches unidos</option></select></label>
       <label>Peso por pieza <output id="massValue"></output><input id="mass" type="range" min="0.25" max="3" step="0.25" value="1"></label>
       <label>Gravedad <output id="gravityValue"></output><input id="gravity" type="range" min="1" max="20" step="0.5" value="9.8"></label>
       <label>Rebote <output id="bounceValue"></output><input id="bounce" type="range" min="0" max="0.65" step="0.05" value="0.12"></label>
@@ -379,6 +379,18 @@ input,select,textarea{font-family:var(--font-menu);}
         <p>Estas dos pruebas afectan solo a la pieza seleccionada y están disponibles en el banco libre.</p>
       </details>
       <p>La guía muestra una caída vertical aproximada. Los choques pueden cambiar la posición final.</p>
+    </div>
+    <div id="page-mechanisms" role="tabpanel" hidden>
+      <p id="mechanism-unlock"></p>
+      <div class="actions"><button id="create-coupler" type="button">Crear enganche</button><button id="create-rotor" type="button">Crear rotor</button></div>
+      <p>El enganche combina una base cúbica y una punta. Une dos puntas con Shift para formar un rotor. Une las piezas de tu rueda a las caras cuadradas del lado que girará.</p>
+      <p id="rotor-status"></p>
+      <label>Velocidad del rotor <output id="rotor-rpm-value">30 rpm</output><input id="rotor-rpm" type="range" min="1" max="120" step="1" value="30"></label>
+      <label>Lado que gira<select id="rotor-side"><option value="a">Lado A · lado B como base</option><option value="b">Lado B · lado A como base</option></select></label>
+      <p>El sentido se observa desde el lado que gira, mirando hacia su punta. Al tomar el mecanismo se detiene para poder transportarlo.</p>
+      <div class="actions"><button id="rotor-clockwise" type="button">Horario</button><button id="rotor-counterclockwise" type="button">Antihorario</button><button id="rotor-stop" type="button">Detener</button></div>
+      <div class="actions"><button id="rotor-save" type="button">Guardar mecanismo</button><button id="rotor-disconnect" type="button">Separar enganches</button></div>
+      <details open><summary>Mecanismos guardados</summary><div id="saved-mechanism-list"></div><div class="actions"><button id="export-mechanisms" type="button">Exportar mecanismos</button><label>Importar mecanismos<input id="import-mechanisms" type="file" accept="application/json,.json"></label></div></details>
     </div>
     <div id="page-route" role="tabpanel" hidden>
       <p>Clic derecho para seleccionar un Q-bit. Después, clic derecho en el suelo → Ir a este punto. Para un grupo, arrastra con clic izquierdo desde un espacio vacío. La estructura busca espacio libre y rueda sobre sus aristas; más peso significa menor velocidad.</p>
@@ -428,6 +440,6 @@ input,select,textarea{font-family:var(--font-menu);}
     <div class="actions"><button id="create" type="button">Crear Q-bit</button><button id="remove" type="button">Borrar pieza</button><button id="split" type="button">Desarmar estructura</button></div>
     <button id="resume" type="button">Volver a la sala</button>
   </section>
-  <script src="assets/js/boot.js?v=20261114-9" defer></script>
+  <script src="assets/js/boot.js?v=20261114-10" defer></script>
 </body>
 </html>

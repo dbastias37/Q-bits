@@ -113,7 +113,7 @@ Las piezas mantienen su identidad al formar una cara compuesta y pueden desarmar
 
 Tienen colisiones según sus caras reales, peso ajustable, agarre, giro, recorrido, estados, energía y enfriamiento. Al mantener Shift y sacudir rápidamente una estructura varias veces, sus piezas se separan: la pieza tomada permanece en la mano y las demás caen conservando su identidad. Un giro normal o una vibración pequeña no activa el desarme. Al acercar una pieza sostenida con la rueda, la vista cambia suavemente de campo de visión, mantiene las piezas nítidas y suaviza el fondo; sus barras de energía aparecen solo de cerca. Se unen entre sí y con Q-bits acercando sus caras y soltando con Shift; Alt permite separar una pieza o desarmar la estructura. Duplicar, guardar formas y volver al banco conservan cada tipo. Los blueprints requieren piezas de la forma correcta y siguen aceptando las formas cúbicas guardadas anteriormente.
 
-El contador inferior izquierdo muestra únicamente el icono negro y las existencias Q/T. Los atajos visibles se reducen a Q · P · N · B; las órdenes y ajustes siguen disponibles en sus menús.
+El contador inferior izquierdo muestra únicamente el icono negro y las existencias Q/T. Los enganches se cuentan como M, separados de Q y T. Los atajos visibles se reducen a Q · P · N · B; las órdenes y ajustes siguen disponibles en sus menús.
 
 ## Transformación de materia
 
@@ -151,6 +151,18 @@ Para modificar la interfaz y los estilos, edita `index.html`; para la lógica, e
 - Las tres fuentes están alojadas dentro del repositorio, conservadas sin modificar, y se comprueba su carga antes de habilitar Jugar. Los originales y sus avisos están en `assets/fonts/` y `THIRD_PARTY_NOTICES.md`. Parisienne y la Spaceman anterior se conservan como archivos históricos y ya no se cargan.
 - Las opciones de menú son texto sin cajas ni fondos, con subrayado al señalar y foco de teclado visible. El selector Q usa tres paneles de cristal translúcido y respeta la preferencia de movimiento reducido.
 - El desintegrador transporta líquido negro hasta formar los nuevos Q-bits. Los artefactos conservan sus volúmenes y colisiones, con acabados blancos y grafito y detalles discretos.
+
+## Enganches y rotores
+
+El **Enganche** es una sola pieza con base cúbica de 9 cm y punta piramidal. Sus cinco caras cuadradas permiten añadir Q-bits o estructuras. La punta es un conector mecánico: acerca las puntas de dos enganches y suelta con Shift para formar un **Rotor**. Las dos mitades conservan cuerpos independientes unidos por un eje; no se convierten en una soldadura rígida.
+
+El banco de pruebas ofrece ambos mecanismos desde el inicio, debajo de las figuras en el menú Q. En campaña se desbloquean al completar el nivel 5, **La primera unión**. El clic posterior a elegir crea el enganche o el rotor. El menú Q usa cristal con cantos y grosor y una transición suave del FOV al abrir y cerrar.
+
+- **Clic derecho → Rotación:** horario, antihorario o detener. El sentido se observa desde el lado móvil, mirando hacia su punta.
+- **Elegir lado que gira:** A o B; el otro lado queda fijo como base mientras funciona el motor. Las piezas añadidas a cada mitad se mueven con esa mitad.
+- **P → Mecanismos:** velocidad de 1 a 120 rpm, elección del lado, creación y guardado. El arranque es gradual; las estructuras de gran radio muestran su velocidad máxima efectiva. Un obstáculo detiene el giro sin romper el eje. Al tomar un rotor, se detiene y se transportan sus dos mitades juntas.
+- **Guardar mecanismo:** una mitad se guarda como Enganche; una pareja articulada se guarda como Rotor, conservando piezas, articulación, lado, sentido y velocidad. Se pueden crear copias, exportar e importar desde la misma pestaña. Los diseños guardados con Q-bits o T-bits añadidos se crean en el banco, para conservar los recursos de la campaña.
+- **Separar enganches:** desconecta el eje sin borrar las piezas. Las caras de la punta no admiten soldaduras rígidas; usa las caras cuadradas para construir la rueda o el soporte.
 
 ## Música
 
