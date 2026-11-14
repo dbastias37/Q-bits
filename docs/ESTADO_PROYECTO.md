@@ -6,7 +6,7 @@ Actualizado: 14 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
 Implementar por bloques pequeños, jugables y publicados en GitHub. Este archivo concentra el contexto operativo; el prompt maestro conserva el diseño completo. Cada entrega debe actualizar ambos cuando cambie una decisión, indicar pruebas reales y dejar un siguiente paso concreto. No convertir todo el diseño futuro en una única modificación difícil de revisar.
 
-El usuario autorizó continuar y publicar por bloques mientras no puede jugar desde el teléfono. La revisión de experiencia y equilibrio se hará cuando pruebe las misiones; las comprobaciones de lógica, físicas e inventario deben completarse en cada entrega.
+La revisión de experiencia y equilibrio se hará cuando el usuario pruebe las misiones; las comprobaciones de lógica, físicas e inventario deben completarse en cada entrega. Al cerrar la jornada del 14 de noviembre, el usuario indicó que el taller y el sensor serían el último bloque jugable por ahora: esta actualización solo registra la dirección futura. No continuar creando etapas a partir de la autorización anterior para avanzar por bloques.
 
 ## Bloques
 
@@ -17,8 +17,8 @@ El usuario autorizó continuar y publicar por bloques mientras no puede jugar de
 | IV | Niveles 16–18: rotor, esfuerzo, transporte físico autónomo y certificaciones de torque | Integrado en main mediante PR #2 |
 | V | Niveles 19–20: dosificación y primer encargo de seis paquetes | Integrado en main mediante PR #3 |
 | Taller y sensor | Dispositivo de contacto, investigación pagada y calibraciones de batería/masa/movimiento | Implementado y verificado: 256 pruebas completas |
-| VI | Niveles 21–24: producción sostenida, materiales, presupuesto y cierre | Pendiente |
-| VII | Desafíos posteriores, mejores marcas y progresión de coordinación | Pendiente |
+| Campaña amplia | Alrededor de diez misiones grandes en galpones, después de enseñar las mecánicas y materiales necesarios | Dirección registrada; sin etapas ni numeración definitivas |
+| Posjuego | Desafíos posteriores, mejores marcas y progresión de coordinación | Pendiente |
 
 ## Decisiones que deben conservarse
 
@@ -56,8 +56,14 @@ El taller está disponible en el banco de pruebas: apuntar a la mesa y pulsar E.
 
 La suite actual pasa **256 pruebas, sin fallos**: ocho del modelo de taller, nueve de integración de mesa/guardado, ocho de contactos, nueve de baterías y dos nuevas comprobaciones de carga, además de las 220 anteriores. Incluye colisiones reales de cubos y triángulos, inversión física de un eje apoyado en el suelo, contactos escalonados, borrado de enlaces, conservación de energía/materia y compras únicas. Sintaxis y `git diff --check` aprobados. Ver `REVISION_TALLER_SENSOR.md`; sigue pendiente la evaluación visual y de equilibrio con jugador.
 
-## Siguiente bloque
+## Dirección futura: misiones grandes en galpones
 
-La siguiente prioridad es pasar de la línea guiada a una línea que el jugador pueda organizar: ubicación y conexión de estaciones, inventario limitado y al menos dos soluciones verificadas. Después, diseñar el nivel 21 alrededor de producción sostenida. Implementar y comprobar un modelo temporal de temperatura antes de convertir el sobrecalentamiento en requisito. Conservar las recetas y la física de transporte del bloque V como base.
+Después de presentar y comprobar todas las mecánicas, elementos y materiales que esos encargos utilizarán, la campaña debería pasar a unas diez misiones grandes. Sus salas serán galpones tipo banco de pruebas, posiblemente más largos, con varias máquinas que el jugador deba poner en funcionamiento mediante mecanismos y automatización. La dificultad debe estar en organizar la instalación y coordinar el trabajo, sin depender del laberinto habitual de puertas.
 
-El cierre previsto es reactivar la instalación y abrir desafíos de optimización. Los niveles 21–24 y el posjuego todavía no deben anunciarse como disponibles.
+Es una dirección de diseño, no diez etapas creadas ni un compromiso de duración. La cantidad es aproximada; quedan abiertos numeración, dimensiones, máquinas, pedidos y criterios de éxito. Los antiguos niveles propuestos 21–24 quedan como temas reutilizables, sin fijar el cierre en el 24 ni sumarse automáticamente a las diez misiones. El detalle está en [el prompt maestro](PROMPT_MAESTRO_CAMPANA.md#misiones-grandes-en-galpones).
+
+## Al retomar
+
+Primero recoger las pruebas del jugador sobre lo existente y revisar qué capacidades ya funcionan y cuáles necesitan correcciones o una enseñanza breve. Después se podrá estudiar, en el banco, una instalación con varias máquinas conectadas y al menos dos soluciones físicas verificables. Aprovechar dosificación, transformación, transporte, empaquetado y sensor existentes; no introducir piezas nuevas solo para llenar misiones.
+
+No construir todavía los galpones ni sus etapas definitivas. La temperatura requiere implementar y comprobar un modelo temporal antes de convertirse en requisito. El cierre narrativo de reactivar la instalación y abrir desafíos sigue como intención; su posición se decidirá junto con la campaña amplia. El posjuego continúa pendiente.
