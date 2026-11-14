@@ -1020,7 +1020,7 @@ function grabQubit(hitOverride=null){
   leaveHaul(g);stopRoute(g);g.body.wakeUp();const point=g===hit.g?hit.point:g.body.position.clone();
   const local=g.body.quaternion.inverse().vmult(sub(point,g.body.position));
   const anchorBody=new CANNON.Body({mass:0});anchorBody.type=CANNON.Body.KINEMATIC;anchorBody.position.copy(point);anchorBody.collisionFilterGroup=0;world.addBody(anchorBody);
-  const joint=new CANNON.PointToPointConstraint(g.body,local,anchorBody,V(),settings.force*g.body.mass/(weight*.25));joint.collideConnected=false;world.addConstraint(joint);
+  const joint=new CANNON.PointToPointConstraint(g.body,local,anchorBody,V(),settings.force*workshopGrip(g)*g.body.mass/(weight*.25));joint.collideConnected=false;world.addConstraint(joint);
   items.push({g,anchor:local,anchorBody,joint,relative:sub(point,rootPoint),initialQ:g.body.quaternion.clone(),restQ:null});
  }
  held={...hit,...items[0],items,weight,age:0,distance:clamp(hit.distance,.3,2.5),rotation:hit.g.body.quaternion.clone(),initialRotation:hit.g.body.quaternion.clone()};
@@ -1302,12 +1302,12 @@ function refreshRotors(){
  // Welding two previously independent networks must not leave competing motors.
  const powered=new Map();for(const rotor of rotors)if(rotor.enabled){const component=rotorConnectedGroups(rotorGroups(rotor));if(component.some(g=>powered.has(g)&&(rotor.mount==='fixed'||powered.get(g)==='fixed'))){rotor.enabled=false;rotor.constraint?.disableMotor();unpinRotor(rotor);}else for(const g of component)powered.set(g,rotor.mount);}
 }
-function configureRotor(rotor,patch={}){
+function configureRotor(rotor,patch={},automatic=false){
  if(!rotor||!rotors.includes(rotor))return false;
  patch={...patch};if(story.scene==='campaign')patch.maxTorque=Math.min(patch.maxTorque??rotor.maxTorque,campaignTorqueCap());
  if(!rotors.includes(rotor)||patch.rpm!==undefined&&!Number.isFinite(patch.rpm)||patch.direction!==undefined&&![1,-1].includes(patch.direction)||patch.moving!==undefined&&!['a','b'].includes(patch.moving)||patch.mount!==undefined&&!['wheel','fixed'].includes(patch.mount)||patch.maxTorque!==undefined&&!Number.isFinite(patch.maxTorque)||patch.capacity!==undefined&&!Number.isFinite(patch.capacity))return false;
  refreshRotors();if(!rotors.includes(rotor))return false;
- automationIntervention('Motor ajustado: ensayo reiniciado.');
+ if(!automatic)automationIntervention('Motor ajustado: ensayo reiniciado.');
  const connected=rotorConnectedGroups(rotorGroups(rotor));
  if(patch.enabled&&(held?.items||[]).some(item=>connected.includes(item.g))){announce('Suelta el rotor antes de accionarlo.');return false;}
  if(patch.moving&&patch.moving!==rotor.moving||patch.mount&&patch.mount!==rotor.mount)unpinRotor(rotor);
@@ -1546,7 +1546,7 @@ function updateGrab(dt){
    const delta=sub(target,item.anchorBody.position),distance=delta.norm(),step=Math.min(distance*(1-Math.exp(-16*dt)),2.8*dt);
    if(distance>1e-8)item.anchorBody.position.vadd(mul(delta,step/distance),item.anchorBody.position);
    item.anchorBody.position.copy(safeGripTarget(item,item.anchorBody.position,[b.quaternion]));
-   const force=settings.force*b.mass/(held.weight*.25);
+   const force=settings.force*workshopGrip(item.g)*b.mass/(held.weight*.25);
    for(const equation of item.joint.equations){equation.maxForce=force;equation.minForce=-force;}
   }
  }
@@ -1731,7 +1731,7 @@ function landingProjection(g){
 function rotorPowerState(rotor,dt=0){
  const a=rotorPart(rotor.aId),b=rotorPart(rotor.bId),component=rotorConnectedGroups(rotorGroups(rotor));
  const load=component.reduce((sum,g)=>sum+totalWeight(g),0);
- return QBitsRotorPower.evaluate({enabled:rotor.enabled,rpm:rotor.rpm,actualRpm:rotor.actualRpm||0,actualTorque:rotor.actualTorque||0,stalled:rotor.stalled,maxTorque:rotor.maxTorque,load,capacity:rotor.capacity,energyA:a?.part.mood.energy??0,energyB:b?.part.mood.energy??0},dt);
+ return QBitsRotorPower.evaluate({enabled:rotor.enabled,rpm:rotor.rpm,actualRpm:rotor.actualRpm||0,actualTorque:rotor.actualTorque||0,stalled:rotor.stalled,maxTorque:rotor.maxTorque,load,capacity:rotor.capacity,energyA:a?.part.mood.energy??0,energyB:b?.part.mood.energy??0,capacityJoulesA:QBitsWorkshop.batteryCapacity(a?.part),capacityJoulesB:QBitsWorkshop.batteryCapacity(b?.part)},dt);
 }
 function rotorPowerDescription(rotor,compact=false){
  const power=rotorPowerState(rotor),energy=[rotor.aId,rotor.bId].map(id=>Math.round((rotorPart(id)?.part.mood.energy||0)*100));
@@ -1762,7 +1762,7 @@ function updateRotorPower(dt){
  for(const rotor of rotors){
   if(!rotor.powerActive||!rotor.enabled)continue;
   const power=rotorPowerState(rotor,dt);rotor.power=power;
-  for(const id of [rotor.aId,rotor.bId]){const part=rotorPart(id)?.part;if(part){part.mood.energy=clamp(part.mood.energy-power.drainPerSide,0,1);part.mood.idle=0;part.mood.boredOnce=false;}}
+  for(const [id,drain]of [[rotor.aId,power.drainA],[rotor.bId,power.drainB]]){const part=rotorPart(id)?.part;if(part){part.mood.energy=clamp(part.mood.energy-drain,0,1);part.mood.idle=0;part.mood.boredOnce=false;}}
   if(power.stopReason)stopRotorForPower(rotor,power.stopReason);
  }
 }
@@ -1770,7 +1770,7 @@ function stepPhysics(dt){
  simTime+=dt;refreshRotors();tutorialFloat(dt);updateGrab(dt);updateRoutes(dt);updateHauling(dt);
  // Bound substep travel to avoid tunnelling through a 9 cm piece.
  for(const g of groups){const b=g.body,speed=b.velocity.norm();if(speed>6)b.velocity.scale(6/speed,b.velocity);const spin=b.angularVelocity.norm();if(spin>30)b.angularVelocity.scale(30/spin,b.angularVelocity);}
- updateCampaignPressure(dt);updateButtonPhysics();prepareRotorPower();updateRotorMotors(dt);productionForces(dt);world.step(dt);stabilizeRotors();updateRotorPower(dt);
+ updateCampaignPressure(dt);updateButtonPhysics();prepareRotorPower();updateRotorMotors(dt);productionForces(dt);world.step(dt);stabilizeRotors();updateRotorPower(dt);tickContactSensors(dt);
  // Correct only tiny solver penetration of a hand-held shape; free bodies keep
  // their normal collision response. A hand cannot push its attachment underground.
  if(held)for(const item of held.items||[held]){const b=item.g.body,low=bounds(item.g).min.y;if(low<.001){b.position.y+=.001-low;if(b.velocity.y<0)b.velocity.y=0;b.aabbNeedsUpdate=true;}if(item.floorLocked)b.angularVelocity.set(0,0,0);}
@@ -1794,6 +1794,7 @@ for(const name of ['mass','gravity','bounce','force','friction','damping','speed
  if(story.scene==='campaign'&&story.campaign?.automation){announce('Ensayo certificado: masa y físicas permanecen fijas. Ajusta el motor.');updatePanel();return;}
  automationIntervention();settings[name]=Number(event.target.value);
  if(name==='mass'&&puzzle.active){settings.mass=1;updatePanel();return;}
+ if(name==='mass'&&selected&&QBitsWorkshop.hasAdaptation(selected.part)){settings.mass=selected.part.weight;announce('Restablece la pieza en la mesa antes de cambiar su masa.');updatePanel();return;}
  if(name==='mass'&&selected){
   const old=selected.g,id=selected.part.id,parts=worldParts(old),ref=old.body.quaternion.clone();parts.find(p=>p.id===id).weight=settings.mass;
   removeGroup(old);const g=makeGroup(parts,ref);selected={g,part:g.parts.find(p=>p.id===id)};
@@ -1861,6 +1862,7 @@ function updateTarget(){
  else if(marquee)targetLabel.textContent='Suelta para seleccionar · hasta '+settings.maxSelect+' piezas';
  else if(held?.latched)targetLabel.textContent='Clic · soltar selección · Shift + WASD · girar'+(held.g.parts.length>1?' · Shift + sacudir · desarmar':' · rueda · enfocar');
  else if(held)targetLabel.textContent=snap?(snap.rotorTip?'Puntas alineadas · suelta para formar Rotor':snap.wholeFace?'Cara completa · suelta para unir':'Suelta para unir esta cara'):shiftDown()?'WASD · girar'+(held.g.parts.length>1?' · sacudir varias veces · desarmar':''):'Shift · girar / unir · rueda · enfocar · Ctrl · caída';
+ else if(aimWorkshop()){targetLabel.textContent='E · mesa de trabajo · investigar y adaptar';crosshair.classList.add('ready');}
  else if(selectedTeam().length)targetLabel.textContent='Clic derecho en el suelo · dar destino | clic izquierdo · deseleccionar';
  else if(hit)targetLabel.textContent=totalWeight(hit.g)>settings.maxCarry?'Supera la capacidad de '+formatWeight(settings.maxCarry)+' u':'Clic · tomar | clic derecho · seleccionar';else targetLabel.textContent=aimCargo(4)?'Clic derecho · órdenes del cuerpo':'';
  if(pendingCargo)targetLabel.textContent='Clic derecho en el suelo · destino de la carga';
@@ -1947,7 +1949,7 @@ function drawQubits(){
  }
  gl.depthMask(true);gl.disable(gl.BLEND);
  for(const g of groups){if(g.parts.some(p=>p.mood.production)){for(const p of poses(g))drawBox(p.p,p.q,V(CUBE_SIZE-.002,CUBE_SIZE-.002,CUBE_SIZE-.002),p.part.mood.production?.kind==='A'?[.27,.56,.67,1]:p.part.mood.production?[.72,.53,.26,1]:[.12,.14,.13,1]);if(g.parts.length===2)drawOutline(g.body.position,g.body.quaternion,sub(bounds(g,V(),Q()).max,bounds(g,V(),Q()).min),.8,false);}else drawGroupSolid(g);}
- drawCargos();drawPuzzle();drawAlpha();drawStructureOutlines();drawGuides();drawTaskGuides();
+ drawCargos();drawPuzzle();drawAlpha();drawWorkshop();drawStructureOutlines();drawGuides();drawTaskGuides();
 }
 addQubit([position[0]-Math.sin(yaw)*1.25,HALF+.003,position[2]-Math.cos(yaw)*1.25]);
 
@@ -2036,8 +2038,11 @@ document.querySelector('#detach-cancel').addEventListener('click',()=>closeDetac
 canvas.addEventListener('mousemove',event=>{if(document.pointerLockElement!==canvas){const rect=canvas.getBoundingClientRect();hoverPointer={x:event.clientX-rect.left,y:event.clientY-rect.top};}});
 canvas.addEventListener('mouseleave',()=>hoverPointer=null);
 function duplicateSelection(){
+ if((multiSelection.length?multiSelection:selected?[selected.g]:[]).some(g=>g.parts.some(QBitsWorkshop.hasAdaptation))){announce('Retira las adaptaciones antes de duplicar: las reservas de mesa pertenecen a la pieza original.');return;}
+
  if(puzzleBlockedEdit())return;
  const hit=aimQubit()||selected;if(!hit){announce('Selecciona una figura para duplicarla con V.');return;}
+ if(hit.g.parts.some(QBitsWorkshop.hasAdaptation)){announce('Retira las adaptaciones antes de duplicar: las reservas de mesa pertenecen a la pieza original.');return;}
  if(typeof rotorForGroup==='function'&&rotorForGroup(hit.g))return duplicateMechanism(hit.g);
  const originals=multiSelection.includes(hit.g)&&multiSelection.length>1?multiSelection.filter(g=>groups.includes(g)):[hit.g];
  const count=originals.reduce((n,g)=>n+g.parts.length,0),population=groups.reduce((n,g)=>n+g.parts.length,0);
@@ -2414,7 +2419,7 @@ function openFloorOrders(point){
 function handleSecondary(event){
  const rect=canvas.getBoundingClientRect();
  const dir=document.pointerLockElement===canvas?direction():screenRay(clamp(event.clientX-rect.left,0,canvas.clientWidth),clamp(event.clientY-rect.top,0,canvas.clientHeight));
- if(openReconfigurationMenu(dir)||openProductionMenu(dir)||alphaSecondary(dir))return;
+ if(openWorkshopMenu(dir)||openReconfigurationMenu(dir)||openProductionMenu(dir)||alphaSecondary(dir))return;
  const cargoHit=aimCargo(4,dir),hit=aimQubit(4,dir);
  if(cargoHit){
   selectedCargo=cargoHit.cargo;const c=selectedCargo,team=selectedTeam(),number=team.reduce((n,g)=>n+g.parts.length,0),items=[];
@@ -2434,6 +2439,7 @@ function handleSecondary(event){
    {label:'Elegir destino en el suelo',run:()=>{captureMouse();announce('Clic derecho en el suelo → Ir a este punto.');}},
    {label:'Guardar forma',run:()=>{saveShape(hit.g);captureMouse();}},
    {label:'Nombrar '+unitLabel(hit.part),run:()=>openAlphaPanel(hit)}];
+  if(QBitsWorkshop.partState(hit.part).sensor)items.unshift({label:'Sensor · conectar punta…',run:()=>showSensorMenu(hit)});
   const rotor=rotorForPart(hit.part.id)||rotorForGroup(hit.g);
   if(rotor){items.splice(items.findIndex(item=>item.label==='Guardar forma'),1);items.unshift({label:'Rotación…',run:()=>showRotorRotation(rotor,partPose(hit.g,hit.part).p)});items.push({label:'Guardar mecanismo · Rotor',run:()=>{saveMechanism(rotor);captureMouse();}},{label:'Separar enganches del rotor',run:()=>{disconnectRotor(rotor);captureMouse();}});}
   else if(hit.g.parts.some(part=>unitShape(part)==='coupler'))items.unshift({label:'Guardar mecanismo · Enganche',run:()=>{saveMechanism(hit.g);captureMouse();}},{label:'Enganche · une su punta con otra usando Shift',disabled:true,run:()=>{}});
@@ -2600,7 +2606,7 @@ function puzzleWall(p,half,portal=null){
 }
 function startPuzzle(){
  if(story.ready&&story.scene!=='lab')enterLab(false);
- if(!puzzle.active)puzzle.savedLab=saveLab();clearPuzzleScene();puzzle.active=true;puzzle.stage=0;puzzle.complete=false;puzzle.delivery=null;puzzle.earned=0;puzzle.run++;
+ if(!puzzle.active)puzzle.savedLab=saveLab();removeWorkshop();clearPuzzleScene();puzzle.active=true;puzzle.stage=0;puzzle.complete=false;puzzle.delivery=null;puzzle.earned=0;puzzle.run++;
  settings.mass=1;settings.maxCarry=Math.max(settings.maxCarry,4);settings.maxSelect=Math.max(settings.maxSelect,12);
  const colors=['#73bdc5','#a69bce','#cdb47b'],names=['Calipso','Violeta','Ámbar'],requirements=[1,5,9],sizes=[3,5,7];
  for(let i=0;i<3;i++){
@@ -2618,7 +2624,7 @@ function leavePuzzle(){
  if(!puzzle.active)return;const saved=puzzle.savedLab;clearPuzzleScene();puzzle.active=false;puzzle.savedLab=null;
  if(saved){Object.assign(settings,saved.settings);if(saved.moodSettings)Object.assign(moodSettings,saved.moodSettings);position.splice(0,3,...saved.position);yaw=saved.yaw;pitch=saved.pitch;camera.splice(0,3,...position);for(const g of saved.groups)makeGroup(g.parts,g.q,g.v,g.w);restoreLabMechanisms(saved);for(const c of saved.cargos)newCargo(c.p,c.side,c.required,c.color);}
  restoreAlphaScene(saved?.alphaScene);world.gravity.y=-settings.gravity;world.defaultContactMaterial.friction=settings.friction;world.defaultContactMaterial.restitution=settings.bounce;
- updatePuzzlePanel();updatePanel();announce('Banco de pruebas restaurado');
+ setupWorkshop();updatePuzzlePanel();updatePanel();announce('Banco de pruebas restaurado · mesa a la izquierda, E para adaptar');
 }
 function portalReady(p){return p.frame>=1&&p.energy>=1;}
 function portalAccepts(p,c){return puzzle.active&&!p.completed&&p.index===puzzle.stage&&c.puzzleStage===p.index&&c.color.toLowerCase()===p.color&&c.required===p.required&&portalReady(p);}
@@ -2761,7 +2767,7 @@ function moodCSS(m){return 'rgb('+moodColor(m).map(c=>Math.round(c*255)).join(',
 function groupWilling(g){return g.parts.every(p=>p.mood.state!=='restless'&&p.mood.energy>.025);}
 function moodSpeed(g){
  const average=g.parts.reduce((n,p)=>n+(.5+.5*Math.min(1,p.mood.energy/.65)+p.mood.blend[1]*.16),0)/g.parts.length;
- return clamp(average,.5,1.16);
+ return clamp(average,.5,1.16)*Math.min(...g.parts.map(p=>QBitsWorkshop.movementFactors(p).speed));
 }
 function crewMoodSpeed(c){const slots=c.job?.slots.filter(s=>s.ready&&groupWilling(s.g))||[];const count=slots.reduce((n,s)=>n+groupWorkUnits(s.g),0);return count?slots.reduce((n,s)=>n+moodSpeed(s.g)*groupWorkUnits(s.g),0)/count:1;}
 function frustrate(g,reason){for(const p of g.parts)beginMoodEpisode(p.mood,reason);}
@@ -2787,8 +2793,8 @@ function updateMoods(dt){
   for(const part of g.parts){const m=part.mood;if(m.production)continue;
    if(g.moodHadTask&&!task){m.calm=2;m.idle=0;m.fullTime=0;if(m.state!=='restless')m.state='neutral';}
    m.calm=Math.max(0,m.calm-dt);
-   if(working&&moving){m.energy=clamp(m.energy-travel*moodSettings.drain*effort-dt*.0015,0,1);m.idle=0;m.boredOnce=false;}
-   else if(!rotorForPart(part.id)?.powerActive)m.energy=clamp(m.energy+dt*moodSettings.recovery*(.9+.2*m.personality),0,1);
+   if(working&&moving){m.energy=clamp(m.energy-travel*moodSettings.drain*effort*QBitsWorkshop.movementFactors(part).energy*20/QBitsWorkshop.batteryCapacity(part)-dt*.0015*20/QBitsWorkshop.batteryCapacity(part),0,1);m.idle=0;m.boredOnce=false;}
+   else if(!rotorForPart(part.id)?.powerActive)m.energy=clamp(m.energy+dt*moodSettings.recovery*(.9+.2*m.personality)*20/QBitsWorkshop.batteryCapacity(part),0,1);
    if(task||carried||duty||rotorForPart(part.id)?.powerActive){m.idle=0;m.boredOnce=false;}else m.idle+=dt;
    m.blocked=blocked?m.blocked+dt:Math.max(0,m.blocked-dt*2);
    m.agitation=clamp(m.agitation+(blocked&&m.blocked>3?dt*.09:-dt*.20),0,1);
@@ -3074,6 +3080,8 @@ function persistMechanisms(){
  try{window.localStorage.setItem('qbits.mechanisms.v1',JSON.stringify(savedMechanisms));return true;}catch{announce('Mecanismo guardado en esta sesión · expórtalo para conservarlo');return false;}
 }
 function saveMechanism(subject,name=null){
+ if(mechanismGroups(subject).some(g=>g.parts.some(QBitsWorkshop.hasAdaptation))){announce('Retira las adaptaciones antes de guardar el montaje. La investigación permanece disponible.');return null;}
+
  if(savedMechanisms.length>=32){announce('Hay 32 mecanismos guardados. Exporta o elimina uno antes de añadir otro.');return null;}
  const record=mechanismSnapshot(subject,name);if(!record){announce('No se puede guardar: revisa el encaje de las puntas del rotor.');return null;}
  savedMechanisms.push(record);const durable=persistMechanisms();updateAlphaPanel();announce(record.name+' guardado · '+mechanismPartCount(record)+' piezas'+(durable?'':' · solo en esta sesión'));return record;
@@ -3096,6 +3104,8 @@ function spawnSavedMechanism(record,point){
  }
 }
 function duplicateMechanism(subject){
+ if(mechanismGroups(subject).some(g=>g.parts.some(QBitsWorkshop.hasAdaptation))){announce('Retira las adaptaciones antes de duplicar el mecanismo.');return null;}
+
  const record=mechanismSnapshot(subject);if(!record){announce('No se puede duplicar este mecanismo hasta ajustar sus puntas.');return null;}
  if(groups.reduce((sum,g)=>sum+g.parts.length,0)+mechanismPartCount(record)>MAX_QUBITS){announce('No caben más copias: límite de '+MAX_QUBITS+' piezas.');return null;}
  const vertices=mechanismRecordParts(record).flat().flatMap(corners),spacing=Math.max(...['x','z'].map(axis=>Math.max(...vertices.map(v=>v[axis]))-Math.min(...vertices.map(v=>v[axis]))))+.18;
@@ -3594,6 +3604,7 @@ function drawStoryGlass(){
 }
 const storyTargetMesh=buildLathe([[.88,.006],[1,.006]],72);
 function clearNarrativeScene(){
+ workshopBench=null;contactStates.clear();rotorContactStates.clear();
  closeUnitRadial(false);
  releaseQubit();story.preserveGrip=false;clearCampaign();clearStoryWalls();clearPuzzleScene();puzzle.active=false;puzzle.savedLab=null;puzzle.delivery=null;clearSelection();speech.queue.length=0;for(const slot of speech.slots)clearSpeechSlot(slot);hideStoryDialogue();storyObjective('');ui.marker.hidden=true;story.guideId=null;story.phaseTime=0;story.dropAligned=false;story.lost=0;story.arrival=0;story.routeIssued=false;story.phase='idle';ui.top.style.height='0';ui.bottom.style.height='0';canvas.style.filter='none';document.querySelector('#notice').textContent='';document.querySelector('#wake-screen').hidden=true;
 }
@@ -3633,10 +3644,10 @@ function openStoryDoor(dt){const d=storyWorld.door;if(!d)return;storyWorld.doorP
 function saveStoryProgress(key){story.progress[key]=true;try{localStorage.setItem('qbits.campaign.v1',JSON.stringify(story.progress));}catch{}}
 function finishFirstLevel(){saveStoryProgress('level1');story.phase='complete';hideStoryDialogue();storyObjective('');gameMode('complete');pause(false);document.querySelector('#complete-repeat').focus({preventScroll:true});}
 function enterLab(capture=true){
- if(story.scene==='lab'){gameMode('playing');panel.hidden=true;if(capture)captureMouse();return;}
+ if(story.scene==='lab'){setupWorkshop();gameMode('playing');panel.hidden=true;if(capture)captureMouse();return;}
  clearNarrativeScene();gameScene('lab');gameMode('playing');story.started=true;const saved=story.lab;
  if(saved){Object.assign(settings,saved.settings);Object.assign(moodSettings,saved.moodSettings||{});Object.assign(alphaSettings,story.labAlpha||{});position.splice(0,3,...saved.position);yaw=saved.yaw;pitch=saved.pitch;camera.splice(0,3,...position);for(const g of saved.groups)makeGroup(g.parts,g.q,g.v,g.w);restoreLabMechanisms(saved);for(const c of saved.cargos)newCargo(c.p,c.side,c.required,c.color);restoreAlphaScene(saved.alphaScene);}else addQubit([0,HALF+.003,0]);
- world.gravity.y=-settings.gravity;world.defaultContactMaterial.friction=settings.friction;world.defaultContactMaterial.restitution=settings.bounce;world.broadphase.dirty=true;ui.veil.style.opacity='0';updatePanel();if(capture)captureMouse();
+ world.gravity.y=-settings.gravity;world.defaultContactMaterial.friction=settings.friction;world.defaultContactMaterial.restitution=settings.bounce;world.broadphase.dirty=true;ui.veil.style.opacity='0';setupWorkshop();updatePanel();if(capture)captureMouse();
 }
 function showMain(){document.querySelector('#wake-screen').hidden=true;gameMode('menu');pause(false);panel.hidden=true;document.querySelector('#main-continue').hidden=!story.started;ui.veil.style.opacity='0';ui.top.style.height='0';ui.bottom.style.height='0';canvas.style.filter='none';document.querySelector('#main-play').focus({preventScroll:true});}
 function openPauseMenu(){if(!story.ready||story.mode!=='playing'||story.transition)return;document.querySelector('#wake-screen').hidden=true;gameMode('pause');pause(false);panel.hidden=true;document.querySelector('#pause-chapter').textContent=story.scene==='intro'?'Prólogo · El primer encuentro':story.scene==='campaign'?'Nivel '+story.level+' · '+chapters[story.level][1]:'Banco de pruebas';document.querySelector('#pause-resume').focus({preventScroll:true});}
@@ -3851,7 +3862,7 @@ function finishCampaignLevel(){
  story.phase='finishing';sceneFade(showCampaignResults,{out:2.1,black:.65,inTime:.9,loading:false,kind:'results'});
 }
 function showCampaignResults(){
- const n=story.level;saveStoryProgress('level'+n);story.phase='complete';hideStoryDialogue();storyObjective('');gameMode('complete');pause(false);
+ const n=story.level;saveStoryProgress('level'+n);awardWorkshopCredits();story.phase='complete';hideStoryDialogue();storyObjective('');gameMode('complete');pause(false);
  document.querySelector('#complete-eyebrow').textContent=String(n).padStart(2,'0')+' / '+chapters[n][1].toUpperCase();document.querySelector('#complete-title').textContent=n===12?'Cada pieza cuenta.':n===8?'Salimos juntos.':'Una puerta más.';document.querySelector('#complete-description').textContent=n===12?'Dos bloques completos. Todos los compañeros han cruzado contigo.':n===8?'Primer bloque completado. Al otro lado te espera el equipo.':'Nivel '+n+' completado. El siguiente encuentro te espera.';if(n===5)document.querySelector('#complete-description').textContent+=' Mecanismo desbloqueado: Enganche y Rotor. Mantén Q para encontrarlos.';if(n===12)document.querySelector('#complete-description').textContent='Dos bloques completos. Al otro lado empieza la reconfiguración.';if(n>=13&&n<=15){document.querySelector('#complete-title').textContent=n===15?'Seguimos siendo nosotros.':'La materia recuerda.';document.querySelector('#complete-description').textContent=n===15?'Has recuperado las dos escalas de división y su recomposición. Tus descubrimientos y planos quedan en el catálogo.':'Descubrimiento registrado. J abre el catálogo durante la partida.';}if(n>=16&&n<=18){document.querySelector('#complete-title').textContent=n===18?'La primera entrega autónoma.':'Una máquina, un acuerdo.';document.querySelector('#complete-description').textContent='Ensayo certificado con torque I · '+(story.campaign?.automation?.run.joules||0).toFixed(2)+' J consumidos.'+(n===16?' Torque II desbloqueado para tus mecanismos.':n===18?' Torque III desbloqueado. Has completado el bloque de automatización inicial.':'');}if(n>=19){const s=story.campaign?.production;document.querySelector('#complete-title').textContent=n===20?'Los primeros seis paquetes.':'Cada unidad cuenta.';document.querySelector('#complete-description').textContent=(s?.ledger.accepted.length||0)+' entregas correctas · '+(s?.joules||0).toFixed(2)+' J · '+(s?.autonomy||0).toFixed(1)+' s de trabajo útil sin intervenir. El catálogo guarda lo aprendido.';}document.querySelector('#complete-next').hidden=n===LEVELS.length-1;document.querySelector(n===LEVELS.length-1?'#complete-repeat':'#complete-next').focus({preventScroll:true});
 }
 function drawCampaignOpaque(){
@@ -3983,7 +3994,7 @@ function sendMaterial(cargo,chosen=null){
  if(count<cargo.required){announce('Se necesitan '+cargo.required+' Q-bits disponibles en el suelo. Libera al equipo de sus otras tareas.');return false;}
  const success=beginHaul(cargo,team,cargo.source.intake);if(success){hideStoryDialogue();storyObjective('Equipo en camino · '+cargo.required+' Q-bits\nPuedes acompañarlos o preparar el siguiente mecanismo.');}return success;
 }
-function interactMaterial(){if(story.scene!=='campaign'||story.encounter)return;if(openReconfigurationMenu()||openProductionMenu())return;const hit=aimCargo(4);if(hit?.cargo.source){if(hit.cargo.job)announce('El equipo ya está trabajando. Clic derecho para cambiar o detener la orden.');else sendMaterial(hit.cargo);}}
+function interactMaterial(){if(openWorkshopMenu())return;if(story.scene!=='campaign'||story.encounter)return;if(openReconfigurationMenu()||openProductionMenu())return;const hit=aimCargo(4);if(hit?.cargo.source){if(hit.cargo.job)announce('El equipo ya está trabajando. Clic derecho para cambiar o detener la orden.');else sendMaterial(hit.cargo);}}
 function onCampaignPad(g){const bb=bounds(g);return activePressureButtons().some(b=>bb.min.y<(b.surface||0)+.025&&bb.min.x>=b.p.x-b.half-.006&&bb.max.x<=b.p.x+b.half+.006&&bb.min.z>=b.p.z-b.half-.006&&bb.max.z<=b.p.z+b.half+.006);}
 function drawMatter(c){
  const t=c.intake||0,scale=1-t*.94,dims=c.dimensions,step=.18,origin=c.body.position,rgb=[1,3,5].map(i=>parseInt(c.color.slice(i,i+2),16)/255);
@@ -4098,6 +4109,96 @@ function tickMoodHints(){
 }
 function tickBlockTwo(dt){if(!story.campaign)return;if(story.encounter)tickEncounter(dt);else{tickSources(dt);tickMoodHints();}}
 function campaignAmbientAllowed(){return story.scene==='campaign'&&story.mode==='playing'&&!story.transition&&!story.encounter&&!story.dialogue&&story.elapsed>8;}
+
+// Workshop research is persistent; fitted modules belong to existing piece IDs.
+let workshopProfile;try{workshopProfile=QBitsWorkshop.normalizeProfile(JSON.parse(localStorage.getItem('qbits.workshop.v1')||'{}'));}catch{workshopProfile=QBitsWorkshop.normalizeProfile({});}
+let workshopBench=null;
+const contactStates=new Map(),rotorContactStates=new Map();
+function persistWorkshop(){try{localStorage.setItem('qbits.workshop.v1',JSON.stringify(workshopProfile));return true;}catch{return false;}}
+function awardWorkshopCredits(){const result=QBitsWorkshop.awardCompleted(workshopProfile,story.progress);workshopProfile=result.profile;persistWorkshop();return result;}
+function purchaseWorkshopResearch(key){awardWorkshopCredits();const result=QBitsWorkshop.purchase(workshopProfile,key,story.progress);if(!result.ok){announce(result.error);return false;}workshopProfile=result.profile;const saved=persistWorkshop();announce('Investigado · '+QBitsWorkshop.RESEARCH.find(item=>item.id===key).label+(saved?'':' · solo en esta sesión; no se pudo guardar'));return true;}
+function setupWorkshop(){
+ if(story.scene!=='lab'||puzzle.active)return null;
+ if(workshopBench&&world.bodies.includes(workshopBench.wall.body))return workshopBench;
+ const p=V(-1.75,.6,1.3),wall=storyWall(V(p.x,.3,p.z),V(.48,.3,.32),{color:[.8,.84,.81]});workshopBench={p,wall};announce('Mesa de trabajo a la izquierda · apunta y pulsa E. Misma personalidad; ahora con garantía de taller.');return workshopBench;
+}
+function removeWorkshop(){if(workshopBench){world.removeBody(workshopBench.wall.body);const at=storyWorld.walls.indexOf(workshopBench.wall);if(at>=0)storyWorld.walls.splice(at,1);workshopBench=null;}contactStates.clear();rotorContactStates.clear();}
+function onWorkshop(p){return !!workshopBench&&Math.abs(p.x-workshopBench.p.x)<.55&&Math.abs(p.z-workshopBench.p.z)<.4&&p.y>=workshopBench.p.y-.02&&p.y<=workshopBench.p.y+.45;}
+function workshopTarget(){
+ if(!workshopBench)return null;
+ const eligible=groups.flatMap(g=>g.parts.map(part=>({g,part,...partPose(g,part)}))).filter(o=>!o.part.mood.production&&onWorkshop(o.p)&&!held?.items?.some(item=>item.g===o.g));
+ return eligible.find(o=>selected?.part.id===o.part.id)||eligible.sort((a,b)=>a.p.distanceTo(workshopBench.p)-b.p.distanceTo(workshopBench.p))[0]||null;
+}
+function applyWorkshopUpgrade(id,patch){
+ if(story.scene!=='lab'||puzzle.active||!workshopBench){announce('Las adaptaciones se preparan en la mesa del banco de pruebas.');return false;}
+ const hit=rotorPart(id);if(!hit||!onWorkshop(hit.p)||held?.items?.some(item=>item.g===hit.g)){announce('Deja la pieza sobre la mesa y suéltala.');return false;}
+ const component=rotorConnectedGroups([hit.g]);if(component.some(g=>g.route||g.pendingMoodOrder||g.haulJob||g.blueprintJob)||rotors.some(r=>r.enabled&&rotorGroups(r).some(g=>component.includes(g)))){announce('Detén el mecanismo antes de adaptarlo.');return false;}
+ awardWorkshopCredits();const parts=worldParts(hit.g),at=parts.findIndex(p=>p.id===id),plan=QBitsWorkshop.planPartUpgrade(parts[at],patch,workshopProfile);
+ if(plan.error){announce(plan.error);return false;}
+ parts[at]=plan.part;if(!QBitsWorkshop.partState(plan.part).sensor){delete parts[at].mood.sensorLink;contactStates.delete(id);}
+ const ref=hit.g.body.quaternion.clone(),velocity=hit.g.body.velocity.clone(),spin=hit.g.body.angularVelocity.clone();removeGroup(hit.g);const made=makeGroup(parts,ref,velocity,spin);refreshRotors();selected={g:made,part:made.parts.find(p=>p.id===id)};
+ announce('Adaptación aplicada · '+plan.storedJ.toFixed(1)+' / '+plan.capacity+' J conservados · '+plan.material.piece.toFixed(2)+' u + '+plan.material.bench.toFixed(2)+' u reservadas en mesa');updatePanel();return true;
+}
+function aimWorkshop(dir=direction()){if(story.scene!=='lab'||puzzle.active||!workshopBench)return false;const half=V(.5,.4,.35),center=add(workshopBench.p,V(0,-.1,0));return rayPuzzleBox(V(...camera),dir,{p:center,half,min:sub(center,half),max:add(center,half)},3.5)!==null;}
+function openWorkshopMenu(dir=direction()){
+ if(story.scene!=='lab'||puzzle.active||story.mode!=='playing'||story.transition)return false;
+ const bench=setupWorkshop();if(!bench||!aimWorkshop(dir))return false;
+ awardWorkshopCredits();const target=workshopTarget(),items=[{label:'Investigaciones · '+workshopProfile.credits+' créditos',run:showWorkshopResearch}];
+ if(target){const state=QBitsWorkshop.partState(target.part),id=target.part.id;
+  items.push({label:target.part.mood.name+' · '+target.part.weight.toFixed(2)+' u · reserva '+state.ballast.toFixed(2)+' u',disabled:true,run:()=>{}});
+  items.push({label:state.sensor?'Retirar sensor de contacto':'Instalar sensor de contacto',disabled:!state.sensor&&!workshopProfile.research.includes('sensor'),run:()=>{applyWorkshopUpgrade(id,{sensor:!state.sensor});captureMouse();}});
+  for(const [key,label]of [['battery','Batería'],['lightweight','Estructura ligera'],['movement','Movimiento']])for(const tier of [1,2,3])items.push({label:(state[key]===tier?'✓ ':'')+label+' '+tier,disabled:tier>1&&!workshopProfile.research.includes(key+tier),run:()=>{applyWorkshopUpgrade(id,{[key]:tier});captureMouse();}});
+  items.push({label:'Restaurar pieza · retirar adaptaciones',run:()=>{applyWorkshopUpgrade(id,{sensor:false,battery:1,lightweight:1,movement:1});captureMouse();}});
+ }else items.push({label:'Deja una pieza sobre la mesa para adaptarla',disabled:true,run:()=>{}});
+ items.push({label:'Cerrar',run:()=>captureMouse()});openCommandMenu(bench.p,'Mesa '+workshopProfile.bench+' · investigar una vez, adaptar gratis',items);return true;
+}
+function showWorkshopResearch(){
+ awardWorkshopCredits();const items=QBitsWorkshop.availableResearch(workshopProfile,story.progress).map(item=>({label:(item.owned?'✓ ':item.available?'':'🔒 ')+item.label+' · '+item.cost+' créditos'+(!item.available&&!item.owned?' · '+item.reason:''),disabled:!item.available,run:()=>{purchaseWorkshopResearch(item.id);showWorkshopResearch();}}));
+ items.push({label:'12 créditos por nivel completado por primera vez. Repetir no paga.',disabled:true,run:()=>{}},{label:'Cerrar',run:()=>captureMouse()});openCommandMenu(workshopBench?.p||V(...camera),'Mesa '+workshopProfile.bench+' · '+workshopProfile.credits+' créditos disponibles',items);
+}
+function sensorRotor(part){const link=part?.mood?.sensorLink;if(!link)return null;const rotor=rotors.find(r=>r.aId===link.aId&&r.bId===link.bId);return rotor&&rotorPart(rotor.aId)&&rotorPart(rotor.bId)?rotor:null;}
+function sensorFace(part){const profile=unitProfile(part),index=profile.faceNormals.reduce((best,n,i)=>n.x>profile.faceNormals[best].x?i:best,0);return {normal:profile.faceNormals[index],center:profile.faceCenters[index]};}
+function linkContactSensor(sensorId,rotor){
+ const hit=rotorPart(sensorId);if(certifiedAutomation()||!hit||!QBitsWorkshop.partState(hit.part).sensor||!rotors.includes(rotor)||rotorGroups(rotor).some(g=>!g)){announce('Necesitas un sensor adaptado y un rotor completo.');return false;}
+ if(hit.p.distanceTo(couplerTip(rotorPart(rotor.aId)).point)>3){announce('Acerca sensor y rotor: el enlace alcanza 3 m.');return false;}
+ hit.part.mood.sensorLink={aId:rotor.aId,bId:rotor.bId};contactStates.delete(sensorId);announce('Punta conectada · tocar pared invierte el rotor una vez');return true;
+}
+function unlinkContactSensor(sensorId){const hit=rotorPart(sensorId);if(!hit)return false;delete hit.part.mood.sensorLink;contactStates.delete(sensorId);return true;}
+function showSensorMenu(hit){
+ const part=hit.part,linked=sensorRotor(part),items=rotors.map((r,i)=>({label:(linked===r?'✓ ':'')+'Conectar punta → Rotor '+(i+1),run:()=>{linkContactSensor(part.id,r);captureMouse();}}));
+ items.push({label:'Desconectar punta',disabled:!linked,run:()=>{unlinkContactSensor(part.id);captureMouse();}},{label:'La punta verde marca la cara activa. Shift permite orientarla.',disabled:true,run:()=>{}},{label:'Cerrar',run:()=>captureMouse()});openCommandMenu(partPose(hit.g,part).p,'Sensor · enlace de inversión',items);
+}
+function sensorContactActive(hit){
+ const shape=hit.g.body.shapes[hit.g.parts.indexOf(hit.part)],axis=hit.q.vmult(sensorFace(hit.part).normal);
+ for(const contact of world.contacts){const isA=contact.bi===hit.g.body,isB=contact.bj===hit.g.body;if(!isA&&!isB)continue;
+  if((isA?contact.si:contact.sj)!==shape)continue;const other=isA?contact.bj:contact.bi;
+  if(other===floor||other.type!==CANNON.Body.STATIC||other.qubitGroup||other.collisionFilterGroup===0)continue;
+  const normal=isA?contact.ni:mul(contact.ni,-1);if(Math.abs(normal.y)<.45&&normal.dot(axis)>.55)return true;
+ }return false;
+}
+function tickContactSensors(dt){
+ if(storySuspended()||story.transition||certifiedAutomation()||!Number.isFinite(dt)||dt<=0)return;
+ const live=new Set(),inputs=new Map();
+ for(const g of groups)for(const part of g.parts){if(!QBitsWorkshop.partState(part).sensor)continue;live.add(part.id);const hit={g,part,...partPose(g,part)},r=sensorRotor(part);
+  if(part.mood.sensorLink&&!r){delete part.mood.sensorLink;contactStates.delete(part.id);continue;}
+  if(!r){contactStates.delete(part.id);continue;}
+  const touching=!held?.items?.some(item=>item.g===g)&&hit.p.distanceTo(couplerTip(rotorPart(r.aId)).point)<=3&&sensorContactActive(hit);
+  contactStates.set(part.id,QBitsContacts.step(contactStates.get(part.id),touching,dt).state);
+  const input=inputs.get(r)||{touching:false,id:part.id};if(touching){input.touching=true;input.id=part.id;}inputs.set(r,input);
+ }
+ for(const id of contactStates.keys())if(!live.has(id))contactStates.delete(id);
+ // One rotor receives one edge from the union of its sensors. Adjacent contacts
+ // cannot undo one another; every linked tip must clear before it can rearm.
+ for(const [r,input]of inputs){const key=r.aId+':'+r.bId,next=QBitsContacts.step(rotorContactStates.get(key),input.touching,dt);rotorContactStates.set(key,next.state);
+  if(next.fire&&r.enabled){configureRotor(r,{direction:-r.direction},true);r.sensorPulses=(r.sensorPulses||0)+1;r.lastSensorId=input.id;}
+ }
+ const keys=new Set([...inputs.keys()].map(r=>r.aId+':'+r.bId));for(const key of rotorContactStates.keys())if(!keys.has(key))rotorContactStates.delete(key);
+}
+function drawWorkshop(){
+ if(story.scene==='lab'&&workshopBench){const p=workshopBench.p;drawBox(add(p,V(0,.012,0)),Q(),V(.68,.018,.4),[.29,.43,.37,1]);drawBox(add(p,V(-.38,.18,-.2)),Q(),V(.12,.32,.06),[.28,.36,.32,1]);}
+ for(const g of groups)for(const part of g.parts)if(QBitsWorkshop.partState(part).sensor){const pose=partPose(g,part),face=sensorFace(part),point=add(pose.p,pose.q.vmult(add(face.center,mul(face.normal,.004)))),r=sensorRotor(part),tipQ=Q();tipQ.setFromVectors(V(1,0,0),face.normal);drawBox(point,pose.q.mult(tipQ),V(.009,.023,.023),r?[.25,.8,.49,1]:[.7,.57,.25,1]);if(r){const tip=couplerTip(rotorPart(r.aId)).point;drawLines([point,tip],[.2,.7,.43,.7]);}}
+}
+function workshopGrip(g){return g.parts.reduce((n,p)=>n+QBitsWorkshop.movementFactors(p).grip,0)/Math.max(1,g.parts.length);}
 
 // Chapter III. A bounded, reversible material transaction; the physical world
 // is committed only when the complete output tray is clear.
@@ -4294,7 +4395,7 @@ function drawProduction(){
 }
 function productionLabels(){const s=story.campaign?.production;if(!s)return [];return [{p:add(s.control,V(0,.25,0)),text:'E · CONTROL DEL LOTE'},{p:V(-1.65,.96,s.z),text:'MATERIA · '+s.ledger.stock.length+' EN RESERVA'},...(s.goal.packages?[{p:V(-.08,.86,s.z),text:'EMPAQUE · A + B'}]:[]),{p:V(1.5,.79,s.z),text:'RECEPTOR · '+s.ledger.accepted.length+'/'+s.goal.target}];}
 
-function groupWorkUnits(g){return g.parts.reduce((n,p)=>n+(p.mood?.matter?p.weight/p.mood.matter.rootWeight:1),0);}
+function groupWorkUnits(g){return g.parts.reduce((n,p)=>n+(p.mood?.matter?p.weight/p.mood.matter.rootWeight:1)*QBitsWorkshop.movementFactors(p).load,0);}
 function chapterMatterParts(c=story.campaign){return groups.flatMap(g=>worldParts(g)).filter(p=>p.mood?.matter?.root===c?.reconfiguration?.root);}
 function chapterDialogue(lines){
  const c=story.campaign;let index=0;
@@ -4341,7 +4442,7 @@ function beginReconfiguration(action){
  const c=story.campaign,s=c?.reconfiguration;
  if(!s||s.job||story.mode!=='playing'||story.transition||!panel.hidden||document.hidden)return false;
  if(!QBitsReconfiguration.actions[action]||c.number<QBitsReconfiguration.actions[action].unlock)return false;
- const input=reconfigurationInput(action),plan=QBitsReconfiguration.plan(action,input);
+ const input=reconfigurationInput(action);if(input.some(QBitsWorkshop.hasAdaptation)){announce('Retira las adaptaciones en la mesa antes de dividir o recomponer.');return false;}const plan=QBitsReconfiguration.plan(action,input);
  if(plan.error){announce(input.length?plan.error:'Deja las piezas necesarias dentro de ENTRADA y suéltalas.');return false;}
  const ids=new Set(plan.inputs),owners=groups.filter(g=>g.parts.some(p=>ids.has(p.id)));
  if(owners.some(g=>g.parts.some(p=>!ids.has(p.id)))||groups.reduce((n,g)=>n+g.parts.length,0)-input.length+plan.outputs.length>MAX_QUBITS){announce('Separa la pieza o libera espacio antes de transformar.');return false;}

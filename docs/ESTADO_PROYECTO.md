@@ -15,7 +15,8 @@ El usuario autorizó continuar y publicar por bloques mientras no puede jugar de
 | I–II | Prólogo y niveles 1–12: movimiento, uniones, formas, fuentes, transporte y equipo | Implementado |
 | III | Niveles 13–15: división, subdivisión, recomposición, catálogo y dos planos | Integrado en main mediante PR #1 |
 | IV | Niveles 16–18: rotor, esfuerzo, transporte físico autónomo y certificaciones de torque | Integrado en main mediante PR #2 |
-| V | Niveles 19–20: dosificación y primer encargo de seis paquetes | Implementado y verificado en este bloque |
+| V | Niveles 19–20: dosificación y primer encargo de seis paquetes | Integrado en main mediante PR #3 |
+| Taller y sensor | Dispositivo de contacto, investigación pagada y calibraciones de batería/masa/movimiento | Implementado y verificado: 256 pruebas completas |
 | VI | Niveles 21–24: producción sostenida, materiales, presupuesto y cierre | Pendiente |
 | VII | Desafíos posteriores, mejores marcas y progresión de coordinación | Pendiente |
 
@@ -28,7 +29,7 @@ El usuario autorizó continuar y publicar por bloques mientras no puede jugar de
 - La autonomía exige trabajo productivo. Manipular piezas o cambiar órdenes/configuración reinicia la prueba; caminar y mirar no. Pausa y pestaña oculta congelan el tiempo.
 - Torque I/II/III es una selección explícita con límites provisionales de 0,40/0,65/1,00 N·m. No aumenta automáticamente el ajuste de un mecanismo existente. La energía sigue calculándose físicamente.
 - Los ejercicios comparables fijan equipamiento. El banco de pruebas mantiene el rango libre hasta 4 N·m.
-- La construcción ligera y la coordinación avanzada siguen pendientes. Las correcciones de choques y rutas nunca se bloquean detrás de progreso.
+- El taller añade estructura ligera con reserva de materia ligada a cada pieza y contrapartidas de agarre/carga. La coordinación avanzada sigue pendiente. Las correcciones de choques y rutas nunca se bloquean detrás de progreso.
 - Potencia disipada no equivale a temperatura: todavía no existe un modelo temporal de sobrecalentamiento.
 - Los materiales A/B son recursos inertes, separados del equipo Q-bit. Dos medias unidades forman un paquete conservando identidades y masa.
 - Cada pedido utiliza una reserva finita. Reiniciar prepara un único lote de prueba y elimina sus entregas previas. El reloj no premia esperar ante una salida obstruida.
@@ -41,9 +42,19 @@ La prueba visual local quedó bloqueada al iniciar Chromium por restricción de 
 
 El bloque IV añade doce pruebas de autonomía, entrega física, consumo, recuperación, certificaciones y restricciones. Al cerrar el bloque IV, la suite pasó **203 pruebas**, incluyendo los niveles y la carga de módulos disponibles entonces. Los comandos de comprobación de sintaxis y `git diff --check` también pasan. El catálogo tenía seis descubrimientos y dos blueprints al cerrar ese bloque.
 
-El bloque V añade dos misiones, dos fichas de catálogo y controles de lote. La suite completa pasa **220 pruebas**, incluidas cinco de inventario y once de integración de producción. Las soluciones físicas de referencia entregan tres unidades en ~17,07 s con 7,19 J, y seis paquetes en ~41,42 s con 26,11 J. El catálogo contiene ahora ocho descubrimientos y dos blueprints. El detalle está en `REVISION_BLOQUE_V.md`.
+El bloque V añade dos misiones, dos fichas de catálogo y controles de lote. Al cerrar ese bloque, la suite pasó **220 pruebas**, incluidas cinco de inventario y once de integración de producción. Las soluciones físicas de referencia entregan tres unidades en ~17,07 s con 7,19 J, y seis paquetes en ~41,42 s con 26,11 J. El catálogo contiene ahora ocho descubrimientos y dos blueprints. El detalle está en `REVISION_BLOQUE_V.md`.
 
 La autonomía de estos pedidos suma segundos de trabajo útil dentro del mismo intento sin intervención; las esperas no suman. La materia conserva masa e IDs entre reserva, línea, cámara y recepción. Las partidas visuales y el equilibrio con jugador siguen pendientes.
+
+## Ampliación transversal acordada
+
+El usuario pidió un dispositivo de contacto preparado a partir de un Q-bit/T-bit existente, conectado por su punta a un rotor para invertir el giro al tocar una pared. No introduce una especie nueva. El taller tiene niveles y la investigación cuesta créditos de primeras finalizaciones. Las mejoras de batería, peso y movimiento tienen efectos y contrapartidas reales; la aplicación de una investigación no vuelve a cobrarse en cada escena. No se promete una duración concreta sin pruebas con jugador.
+
+Mantener la identidad y las reservas al unir/separar, impedir clonación de mejoras/reservas y conservar los julios al cambiar batería. Las misiones certificadas conservan sus restricciones. El trabajo pendiente sobre otros comportamientos de Q-bits requiere especificaciones futuras del usuario.
+
+El taller está disponible en el banco de pruebas: apuntar a la mesa y pulsar E. El sensor se conecta desde su menú de clic derecho y necesita que su cara activa toque una pared a menos de 3 m del rotor. Varios sensores del mismo rotor comparten una sola señal hasta que todos se separan. La investigación se guarda en el navegador; las adaptaciones se conservan al recuperar la escena del laboratorio, pero deben retirarse antes de exportar una plantilla de mecanismo.
+
+La suite actual pasa **256 pruebas, sin fallos**: ocho del modelo de taller, nueve de integración de mesa/guardado, ocho de contactos, nueve de baterías y dos nuevas comprobaciones de carga, además de las 220 anteriores. Incluye colisiones reales de cubos y triángulos, inversión física de un eje apoyado en el suelo, contactos escalonados, borrado de enlaces, conservación de energía/materia y compras únicas. Sintaxis y `git diff --check` aprobados. Ver `REVISION_TALLER_SENSOR.md`; sigue pendiente la evaluación visual y de equilibrio con jugador.
 
 ## Siguiente bloque
 

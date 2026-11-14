@@ -12,8 +12,9 @@
     maxTorque: Object.freeze([.02, 4]),
     capacity: Object.freeze([2, 128])
   });
-  // Gameplay calibration: each Enganche owns a 20 J reservoir, represented by
-  // its existing 0..1 energy bar. Both sides supply the motor equally. Ordinary
+  // Gameplay calibration: each Enganche starts with a 20 J reservoir, upgraded
+  // explicitly up to 40 J, represented by its existing 0..1 energy bar. Both
+  // sides supply equal absolute joules even with unequal capacities. Ordinary
   // attached Q-bits add load, not battery capacity. This is an explicit motor
   // model, not a specification of a particular real-world motor or battery.
   const MODEL = Object.freeze({
@@ -54,6 +55,8 @@
     // The simulation limits commanded speed to 120 RPM. This wider guard only
     // bounds corrupt/external measurements and keeps every power value finite.
     const rpm = state.stalled ? 0 : Math.min(10000, Math.abs(finite(state.actualRpm, 0)));
+    const capacityJoulesA = clamp(finite(state.capacityJoulesA, MODEL.joulesPerSide), 20, 40);
+    const capacityJoulesB = clamp(finite(state.capacityJoulesB, MODEL.joulesPerSide), 20, 40);
     const beforeA = clamp(finite(state.energyA, 0), 0, 1);
     const beforeB = clamp(finite(state.energyB, 0), 0, 1);
     let stopReason = !state.enabled ? null : load > capacity ? 'overload' : Math.min(beforeA, beforeB) <= MODEL.emptyEpsilon ? 'empty' : null;
@@ -61,19 +64,29 @@
     const mechanicalWatts = powered ? torque * rpm * Math.PI * 2 / 60 : 0;
     const heatWatts = powered ? MODEL.copperWattsPerTorqueSquared * torque * torque : 0;
     const inputWatts = powered ? MODEL.idleWatts + heatWatts + mechanicalWatts / MODEL.efficiency : 0;
-    const drainPerSecond = inputWatts / (MODEL.joulesPerSide * 2);
-    const availableSeconds = drainPerSecond > 0 ? Math.min(beforeA, beforeB) / drainPerSecond : null;
+    const wattsPerSide = inputWatts / 2;
+    const drainPerSecondA = wattsPerSide / capacityJoulesA;
+    const drainPerSecondB = wattsPerSide / capacityJoulesB;
+    const availableJoulesPerSide = Math.min(beforeA * capacityJoulesA, beforeB * capacityJoulesB);
+    const availableSeconds = wattsPerSide > 0 ? availableJoulesPerSide / wattsPerSide : null;
     const suppliedSeconds = powered ? Math.min(seconds, availableSeconds) : 0;
     const exhausted = powered && seconds > 0 && seconds >= availableSeconds;
-    const drainPerSide = powered ? exhausted ? Math.min(beforeA, beforeB) : Math.min(beforeA, beforeB, suppliedSeconds * drainPerSecond) : 0;
-    const energyA = Math.max(0, beforeA - drainPerSide);
-    const energyB = Math.max(0, beforeB - drainPerSide);
+    const spentPerSide = powered ? Math.min(availableJoulesPerSide, suppliedSeconds * wattsPerSide) : 0;
+    const drainA = spentPerSide / capacityJoulesA;
+    const drainB = spentPerSide / capacityJoulesB;
+    const energyA = Math.max(0, beforeA - drainA);
+    const energyB = Math.max(0, beforeB - drainB);
+    // Legacy readings use the original 20 J reference. They remain useful for
+    // comparable telemetry; upgraded batteries must debit drainA and drainB.
+    const drainPerSide = spentPerSide / MODEL.joulesPerSide;
+    const drainPerSecond = wattsPerSide / MODEL.joulesPerSide;
     if (exhausted) stopReason = 'empty';
     return {
-      drainPerSide, drainPerSecond, energyA, energyB, suppliedSeconds,
+      drainPerSide, drainPerSecond, drainA, drainB, drainPerSecondA, drainPerSecondB,
+      capacityJoulesA, capacityJoulesB, energyA, energyB, suppliedSeconds,
       inputWatts, mechanicalWatts, heatWatts,
-      spentJoules: drainPerSide * MODEL.joulesPerSide * 2,
-      remainingSeconds: drainPerSecond > 0 ? Math.min(energyA, energyB) / drainPerSecond : state.enabled && stopReason === 'empty' ? 0 : null,
+      spentJoules: spentPerSide * 2,
+      remainingSeconds: wattsPerSide > 0 ? Math.min(energyA * capacityJoulesA, energyB * capacityJoulesB) / wattsPerSide : state.enabled && stopReason === 'empty' ? 0 : null,
       load, capacity, maxTorque, loadRatio: load / capacity, torqueRatio: torque / maxTorque,
       stopReason
     };
