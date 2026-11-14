@@ -32,7 +32,7 @@ function create({profiles}){
  const cancel=document.createElement('div');cancel.className='radial-cancel';cancel.setAttribute('aria-hidden','true');cancel.innerHTML='<span>×</span><small>Cancelar</small>';
  const detail=document.createElement('div');detail.className='radial-description';detail.setAttribute('aria-live','polite');detail.setAttribute('aria-atomic','true');
  const detailTitle=document.createElement('strong'),detailText=document.createElement('p');detail.append(detailTitle,detailText);
- const help=document.createElement('p');help.className='radial-help';help.textContent='Suelta Q para elegir · N para crear';
+ const help=document.createElement('p');help.className='radial-help';help.textContent='Suelta Q para elegir · clic para crear';
  const cursor=document.createElement('i');cursor.className='radial-cursor';cursor.setAttribute('aria-hidden','true');
  let opened=false,hover=-1,selected=null,frameId=0,lastTime=0,hideAt=0,detailTime=0,virtual=false,g=layout(1,1,profiles.length),pointer={x:0,y:0},context=null;
  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');

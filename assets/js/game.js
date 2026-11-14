@@ -8,7 +8,7 @@ function readQbitsStorage(key){
  return previous;
 }
 const story={ready:false,mode:'menu',scene:'lab',phase:'idle',started:false,elapsed:0,phaseTime:0,dialogue:null,transition:null,intentionalUnlock:false,preserveGrip:false,progress:{},lab:null,guideId:null,dropAligned:false};
-let unitRadial=null;
+let unitRadial=null,pendingUnitCreation=null;
 function radialOpen(){return !!unitRadial?.isOpen;}
 const storyWorld={walls:[],details:[],door:null,target:null,doorProgress:0};
 const ROOM_SIZE = 28; // Ancho y largo; las cuatro paredes se alejan del centro.
@@ -17,6 +17,8 @@ const EYE_HEIGHT = 1.68;
 const PLAYER_RADIUS = 0.28;
 const WALK_SPEED = 3.2;
 const posture = { height:EYE_HEIGHT, crouchHeight:.78 };
+// Inspection follows the wheel-driven hand distance, not the selection state.
+const heldFocus = { amount:0, target:0, focal:1.48256097, groups:[], active:false };
 
 function updatePosture(dt, active, crouching) {
   // C controls posture independently of grabbing, rotating and joining pieces.
@@ -63,6 +65,7 @@ const vertexSource = `
   uniform vec3 uCamera;
   uniform vec2 uLook;
   uniform float uAspect;
+  uniform float uFocal;
   uniform float uKind;
   uniform vec3 uCenter;
   uniform float uScale;
@@ -82,7 +85,7 @@ const vertexSource = `
     vec3 world = uKind > 0.5 ? rotate(aPosition * uDimensions) + uCenter : aPosition;
     vec3 relative = world - uCamera;
     float depth = dot(relative, forward);
-    float focal = 1.48256097;
+    float focal = uFocal;
     float nearClip = 0.04, farClip = 60.0;
     gl_Position = vec4(
       dot(relative, right) * focal / uAspect,
@@ -105,6 +108,7 @@ const fragmentSource = `
   uniform vec3 uLightPos[4];
   uniform vec3 uLightColor[4];
   uniform float uGlow;
+  uniform float uFocusMask;
   varying vec3 vPosition;
   varying vec3 vNormal;
   uniform float uSize;
@@ -122,6 +126,7 @@ const fragmentSource = `
     return result;
   }
   void main() {
+    if (uFocusMask > 0.5) { gl_FragColor = vec4(1.0); return; }
     if (uKind > 13.5) {
       // Dense black feedstock, with a neutral moving meniscus and soft reflections.
       // Unlike the energy circuits, this liquid does not emit green light.
@@ -262,7 +267,9 @@ for (const [name, offset] of [['aPosition', 0], ['aNormal', 12]]) {
   gl.enableVertexAttribArray(location);
   gl.vertexAttribPointer(location, 3, gl.FLOAT, false, 24, offset);
 }
-const uniforms = Object.fromEntries(['uGlow','uLightPos[0]','uLightColor[0]','uTime','uCamera','uLook','uAspect','uSize','uHeight','uKind','uCenter','uScale','uShadow','uDimensions','uQuaternion','uTint'].map(name => [name, gl.getUniformLocation(program, name)]));
+const uniforms = Object.fromEntries(['uFocal','uFocusMask','uGlow','uLightPos[0]','uLightColor[0]','uTime','uCamera','uLook','uAspect','uSize','uHeight','uKind','uCenter','uScale','uShadow','uDimensions','uQuaternion','uTint'].map(name => [name, gl.getUniformLocation(program, name)]));
+gl.uniform1f(uniforms.uFocal, heldFocus.focal);
+gl.uniform1f(uniforms.uFocusMask, 0);
 gl.uniform1f(uniforms.uSize, ROOM_SIZE);
 gl.uniform1f(uniforms.uHeight, ROOM_HEIGHT);
 gl.enable(gl.DEPTH_TEST);
@@ -304,6 +311,7 @@ function lockFailed() {
 }
 
 function pause(release=true) {
+  resetAssemblyShake();
   closeUnitRadial(false);
   if(story.ready){story.preserveGrip=!release;if(document.pointerLockElement===canvas)story.intentionalUnlock=true;}
   pendingPickup=null;
@@ -358,6 +366,7 @@ document.addEventListener('pointerlockchange', () => {
   clearTimeout(lockTimeout);
   lockPending = false;
   locked = document.pointerLockElement === canvas;
+  resetAssemblyShake();
   if(!locked)closeUnitRadial(false);
   keys.clear();
   if (locked) { story.intentionalUnlock=false;story.preserveGrip=false;hint.hidden=true;completePendingPickup(); }
@@ -378,6 +387,7 @@ document.addEventListener('mousemove', event => {
   if (document.pointerLockElement !== canvas || !storyLookAllowed()) return;
   if (marquee) { updateMarquee(event); return; }
   noteSpeechLook(event.movementX,event.movementY);
+  noteAssemblyShake(event.movementX,event.movementY,event.timeStamp);
   yaw -= event.movementX * 0.002;
   yaw = Math.atan2(Math.sin(yaw), Math.cos(yaw));
   pitch = Math.max(-Math.PI / 2 + 0.012, Math.min(Math.PI / 2 - 0.012, pitch - event.movementY * 0.002));
@@ -911,21 +921,24 @@ function unitRadialAllowed(){
 }
 function openUnitRadial(){
  if(radialOpen()||!unitRadialAllowed())return false;
- initUnitRadial();keys.clear();routeInspection=null;accumulator=0;
+ cancelUnitCreation();initUnitRadial();keys.clear();routeInspection=null;accumulator=0;
  unitRadial.open(creationShape(),{virtualPointer:document.pointerLockElement===canvas});
  document.body.dataset.unitRadial='open';hint.hidden=true;redraw=true;
  return true;
 }
 function closeUnitRadial(commit=false){
+ if(!commit)cancelUnitCreation();
  if(!radialOpen())return false;
  const choice=unitRadial.hovered;
  const valid=commit&&unitRadialAllowed()&&['cube','tetra','pyramid'].includes(choice);
  unitRadial.close();document.body.dataset.unitRadial='closed';keys.clear();accumulator=0;
- if(valid){settings.unitShape=choice;syncUnitControls();announce((choice==='cube'?'Q-bit':choice==='tetra'?'T-bit triangular':'T-bit de base cuadrada')+' · N para crear');}
+ if(valid){settings.unitShape=choice;pendingUnitCreation=choice;syncUnitControls();announce((choice==='cube'?'Q-bit':choice==='tetra'?'T-bit triangular':'T-bit de base cuadrada')+' · clic izquierdo para crear · Esc cancela');}
  redraw=true;return valid;
 }
+function cancelUnitCreation(){pendingUnitCreation=null;}
 function handleKeyUp(event){
  keys.delete(event.code);
+ if(event.code==='ShiftLeft'||event.code==='ShiftRight'){resetAssemblyShake();if(held&&!shiftDown())held.shakeSeparated=false;}
  if(event.code==='KeyQ'&&radialOpen()){event.preventDefault();closeUnitRadial(true);}
 }
 function spawnQubit(){
@@ -936,7 +949,7 @@ function spawnQubit(){
   const p=V(position[0]-Math.sin(yaw)*(.95+row*.16)+Math.cos(yaw)*col*.16,unitGroundHeight(shape)+.002,position[2]-Math.cos(yaw)*(.95+row*.16)-Math.sin(yaw)*col*.16);
   if(Math.max(Math.abs(p.x),Math.abs(p.z))>13.9)continue;
   if(groups.some(g=>poses(g).some(o=>obbOverlap({p,q:Q(),shape},o,-.012))))continue;
-  const g=addQubit([p.x,p.y,p.z],settings.mass,shape);selected={g,part:g.parts[0]};multiSelection=[];announce(unitLabel(g.parts[0])+' creado · '+settings.mass+' u');return g;
+  const g=addQubit([p.x,p.y,p.z],settings.mass,shape);cancelUnitCreation();selected={g,part:g.parts[0]};multiSelection=[];announce(unitLabel(g.parts[0])+' creado · '+settings.mass+' u');return g;
  }announce('No hay espacio delante. Muévete y vuelve a intentarlo.');
 }
 function rayPart(origin,dir,pose,max=40,half=pose.half?.x||HALF){
@@ -964,6 +977,7 @@ function aimQubit(max=2.7,dir=direction()){
 function carrySet(hit){return multiSelection.includes(hit.g)&&multiSelection.length>1?multiSelection.filter(g=>groups.includes(g)):[hit.g];}
 function canCarry(list){return list.reduce((n,g)=>n+totalWeight(g),0)<=settings.maxCarry+.0001;}
 function grabQubit(hitOverride=null){
+ resetAssemblyShake();
  if(document.pointerLockElement!==canvas||held||marquee)return;const hit=hitOverride||aimQubit();if(hit?.g?.storyEmerging)return;
  if(!hit){if(aimCargo(3)){announce('Este cuerpo se arrastra con un equipo de Q-bits.');return;}startMarquee();return;}
  if(altDown()){openDetachMenu(hit);return;}
@@ -986,6 +1000,7 @@ function grabQubit(hitOverride=null){
  speech.shake=null;queueSpeech(hit.g,'close',{part:hit.part,kind:'pickup',priority:62,cooldown:18});
 }
 function releaseQubit(join=false){
+ resetAssemblyShake();
  if(!held)return;
  const g=held.g,items=held.items||[held],dock=story.dockCandidate;
  for(const item of items){if(item.joint)world.removeConstraint(item.joint);if(item.anchorBody)world.removeBody(item.anchorBody);item.g.body.angularDamping=settings.damping;item.g.body.fixedRotation=false;item.g.body.updateMassProperties();}
@@ -1104,6 +1119,49 @@ function detachPart(hit,all=false){
   makeFragments(rest,ref,velocity,spin);const detached=makeGroup([one],one.q,velocity,spin);selected={g:detached,part:detached.parts[0]};announce(unitLabel(one)+' separado');
  }
 }
+function resetAssemblyShake(){if(held)held.assemblyShake=null;}
+function dismantleHeldAssembly(){
+ const grip=held;if(!grip||grip.g.parts.length<2||(grip.items||[grip]).length!==1)return false;
+ const g=grip.g,parts=worldParts(g),picked=grip.part.id,center=g.body.position.clone();
+ const point=add(center,g.body.quaternion.vmult(grip.anchor)),distance=grip.distance;
+ const bounded=(value,max)=>{const length=value.norm();return length>max?mul(value,max/length):value.clone();};
+ const velocity=bounded(g.body.velocity,.35),spin=bounded(g.body.angularVelocity,2);
+ // Drop old constraints before replacing the body, but keep the actual picked
+ // unit in the same hand. Other units retain their world poses and settle freely.
+ story.dockCandidate=null;releaseQubit(false);removeGroup(g);multiSelection=[];
+ let pickedGroup=null;
+ for(const part of parts){
+  const offset=sub(part.p,center),outward=offset.norm()>1e-6?mul(offset,.06/offset.norm()):V();
+  const motion=bounded(add(add(velocity,spin.cross(offset)),outward),.45);
+  const fragment=makeGroup([part],part.q,motion,spin);if(part.id===picked)pickedGroup=fragment;
+ }
+ grabQubit({g:pickedGroup,part:pickedGroup.parts[0],point,distance});
+ if(held){held.distance=distance;held.latched=grip.latched;held.reward=grip.reward;held.shakeSeparated=true;}
+ snap=null;announce('Estructura desarmada · conservas la pieza que tomaste');redraw=true;return true;
+}
+function noteAssemblyShake(dx,dy,time){
+ if(!held||held.age<.25||held.g.parts.length<2||(held.items||[held]).length!==1||!shiftDown()||!running||document.hidden||document.pointerLockElement!==canvas||!storyLookAllowed()||story.transition||radialOpen()||!panel.hidden||!menu.hidden||!commandMenu.hidden){resetAssemblyShake();return;}
+ if(!Number.isFinite(dx)||!Number.isFinite(dy))return;
+ const now=Number.isFinite(time)?time:performance.now(),axis=Math.abs(dx)>=Math.abs(dy)?'x':'y';
+ const amount=axis==='x'?dx:dy;if(Math.abs(amount)<2)return;
+ let shake=held.assemblyShake;
+ if(!shake||shake.group!==held.g||now<shake.last||now-shake.last>180||now-shake.start>1200||shake.axis!==axis||now-shake.strokeStart>240){
+  shake=held.assemblyShake={group:held.g,axis,start:now,last:now,strokeStart:now,sign:Math.sign(amount),stroke:0,reverse:0,turns:0,travel:0};
+ }
+ const travel=Math.min(Math.abs(amount),120);shake.travel+=travel;shake.last=now;
+ if(Math.sign(amount)===shake.sign){shake.stroke+=travel;shake.reverse=0;}
+ else{
+  shake.reverse+=travel;
+  // A reversal counts only after both strokes travel far enough. Tiny mouse
+  // jitter or one quick turn while aligning a joint cannot dismantle a body.
+  if(shake.reverse>=32){
+   if(shake.stroke>=32)shake.turns++;
+   else{shake.turns=0;shake.travel=shake.reverse;shake.start=now;}
+   shake.sign*=-1;shake.stroke=shake.reverse;shake.reverse=0;shake.strokeStart=now;
+  }
+ }
+ if(shake.turns>=4&&shake.travel>=240&&now-shake.start>=120)dismantleHeldAssembly();
+}
 function deleteQubit(hit){
  if(puzzleBlockedEdit())return;
  if(!hit||!groups.includes(hit.g)){announce('Apunta a una pieza para borrarla.');return;}
@@ -1158,7 +1216,7 @@ function findCompoundSquareSnap(source,target,limit){
  return candidates.find(candidate=>validPose(source,candidate.position,candidate.quaternion))||null;
 }
 function findSnap(){
- if(!held||!shiftDown()||(held.items&&held.items.length>1))return null;
+ if(!held||held.shakeSeparated||!shiftDown()||(held.items&&held.items.length>1))return null;
  const source=held.g,part=partPose(source,held.part);let candidate=null,best=.055;
  for(const target of groups){if(target===source||target.route||target.haulJob)continue;
   if(sameBlockShape(source,target)){
@@ -1479,8 +1537,8 @@ function handleWheel(event){
  if(keys.has('KeyC')){
   event.preventDefault();posture.crouchHeight=clamp(posture.crouchHeight-Math.sign(event.deltaY)*.08,.42,1.15);redraw=true;return;
  }
- if(!held)return;
- event.preventDefault();held.distance=clamp(held.distance+Math.sign(event.deltaY)*.07,.3,2.5);
+ if(!held||!storyLookAllowed()||storySuspended()||story.transition)return;
+ event.preventDefault();held.distance=clamp(held.distance+Math.sign(event.deltaY)*.07,.3,2.5);redraw=true;
 }
 canvas.addEventListener('wheel',handleWheel,{passive:false});
 function handleKey(event){
@@ -1493,6 +1551,7 @@ function handleKey(event){
  if(event.code==='KeyQ'&&!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&unitRadialAllowed()){
   event.preventDefault();openUnitRadial();return;
  }
+ if(event.code==='Escape'&&pendingUnitCreation){event.preventDefault();cancelUnitCreation();announce('Creación cancelada');return;}
  if(storyInput(event))return;
  speech.lastInput=simTime;
  if(event.code==='Escape'){closeCommandMenu(false);moveChoice=null;pendingCargo=null;routeInspection=null;if(!menu.hidden)closeDetachMenu(false);finishMarquee(true);pause();return;}
@@ -1515,9 +1574,10 @@ function updateTarget(){
  snap=findSnap();updateCallout();updateCargoCallout();updateMenuConnector();updateInspection();updatePuzzleHUD();updateMoodSelection();updateAlphaHUD();
  if(document.pointerLockElement!==canvas){targetLabel.textContent='';crosshair.classList.remove('ready');return;}
  const hit=held||aimQubit();crosshair.classList.toggle('ready',!!hit);
- if(marquee)targetLabel.textContent='Suelta para seleccionar · hasta '+settings.maxSelect+' piezas';
- else if(held?.latched)targetLabel.textContent='Clic · soltar selección · Shift + WASD · girar';
- else if(held)targetLabel.textContent=snap?(snap.wholeFace?'Cara completa · suelta para unir':'Suelta para unir esta cara'):shiftDown()?'WASD · girar':'Shift · girar / unir · Ctrl · caída';
+ if(pendingUnitCreation)targetLabel.textContent='Clic izquierdo · crear '+(pendingUnitCreation==='cube'?'Q-bit':'T-bit')+' · Esc / clic derecho · cancelar';
+ else if(marquee)targetLabel.textContent='Suelta para seleccionar · hasta '+settings.maxSelect+' piezas';
+ else if(held?.latched)targetLabel.textContent='Clic · soltar selección · Shift + WASD · girar'+(held.g.parts.length>1?' · Shift + sacudir · desarmar':' · rueda · enfocar');
+ else if(held)targetLabel.textContent=snap?(snap.wholeFace?'Cara completa · suelta para unir':'Suelta para unir esta cara'):shiftDown()?'WASD · girar'+(held.g.parts.length>1?' · sacudir varias veces · desarmar':''):'Shift · girar / unir · rueda · enfocar · Ctrl · caída';
  else if(selectedTeam().length)targetLabel.textContent='Clic derecho en el suelo · dar destino | clic izquierdo · deseleccionar';
  else if(hit)targetLabel.textContent=totalWeight(hit.g)>settings.maxCarry?'Supera la capacidad de '+formatWeight(settings.maxCarry)+' u':'Clic · tomar | clic derecho · seleccionar';else targetLabel.textContent=aimCargo(4)?'Clic derecho · órdenes del cuerpo':'';
  if(pendingCargo)targetLabel.textContent='Clic derecho en el suelo · destino de la carga';
@@ -1592,6 +1652,10 @@ function drawGuides(){
  }
  gl.depthMask(true);gl.disable(gl.BLEND);
 }
+function drawGroupSolid(g){
+ if(g.block){const p=moodVisualPose(g,blockPose(g));bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,1);setPose(p.p,p.q,p.size);gl.drawArrays(gl.TRIANGLES,0,36);}
+ else for(const p of poses(g))drawUnitMesh(g.parts.length===1?{...moodVisualPose(g,p),part:p.part}:p);
+}
 function drawQubits(){
  bindGeometry(shadowGeometry);gl.uniform1f(uniforms.uKind,2);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
  for(const g of groups)for(const p of poses(g)){
@@ -1599,7 +1663,7 @@ function drawQubits(){
   setPose(V(p.p.x,.001,p.p.z),Q(),V(scale,scale,scale));gl.uniform1f(uniforms.uScale,scale);gl.uniform1f(uniforms.uShadow,.22/(1+height*3));gl.drawArrays(gl.TRIANGLES,0,6);
  }
  gl.depthMask(true);gl.disable(gl.BLEND);
- for(const g of groups){if(g.block){const p=moodVisualPose(g,blockPose(g));bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,1);setPose(p.p,p.q,p.size);gl.drawArrays(gl.TRIANGLES,0,36);}else for(const p of poses(g))drawUnitMesh(g.parts.length===1?{...moodVisualPose(g,p),part:p.part}:p);}
+ for(const g of groups)drawGroupSolid(g);
  drawCargos();drawPuzzle();drawAlpha();drawStructureOutlines();drawGuides();drawTaskGuides();
 }
 addQubit([position[0]-Math.sin(yaw)*1.25,HALF+.003,position[2]-Math.cos(yaw)*1.25]);
@@ -1643,8 +1707,8 @@ function findBlockSnap(source,target){
  }return best;
 }
 function cameraBasis(){return {forward:direction(),right:V(Math.cos(yaw),0,-Math.sin(yaw)),up:V(Math.sin(yaw)*Math.sin(pitch),Math.cos(pitch),Math.cos(yaw)*Math.sin(pitch))};}
-function screenRay(x,y){const b=cameraBasis(),w=canvas.clientWidth,h=canvas.clientHeight,xx=(2*x/w-1)*(w/h)/1.48256097,yy=(1-2*y/h)/1.48256097;const d=add(add(b.forward,mul(b.right,xx)),mul(b.up,yy));d.normalize();return d;}
-function project(p){const b=cameraBasis(),r=sub(p,V(...camera)),depth=r.dot(b.forward);if(depth<=.04)return null;const h=canvas.clientHeight,w=canvas.clientWidth;return {x:w/2+r.dot(b.right)*1.48256097*h/2/depth,y:h/2-r.dot(b.up)*1.48256097*h/2/depth,depth};}
+function screenRay(x,y){const b=cameraBasis(),w=canvas.clientWidth,h=canvas.clientHeight,xx=(2*x/w-1)*(w/h)/heldFocus.focal,yy=(1-2*y/h)/heldFocus.focal;const d=add(add(b.forward,mul(b.right,xx)),mul(b.up,yy));d.normalize();return d;}
+function project(p){const b=cameraBasis(),r=sub(p,V(...camera)),depth=r.dot(b.forward);if(depth<=.04)return null;const h=canvas.clientHeight,w=canvas.clientWidth;return {x:w/2+r.dot(b.right)*heldFocus.focal*h/2/depth,y:h/2-r.dot(b.up)*heldFocus.focal*h/2/depth,depth};}
 function screenBounds(g){
  const points=poses(g).flatMap(p=>corners(p)).map(project).filter(Boolean);if(!points.length)return null;
  return {left:Math.min(...points.map(p=>p.x)),right:Math.max(...points.map(p=>p.x)),top:Math.min(...points.map(p=>p.y)),bottom:Math.max(...points.map(p=>p.y))};
@@ -2013,6 +2077,13 @@ function onCanvasMouseDown(event){
  if(!storyActionAllowed())return;
  if(story.scene==='intro'&&event.button===2)return;
  event.preventDefault();speech.lastInput=simTime;
+ if(pendingUnitCreation){
+  if(!unitRadialAllowed()){cancelUnitCreation();return;}
+  if(event.button===2){cancelUnitCreation();announce('Creación cancelada');return;}
+  settings.unitShape=pendingUnitCreation;
+  if(spawnQubit())clearSelection();
+  return;
+ }
  if((held?.reward||held?.latched)){releaseQubit(shiftDown());clearSelection();return;}
  if(event.button===2){if(marquee)finishMarquee(true);handleSecondary(event);return;}
  const hadSelection=selectedTeam().length>0;
@@ -2410,7 +2481,35 @@ function moodSummary(list){
  for(const g of [...new Set(list)])for(const p of g.parts){counts[p.mood.state]++;energy+=p.mood.energy;}
  const total=counts.neutral+counts.excited+counts.restless;return {counts,total,energy:total?energy/total:0};
 }
+function heldInspectionStrength(distance){
+ const t=clamp((1.1-distance)/.7,0,1);return t*t*(3-2*t);
+}
+function syncHeldFocusHUD(){
+ const visible=heldFocus.active&&heldFocus.target>.005&&heldFocus.amount>.015;
+ const labels=document.querySelector('#mood-held-labels');labels.hidden=!visible;labels.style.opacity=String(visible?heldFocus.amount:0);
+ for(const id of ['mood-energy-track','mood-energy-label']){
+  const node=document.querySelector('#'+id);node.hidden=!!held&&!visible;node.style.opacity=String(held?(visible?heldFocus.amount:0):1);
+ }
+}
+function updateHeldFocus(dt,enabled=true){
+ heldFocus.active=!!(enabled&&held&&groups.includes(held.g)&&document.pointerLockElement===canvas&&!document.hidden&&!radialOpen()&&!storySuspended()&&!story.transition&&storyLookAllowed());
+ let target=0;
+ if(heldFocus.active){
+  heldFocus.groups=(held.items||[held]).map(item=>item.g);
+  const anchor=add(held.g.body.position,held.g.body.quaternion.vmult(held.anchor||V()));
+  // A wheel target alone cannot reveal a distant piece obstructed by a wall.
+  target=heldInspectionStrength(Math.max(held.distance,anchor.distanceTo(V(...camera))));
+ }
+ heldFocus.target=target;
+ const previous=heldFocus.amount;heldFocus.amount+=(target-previous)*(1-Math.exp(-9*Math.max(0,Math.min(dt,.05))));
+ if(heldFocus.amount<.0005&&target===0){heldFocus.amount=0;heldFocus.groups=[];}
+ // 68° normally, 60° at the closest inspection distance. Every projection uses it.
+ heldFocus.focal=1.48256097+(1/Math.tan(Math.PI/6)-1.48256097)*heldFocus.amount;
+ if(Math.abs(previous-heldFocus.amount)>.000001)redraw=true;
+ syncHeldFocusHUD();
+}
 function updateMoodCallout(hit){
+ syncHeldFocusHUD();
  const el=document.querySelector('#mood-callout');el.hidden=!hit;if(!hit)return;
  const part=hit.part||hit.g.parts[0],m=part.mood,summary=moodSummary([hit.g]);
  document.querySelector('#mood-unit-name').textContent=m.name;
@@ -2428,7 +2527,7 @@ function updateMoodSelection(){
  const parts=held?held.items.flatMap(item=>item.g.parts.map(part=>({g:item.g,part}))):[];
  for(let i=0;i<moodLabels.length;i++){
   const label=moodLabels[i],o=parts.length<=8?parts[i]:null;label.hidden=!o||speech.slots.some(b=>b.s?.id===o?.part.id);if(label.hidden)continue;
-  const pos=partPose(o.g,o.part).p,p=project(add(pos,V(0,.072,0)));if(!p){label.hidden=true;continue;}
+  const pos=partPose(o.g,o.part).p,near=heldInspectionStrength(pos.distanceTo(V(...camera))),p=project(add(pos,V(0,.072,0)));if(!p||near<.005){label.hidden=true;continue;}label.style.opacity=String(near);
   label.style.left=p.x+'px';label.style.top=p.y+'px';label.style.color=moodCSS(o.part.mood);label.textContent=o.part.mood.name;label.style.backgroundImage='linear-gradient(to right,'+moodCSS(o.part.mood)+' '+Math.round(o.part.mood.energy*100)+'%,#aab3b333 '+Math.round(o.part.mood.energy*100)+'%)';label.title=moodName(o.part.mood);label.setAttribute('aria-label',moodName(o.part.mood)+', energía '+Math.round(o.part.mood.energy*100)+' por ciento');
  }
 }
@@ -3465,9 +3564,123 @@ function tickMoodHints(){
 function tickBlockTwo(dt){if(!story.campaign)return;if(story.encounter)tickEncounter(dt);else{tickSources(dt);tickMoodHints();}}
 function campaignAmbientAllowed(){return story.scene==='campaign'&&story.mode==='playing'&&!story.transition&&!story.encounter&&!story.dialogue&&story.elapsed>8;}
 
+// One depth-tested mask keeps carried pieces sharp while the room softens. The
+// mask shares the scene depth buffer, so focus never reveals an occluded piece.
+const focusVertexSource = `
+ attribute vec2 aScreen;
+ varying vec2 vUV;
+ void main(){vUV=aScreen*.5+.5;gl_Position=vec4(aScreen,0.,1.);}
+`;
+const focusFragmentSource = `
+ precision mediump float;
+ uniform sampler2D uScene;
+ uniform sampler2D uMask;
+ uniform vec2 uStep;
+ uniform float uAmount;
+ varying vec2 vUV;
+ void sampleRoom(inout vec3 sum,inout float weight,vec2 offset,float factor){
+   vec2 uv=vUV+offset*uStep;
+   // Reject bilinear taps touching the silhouette; fractional weights still leak its color.
+   float w=factor*(1.-step(.001,texture2D(uMask,uv).r));
+   sum+=texture2D(uScene,uv).rgb*w;weight+=w;
+ }
+ void main(){
+   vec3 original=texture2D(uScene,vUV).rgb;
+   float mask=texture2D(uMask,vUV).r;
+   vec3 sum=vec3(0.);float weight=0.;
+   sampleRoom(sum,weight,vec2(0.,0.),4.);
+   sampleRoom(sum,weight,vec2(-1.,0.),2.);sampleRoom(sum,weight,vec2(1.,0.),2.);
+   sampleRoom(sum,weight,vec2(0.,-1.),2.);sampleRoom(sum,weight,vec2(0.,1.),2.);
+   sampleRoom(sum,weight,vec2(-1.,-1.),1.);sampleRoom(sum,weight,vec2(1.,-1.),1.);
+   sampleRoom(sum,weight,vec2(-1.,1.),1.);sampleRoom(sum,weight,vec2(1.,1.),1.);
+   // Excluding mask samples prevents dark silhouettes bleeding into the room.
+   vec3 room=weight>.001?sum/weight:original;
+   gl_FragColor=vec4(mix(original,room,uAmount*(1.-mask)),1.);
+ }
+`;
+const focusPass={failed:false,nativeOnly:false,maxSize:Infinity,width:0,height:0,program:null,quad:null,depth:null,scene:null,mask:null};
+function disableFocusPass(){
+ for(const key of ['scene','mask'])if(focusPass[key]){gl.deleteTexture(focusPass[key].texture);gl.deleteFramebuffer(focusPass[key].framebuffer);focusPass[key]=null;}
+ if(focusPass.depth)gl.deleteRenderbuffer(focusPass.depth);
+ if(focusPass.quad)gl.deleteBuffer(focusPass.quad);
+ if(focusPass.program)gl.deleteProgram(focusPass.program);
+ focusPass.depth=null;focusPass.quad=null;focusPass.program=null;focusPass.failed=true;boundGeometry=null;
+ gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.bindRenderbuffer(gl.RENDERBUFFER,null);gl.bindTexture(gl.TEXTURE_2D,null);
+}
+function ensureFocusPass(){
+ if(focusPass.failed||gl.isContextLost())return false;
+ try{
+  if(!focusPass.program){
+   const p=gl.createProgram(),vs=shader(gl.VERTEX_SHADER,focusVertexSource),fs=shader(gl.FRAGMENT_SHADER,focusFragmentSource);
+   focusPass.program=p;gl.attachShader(p,vs);gl.attachShader(p,fs);gl.linkProgram(p);gl.deleteShader(vs);gl.deleteShader(fs);
+   if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error('Focus shader unavailable');
+   focusPass.maxSize=Math.min(Number(gl.getParameter(gl.MAX_TEXTURE_SIZE))||Infinity,Number(gl.getParameter(gl.MAX_RENDERBUFFER_SIZE))||Infinity);
+   focusPass.location=gl.getAttribLocation(p,'aScreen');
+   focusPass.uniforms=Object.fromEntries(['uScene','uMask','uStep','uAmount'].map(name=>[name,gl.getUniformLocation(p,name)]));
+   focusPass.quad=buffer([-1,-1,1,-1,-1,1,1,1]);boundGeometry=null;focusPass.depth=gl.createRenderbuffer();
+   for(const key of ['scene','mask'])focusPass[key]={texture:gl.createTexture(),framebuffer:gl.createFramebuffer()};
+   if(!focusPass.depth||!focusPass.scene.texture||!focusPass.mask.texture||!focusPass.scene.framebuffer||!focusPass.mask.framebuffer)throw new Error('Focus buffers unavailable');
+  }
+  // FBOs have no canvas MSAA. Extra sampling is capped at 4.5 MP and 2× CSS
+  // density; larger native canvases retain their resolution without extra cost.
+  if(Math.max(canvas.width,canvas.height)>focusPass.maxSize)throw new Error('Focus size unsupported');
+  const scale=focusPass.nativeOnly?1:Math.max(1,Math.min(1.5,2*canvas.clientWidth/canvas.width,Math.sqrt(4500000/(canvas.width*canvas.height)),focusPass.maxSize/Math.max(canvas.width,canvas.height)));
+  const width=Math.max(1,Math.floor(canvas.width*scale)),height=Math.max(1,Math.floor(canvas.height*scale));
+  if(focusPass.width!==width||focusPass.height!==height){
+   const allocate=(w,h)=>{
+    // Clear a failed larger allocation before retrying, including a retained OOM.
+    for(let i=0;i<8;i++){const error=gl.getError();if(!error||error===gl.NO_ERROR)break;}
+    gl.bindRenderbuffer(gl.RENDERBUFFER,focusPass.depth);gl.renderbufferStorage(gl.RENDERBUFFER,gl.DEPTH_COMPONENT16,w,h);
+    for(const key of ['scene','mask']){
+     const target=focusPass[key];gl.bindTexture(gl.TEXTURE_2D,target.texture);
+     for(const parameter of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,parameter,gl.LINEAR);
+     for(const parameter of [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T])gl.texParameteri(gl.TEXTURE_2D,parameter,gl.CLAMP_TO_EDGE);
+     gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+     gl.bindFramebuffer(gl.FRAMEBUFFER,target.framebuffer);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,target.texture,0);
+     gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.RENDERBUFFER,focusPass.depth);
+     if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw new Error('Focus framebuffer incomplete');
+    }
+    const error=gl.getError();if(error&&error!==gl.NO_ERROR)throw new Error('Focus allocation failed');
+    focusPass.width=w;focusPass.height=h;
+   };
+   try{allocate(width,height);}catch(error){
+    if(width===canvas.width&&height===canvas.height)throw error;
+    focusPass.nativeOnly=true;allocate(canvas.width,canvas.height);
+   }
+   gl.bindRenderbuffer(gl.RENDERBUFFER,null);gl.bindTexture(gl.TEXTURE_2D,null);gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+  }
+  return true;
+ }catch{disableFocusPass();return false;}
+}
+function compositeHeldFocus(){
+ gl.bindFramebuffer(gl.FRAMEBUFFER,focusPass.mask.framebuffer);
+ gl.clearColor(0,0,0,1);gl.clear(gl.COLOR_BUFFER_BIT);gl.clearColor(1,1,1,1);
+ gl.disable(gl.BLEND);gl.depthMask(false);gl.depthFunc(gl.LEQUAL);gl.uniform1f(uniforms.uFocusMask,1);
+ for(const g of heldFocus.groups)if(groups.includes(g)){
+  drawGroupSolid(g);
+  if(g.block){const p=moodVisualPose(g,blockPose(g));drawOutline(p.p,p.q,p.size);}
+  else if(multiSelection.includes(g))for(const pose of poses(g))drawUnitOutline(pose);
+ }
+ gl.uniform1f(uniforms.uFocusMask,0);gl.depthFunc(gl.LESS);gl.depthMask(true);
+ gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,canvas.width,canvas.height);gl.disable(gl.DEPTH_TEST);
+ for(const [location]of attributes)gl.disableVertexAttribArray(location);
+ gl.useProgram(focusPass.program);gl.bindBuffer(gl.ARRAY_BUFFER,focusPass.quad);gl.enableVertexAttribArray(focusPass.location);gl.vertexAttribPointer(focusPass.location,2,gl.FLOAT,false,0,0);
+ gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,focusPass.scene.texture);gl.uniform1i(focusPass.uniforms.uScene,0);
+ gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,focusPass.mask.texture);gl.uniform1i(focusPass.uniforms.uMask,1);
+ const radius=2.8*heldFocus.amount;gl.uniform2f(focusPass.uniforms.uStep,radius/canvas.clientWidth,radius/canvas.clientHeight);gl.uniform1f(focusPass.uniforms.uAmount,heldFocus.amount);
+ gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+ gl.bindTexture(gl.TEXTURE_2D,null);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,null);
+ gl.disableVertexAttribArray(focusPass.location);gl.useProgram(program);for(const [location]of attributes)gl.enableVertexAttribArray(location);
+ boundGeometry=null;gl.enable(gl.DEPTH_TEST);
+}
+
 initSpeech();
 let previousTime = performance.now();
 function renderScene(){
+  const focused=heldFocus.amount>.001&&ensureFocusPass();
+  gl.bindFramebuffer(gl.FRAMEBUFFER,focused?focusPass.scene.framebuffer:null);
+  gl.viewport(0,0,focused?focusPass.width:canvas.width,focused?focusPass.height:canvas.height);
+  gl.uniform1f(uniforms.uFocal,heldFocus.focal);
   updateAccentLights();
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.uniform3fv(uniforms.uCamera,camera);
@@ -3476,6 +3689,7 @@ function renderScene(){
   gl.uniform1f(uniforms.uKind,0);
   gl.drawArrays(gl.TRIANGLES,0,vertices.length/6);
   drawStoryWorld();drawQubits();drawStoryGlass();
+  if(focused)compositeHeldFocus();
   redraw=false;
 }
 function frame(time) {
@@ -3485,6 +3699,7 @@ function frame(time) {
   previousTime = time;
   if(radialOpen()){
     accumulator=0;if(!unitRadialAllowed())closeUnitRadial(false);
+    updateHeldFocus(dt,false);if(redraw&&!document.hidden)renderScene();
     requestAnimationFrame(frame);return;
   }
   tickStory(dt);
@@ -3516,6 +3731,7 @@ function frame(time) {
   camera[0] = Math.max(-cameraLimit, Math.min(cameraLimit, position[0] + Math.cos(yaw) * bobSide));
   camera[1] = posture.height + bobHeight;
   camera[2] = Math.max(-cameraLimit, Math.min(cameraLimit, position[2] - Math.sin(yaw) * bobSide));
+  updateHeldFocus(dt,active);
   if (!document.hidden&&!frozen) {
     accumulator += dt;
     while (accumulator >= FIXED_STEP) { stepPhysics(FIXED_STEP); accumulator -= FIXED_STEP; }

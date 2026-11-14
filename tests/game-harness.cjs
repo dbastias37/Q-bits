@@ -108,6 +108,8 @@ module.exports = function createGame() {
     radialOpen,unitRadialAllowed,storySuspended,onCanvasMouseDown,onCanvasMouseUp,pause,getSimTime:()=>simTime,
     makeGroup,worldParts,addQubit,removeGroup,orientations,clearNarrativeScene,rollGeometry,beginHaul,stopHaul,assignCrew,
     navigationJobs,runNavigationJobs,updatePosture,handleKey,handleWheel,grabQubit,releaseQubit,
+    heldFocus,heldInspectionStrength,updateHeldFocus,updateMoodCallout,updateMoodSelection,project,screenRay,
+    renderScene,focusPass,ensureFocusPass,disableFocusPass,resize,
     posture,position,keys,canvas,storyWorld,EYE_HEIGHT,frame,sceneFade,tickSceneFade,tickStory,storyInput,wakeUp,renderDialogue,advanceDialogue,resumeGame,openPauseMenu,storyLookAllowed,getHeld:()=>held,
     setRunning:value=>{running=value}};`;
   scripts = scripts.map(source => {

@@ -66,13 +66,15 @@ El menú permite seleccionar niveles, reiniciar, pausar y entrar al laboratorio.
 | Ajustar la altura al agacharse | C + rueda |
 | Girar una pieza sostenida | Shift + WASD |
 | Unir piezas | Acercar sus caras y soltar manteniendo Shift |
+| Desarmar con un gesto | Sostener una estructura unida, mantener Shift y sacudirla rápidamente de un lado a otro varias veces |
+| Enfocar una pieza sostenida | Acercar con la rueda; el fondo se suaviza y aparecen sus barras de energía |
 | Opciones de separación | Alt, apuntando a una estructura |
 | Seleccionar varias piezas | Arrastrar con clic izquierdo desde un espacio vacío |
 | Dar órdenes y elegir un destino | Menú de clic derecho sobre la pieza y después sobre el suelo |
 | Tomar un grupo seleccionado | Clic derecho → Tomar selección |
 | Duplicar selección en el laboratorio | V |
 | Elegir Q-bit o T-bit en el laboratorio | Mantener Q, apuntar con el mouse y soltar Q; centro o Esc para cancelar |
-| Crear la pieza elegida en el laboratorio | N, o P → Piezas → Crear |
+| Crear la pieza elegida en el laboratorio | Clic izquierdo después de elegir con Q; también N o P → Piezas → Crear |
 | Detener una orden | R |
 | Avanzar o completar el texto del diálogo | E o Espacio |
 | Asignar un equipo al material señalado | E, cuando no hay diálogo activo |
@@ -85,7 +87,7 @@ El panel de pruebas incluye controles adicionales y ajustes del laboratorio. En 
 
 ## T-bits en el banco de pruebas
 
-Mantén **Q** para abrir el selector radial de vidrio: apunta a una figura y suelta Q para elegirla. El centro y Esc cancelan. **N** crea la pieza elegida. Las figuras giran suavemente y aceleran al señalarlas; la descripción aparece con la misma línea animada del Q-bit. Las flechas también permiten recorrer las opciones. Mientras está abierto, la escena se detiene y el mouse controla el selector sin mover la cámara. Se cierra sin elegir al pausar o cambiar de pestaña; cambiar el tamaño de la ventana cancela la opción resaltada. Abre el selector con el mouse capturado y las manos libres, en el banco sin puzzle activo.
+Mantén **Q** para abrir el selector radial de vidrio: apunta a una figura y suelta Q para elegirla. El centro y Esc cancelan. Después de elegir, **el siguiente clic izquierdo crea una sola pieza** delante del jugador. Esc o clic derecho cancelan esa creación pendiente; pausar o cambiar de escena también la cancela. N sigue disponible como atajo. Las figuras giran suavemente y aceleran al señalarlas; la descripción aparece con la misma línea animada del Q-bit. Las flechas también permiten recorrer las opciones. Mientras está abierto, la escena se detiene y el mouse controla el selector sin mover la cámara. Se cierra sin elegir al pausar o cambiar de pestaña; cambiar el tamaño de la ventana cancela la opción resaltada. Abre el selector con el mouse capturado y las manos libres, en el banco sin puzzle activo.
 
 También en **P → Piezas → Tipo de pieza** se elige entre el Q-bit cúbico y dos T-bits grises. El botón Crear y el atajo N usan esa elección. Las nuevas formas se crean en el banco libre.
 
@@ -109,7 +111,7 @@ Las tres piezas proceden de una misma partición del cubo. Igualar todas las ari
 
 Las piezas mantienen su identidad al formar una cara compuesta y pueden desarmarse. Al quitar una mitad, su cara cuadrada incompleta deja de sostener esa unión. Las uniones se vuelven a validar al soltar: si una pieza se movió o el espacio quedó ocupado, no se unen. Los blueprints obedecen las mismas reglas; las formas antiguas incompatibles se conservan para exportar, pero deben rearmarse para volver a construirlas. Las nuevas formas guardadas usan `geometryVersion: 3`.
 
-Tienen colisiones según sus caras reales, peso ajustable, agarre, giro, recorrido, estados, energía y enfriamiento. Se unen entre sí y con Q-bits acercando sus caras y soltando con Shift; Alt permite separar una pieza o desarmar la estructura. Duplicar, guardar formas y volver al banco conservan cada tipo. Los blueprints requieren piezas de la forma correcta y siguen aceptando las formas cúbicas guardadas anteriormente.
+Tienen colisiones según sus caras reales, peso ajustable, agarre, giro, recorrido, estados, energía y enfriamiento. Al mantener Shift y sacudir rápidamente una estructura varias veces, sus piezas se separan: la pieza tomada permanece en la mano y las demás caen conservando su identidad. Un giro normal o una vibración pequeña no activa el desarme. Al acercar una pieza sostenida con la rueda, la vista cambia suavemente de campo de visión, mantiene las piezas nítidas y suaviza el fondo; sus barras de energía aparecen solo de cerca. Se unen entre sí y con Q-bits acercando sus caras y soltando con Shift; Alt permite separar una pieza o desarmar la estructura. Duplicar, guardar formas y volver al banco conservan cada tipo. Los blueprints requieren piezas de la forma correcta y siguen aceptando las formas cúbicas guardadas anteriormente.
 
 El contador inferior izquierdo muestra únicamente el icono negro y las existencias Q/T. Los atajos visibles se reducen a Q · P · N · B; las órdenes y ajustes siguen disponibles en sus menús.
 
@@ -171,6 +173,8 @@ node --check assets/js/radial-menu.js
 ```
 
 Las pruebas automatizadas cubren lógica y coordinación de la carga; no sustituyen una prueba visual de WebGL ni una medición de FPS en el equipo del jugador.
+
+En Linux con EGL/GLES (por ejemplo Mesa), `python tests/validate-focus-gles.py` compila los shaders reales y comprueba píxeles de una escena de prueba: enfoque desactivado sin alteración, piezas nítidas, fondo suavizado y ausencia de halos. Usa la biblioteca estándar de Python y no añade dependencias al juego.
 
 El progreso y las formas del nombre anterior se recuperan cuando están disponibles en el almacenamiento del mismo navegador y origen.
 

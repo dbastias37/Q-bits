@@ -221,3 +221,73 @@ test('releasing Q after eligibility changes never applies the hover choice', () 
   assert.equal(t.radialOpen(), false);
   assert.equal(t.settings.unitShape, 'cube');
 });
+
+function click(game, button = 0) {
+  game.t.canvas.dispatchEvent({ type: 'mousedown', button });
+  game.sandbox.document.dispatchEvent({ type: 'mouseup', button });
+}
+function choose(game, shape) { key(game, 'KeyQ');hover(game, shape);release(game, 'KeyQ'); }
+
+test('Q selection arms exactly one primary click to create the chosen shape', () => {
+  for (const shape of ['cube', 'tetra', 'pyramid']) {
+    const game = lab(), { t } = game;
+    choose(game, shape);
+    assert.equal(t.groups.length, 0, 'releasing Q only selects');
+    click(game);
+    assert.equal(t.groups.length, 1);
+    assert.equal(t.groups[0].parts[0].shape, shape);
+    assert.equal(t.getHeld(), null, 'creation click is not also a pickup');
+    assert.equal(t.getSelected(), null, 'next click can interact normally');
+    click(game);
+    assert.equal(t.groups.length, 1, 'the creation choice is consumed after one click');
+  }
+});
+
+test('Escape and secondary click cancel an armed creation without opening another action', () => {
+  for (const cancel of [game => key(game, 'Escape'), game => click(game, 2)]) {
+    const game = lab(), { t } = game;
+    choose(game, 'tetra');cancel(game);
+    assert.equal(t.story.mode, 'playing');
+    assert.equal(game.sandbox.document.querySelector('#command-menu').hidden, true);
+    click(game);
+    assert.equal(t.groups.length, 0);
+  }
+});
+
+test('reopening Q replaces the pending choice, and dead-zone cancellation disarms it', () => {
+  const game = lab(), { t } = game;
+  choose(game, 'tetra');choose(game, 'pyramid');click(game);
+  assert.equal(t.groups[0].parts[0].shape, 'pyramid');
+  choose(game, 'cube');key(game, 'KeyQ');release(game, 'KeyQ');click(game);
+  assert.equal(t.groups.length, 1, 'cancelled selector must not leave the earlier creation armed');
+});
+
+test('pause, lock loss, hidden tab and scene changes discard pending creation', () => {
+  for (const cancel of [
+    game => game.t.pause(),
+    game => { game.sandbox.document.pointerLockElement = null;game.sandbox.document.dispatchEvent({ type: 'pointerlockchange' }); },
+    game => { game.sandbox.document.hidden = true;game.sandbox.document.dispatchEvent({ type: 'visibilitychange' }); },
+    game => game.t.clearNarrativeScene(),
+    game => game.t.sceneFade(() => {})
+  ]) {
+    const game = lab(), { t, sandbox } = game;
+    choose(game, 'tetra');cancel(game);
+    Object.assign(t.story, { mode: 'playing', transition: null });
+    sandbox.document.hidden = false;sandbox.document.pointerLockElement = t.canvas;
+    click(game);
+    assert.equal(t.groups.length, 0);
+  }
+});
+
+test('N consumes the pending creation and a failed full-capacity click can be retried', () => {
+  const game = lab(), { t } = game;
+  choose(game, 'pyramid');key(game, 'KeyN');click(game);
+  assert.equal(t.groups.length, 1, 'N must not leave another piece armed');
+  t.clearNarrativeScene();
+  for (let i = 0; i < 128; i++) t.addQubit([5 + (i % 16) * .1, .05, 5 + Math.floor(i / 16) * .1]);
+  choose(game, 'tetra');click(game);
+  assert.equal(t.groups.length, 128);
+  t.removeGroup(t.groups[0]);click(game);
+  assert.equal(t.groups.length, 128);
+  assert.equal(t.groups.at(-1).parts[0].shape, 'tetra');
+});
