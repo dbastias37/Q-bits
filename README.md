@@ -2,7 +2,7 @@
 
 Juego de puzles en primera persona, ambientado en salas blancas minimalistas. Mueve y une Q-bits, organiza al equipo, activa circuitos y transforma materia para abrir nuevas rutas.
 
-Versión actualizada el 14 de noviembre de 2026: prólogo, 12 niveles y laboratorio de pruebas.
+Versión actualizada el 14 de noviembre de 2026: prólogo, 15 niveles y laboratorio de pruebas.
 
 ## Jugar
 
@@ -51,6 +51,9 @@ Referencia: [configurar la publicación en GitHub Pages](https://docs.github.com
 | 10 | El camino de vuelta | Transportar materia entre dos estaciones y organizar descansos. |
 | 11 | Dos rutas | Elegir entre materiales y organizar el equipo de transporte. |
 | 12 | La instalación | Utilizar tres estaciones y reunir al equipo completo en la salida. |
+| 13 | La primera división | Reconfigurar un Q-bit en seis pirámides conservando su materia. |
+| 14 | La segunda escala | Subdividir una pirámide en dos triangulares complementarios. |
+| 15 | Seguimos siendo nosotros | Recomponer los triangulares y recuperar el cubo original. |
 
 El menú permite seleccionar niveles, reiniciar, pausar y entrar al laboratorio. Las transiciones incluyen fundidos, una carga de transición deliberada de al menos 1,8 segundos para dar una pausa entre escenas, y pantalla de final de nivel. Esa pausa es independiente de la precarga real inicial.
 
@@ -77,6 +80,8 @@ El menú permite seleccionar niveles, reiniciar, pausar y entrar al laboratorio.
 | Crear la pieza elegida en el laboratorio | Clic izquierdo después de elegir con Q; también N o P → Piezas → Crear |
 | Detener una orden | R |
 | Avanzar o completar el texto del diálogo | E o Espacio |
+| Operar la cámara de reconfiguración | Dejar las piezas en ENTRADA y pulsar E mirando la cámara; también clic derecho. |
+| Consultar el catálogo de materia | J durante la partida, o desde los menús principal y de pausa. |
 | Asignar un equipo al material señalado | E, cuando no hay diálogo activo |
 | Saltar la presentación del grupo | O, durante esa presentación |
 | Pausar / liberar el mouse | Esc |
@@ -120,6 +125,16 @@ El contador inferior izquierdo muestra únicamente el icono negro y las existenc
 La materia es finita: cada bloque se consume una sola vez y produce la cantidad de Q-bits que indican sus unidades. El equipo debe arrastrarlo hasta el desintegrador. La transformación pasa por la entrada, el recorrido del líquido y la salida de nuevos compañeros; si la salida está ocupada, espera a que quede libre.
 
 Los desintegradores tienen una superficie de portal animada con fondo negro opaco, manguera transparente, compuerta de salida y contador de producción. Las estaciones están distribuidas en distintos espacios de los niveles del segundo bloque.
+
+## Reconfiguración y catálogo
+
+Los niveles 13–15 continúan la campaña existente. La cámara trabaja con piezas de un mismo origen, colocadas en el círculo ENTRADA. Un Q-bit produce seis pirámides; una pirámide produce dos triangulares. El triangular es la última subdivisión. En el nivel 15 se habilitan las operaciones inversas. Las piezas pueden reunirse sueltas en la bandeja; la cámara realiza la recomposición, que es distinta de la unión manual de caras.
+
+El proceso dura cuatro segundos de simulación y se congela al pausar, consultar el catálogo o cambiar de pestaña. Si la bandeja SALIDA está ocupada, conserva la transacción y espera: mueve las piezas anteriores antes de empezar otra transformación. La emisión ocurre completa, sin perder ni duplicar partes. Materia, energía ponderada, estado de descanso y origen se conservan; seis pirámides aportan juntas la misma capacidad de arrastre que su cubo original. Los ajustes manuales de peso incompatibles con la materia se rechazan al transformar.
+
+El NPC introduce cada experimento con diálogos que avanzan con E. J abre el catálogo; también está disponible desde los menús. Los descubrimientos se conservan en el progreso existente. Los planos de referencia de un cubo formado por seis pirámides y de una pirámide formada por dos triangulares se añaden a **Formas guardadas**. Para colocar uno: clic derecho en el suelo → Formas guardadas. Para construirlo: reúne piezas compatibles y activa **Integrar cercanos** sobre el blueprint. Guardar un plano no concede cuerpos ni recursos.
+
+El [prompt maestro de campaña](docs/PROMPT_MAESTRO_CAMPANA.md) reúne el lore, el tono del guía, la secuencia posterior, la autonomía, los desafíos y la progresión propuesta. Las misiones 16–24 y las mejoras Torque I–III, construcción ligera, coordinación y gestión térmica son trabajo futuro; no están activadas por este incremento. La [revisión del bloque](docs/REVISION_BLOQUE_III.md) detalla qué se comprobó y qué queda pendiente.
 
 ## Archivos y desarrollo
 

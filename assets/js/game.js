@@ -906,7 +906,7 @@ function validPose(g,pos,quat,exclude=[]){
  if(cargos.some(c=>boundsOverlap(bb,cargoBounds(c))&&src.some(a=>obbOverlap(a,cargoPose(c)))))return false;
  return !groups.some(other=>other!==g&&!exclude.includes(other)&&boundsOverlap(bb,bounds(other))&&poses(other).some(b=>src.some(a=>obbOverlap(a,b))));
 }
-function mechanismsUnlocked(){return [5,6,7,8,9,10,11,12].some(n=>!!story.progress['level'+n]);}
+function mechanismsUnlocked(){return Object.keys(story.progress).some(key=>/^level\d+$/.test(key)&&Number(key.slice(5))>=5&&story.progress[key]);}
 function mechanismsAvailable(){return !puzzle.active&&(story.scene==='lab'||story.scene==='campaign'&&mechanismsUnlocked());}
 function isMechanismChoice(id){return id==='coupler'||id==='rotor';}
 function normalizeCreationChoice(id){return id==='rotor'?'rotor':normalizeUnitShape(id);}
@@ -1769,7 +1769,7 @@ function updatePanel(){
  syncUnitControls();
  document.querySelector('#editing').textContent=selected?unitLabel(selected.part)+' '+selected.part.id+' · estructura de '+selected.g.parts.length+' · '+totalWeight(selected.g)+' u en total.':'Selecciona con clic derecho para ajustar una pieza.';
  for(const name of ['mass','gravity','bounce','force','friction','damping','speed','maxCarry','maxSelect','rotationSpeed','grip']){
-  const input=document.querySelector('#'+name);input.value=name==='mass'&&selected?selected.part.weight:settings[name];
+  const input=document.querySelector('#'+name);if(name==='mass'){input.min=selected?.part.mood?.matter?String(.25/12):'.25';input.step=selected?.part.mood?.matter?'any':'.25';}input.value=name==='mass'&&selected?selected.part.weight:settings[name];
   document.querySelector('#'+name+'Value').textContent=Number(input.value).toFixed(name==='mass'?2:2)+({mass:' u',gravity:' m/s²',force:' N',speed:' m/s',maxCarry:' u',maxSelect:' piezas',rotationSpeed:' rad/s'}[name]||'');
  }
  for(const name of ['guide','line'])document.querySelector('#'+name).value=settings[name];
@@ -2135,7 +2135,7 @@ function setCargoMoving(c,moving){
 }
 function leaveHaul(g){
  const job=g.haulJob;if(!job)return;for(const slot of job.slots)if(slot.g===g){cancelNavigation(slot);slot.approachSearch=null;}job.slots=job.slots.filter(s=>s.g!==g);g.haulJob=null;g.body.material=g.haulMaterialRestore||null;g.body.fixedRotation=false;g.body.updateMassProperties();g.body.wakeUp();
- if(job.cargo.job===job){job.activeCount=Math.min(job.activeCount,job.slots.reduce((n,s)=>n+s.g.parts.length,0));if(job.activeCount<job.cargo.required)setCargoMoving(job.cargo,false);}
+ if(job.cargo.job===job){job.activeCount=Math.min(job.activeCount,job.slots.reduce((n,s)=>n+groupWorkUnits(s.g),0));if(job.activeCount+1e-8<job.cargo.required)setCargoMoving(job.cargo,false);}
 }
 function stopHaul(c,status='Detenido'){
  cancelNavigation(c);c.pathSearch=null;const job=c.job;if(job){cancelNavigation(job);job.pathSearch=null;for(const slot of job.slots){cancelNavigation(slot);slot.approachSearch=null;}}
@@ -2202,7 +2202,7 @@ function beginHaul(c,team,goal){
   if(!path||!job.slots.length){stopHaul(c,path?'Sin equipo':'Camino bloqueado');announce(path?'Selecciona de nuevo el equipo.':'El cuerpo no tiene un camino libre hasta ese punto.');return;}
   job.path=path;job.index=0;job.phase='reuniendo';job.nextRouteCheck=simTime+.5;
   for(const slot of job.slots)if(queueSpeech(slot.g,'order'))break;
-  announce('Equipo asignado · '+job.slots.reduce((n,s)=>n+s.g.parts.length,0)+' / '+c.required+' Q-bits');
+  announce('Equipo asignado · '+job.slots.reduce((n,s)=>n+groupWorkUnits(s.g),0)+' / '+c.required+' Q-bits');
  },()=>cargos.includes(c)&&c.job===job&&c.pathSearch===search);
  c.pathSearch=search;announce('Calculando recorrido del equipo…');return true;
 }
@@ -2263,12 +2263,12 @@ function updateHauling(dt){
      const safe=(Math.max(bb.size.x,bb.size.z)+Math.max(crewBounds.get(other.g).size.x,crewBounds.get(other.g).size.z))/2+.012;
      if(gap>.001&&gap<safe)force.vadd(mul(away,b.mass*18*(safe-gap)/gap),force);
     }
-    const limit=g.parts.length*5,magnitude=force.norm();if(magnitude>limit)force.scale(limit/magnitude,force);b.force.vadd(force,b.force);
+    const limit=groupWorkUnits(g)*5,magnitude=force.norm();if(magnitude>limit)force.scale(limit/magnitude,force);b.force.vadd(force,b.force);
    }
-   slot.ready=!g.route&&distance<.18&&bb.min.y<.055; if(slot.ready)active+=g.parts.length;
+   slot.ready=!g.route&&distance<.18&&bb.min.y<.055; if(slot.ready)active+=groupWorkUnits(g);
   }
   job.activeCount=active;
-  if(active<c.required){setCargoMoving(c,false);job.phase=job.slots.some(s=>!groupWilling(s.g))?'descansando':'reuniendo';job.lastProgress=simTime;continue;}
+  if(active+1e-8<c.required){setCargoMoving(c,false);job.phase=job.slots.some(s=>!groupWilling(s.g))?'descansando':'reuniendo';job.lastProgress=simTime;continue;}
   if(job.phase==='bloqueado'&&simTime<job.nextRouteCheck){setCargoMoving(c,false);continue;}
   if(job.index>=job.path.length){c.pin.arrived=true;stopHaul(c,'Destino alcanzado');continue;}
   let target=job.path[job.index],error=V(target.x-c.body.position.x,0,target.z-c.body.position.z),distance=error.norm();
@@ -2398,7 +2398,7 @@ function openFloorOrders(point){
 function handleSecondary(event){
  const rect=canvas.getBoundingClientRect();
  const dir=document.pointerLockElement===canvas?direction():screenRay(clamp(event.clientX-rect.left,0,canvas.clientWidth),clamp(event.clientY-rect.top,0,canvas.clientHeight));
- if(alphaSecondary(dir))return;
+ if(openReconfigurationMenu(dir)||alphaSecondary(dir))return;
  const cargoHit=aimCargo(4,dir),hit=aimQubit(4,dir);
  if(cargoHit){
   selectedCargo=cargoHit.cargo;const c=selectedCargo,team=selectedTeam(),number=team.reduce((n,g)=>n+g.parts.length,0),items=[];
@@ -2614,7 +2614,7 @@ function buttonLoad(button){
  return [...supported].reduce((n,g)=>n+totalWeight(g),0);
 }
 function beginPortalIntake(p,c){
- if(puzzle.delivery||!portalAccepts(p,c)||!c.job||c.job.activeCount<c.required)return false;
+ if(puzzle.delivery||!portalAccepts(p,c)||!c.job||c.job.activeCount+1e-8<c.required)return false;
  stopHaul(c,'Entregando');c.pin=null;const start=c.body.position.clone();puzzle.delivery={p,c,start,t:0,run:puzzle.run};
  c.body.type=CANNON.Body.KINEMATIC;c.body.collisionResponse=false;c.body.velocity.set(0,0,0);c.intake=0;return true;
 }
@@ -2741,7 +2741,7 @@ function moodSpeed(g){
  const average=g.parts.reduce((n,p)=>n+(.5+.5*Math.min(1,p.mood.energy/.65)+p.mood.blend[1]*.16),0)/g.parts.length;
  return clamp(average,.5,1.16);
 }
-function crewMoodSpeed(c){const slots=c.job?.slots.filter(s=>s.ready&&groupWilling(s.g))||[];const count=slots.reduce((n,s)=>n+s.g.parts.length,0);return count?slots.reduce((n,s)=>n+moodSpeed(s.g)*s.g.parts.length,0)/count:1;}
+function crewMoodSpeed(c){const slots=c.job?.slots.filter(s=>s.ready&&groupWilling(s.g))||[];const count=slots.reduce((n,s)=>n+groupWorkUnits(s.g),0);return count?slots.reduce((n,s)=>n+moodSpeed(s.g)*groupWorkUnits(s.g),0)/count:1;}
 function frustrate(g,reason){for(const p of g.parts)beginMoodEpisode(p.mood,reason);}
 function moodObstacleStamp(g){return [g.body.position.x,g.body.position.y,g.body.position.z,...navigationObstacles(g).flatMap(b=>[b.min.x,b.min.y,b.min.z,b.max.x,b.max.y,b.max.z])].map(n=>Math.round(n*100)).join(',');}
 function queueMoodRoute(g,goal,reason='descanso'){
@@ -2761,7 +2761,7 @@ function updateMoods(dt){
   const waiting=!!job&&(job.phase==='planning'||slot?.ready&&['reuniendo','descansando'].includes(job.phase)),resting=!groupWilling(g),moving=travel>dt*.006;
   const working=!carried&&!resting&&(!!g.route||!!job&&!waiting&&job.phase!=='bloqueado');
   const blocked=!carried&&!resting&&((g.pendingMoodOrder?.reason==='bloqueo')||!!job&&job.phase==='bloqueado'||working&&!moving&&!g.route?.align&&!slot?.ready);
-  const effort=job?1+Math.min(1,job.cargo.required/Math.max(1,job.slots.reduce((n,s)=>n+s.g.parts.length,0)))*.65:1;
+  const effort=job?1+Math.min(1,job.cargo.required/Math.max(1,job.slots.reduce((n,s)=>n+groupWorkUnits(s.g),0)))*.65:1;
   for(const part of g.parts){const m=part.mood;
    if(g.moodHadTask&&!task){m.calm=2;m.idle=0;m.fullTime=0;if(m.state!=='restless')m.state='neutral';}
    m.calm=Math.max(0,m.calm-dt);
@@ -2987,7 +2987,7 @@ function savedMechanismValid(record){
    if(!Array.isArray(group?.parts)||!group.parts.length)return false;
    for(const part of group.parts){
     if(++count>MAX_QUBITS||!part||!Number.isSafeInteger(part.key)||part.key<0||part.key>=MAX_QUBITS||keys.has(part.key)||!['cube','tetra','pyramid','coupler'].includes(part.shape))return false;
-    if(!Number.isFinite(part.weight)||part.weight<.25||part.weight>3||!Array.isArray(part.p)||part.p.length!==3||!part.p.every(n=>Number.isFinite(n)&&Math.abs(n)<14)||!Array.isArray(part.q)||part.q.length!==4||!part.q.every(Number.isFinite)||Math.abs(Math.hypot(...part.q)-1)>.0001)return false;
+    if(!Number.isFinite(part.weight)||part.weight<(part.shape==='tetra'?.25/12:part.shape==='pyramid'?.25/6:.25)-1e-9||part.weight>3||!Array.isArray(part.p)||part.p.length!==3||!part.p.every(n=>Number.isFinite(n)&&Math.abs(n)<14)||!Array.isArray(part.q)||part.q.length!==4||!part.q.every(Number.isFinite)||Math.abs(Math.hypot(...part.q)-1)>.0001)return false;
     keys.set(part.key,part);owners.set(part.key,groupIndex);
    }
   }
@@ -3104,7 +3104,7 @@ function placeBlueprint(shape,p){
  if(!savedShapeValid(shape)||!p||blueprints.length>=6){announce('No se puede colocar otro blueprint aquí.');return null;}
  const bp={id:++alphaSerial,shape:JSON.parse(JSON.stringify(shape)),p:V(p.x,.002,p.z),q:Q(),slots:[],active:false,nextScan:0,status:'Esperando unidades'};const box=blueprintBox(bp);
  if(!assemblyValid(blueprintTargets(bp))){announce('La forma guardada tiene caras incompatibles con las medidas actuales. Se conserva para exportarla; vuelve a armarla.');return null;}
- if(box.min.y<-.001||box.max.y>ROOM_HEIGHT||Math.max(Math.abs(box.min.x),Math.abs(box.max.x),Math.abs(box.min.z),Math.abs(box.max.z))>13.85||cargos.some(c=>obbOverlap(box,cargoPose(c)))||puzzleObstacleBounds().some(w=>obbOverlap(box,w))||alphaObstacles().some(w=>obbOverlap(box,w))||blueprints.some(other=>obbOverlap(box,blueprintBox(other)))){announce('La forma necesita más espacio libre.');return null;}
+ if(box.min.y<-.001||box.max.y>ROOM_HEIGHT||Math.max(Math.abs(box.min.x),Math.abs(box.max.x),Math.abs(box.min.z),Math.abs(box.max.z))>13.85||cargos.some(c=>obbOverlap(box,cargoPose(c)))||puzzleObstacleBounds().some(w=>obbOverlap(box,{p:w.p,q:Q(),half:w.half}))||alphaObstacles().some(w=>obbOverlap(box,w))||blueprints.some(other=>obbOverlap(box,blueprintBox(other)))){announce('La forma necesita más espacio libre.');return null;}
  blueprints.push(bp);announce(shape.name+' · clic derecho en el blueprint para integrar');return bp;
 }
 function nearBlueprint(bp){const used=new Set(bp.slots.map(s=>s.index)),needed=new Set(blueprintTargets(bp).filter((_,i)=>!used.has(i)).map(t=>t.shape));return groups.filter(g=>g.parts.length===1&&!(typeof rotorForGroup==='function'&&rotorForGroup(g))&&needed.has(normalizeUnitShape(g.parts[0].shape))&&!g.route&&!g.pendingMoodOrder&&!g.haulJob&&!g.blueprintJob&&!g.cooler&&!(held?.items||[]).some(i=>i.g===g)&&groupWilling(g)&&bounds(g).min.y<.03&&Math.hypot(g.body.position.x-bp.p.x,g.body.position.z-bp.p.z)<=alphaSettings.blueprintRange).sort((a,b)=>a.body.position.distanceTo(bp.p)-b.body.position.distanceTo(bp.p));}
@@ -3485,7 +3485,7 @@ document.addEventListener('webkitfullscreenchange',syncFullscreenButton);
 // Campaign prologue. Scene state, narrative timers and test tools share one clock.
 const chapters=[['00','El primer encuentro','Prólogo · tomar, mover y enfriar'],['01','Primer contacto','Llevar un Q-bit a un destino'],['02','Cada uno por su camino','Dos destinos independientes'],['03','Dos lados','Dos botones simultáneos'],['04','Juntos pesamos más','Dos Q-bits en un botón'],['05','La primera unión','Dos piezas · circuito de líquido'],['06','Cambiar de forma','Tres puertas · L, cuadrado y T'],['07','Seis piezas','Rectángulo y escalera'],['08','Salimos juntos','Seis compañeros · fin del primer bloque'],['09','La fuente','Conocer al equipo · transformar materia'],['10','El camino de vuelta','Dos estaciones · transporte y descanso'],['11','Dos rutas','Elegir materia y organizar al equipo'],['12','La instalación','Tres estaciones · el equipo completo']];
 const ui={main:document.querySelector('#main-screen'),pause:document.querySelector('#pause-screen'),levels:document.querySelector('#levels-screen'),complete:document.querySelector('#chapter-complete'),dialogue:document.querySelector('#story-dialogue'),text:document.querySelector('#story-text'),speaker:document.querySelector('#story-speaker'),choices:document.querySelector('#story-choices'),objective:document.querySelector('#story-objective'),veil:document.querySelector('#scene-veil'),top:document.querySelector('#eye-top'),bottom:document.querySelector('#eye-bottom'),cooling:document.querySelector('#cooling-track'),marker:document.querySelector('#world-label')};
-function gameMode(mode){if(mode!=='playing')closeUnitRadial(false);story.mode=mode;window.QBitsMusic?.setPaused(mode!=='playing');document.body.dataset.gameMode=mode;for(const [key,el] of [['menu',ui.main],['pause',ui.pause],['levels',ui.levels],['complete',ui.complete]])el.hidden=mode!==key;document.querySelector('#pause-button').hidden=mode!=='playing';hint.hidden=true;redraw=true;}
+function gameMode(mode){if(mode!=='playing')closeUnitRadial(false);story.mode=mode;window.QBitsMusic?.setPaused(mode!=='playing');document.body.dataset.gameMode=mode;for(const [key,el] of [['menu',ui.main],['pause',ui.pause],['levels',ui.levels],['complete',ui.complete],['codex',document.querySelector('#codex-screen')]])el.hidden=mode!==key;document.querySelector('#pause-button').hidden=mode!=='playing';hint.hidden=true;redraw=true;}
 function gameScene(scene){story.scene=scene;document.body.dataset.gameScene=scene;const label=document.querySelector('#chapter-label');label.hidden=scene==='lab';document.querySelector('#chapter-number').textContent=scene==='intro'?'PRÓLOGO / 00':'NIVEL / '+String(story.level||1).padStart(2,'0');document.querySelector('#chapter-name').textContent=scene==='intro'?'El primer encuentro':chapters[story.level||1][1];}
 function storySuspended(){return radialOpen()||story.ready&&(story.mode!=='playing'||!panel.hidden||document.hidden);}
 function storyWalkAllowed(){return !story.ready||story.scene!=='intro'||['deliver','cooling','cooled','choice','repeat'].includes(story.phase);}
@@ -3625,9 +3625,9 @@ function storyInput(event){
  if(event.code==='KeyP'&&!event.repeat&&!editing){event.preventDefault();if(!panel.hidden){panel.hidden=true;if(story.mode==='playing')captureMouse();}else openPanel();return true;}
  if(event.code==='Escape'){
   event.preventDefault();if(story.transition&&panel.hidden)return true;if(!panel.hidden){panel.hidden=true;if(story.mode==='playing')openPauseMenu();return true;}
-  if(story.mode==='levels'){backFromLevels();return true;}if(story.mode==='pause'){resumeGame();return true;}if(story.mode==='playing'){if(!commandMenu.hidden){closeCommandMenu(true);return true;}if(!menu.hidden){closeDetachMenu(true);return true;}openPauseMenu();return true;}return true;
+  if(story.mode==='codex'){closeCodex();return true;}if(story.mode==='levels'){backFromLevels();return true;}if(story.mode==='pause'){resumeGame();return true;}if(story.mode==='playing'){if(!commandMenu.hidden){closeCommandMenu(true);return true;}if(!menu.hidden){closeDetachMenu(true);return true;}openPauseMenu();return true;}return true;
  }
- if(editing)return false;if(story.mode!=='playing'||story.transition)return true;
+ if(editing)return false;if(event.code==='KeyJ'&&!event.repeat&&panel.hidden){event.preventDefault();if(story.mode==='codex')closeCodex();else if(story.mode==='playing')showCodex();return true;}if(story.mode!=='playing'||story.transition)return true;
  if(event.code==='KeyO'&&story.encounter&&!event.repeat){event.preventDefault();finishEncounter();return true;}
  if((event.code==='KeyE'||event.code==='Space')&&!event.repeat&&panel.hidden){event.preventDefault();if(story.phase==='asleep')wakeUp();else if(story.dialogue)advanceDialogue();else if(event.code==='KeyE')interactMaterial();return true;}
  if(story.scene==='intro'&&!storyWalkAllowed()&&['KeyW','KeyA','KeyS','KeyD','KeyC','ShiftLeft','ShiftRight'].includes(event.code)&&!held){event.preventDefault();return true;}
@@ -3659,7 +3659,7 @@ function tickStory(dt){
    }else if(story.phase==='cooling'){story.phase='deliver';ui.cooling.hidden=true;say('Un poquito más dentro. Todavía me falta enfriarme.',{hold:true});}
   }
  }
- if(story.scene==='campaign'){tickBlockTwo(dt);if(!story.encounter)tickCampaign(dt);}
+ if(story.scene==='campaign'){tickBlockTwo(dt);tickReconfiguration(dt);if(!story.encounter)tickCampaign(dt);}
 }
 function updateStoryMarker(){
  updateCampaignLabels();layoutEncounterBubbles();ui.marker.hidden=true;if(story.mode!=='playing'||!panel.hidden||story.transition)return;
@@ -3669,8 +3669,8 @@ function updateStoryMarker(){
 function initStory(){
  story.lab=saveLab();story.labAlpha={...alphaSettings};try{story.progress=JSON.parse(readQbitsStorage('qbits.campaign.v1')||'{}')||{};}catch{story.progress={};}story.ready=true;
  const click=(id,fn)=>document.querySelector('#'+id).addEventListener('click',fn);
- click('main-play',()=>{sceneFade(()=>beginIntro(),{out:.3,black:.65});});click('wake-button',wakeUp);click('skip-encounter',finishEncounter);click('main-continue',resumeGame);click('main-levels',showLevelSelector);click('main-lab',()=>{sceneFade(()=>enterLab(false));captureForTransition();});click('pause-button',openPauseMenu);click('pause-resume',resumeGame);click('pause-restart',restartCurrent);click('pause-levels',showLevelSelector);click('pause-main',showMain);click('pause-lab',()=>{sceneFade(()=>enterLab(false));captureForTransition();});click('levels-back',backFromLevels);click('complete-repeat',()=>{sceneFade(()=>beginCampaignLevel(story.level||1));captureForTransition();});click('complete-next',()=>{sceneFade(()=>beginCampaignLevel(Math.min(12,story.level+1)));captureForTransition();});click('complete-levels',showLevelSelector);click('complete-main',showMain);click('complete-lab',()=>{sceneFade(()=>enterLab(false));captureForTransition();});
- initTitleGreeting();gameScene('lab');gameMode('boot');
+ click('main-play',()=>{sceneFade(()=>beginIntro(),{out:.3,black:.65});});click('wake-button',wakeUp);click('skip-encounter',finishEncounter);click('main-continue',resumeGame);click('main-levels',showLevelSelector);click('main-lab',()=>{sceneFade(()=>enterLab(false));captureForTransition();});click('pause-button',openPauseMenu);click('pause-resume',resumeGame);click('pause-restart',restartCurrent);click('pause-levels',showLevelSelector);click('pause-main',showMain);click('pause-lab',()=>{sceneFade(()=>enterLab(false));captureForTransition();});click('levels-back',backFromLevels);click('complete-repeat',()=>{sceneFade(()=>beginCampaignLevel(story.level||1));captureForTransition();});click('complete-next',()=>{sceneFade(()=>beginCampaignLevel(Math.min(LEVELS.length-1,story.level+1)));captureForTransition();});click('complete-levels',showLevelSelector);click('complete-main',showMain);click('complete-lab',()=>{sceneFade(()=>enterLab(false));captureForTransition();});
+ click('main-codex',showCodex);click('pause-codex',showCodex);click('codex-back',closeCodex);initTitleGreeting();gameScene('lab');gameMode('boot');
 }
 
 // Eight complete campaign levels. All gates use the actual bodies and welded parts.
@@ -3772,7 +3772,7 @@ function updateCampaignPressure(dt){if(story.scene!=='campaign'||!story.campaign
 function moveCampaignDoor(gate,dt){if(!gate.solved)return;gate.open=Math.min(1,gate.open+dt/.95);const t=gate.open,u=t*t*(3-2*t),d=gate.door;d.p.y=d.initialY+2.65*u;d.body.position.copy(d.p);d.min=sub(d.p,d.half);d.max=add(d.p,d.half);d.body.aabbNeedsUpdate=true;}
 function campaignOrder(g){if(story.scene==='campaign'&&story.campaign)for(const part of g.parts)story.campaign.ordered.add(part.id);}
 function beginCampaignLevel(number){
- number=clamp(Math.floor(number),1,12);const carry=number===9&&story.level===8&&story.phase==='complete'?groups.flatMap(g=>worldParts(g)):null;rememberLab();clearNarrativeScene();applyStageDefaults();story.level=number;story.phase='challenge';story.started=true;story.elapsed=0;gameScene('campaign');gameMode('playing');position.splice(0,3,0,EYE_HEIGHT,2.3);yaw=0;pitch=number<=4?-.6:-.25;camera.splice(0,3,...position);
+ number=clamp(Math.floor(number),1,LEVELS.length-1);const carry=number===9&&story.level===8&&story.phase==='complete'?groups.flatMap(g=>worldParts(g)):null;rememberLab();clearNarrativeScene();applyStageDefaults();story.level=number;story.phase='challenge';story.started=true;story.elapsed=0;gameScene('campaign');gameMode('playing');position.splice(0,3,0,EYE_HEIGHT,2.3);yaw=0;pitch=number<=4?-.6:-.25;camera.splice(0,3,...position);
  const definition=LEVELS[number],zs=definition.gates.map((_,i)=>definition.gates.length===1?-3.4:-1.6-i*4),c={number,definition,stage:0,gates:[],crew:[],ordered:new Set(),labelsAt:0,hintAt:0};story.campaign=c;storyWorld.buttons=[];campaignBoundary(zs);
  definition.gates.forEach((def,index)=>{const gate=campaignGate(zs[index],index,def);c.gates.push(gate);
   if(def.weights)for(let i=0;i<def.weights.length;i++){const x=def.weights.length===1?(def.kind==='combo'?1.65:0):i===0?-1.4:1.4;makeCampaignPad(gate,x,gate.z+1.4,def.weights[i],i);}
@@ -3781,10 +3781,11 @@ function beginCampaignLevel(number){
  });
  for(let i=0;i<definition.count;i++){const x=definition.count===1?-.85:(i%3-1)*.30,z=.55+Math.floor(i/3)*.3,g=carry?.[i]?makeGroup([{...carry[i],p:V(x,HALF+.004,z),q:Q()}]):addQubit([x,HALF+.004,z],1);c.crew.push(g.parts[0].id);g.parts[0].mood.name='Q-bit '+(i+1);if(i===0)story.guideId=g.parts[0].id;}
  if(number<=2)c.gates[0].targets.forEach((t,i)=>t.assigned=c.crew[i]);makeButtonPhysics(storyWorld.buttons);storyWorld.door=c.gates[0].door;storyWorld.doorProgress=0;world.broadphase.dirty=true;
- setupBlockTwo(c);updateCampaignObjective();if(number===9)beginEncounter();else say(definition.line,{after:hideStoryDialogue});updatePanel();
+ setupBlockTwo(c);setupReconfiguration(c);updateCampaignObjective();if(number===9)beginEncounter();else if(definition.lines)chapterDialogue(definition.lines);else say(definition.line,{after:hideStoryDialogue});updatePanel();
 }
 function updateCampaignObjective(){
  const c=story.campaign;if(!c)return;const gate=c.gates[c.stage],part=c.gates.length>1?'Sala '+(c.stage+1)+' / '+c.gates.length+' · ':'';let text='';
+ if(c.reconfiguration){storyObjective(reconfigurationObjective(c));return;}
  if(gate.solved){text=c.number>=5?'Puerta abierta. Retira y reutiliza los Q-bits.\nCruza para continuar.':'Puerta abierta. Cruza para continuar.';}
  else if(gate.kind==='routes')text=gate.targets.length===1?'Lleva al Q-bit al círculo de luz.\nClic derecho · seleccionar y elegir destino':'Un Q-bit en cada destino.\nDales órdenes por separado: 1 → A, 2 → B.';
  else if(gate.kind==='generation')text='Entrega materia al desintegrador '+(gate.index+1)+'.\n'+gate.generatedRequired+' unidades → '+gate.generatedRequired+' Q-bits.\nApunta al material y pulsa E para asignar un equipo.';
@@ -3796,7 +3797,8 @@ function tickCampaign(dt){
  const c=story.campaign;if(!c||['complete','finishing'].includes(story.phase))return;const gate=c.gates[c.stage];
  for(const g of c.gates)moveCampaignDoor(g,dt);
  let active=false;
- if(gate.kind==='routes'){
+ if(gate.kind==='reconfiguration')active=reconfigurationSatisfied(c);
+ else if(gate.kind==='routes'){
   for(const t of gate.targets){const g=groups.find(g=>g.parts.length===1&&g.parts[0].id===t.assigned);t.ready=!!g&&c.ordered.has(t.assigned)&&!g.route&&held?.g!==g&&bounds(g).min.y<.035&&Math.hypot(g.body.position.x-t.p.x,g.body.position.z-t.p.z)<.21;}
   active=gate.targets.every(t=>t.ready);
  }else{active=gate.pads.every(b=>b.load>=b.required);if(gate.socket)active=active&&socketIsPressed(gate.socket);}
@@ -3804,7 +3806,7 @@ function tickCampaign(dt){
  if(!gate.solved){
   if(gate.pipe){gate.flow=clamp(gate.flow+dt*(active?1/(gate.seconds||9):-1/5.5),0,1);if(gate.flow>=1)gate.solved=true;}
   else{gate.hold=active?Math.min(1,gate.hold+dt/1.1):0;if(gate.hold>=1)gate.solved=true;}
-  if(gate.solved){updateCampaignObjective();if(!story.dialogue)say(gate.pipe?'Llegó. La puerta queda abierta. Ahora puedes retirarnos.':'Listo. Puedes recuperar las piezas; esta puerta ya queda abierta.',{after:hideStoryDialogue});}
+  if(gate.solved){updateCampaignObjective();if(!story.dialogue)say(c.reconfiguration?'Seguimos siendo nosotros. Solo cambió la forma de trabajar. El catálogo ya guarda el descubrimiento; reúne todas las piezas y crucemos.':gate.pipe?'Llegó. La puerta queda abierta. Ahora puedes retirarnos.':'Listo. Puedes recuperar las piezas; esta puerta ya queda abierta.',{after:hideStoryDialogue});}
  }
  storyWorld.door=gate.door;storyWorld.doorProgress=gate.open;
  if(gate.solved&&gate.open>.98&&position[2]<gate.z-.85){
@@ -3819,10 +3821,10 @@ function finishCampaignLevel(){
 }
 function showCampaignResults(){
  const n=story.level;saveStoryProgress('level'+n);story.phase='complete';hideStoryDialogue();storyObjective('');gameMode('complete');pause(false);
- document.querySelector('#complete-eyebrow').textContent=String(n).padStart(2,'0')+' / '+chapters[n][1].toUpperCase();document.querySelector('#complete-title').textContent=n===12?'Cada pieza cuenta.':n===8?'Salimos juntos.':'Una puerta más.';document.querySelector('#complete-description').textContent=n===12?'Dos bloques completos. Todos los compañeros han cruzado contigo.':n===8?'Primer bloque completado. Al otro lado te espera el equipo.':'Nivel '+n+' completado. El siguiente encuentro te espera.';if(n===5)document.querySelector('#complete-description').textContent+=' Mecanismo desbloqueado: Enganche y Rotor. Mantén Q para encontrarlos.';document.querySelector('#complete-next').hidden=n===12;document.querySelector(n===12?'#complete-repeat':'#complete-next').focus({preventScroll:true});
+ document.querySelector('#complete-eyebrow').textContent=String(n).padStart(2,'0')+' / '+chapters[n][1].toUpperCase();document.querySelector('#complete-title').textContent=n===12?'Cada pieza cuenta.':n===8?'Salimos juntos.':'Una puerta más.';document.querySelector('#complete-description').textContent=n===12?'Dos bloques completos. Todos los compañeros han cruzado contigo.':n===8?'Primer bloque completado. Al otro lado te espera el equipo.':'Nivel '+n+' completado. El siguiente encuentro te espera.';if(n===5)document.querySelector('#complete-description').textContent+=' Mecanismo desbloqueado: Enganche y Rotor. Mantén Q para encontrarlos.';if(n===12)document.querySelector('#complete-description').textContent='Dos bloques completos. Al otro lado empieza la reconfiguración.';if(n>=13){document.querySelector('#complete-title').textContent=n===15?'Seguimos siendo nosotros.':'La materia recuerda.';document.querySelector('#complete-description').textContent=n===15?'Has recuperado las dos escalas de división y su recomposición. Tus descubrimientos y planos quedan en el catálogo.':'Descubrimiento registrado. J abre el catálogo durante la partida.';}document.querySelector('#complete-next').hidden=n===LEVELS.length-1;document.querySelector(n===LEVELS.length-1?'#complete-repeat':'#complete-next').focus({preventScroll:true});
 }
 function drawCampaignOpaque(){
- const c=story.campaign;if(!c)return;drawSourcesOpaque();gl.uniform1f(uniforms.uTime,simTime);drawAlphaButtons(storyWorld.buttons);
+ const c=story.campaign;if(!c)return;drawSourcesOpaque();drawReconfiguration();gl.uniform1f(uniforms.uTime,simTime);drawAlphaButtons(storyWorld.buttons);
  for(const gate of c.gates){
   for(const t of gate.targets){drawAsset(storyTargetMesh,t.p,Q(),V(.25,1,.25),t.ready?[.22,.77,.50,1]:[.42,.67,.62,1],3);drawRing(add(t.p,V(0,.003,0)),.28,.8);}
   const s=gate.socket;if(s){for(const p of s.targets){const size=V(CUBE_SIZE-.005,CUBE_SIZE-.005,.003);drawBox(add(p,V(0,0,-.069)),Q(),size,[.21,.40,.34,1]);}
@@ -3840,7 +3842,7 @@ function drawCampaignTransparent(){
 const campaignLabels=[];
 function updateCampaignLabels(){
  const layer=document.querySelector('#campaign-labels'),c=story.campaign,visible=story.scene==='campaign'&&story.mode==='playing'&&panel.hidden&&!story.transition;layer.hidden=!visible;if(!visible||!c)return;
- const gate=c.gates[c.stage],labels=blockTwoLabels();
+ const gate=c.gates[c.stage],labels=blockTwoLabels().concat(reconfigurationLabels());
  for(const t of gate.targets)labels.push({p:add(t.p,V(0,.10,0)),text:(t.index===0?'A':'B')+' · '+(t.ready?'listo':'Q-bit '+(t.index+1))});
  if(gate.kind==='routes')for(const [i,id] of c.crew.entries()){const g=groups.find(g=>g.parts.some(p=>p.id===id));if(g)labels.push({p:add(g.body.position,V(0,.14,0)),text:String(i+1)});}
  for(const b of gate.pads)labels.push({p:add(b.p,V(0,.19,0)),text:Math.min(b.required,Math.round(b.load))+' / '+b.required+' Q-bits'});
@@ -3872,7 +3874,7 @@ function setupBlockTwo(c){
  if(c.number===10){station(1,2,V(2.15,0,-4.3),V(1.6,0,.5));station(2,2,V(2.15,0,-8.3),V(-1.5,0,-3.05));}
  if(c.number===11){station(0,2,V(-2.15,0,-.35),V(-1.85,0,1.1));station(0,4,V(2.15,0,-.35),V(2.05,0,3.0),4);storyWall(V(0,.5,.25),V(.07,.5,.95),{color:[.93,.95,.94]});for(const [i,g] of groups.entries()){g.body.position.set((i%3-1)*.36,HALF+.005,1.45+Math.floor(i/3)*.22);g.body.aabbNeedsUpdate=true;}}
  if(c.number===12){station(0,2,V(2.15,0,-.35),V(1.1,0,1.4));station(1,4,V(2.15,0,-4.3),V(1.65,0,-2.9),4);station(2,8,V(2.15,0,-8.3),V(1.65,0,-6.8),6);}
- const rest=createCooler(V(-2.15,0,c.number===9?1.5:.8));if(rest){rest.capacity=4;rest.coolSeconds=4.5;rest.chapterOwned=true;c.rest=rest;}
+ const rest=createCooler(V(-2.15,0,c.number===9?1.5:c.number>=13?2.7:.8));if(rest){rest.capacity=4;rest.coolSeconds=4.5;rest.chapterOwned=true;c.rest=rest;}
  for(let i=1;i<c.gates.length;i++){const cooler=createCooler(V(-2.6,0,c.gates[i].z+2.6));if(cooler){cooler.capacity=4;cooler.coolSeconds=4.5;cooler.chapterOwned=true;}}
 }
 function newMatter(units,p,required,station){
@@ -3946,11 +3948,11 @@ function sendMaterial(cargo,chosen=null){
  if(!cargo?.source||!sourceAccepts(cargo.source,cargo)||story.encounter)return false;
  if(cargo.source.gate.index>story.campaign.stage){announce('Abre primero el paso hasta esa estación.');return false;}
  const candidates=chosen?.length?chosen:availableHaulers(cargo),team=[];let count=0;
- for(const g of candidates){team.push(g);count+=g.parts.length;if(count>=cargo.required)break;}
+ for(const g of candidates){team.push(g);count+=groupWorkUnits(g);if(count+1e-8>=cargo.required)break;}
  if(count<cargo.required){announce('Se necesitan '+cargo.required+' Q-bits disponibles en el suelo. Libera al equipo de sus otras tareas.');return false;}
  const success=beginHaul(cargo,team,cargo.source.intake);if(success){hideStoryDialogue();storyObjective('Equipo en camino · '+cargo.required+' Q-bits\nPuedes acompañarlos o preparar el siguiente mecanismo.');}return success;
 }
-function interactMaterial(){if(story.scene!=='campaign'||story.encounter)return;const hit=aimCargo(4);if(hit?.cargo.source){if(hit.cargo.job)announce('El equipo ya está trabajando. Clic derecho para cambiar o detener la orden.');else sendMaterial(hit.cargo);}}
+function interactMaterial(){if(story.scene!=='campaign'||story.encounter)return;if(openReconfigurationMenu())return;const hit=aimCargo(4);if(hit?.cargo.source){if(hit.cargo.job)announce('El equipo ya está trabajando. Clic derecho para cambiar o detener la orden.');else sendMaterial(hit.cargo);}}
 function onCampaignPad(g){const bb=bounds(g);return activePressureButtons().some(b=>bb.min.y<(b.surface||0)+.025&&bb.min.x>=b.p.x-b.half-.006&&bb.max.x<=b.p.x+b.half+.006&&bb.min.z>=b.p.z-b.half-.006&&bb.max.z<=b.p.z+b.half+.006);}
 function drawMatter(c){
  const t=c.intake||0,scale=1-t*.94,dims=c.dimensions,step=.18,origin=c.body.position,rgb=[1,3,5].map(i=>parseInt(c.color.slice(i,i+2),16)/255);
@@ -4065,6 +4067,161 @@ function tickMoodHints(){
 }
 function tickBlockTwo(dt){if(!story.campaign)return;if(story.encounter)tickEncounter(dt);else{tickSources(dt);tickMoodHints();}}
 function campaignAmbientAllowed(){return story.scene==='campaign'&&story.mode==='playing'&&!story.transition&&!story.encounter&&!story.dialogue&&story.elapsed>8;}
+
+// Chapter III. A bounded, reversible material transaction; the physical world
+// is committed only when the complete output tray is clear.
+chapters.push(...QBitsReconfiguration.chapters);
+LEVELS.push(...QBitsReconfiguration.levels);
+function groupWorkUnits(g){return g.parts.reduce((n,p)=>n+(p.mood?.matter?p.weight/p.mood.matter.rootWeight:1),0);}
+function chapterMatterParts(c=story.campaign){return groups.flatMap(g=>worldParts(g)).filter(p=>p.mood?.matter?.root===c?.reconfiguration?.root);}
+function chapterDialogue(lines){
+ const c=story.campaign;let index=0;
+ const next=()=>{if(story.campaign!==c)return;if(index>=lines.length){hideStoryDialogue();return;}say(lines[index++],{hold:true,after:next});};next();
+}
+function setupReconfiguration(c){
+ if(!c.definition.reconfiguration)return;
+ const p=V(-1.9,0,-1.1),state={p,intake:add(p,V(0,0,.78)),exit:add(p,V(1.16,0,.7)),job:null,stats:{divide:0,subdivide:0,pyramid:0,cube:0},root:null,kind:c.definition.reconfiguration};c.reconfiguration=state;
+ const guide=storyGuide();guide.body.position.set(.65,HALF+.004,.8);guide.parts[0].mood.name='Q-bit';
+ let seed;
+ if(c.number===15){const id=allocateUnitId();seed=QBitsReconfiguration.identify({id,weight:1,shape:'cube',mood:newMood(id)});seed.mood.name=seed.mood.matter.name='Compañero';
+  const pyramids=QBitsReconfiguration.plan('divide',[seed]).outputs.map(p=>({...p,id:allocateUnitId()}));
+  const halves=QBitsReconfiguration.plan('subdivide',[pyramids[0]]).outputs;
+  const pieces=[...halves,...pyramids.slice(1)];
+  for(const [i,part]of pieces.entries()){const id=allocateUnitId(),g=makeGroup([{...part,id,p:V(-1.9+(i%4)*.23,unitGroundHeight(part.shape)+.004,.65+Math.floor(i/4)*.25),q:Q()}]);c.crew.push(id);}
+ }else{const g=groups.find(g=>g.parts[0].id===c.crew[1]);seed=QBitsReconfiguration.identify(worldParts(g)[0]);seed.mood.name=seed.mood.matter.name='Compañero';g.parts[0].mood=seed.mood;g.body.position.set(-1.9,HALF+.004,.65);}
+ state.root=seed.mood.matter.root;
+ const white=[.91,.935,.925];
+ for(const x of [-.4,.4])storyWall(add(p,V(x,.39,0)),V(.055,.39,.25),{color:white});
+ storyWall(add(p,V(0,.76,0)),V(.455,.05,.25),{color:white});
+ storyWall(add(p,V(0,.37,-.235)),V(.35,.34,.025),{color:[.025,.033,.030]});
+ storyWorld.details.push({p:add(p,V(0,.02,.48)),size:V(.68,.025,.3),color:[.72,.78,.75]});
+ world.broadphase.dirty=true;
+}
+function reconfigurationInput(action){
+ const c=story.campaign,s=c?.reconfiguration;
+ if(!s||s.job||!QBitsReconfiguration.actions[action]||c.number<QBitsReconfiguration.actions[action].unlock)return [];
+ const candidates=groups.filter(g=>!g.route&&!g.pendingMoodOrder&&!g.haulJob&&!g.blueprintJob&&!g.cooler&&!rotorForGroup(g)&&!held?.items.some(item=>item.g===g)&&
+  poses(g).every(p=>p.part.mood?.matter?.root===s.root&&Math.hypot(p.p.x-s.intake.x,p.p.z-s.intake.z)<.38&&p.p.y<.27));
+ const parts=candidates.flatMap(worldParts);
+ if(action==='divide'||action==='subdivide'){
+  const shape=action==='divide'?'cube':'pyramid',part=parts.find(p=>p.shape===shape);
+  if(!part)return [];const group=candidates.find(g=>g.parts.some(p=>p.id===part.id));return group.parts.length===1?[part]:[];
+ }
+ if(action==='pyramid'){
+  for(const p of parts.filter(p=>p.shape==='tetra')){
+   const path=p.mood.matter.path,couple=parts.filter(other=>other.shape==='tetra'&&other.mood.matter.path[0]===path[0]);
+   if(couple.length===2){const ids=new Set(couple.map(p=>p.id));if(candidates.filter(g=>g.parts.some(p=>ids.has(p.id))).every(g=>g.parts.every(p=>ids.has(p.id))))return couple;}
+  }return [];
+ }
+ return parts.length===6&&parts.every(p=>p.shape==='pyramid')?parts:[];
+}
+function beginReconfiguration(action){
+ const c=story.campaign,s=c?.reconfiguration;
+ if(!s||s.job||story.mode!=='playing'||story.transition||!panel.hidden||document.hidden)return false;
+ if(!QBitsReconfiguration.actions[action]||c.number<QBitsReconfiguration.actions[action].unlock)return false;
+ const input=reconfigurationInput(action),plan=QBitsReconfiguration.plan(action,input);
+ if(plan.error){announce(input.length?plan.error:'Deja las piezas necesarias dentro de ENTRADA y suéltalas.');return false;}
+ const ids=new Set(plan.inputs),owners=groups.filter(g=>g.parts.some(p=>ids.has(p.id)));
+ if(owners.some(g=>g.parts.some(p=>!ids.has(p.id)))||groups.reduce((n,g)=>n+g.parts.length,0)-input.length+plan.outputs.length>MAX_QUBITS){announce('Separa la pieza o libera espacio antes de transformar.');return false;}
+ s.job={...plan,time:0,duration:4,original:input,blocked:false};
+ for(const g of owners)removeGroup(g);clearSelection();
+ announce('Reconfigurando · la materia y la energía se conservan');updateCampaignObjective();return true;
+}
+function reconfigurationOutputPoses(s){return s.job.outputs.map((part,i)=>({...part,p:add(s.exit,V((i%3-1)*.17,unitGroundHeight(part.shape)+.005,Math.floor(i/3)*.17)),q:Q()}));}
+function reconfigurationOutputClear(parts){
+ if(groups.reduce((n,g)=>n+g.parts.length,0)+parts.length>MAX_QUBITS)return false;
+ return parts.every(p=>!groups.some(g=>poses(g).some(other=>obbOverlap(p,other,.000001)))&&!cargos.some(c=>obbOverlap(p,cargoPose(c),.000001))&&!storyWorld.walls.some(w=>obbOverlap(p,{p:w.p,q:Q(),half:w.half},.000001)));
+}
+function tickReconfiguration(dt){
+ const c=story.campaign,s=c?.reconfiguration;
+ if(!s||!s.job||storySuspended()||story.transition||story.mode!=='playing'||!Number.isFinite(dt)||dt<=0)return;
+ s.job.time=Math.min(s.job.duration,s.job.time+dt);
+ if(s.job.time<s.job.duration)return;
+ const outputs=reconfigurationOutputPoses(s);s.job.blocked=!reconfigurationOutputClear(outputs);
+ if(s.job.blocked){updateCampaignObjective();return;}
+ const job=s.job,made=[];
+ try{for(const output of outputs){const id=output.shape==='cube'?output.mood.matter.root:allocateUnitId();made.push(makeGroup([{...output,id}]));}}
+ catch(error){for(const g of made)removeGroup(g);job.blocked=true;return;}
+ c.crew=c.crew.filter(id=>!job.inputs.includes(id));c.crew.push(...made.map(g=>g.parts[0].id));s.stats[job.action]++;s.job=null;
+ const lesson=job.action==='divide'?'division':job.action==='subdivide'?'subdivision':'reunion';
+ saveStoryProgress('lore.'+lesson);updatePanel();updateCampaignObjective();announce('Transformación completa · J: catálogo');
+}
+function reconfigurationSatisfied(c){
+ const s=c?.reconfiguration;if(!s||s.job||!QBitsReconfiguration.complete(s.kind,s.stats))return false;
+ const parts=chapterMatterParts(c),mass=parts.reduce((n,p)=>n+p.weight,0);
+ return Math.abs(mass-1)<1e-8&&(s.kind!=='reunion'||parts.length===1&&parts[0].shape==='cube'&&parts[0].mood.matter.path==='');
+}
+function reconfigurationObjective(c){
+ const s=c.reconfiguration,job=s.job;
+ if(c.gates[c.stage].solved)return 'Puerta abierta. Reúne al guía y todas las piezas.\nLa misma materia sale contigo. J · catálogo';
+ if(job)return job.blocked?'SALIDA ocupada · libera la bandeja.\nLa cámara conserva todas las piezas.':'Reconfigurando · '+Math.floor(job.time/job.duration*100)+' %\nLa energía disponible se reparte entre las formas.';
+ return c.definition.goal+'\nENTRADA: deja las piezas · E: operar la cámara · J: catálogo';
+}
+function reconfigurationHit(dir=direction()){
+ const s=story.campaign?.reconfiguration;if(!s)return null;
+ const box=alphaBox(add(s.p,V(0,.4,.2)),V(.47,.45,.48)),d=rayPuzzleBox(V(...camera),dir,box,3.2);
+ if(d===null||Math.min(aimQubit(d,dir)?.distance??Infinity,aimCargo(d,dir)?.distance??Infinity)<d-.02)return null;
+ return {s,d};
+}
+function openReconfigurationMenu(dir=direction()){
+ const hit=reconfigurationHit(dir);if(!hit)return false;
+ if(hit.s.job){announce(hit.s.job.blocked?'Libera la bandeja SALIDA.':'La cámara está reconfigurando.');return true;}
+ const items=Object.entries(QBitsReconfiguration.actions).filter(([,action])=>story.level>=action.unlock).map(([key,action])=>({label:action.label,run:()=>{beginReconfiguration(key);captureMouse();}}));
+ items.push({label:'Consultar catálogo',run:showCodex},{label:'Cerrar',run:()=>captureMouse()});
+ openCommandMenu(add(hit.s.p,V(0,.4,.2)),'Cámara de reconfiguración',items);return true;
+}
+function drawReconfiguration(){
+ const s=story.campaign?.reconfiguration;if(!s)return;
+ for(const [point,color]of [[s.intake,[.2,.55,.47,1]],[s.exit,[.5,.63,.68,1]]]){
+  drawAsset(storyTargetMesh,add(point,V(0,.003,0)),Q(),V(.38,1,.38),color,3);drawRing(add(point,V(0,.005,0)),.4,.75);
+ }
+ drawBox(add(s.p,V(.31,.40,.27)),Q(),V(.025,.32,.015),[.2,.42,.36,1]);
+ if(s.job){
+  const progress=s.job.time/s.job.duration,q=Q();q.setFromEuler(0,simTime*.4,0);
+  if(progress<.5){for(const [i,part]of s.job.original.entries())drawUnitMesh({...part,p:add(s.p,V((i%3-1)*.105,.25+Math.floor(i/3)*.1,.08)),q});}
+  else for(const [i,part]of s.job.outputs.entries())drawUnitMesh({...part,p:add(s.p,V((i%3-1)*.14,.25+Math.floor(i/3)*.15,.08)),q});
+  drawBox(add(s.p,V(.31,.24+.16*progress,.282)),Q(),V(.015,.32*progress,.004),[.5,.9,.72,1]);
+ }
+}
+function reconfigurationLabels(){
+ const s=story.campaign?.reconfiguration;if(!s)return [];
+ const labels=[{p:add(s.p,V(0,.92,.05)),text:'RECONFIGURACIÓN · '+(s.job?s.job.blocked?'SALIDA ocupada':Math.floor(s.job.time/s.job.duration*100)+' %':'E · operar')},
+  {p:add(s.intake,V(0,.08,.1)),text:'ENTRADA'},{p:add(s.exit,V(0,.08,.1)),text:'SALIDA'}];
+ for(const g of groups)if(g.parts.length===1&&g.parts[0].mood?.matter?.root===s.root&&g.body.position.z>0)labels.push({p:add(g.body.position,V(0,.14,0)),text:g.parts[0].shape==='cube'?'COMPAÑERO':g.parts[0].shape==='pyramid'?'1/6 · pirámide':'1/12 · triangular'});
+ return labels;
+}
+function catalogueRecipe(kind){
+ let parts;
+ if(kind==='pyramid'){
+  const turn=Q();turn.setFromAxisAngle(V(0,1,0),Math.PI);
+  parts=[{shape:'tetra',p:V(CUBE_SIZE/8,0,-CUBE_SIZE/8),q:Q()},{shape:'tetra',p:V(-CUBE_SIZE/8,0,CUBE_SIZE/8),q:turn}];
+ }else if(kind==='cube')parts=[V(0,-1,0),V(-1,0,0),V(0,0,-1),V(1,0,0),V(0,0,1),V(0,1,0)].map(normal=>{const q=Q();q.setFromVectors(V(0,-1,0),normal);q.normalize();return {shape:'pyramid',p:mul(normal,3*CUBE_SIZE/8),q};});
+ else return null;
+ const min=Math.min(...parts.flatMap(corners).map(v=>v.y));
+ return {name:kind==='cube'?'Cubo · seis pirámides':'Pirámide · dos triangulares',catalogueId:kind,geometryVersion:3,parts:parts.map(p=>({shape:p.shape,p:[p.p.x,p.p.y-min,p.p.z],q:[p.q.x,p.q.y,p.q.z,p.q.w]}))};
+}
+function catalogueKnown(key){const lesson=QBitsReconfiguration.lessons[key];return !!story.progress['lore.'+key]||story.scene==='campaign'&&story.level>=lesson.level;}
+function rememberCatalogueRecipe(kind){
+ const entry=Object.entries(QBitsReconfiguration.lessons).find(([,value])=>value.recipe===kind);
+ if(!entry||!catalogueKnown(entry[0]))return false;
+ if(savedShapes.some(shape=>shape.catalogueId===kind)){announce('Ese plano ya está entre tus formas guardadas.');return true;}
+ if(savedShapes.length>=32){announce('Libera un espacio entre tus formas guardadas.');return false;}
+ const recipe=catalogueRecipe(kind);if(!savedShapeValid(recipe)||!assemblyValid(blueprintTargets({shape:recipe,p:V(),q:Q()})))return false;
+ savedShapes.push(recipe);persistShapes();updateAlphaPanel();announce('Plano añadido · clic derecho en el suelo → Formas guardadas');return true;
+}
+function showCodex(){
+ if(story.transition||!story.ready)return;story.codexReturn=story.mode==='codex'?story.codexReturn:story.mode;
+ closeCommandMenu(false);gameMode('codex');pause(false);panel.hidden=true;
+ const list=document.querySelector('#codex-entries');list.replaceChildren();
+ for(const [key,entry]of Object.entries(QBitsReconfiguration.lessons)){
+  const article=document.createElement('article'),title=document.createElement('h3'),text=document.createElement('p'),known=catalogueKnown(key);
+  title.textContent=entry.title;text.textContent=known?entry.text:'Se descubre en el nivel '+entry.level+'.';article.append(title,text);
+  if(known&&entry.recipe){const button=document.createElement('button');button.textContent='Guardar blueprint · '+(entry.recipe==='cube'?'cubo de seis pirámides':'pirámide de dos triangulares');button.addEventListener('click',()=>rememberCatalogueRecipe(entry.recipe));article.appendChild(button);}list.appendChild(article);
+ }
+ const learned=Object.keys(QBitsReconfiguration.lessons).filter(key=>story.progress['lore.'+key]).length;
+ document.querySelector('#codex-progress').textContent=learned+' / 3 descubrimientos registrados · materia';document.querySelector('#codex-back').focus({preventScroll:true});
+}
+function closeCodex(){gameMode(story.codexReturn||'menu');if(story.mode==='playing')resumeGame();}
 
 // One depth-tested mask keeps carried pieces sharp while the room softens. The
 // mask shares the scene depth buffer, so focus never reveals an occluded piece.

@@ -78,6 +78,7 @@ function environment({ autoFonts = true } = {}) {
     await scriptResult('cannon.min.js');
     await scriptResult('radial-menu.js');
     await scriptResult('rotor-power.js');
+    await scriptResult('campaign-reconfiguration.js');
     await scriptResult('game.js');
     await scriptResult('music.js');
   }
@@ -159,10 +160,11 @@ function assertBlocked(e) {
   assert.notEqual(e.nodes.get('#boot-percent').textContent, '100%');
 }
 
-for(const module of ['radial-menu.js','rotor-power.js'])test(`a missing ${module} blocks game preparation, 100 percent and Jugar even when music is ready`, async () => {
+for(const module of ['radial-menu.js','rotor-power.js','campaign-reconfiguration.js'])test(`a missing ${module} blocks game preparation, 100 percent and Jugar even when music is ready`, async () => {
   const e=environment();
   await e.scriptResult('cannon.min.js');
-  if(module==='rotor-power.js')await e.scriptResult('radial-menu.js');
+  if(module!=='radial-menu.js')await e.scriptResult('radial-menu.js');
+  if(module==='campaign-reconfiguration.js')await e.scriptResult('rotor-power.js');
   assert.equal(e.events.includes('game.prepare'),false,'the game waits for the selector dependency');
   await e.scriptResult(module,false);
   assert.equal(e.events.includes('game.prepare'),false);
