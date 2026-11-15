@@ -12,7 +12,7 @@ function deferred() {
   return { promise, resolve, reject };
 }
 async function flush() { for (let n = 0; n < 12; n++) await Promise.resolve(); }
-function environment({ autoFonts = true, openingFailure = null } = {}) {
+function environment({ autoFonts = true, openingFailure = null, randomValue } = {}) {
   class Element extends EventTarget {
     constructor() { super(); this.children = []; this.hidden = false; this.disabled = false; this.dataset = {}; this.style = {}; this.attributes = {}; this.textContent = ''; this.classes = new Set(); this.classList = { add: value => this.classes.add(value), remove: value => this.classes.delete(value), toggle: (value, enabled) => enabled ? this.classes.add(value) : this.classes.delete(value) }; }
     append(...nodes) { this.children.push(...nodes); }
@@ -82,6 +82,7 @@ function environment({ autoFonts = true, openingFailure = null } = {}) {
       setMuted() {}, setVolume() {}
     }
   });
+  if(randomValue!==undefined){context.Math=Object.create(Math);context.Math.random=()=>randomValue;}
   context.window = context;
   vm.runInNewContext(source, context);
   async function scriptResult(name, success = true) {
@@ -326,3 +327,10 @@ for (const failure of ['script', 'music', 'scene']) {
     assert.equal(e.reloads, 1);
   });
 }
+
+test('different startup random values change the loading pauses',async()=>{
+ const a=environment({randomValue:0}),b=environment({randomValue:.9});
+ await a.advance(3000);await b.advance(3000);
+ assert.notEqual(a.nodes.get('#boot-percent').textContent,b.nodes.get('#boot-percent').textContent);
+ assertBlocked(a);assertBlocked(b);
+});

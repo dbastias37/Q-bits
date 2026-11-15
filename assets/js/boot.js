@@ -9,6 +9,14 @@
   const retry = document.querySelector('#boot-retry');
   let opening, openingStarted = false;
   let displayed = 0, elapsed = 0;
+  const stops = [[0,0]];
+  let loadTime = .3 + Math.random()*.5, loadValue = 0;
+  for (let i=0;i<5;i++) {
+    loadValue = Math.min(95, loadValue + 10 + Math.random()*12);
+    loadTime += .6 + Math.random()*.55;stops.push([loadTime,loadValue]);
+    loadTime += .2 + Math.random()*.75;stops.push([loadTime,loadValue]);
+  }
+  stops.push([loadTime+.8,100]);
   const stages = { physics: 0, code: 0, scene: 0, music: 0, fonts: 0 };
   let ready = false, presentationDone = false, failed = false;
   function update(key, value) {
@@ -42,7 +50,7 @@
   function loadScript(path) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = path + '?v=20261115-opening-1';
+      script.src = path + '?v=20261115-opening-2';
       script.onload = resolve;
       script.onerror = () => reject(new Error('No se pudo cargar ' + path));
       document.head.append(script);
@@ -63,14 +71,13 @@
   function presentation() {
     if (failed || openingStarted) return;
     if (!document.hidden) elapsed += .08;
-    const stops = [[0,0],[.6,0],[1.5,17],[2,17],[3.1,38],[3.7,38],[5,68],[5.6,68],[7,91],[7.6,91],[8.4,100]];
     let amount = 100;
     for (let i = 1; i < stops.length; i++) if (elapsed < stops[i][0]) {
       const a = stops[i-1], b = stops[i];
       amount = a[1] + (b[1]-a[1]) * (elapsed-a[0]) / (b[0]-a[0]);break;
     }
     displayed = Math.max(displayed, Math.floor(amount));
-    presentationDone = elapsed >= 8.4;
+    presentationDone = elapsed >= stops[stops.length-1][0];
     update('scene', stages.scene);
     if (!presentationDone) setTimeout(presentation, 80);
     else if (ready) play.focus({preventScroll:true});

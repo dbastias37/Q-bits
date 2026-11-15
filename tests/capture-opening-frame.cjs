@@ -19,7 +19,7 @@ const gl=new Proxy({...constants},{get(o,key){
  if(key==='getShaderParameter'||key==='getProgramParameter')return()=>true;
  if(key==='getShaderInfoLog'||key==='getProgramInfoLog')return()=>'';
  if(key==='getUniformLocation'||key==='getAttribLocation')return(p,name)=>{const loc=++id;init.push([key,loc,p,name]);if(key==='getAttribLocation'){if(!programAttribs.has(p))programAttribs.set(p,new Set());programAttribs.get(p).add(loc);}return loc;};
- if(key==='bufferData')return(target,data,usage)=>{init.push(['bindBuffer',target,bound],['bufferData',target,Array.from(data),usage]);buffers.set(bound,data.byteLength);};
+ if(key==='bufferData')return(target,data,usage)=>{if(!buffers.has(bound))init.push(['bindBuffer',target,bound],['bufferData',target,Array.from(data),usage]);else record('bufferData',[target,data,usage]);buffers.set(bound,data.byteLength);};
  if(key==='bindBuffer')return(...args)=>{bound=args[1];record(key,args);};
  if(key==='depthMask')return(value)=>{depthWritable=value;record(key,[value]);};
  if(key==='clear')return(mask)=>{if((mask&constants.DEPTH_BUFFER_BIT)&&!depthWritable)validation.push({error:'depth clear while writes disabled'});record(key,[mask]);};
@@ -40,8 +40,14 @@ function tick(){frameStartProgram=current;frameCommands=[];now+=1000/60;const ba
 function save(name){snapshots.push({name,state:scene.getState(),commands:[['viewport',0,0,width,height],...(frameStartProgram===null?[]:[['useProgram',frameStartProgram]]),...frameCommands]});}
 for(const [p,name]of[[0,'loading-0'],[.5,'loading-50'],[1,'loading-100']]){scene.setProgress(p);scene.setReady(p===1);tick();save(name);}
 scene.play();
-const times=[[5,'forming'],[13,'assembled'],[20,'orbit'],[28,'dive'],[29.52,'dive-close'],[31.5,'white']];let last=0;
-for(const [target,name]of times){while(last<target){tick();last+=1/60;}save(name);}
+let ticks=0,formed=false,close=false;
+while(scene.getState().phase!=='complete'&&ticks<60*65){tick();ticks++;
+ const state=scene.getState();
+ if(ticks===300)save('forming');
+ if(state.phase==='glow'&&!formed){save('assembled');formed=true;}
+ if(state.phase==='dive'&&!close){save('dive');close=true;}
+}
+if(scene.getState().phase!=='complete')throw Error('Formation did not finish');save('white');
 scene.dispose();fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,JSON.stringify({width,height,init,snapshots,validation}));
 console.log(JSON.stringify({output,frames:snapshots.map(s=>({name:s.name,...s.state})),activeAttributeErrors:validation.length}));
 if(validation.length)process.exitCode=1;

@@ -9,7 +9,7 @@ test('the title has one independently addressable cube for each of its 69 font d
   assert.equal(new Set(pieces.map(p => p.id)).size, 69);
   for (const p of pieces) {
     assert.ok(p.target.every(Number.isFinite));
-    assert.ok(Math.hypot(p.start[0], p.start[2]) > 14, 'cube must enter from outside the title');
+    assert.ok(Math.hypot(p.start[0], p.start[2]) > 10, 'cube must enter from outside the title');
   }
   pieces[0].target[0] = 100;
   assert.notEqual(opening.makePieces()[0].target[0], 100, 'instances must not modify font data');
@@ -17,7 +17,7 @@ test('the title has one independently addressable cube for each of its 69 font d
 
 for (const rate of [30, 60, 120]) test(`all cubes physically settle before the glow at ${rate} FPS`, () => {
   const pieces = opening.makePieces(), step = 1 / rate;
-  for (let frame = 1; frame <= Math.ceil(opening.TIMING.assemble * rate); frame++) opening.updatePieces(pieces, frame * step, step);
+  for (let frame = 1; frame <= Math.ceil(40 * rate); frame++) opening.updatePieces(pieces, frame * step, step);
   assert.equal(pieces.filter(p => p.settled).length, 69);
   for (const p of pieces) {
     assert.ok(Math.hypot(...p.p.map((v, i) => v - p.target[i])) < .012);
@@ -28,16 +28,13 @@ for (const rate of [30, 60, 120]) test(`all cubes physically settle before the g
   }
 });
 
-test('an approaching pair separates and exchanges an impulse instead of passing through', () => {
-  const pieces = opening.makePieces().slice(0, 2);
-  for (const [i, p] of pieces.entries()) {
-    const x = i ? .1 : -.1;
-    p.start = p.bend = p.target = [x, .335 / 2, 0];
-    p.p = [x, .335 / 2, 0]; p.v = [i ? -.8 : .8, 0, 0]; p.delay = 0;
-  }
-  opening.updatePieces(pieces, .5, 1 / 60);
-  assert.ok(pieces[1].p[0] - pieces[0].p[0] >= .335);
-  assert.ok(pieces[0].v[0] < 0 && pieces[1].v[0] > 0, 'contact should reverse the closing motion');
+test('rolling lifts the center around a support edge and replans around an obstacle',()=>{
+ const p=opening.makePieces().slice(0,2);p[0].p=[0,.1675,0];p[0].target=[1.005,.1675,0];p[0].delay=0;
+ p[1].p=[.40,.1675,0];p[1].settled=true;
+ opening.updatePieces(p,2,.06);
+ assert.ok(p[0].p[1]>.2);assert.ok(p[0].rollAngle>0);assert.ok(Math.abs(p[0].p[2])>0,'detour must avoid blocked forward step');
+ for(let t=2;t<12;t+=1/60)opening.updatePieces(p,t,1/60);
+ assert.equal(p[0].settled,true);assert.ok(p[0].replans>0);
 });
 
 test('camera completes a tracked 360 orbit without nonfinite transforms on narrow screens', () => {

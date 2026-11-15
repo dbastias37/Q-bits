@@ -199,6 +199,12 @@
   window.QBitsMusic = Object.freeze({
     preload,
     start() { started = true; paused = false; initAudioContext(); playIfAllowed(); notify(); },
+    next() {
+      if (!ready || tracks.length < 2) return;
+      stopTimer();index = (index + 1) % tracks.length;
+      audio.src = tracks[index].url;audio.load();
+      started = true;paused = false;playIfAllowed();notify();
+    },
     setPaused(value) { paused = !!value; if (paused) pausePlayback(); else playIfAllowed(); notify(); },
     setVolume(value) { if (!Number.isFinite(value)) return; volume = Math.max(0, Math.min(1, value)); saved = { volume, muted }; save(); applyGain(); notify(); },
     setMuted(value) { muted = !!value; saved = { volume, muted }; save(); applyGain(); if (!muted) playIfAllowed(); notify(); },

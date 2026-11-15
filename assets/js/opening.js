@@ -15,76 +15,84 @@
   const SIZE = .335;
   const TIMING = Object.freeze({ black: .8, assemble: 11.5, hold: .5, glow: 1.2, orbit: 12, dive: 3.5, white: .85 });
 
-  function fontDots(doc) {
-    if (!doc?.createElement || !doc.fonts?.check('180px "LED Calculator"', 'Q-bits')) return FONT_DOTS.map(p => [...p]);
-    const c = doc.createElement('canvas'); c.width = 1000; c.height = 250;
-    const ctx = c.getContext('2d', { willReadFrequently: true });
-    if (!ctx) return FONT_DOTS.map(p => [...p]);
-    ctx.font = '180px "LED Calculator"'; ctx.fillStyle = '#fff'; ctx.fillText('Q-bits', 20, 205);
-    const { data, width, height } = ctx.getImageData(0, 0, c.width, c.height);
-    const visited = new Uint8Array(width * height), found = [];
-    for (let seed = 0; seed < visited.length; seed++) {
-      if (visited[seed] || data[seed * 4 + 3] < 120) continue;
-      const queue = [seed]; visited[seed] = 1;
-      let x0 = width, x1 = 0, y0 = height, y1 = 0;
-      for (let k = 0; k < queue.length; k++) {
-        const n = queue[k], x = n % width, y = Math.floor(n / width);
-        x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
-        for (const next of [x > 0 ? n - 1 : -1, x < width - 1 ? n + 1 : -1, y > 0 ? n - width : -1, y < height - 1 ? n + width : -1]) {
-          if (next < 0 || visited[next] || data[next * 4 + 3] < 120) continue;
-          visited[next] = 1; queue.push(next);
-        }
-      }
-      if (queue.length > 8) found.push([(x0 + x1) / 2, (y0 + y1) / 2]);
-    }
-    if (found.length !== FONT_DOTS.length) return FONT_DOTS.map(p => [...p]);
-    const xs = found.map(p => p[0]), ys = found.map(p => p[1]);
-    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
-    return found.map(p => [(p[0] - (x0 + x1) / 2) * 15 / (x1 - x0), (p[1] - (y0 + y1) / 2) * 15 / (x1 - x0)]);
+  function fontDots() {
+    // Exact centers extracted from the bundled font contours, independent of
+    // browser antialiasing and raster scan order; each dot owns a stable route.
+    return FONT_DOTS.map(p=>[...p]);
   }
 
   function random(seed) { let s = seed >>> 0; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
   function makePieces(dots = FONT_DOTS) {
-    const rand = random(17062026);
-    return dots.map((p, i) => {
-      const a = rand() * Math.PI * 2, radius = 15 + rand() * 7;
-      const start = [Math.cos(a) * radius, SIZE / 2, Math.sin(a) * radius];
-      const target = [p[0], SIZE / 2, p[1]];
-      const bend = [mix(start[0], target[0], .55) + (rand() - .5) * 7, SIZE / 2, mix(start[2], target[2], .55) + (rand() - .5) * 5];
-      return { target, start, bend, p: [...start], v: [0, 0, 0], angle: (rand() - .5) * 2, spin: (rand() - .5) * 4, delay: rand() * 1.8, duration: 5 + rand() * 2.4, settled: false, id: i };
+    const rand = random(17062026), occupied=[];
+    return dots.map((p,i) => {
+      const a=rand()*Math.PI*2,r=12+rand()*5;
+      const target=[p[0],SIZE/2,p[1]];
+      let start=[target[0]+Math.round((Math.cos(a)*r-target[0])/SIZE)*SIZE,SIZE/2,target[2]+Math.round((Math.sin(a)*r-target[2])/SIZE)*SIZE];
+      while(occupied.some(q=>Math.hypot(q[0]-start[0],q[2]-start[2])<SIZE*2)) {start[0]+=SIZE*2;start[2]+=SIZE*2;}
+      occupied.push(start);
+      return {id:i,target,start,bend:lerp(start,target,.5),p:[...start],v:[0,0,0],angle:0,delay:rand()*1.5,settled:false,segment:null,path:[],retry:0,replans:0,rollAxis:[0,0,1],rollAngle:0};
     });
   }
-  function bezier(a, b, c, t) { const u = 1 - t; return a.map((v, i) => u * u * v + 2 * u * t * b[i] + t * t * c[i]); }
-  function updatePieces(pieces, time, dt) {
-    const finish = smooth((time - 9) / 2.5);
-    for (const p of pieces) {
-      if (time < p.delay) continue;
-      const u = clamp((time - p.delay) / p.duration);
-      const desired = bezier(p.start, p.bend, p.target, smooth(u));
-      const gain = 13 + finish * 30;
-      for (const k of [0, 2]) {
-        p.v[k] += (desired[k] - p.p[k]) * gain * dt;
-        p.v[k] *= Math.exp(-5.5 * dt); p.p[k] += p.v[k] * dt;
+  function bezier(a,b,c,t){return lerp(a,c,t);}
+  function obstacleBoxes(piece,pieces){return pieces.filter(p=>p!==piece).map(p=>{
+    const a=p.segment?.from||p.p,b=p.segment?.to||p.p;
+    return {x0:Math.min(a[0],b[0])-SIZE*.51,x1:Math.max(a[0],b[0])+SIZE*.51,z0:Math.min(a[2],b[2])-SIZE*.51,z1:Math.max(a[2],b[2])+SIZE*.51};
+  });}
+  function stepClear(a,b,boxes){
+    const pad=SIZE*.51;
+    return !boxes.some(o=>Math.min(a[0],b[0])-pad<o.x1&&Math.max(a[0],b[0])+pad>o.x0&&Math.min(a[2],b[2])-pad<o.z1&&Math.max(a[2],b[2])+pad>o.z0);
+  }
+  const directions=[[1,0],[-1,0],[0,1],[0,-1]];
+  function plan(piece,pieces){
+    const boxes=obstacleBoxes(piece,pieces),origin=piece.target;
+    const sx=Math.round((piece.p[0]-origin[0])/SIZE),sz=Math.round((piece.p[2]-origin[2])/SIZE);
+    const point=(x,z)=>[origin[0]+x*SIZE,SIZE/2,origin[2]+z*SIZE];
+    const key=(x,z)=>x+','+z,open=[{x:sx,z:sz,g:0,f:Math.abs(sx)+Math.abs(sz),parent:null}],cost=new Map([[key(sx,sz),0]]);
+    for(let n=0;open.length&&n<5000;n++){
+      let best=0;for(let j=1;j<open.length;j++)if(open[j].f<open[best].f)best=j;
+      const c=open.splice(best,1)[0];if(c.x===0&&c.z===0){const path=[];for(let q=c;q.parent;q=q.parent)path.push(point(q.x,q.z));return path.reverse();}
+      for(const [dx,dz]of directions){const x=c.x+dx,z=c.z+dz,g=c.g+1,k=key(x,z);if(g>=(cost.get(k)??Infinity)||Math.abs(x)>100||Math.abs(z)>100)continue;
+        if(!stepClear(point(c.x,c.z),point(x,z),boxes))continue;
+        cost.set(k,g);open.push({x,z,g,f:g+Math.abs(x)+Math.abs(z),parent:c});
       }
-      p.angle += p.spin * dt * (1 - smooth(u)); p.angle *= Math.exp(-dt * (2 + finish * 10));
-      p.p[1] = SIZE / 2 + Math.abs(Math.sin(time * 6 + p.id)) * .035 * (1 - smooth(u));
-      if (finish > 0) { const f = 1 - Math.exp(-dt * finish * 35); p.p = lerp(p.p, p.target, f); }
-      p.settled = Math.hypot(...sub(p.p, p.target)) < .012 && u === 1;
-    }
-    // Equal-mass contact impulses while the pieces are entering; no particles are
-    // teleported through each other. Final spacing already exceeds the cube size.
-    if (finish < .95) for (let i = 0; i < pieces.length; i++) for (let j = i + 1; j < pieces.length; j++) {
-      const a = pieces[i], b = pieces[j]; if (time < a.delay || time < b.delay) continue;
-      const dx = b.p[0] - a.p[0], dz = b.p[2] - a.p[2], d = Math.hypot(dx, dz), min = SIZE * 1.04;
-      if (d >= min) continue;
-      const nx = d > 1e-6 ? dx / d : 1, nz = d > 1e-6 ? dz / d : 0, push = (min - d) * .5;
-      a.p[0] -= nx * push; a.p[2] -= nz * push; b.p[0] += nx * push; b.p[2] += nz * push;
-      const approach = (b.v[0] - a.v[0]) * nx + (b.v[2] - a.v[2]) * nz;
-      if (approach < 0) {
-        const impulse = approach * .65;
-        a.v[0] += nx * impulse; a.v[2] += nz * impulse; b.v[0] -= nx * impulse; b.v[2] -= nz * impulse;
-        a.spin += .15; b.spin -= .15;
+    }return [];
+  }
+  function updatePieces(pieces,time,dt){
+    pieces.tickRemainder=(pieces.tickRemainder||0)+dt;
+    while(pieces.tickRemainder>=1/60-1e-9){pieces.tickRemainder-=1/60;const t=pieces.simulationTime||0;stepPieces(pieces,t,1/60);pieces.simulationTime=t+1/60;}
+  }
+  function stepPieces(pieces,time,dt){
+    // Same movement principle as autonomous campaign cubes: choose a clear
+    // cardinal step, reserve its sweep, and rotate 90 degrees on the support edge.
+    for(const p of pieces){
+      if(p.yieldFor?.settled){p.target=p.home;p.home=null;p.yieldFor=null;p.settled=false;p.path=[];p.retry=0;}
+      if(p.settled||time<p.delay)continue;
+      // Fill the enclosed dot of Q before closing its surrounding outline.
+      const inner=pieces.find(q=>q.target[0]>-6.8&&q.target[0]<-6.4&&q.target[2]>.3&&q.target[2]<.6);
+      if(inner&&inner!==p&&!inner.settled&&p.target[0]<-5.4)continue;
+      if(!p.segment){
+        if(Math.hypot(p.p[0]-p.target[0],p.p[2]-p.target[2])<.001){p.settled=true;continue;}
+        if(time<p.retry)continue;
+        if(!p.path.length||!stepClear(p.p,p.path[0],obstacleBoxes(p,pieces))){p.path=plan(p,pieces);p.replans++;}
+        if(!p.path.length){
+          if(p.replans%4===0&&!p.yieldFor){
+            const candidates=pieces.filter(q=>q!==p&&!q.segment&&!q.home&&!q.yieldFor).sort((a,b)=>Math.min(Math.hypot(a.p[0]-p.p[0],a.p[2]-p.p[2]),Math.hypot(a.p[0]-p.target[0],a.p[2]-p.target[2]))-Math.min(Math.hypot(b.p[0]-p.p[0],b.p[2]-p.p[2]),Math.hypot(b.p[0]-p.target[0],b.p[2]-p.target[2])));
+            for(const q of candidates.slice(0,5)){
+              let found=false;for(const [dx,dz]of directions){const home=q.target,temp=[q.p[0]+dx*SIZE*3,SIZE/2,q.p[2]+dz*SIZE*3];q.target=temp;const route=plan(q,pieces);q.target=home;
+                if(route.length){q.home=home;q.target=temp;q.path=route;q.settled=false;q.yieldFor=p;q.retry=0;found=true;break;}}
+              if(found)break;
+            }
+          }
+          p.retry=time+.25+(p.id%7)*.04;continue;
+        }
+        const to=p.path.shift(),from=[...p.p],dx=Math.round((to[0]-from[0])/SIZE),dz=Math.round((to[2]-from[2])/SIZE);
+        p.segment={from,to,dx,dz,t:0};p.rollAxis=[dz,0,-dx];
       }
+      const seg=p.segment;seg.t=Math.min(1,seg.t+dt/.12);
+      const angle=smooth(seg.t)*Math.PI/2,h=SIZE/2;
+      const distance=h*(1-Math.cos(angle)+Math.sin(angle));
+      p.p=[seg.from[0]+seg.dx*distance,h*(Math.cos(angle)+Math.sin(angle)),seg.from[2]+seg.dz*distance];p.rollAngle=angle;
+      if(seg.t===1){p.p=[...seg.to];p.segment=null;p.rollAngle=0;}
     }
   }
 
@@ -99,7 +107,9 @@
     const x = norm(cross(up, z)), y = cross(z, x);
     return new Float32Array([x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, -dot(x, eye), -dot(y, eye), -dot(z, eye), 1]);
   }
-  function model(pos, size, angle = 0) {
+  function model(pos, size, angle = 0, rollAxis = null, rollAngle = 0) {
+    if(rollAxis){const [x,y,z]=rollAxis,c=Math.cos(rollAngle),s=Math.sin(rollAngle),t=1-c;
+      return new Float32Array([(t*x*x+c)*size[0],(t*x*y+s*z)*size[0],(t*x*z-s*y)*size[0],0,(t*x*y-s*z)*size[1],(t*y*y+c)*size[1],(t*y*z+s*x)*size[1],0,(t*x*z+s*y)*size[2],(t*y*z-s*x)*size[2],(t*z*z+c)*size[2],0,...pos,1]);}
     const c = Math.cos(angle), s = Math.sin(angle);
     return new Float32Array([c * size[0], 0, -s * size[0], 0, 0, size[1], 0, 0, s * size[2], 0, c * size[2], 0, ...pos, 1]);
   }
@@ -151,9 +161,9 @@
     function attr(p, name, count, stride, offset = 0) { const l = loc(p, name); gl.enableVertexAttribArray(l);enabledAttributes.add(l);gl.vertexAttribPointer(l, count, gl.FLOAT, false, stride, offset); }
     let currentVP, currentEye, aspect = 1, width = 1, height = 1;
     function camera(c) { currentEye = c.eye; currentVP = multiply(perspective(c.fov, aspect), lookAt(c.eye, c.at, c.roll)); }
-    function drawCube(pos, size, color, angle = 0, glass = false, emission = 0) {
+    function drawCube(pos, size, color, angle = 0, glass = false, emission = 0, rollAxis = null, rollAngle = 0) {
       use(solid); gl.bindBuffer(gl.ARRAY_BUFFER, cube); attr(solid,'aPosition',3,24);attr(solid,'aNormal',3,24,12);
-      gl.uniformMatrix4fv(loc(solid,'uVP'),false,currentVP);gl.uniformMatrix4fv(loc(solid,'uModel'),false,model(pos,size,angle));
+      gl.uniformMatrix4fv(loc(solid,'uVP'),false,currentVP);gl.uniformMatrix4fv(loc(solid,'uModel'),false,model(pos,size,angle,rollAxis,rollAngle));
       gl.uniform3fv(loc(solid,'uEye'),currentEye);gl.uniform4fv(loc(solid,'uColor'),color);gl.uniform1f(loc(solid,'uGlass'),glass?1:0);gl.uniform1f(loc(solid,'uGlow'),emission);gl.drawArrays(gl.TRIANGLES,0,36);
     }
     function drawLines(b, count, color, m) {
@@ -172,9 +182,10 @@
     }
     let state='loading',progress=0,ready=false,clock=0,last=0,raf=0,disposed=false,pieces=[],pathBuffer=null,pathCount=0,resolvePlay,rejectPlay,promise;
     let formationStart=TIMING.black,settledAt=null,diveTarget=[0,SIZE/2,0];
-    const orbitDuration=reduced?2:TIMING.orbit,diveDuration=reduced?1.4:TIMING.dive;
+    const diveDuration=reduced?1.4:7;
     function finish(){if(state==='complete')return;state='complete';resolvePlay?.();}
-    function paths(){const data=[];for(const p of pieces)for(let i=0;i<24;i++){const a=bezier(p.start,p.bend,p.target,i/24),b=bezier(p.start,p.bend,p.target,(i+1)/24);a[1]=b[1]=.012;data.push(...a,...b);}pathBuffer=buffer(data);pathCount=data.length/3;}
+    function paths(){const data=[];for(const p of pieces){let prev=p.p;for(const next of p.path){data.push(prev[0],.012,prev[2],next[0],.012,next[2]);prev=next;}}
+      if(!pathBuffer)pathBuffer=buffer(data);else {gl.bindBuffer(gl.ARRAY_BUFFER,pathBuffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);}pathCount=data.length/3;}
     function render(dt){
       resize();gl.depthMask(true);gl.clearColor(0,0,0,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.disable(gl.CULL_FACE);
       if(state==='loading'||state==='fade'){
@@ -190,7 +201,7 @@
       }
       if(state==='complete'){gl.clearColor(1,1,1,1);gl.clear(gl.COLOR_BUFFER_BIT);return;}
       const assemblyTime=clock-formationStart;
-      if(settledAt===null){updatePieces(pieces,assemblyTime,dt);if(assemblyTime>=TIMING.assemble&&pieces.every(p=>p.settled)){settledAt=clock;state='hold';}}
+      if(settledAt===null){updatePieces(pieces,assemblyTime,dt);paths();if(assemblyTime>=TIMING.assemble&&pieces.every(p=>p.settled&&!p.home)){settledAt=clock;state='hold';}}
       const since=settledAt===null?-1:clock-settledAt;
       let emission=0,white=0;
       const top={eye:[0,fitHeight(aspect),.001],at:[0,0,0],roll:0,fov:1.22};
@@ -198,23 +209,23 @@
       if(since>=TIMING.hold){
         const glowTime=since-TIMING.hold;emission=Math.sin(clamp(glowTime/TIMING.glow)*Math.PI)*1.8;state='glow';
         if(glowTime>=TIMING.glow){
-          const orbitTime=glowTime-TIMING.glow;state='orbit';view=orbitCamera(orbitTime/orbitDuration,aspect,[0,0,0],reduced);
-          if(orbitTime>=orbitDuration){
-            state='dive';const t=clamp((orbitTime-orbitDuration)/diveDuration),start=orbitCamera(1,aspect,[0,0,0],reduced);
+          const flightTime=glowTime-TIMING.glow;
+            state='dive';const t=clamp(flightTime/diveDuration);
             const travel=t*t*t,at=lerp([0,0,0],diveTarget,smooth(t*1.8));
             const end=[diveTarget[0],SIZE+.05,diveTarget[2]+.012];
-            view={eye:lerp(start.eye,end,travel),at,roll:reduced?0:Math.sin(t*Math.PI)*-.075,fov:mix(1.22,1.32,smooth(t))};
+            const radius=reduced?0:8.8*Math.sin(Math.PI*t)*(1-travel),azimuth=t*Math.PI*2;
+            const eye=lerp(top.eye,end,travel);eye[0]+=Math.sin(azimuth)*radius;eye[2]+=Math.cos(azimuth)*radius;
+            view={eye,at,roll:reduced?0:Math.sin(t*Math.PI*2)*.045,fov:mix(1.22,1.32,smooth(t))};
             // The lens reaches the cube first. Only then does its white face bloom
             // across the frame; no distant fade is substituted for the dive.
-            white=smooth((orbitTime-orbitDuration-diveDuration-.12)/.55);emission=white*.8;
-            if(orbitTime>=orbitDuration+diveDuration+TIMING.white){finish();white=1;}
-          }
+            white=smooth((flightTime-diveDuration-.12)/.55);emission=white*.8;
+            if(flightTime>=diveDuration+TIMING.white){finish();white=1;}
         }
       }
       camera(view);
       const enter=smooth(assemblyTime/.8),pathOpacity=settledAt===null?.19: .19*(1-smooth(since/.5));
       if(pathOpacity>0){gl.depthMask(false);drawLines(pathBuffer,pathCount,[.56,.67,.72,pathOpacity*enter]);gl.depthMask(true);}
-      for(const p of pieces){if(assemblyTime<p.delay)continue;drawCube(p.p,[SIZE,SIZE,SIZE],[.97,.985,1,enter],p.angle,false,emission);}
+      for(const p of pieces){if(assemblyTime<p.delay)continue;drawCube(p.p,[SIZE,SIZE,SIZE],[.97,.985,1,enter],p.angle,false,emission,p.rollAxis,p.rollAngle);}
       // Soft bloom only during the synchronized pulse, with no halos on paths.
       if(emission>.015){gl.disable(gl.DEPTH_TEST);gl.depthMask(false);gl.blendFunc(gl.SRC_ALPHA,gl.ONE);for(const p of pieces)glowAt(p.p,1.5,Math.min(.38,emission*.24));gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);}
       if(white>0){gl.disable(gl.DEPTH_TEST);gl.depthMask(false);use(glow);gl.bindBuffer(gl.ARRAY_BUFFER,quad);attr(glow,'aPosition',2,8);gl.uniform2f(loc(glow,'uCenter'),0,0);gl.uniform2f(loc(glow,'uScale'),20,20);gl.uniform4fv(loc(glow,'uColor'),[1,1,1,white]);gl.drawArrays(gl.TRIANGLES,0,6);}
@@ -236,7 +247,7 @@
       dispose
     };
   }
-  const api = {create,fontDots,makePieces,updatePieces,orbitCamera,FONT_DOTS,TIMING};
+  const api = {plan,stepClear,obstacleBoxes,create,fontDots,makePieces,updatePieces,orbitCamera,FONT_DOTS,TIMING};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   if(typeof window!=='undefined')window.QBitsOpening=api;
 })();

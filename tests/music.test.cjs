@@ -115,3 +115,9 @@ test('playlist rejects paths outside the music folder', async () => {
   assert.deepEqual(e.fetched, ['playlist.json']);
   e.music.dispose();
 });
+
+ test('campaign advances track without fetching again and menu resume keeps current position',async()=>{
+ const e=environment({tracks:[{file:'a.mp3'},{file:'b.mp3'}]},{'a.mp3':'audio/mpeg','b.mp3':'audio/mpeg'});
+ await e.music.preload();e.music.start();e.players[0].currentTime=17;e.music.setPaused(false);
+ assert.equal(e.players[0].currentTime,17);e.music.next();assert.equal(e.music.getState().track,'b.mp3');assert.equal(e.music.getState().playing,true);assert.equal(e.fetched.length,3);e.music.dispose();
+ });
