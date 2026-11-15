@@ -1,59 +1,56 @@
-/* Translucent matter: the selector keeps the room visible behind its panels. */
+/* A polished glass shell around a frosted face. The room stays visible and the
+   front silhouette is shared by the material, outline and pointer hit test. */
 body[data-unit-radial='open'] #crosshair,body[data-unit-radial='open'] #tools,body[data-unit-radial='open'] #callout,body[data-unit-radial='open'] #target,body[data-unit-radial='open'] #notice,body[data-unit-radial='open'] #qbit-dialogues,body[data-unit-radial='open'] #mood-held-labels,body[data-unit-radial='open'] #route-readout,body[data-unit-radial='open'] #menu-link{visibility:hidden;}
-#unit-radial{position:fixed;inset:0;z-index:46;isolation:isolate;opacity:0;filter:blur(12px);transform:scale(.975);transition:opacity .24s ease,filter .28s ease,transform .28s cubic-bezier(.2,.7,.2,1);background:radial-gradient(ellipse at 50% 48%,#f3f6f331,#e9eeeb16 65%,transparent);color:#323b36;pointer-events:none;font-family:var(--font-info,system-ui,sans-serif);}
+#unit-radial{position:fixed;inset:0;z-index:46;isolation:isolate;opacity:0;filter:blur(8px);transform:scale(.985);transition:opacity .24s linear,filter .24s ease,transform .24s ease;background:transparent;color:#293a3c;pointer-events:none;font-family:var(--font-info,system-ui,sans-serif);}
+#unit-radial[hidden]{display:none!important;}
 #unit-radial.visible{opacity:1;filter:none;transform:scale(1);pointer-events:auto;}
 #unit-radial.virtual-pointer{cursor:none;}
-#unit-radial .radial-heading{position:absolute;left:50%;transform:translateX(-50%);font:400 10px/1.5 var(--font-menu,system-ui,sans-serif);letter-spacing:.14em;color:#707c74;text-shadow:0 1px 12px #fff;}
 #unit-radial .radial-stage{position:absolute;inset:0;}
-#unit-radial .radial-sector{position:absolute;inset:0;background:linear-gradient(135deg,#ffffff7d,#e4ebe53d 48%,#ffffff29);-webkit-backdrop-filter:blur(15px) saturate(.65);backdrop-filter:blur(15px) saturate(.65);transition:background .2s ease;}
-#unit-radial .radial-sector.hovered{background:linear-gradient(135deg,#ffffffd1,#eff5ef9e 48%,#ffffff60);}
-#unit-radial .radial-sector.selected{background:linear-gradient(135deg,#ffffffa1,#e1e9e259 48%,#ffffff44);}
-#unit-radial .radial-sector.selected.hovered{background:linear-gradient(135deg,#ffffffe0,#f3f7f2aa 48%,#ffffff75);}
-#unit-radial .radial-models,#unit-radial .radial-lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
-#unit-radial .radial-outline{fill:none;stroke:#ffffffbd;stroke-width:1;transition:stroke .2s,stroke-width .2s;}
-#unit-radial .radial-outline.selected{stroke:#8c9d9291;}
-#unit-radial .radial-outline.hovered{stroke:#ffffff;stroke-width:1.6;}
-#unit-radial .radial-label{position:absolute;transform:translateX(-50%);text-align:center;pointer-events:none;line-height:1.4;opacity:.7;transition:opacity .16s,transform .2s;}
-#unit-radial .radial-label.hovered{opacity:1;transform:translateX(-50%) translateY(2px);}
-#unit-radial .radial-label strong{display:block;font:400 var(--radial-label-size,11px)/1.5 var(--font-menu,system-ui,sans-serif);color:#333e37;white-space:nowrap;}
-#unit-radial .radial-label small{display:block;font:400 clamp(9px,1.2vw,11px)/1.4 var(--font-info,system-ui,sans-serif);color:#657169;margin-top:2px;}
+#unit-radial .radial-heading,#unit-radial .radial-mechanism-heading{position:absolute;left:50%;transform:translateX(-50%);z-index:6;pointer-events:none;font:400 10px/1.5 var(--font-menu,system-ui,sans-serif);letter-spacing:.14em;color:#627477;text-shadow:0 1px 10px #fff;}
+#unit-radial .radial-mechanism-heading{font-size:9px;letter-spacing:.16em;}
+#unit-radial .radial-crystal-back{position:absolute;inset:0;z-index:0;background:linear-gradient(145deg,#dcebed57,#557b853a 35%,#c8e0e17d 70%,#f7ffffa1);pointer-events:none;}
+#unit-radial .radial-sector{position:absolute;inset:0;z-index:1;background:linear-gradient(142deg,#ffffff77 3%,#dce9ed28 39%,#f4fbfb38 63%,#ffffff76 98%);-webkit-backdrop-filter:blur(17px) saturate(.75);backdrop-filter:blur(17px) saturate(.75);transition:background .2s ease;}
+#unit-radial .radial-sector::before{content:'';position:absolute;inset:0;background:linear-gradient(116deg,transparent 23%,#ffffff2b 31%,#ffffff06 38%,transparent 46%,transparent 68%,#ffffff24 82%,transparent 91%);pointer-events:none;}
+#unit-radial .radial-sector.selected{background:linear-gradient(142deg,#ffffff8c,#d9e9ed39 45%,#ffffff71);}
+#unit-radial .radial-sector.hovered{background:linear-gradient(142deg,#ffffffa6,#e8f3f547 45%,#ffffff85);}
+#unit-radial .radial-sector.selected.hovered{background:linear-gradient(142deg,#ffffffb3,#edf7f75c 45%,#ffffff91);}
+#unit-radial .radial-sector.locked{background:linear-gradient(142deg,#f7fbfc80,#dce6e82b 45%,#f7fcfc60);}
+#unit-radial .radial-models,#unit-radial .radial-lines,#unit-radial .radial-depth{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+#unit-radial .radial-depth{z-index:2;filter:drop-shadow(0 8px 9px #263f4a20);}
+/* No strokes between adjacent sidewall triangles: the cut glass is continuous. */
+#unit-radial .radial-crystal-edge{fill:url(#radial-glass-cut);fill-opacity:.68;stroke:none;transition:fill-opacity .2s;}
+#unit-radial .radial-crystal-edge.hovered{fill-opacity:.82;}
+#unit-radial .radial-crystal-rim{fill:none;stroke:#69879291;stroke-width:.8;stroke-linejoin:round;}
+#unit-radial .radial-crystal-bevel{fill:none;stroke:url(#radial-glass-polish);stroke-opacity:.82;stroke-width:5.2;stroke-linejoin:round;}
+#unit-radial .radial-outline{fill:none;stroke:#ffffffed;stroke-width:1.1;stroke-linejoin:round;filter:drop-shadow(0 1px 1px #425f6a52);transition:stroke .2s;}
+#unit-radial .radial-outline.selected{stroke:#e4ffff;}
+#unit-radial .radial-outline.hovered{stroke:#ffffff;}
+#unit-radial .radial-models{z-index:3;}
+#unit-radial .radial-lines{z-index:4;}
+#unit-radial .radial-label,#unit-radial .radial-description,#unit-radial .radial-cancel{z-index:5;}
+#unit-radial .radial-label{position:absolute;transform:translateX(-50%);text-align:center;pointer-events:none;line-height:1.4;opacity:.86;transition:opacity .16s;}
+#unit-radial .radial-label.hovered{opacity:1;}
+#unit-radial .radial-label strong{display:block;font:400 var(--radial-label-size,11px)/1.5 var(--font-menu,system-ui,sans-serif);color:#293d42;white-space:nowrap;text-shadow:0 1px 4px #ffffffb3;}
+#unit-radial .radial-label small{display:block;font:400 clamp(9px,1.2vw,11px)/1.4 var(--font-info,system-ui,sans-serif);color:#566c72;margin-top:2px;text-shadow:0 1px 4px #ffffffb3;}
 #unit-radial .radial-cancel{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:1px;pointer-events:none;opacity:.38;transition:opacity .18s;}
 #unit-radial .radial-cancel.active{opacity:.8;}
 #unit-radial .radial-cancel span{font:200 30px/1 var(--font-info,system-ui,sans-serif);}
 #unit-radial .radial-cancel small{font:400 10px/1.4 var(--font-info,system-ui,sans-serif);letter-spacing:.02em;}
-#unit-radial .radial-connector{fill:none;stroke:#536259a3;stroke-width:.8;stroke-linecap:round;}
+#unit-radial .radial-connector{fill:none;stroke:#536b72a3;stroke-width:.8;stroke-linecap:round;}
 #unit-radial .radial-description{position:absolute;left:50%;transform:translateX(-50%);pointer-events:none;text-align:left;color:#3e4a42;text-shadow:0 0 8px #fff,0 1px 16px #fff;}
-#unit-radial .radial-description strong{font:400 11px/1.5 var(--font-info,system-ui,sans-serif);color:#38463d;}
-#unit-radial .radial-description p{font:400 11px/1.65 var(--font-info,system-ui,sans-serif);color:#68756d;margin:5px 0 0;max-width:350px;}
-#unit-radial .radial-help{position:absolute;left:50%;transform:translateX(-50%);margin:0;width:calc(100% - 32px);text-align:center;font:400 10px/1.6 var(--font-info,system-ui,sans-serif);color:#77857b;letter-spacing:.02em;text-shadow:0 0 7px #fff;pointer-events:none;}
-#unit-radial .radial-cursor{display:none;position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:2;}
+#unit-radial .radial-description strong{font:400 11px/1.5 var(--font-info,system-ui,sans-serif);color:#384d53;}
+#unit-radial .radial-description p{font:400 11px/1.65 var(--font-info,system-ui,sans-serif);color:#61747a;margin:5px 0 0;max-width:350px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+#unit-radial .radial-help{position:absolute;left:50%;transform:translateX(-50%);z-index:6;margin:0;width:calc(100% - 32px);text-align:center;font:400 10px/1.6 var(--font-info,system-ui,sans-serif);color:#657c83;letter-spacing:.02em;text-shadow:0 0 7px #fff;pointer-events:none;}
+#unit-radial .radial-cursor{display:none;position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:8;}
 #unit-radial.virtual-pointer .radial-cursor{display:block;}
-#unit-radial .radial-cursor::after{content:'';display:block;width:7px;height:7px;transform:translate(-50%,-50%);border:1px solid #34443b;border-radius:50%;background:#ffffffe6;box-shadow:0 0 0 3px #ffffff51;transition:width .16s,height .16s,background .16s;}
-#unit-radial .radial-cursor.over-unit::after{width:10px;height:10px;background:#34443b;box-shadow:0 0 0 3px #ffffffb5;}
-@media(max-height:480px){#unit-radial .radial-description strong,#unit-radial .radial-description p{font-size:10px;}#unit-radial .radial-description p{line-height:1.4;margin-top:2px;}#unit-radial .radial-cancel span{font-size:24px;}}
-@media(prefers-reduced-motion:reduce){#unit-radial{transition:opacity .12s ease;filter:none;transform:none;}#unit-radial .radial-label,#unit-radial .radial-cursor::after{transition:none;}}
-/* Extruded crystal: rear plate, visible sidewalls, polished front and rear rims.
-   The front geometry never translates on hover, so the pointer remains exact. */
-#unit-radial .radial-heading,#unit-radial .radial-mechanism-heading{z-index:6;}
-#unit-radial .radial-mechanism-heading{position:absolute;left:50%;transform:translateX(-50%);font:400 9px/1.5 var(--font-menu,system-ui,sans-serif);letter-spacing:.16em;color:#738179;text-shadow:0 1px 10px #fff;pointer-events:none;}
-#unit-radial .radial-crystal-back{position:absolute;inset:0;z-index:0;background:linear-gradient(155deg,#c0d0c9a3,#5d776e45 40%,#c2d2cc85 74%,#eff8f380);filter:drop-shadow(0 9px 12px #273c3420);pointer-events:none;}
-#unit-radial .radial-sector{z-index:1;background:linear-gradient(140deg,#ffffff9e 5%,#dce9e342 40%,#ffffff4f 63%,#f9fffc83 85%);-webkit-backdrop-filter:blur(18px) saturate(.7);backdrop-filter:blur(18px) saturate(.7);}
-#unit-radial .radial-sector::before{content:'';position:absolute;inset:0;background:linear-gradient(113deg,transparent 27%,#ffffff42 27.4%,#ffffff0d 36%,transparent 36.5%,transparent 69%,#ffffff46 69.4%,transparent 70.3%);pointer-events:none;}
-#unit-radial .radial-depth{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;filter:drop-shadow(0 7px 8px #22392f18);}
-#unit-radial .radial-crystal-edge{fill:#91aaa05c;stroke:#f3fff53b;stroke-width:.45;stroke-linejoin:round;transition:fill .2s,stroke .2s;}
-#unit-radial .radial-crystal-edge.hovered{fill:#aac7b97a;stroke:#ffffff94;}
-#unit-radial .radial-crystal-rim{fill:none;stroke:#58756b7d;stroke-width:1;stroke-linejoin:round;}
-#unit-radial .radial-crystal-rim.hovered{stroke:#6f9182a6;}
-#unit-radial .radial-models{z-index:3;}
-#unit-radial .radial-lines{z-index:4;}
-#unit-radial .radial-outline{stroke:#ffffffed;stroke-width:1.3;stroke-linejoin:round;filter:drop-shadow(0 1px 1px #657a6e50);}
-#unit-radial .radial-outline.hovered{stroke-width:2;}
-#unit-radial .radial-label,#unit-radial .radial-description,#unit-radial .radial-cancel{z-index:5;}
-#unit-radial .radial-label.hovered{transform:translateX(-50%);}
-#unit-radial .radial-sector.locked{background:linear-gradient(140deg,#eef3f170,#cedbd230 48%,#f5f8f440);}
-#unit-radial .radial-sector.locked::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(125deg,transparent 0,transparent 5px,#657c7020 5px,#657c7020 6px);pointer-events:none;}
-#unit-radial .radial-description p{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
-#unit-radial .radial-help{z-index:6;}
-#unit-radial .radial-cursor{z-index:8;}
-#unit-radial .radial-cursor.over-locked::after{background:#ffffffb3;border-color:#87958c;box-shadow:0 0 0 3px #ffffff51;}
-@media(max-height:480px){#unit-radial.has-mechanisms .radial-label small{font-size:9px;line-height:1.2;}#unit-radial.has-mechanisms .radial-label strong{line-height:1.25;}#unit-radial .radial-mechanism-heading{font-size:8px;}}
+#unit-radial .radial-cursor::after{content:'';display:block;width:7px;height:7px;transform:translate(-50%,-50%);border:1px solid #344b54;border-radius:50%;background:#ffffffe6;box-shadow:0 0 0 3px #ffffff51;transition:width .16s,height .16s,background .16s;}
+#unit-radial .radial-cursor.over-unit::after{width:10px;height:10px;background:#344b54;box-shadow:0 0 0 3px #ffffffb5;}
+#unit-radial .radial-cursor.over-locked::after{background:#ffffffb3;border-color:#87969c;box-shadow:0 0 0 3px #ffffff51;}
+/* Native refraction draws the very same contours over the scene framebuffer.
+   Keep only sharp DOM text, focus cues, connectors and the figure previews. */
+#unit-radial.glass-native{filter:none;transform:none;transition:opacity .24s linear;}
+#unit-radial.glass-native .radial-sector,#unit-radial.glass-native .radial-sector.selected.hovered{background:none;-webkit-backdrop-filter:none;backdrop-filter:none;}
+#unit-radial.glass-native .radial-sector::before,#unit-radial.glass-native .radial-sector::after{display:none;}
+#unit-radial.glass-native .radial-crystal-back,#unit-radial.glass-native .radial-depth,#unit-radial.glass-native .radial-outline,#unit-radial.glass-native .radial-crystal-rim,#unit-radial.glass-native .radial-crystal-bevel{visibility:hidden;}
+@media(max-height:480px){#unit-radial .radial-description strong,#unit-radial .radial-description p{font-size:10px;}#unit-radial .radial-description p{line-height:1.4;margin-top:2px;}#unit-radial .radial-cancel span{font-size:24px;}#unit-radial.has-mechanisms .radial-label small{font-size:9px;line-height:1.2;}#unit-radial.has-mechanisms .radial-label strong{line-height:1.25;}#unit-radial .radial-mechanism-heading{font-size:8px;}}
+@media(prefers-reduced-motion:reduce){#unit-radial,#unit-radial.glass-native{transition:none;filter:none;transform:none;}#unit-radial .radial-label,#unit-radial .radial-cursor::after{transition:none;}}

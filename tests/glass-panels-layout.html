@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="../"><title>Q-bits · cristal de los paneles</title></head>
+<body>
+<script>
+// Actual panel markup/styles and settings controller, without game physics or
+// WebGL. The geometric room behind them is a contrast/blur reference only.
+(async()=>{
+ const response=await fetch('index.html');if(!response.ok)throw Error('No se pudo cargar la interfaz.');
+ const source=new DOMParser().parseFromString(await response.text(),'text/html');
+ for(const node of source.head.querySelectorAll('style,link[rel="stylesheet"]'))document.head.append(node.cloneNode(true));
+ if(!document.head.querySelector('link[href*="glass-panels.css"]')){const link=document.createElement('link');link.rel='stylesheet';link.href='assets/css/glass-panels.css';document.head.append(link);}
+ const style=document.createElement('style');style.textContent=`
+ .fixture-scene{position:fixed;inset:0;background:linear-gradient(165deg,#edf2f0 0 53%,#b3c2bb 53% 53.3%,#f8fbf8 53.4%);}
+ .fixture-scene::before{content:'';position:absolute;width:45vw;height:80vh;left:25vw;top:-20vh;transform:skewY(18deg);border:2px solid #8b9f94;background:linear-gradient(110deg,#d5e1d8,#bacbc0);}
+ .fixture-scene::after{content:'';position:absolute;width:18vw;height:18vw;left:42vw;top:50vh;background:linear-gradient(115deg,#283d36 0 46%,#455b50 46% 72%,#7c9283 72%);box-shadow:25px 32px 24px #52645522;transform:rotate(-5deg);}
+ body.dark .fixture-scene{filter:brightness(.25);}
+ #fixture-toolbar{position:fixed;left:12px;bottom:12px;z-index:200;display:flex;flex-wrap:wrap;gap:6px;max-width:calc(100vw - 24px);padding:8px;background:#edf5eeeb;border:1px solid #9ab1a5;border-radius:12px;font:12px system-ui;}
+ #fixture-toolbar button{border:1px solid #93a99c;background:white;color:#294338;border-radius:6px;padding:7px 10px;cursor:pointer;}
+ #fixture-caption{position:fixed;left:18px;top:16px;z-index:40;font:11px system-ui;color:#4e6557;max-width:250px;}
+ `;document.head.append(style);
+ const backdrop=document.createElement('div');backdrop.className='fixture-scene';backdrop.setAttribute('aria-hidden','true');document.body.append(backdrop);
+ for(const id of ['panel','completion-panel','settings-screen'])document.body.append(source.querySelector('#'+id).cloneNode(true));
+ const caption=document.createElement('p');caption.id='fixture-caption';caption.textContent='Vista aislada de los paneles reales. Fondo de referencia; sin partida ni físicas.';document.body.append(caption);
+ for(const file of ['controls','subtitles','preferences','settings'])await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='assets/js/'+file+'.js?v=glass-panels-20261115';script.onload=resolve;script.onerror=reject;document.head.append(script);});
+ const memory=new Map(),storage={getItem:key=>memory.get(key)||null,setItem:(key,value)=>memory.set(key,value)};
+ let pending=null;
+ const fixture=QBitsSettings.init({storage,capabilities:{anisotropy:8},open(){},close(){if(pending){const id=pending;pending=null;show(id);}},apply(){}});
+ function show(id){
+  if(fixture.isOpen){pending=id;fixture.requestClose();return;}
+  for(const candidate of ['panel','completion-panel','settings-screen'])document.querySelector('#'+candidate).hidden=true;
+  if(id==='settings-screen'){
+   fixture.open('menu');document.querySelector('#settings-preview-state').textContent='Vista aislada · sin render 3D';
+   const canvas=document.querySelector('#settings-preview-canvas'),ctx=canvas.getContext('2d');canvas.width=640;canvas.height=480;ctx.fillStyle='#e7ebe7';ctx.fillRect(0,0,640,480);ctx.fillStyle='#647871';ctx.textAlign='center';ctx.font='15px system-ui';ctx.fillText('Vista de interfaz y cristal',320,230);ctx.font='13px system-ui';ctx.fillText('El efecto 3D se comprueba por separado.',320,260);
+  }else document.querySelector('#'+id).hidden=false;
+ }
+ const bar=document.createElement('nav');bar.id='fixture-toolbar';bar.setAttribute('aria-label','Vistas de prueba');
+ for(const [text,id] of [['Panel del banco','panel'],['Fin del puzle','completion-panel'],['Configuración','settings-screen']]){const button=document.createElement('button');button.textContent=text;button.onclick=()=>show(id);bar.append(button);}
+ const contrast=document.createElement('button');contrast.textContent='Fondo oscuro / claro';contrast.onclick=()=>document.body.classList.toggle('dark');bar.append(contrast);document.body.append(bar);
+ for(const tab of document.querySelectorAll('#panel [role=tab]'))tab.addEventListener('click',()=>{for(const item of document.querySelectorAll('#panel [role=tab]')){const active=item===tab;item.setAttribute('aria-selected',String(active));document.getElementById(item.getAttribute('aria-controls')).hidden=!active;}});
+ for(const button of document.querySelectorAll('#completion-panel button'))button.disabled=true;
+ show('panel');
+})().catch(error=>{document.body.textContent=error.message;console.error(error);});
+</script></body></html>

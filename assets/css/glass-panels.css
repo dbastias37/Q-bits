@@ -1,0 +1,133 @@
+/* A quiet glass shell around existing panels. Text, controls and the 3D preview
+   remain on a sharp inner plate; the cut edges carry the reflected light.
+   The radial selector has its own scene-sampling glass renderer. */
+:root {
+  --glass-radius: 28px;
+  --glass-line: rgba(255,255,255,.84);
+  --glass-body: linear-gradient(136deg,rgba(255,255,255,.66),rgba(231,242,238,.42) 46%,rgba(248,253,251,.58));
+  --glass-shadow: 0 1px 0 rgba(255,255,255,.95) inset,
+    1px 0 0 rgba(255,255,255,.66) inset,
+    -1px -2px 2px rgba(54,89,85,.18) inset,
+    0 0 0 3px rgba(250,255,253,.30) inset,
+    0 0 0 5px rgba(68,105,98,.09) inset,
+    1px 2px 0 rgba(222,238,233,.88),
+    2px 5px 0 rgba(113,147,141,.30),
+    3px 7px 0 rgba(241,252,248,.75),
+    3px 8px 0 rgba(69,102,96,.22),
+    0 18px 35px -12px rgba(30,57,49,.22);
+}
+
+#panel,
+#completion-panel,
+#settings-screen .settings-shell,
+#settings-screen .settings-confirm-card {
+  border: 1px solid var(--glass-line);
+  border-radius: var(--glass-radius);
+  background: var(--glass-body);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: blur(20px) saturate(.88);
+  backdrop-filter: blur(20px) saturate(.88);
+  background-clip: padding-box;
+}
+
+/* These shells do not scroll. Their continuous polished lips stay fixed while
+   the fields move inside; no full-surface overlay can intercept a control. */
+#settings-screen .settings-shell,
+#settings-screen .settings-confirm-card { position: relative; }
+#settings-screen .settings-shell::before,
+#settings-screen .settings-confirm-card::before,
+.settings-preview-frame::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  z-index: 4;
+  border: 1px solid rgba(255,255,255,.65);
+  border-radius: calc(var(--glass-radius) - 4px);
+  box-shadow: 0 1px 2px rgba(255,255,255,.72), 0 -1px 2px rgba(70,107,97,.17);
+  pointer-events: none;
+}
+
+@supports ((mask-composite: exclude) or (-webkit-mask-composite: xor)) {
+  #settings-screen .settings-shell::before,
+  #settings-screen .settings-confirm-card::before,
+  .settings-preview-frame::after {
+    inset: 0;
+    padding: 5px;
+    border: 0;
+    border-radius: inherit;
+    background: conic-gradient(from 135deg,
+      rgba(60,104,98,.20),rgba(249,255,253,.92) 13%,
+      rgba(91,140,144,.18) 25%,rgba(255,255,255,.85) 35%,
+      rgba(255,255,255,.18) 54%,rgba(255,255,255,.96) 67%,
+      rgba(121,172,167,.26) 81%,rgba(255,255,255,.92) 92%,
+      rgba(60,104,98,.20));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+}
+
+/* Lab and completion already have their own fixed positioning. Their inset
+   shadows are attached to the scrolling box itself, so the edge never drifts. */
+#panel { padding: 23px; scrollbar-width: thin; scrollbar-color: #98b4a9 transparent; }
+#panel select,
+#panel input[type=text] { border-radius: 9px; border-color: #8eaaa357; background: #f9fffc75; }
+#panel .tabs { padding-bottom: 10px; border-bottom: 1px solid #7a9f9026; }
+#completion-panel { padding: 30px; max-height: calc(100svh - 36px); overflow: auto; }
+#completion-panel p { color: #3c554b; }
+
+/* The screen remains a veil over the room, rather than an opaque flat sheet.
+   Only the shell is blurred. Nested previews and individual buttons are not. */
+#settings-screen { background: rgba(225,235,230,.26); padding: clamp(16px,3.2vw,48px); }
+#settings-room-backdrop { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; background: #e7eeea; }
+#settings-screen .settings-shell { z-index: 1; padding: clamp(18px,2.4vw,32px); min-width: 0; overflow: hidden; }
+#settings-screen .settings-header { padding-bottom: 18px; border-color: #6d938530; }
+#settings-screen .settings-grid { grid-template-columns: minmax(0,1.05fr) minmax(0,1fr); gap: 32px; padding: 24px 10px 24px 0; }
+#settings-screen .settings-grid > div { min-width: 0; }
+#settings-screen .settings-tabs,
+#settings-screen .settings-row { border-color: #6d938528; }
+#settings-screen .settings-row select { background: #f8fffb96; border-color: #91b0a35c; border-radius: 9px; }
+#settings-screen button { border-radius: 11px; border-color: #72978c6b; background: #f8fffc36; }
+#settings-screen button:hover { background: #f7fffc8c; }
+#settings-screen .settings-tabs button { border-radius: 0; background: transparent; }
+#settings-screen .settings-footer {
+  /* An opaque inner plate prevents fields showing beneath the save bar. */
+  background: linear-gradient(#eef4f0,#e9f1ec);
+  border-color: #73978737;
+  border-radius: 0 0 12px 12px;
+  padding: 18px 0 0;
+  margin: 0;
+}
+#settings-screen #settings-save { color: #fff; background: #29483e; border-color: #29483e; box-shadow: 0 1px 0 #7e9b8e88 inset; }
+#settings-screen #settings-save:hover { background: #355c4f; }
+#settings-confirm { background: rgba(42,64,56,.28); }
+#settings-screen .settings-confirm-card { --glass-radius: 26px; width: min(460px,100%); padding: 32px; background: linear-gradient(135deg,#f8fff6e8,#e5f0ead9); }
+.settings-preview-frame { --glass-radius: 22px; border-radius: var(--glass-radius); border: 1px solid #fafffa; box-shadow: 0 1px 0 #ffffff inset,0 0 0 4px #e9f6f066 inset,1px 3px 0 #94b3a761,2px 5px 0 #f6fff9cc,0 12px 24px -12px #42605050; }
+
+/* Without compositor blur, a denser matte preserves contrast and the same rim. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  #panel,#completion-panel,#settings-screen .settings-shell,#settings-screen .settings-confirm-card { background: linear-gradient(135deg,#f4faf5f5,#e2eee6f5); }
+}
+@media (max-width: 760px) {
+  :root { --glass-radius: 22px; }
+  #settings-screen { padding: 12px; }
+  #settings-screen .settings-shell { padding: 18px 16px; }
+  #settings-screen .settings-grid { grid-template-columns: minmax(0,1fr); gap: 20px; padding: 18px 5px 18px 0; }
+  #settings-screen .settings-header { gap: 12px; padding-bottom: 13px; }
+  #settings-screen .settings-header h2 { font-size: clamp(18px,4.5vw,24px); }
+  #settings-screen .settings-header button { padding: 9px; white-space: nowrap; font-size: 12px; }
+  #settings-screen .settings-footer { padding-top: 12px; }
+  #settings-screen .settings-confirm-card { padding: 25px; }
+  #panel { padding: 20px; }
+}
+@media (max-height: 500px) {
+  #settings-screen { padding: 12px; }
+  #settings-screen .settings-shell { padding: 14px 20px; }
+  #settings-screen .settings-header { padding-bottom: 8px; }
+  #settings-screen .settings-header h2 { font-size: 23px; margin: 0; }
+  #settings-screen .settings-footer { padding-top: 10px; }
+}
+@media (prefers-contrast: more) {
+  #panel,#completion-panel,#settings-screen .settings-shell,#settings-screen .settings-confirm-card { background: #f1f7f1f5; border-color: #476b5d; }
+}

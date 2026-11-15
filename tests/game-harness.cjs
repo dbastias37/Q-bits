@@ -3,7 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-module.exports = function createGame() {
+module.exports = function createGame(options = {}) {
   const root = path.join(__dirname, '..');
   let nextBuffer = 0, nextFrame = 0, seed = 731, nextTimer=0, timerTime=0;
   const buffers = new Set(), frames = new Map(), elements = new Map(), timers=new Map();
@@ -128,6 +128,7 @@ module.exports = function createGame() {
     if (at < 0) throw new Error('Game closure not found');
     return source.slice(0, at) + hook + source.slice(at);
   });
+  if(options.glass)sandbox.QBitsGlass=options.glass;
   for (const source of scripts) vm.runInContext(source, sandbox, { timeout: 10000 });
   return {
     t: sandbox.__testGame, api: sandbox.QBitsGame, sandbox, buffers,

@@ -9,6 +9,7 @@ function readQbitsStorage(key){
 }
 const story={ready:false,mode:'menu',scene:'lab',phase:'idle',started:false,elapsed:0,phaseTime:0,dialogue:null,transition:null,intentionalUnlock:false,preserveGrip:false,progress:{},lab:null,guideId:null,dropAligned:false};
 let unitRadial=null,pendingUnitCreation=null;
+let radialGlassStamp='',radialGlassAllocated=false;
 const preferences=window.QBitsPreferences;
 let savedPreferences=preferences.load(window.localStorage),visuals=preferences.effective(savedPreferences),settingsScreen=null,lastVisualFrame=0,previewViewport=null;
 let selectionHud=null,selectionHudClock=0,selectionHudStamp='',selectionHudItems=[];
@@ -67,7 +68,7 @@ if (!gl) {
   throw new Error('WebGL unavailable');
 }
 
-const postEffects=window.QBitsGraphics?.create(gl),surfaceTexture=window.QBitsGraphics?.surface(gl);
+const postEffects=window.QBitsGraphics?.create(gl),surfaceTexture=window.QBitsGraphics?.surface(gl),radialGlass=window.QBitsGlass?.create(gl);
 const vertexSource = `
   attribute vec3 aPosition;
   attribute vec3 aNormal;
@@ -4788,8 +4789,21 @@ function applyPreferences(next){
 function initSettingsScreen(){
  if(settingsScreen||!window.QBitsSettings)return;
  settingsScreen=window.QBitsSettings.init({capabilities:{anisotropy:surfaceTexture?.maxAnisotropy||1},
-  open(){closeCommandMenu(false);closeDetachMenu(false);gameMode('settings');pause(false);panel.hidden=true;},
-  close(mode){visuals=preferences.effective(savedPreferences);previewViewport=null;restoreSceneProgram();resize();gameMode(mode);redraw=true;},
+  open(){
+   closeCommandMenu(false);closeDetachMenu(false);gameMode('settings');pause(false);panel.hidden=true;
+   // The preview reuses the main GL canvas. Freeze the actual room first so
+   // transparent settings never reveal a stretched second preview behind them.
+   restoreSceneProgram();resize();renderScene();
+   const backdrop=document.querySelector('#settings-room-backdrop'),ctx=backdrop.getContext('2d');
+   const scale=Math.min(1,Math.sqrt(1200000/(canvas.width*canvas.height)));
+   backdrop.width=Math.max(1,Math.round(canvas.width*scale));backdrop.height=Math.max(1,Math.round(canvas.height*scale));
+   if(ctx){ctx.fillStyle='#e7eeea';ctx.fillRect(0,0,backdrop.width,backdrop.height);ctx.drawImage(canvas,0,0,backdrop.width,backdrop.height);}
+   backdrop.hidden=false;
+  },
+  close(mode){
+   const backdrop=document.querySelector('#settings-room-backdrop');backdrop.hidden=true;backdrop.width=backdrop.height=1;
+   visuals=preferences.effective(savedPreferences);previewViewport=null;restoreSceneProgram();resize();gameMode(mode);redraw=true;
+  },
   apply:applyPreferences
  });
  for(const id of ['main-settings','pause-settings'])document.querySelector('#'+id).addEventListener('click',()=>{if(story.ready&&!story.transition)settingsScreen.open(story.mode);});
@@ -4966,7 +4980,16 @@ function compositeHeldFocus(destination=null){
 
 initSpeech();
 let previousTime = performance.now();
-function renderScene(){
+function radialGlassFrame(time){
+  const visible=!!unitRadial?.isGlassVisible&&story.mode==='playing';
+  const opacity=visible?unitRadial.getGlassOpacity(time):0;
+  const panels=visible?unitRadial.getGlassPanels():[];
+  // The room is paused under the selector. Only material state/fades or a
+  // genuine scene change need a fresh GPU capture; model previews use 2D.
+  const stamp=panels.length?canvas.width+':'+canvas.height+':'+canvas.clientWidth+':'+canvas.clientHeight+':'+opacity.toFixed(4)+':'+panels.map(p=>[p.hovered,p.selected,p.locked].join(',')).join(';'):'';
+  return {panels,opacity,stamp};
+}
+function renderScene(time=performance.now()){
   const destination=postEffects?.begin(canvas.width,canvas.height,visuals)||null;
   const focused=heldFocus.amount>.001&&ensureFocusPass();
   restoreSceneProgram();applyVisualUniforms();
@@ -4983,6 +5006,17 @@ function renderScene(){
   drawStoryWorld();drawQubits();drawStoryGlass();
   if(focused)compositeHeldFocus(destination);
   if(destination){postEffects.end(visuals);restoreSceneProgram();}
+  const glass=radialGlassFrame(time);
+  if(glass.panels.length&&radialGlass){
+    const success=radialGlass.render(canvas.width,canvas.height,canvas.clientWidth,canvas.clientHeight,glass.panels.map(panel=>({...panel,opacity:glass.opacity})));
+    radialGlassAllocated=success;
+    unitRadial.setGlassActive(success);
+    restoreSceneProgram();
+  }else{
+    if(radialGlassAllocated){radialGlass.release();radialGlassAllocated=false;}
+    unitRadial?.setGlassActive(false);
+  }
+  radialGlassStamp=glass.stamp;
   redraw=false;
 }
 function frame(time) {
@@ -4992,6 +5026,7 @@ function frame(time) {
   previousTime = time;
   pollGamepadInput(dt);
   updateSelectionHud(dt);
+  if(radialGlassFrame(time).stamp!==radialGlassStamp)redraw=true;
   if(settingsScreen?.isOpen){
     accumulator=0;
     if(!document.hidden && time-lastVisualFrame>=1000/30){renderSettingsPreview(time);lastVisualFrame=time;}
@@ -4999,7 +5034,7 @@ function frame(time) {
   }
   if(radialOpen()){
     accumulator=0;if(!unitRadialAllowed())closeUnitRadial(false);
-    updateHeldFocus(dt,false);if(redraw&&!document.hidden)renderScene();
+    updateHeldFocus(dt,false);if(redraw&&!document.hidden)renderScene(time);
     requestAnimationFrame(frame);return;
   }
   tickStory(dt);
@@ -5041,7 +5076,7 @@ function frame(time) {
     redraw = true;
   }
   if (redraw && !document.hidden && (!visuals.fps || time-lastVisualFrame>=1000/visuals.fps-.5)) {
-    lastVisualFrame=time;renderScene();
+    lastVisualFrame=time;renderScene(time);
   }
   requestAnimationFrame(frame);
 }

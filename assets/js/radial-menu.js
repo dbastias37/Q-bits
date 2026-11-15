@@ -3,6 +3,23 @@
 'use strict';
 const PI=Math.PI, GAP=.032, CLOSE_MS=240;
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
+// Contours are clockwise in screen coordinates. Circular fillets share the
+// drawing and hit-test boundary; neither the hover nor the material moves it.
+function appendArc(points,cx,cy,r,start,end,steps){
+ for(let i=0;i<=steps;i++){const angle=start+(end-start)*i/steps,p=[cx+Math.cos(angle)*r,cy+Math.sin(angle)*r],last=points[points.length-1];if(!last||Math.hypot(p[0]-last[0],p[1]-last[1])>.001)points.push(p);}
+}
+function roundedRect(left,top,width,height,radius){
+ const r=Math.min(radius,width/2,height/2),points=[];
+ for(const [x,y,start]of [[left+width-r,top+r,-PI/2],[left+width-r,top+height-r,0],[left+r,top+height-r,PI/2],[left+r,top+r,PI]])appendArc(points,x,y,r,start,start+PI/2,8);
+ return points;
+}
+function insetContour(points,distance){
+ return points.map((point,i)=>{
+  const before=points[(i+points.length-1)%points.length],after=points[(i+1)%points.length],ax=point[0]-before[0],ay=point[1]-before[1],bx=after[0]-point[0],by=after[1]-point[1],al=Math.hypot(ax,ay)||1,bl=Math.hypot(bx,by)||1;
+  const nx=-ay/al-by/bl,ny=ax/al+bx/bl,nl=Math.hypot(nx,ny)||1,dot=Math.max(.5,(nx/nl)*(-by/bl)+(ny/nl)*(bx/bl));
+  return [point[0]+nx/nl*distance/dot,point[1]+ny/nl*distance/dot];
+ });
+}
 function layout(width,height,count=3,mechanismCount=0){
  const columns=Math.min(2,mechanismCount),rows=columns?Math.ceil(mechanismCount/columns):0;
  const radius=mechanismCount?Math.max(45,Math.min(320,(width-28)/2,(height-206)/(1+rows*.54))):Math.max(50,Math.min(340,(width-28)/2,height*.38));
@@ -10,11 +27,12 @@ function layout(width,height,count=3,mechanismCount=0){
  const cy=mechanismCount?top+30+radius:height*.51+radius*.1;
  const rowTop=cy+36,cardWidth=radius*.88,cardHeight=radius*.54,gap=Math.max(12,radius*.08),cards=[];
  for(let i=0;i<mechanismCount;i++){
-  const row=Math.floor(i/columns),n=Math.min(columns,mechanismCount-row*columns),left=cx-(n*cardWidth+(n-1)*gap)/2+(i%columns)*(cardWidth+gap),y=rowTop+row*(cardHeight+12),bevel=Math.min(12,cardHeight*.12);
-  cards.push({left,top:y,width:cardWidth,height:cardHeight,points:[[left+bevel,y],[left+cardWidth-bevel,y],[left+cardWidth,y+bevel],[left+cardWidth,y+cardHeight-bevel],[left+cardWidth-bevel,y+cardHeight],[left+bevel,y+cardHeight],[left,y+cardHeight-bevel],[left,y+bevel]]});
+  const row=Math.floor(i/columns),n=Math.min(columns,mechanismCount-row*columns),left=cx-(n*cardWidth+(n-1)*gap)/2+(i%columns)*(cardWidth+gap),y=rowTop+row*(cardHeight+16),corner=Math.min(24,cardHeight*.18);
+  cards.push({left,top:y,width:cardWidth,height:cardHeight,corner,points:roundedRect(left,y,cardWidth,cardHeight,corner)});
  }
- const detailTop=mechanismCount?rowTop+rows*cardHeight+(rows-1)*12+18:cy+radius*.19;
- return {width,height,count,mechanismCount,cx,cy,radius,inner:radius*.43,step:PI/Math.max(1,count),cards,detailTop,headTop:mechanismCount?top:Math.max(20,cy-radius-53),helpTop:mechanismCount?Math.min(height-22,detailTop+82):Math.min(height-28,cy+radius*.57+24),thickness:clamp(radius*.035,4,11)};
+ const detailTop=mechanismCount?rowTop+rows*cardHeight+(rows-1)*16+26:cy+radius*.19;
+ const g={width,height,count,mechanismCount,cx,cy,radius,inner:radius*.43,step:PI/Math.max(1,count),cards,detailTop,headTop:mechanismCount?top:Math.max(20,cy-radius-53),helpTop:mechanismCount?Math.min(height-22,detailTop+82):Math.min(height-28,cy+radius*.57+24),thickness:clamp(radius*.045,5,14)};
+ g.sectors=Array.from({length:count},(_,index)=>arcPoints(g,index));return g;
 }
 function polygonContains(x,y,points){
  let inside=false;
@@ -24,18 +42,25 @@ function polygonContains(x,y,points){
  }
  return inside;
 }
-function hitTest(x,y,width,height,count=3,mechanismCount=0){
- const g=layout(width,height,count,mechanismCount),dx=x-g.cx,dy=y-g.cy,r=Math.hypot(dx,dy);
- for(let i=0;i<g.cards.length;i++)if(polygonContains(x,y,g.cards[i].points))return count+i;
- if(r<g.inner||r>g.radius||dy>=0)return -1;
- let angle=Math.atan2(dy,dx);if(angle<0)angle+=2*PI;
- const index=Math.min(count-1,Math.floor((angle-PI)/g.step)),offset=angle-PI-index*g.step;
- return index>=0&&offset>GAP&&offset<g.step-GAP?index:-1;
+function hitLayout(x,y,g){
+ for(let i=0;i<g.cards.length;i++)if(polygonContains(x,y,g.cards[i].points))return g.count+i;
+ for(let i=0;i<g.sectors.length;i++)if(polygonContains(x,y,g.sectors[i]))return i;
+ return -1;
 }
+function hitTest(x,y,width,height,count=3,mechanismCount=0){return hitLayout(x,y,layout(width,height,count,mechanismCount));}
 function arcPoints(g,index){
  const start=PI+index*g.step+GAP,end=PI+(index+1)*g.step-GAP,points=[];
- for(let n=0;n<=24;n++){const a=start+(end-start)*n/24;points.push([g.cx+Math.cos(a)*g.radius,g.cy+Math.sin(a)*g.radius]);}
- for(let n=24;n>=0;n--){const a=start+(end-start)*n/24;points.push([g.cx+Math.cos(a)*g.inner,g.cy+Math.sin(a)*g.inner]);}
+ const radius=Math.min(17,g.radius*.055,(g.radius-g.inner)*.16,g.inner*Math.sin((end-start)/2)*.3);
+ const outerAngle=Math.asin(radius/(g.radius-radius)),innerAngle=Math.asin(radius/(g.inner+radius));
+ const fillet=(r,angle,a,b)=>appendArc(points,g.cx+Math.cos(angle)*r,g.cy+Math.sin(angle)*r,radius,a,b,7);
+ appendArc(points,g.cx,g.cy,g.radius,start+outerAngle,end-outerAngle,24);
+ fillet(g.radius-radius,end-outerAngle,end-outerAngle,end+PI/2);
+ fillet(g.inner+radius,end-innerAngle,end+PI/2,end-innerAngle+PI);
+ appendArc(points,g.cx,g.cy,g.inner,end-innerAngle,start+innerAngle,24);
+ fillet(g.inner+radius,start+innerAngle,start+innerAngle+PI,start+PI*1.5);
+ fillet(g.radius-radius,start+outerAngle,start-PI/2,start+outerAngle);
+ // The closing segment is implicit, so avoid a duplicate end vertex.
+ if(Math.hypot(points[0][0]-points[points.length-1][0],points[0][1]-points[points.length-1][1])<.001)points.pop();
  return points;
 }
 function create({profiles}){
@@ -47,6 +72,10 @@ function create({profiles}){
  const models=document.createElement('canvas');models.className='radial-models';models.setAttribute('aria-hidden','true');
  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('radial-lines');svg.setAttribute('aria-hidden','true');
  const depthSvg=document.createElementNS('http://www.w3.org/2000/svg','svg');depthSvg.classList.add('radial-depth');depthSvg.setAttribute('aria-hidden','true');
+ const defs=document.createElementNS('http://www.w3.org/2000/svg','defs');
+ function gradient(id,stops){const grad=document.createElementNS('http://www.w3.org/2000/svg','linearGradient');grad.setAttribute('id',id);grad.setAttribute('x1','0%');grad.setAttribute('y1','0%');grad.setAttribute('x2','100%');grad.setAttribute('y2','100%');for(const [offset,color]of stops){const stop=document.createElementNS('http://www.w3.org/2000/svg','stop');stop.setAttribute('offset',offset);stop.setAttribute('stop-color',color);grad.appendChild(stop);}defs.appendChild(grad);}
+ gradient('radial-glass-cut',[['0%','#f5ffff'],['18%','#afc5c8'],['35%','#eefaff'],['53%','#748f96'],['74%','#d8edf0'],['91%','#6d8d96'],['100%','#f8ffff']]);
+ gradient('radial-glass-polish',[['0%','#ffffff'],['20%','#e6f4f5'],['39%','#91adb6'],['57%','#ffffff'],['78%','#95b1ba'],['93%','#faffff'],['100%','#ffffff']]);svg.appendChild(defs);
  const connector=document.createElementNS('http://www.w3.org/2000/svg','path');connector.classList.add('radial-connector');
  const cancel=document.createElement('div');cancel.className='radial-cancel';cancel.setAttribute('aria-hidden','true');cancel.innerHTML='<span>×</span><small>Cancelar</small>';
  const detail=document.createElement('div');detail.className='radial-description';detail.setAttribute('aria-live','polite');detail.setAttribute('aria-atomic','true');
@@ -55,6 +84,9 @@ function create({profiles}){
  const cursor=document.createElement('i');cursor.className='radial-cursor';cursor.setAttribute('aria-hidden','true');
  let opened=false,hover=-1,selected=null,frameId=0,lastTime=0,hideAt=0,detailTime=0,virtual=false,g=layout(1,1,profiles.length),pointer={x:0,y:0},context=null;
  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
+ let glassFrom=0,glassTo=0,glassChangedAt=0;
+ function getGlassOpacity(time=performance.now()){const progress=reduced.matches?1:clamp((time-glassChangedAt)/CLOSE_MS,0,1);return glassFrom+(glassTo-glassFrom)*progress;}
+ function fadeGlass(to){const now=performance.now();glassFrom=getGlassOpacity(now);glassTo=to;glassChangedAt=now;}
  const mainCount=profiles.filter(p=>p.section!=='mechanisms').length,mechanismCount=profiles.length-mainCount;
  let mainIndex=0,mechanismIndex=0;mechanismHead.hidden=!mechanismCount;
  root.classList.toggle('has-mechanisms',mechanismCount>0);
@@ -64,13 +96,14 @@ function create({profiles}){
   const edge=document.createElementNS('http://www.w3.org/2000/svg','path');edge.classList.add('radial-crystal-edge');depthSvg.appendChild(edge);
   const rim=document.createElementNS('http://www.w3.org/2000/svg','path');rim.classList.add('radial-crystal-rim');svg.appendChild(rim);
   const panel=document.createElement('div');panel.className='radial-sector';panel.id='radial-option-'+profile.id;panel.setAttribute('role','option');panel.setAttribute('aria-label',profile.title+' · '+profile.subtitle);panel.setAttribute('aria-selected','false');panel.setAttribute('aria-disabled',String(!!profile.locked));panel.classList.toggle('locked',!!profile.locked);panel.classList.toggle('mechanism',mechanism);
+  const bevel=document.createElementNS('http://www.w3.org/2000/svg','path');bevel.classList.add('radial-crystal-bevel');svg.appendChild(bevel);
   const outline=document.createElementNS('http://www.w3.org/2000/svg','path');outline.classList.add('radial-outline');svg.appendChild(outline);
   const label=document.createElement('div');label.className='radial-label';label.setAttribute('aria-hidden','true');const title=document.createElement('strong'),sub=document.createElement('small');title.textContent=profile.title;sub.textContent=profile.locked?'Bloqueado':profile.subtitle;label.append(title,sub);
   stage.appendChild(back);stage.appendChild(panel);stage.appendChild(label);
   const center=[0,1,2].map(axis=>(Math.min(...profile.vertices.map(v=>v[axis]))+Math.max(...profile.vertices.map(v=>v[axis])))/2);
   const vertices=profile.vertices.map(v=>v.map((n,axis)=>n-center[axis]));
   const modelSize=Math.max(...[0,1,2].map(axis=>Math.max(...profile.vertices.map(v=>v[axis]))-Math.min(...profile.vertices.map(v=>v[axis]))))||1;
-  return {profile,vertices,modelSize,panel,back,edge,rim,outline,label,sub,mechanism,sectionIndex,index,angle:index*.65+.4,speed:.34,x:0,y:0};
+  return {profile,vertices,modelSize,panel,back,edge,rim,bevel,outline,label,sub,mechanism,sectionIndex,index,angle:index*.65+.4,speed:.34,x:0,y:0};
  });
  const slots=[...items.filter(item=>!item.mechanism),...items.filter(item=>item.mechanism)];
  svg.appendChild(connector);stage.append(depthSvg,models,svg,cancel,detail,cursor);root.append(head,mechanismHead,stage,help);document.body.appendChild(root);
@@ -82,9 +115,9 @@ function create({profiles}){
   const path=points=>'M'+points.map(p=>p.map(n=>n.toFixed(2)).join(',')).join('L')+'Z';
   const clip=points=>'polygon('+points.map(p=>(p[0]/g.width*100)+'% '+(p[1]/g.height*100)+'%').join(',')+')';
   for(const item of items){
-   const card=item.mechanism?g.cards[item.sectionIndex]:null,points=card?card.points:arcPoints(g,item.sectionIndex),dx=g.thickness*.42,dy=g.thickness;
-   const rear=points.map(([x,y])=>[x+dx,y+dy]);
-   item.panel.style.clipPath=clip(points);item.back.style.clipPath=clip(rear);item.outline.setAttribute('d',path(points));item.rim.setAttribute('d',path(rear));
+   const card=item.mechanism?g.cards[item.sectionIndex]:null,points=card?card.points:g.sectors[item.sectionIndex],dx=g.thickness*.38,dy=g.thickness;
+   const rear=points.map(([x,y])=>[x+dx,y+dy]);item.points=points;
+   item.panel.style.clipPath=clip(points);item.back.style.clipPath=clip(rear);item.outline.setAttribute('d',path(points));item.rim.setAttribute('d',path(rear));item.bevel.setAttribute('d',path(insetContour(points,2.6)));
    let sides='';for(let i=0;i<points.length;i++){const next=(i+1)%points.length;sides+=path([points[i],points[next],rear[next],rear[i]]);}
    item.edge.setAttribute('d',sides);
    const angle=PI+(item.sectionIndex+.5)*g.step;item.x=card?card.left+card.width/2:g.cx+Math.cos(angle)*g.radius*.74;item.y=card?card.top+card.height*.31:g.cy+Math.sin(angle)*g.radius*.74;
@@ -103,7 +136,7 @@ function create({profiles}){
   if(index>=0){const profile=profiles[index];detailTitle.textContent=profile.title+' · '+profile.subtitle;detailText.textContent=profile.locked?(profile.lockedDescription||'Este mecanismo todavía no se ha desbloqueado.'):profile.description;detailTitle.textContent+=(profile.locked?' · Bloqueado':'');stage.setAttribute('aria-activedescendant',items[index].panel.id);}
   else {detailTitle.textContent='';detailText.textContent='';stage.removeAttribute('aria-activedescendant');}
  }
- function moveTo(x,y){if(!opened)return;pointer.x=clamp(x,0,g.width);pointer.y=clamp(y,0,g.height);positionCursor();const slot=hitTest(pointer.x,pointer.y,g.width,g.height,mainCount,mechanismCount);setHover(slot<0?-1:slots[slot].index);}
+ function moveTo(x,y){if(!opened)return;pointer.x=clamp(x,0,g.width);pointer.y=clamp(y,0,g.height);positionCursor();const slot=hitLayout(pointer.x,pointer.y,g);setHover(slot<0?-1:slots[slot].index);}
  function chooseNext(delta){
   if(!opened)return;const available=slots.filter(item=>!item.profile.locked);if(!available.length){setHover(-1);return;}
   const current=available.findIndex(item=>item.index===hover),index=current<0?(delta<0?available.length-1:0):(current+(delta<0?-1:1)+available.length)%available.length,item=available[index];moveTo(item.x,item.y);
@@ -138,18 +171,18 @@ function create({profiles}){
   if(context){context.clearRect(0,0,g.width,g.height);for(const item of items)renderModel(item,dt);}renderDescription(dt);frameId=requestAnimationFrame(render);
  }
  function open(selectedId,{virtualPointer=false}={}){
-  if(opened)return;opened=true;selected=selectedId;virtual=virtualPointer;root.hidden=false;root.classList.remove('visible');root.classList.toggle('virtual-pointer',virtual);root.setAttribute('aria-hidden','false');updateLayout();
+  if(opened)return;fadeGlass(1);opened=true;selected=selectedId;virtual=virtualPointer;root.hidden=false;root.classList.remove('visible');root.classList.toggle('virtual-pointer',virtual);root.setAttribute('aria-hidden','false');updateLayout();
   for(const item of items){const chosen=item.profile.id===selected;item.panel.classList.toggle('selected',chosen);item.panel.setAttribute('aria-selected',String(chosen));item.outline.classList.toggle('selected',chosen);}
   pointer={x:g.cx,y:g.cy-g.inner*.25};hover=-2;setHover(-1);positionCursor();lastTime=0;hideAt=0;
   // Force the entry state once; subsequent animation uses only composited properties.
   void root.offsetWidth;root.classList.add('visible');if(!frameId)frameId=requestAnimationFrame(render);
  }
- function close(){if(!opened)return;opened=false;root.classList.remove('visible');root.setAttribute('aria-hidden','true');hideAt=performance.now()+(reduced.matches?0:CLOSE_MS);if(!frameId)frameId=requestAnimationFrame(render);}
+ function close(){if(!opened)return;fadeGlass(0);opened=false;root.classList.remove('visible');root.setAttribute('aria-hidden','true');hideAt=performance.now()+(reduced.matches?0:CLOSE_MS);if(!frameId)frameId=requestAnimationFrame(render);}
  window.addEventListener('resize',()=>{if(opened){updateLayout();moveTo(g.cx,g.cy-g.inner*.25);}});
  root.addEventListener('pointermove',event=>{if(opened&&!virtual)moveTo(event.clientX,event.clientY);});
  root.addEventListener('contextmenu',event=>event.preventDefault());
- return {open,close,moveTo,moveBy(dx=0,dy=0){moveTo(pointer.x+(Number.isFinite(dx)?dx:0),pointer.y+(Number.isFinite(dy)?dy:0));},chooseNext,setLocked,get hovered(){return hover<0||profiles[hover].locked?null:profiles[hover].id;},get isOpen(){return opened;},
+ return {open,close,moveTo,setGlassActive(active){root.classList.toggle('glass-native',!!active);},getGlassOpacity,get isGlassVisible(){return !root.hidden&&(opened||performance.now()<hideAt);},getGlassPanels(){return !root.hidden?items.map(item=>({points:item.points,thickness:g.thickness,hovered:item.index===hover,selected:item.profile.id===selected,locked:!!item.profile.locked})):[];},moveBy(dx=0,dy=0){moveTo(pointer.x+(Number.isFinite(dx)?dx:0),pointer.y+(Number.isFinite(dy)?dy:0));},chooseNext,setLocked,get hovered(){return hover<0||profiles[hover].locked?null:profiles[hover].id;},get isOpen(){return opened;},
    getState:()=>({open:opened,hovered:hover<0||profiles[hover].locked?null:profiles[hover].id,highlighted:hover<0?null:profiles[hover].id,x:pointer.x,y:pointer.y,figures:items.map(item=>({id:item.profile.id,angle:item.angle,speed:item.speed,x:item.x,y:item.y,section:item.mechanism?'mechanisms':'pieces',locked:!!item.profile.locked}))})};
 }
-window.QBitsRadial={create,hitTest,layout};
+window.QBitsRadial={create,hitTest,layout,arcPoints,roundedRect,polygonContains};
 })();

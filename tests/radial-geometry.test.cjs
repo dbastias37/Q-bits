@@ -96,3 +96,29 @@ test('queued navigation remains suspended while choosing and resumes after cance
   key(game,'keydown','KeyQ');t.runNavigationJobs();assert.equal(steps,0);
   t.closeUnitRadial(false);t.runNavigationJobs();assert(steps>0);
 });
+
+test('rounded glass contours exclude old sharp corners and use the exact rendered silhouette for hits',()=>{
+  const {sandbox}=setup(),{layout,hitTest,polygonContains}=sandbox.QBitsRadial;
+  for(const [width,height]of [[1280,720],[320,568],[390,844],[600,420],[1920,1080]]){
+    const g=layout(width,height,3,2),contours=[...g.sectors,...g.cards.map(card=>card.points)];
+    for(let index=0;index<contours.length;index++){
+      const points=contours[index];
+      assert(points.length>=32&&points.length<=100,'curves are smooth with bounded geometry');
+      let twiceArea=0;
+      for(let j=0;j<points.length;j++){
+        const [x,y]=points[j],next=points[(j+1)%points.length];
+        assert(Number.isFinite(x)&&Number.isFinite(y));
+        assert(x>=8&&x+g.thickness*.38<width-8&&y>=0&&y+g.thickness<height,'glass thickness respects screen margins');
+        twiceArea+=x*next[1]-next[0]*y;
+      }
+      assert(twiceArea>0,'every contour has clockwise screen winding');
+      const minX=Math.floor(Math.min(...points.map(p=>p[0]))),maxX=Math.ceil(Math.max(...points.map(p=>p[0]))),minY=Math.floor(Math.min(...points.map(p=>p[1]))),maxY=Math.ceil(Math.max(...points.map(p=>p[1])));
+      for(let x=minX;x<=maxX;x+=17)for(let y=minY;y<=maxY;y+=19)assert.equal(hitTest(x,y,width,height,3,2)===index,polygonContains(x,y,points),'hit region uses rounded drawing contour');
+    }
+    for(let index=0;index<3;index++){
+      const angle=Math.PI+index*g.step+.032+.002;
+      for(const radius of [g.radius-.25,g.inner+.25])assert.equal(hitTest(g.cx+Math.cos(angle)*radius,g.cy+Math.sin(angle)*radius,width,height,3,2),-1,'old wedge corner is cut away by polished rounding');
+    }
+    for(const card of g.cards)assert.equal(hitTest(card.left+.5,card.top+.5,width,height,3,2),-1,'old card corner is outside glass');
+  }
+});

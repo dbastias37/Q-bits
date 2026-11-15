@@ -72,3 +72,21 @@ test('glass panels have distinct rear contours and sidewall meshes while figure 
   const start=performance.now();aim(menu,'rotor');for(let i=0;i<30;i++)frame(start+i*50);
   const state=menu.getState();assert(state.figures.find(item=>item.id==='rotor').speed>state.figures.find(item=>item.id==='coupler').speed*2);
 });
+
+test('native glass shares cached contours, preserves locked feedback and fades with the DOM shell',()=>{
+  const {menu,sandbox,frame}=setup({locked:true});let now=1000;sandbox.performance={now:()=>now};
+  assert.equal(menu.isGlassVisible,false);assert.equal(menu.getGlassPanels().length,0);
+  menu.open('cube');assert.equal(menu.isGlassVisible,true);assert.equal(menu.getGlassOpacity(now),0);
+  let panels=menu.getGlassPanels();assert.equal(panels.length,5);assert.equal(panels[0].selected,true);assert.equal(panels[4].locked,true);
+  const contours=panels.map(panel=>panel.points);
+  now+=120;assert.equal(menu.getGlassOpacity(now),.5);
+  aim(menu,'rotor');panels=menu.getGlassPanels();assert.equal(panels[4].hovered,true);assert.equal(menu.hovered,null);
+  for(let i=0;i<panels.length;i++)assert.equal(panels[i].points,contours[i],'hover updates material state without regenerating contours');
+  menu.setGlassActive(true);const root=sandbox.document.querySelector('#unit-radial');assert(root.classList.contains('glass-native'));
+  now+=120;assert.equal(menu.getGlassOpacity(now),1);menu.close();
+  assert.equal(menu.isOpen,false);assert.equal(menu.isGlassVisible,true);assert.equal(menu.getGlassPanels().length,5,'rear plate remains during exit');
+  now+=120;assert.equal(menu.getGlassOpacity(now),.5);assert.equal(menu.isGlassVisible,true);
+  now+=121;assert.equal(menu.getGlassOpacity(now),0);assert.equal(menu.isGlassVisible,false,'expiration does not wait for the next DOM animation frame');
+  frame(now);assert.equal(menu.getGlassPanels().length,0);assert.equal(root.hidden,true);
+  menu.setGlassActive(false);assert.equal(root.classList.contains('glass-native'),false);
+});
