@@ -9,7 +9,7 @@
  const source=new DOMParser().parseFromString(await response.text(),'text/html');
  for(const node of source.head.querySelectorAll('style,link[rel="stylesheet"]'))document.head.append(node.cloneNode(true));
  document.body.append(source.querySelector('#settings-screen').cloneNode(true));
- for(const file of ['preferences','settings'])await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='assets/js/'+file+'.js?v=layout-20261115';script.onload=resolve;script.onerror=reject;document.head.append(script);});
+ for(const file of ['controls','subtitles','preferences','settings'])await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='assets/js/'+file+'.js?v=layout-input-20261115';script.onload=resolve;script.onerror=reject;document.head.append(script);});
  const memory=new Map(),storage={getItem:key=>memory.get(key)||null,setItem:(key,value)=>memory.set(key,value)};
  const fixture=QBitsSettings.init({storage,capabilities:{anisotropy:8},open(){},close(){document.querySelector('#reopen').hidden=false;},apply(){}});
  const button=document.createElement('button');button.id='reopen';button.textContent='Abrir configuración';button.hidden=true;button.onclick=()=>{button.hidden=true;fixture.open('menu');};document.body.append(button);

@@ -1,0 +1,16 @@
+/* Text-only visibility leaves dialogue choices and the continue hint operable. */
+body[data-npc-subtitles] #story-dialogue:not(.mysterious){background:var(--subtitle-npc-background)!important;}
+body[data-npc-subtitles] #story-dialogue:not(.mysterious) #story-text,
+body[data-npc-subtitles] .campaign-label[data-voice='npc']{color:var(--subtitle-npc-color)!important;font-size:var(--subtitle-npc-size)!important;overflow-wrap:anywhere;}
+body[data-npc-subtitles] .campaign-label[data-voice='npc']{background:var(--subtitle-npc-background)!important;white-space:normal;max-width:min(380px,calc(100vw - 32px));}
+body[data-npc-subtitle-custom='true'] #story-dialogue.mysterious #story-text{color:var(--subtitle-npc-color)!important;font-size:var(--subtitle-npc-size)!important;background:var(--subtitle-npc-background)!important;padding:10px 14px;border-radius:6px;overflow-wrap:anywhere;}
+body[data-qbits-subtitles] .qbit-speech,
+body[data-qbits-subtitles] .encounter-bubble,
+body[data-qbits-subtitles] #title-greeting,
+body[data-qbits-subtitles] .selection-hud-speech{color:var(--subtitle-qbits-color)!important;font-size:var(--subtitle-qbits-size)!important;background:var(--subtitle-qbits-background)!important;overflow-wrap:anywhere;}
+body[data-npc-subtitles='off'] #story-text{visibility:hidden!important;}
+body[data-npc-subtitles='off'] .campaign-label[data-voice='npc'],
+body[data-qbits-subtitles='off'] .qbit-speech,
+body[data-qbits-subtitles='off'] .encounter-bubble,
+body[data-qbits-subtitles='off'] #title-greeting,
+body[data-qbits-subtitles='off'] .selection-hud-speech{display:none!important;}

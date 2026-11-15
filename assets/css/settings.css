@@ -25,3 +25,16 @@
 @media(max-width:760px){#settings-screen{padding:20px;}.settings-grid{grid-template-columns:1fr;gap:24px;}.settings-preview{position:static;grid-row:1;}.settings-preview-frame{aspect-ratio:2;}.settings-header h2{font-size:24px;}.settings-footer{flex-wrap:wrap;}.settings-row{grid-template-columns:1fr 45%;}.settings-tabs{gap:16px;}}
 
 @media(max-width:760px){.settings-grid{padding:20px 6px 20px 0;}.settings-footer{gap:8px;padding:14px 0 0;}.settings-footer #settings-status{flex-basis:100%;}.settings-footer button{flex:1;font-size:12px!important;padding:10px!important;}}
+
+/* All input families use the same draft, footer and responsive field column. */
+.settings-tabs{flex-wrap:wrap;gap:2px 18px;}
+#settings-screen .settings-tabs button{font-size:12px;white-space:nowrap;}
+.settings-section-title{font-size:15px;font-weight:500;margin:24px 0 6px;color:#35584b;}
+.settings-binding-actions{display:flex;gap:6px;min-width:0;justify-content:flex-end;}
+#settings-screen .settings-binding-actions button:first-child{min-width:0;flex:1;overflow-wrap:anywhere;padding:8px;font-size:12px;}
+#settings-screen .settings-binding-clear{padding:6px 10px;color:#7a8980;}
+.settings-pad-status{font-size:12px;line-height:1.5;border-left:2px solid #75a893;padding:8px 12px;background:#e7eee9;}
+.settings-subtitle-sample{padding:14px 16px;margin:16px 0 26px;line-height:1.45;border-radius:8px;font-family:var(--font-npc),sans-serif;overflow-wrap:anywhere;}
+#settings-screen[data-binding-capture='keyboard'] .settings-binding-row button:focus,
+#settings-screen[data-binding-capture='gamepad'] .settings-binding-row button:focus{outline:2px solid #377f85;outline-offset:3px;}
+@media(max-width:760px){.settings-tabs{gap:2px 14px;}.settings-binding-row{grid-template-columns:minmax(0,1fr) minmax(120px,48%);gap:10px;}}

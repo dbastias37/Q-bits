@@ -33,7 +33,7 @@ test('triangle strokes use requested pixel width, with no native wide-line depen
  const {camera,yaw,pitch}=t.getLook(),a=t.V(...camera).vadd(t.V(-Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)).scale(1)),b=a.vadd(t.V(.15,0,0));
  t.drawWideLines([a,b],[0,1,1,1],5);assert.equal(uploads.length,1);const points=uploads[0];assert.equal(points.length,36);const pa=t.project(t.V(...points.slice(0,3))),pb=t.project(t.V(...points.slice(6,9)));assert(Math.abs(Math.hypot(pa.x-pb.x,pa.y-pb.y)-5)<.001);
 });
-function uiSetup(){const game=createGame(),{t,sandbox}=game,doc=sandbox.document,screen=doc.querySelector('#settings-screen');const tabs=['look','performance','audio'].map(name=>{const node=doc.createElement('button');node.dataset.settingsTab=name;return node;});screen.querySelectorAll=q=>q==='[data-settings-tab]'?tabs:[];Object.assign(t.story,{ready:true,mode:'pause'});t.initSettingsScreen();return {...game,tabs,doc,settings:t.getSettingsScreen(),click:id=>doc.querySelector('#'+id).dispatchEvent({type:'click'})};}
+function uiSetup(){const game=createGame(),{t,sandbox}=game,doc=sandbox.document,screen=doc.querySelector('#settings-screen');const tabs=['look','performance','audio','keyboard','mando','subtitles'].map(name=>{const node=doc.createElement('button');node.dataset.settingsTab=name;return node;});screen.querySelectorAll=q=>q==='[data-settings-tab]'?tabs:[];Object.assign(t.story,{ready:true,mode:'pause'});t.initSettingsScreen();return {...game,tabs,doc,settings:t.getSettingsScreen(),click:id=>doc.querySelector('#'+id).dispatchEvent({type:'click'})};}
 test('settings UI preserves the game and supports cancel, discard, and save-and-exit',()=>{
  const {t,doc,settings,click}=uiSetup(),initial=t.groups.length;settings.open('pause');assert.equal(t.story.mode,'settings');
  const selector=doc.querySelector('#pref-style');selector.value='neon';selector.dispatchEvent({type:'change'});assert.equal(settings.draft.style,'neon');assert.equal(t.getVisuals().style,'clean');
@@ -50,4 +50,32 @@ test('settings exposes all performance/audio controls and preview cannot advance
 test('after saving without leaving, subsequent edits remain attached to the new draft',()=>{
  const {settings,doc,click,t}=uiSetup();settings.open('pause');let color=doc.querySelector('#pref-outlineColor');color.value='#ffaa00';color.dispatchEvent({type:'input'});click('settings-save');assert.equal(t.getVisuals().outlineColor,'#ffaa00');
  color=doc.querySelector('#pref-outlineColor');color.value='#dd33ee';color.dispatchEvent({type:'input'});assert.equal(settings.draft.outlineColor,'#dd33ee');assert.equal(t.getVisuals().outlineColor,'#ffaa00');settings.requestClose();assert.equal(doc.querySelector('#settings-confirm').hidden,false);click('settings-confirm-save');assert.equal(t.getVisuals().outlineColor,'#dd33ee');
+});
+
+test('legacy settings acquire independent keyboard, controller and subtitle defaults without losing visual profiles',()=>{
+ const old=P.defaults();delete old.controls;delete old.subtitles;old.profiles.neon.outlineColor='#ff5500';
+ const migrated=P.load(storage({[P.KEY]:JSON.stringify(old)}));assert.equal(migrated.profiles.neon.outlineColor,'#ff5500');assert.equal(migrated.controls.keyboard.bindings.forward,'KeyW');assert.equal(migrated.controls.gamepad.preset,'explore');assert.equal(migrated.subtitles.npc.enabled,true);
+ migrated.subtitles.npc.size=30;assert.equal(P.defaults().subtitles.npc.size,16);assert.equal(migrated.subtitles.qbits.size,15);
+ const clean=P.sanitize({controls:{keyboard:{sensitivity:99}},subtitles:{npc:{color:'url(x)',size:100,opacity:-10},qbits:{enabled:false}}});assert.equal(clean.controls.keyboard.sensitivity,3);assert.equal(clean.subtitles.npc.size,32);assert.equal(clean.subtitles.npc.opacity,0);assert.equal(clean.subtitles.npc.color,'#34423a');assert.equal(clean.subtitles.qbits.enabled,false);
+});
+test('keyboard rebinding swaps duplicates inside the draft and capture Escape cancels without closing',()=>{
+ const {t,doc,settings,tabs,click}=uiSetup();settings.open('pause');tabs[3].dispatchEvent({type:'click'});
+ click('bind-keyboard-forward');assert.equal(doc.querySelector('#settings-screen').dataset.bindingCapture,'keyboard');
+ doc.dispatchEvent({type:'keydown',code:'KeyD'});assert.equal(settings.draft.controls.keyboard.bindings.forward,'KeyD');assert.equal(settings.draft.controls.keyboard.bindings.right,'KeyW');assert.equal(t.getVisuals().controls.keyboard.bindings.forward,'KeyW');
+ click('bind-keyboard-forward');doc.dispatchEvent({type:'keydown',code:'Escape'});assert(settings.isOpen);assert.equal(doc.querySelector('#settings-screen').dataset.bindingCapture,'');
+ click('settings-save');assert.equal(t.getVisuals().controls.keyboard.bindings.forward,'KeyD');
+ click('settings-reset');assert.equal(settings.draft.controls.keyboard.bindings.forward,'KeyW');settings.requestClose();assert.equal(doc.querySelector('#settings-confirm').hidden,false);click('settings-discard');assert.equal(t.getVisuals().controls.keyboard.bindings.forward,'KeyD');
+});
+test('controller capture waits for a new press and applies assignments only on save',()=>{
+ const game=uiSetup(),{t,doc,settings,tabs,click,sandbox}=game;const buttons=Array.from({length:17},()=>({pressed:false,value:0})),pad={index:0,mapping:'standard',connected:true,id:'Test DualShock',buttons,axes:[0,0,0,0]};sandbox.navigator.getGamepads=()=>[pad];
+ settings.open('pause');tabs[4].dispatchEvent({type:'click'});buttons[7]={pressed:true,value:1};click('bind-gamepad-forward');game.frame(1000);assert.equal(settings.draft.controls.gamepad.bindings.forward,null);
+ buttons[7]={pressed:false,value:0};game.frame(1200);buttons[7]={pressed:true,value:1};game.frame(1400);assert.equal(settings.draft.controls.gamepad.bindings.forward,7);assert.equal(settings.draft.controls.gamepad.bindings.secondary,null);assert.equal(t.getVisuals().controls.gamepad.bindings.forward,null);
+ click('settings-save');assert.equal(t.getVisuals().controls.gamepad.bindings.forward,7);assert.equal(doc.querySelector('#settings-screen').dataset.bindingCapture,'');
+});
+test('subtitle edits preserve independent channels and discard restores applied values',()=>{
+ const {t,doc,settings,tabs,click}=uiSetup();settings.open('pause');tabs[5].dispatchEvent({type:'click'});
+ const color=doc.querySelector('#pref-npc-color');color.value='#cc8800';color.dispatchEvent({type:'input'});const size=doc.querySelector('#pref-qbits-size');size.value='28';size.dispatchEvent({type:'input'});
+ assert.equal(settings.draft.subtitles.npc.color,'#cc8800');assert.equal(settings.draft.subtitles.qbits.size,28);assert.equal(t.getVisuals().subtitles.qbits.size,15);assert.equal(doc.querySelector('#settings-subtitle-preview-qbits').style.fontSize,'28px');
+ click('settings-save');assert.equal(t.getVisuals().subtitles.npc.color,'#cc8800');assert.equal(t.getVisuals().subtitles.qbits.size,28);
+ const enabled=doc.querySelector('#pref-qbits-enabled');enabled.checked=false;enabled.dispatchEvent({type:'change'});settings.requestClose();click('settings-discard');assert.equal(t.getVisuals().subtitles.qbits.enabled,true);
 });

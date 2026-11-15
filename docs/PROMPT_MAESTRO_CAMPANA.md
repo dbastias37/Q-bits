@@ -155,3 +155,10 @@ Antes de añadir más contenido, realiza una revisión del mecanismo, su misión
 Mantén una matriz con: comportamiento esperado, evidencia, defecto encontrado, corrección, prueba de regresión y estado. Cuando algo falle, corrige su causa antes de convertirlo en requisito para otra misión. No afirmes que un bloque está equilibrado o que todas las rutas se han probado si la evidencia solo cubre pruebas lógicas.
 
 Entrega cada bloque con cambios concretos, pruebas realizadas y límites pendientes. El objetivo es una campaña jugable que enseña mecanismos fiables y desemboca en desafíos que el jugador quiera perfeccionar.
+
+
+## Interfaz y entradas vigentes — 15 de noviembre de 2026
+
+Mantener el contador general ampliado y la fila superior de miniaturas fieles a las estructuras seleccionadas. Son representaciones visuales, nunca clones físicos ni fuentes de materia/energía. La entrada y salida son elásticas y breves; movimiento y respuestas de hover dependen de los estados existentes, con frases espaciadas. Respetar márgenes y movimiento reducido. En escritorio se ocultan los botones flotantes de pausa y pantalla completa, conservando acciones de teclado y menús.
+
+Teclado y Mando se configuran por separado con dos distribuciones y una personalizada, asignaciones individuales y captura que no ejecuta acciones del juego. Mantener Tab/L3 habilita el mostrador sin soltar lo que se lleva. La configuración se edita como borrador, se guarda explícitamente y avisa antes de salir con cambios. NPC y Q-bits tienen estilos independientes de subtítulos; ocultarlos no debe bloquear elecciones ni el avance narrativo. Estos cambios de interfaz no alteran el alcance de campaña ni sus mecánicas.

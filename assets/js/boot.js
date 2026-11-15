@@ -52,7 +52,7 @@
   function loadScript(path) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = path + '?v=20261115-polish-1';
+      script.src = path + '?v=20261115-input-1';
       script.onload = resolve;
       script.onerror = () => reject(new Error('No se pudo cargar ' + path));
       document.head.append(script);
@@ -126,6 +126,9 @@
       await loadScript('assets/js/campaign-production.js');
       await loadScript('assets/js/workshop.js');
       await loadScript('assets/js/contact-sensors.js');
+      await loadScript('assets/js/controls.js');
+      await loadScript('assets/js/subtitles.js');
+      await loadScript('assets/js/selection-hud.js');
       await loadScript('assets/js/preferences.js');
       await loadScript('assets/js/graphics.js');
       await loadScript('assets/js/settings.js');

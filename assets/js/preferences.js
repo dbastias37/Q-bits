@@ -2,6 +2,7 @@
 (function(root){
  'use strict';
  const KEY='qbits.preferences.v1';
+ const C=root.QBitsControls||(typeof require==='function'?require('./controls.js'):null),S=root.QBitsSubtitles||(typeof require==='function'?require('./subtitles.js'):null);
  const styles={
   clean:{dither:0,bits:8,jitter:0,warp:0,cel:0,bloom:false,bloomStrength:20,outlineColor:'#58abc0',pathColor:'#58abc0',outlineWidth:2.5,pathWidth:2.5},
   psx:{dither:55,bits:5,jitter:45,warp:60,cel:0,bloom:false,bloomStrength:15,outlineColor:'#63b7c4',pathColor:'#63b7c4',outlineWidth:2,pathWidth:2.5},
@@ -10,7 +11,7 @@
  };
  const quality={low:{resolution:65,shadows:'off',lighting:0,anisotropy:1,filter:'linear',fps:30,sampling:1},balanced:{resolution:100,shadows:'soft',lighting:35,anisotropy:4,filter:'trilinear',fps:60,sampling:1},high:{resolution:100,shadows:'sharp',lighting:75,anisotropy:8,filter:'trilinear',fps:0,sampling:1.5}};
  const copy=x=>JSON.parse(JSON.stringify(x));
- function defaults(){return {version:1,style:'clean',quality:'balanced',...quality.balanced,textureScale:1,markers:true,markerMotion:true,music:true,volume:30,profiles:copy(styles)};}
+ function defaults(){return {version:1,style:'clean',quality:'balanced',...quality.balanced,textureScale:1,markers:true,markerMotion:true,music:true,volume:30,controls:C.defaults(),subtitles:S.defaults(),profiles:copy(styles)};}
  const limit=(v,a,b,f)=>typeof v==='number'&&Number.isFinite(v)?Math.max(a,Math.min(b,v)):f;
  const pick=(v,opts,f)=>opts.includes(v)?v:f;
  function sanitize(raw){
@@ -27,6 +28,7 @@
    for(const k of ['outlineColor','pathColor'])if(/^#[a-f0-9]{6}$/i.test(p[k]))out[k]=p[k].toLowerCase();
    if(typeof p.bloom==='boolean')out.bloom=p.bloom;
   }
+  d.controls=C.sanitize(s.controls);d.subtitles=S.sanitize(s.subtitles);
   return d;
  }
  function load(storage){try{const raw=storage.getItem(KEY);if(raw)return sanitize(JSON.parse(raw));const d=defaults(),m=JSON.parse(storage.getItem('qbits.music.v1'));if(m){d.volume=limit(m.volume*100,0,100,30);d.music=!m.muted;}return d;}catch{return defaults();}}

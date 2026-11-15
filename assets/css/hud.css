@@ -1,0 +1,33 @@
+/* Keep the world clear on desktop; keyboard/menu controls remain available. */
+@media (hover:hover) and (pointer:fine){
+ #pause-button,#fullscreen-button,#tools{display:none!important;}
+}
+#alpha-census{left:max(28px,env(safe-area-inset-left));bottom:max(28px,env(safe-area-inset-bottom));gap:20px;max-width:calc(100vw - 56px);font-size:clamp(16px,1.3vw,21px);line-height:1.5;z-index:16;}
+#alpha-census-text{overflow-wrap:anywhere;}
+#alpha-census .mini-cube{--cube-half:15px;width:30px;height:30px;margin:7px;flex:0 0 30px;}
+#alpha-census .mini-cube i{width:30px;height:30px;}
+#alpha-census .front{transform:translateZ(var(--cube-half));}
+#alpha-census .back{transform:rotateY(180deg) translateZ(var(--cube-half));}
+#alpha-census .right{transform:rotateY(90deg) translateZ(var(--cube-half));}
+#alpha-census .left{transform:rotateY(-90deg) translateZ(var(--cube-half));}
+#alpha-census .top{transform:rotateX(90deg) translateZ(var(--cube-half));}
+#alpha-census .bottom{transform:rotateX(-90deg) translateZ(var(--cube-half));}
+body:not([data-game-mode='playing']) #alpha-census{display:none!important;}
+/* Keep campaign labels and touch buttons clear of the new selection row. */
+body:has(#selection-hud:not([hidden])) #chapter-label{max-width:240px;}
+@media(min-width:1001px){#selection-hud{width:min(760px,calc(100% - 560px));}}
+@media(max-width:1000px){
+ body:has(#selection-hud:not([hidden])) #chapter-label{top:132px;}
+ body:has(#selection-hud:not([hidden])) #story-objective{top:185px;max-width:min(340px,calc(100vw - 36px));}
+}
+@media(hover:none),(pointer:coarse){
+ #selection-hud{top:max(60px,calc(env(safe-area-inset-top) + 48px));}
+ body:has(#selection-hud:not([hidden])) #chapter-label{top:178px;}
+ body:has(#selection-hud:not([hidden])) #story-objective{top:225px;}
+}
+@media(max-width:620px){
+ #alpha-census{left:max(18px,env(safe-area-inset-left));bottom:max(20px,env(safe-area-inset-bottom));max-width:calc(100vw - 36px);gap:13px;font-size:14px;}
+ #alpha-census .mini-cube{--cube-half:11px;width:22px;height:22px;flex-basis:22px;}
+ #alpha-census .mini-cube i{width:22px;height:22px;}
+}
+@media(prefers-reduced-motion:reduce){#alpha-census .mini-cube{animation:none;transform:rotateX(-22deg) rotateY(30deg);}}

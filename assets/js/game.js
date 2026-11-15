@@ -11,6 +11,9 @@ const story={ready:false,mode:'menu',scene:'lab',phase:'idle',started:false,elap
 let unitRadial=null,pendingUnitCreation=null;
 const preferences=window.QBitsPreferences;
 let savedPreferences=preferences.load(window.localStorage),visuals=preferences.effective(savedPreferences),settingsScreen=null,lastVisualFrame=0,previewViewport=null;
+let selectionHud=null,selectionHudClock=0,selectionHudStamp='',selectionHudItems=[];
+const selectionHudGeometry=new WeakMap();
+const reducedHudMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)');
 const visualRGB=key=>preferences.rgb(visuals[key]);
 function radialOpen(){return !!unitRadial?.isOpen;}
 const storyWorld={walls:[],details:[],door:null,target:null,doorProgress:0};
@@ -311,9 +314,99 @@ let lockPending = false;
 let redraw = true;
 let running = true;
 const keys = new Set();
+// Input state is shared by real keyboard/mouse and a standard-mapped controller.
+let gamepadActive=false,gamepadMove=[0,0],gamepadRotationCodes=new Set(),hudInputActive=false,hudReturnCapture=false;
+const controlHolds=new Map(),controller=window.QBitsControls?.gamepad();
+const keyboardInput=window.QBitsControls?.keyboard(()=>savedPreferences.controls?.keyboard||window.QBitsControls.defaults().keyboard,(id,down,event)=>dispatchControlAction(id,down,'keyboard',event));
+function gameInputActive(){return !hudInputActive&&(document.pointerLockElement===canvas||gamepadActive);}
+function inputLabel(action){return window.QBitsControls?.labelFor(action,savedPreferences)||action;}
+function controlEvent(code,event={},source='keyboard'){return {code,repeat:false,target:canvas,clientX:event.clientX??canvas.clientWidth/2,clientY:event.clientY??canvas.clientHeight/2,altKey:altDown()||!!event.altKey,ctrlKey:ctrlDown()||!!event.ctrlKey,shiftKey:shiftDown()||!!event.shiftKey,metaKey:!!event.metaKey,source,preventDefault(){event.preventDefault?.();},stopPropagation(){event.stopPropagation?.();}};}
+function setHudInput(enabled,source='keyboard'){
+ if(enabled){if(hudInputActive||!window.qbitsSelectionHud?.available||story.mode!=='playing'||story.transition||!panel.hidden||!menu.hidden||!commandMenu.hidden)return;hudInputActive=true;hudReturnCapture=document.pointerLockElement===canvas;keys.clear();gamepadMove=[0,0];window.qbitsSelectionHud.setInteractive(true,source);if(hudReturnCapture){story.intentionalUnlock=true;story.preserveGrip=true;document.exitPointerLock();}}
+ else {if(!hudInputActive)return;hudInputActive=false;window.qbitsSelectionHud?.setInteractive(false,source);const capture=hudReturnCapture;hudReturnCapture=false;if(capture&&!document.hidden&&story.mode==='playing'&&!story.transition)captureMouse();}
+}
+function dispatchControlAction(id,down,source='keyboard',event={}){
+ const token=source+':'+id,holders=controlHolds.get(id)||new Set();
+ if(down){if(holders.has(token))return;holders.add(token);controlHolds.set(id,holders);if(holders.size>1)return;}
+ else {holders.delete(token);if(holders.size)return;controlHolds.delete(id);}
+ if(id==='hud'){setHudInput(down,source);return;}
+ const action=window.QBitsControls?.actions.find(a=>a.id===id);if(!action)return;
+ const e=controlEvent(action.code,event,source);
+ if(id==='primary'||id==='secondary'){
+  if(hudInputActive){if(down&&id==='primary')window.qbitsSelectionHud?.activateFocused({toggle:ctrlDown(),source});return;}
+  e.button=id==='primary'?0:2;
+  if(down)onCanvasMouseDown(e);else if(id==='primary'){if(event.cancelled){if(!story.preserveGrip)releaseQubit(false);}else onCanvasMouseUp(e);}return;
+ }
+ if(!down){if(id==='radial'&&event.cancelled)closeUnitRadial(false);handleKeyUp(e);return;}
+ if(id==='fullscreen'){toggleFullscreen();return;}
+ if(hudInputActive)return;
+ if(id==='select'&&storyActionAllowed()&&gameInputActive()){
+  const hit=aimQubit();if(!hit)return;let team=selectedTeam();team=team.includes(hit.g)?team.filter(g=>g!==hit.g):[...team,hit.g];if(team.reduce((n,g)=>n+g.parts.length,0)>settings.maxSelect){announce('Máximo '+settings.maxSelect+' piezas seleccionadas');return;}multiSelection=team;selected=team.length?{g:team.includes(hit.g)?hit.g:team[0],part:team.includes(hit.g)?hit.part:team[0].parts[0]}:null;speech.nextHud=0;return;
+ }
+ if(id==='clear'&&storyActionAllowed()){if(held)releaseQubit(false);clearSelection();return;}
+ if((id==='near'||id==='far')&&storyLookAllowed()){handleWheel({...e,deltaY:id==='near'?-1:1});return;}
+ handleKey(e);
+}
+function releaseInputSource(source){for(const [id,holders]of [...controlHolds])if(holders.has(source+':'+id))dispatchControlAction(id,false,source,{cancelled:true});}
+function resetGameInputs(){keyboardInput?.clear();releaseInputSource('gamepad');gamepadActive=false;gamepadMove=[0,0];controller?.reset();if(hudInputActive){hudReturnCapture=false;setHudInput(false);}keys.clear();}
+function onPhysicalKeyDown(event){
+ if(event.defaultPrevented||settingsScreen?.isOpen||editableTarget(event.target)||editableTarget(document.activeElement))return;
+ if(event.code==='Escape'){event.preventDefault();if(hudInputActive){hudReturnCapture=false;setHudInput(false);}handleKey(controlEvent('Escape',event));return;}
+ if(hudInputActive&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter','Space'].includes(event.code)){event.preventDefault();if(event.code==='Enter'||event.code==='Space')window.qbitsSelectionHud?.activateFocused({toggle:ctrlDown()||event.ctrlKey,source:'keyboard'});else window.qbitsSelectionHud?.stepFocus(event.code==='ArrowLeft'||event.code==='ArrowUp'?-1:1);return;}
+ if(radialOpen()&&event.code.startsWith('Arrow')){handleKey(event);return;}
+ if(story.ready&&story.mode!=='playing')return;
+ gamepadActive=false;
+ if(keyboardInput?.down(event.code,event))event.preventDefault();else if(!keyboardInput)handleKey(event);
+}
+function onPhysicalKeyUp(event){if(keyboardInput?.up(event.code,event))event.preventDefault();else if(!keyboardInput)handleKeyUp(event);}
+function onPhysicalMouseDown(event){if(hudInputActive||settingsScreen?.isOpen)return;gamepadActive=false;if(keyboardInput?.down('Mouse'+event.button,event))event.preventDefault();else if(!keyboardInput)onCanvasMouseDown(event);}
+function onPhysicalMouseUp(event){if(keyboardInput?.up('Mouse'+event.button,event))event.preventDefault();else if(!keyboardInput||(event.button===0&&savedPreferences.controls?.keyboard.bindings.primary==='Mouse0'&&!controlHolds.has('primary')))onCanvasMouseUp(event);}
+function inputMenuScope(){
+ if(settingsScreen?.isOpen)return document.querySelector(document.querySelector('#settings-confirm').hidden?'#settings-screen':'#settings-confirm');
+ if(!menu.hidden)return menu;if(!commandMenu.hidden)return commandMenu;if(!panel.hidden)return panel;
+ if(story.phase==='choice'||story.phase==='repeat')return document.querySelector('#story-choices');
+ return document.querySelector(({menu:'#main-screen',pause:'#pause-screen',levels:'#levels-screen',codex:'#codex-screen',complete:'#chapter-complete'})[story.mode]||'#wake-screen');
+}
+function navigateControllerMenu(id){
+ if(id==='back'||id==='pause'){if(settingsScreen?.isOpen){if(!document.querySelector('#settings-confirm').hidden)document.querySelector('#settings-keep').click();else settingsScreen.requestClose();}else handleKey(controlEvent('Escape',{},'gamepad'));return;}
+ const scope=inputMenuScope(),nodes=[...(scope?.querySelectorAll('button,input,select')||[])].filter(el=>!el.disabled&&!el.hidden&&el.getClientRects?.().length);
+ if(!nodes.length)return;let at=nodes.indexOf(document.activeElement);if(at<0){at=0;nodes[at].focus({preventScroll:true});}
+ const el=nodes[at];
+ if(id==='confirm'){if(el.tagName==='BUTTON')el.click();else if(el.type==='checkbox'){el.checked=!el.checked;el.dispatchEvent(new Event('change',{bubbles:true}));}return;}
+ if(id==='left'||id==='right'){
+  const delta=id==='right'?1:-1;
+  if(el.tagName==='SELECT'){const opts=[...el.options].filter(o=>!o.disabled),i=opts.indexOf(el.selectedOptions[0]);el.value=opts[Math.max(0,Math.min(opts.length-1,i+delta))].value;el.dispatchEvent(new Event('change',{bubbles:true}));return;}
+  if(el.type==='range'){el.value=String(Math.max(Number(el.min),Math.min(Number(el.max),Number(el.value)+delta*(Number(el.step)||1))));el.dispatchEvent(new Event('input',{bubbles:true}));return;}
+ }
+ if(['up','down','left','right'].includes(id)){at=(at+(['down','right'].includes(id)?1:nodes.length-1))%nodes.length;nodes[at].focus({preventScroll:true});nodes[at].scrollIntoView?.({block:'nearest'});}
+}
+function pollGamepadInput(dt){
+ if(!controller)return;let pads=[];try{pads=navigator.getGamepads?.()||[];}catch{}
+ const config=savedPreferences.controls?.gamepad||window.QBitsControls.defaults().gamepad,capture=document.querySelector('#settings-screen').dataset.bindingCapture;
+ const blocked=document.hidden||story.transition||document.body.dataset.booting==='true'||capture==='gamepad'||capture==='keyboard';
+ const uiMode=settingsScreen?.isOpen||story.ready&&(story.mode!=='playing'||!panel.hidden||!menu.hidden||!commandMenu.hidden||['choice','repeat'].includes(story.phase));
+ const mode=blocked?'blocked':hudInputActive?'hud':radialOpen()?'radial':uiMode?'menu':'game',sample=controller.poll(pads,config,mode);
+ window.qbitsInputStatus={status:sample.status,id:sample.id};
+ if(!blocked&&(sample.events.some(e=>e.down)||Math.hypot(...sample.move,...sample.look)>.08))gamepadActive=true;
+ if(sample.status!=='connected'&&gamepadActive){releaseInputSource('gamepad');gamepadActive=false;gamepadMove=[0,0];if(story.ready&&story.mode==='playing')openPauseMenu();}
+ for(const e of sample.events){
+  if(!e.down){dispatchControlAction(e.id,false,'gamepad',e);continue;}
+  if(mode==='menu'){navigateControllerMenu(e.id);continue;}
+  if(mode==='hud'&&['up','down','left','right','confirm','back'].includes(e.id)){if(e.id==='confirm')window.qbitsSelectionHud?.activateFocused({toggle:ctrlDown(),source:'gamepad'});else if(e.id==='back')setHudInput(false,'gamepad');else window.qbitsSelectionHud?.stepFocus(e.id==='left'||e.id==='up'?-1:1);continue;}
+  if(mode==='radial'&&['up','down','left','right','confirm','back'].includes(e.id)){if(e.id==='back')closeUnitRadial(false);else if(e.id==='confirm')closeUnitRadial(true);else unitRadial.chooseNext(e.id==='left'||e.id==='up'?-1:1);continue;}
+  dispatchControlAction(e.id,true,'gamepad',e);
+ }
+ for(const code of gamepadRotationCodes){const action=window.QBitsControls.actions.find(a=>a.code===code)?.id;if(!controlHolds.get(action)?.has('keyboard:'+action))keys.delete(code);}gamepadRotationCodes.clear();
+ gamepadMove=mode==='game'&&gamepadActive?sample.move:[0,0];
+ if(gamepadActive&&mode==='game'&&storyLookAllowed()&&!storySuspended()){
+  const [x,y]=sample.look,speed=2.1*config.sensitivity;yaw-=x*speed*dt;yaw=Math.atan2(Math.sin(yaw),Math.cos(yaw));pitch=clamp(pitch-y*speed*dt*(config.invertY?-1:1),-Math.PI/2+.012,Math.PI/2-.012);if(x||y)redraw=true;
+  if(held&&shiftDown()){for(const [code,pressed]of [['KeyW',gamepadMove[1]<-.1],['KeyS',gamepadMove[1]>.1],['KeyA',gamepadMove[0]<-.1],['KeyD',gamepadMove[0]>.1]]){if(pressed){keys.add(code);gamepadRotationCodes.add(code);}}}
+ }
+}
+
 
 const hint = document.querySelector('#hint');
-const pausedHint = 'Clic para entrar · WASD para caminar · C para agacharte · Esc para liberar el mouse';
+const pausedHint = 'Clic para entrar · Esc para pausa · Controles en Configuración';
 const blockedHint = 'No se pudo capturar el mouse. Haz clic para reintentar. Si estás en un visor, descarga este HTML y ábrelo directamente en Chrome, Edge o Firefox.';
 let lockTimeout;
 let pendingPickup=null;
@@ -342,6 +435,7 @@ function pause(release=true) {
   resetAssemblyShake();
   closeUnitRadial(false);
   if(story.ready){story.preserveGrip=!release;if(document.pointerLockElement===canvas)story.intentionalUnlock=true;}
+  resetGameInputs();
   pendingPickup=null;
   finishMarquee(true);
   if(release)releaseQubit();
@@ -363,6 +457,7 @@ function resize() {
 }
 
 async function captureMouse() {
+  if(gamepadActive){panel.hidden=true;menu.hidden=true;detachChoice=null;closeCommandMenu(false);hint.hidden=true;if(pendingPickup)completePendingPickup();return;}
   if(radialOpen())return;
   if(story.ready&&!story.allowTransitionCapture&&(story.mode!=='playing'||['asleep','invocation','choice','repeat'].includes(story.phase)))return;
   if (document.pointerLockElement === canvas || lockPending) return;
@@ -416,16 +511,18 @@ document.addEventListener('mousemove', event => {
   if (marquee) { updateMarquee(event); return; }
   noteSpeechLook(event.movementX,event.movementY);
   noteAssemblyShake(event.movementX,event.movementY,event.timeStamp);
-  yaw -= event.movementX * 0.002;
+  gamepadActive=false;
+  const mouse=savedPreferences.controls?.keyboard||{sensitivity:1,invertY:false};
+  yaw -= event.movementX * 0.002 * mouse.sensitivity;
   yaw = Math.atan2(Math.sin(yaw), Math.cos(yaw));
-  pitch = Math.max(-Math.PI / 2 + 0.012, Math.min(Math.PI / 2 - 0.012, pitch - event.movementY * 0.002));
+  pitch = Math.max(-Math.PI / 2 + 0.012, Math.min(Math.PI / 2 - 0.012, pitch - event.movementY * 0.002 * mouse.sensitivity * (mouse.invertY?-1:1)));
   redraw = true;
 });
-document.addEventListener('keydown', handleKey);
-document.addEventListener('keyup', handleKeyUp);
-window.addEventListener('blur',()=>{if(story.ready&&story.mode==='playing')openPauseMenu();else pause();});
+document.addEventListener('keydown', onPhysicalKeyDown);
+document.addEventListener('keyup', onPhysicalKeyUp);
+window.addEventListener('blur',()=>{resetGameInputs();if(story.ready&&story.mode==='playing')openPauseMenu();else pause();});
 document.addEventListener('visibilitychange', () => {
-  if(document.hidden){if(story.ready&&story.mode==='playing')openPauseMenu();else pause();}
+  if(document.hidden){resetGameInputs();if(story.ready&&story.mode==='playing')openPauseMenu();else pause();}
 });
 window.addEventListener('resize', resize);
 canvas.addEventListener('webglcontextlost', event => {
@@ -964,12 +1061,12 @@ function initUnitRadial(){
  })});
 }
 function unitRadialAllowed(){
- return running&&document.pointerLockElement===canvas&&story.ready&&story.mode==='playing'&&(story.scene==='lab'||story.scene==='campaign'&&mechanismsUnlocked())&&!puzzle.active&&!story.transition&&!document.hidden&&document.body.dataset.booting!=='true'&&panel.hidden&&menu.hidden&&commandMenu.hidden&&!held&&!marquee&&!pendingPickup&&!moveChoice&&!pendingCargo&&!editableTarget(document.activeElement);
+ return running&&gameInputActive()&&story.ready&&story.mode==='playing'&&(story.scene==='lab'||story.scene==='campaign'&&mechanismsUnlocked())&&!puzzle.active&&!story.transition&&!document.hidden&&document.body.dataset.booting!=='true'&&panel.hidden&&menu.hidden&&commandMenu.hidden&&!held&&!marquee&&!pendingPickup&&!moveChoice&&!pendingCargo&&!editableTarget(document.activeElement);
 }
 function openUnitRadial(){
  if(radialOpen()||!unitRadialAllowed())return false;
  cancelUnitCreation();initUnitRadial();for(const id of ['cube','tetra','pyramid','coupler','rotor'])unitRadial.setLocked?.(id,!creationChoiceAllowed(id));keys.clear();routeInspection=null;accumulator=0;
- unitRadial.open(creationShape(),{virtualPointer:document.pointerLockElement===canvas});
+ unitRadial.open(creationShape(),{virtualPointer:gameInputActive()});
  document.body.dataset.unitRadial='open';hint.hidden=true;redraw=true;
  return true;
 }
@@ -1030,7 +1127,7 @@ function carrySet(hit){return rotorConnectedGroups(multiSelection.includes(hit.g
 function canCarry(list){return rotorConnectedGroups(list).reduce((n,g)=>n+totalWeight(g),0)<=settings.maxCarry+.0001;}
 function grabQubit(hitOverride=null){
  resetAssemblyShake();
- if(document.pointerLockElement!==canvas||held||marquee)return;const hit=hitOverride||aimQubit();if(hit?.g?.storyEmerging)return;
+ if(!gameInputActive()||held||marquee)return;const hit=hitOverride||aimQubit();if(hit?.g?.storyEmerging)return;
  if(!hit){if(aimCargo(3)){announce('Este cuerpo se arrastra con un equipo de Q-bits.');return;}startMarquee();return;}
  if(altDown()){openDetachMenu(hit);return;}
  const list=carrySet(hit),weight=list.reduce((n,g)=>n+totalWeight(g),0);
@@ -1866,11 +1963,11 @@ document.querySelector('#remove').addEventListener('click',()=>{deleteQubit(sele
 document.querySelector('#split').addEventListener('click',()=>{detachPart(selected,true);updatePanel();});
 document.querySelector('#stop').addEventListener('click',()=>{if(selectedCargo)stopHaul(selectedCargo);for(const g of selectedTeam()){leaveHaul(g);stopRoute(g);}});
 document.querySelector('#resume').addEventListener('click',()=>{panel.hidden=true;if(!story.ready||story.mode==='playing')captureMouse();});
-canvas.addEventListener('mousedown',onCanvasMouseDown);
-document.addEventListener('mouseup',onCanvasMouseUp);
+canvas.addEventListener('mousedown',onPhysicalMouseDown);
+document.addEventListener('mouseup',onPhysicalMouseUp);
 function handleWheel(event){
  if(radialOpen()){event.preventDefault();return;}
- if(document.pointerLockElement!==canvas)return;
+ if(!gameInputActive())return;
  if(keys.has('KeyC')){
   event.preventDefault();posture.crouchHeight=clamp(posture.crouchHeight-Math.sign(event.deltaY)*.08,.42,1.15);redraw=true;return;
  }
@@ -1895,7 +1992,7 @@ function handleKey(event){
  if(event.code==='Escape'){closeCommandMenu(false);moveChoice=null;pendingCargo=null;routeInspection=null;if(!menu.hidden)closeDetachMenu(false);finishMarquee(true);pause();return;}
  const editing=['INPUT','SELECT','BUTTON'].includes(document.activeElement?.tagName);
  if(event.code==='KeyP'&&!event.repeat&&!editing){event.preventDefault();if(panel.hidden)openPanel();else panel.hidden=true;return;}
- if(document.pointerLockElement!==canvas)return;
+ if(!gameInputActive())return;
  if(event.code.startsWith('Alt')&&!held&&!marquee&&!event.repeat){const inspection=inspectionNearPin();if(inspection){event.preventDefault();routeInspection=inspection;keys.add(event.code);return;}const hit=aimQubit()||selected;if(hit?.g.parts.length>1){event.preventDefault();openDetachMenu(hit);return;}}
  if(['ShiftLeft','ShiftRight','ControlLeft','ControlRight','AltLeft','AltRight','KeyW','KeyA','KeyS','KeyD','KeyC'].includes(event.code)){
   event.preventDefault();if(event.code.startsWith('Shift')&&held&&!shiftDown()){held.rotation=held.g.body.quaternion.clone();held.initialRotation=held.rotation.clone();for(const item of held.items||[held]){item.initialQ=item.g.body.quaternion.clone();item.relative=sub(item.anchorBody.position,held.anchorBody.position);}}keys.add(event.code);return;
@@ -1910,7 +2007,7 @@ function handleKey(event){
 }
 function updateTarget(){
  snap=findSnap();updateCallout();updateCargoCallout();updateMenuConnector();updateInspection();updatePuzzleHUD();updateMoodSelection();updateAlphaHUD();
- if(document.pointerLockElement!==canvas){targetLabel.textContent='';crosshair.classList.remove('ready');return;}
+ if(!gameInputActive()){targetLabel.textContent='';crosshair.classList.remove('ready');return;}
  const hit=held||aimQubit();crosshair.classList.toggle('ready',!!hit);
  if(pendingUnitCreation)targetLabel.textContent='Clic izquierdo · crear '+creationTitle(pendingUnitCreation)+' · Esc / clic derecho · cancelar';
  else if(marquee)targetLabel.textContent='Suelta para seleccionar · hasta '+settings.maxSelect+' piezas';
@@ -2128,7 +2225,7 @@ function placeCallout(g,anchor){
  return chosen;
 }
 function updateCallout(){
- const info=panel.hidden&&menu.hidden&&commandMenu.hidden&&!marquee?(held||aimQubit(8,document.pointerLockElement===canvas?direction():hoverPointer?screenRay(hoverPointer.x,hoverPointer.y):V(0,1,0))):null;
+ const info=panel.hidden&&menu.hidden&&commandMenu.hidden&&!marquee?(held||aimQubit(8,gameInputActive()?direction():hoverPointer?screenRay(hoverPointer.x,hoverPointer.y):V(0,1,0))):null;
  updateMoodCallout(info);
  if(!info||!groups.includes(info.g)){callout.style.opacity='0';calloutState.g=null;return;}
  const g=info.g,box=screenBounds(g);if(!box){callout.style.opacity='0';return;}
@@ -2163,6 +2260,36 @@ function drawUnitOutline(pose,alpha=.7,selectedOutline=true){
  drawWideLines(points,[...(selectedOutline?visualRGB('outlineColor'):[.1,.15,.16]),alpha],visuals.outlineWidth);
 }
 function selectionGroups(){return groups.filter(g=>multiSelection.includes(g)||selected?.g===g);}
+function selectionHudSnapshot(team=selectionGroups()){
+ return team.map(g=>{
+  let geometry=selectionHudGeometry.get(g);
+  if(!geometry||geometry.source!==g.parts){
+   geometry={source:g.parts,parts:g.parts.map(p=>{const shape=unitShape(p),profile=unitProfile(p);return {id:p.id,p:[p.offset.x,p.offset.y,p.offset.z],q:[p.q.x,p.q.y,p.q.z,p.q.w],vertices:profile.vertices.map(v=>[v.x,v.y,v.z]),faces:profile.faces.map(face=>face.slice()),color:shape==='cube'?[.15,.18,.19]:shape==='coupler'?[.25,.30,.30]:[.48,.48,.48]};})};
+   selectionHudGeometry.set(g,geometry);
+  }
+  const summary=moodSummary([g]),agitation=Math.max(0,...g.parts.map(p=>p.mood.agitation||0));
+  return {id:g.body.id,name:g.parts[0].mood.name,count:g.parts.length,revision:g.parts.map(p=>p.id).join(','),parts:geometry.parts,mood:summary.counts.restless?'restless':summary.counts.excited?'excited':'neutral',energy:summary.energy,agitation,shaking:agitation>.65||speech.shake?.id===g.parts[0].id};
+ });
+}
+function selectFromHud(id,{toggle=false}={}){
+ const g=groups.find(item=>item.body.id===id);if(!g||story.transition||story.mode!=='playing')return false;
+ if(toggle){const team=selectionGroups();multiSelection=team.includes(g)?team.filter(item=>item!==g):[...team,g];selected=multiSelection.length?{g:multiSelection[0],part:multiSelection[0].parts[0]}:null;}
+ else {multiSelection=[g];selected={g,part:g.parts[0]};}
+ selectedCargo=null;selectionHudStamp='';redraw=true;return true;
+}
+function initSelectionHud(){
+ if(selectionHud||!window.QBitsSelectionHUD)return;
+ selectionHud=window.QBitsSelectionHUD.create({root:document.querySelector('#selection-hud'),onSelect:selectFromHud});
+ window.qbitsSelectionHud=selectionHud;
+ selectionHud.setHint?.('Mantén '+inputLabel('hud')+' para elegir · Ctrl + clic para quitar');
+}
+function updateSelectionHud(dt){
+ if(!selectionHud)return;
+ const active=story.ready&&story.mode==='playing'&&!story.transition&&!document.hidden&&panel.hidden&&menu.hidden&&commandMenu.hidden&&!radialOpen();
+ const team=active?selectionGroups():[],stamp=team.map(g=>g.body.id).join(',');selectionHudClock-=dt;
+ if(stamp!==selectionHudStamp||selectionHudClock<=0){selectionHudStamp=stamp;selectionHudClock=.08;selectionHudItems=selectionHudSnapshot(team);}
+ selectionHud.update(selectionHudItems,dt,{active,reducedMotion:!!reducedHudMotion?.matches});
+}
 function drawStructureOutlines(){
  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
  const selectedGroups=selectionGroups();
@@ -2425,6 +2552,7 @@ function clearSelection(){
  speech.nextHud=0;document.querySelector('#selection').textContent='';
 }
 function onCanvasMouseDown(event){
+ if(hudInputActive)return;
  if(radialOpen()){event.preventDefault();return;}
  if(event.button!==0&&event.button!==2)return;
  if(!storyActionAllowed())return;
@@ -2442,10 +2570,11 @@ function onCanvasMouseDown(event){
  const hadSelection=selectedTeam().length>0;
  if(!menu.hidden||!commandMenu.hidden){closeDetachMenu(false);closeCommandMenu(false);}
  if(hadSelection){clearSelection();if(document.pointerLockElement===canvas&&!aimQubit()&&!aimCargo(3))startMarquee();return;}
- if(document.pointerLockElement!==canvas)return;
+ if(!gameInputActive())return;
  grabQubit();
 }
 function onCanvasMouseUp(event){
+ if(hudInputActive)return;
  if(radialOpen()){event.preventDefault();return;}
  if(event.button!==0||held?.reward||held?.latched)return;
  if(marquee)finishMarquee();else releaseQubit(shiftDown());
@@ -2454,7 +2583,7 @@ function takeSelection(hit){
  const team=selectedTeam();if(!team.length||!canCarry(team)){announce('La selección supera la capacidad de agarre.');return;}
  const g=team.includes(hit.g)?hit.g:team[0],part=g===hit.g?hit.part:g.parts[0];
  pendingPickup={g,part,team:[...team]};
- if(document.pointerLockElement===canvas)completePendingPickup();else captureMouse();
+ if(gameInputActive())completePendingPickup();else captureMouse();
 }
 function completePendingPickup(){
  const request=pendingPickup;pendingPickup=null;if(!request||!groups.includes(request.g))return;
@@ -2480,7 +2609,7 @@ function openFloorOrders(point){
 }
 function handleSecondary(event){
  const rect=canvas.getBoundingClientRect();
- const dir=document.pointerLockElement===canvas?direction():screenRay(clamp(event.clientX-rect.left,0,canvas.clientWidth),clamp(event.clientY-rect.top,0,canvas.clientHeight));
+ const dir=gameInputActive()?direction():screenRay(clamp(event.clientX-rect.left,0,canvas.clientWidth),clamp(event.clientY-rect.top,0,canvas.clientHeight));
  if(openWorkshopMenu(dir)||openReconfigurationMenu(dir)||openProductionMenu(dir)||alphaSecondary(dir))return;
  const cargoHit=aimCargo(4,dir),hit=aimQubit(4,dir);
  if(cargoHit){
@@ -2640,7 +2769,7 @@ function drawTaskGuides(){
 function updateCargoCallout(){
  if(held)return;
  if(!panel.hidden||!menu.hidden||!commandMenu.hidden||marquee)return;
- const dir=document.pointerLockElement===canvas?direction():hoverPointer?screenRay(hoverPointer.x,hoverPointer.y):V(0,1,0),hit=aimCargo(8,dir);if(!hit){calloutState.cargo=null;return;}
+ const dir=gameInputActive()?direction():hoverPointer?screenRay(hoverPointer.x,hoverPointer.y):V(0,1,0),hit=aimCargo(8,dir);if(!hit){calloutState.cargo=null;return;}
  const c=hit.cargo,p=project(add(c.body.position,V(0,c.size/2+.025,0)));if(!p)return;
  const side=p.x<canvas.clientWidth/2?1:-1,x=clamp(p.x+side*130+(side>0?0:-156),12,canvas.clientWidth-168),y=clamp(p.y-32,18,canvas.clientHeight-60);
  if(calloutState.cargo!==c){calloutState={g:null,cargo:c,since:simTime};}
@@ -2725,7 +2854,7 @@ function rewardPlacement(){
  }return null;
 }
 function givePuzzleReward(){
- if(!puzzle.active||puzzle.pendingRewards<4||held||document.pointerLockElement!==canvas||!panel.hidden||!commandMenu.hidden||!menu.hidden)return false;
+ if(!puzzle.active||puzzle.pendingRewards<4||held||!gameInputActive()||!panel.hidden||!commandMenu.hidden||!menu.hidden)return false;
  const points=rewardPlacement();if(!points)return false;
  const team=points.map(p=>addQubit([p.x,p.y,p.z],1)),rootPoint=points[0],items=[];
  for(let i=0;i<team.length;i++){
@@ -2760,7 +2889,7 @@ function rayPuzzleBox(origin,dir,w,max){
 }
 function puzzleRayLimit(max,dir=direction()){for(const w of [...(puzzle.active?puzzle.walls:[]),...storyWorld.walls]){const d=rayPuzzleBox(V(...camera),dir,w,max);if(d!==null)max=Math.min(max,d);}return max;}
 function aimPuzzle(){
- if(!puzzle.active)return null;const d=document.pointerLockElement===canvas?direction():hoverPointer?screenRay(hoverPointer.x,hoverPointer.y):direction(),o=V(...camera);let best=Math.min(6,aimQubit(6,d)?.distance??6,raycastCargo(6,d)?.distance??6),found=null;
+ if(!puzzle.active)return null;const d=gameInputActive()?direction():hoverPointer?screenRay(hoverPointer.x,hoverPointer.y):direction(),o=V(...camera);let best=Math.min(6,aimQubit(6,d)?.distance??6,raycastCargo(6,d)?.distance??6),found=null;
  for(const p of puzzle.portals){const hit=rayPuzzleBox(o,d,{min:V(p.x-.72,0,p.z-.15),max:V(p.x+.72,1.98,p.z+.15)},best);if(hit!==null&&hit<best){best=hit;found={portal:p,point:V(p.x,1.45,p.z+.16)};}}
  for(const b of puzzle.buttons){const hit=rayPuzzleBox(o,d,{min:V(b.p.x-b.half,0,b.p.z-b.half),max:V(b.p.x+b.half,.018,b.p.z+b.half)},best);if(hit!==null&&hit<best){best=hit;found={button:b,point:add(b.p,V(0,.025,0))};}}
  return found;
@@ -2912,7 +3041,7 @@ function syncHeldFocusHUD(){
  }
 }
 function updateHeldFocus(dt,enabled=true){
- heldFocus.active=!!(enabled&&held&&groups.includes(held.g)&&document.pointerLockElement===canvas&&!document.hidden&&!radialOpen()&&!storySuspended()&&!story.transition&&storyLookAllowed());
+ heldFocus.active=!!(enabled&&held&&groups.includes(held.g)&&gameInputActive()&&!document.hidden&&!radialOpen()&&!storySuspended()&&!story.transition&&storyLookAllowed());
  let target=0;
  if(heldFocus.active){
   heldFocus.groups=(held.items||[held]).map(item=>item.g);
@@ -3460,6 +3589,7 @@ function layoutSpeech(){
   const el=document.querySelector('#callout-text');if(callout.style.opacity==='1'){const r=el.getBoundingClientRect();if(r.width&&r.height)speech.obstacles.push({x:r.left-8,y:r.top-8,w:r.width+16,h:r.height+16});}
  }
  for(const slot of speech.slots){if(!slot.s)continue;
+  if(slot.sizeDirty||slot.viewportWidth!==w||slot.viewportHeight!==h){slot.w=slot.node.offsetWidth;slot.h=slot.node.offsetHeight;slot.viewportWidth=w;slot.viewportHeight=h;slot.sizeDirty=false;}
   const screen=speechScreen(slot.s);
   if(simTime>=slot.nextVisibility){slot.visible=speechVisible(slot.s,screen);slot.nextVisibility=simTime+.25;}
   if(!screen||!slot.visible){slot.node.style.visibility='hidden';continue;}
@@ -4644,7 +4774,12 @@ function applyVisualUniforms(){
  gl.uniform1f(uniforms.uTextureScale,visuals.textureScale);gl.uniform1f(uniforms.uWarp,visuals.warp/100);gl.uniform1f(uniforms.uJitter,visuals.jitter/100);gl.uniform2f(uniforms.uResolution,canvas.width,canvas.height);gl.uniform1f(uniforms.uCel,visuals.cel);gl.uniform1f(uniforms.uLighting,visuals.lighting/100);gl.uniform1f(uniforms.uShadows,visuals.shadows==='off'?0:1);
 }
 function applyPreferences(next){
+ resetGameInputs();
  savedPreferences=preferences.sanitize(next);visuals=preferences.effective(savedPreferences);
+ window.qbitsSelectionHud?.setHint?.('Mantén '+inputLabel('hud')+' para elegir · Ctrl + clic para quitar');
+ window.QBitsSubtitles?.apply(savedPreferences);
+ for(const b of encounterBubbles)b.size=null;
+ for(const slot of speech.slots)slot.sizeDirty=true;
  window.QBitsMusic?.setVolume(savedPreferences.volume/100);window.QBitsMusic?.setMuted(!savedPreferences.music);
  restoreSceneProgram();resize();redraw=true;
 }
@@ -4853,6 +4988,8 @@ function frame(time) {
   const dt = Math.min(Math.max((time - previousTime) / 1000, 0), 0.05);
   let distance = 0;
   previousTime = time;
+  pollGamepadInput(dt);
+  updateSelectionHud(dt);
   if(settingsScreen?.isOpen){
     accumulator=0;
     if(!document.hidden && time-lastVisualFrame>=1000/30){renderSettingsPreview(time);lastVisualFrame=time;}
@@ -4865,14 +5002,15 @@ function frame(time) {
   }
   tickStory(dt);
   const frozen=storySuspended()||!!story.transition;
-  const active=document.pointerLockElement===canvas&&!document.hidden&&!frozen;
+  const active=gameInputActive()&&!document.hidden&&!frozen;
   if(!frozen)updatePosture(dt,active&&storyWalkAllowed(),keys.has('KeyC'));
   if (active) {
-    const forward = Number(keys.has('KeyW')) - Number(keys.has('KeyS'));
-    const sideways = Number(keys.has('KeyD')) - Number(keys.has('KeyA'));
+    const forward = clamp(Number(keys.has('KeyW')) - Number(keys.has('KeyS'))-gamepadMove[1],-1,1);
+    const sideways = clamp(Number(keys.has('KeyD')) - Number(keys.has('KeyA'))+gamepadMove[0],-1,1);
     if ((forward || sideways) && storyWalkAllowed() && !marquee && !(held && shiftDown())) {
       const oldX = position[0], oldZ = position[2];
-      movePlayer(position, yaw, forward, sideways, dt,posture.height<EYE_HEIGHT-.1?.58:1);
+      const analogSpeed=Math.min(1,Math.hypot(forward,sideways));
+      movePlayer(position, yaw, forward, sideways, dt,(posture.height<EYE_HEIGHT-.1?.58:1)*analogSpeed);
       resolvePuzzlePlayer(oldX,oldZ);resolveStoryPlayer(oldX,oldZ);
       distance = Math.hypot(position[0] - oldX, position[2] - oldZ);
       redraw = true;
@@ -4911,7 +5049,7 @@ window.QBitsGame={
   applyPreferences:()=>applyPreferences(savedPreferences),
   async prepare(onProgress=()=>{}){
     if(gamePrepared)return;
-    initUnitRadial();initStory();initSettingsScreen();resize();onProgress(.25);
+    initUnitRadial();initStory();initSettingsScreen();initSelectionHud();resize();onProgress(.25);
     await nextPaint();
     // Build the actual prologue before Jugar, retaining its bodies and GPU assets.
     beginIntro();gameMode('boot');story.started=false;
