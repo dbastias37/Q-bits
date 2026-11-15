@@ -37,7 +37,7 @@ function environment({ autoFonts = true, openingFailure = null, randomValue = .5
   const opening = {
     setProgress: value => fillValues.push(value),
     setReady: value => readyValues.push(value),
-    play: ({onFrame}) => { events.push('opening.play');onFrame({matrix:[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1],blur:12,progress:.8});return cinematicReady.promise; },
+    play: ({onFrame}) => { events.push('opening.play');onFrame({matrix:[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1],blur:6,opacity:0,progress:.8});return cinematicReady.promise; },
     dispose: () => events.push('opening.dispose')
   };
   const fontsReady = { Tengoku: deferred(), 'Spaceman UI': deferred(), 'LED Calculator': deferred() };
@@ -257,7 +257,8 @@ test('Comenzar starts the cinematic once and projects the inert live menu and ha
   assert.equal(e.events.includes('game.menu'), false, 'menu input waits for the camera dive');
   assert.equal(e.nodes.get('#main-screen').hidden,false);
   assert.equal(e.nodes.get('#main-screen').inert,true);
-  assert.equal(e.nodes.get('#main-screen').style.filter,'blur(12px)');
+  assert.equal(e.nodes.get('#main-screen').style.opacity,'0','menu stays invisible during the dive');
+  assert.equal(e.nodes.get('#main-screen').style.filter,'blur(6px)');
   assert.equal(e.document.body.dataset.booting, 'true');
   e.nodes.get('#boot-play').click();
   assert.equal(e.events.filter(v => v === 'opening.play').length, 1);
@@ -337,4 +338,10 @@ test('different startup random values change the loading pauses',async()=>{
  await a.advance(3000);await b.advance(3000);
  assert.notEqual(a.nodes.get('#boot-percent').textContent,b.nodes.get('#boot-percent').textContent);
  assertBlocked(a);assertBlocked(b);
+});
+
+test('short loading presentation finishes within 4.2 seconds even with longest random pauses',async()=>{
+ const e=environment({randomValue:.999});await e.loadScripts();e.gameReady.resolve();e.musicReady.resolve();await flush();
+ await e.advance(2000);assertBlocked(e);
+ await e.advance(2200);assert.equal(e.nodes.get('#boot-percent').textContent,'100%');assert.equal(e.nodes.get('#boot-play').disabled,false);
 });

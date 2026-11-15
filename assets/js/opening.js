@@ -13,7 +13,7 @@
   // to 15 world units. This exact outline-derived fallback also avoids tofu dots.
   const FONT_DOTS = [[-6.1765,-1.3245],[-5.7347,-.8827],[-6.6173,-1.3245],[-5.7347,-.4419],[-7.0592,-1.3245],[-5.7347,0],[-5.7347,.4408],[-7.5,-.8827],[-7.5,-.4419],[-6.6173,.4408],[-6.1765,.8827],[-5.7347,1.3245],[-7.5,0],[-7.5,.4408],[-6.6173,1.3245],[-7.5,.8827],[-7.0592,1.3245],[-3.0877,0],[-3.5296,0],[-3.9704,0],[-4.4123,0],[-4.8531,0],[-.8827,-.4419],[-.4408,0],[-2.2061,-1.3245],[-1.3235,-.4419],[-.4408,.4408],[-2.2061,-.8827],[-.4408,.8827],[-2.2061,-.4419],[-1.7653,0],[-2.2061,0],[-.8827,1.3245],[-2.2061,.4408],[-1.3235,1.3245],[-2.2061,.8827],[-1.7653,1.3245],[-2.2061,1.3245],[1.3235,-1.3245],[1.3235,-.4419],[.8816,-.4419],[1.3235,0],[1.3235,.4408],[1.3235,.8827],[1.7643,1.3245],[1.3235,1.3245],[.8816,1.3245],[3.9704,-1.3245],[3.9704,-.8827],[4.4112,-.4419],[3.9704,-.4419],[3.5285,-.4419],[3.9704,0],[4.8531,.8827],[3.9704,.4408],[3.9704,.8827],[4.4112,1.3245],[7.0581,-.4419],[6.6173,-.4419],[6.1755,-.4419],[7.0581,.4408],[7.5,.8827],[6.6173,.4408],[5.7347,0],[6.1755,.4408],[7.0581,1.3245],[6.6173,1.3245],[6.1755,1.3245],[5.7347,1.3245]];
   const SIZE = .335;
-  const TIMING = Object.freeze({ black: .8, assemble: 11.5, hold: .5, glow: 1.2, flight: 10, reducedFlight: 2.8 });
+  const TIMING = Object.freeze({ black: .8, assemble: 11.5, hold: .5, glow: 1.2, flight: 8, reducedFlight: 2.8, menuReveal: 1.3 });
 
   function fontDots() {
     // Exact centers extracted from the bundled font contours, independent of
@@ -118,13 +118,14 @@
   function menuSize(aspect) { const width=SIZE*.88*Math.min(1,aspect);return [width,width/aspect]; }
   function flightCamera(t, aspect, target=[0,SIZE/2,0], reduced=false) {
     t=clamp(t);
-    const travel=smoother(t*t),turn=smoother(t)*Math.PI*2;
+    const travel=smoother(t*t),turn=reduced?0:smoother(t)*Math.PI*2;
     const surface=[target[0],SIZE+.002,target[2]],fov=mix(1.22,1.04,smoother(t));
     const distance=menuSize(aspect)[1]/(2*Math.tan(1.04/2));
-    const eye=lerp([0,fitHeight(aspect),0],[surface[0],surface[1]+distance,surface[2]],travel);
-    const radius=reduced?0:8.8*Math.sin(Math.PI*t)**2*(1-travel);
-    eye[0]+=Math.sin(turn)*radius;eye[2]+=Math.cos(turn)*radius;
-    return {eye,at:lerp([0,0,0],surface,smoother(t)),roll:reduced||t===1?0:Math.sin(turn)*.045*Math.sin(Math.PI*t)**2,fov,topDown:true};
+    // A shrinking helix around a vertical optical axis: one monotonic turn,
+    // without alternating bank, lateral excursions or target-tracking pitch.
+    const x=-surface[0]*(1-travel),z=-surface[2]*(1-travel);
+    const eye=[surface[0]+x*Math.cos(turn)-z*Math.sin(turn),mix(fitHeight(aspect),surface[1]+distance,travel),surface[2]+x*Math.sin(turn)+z*Math.cos(turn)];
+    return {eye,at:[eye[0],mix(0,surface[1],travel),eye[2]],roll:turn,fov,topDown:true};
   }
   // Project the live DOM menu onto the same world plane as the cube's top face.
   // CSS and WebGL share this homogeneous transform; at t=1 it is the identity.
@@ -195,7 +196,7 @@
       const w=Math.max(1,Math.round(bounds.width*dpr*limit)),h=Math.max(1,Math.round(bounds.height*dpr*limit));
       if(width!==w||height!==h){width=canvas.width=w;height=canvas.height=h;aspect=w/h;gl.viewport(0,0,w,h);}
     }
-    let state='loading',progress=0,ready=false,clock=0,last=0,raf=0,disposed=false,pieces=[],pathBuffer=null,pathCount=0,resolvePlay,rejectPlay,promise,onMenuFrame=null,flightProgress=0;
+    let state='loading',progress=0,ready=false,clock=0,last=0,raf=0,disposed=false,pieces=[],pathBuffer=null,pathCount=0,resolvePlay,rejectPlay,promise,onMenuFrame=null,flightProgress=0,menuOpacity=0;
     let formationStart=TIMING.black,settledAt=null,diveTarget=[0,SIZE/2,0];
     const diveDuration=reduced?TIMING.reducedFlight:TIMING.flight;
     function finish(){if(state==='complete')return;state='complete';resolvePlay?.();}
@@ -227,7 +228,9 @@
           const flightTime=glowTime-TIMING.glow;
           state='dive';flightProgress=clamp(flightTime/diveDuration);
           view=flightCamera(flightProgress,aspect,diveTarget,reduced);
-          if(flightProgress===1)finish();
+          menuOpacity=smoother((flightTime-diveDuration)/TIMING.menuReveal);
+          if(flightProgress===1)state='reveal';
+          if(menuOpacity===1)finish();
         }
       }
       camera(view);
@@ -238,7 +241,7 @@
       if(emission>.015){gl.disable(gl.DEPTH_TEST);gl.depthMask(false);gl.blendFunc(gl.SRC_ALPHA,gl.ONE);for(const p of pieces)glowAt(p.p,1.5,Math.min(.38,emission*.24));gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);}
       if(onMenuFrame&&since>=TIMING.hold+TIMING.glow){
         const bounds=canvas.getBoundingClientRect();
-        onMenuFrame({matrix:menuSurface(view,aspect,bounds.width,bounds.height,diveTarget),blur:22*(1-smoother((flightProgress-.65)/.35)),progress:flightProgress});
+        onMenuFrame({matrix:menuSurface(view,aspect,bounds.width,bounds.height,diveTarget),blur:6*(1-menuOpacity),opacity:menuOpacity,progress:flightProgress});
       }
     }
     function frame(now){if(disposed)return;const dt=last?Math.min(.04,(now-last)/1000):0;last=now;if(!doc.hidden){if(state!=='loading'&&state!=='complete')clock+=dt;render(dt);}raf=win.requestAnimationFrame(frame);}
@@ -254,7 +257,7 @@
         pieces=makePieces(fontDots(doc));paths();diveTarget=[...pieces.reduce((a,b)=>Math.hypot(a.target[0],a.target[2])<Math.hypot(b.target[0],b.target[2])?a:b).target];
         onMenuFrame=onFrame;state='fade';clock=0;promise=new Promise((resolve,reject)=>{resolvePlay=resolve;rejectPlay=reject;});return promise;
       },
-      getState(){return {phase:state,elapsed:clock,cubes:pieces.length,settled:pieces.filter(p=>p.settled).length,reducedMotion:reduced,flightProgress};},
+      getState(){return {phase:state,elapsed:clock,cubes:pieces.length,settled:pieces.filter(p=>p.settled).length,reducedMotion:reduced,flightProgress,menuOpacity};},
       dispose
     };
   }

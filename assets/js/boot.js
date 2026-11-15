@@ -11,13 +11,13 @@
   let opening, openingStarted = false;
   let displayed = 0, elapsed = 0;
   const stops = [[0,0]];
-  let loadTime = .3 + Math.random()*.5, loadValue = 0;
-  for (let i=0;i<5;i++) {
-    loadValue = Math.min(95, loadValue + 10 + Math.random()*12);
-    loadTime += .6 + Math.random()*.55;stops.push([loadTime,loadValue]);
-    loadTime += .2 + Math.random()*.75;stops.push([loadTime,loadValue]);
+  let loadTime = .2 + Math.random()*.1, loadValue = 0;
+  for (let i=0;i<3;i++) {
+    loadValue = Math.min(95, loadValue + 20 + Math.random()*10);
+    loadTime += .45 + Math.random()*.3;stops.push([loadTime,loadValue]);
+    loadTime += .12 + Math.random()*.25;stops.push([loadTime,loadValue]);
   }
-  stops.push([loadTime+.8,100]);
+  stops.push([loadTime+.45,100]);
   const stages = { physics: 0, code: 0, scene: 0, music: 0, fonts: 0 };
   let ready = false, presentationDone = false, failed = false;
   function update(key, value) {
@@ -52,7 +52,7 @@
   function loadScript(path) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = path + '?v=20261115-opening-3';
+      script.src = path + '?v=20261115-opening-4';
       script.onload = resolve;
       script.onerror = () => reject(new Error('No se pudo cargar ' + path));
       document.head.append(script);
@@ -108,14 +108,14 @@
     screen.dataset.stage = 'cinematic';loading.hidden = true;
     try {
       mainMenu.hidden=false;mainMenu.inert=true;mainMenu.classList.add('cube-menu');mainMenu.style.opacity='0';
-      await opening.play({onFrame:({matrix,blur,progress})=>{
+      await opening.play({onFrame:({matrix,blur,opacity,progress})=>{
         mainMenu.style.transform='matrix3d('+matrix.join(',')+')';
-        mainMenu.style.filter='blur('+blur+'px)';mainMenu.style.opacity='1';
+        mainMenu.style.filter='blur('+blur+'px)';mainMenu.style.opacity=String(opacity);
         const focus=Math.max(0,Math.min(1,(progress-.65)/.35));
         openingCanvas.style.filter='blur('+(8*Math.sin(Math.PI*focus)**2)+'px)';
       }});
       if (failed) return;
-      // The same menu is already full-size and focused. Hand off input only.
+      // The landing and subtle reveal are finished. Hand off input without moving the camera.
       QBitsGame.menu();
       document.body.dataset.booting = 'false';
       mainMenu.classList.remove('cube-menu');mainMenu.inert=false;

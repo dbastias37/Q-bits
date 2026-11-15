@@ -63,5 +63,17 @@ test('one continuous flight lands on the menu without a projection jump',()=>{
 test('reduced motion removes the orbit and banking while keeping the same menu landing',()=>{
  const target=[0,.1675,0];
  for(const t of [0,.2,.5,.8,1]){const c=opening.flightCamera(t,.45,target,true);assert.equal(c.eye[0],0);assert.equal(c.eye[2],0);assert.equal(c.roll,0);}
- assert.deepEqual(opening.flightCamera(1,.45,target,true),opening.flightCamera(1,.45,target,false));
+ assert.deepEqual(opening.flightCamera(1,.45,target,true).eye,opening.flightCamera(1,.45,target,false).eye);
+});
+
+test('rocket descent keeps a vertical optical axis and a single monotonic turn',()=>{
+ const target=[-.4408,.1675,0];let last=null;
+ for(let i=0;i<=1000;i++){
+  const c=opening.flightCamera(i/1000,16/9,target);
+  assert.equal(c.eye[0],c.at[0]);assert.equal(c.eye[2],c.at[2]);
+  const radius=Math.hypot(c.eye[0]-target[0],c.eye[2]-target[2]);
+  if(last){assert.ok(c.eye[1]<=last.eye[1]+1e-9);assert.ok(c.roll>=last.roll);assert.ok(radius<=last.radius+1e-9);}
+  last={...c,radius};
+ }
+ assert.ok(Math.abs(last.roll-Math.PI*2)<1e-8);
 });
