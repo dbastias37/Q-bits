@@ -31,7 +31,7 @@ body[data-unit-radial='open'] #crosshair,body[data-unit-radial='open'] #tools,bo
 #unit-radial .radial-label{position:absolute;transform:translateX(-50%);text-align:center;pointer-events:none;line-height:1.4;opacity:1;}
 /* A soft inner reading plate stays local to the lettering. Dark pieces behind
    the glass cannot swallow a name, while most of the front remains clear. */
-#unit-radial .radial-label::before{content:'';position:absolute;inset:-3px -4px;z-index:-1;border-radius:50%;background:radial-gradient(ellipse,#f5fbfbe0 15%,#f5fbfbad 58%,#f5fbfb00 76%);filter:blur(3px);pointer-events:none;}
+#unit-radial .radial-label::before{content:'';position:absolute;inset:-8px 2px;z-index:-1;border-radius:14px;background:linear-gradient(90deg,transparent,#f5fbfbbd 26%,#f5fbfbbd 74%,transparent);filter:blur(8px);pointer-events:none;}
 #unit-radial .radial-label.hovered{opacity:1;}
 #unit-radial .radial-label strong{display:block;font:400 var(--radial-label-size,11px)/1.5 var(--font-menu,system-ui,sans-serif);color:#293d42;white-space:nowrap;text-shadow:0 1px 4px #ffffffb3;}
 #unit-radial .radial-label small{display:block;font:400 clamp(9px,1.2vw,11px)/1.4 var(--font-info,system-ui,sans-serif);color:#566c72;margin-top:2px;text-shadow:0 1px 4px #ffffffb3;}
