@@ -10,7 +10,7 @@
   <link rel="preload" href="assets/fonts/tengoku/Tengoku.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="preload" href="assets/fonts/spaceman/Spaceman-Regular.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="preload" href="assets/fonts/led-calculator/LEDCalculator.ttf" as="font" type="font/ttf" crossorigin>
-  <link rel="stylesheet" href="assets/css/radial-menu.css?v=20261114-16">
+  <link rel="stylesheet" href="assets/css/radial-menu.css?v=20261114-17">
   <style>
     * { box-sizing: border-box; }
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000; }
@@ -386,6 +386,7 @@ input,select,textarea{font-family:var(--font-menu);}
       <p id="mechanism-unlock"></p>
       <div class="actions"><button id="create-coupler" type="button">Crear enganche</button><button id="create-rotor" type="button">Crear rotor</button></div>
       <p>El enganche combina una base cúbica y una punta. Une dos puntas con Shift para formar un rotor. Une las piezas de tu rueda a las caras cuadradas del lado que girará.</p>
+      <p>Puedes montar varios rotores completos en un mismo chasis. Toma el enganche que quieres fijar, acerca una de sus caras cuadradas al cuerpo y suelta con Shift. La otra mitad conserva su eje libre para la rueda.</p>
       <p id="rotor-status"></p>
       <label>Montaje<select id="rotor-mount"><option value="wheel">Rueda libre · el conjunto puede moverse</option><option value="fixed">Eje fijo · base anclada al banco</option></select></label>
       <label>Velocidad objetivo <output id="rotor-rpm-value">30 rpm</output><input id="rotor-rpm" type="range" min="1" max="120" step="1" value="30"></label>
@@ -450,6 +451,6 @@ input,select,textarea{font-family:var(--font-menu);}
     <div class="actions"><button id="create" type="button">Crear Q-bit</button><button id="remove" type="button">Borrar pieza</button><button id="split" type="button">Desarmar estructura</button></div>
     <button id="resume" type="button">Volver a la sala</button>
   </section>
-  <script src="assets/js/boot.js?v=20261114-16" defer></script>
+  <script src="assets/js/boot.js?v=20261114-17" defer></script>
 </body>
 </html>

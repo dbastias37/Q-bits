@@ -18,6 +18,7 @@ La revisión de experiencia y equilibrio se hará cuando el usuario pruebe las m
 | V | Niveles 19–20: dosificación y primer encargo de seis paquetes | Integrado en main mediante PR #3 |
 | Taller y sensor | Dispositivo de contacto, investigación pagada y calibraciones de batería/masa/movimiento | Implementado y verificado: 256 pruebas completas |
 | Integración | Continuidad de sensores, enfriadores con baterías mejoradas y reinicio de lotes con material tomado | Implementado y verificado: 263 pruebas completas |
+| Chasis articulados | Unión con Shift de rotores completos a un cuerpo común, conservando cada eje | Corregido; prueba de lingote con cuatro rotores y cuatro ruedas |
 | Campaña amplia | Alrededor de diez misiones grandes en galpones, después de enseñar las mecánicas y materiales necesarios | Dirección registrada; sin etapas ni numeración definitivas |
 | Giro narrativo | Cooperación manipulada para producir cubos, explotación revelada y fuga final | Solo registro de diseño; sin cambios de diálogos, IA o etapas |
 | Posjuego | Desafíos posteriores, mejores marcas y progresión de coordinación | Pendiente |
@@ -73,6 +74,10 @@ Los cubos habrían aprovechado la simpatía y cooperación del jugador para recu
 El núcleo queda registrado; el momento del giro, los motivos concretos, aliados, responsabilidad del NPC y escenas siguen abiertos. Las propuestas de indicios y fuga se describen en [el prompt maestro](PROMPT_MAESTRO_CAMPANA.md#giro-narrativo-y-fuga). Mantener la conservación de materia y las capacidades actuales de los cubos: producir compañeros usa materia externa, los paquetes actuales son inertes y la hostilidad no equivale a alterar arbitrariamente emociones o físicas. Las referencias Portal y The Stanley Parable orientan la sorpresa, sin copiar su guion. No implementar todavía este arco.
 
 ## Al retomar
+
+Corrección del montaje de chasis: el agarre de un rotor recoge dos cuerpos y la regla antigua bloqueaba toda unión si había más de un cuerpo sujeto. Ahora un componente conectado completo puede ajustarse y soldarse por una cara compatible, transformando sus cuerpos juntos; la unión rígida afecta solo al cuerpo de contacto. Se mantienen los ejes independientes, las comprobaciones de espacio de todo el conjunto y el rechazo de ciclos rígidos y selecciones inconexas. La previsualización magnética guía todas las mitades. No se elevan automáticamente los límites de carga ni de agarre.
+
+Se añadieron siete regresiones con juego real y Cannon: montaje por agarre/Shift de cuatro rotores en un lingote de 14 Q-bits; cuatro ruedas de cinco piezas impulsando el chasis (38 piezas en total); guardado/copia/recuperación de sus cuatro articulaciones; traslado de un chasis articulado para otra unión; obstáculo en la mitad remota; selección inconexa/ciclo; previsualización y reversión de una punta rechazada. La suite completa pasa **270 pruebas**. Son pruebas de lógica y simulación, no una partida visual en navegador. La siguiente revisión del jugador debe comprobar comodidad del montaje, selección del enganche y ajustes de carga/torque de su vehículo.
 
 Primero recoger las pruebas del jugador sobre lo existente y revisar qué capacidades ya funcionan y cuáles necesitan correcciones o una enseñanza breve. Después se podrá estudiar, en el banco, una instalación con varias máquinas conectadas y al menos dos soluciones físicas verificables. Aprovechar dosificación, transformación, transporte, empaquetado y sensor existentes; no introducir piezas nuevas solo para llenar misiones.
 

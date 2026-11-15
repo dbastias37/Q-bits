@@ -1033,7 +1033,7 @@ function releaseQubit(join=false){
  const g=held.g,items=held.items||[held],dock=story.dockCandidate;
  for(const item of items){if(item.joint)world.removeConstraint(item.joint);if(item.anchorBody)world.removeBody(item.anchorBody);item.g.body.angularDamping=settings.damping;item.g.body.fixedRotation=false;item.g.body.updateMassProperties();}
  let joined=null;
- if(items.length===1&&join&&snap&&snap.source===g&&groups.includes(snap.target))joined=weld(snap);
+ if(heldMechanismCanSnap()&&join&&snap&&snap.source===g&&groups.includes(snap.target))joined=weld(snap);
  if(!joined)for(const item of items){item.g.body.velocity.set(0,0,0);item.g.body.wakeUp();}
  held=null;snap=null;tryDockCampaign(g,dock);
 }
@@ -1219,7 +1219,7 @@ function findConvexSnap(source,part,target,t,limit){
  }
  // Most frames need one scene collision check, regardless of the number of faces.
  candidates.sort((a,b)=>a.score-b.score);
- return candidates.find(c=>validPose(source,c.position,c.quaternion))||null;
+ return candidates.find(c=>validSnapPose(source,c.position,c.quaternion))||null;
 }
 function findCompoundSquareSnap(source,target,limit){
  if(source.body.position.distanceTo(target.body.position)>source.body.boundingRadius+target.body.boundingRadius+limit)return null;
@@ -1243,7 +1243,7 @@ function findCompoundSquareSnap(source,target,limit){
   }
  }
  candidates.sort((a,b)=>a.score-b.score);
- return candidates.find(candidate=>validPose(source,candidate.position,candidate.quaternion))||null;
+ return candidates.find(candidate=>validSnapPose(source,candidate.position,candidate.quaternion))||null;
 }
 // Mechanical connections remain separate rigid bodies: stable unit IDs survive
 // ordinary weld/split operations, and the hinge is rebuilt before the next step.
@@ -1440,13 +1440,36 @@ function findRotorSnap(source,target,limit){
   const delta=Q();delta.setFromVectors(at.axis,mul(bt.axis,-1));delta.normalize();const quaternion=delta.mult(source.body.quaternion);quaternion.normalize();
   const local=add(a.part.offset,a.part.q.vmult(V(0,CUBE_SIZE*51/56,0))),position=sub(bt.point,quaternion.vmult(local));
   const score=distance+(1-qSimilarity(quaternion,source.body.quaternion))*.025;
-  if(score>=limit||best&&score>=best.score||!validPose(source,position,quaternion))continue;
+  if(score>=limit||best&&score>=best.score||!validSnapPose(source,position,quaternion))continue;
   best={source,target,position,quaternion,score,rotorTip:true,aId:a.part.id,bId:b.part.id,face:{p:bt.point,q:b.q,axis:1,normal:bt.axis,dimensions:V(.018,.018,.018)}};
  }return best;
 }
 
+// Snap a connected mechanism as one placement, while retaining each rigid
+// body and every hinge. Unrelated marquee selections still cannot be welded.
+function heldMechanismCanSnap(){
+ if(!held)return false;
+ const members=rotorConnectedGroups([held.g]),items=held.items||[held];
+ return items.length===members.length&&members.every(g=>items.some(item=>item.g===g));
+}
+function mechanismSnapPoses(source,position,quaternion){
+ const delta=quaternion.mult(source.body.quaternion.inverse());delta.normalize();
+ return rotorConnectedGroups([source]).map(g=>({g,p:add(position,delta.vmult(sub(g.body.position,source.body.position))),q:delta.mult(g.body.quaternion)}));
+}
+function validSnapPose(source,position,quaternion){
+ const placement=mechanismSnapPoses(source,position,quaternion),members=placement.map(item=>item.g);
+ return placement.every(item=>validPose(item.g,item.p,item.q,members));
+}
+function placeSnappedMechanism(placement){
+ for(const {g,p,q}of placement){g.body.position.copy(p);g.body.quaternion.copy(q);g.body.aabbNeedsUpdate=true;g.body.updateInertiaWorld(true);}
+}
+function settleSnappedMechanisms(source,target){
+ const members=rotorConnectedGroups([source,target]);
+ for(const rotor of rotors)if(rotorGroups(rotor).some(g=>members.includes(g)))unpinRotor(rotor);
+ for(const g of members){g.body.velocity.set(0,0,0);g.body.angularVelocity.set(0,0,0);g.body.wakeUp();}
+}
 function findSnap(){
- if(!held||held.shakeSeparated||!shiftDown()||(held.items&&held.items.length>1))return null;
+ if(!held||held.shakeSeparated||!shiftDown()||!heldMechanismCanSnap())return null;
  const source=held.g,part=partPose(source,held.part);let candidate=null,best=.055;
  for(const target of groups){if(target===source||target.route||target.haulJob||rotorConnectedGroups([source]).includes(target))continue;
   const tip=findRotorSnap(source,target,best);if(tip){candidate=tip;best=tip.score;}
@@ -1465,7 +1488,7 @@ function findSnap(){
    if(distance>=best)continue;
    const partQ=nearestRelative(t.q,part.q),delta=partQ.mult(part.q.inverse()),quaternion=delta.mult(source.body.quaternion);
    const position=sub(center,quaternion.vmult(held.part.offset));
-   if(!validPose(source,position,quaternion))continue;
+   if(!validSnapPose(source,position,quaternion))continue;
    best=distance;candidate={source,target,position,quaternion,score:distance,face:{p:add(t.p,mul(normal,HALF+.001)),normal,q:t.q,axis}};
    }
   }
@@ -1477,17 +1500,19 @@ function weld(candidate){
  if([candidate.source,candidate.target].some(g=>g?.parts.some(p=>p.mood.production))){announce('La materia de este lote se combina dentro de la cámara.');return null;}
  const {source,target,position,quaternion}=candidate;
  if(source===target||!groups.includes(source)||!groups.includes(target)||!position||!quaternion||!['x','y','z'].every(k=>Number.isFinite(position[k]))||!['x','y','z','w'].every(k=>Number.isFinite(quaternion[k]))||Math.abs(quaternion.x**2+quaternion.y**2+quaternion.z**2+quaternion.w**2-1)>1e-5)return null;
- if(!validPose(source,position,quaternion)||rotorConnectedGroups([source]).includes(target))return null;
+ if(!validSnapPose(source,position,quaternion)||rotorConnectedGroups([source]).includes(target))return null;
  if(candidate.rotorTip){
-  const oldP=source.body.position.clone(),oldQ=source.body.quaternion.clone();source.body.position.copy(position);source.body.quaternion.copy(quaternion);source.body.aabbNeedsUpdate=true;
+  const placement=mechanismSnapPoses(source,position,quaternion),before=placement.map(({g})=>({g,p:g.body.position.clone(),q:g.body.quaternion.clone()}));placeSnappedMechanism(placement);
   const rotor=connectRotorTips(candidate.aId,candidate.bId);
-  if(!rotor){source.body.position.copy(oldP);source.body.quaternion.copy(oldQ);source.body.aabbNeedsUpdate=true;return null;}
+  if(!rotor){placeSnappedMechanism(before);return null;}
+  settleSnappedMechanisms(source,target);
   selected={g:source,part:source.parts.find(p=>p.id===candidate.aId)||source.parts[0]};announce('Rotor unido · clic derecho → Rotación');return source;
  }
  const sourceParts=poses(source,position,quaternion),targetParts=poses(target);
  if(sourceParts.some(a=>targetParts.some(b=>obbOverlap(a,b,.000001))))return null;
  if(!assembliesTouch(sourceParts,targetParts))return null;
  const parts=sourceParts.map(o=>({id:o.part.id,weight:o.part.weight,shape:o.part.shape,p:o.p,q:o.q,mood:copyMood(o.part.mood)})).concat(worldParts(target));
+ const placement=mechanismSnapPoses(source,position,quaternion);settleSnappedMechanisms(source,target);placeSnappedMechanism(placement);
  const ref=target.body.quaternion.clone();removeGroup(source);removeGroup(target);const joined=makeGroup(parts,ref);refreshRotors();
  selected={g:joined,part:joined.parts[0]};queueSpeech(joined,'happy',{kind:'joined',indices:[7,9,15,17]});announce('Unidos · '+joined.parts.length+' '+groupUnitLabel(joined)+' · '+totalWeight(joined)+' u');return joined;
 }
@@ -1519,10 +1544,12 @@ function updateGrab(dt){
   if(tilt||turn){const axis=V(Math.cos(yaw)*tilt,turn,-Math.sin(yaw)*tilt);axis.normalize();const q=Q();q.setFromAxisAngle(axis,dt*settings.rotationSpeed);held.rotation=q.mult(held.rotation);}
  }
  const rootTarget=campaignDockTarget(tutorialGripTarget(add(add(V(...camera),mul(direction(),held.distance)),held.rootOffset||V()))),rotationDelta=held.rotation.mult(held.initialRotation.inverse());
+ const snapPoses=snap&&snap.source===held.g?mechanismSnapPoses(held.g,snap.position,snap.quaternion):[];
  for(const item of held.items||[held]){
   const b=item.g.body;b.wakeUp();b.angularDamping=.85+settings.grip*.1499;
   let target=add(rootTarget,rotationDelta.vmult(item.relative||V())),desired=null,strength=160;
-  if(snap&&item.g===held.g){target=add(snap.position,snap.quaternion.vmult(item.anchor));desired=snap.quaternion;item.restQ=null;}
+  const snapped=snapPoses.find(pose=>pose.g===item.g);
+  if(snapped){target=add(snapped.p,snapped.q.vmult(item.anchor));desired=snapped.q;item.restQ=null;}
   else if(story.dockCandidate&&item.g===held.g){desired=story.dockCandidate.quaternion;item.restQ=null;}
   else if(shiftDown()){desired=rotationDelta.mult(item.initialQ||held.initialRotation);item.restQ=null;}
   else if(held.age>.22){if(!item.restQ)item.restQ=b.quaternion.clone();desired=item.restQ;strength=30+settings.grip*35;}
@@ -1985,7 +2012,7 @@ function findBlockSnap(source,target){
    const k=['x','y','z'][axis],normal=targetPose.q.vmult(mul(axes[axis],sign));
    const center=add(targetPose.p,mul(normal,(target.block.size[k]+size[k])/2));
    const distance=center.distanceTo(sourcePose.p);if(distance>limit)continue;
-   const position=sub(center,q.vmult(source.block.center));if(!validPose(source,position,q))continue;
+   const position=sub(center,q.vmult(source.block.center));if(!validSnapPose(source,position,q))continue;
    const score=distance+(1-qSimilarity(q,source.body.quaternion))*.025;if(best&&score>=best.score)continue;
    best={source,target,position,quaternion:q,score,wholeFace:true,face:{p:add(targetPose.p,mul(normal,target.block.size[k]/2+.001)),normal,q:targetPose.q,axis,dimensions:target.block.size}};
   }
