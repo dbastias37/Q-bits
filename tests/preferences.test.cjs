@@ -47,3 +47,7 @@ test('settings exposes all performance/audio controls and preview cannot advance
  tabs[2].dispatchEvent({type:'click'});const volume=doc.querySelector('#pref-volume');volume.value='65';volume.dispatchEvent({type:'input'});assert.equal(settings.draft.volume,65);
  const before=t.groups.map(g=>[g.body.position.x,g.body.position.y,g.body.position.z]),look=t.getLook();assert.doesNotThrow(()=>t.renderSettingsPreview(3000));assert.deepEqual(t.getLook(),look);assert.deepEqual(t.groups.map(g=>[g.body.position.x,g.body.position.y,g.body.position.z]),before);
 });
+test('after saving without leaving, subsequent edits remain attached to the new draft',()=>{
+ const {settings,doc,click,t}=uiSetup();settings.open('pause');let color=doc.querySelector('#pref-outlineColor');color.value='#ffaa00';color.dispatchEvent({type:'input'});click('settings-save');assert.equal(t.getVisuals().outlineColor,'#ffaa00');
+ color=doc.querySelector('#pref-outlineColor');color.value='#dd33ee';color.dispatchEvent({type:'input'});assert.equal(settings.draft.outlineColor,'#dd33ee');assert.equal(t.getVisuals().outlineColor,'#ffaa00');settings.requestClose();assert.equal(doc.querySelector('#settings-confirm').hidden,false);click('settings-confirm-save');assert.equal(t.getVisuals().outlineColor,'#dd33ee');
+});
