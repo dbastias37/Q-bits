@@ -28,7 +28,10 @@ body[data-unit-radial='open'] #crosshair,body[data-unit-radial='open'] #tools,bo
 #unit-radial .radial-models{z-index:3;}
 #unit-radial .radial-lines{z-index:4;}
 #unit-radial .radial-label,#unit-radial .radial-description,#unit-radial .radial-cancel{z-index:5;}
-#unit-radial .radial-label{position:absolute;transform:translateX(-50%);text-align:center;pointer-events:none;line-height:1.4;opacity:.86;transition:opacity .16s;}
+#unit-radial .radial-label{position:absolute;transform:translateX(-50%);text-align:center;pointer-events:none;line-height:1.4;opacity:1;}
+/* A soft inner reading plate stays local to the lettering. Dark pieces behind
+   the glass cannot swallow a name, while most of the front remains clear. */
+#unit-radial .radial-label::before{content:'';position:absolute;inset:-3px -4px;z-index:-1;border-radius:50%;background:radial-gradient(ellipse,#f5fbfbe0 15%,#f5fbfbad 58%,#f5fbfb00 76%);filter:blur(3px);pointer-events:none;}
 #unit-radial .radial-label.hovered{opacity:1;}
 #unit-radial .radial-label strong{display:block;font:400 var(--radial-label-size,11px)/1.5 var(--font-menu,system-ui,sans-serif);color:#293d42;white-space:nowrap;text-shadow:0 1px 4px #ffffffb3;}
 #unit-radial .radial-label small{display:block;font:400 clamp(9px,1.2vw,11px)/1.4 var(--font-info,system-ui,sans-serif);color:#566c72;margin-top:2px;text-shadow:0 1px 4px #ffffffb3;}
@@ -46,6 +49,7 @@ body[data-unit-radial='open'] #crosshair,body[data-unit-radial='open'] #tools,bo
 #unit-radial .radial-cursor::after{content:'';display:block;width:7px;height:7px;transform:translate(-50%,-50%);border:1px solid #344b54;border-radius:50%;background:#ffffffe6;box-shadow:0 0 0 3px #ffffff51;transition:width .16s,height .16s,background .16s;}
 #unit-radial .radial-cursor.over-unit::after{width:10px;height:10px;background:#344b54;box-shadow:0 0 0 3px #ffffffb5;}
 #unit-radial .radial-cursor.over-locked::after{background:#ffffffb3;border-color:#87969c;box-shadow:0 0 0 3px #ffffff51;}
+#unit-radial .radial-heading,#unit-radial .radial-mechanism-heading,#unit-radial .radial-help,#unit-radial .radial-cancel{color:#425a60;text-shadow:0 1px 1px #fff,0 -1px 1px #fff,1px 0 1px #fff,-1px 0 1px #fff,0 0 7px #fff;}
 /* Native refraction draws the very same contours over the scene framebuffer.
    Keep only sharp DOM text, focus cues, connectors and the figure previews. */
 #unit-radial.glass-native{filter:none;transform:none;transition:opacity .24s linear;}
