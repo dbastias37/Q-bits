@@ -320,9 +320,9 @@ const controlHolds=new Map(),controller=window.QBitsControls?.gamepad();
 const keyboardInput=window.QBitsControls?.keyboard(()=>savedPreferences.controls?.keyboard||window.QBitsControls.defaults().keyboard,(id,down,event)=>dispatchControlAction(id,down,'keyboard',event));
 function gameInputActive(){return !hudInputActive&&(document.pointerLockElement===canvas||gamepadActive);}
 function inputLabel(action){return window.QBitsControls?.labelFor(action,savedPreferences)||action;}
-function controlEvent(code,event={},source='keyboard'){return {code,repeat:false,target:canvas,clientX:event.clientX??canvas.clientWidth/2,clientY:event.clientY??canvas.clientHeight/2,altKey:altDown()||!!event.altKey,ctrlKey:ctrlDown()||!!event.ctrlKey,shiftKey:shiftDown()||!!event.shiftKey,metaKey:!!event.metaKey,source,preventDefault(){event.preventDefault?.();},stopPropagation(){event.stopPropagation?.();}};}
+function controlEvent(code,event={},source='keyboard'){return {code,repeat:false,target:canvas,clientX:event.clientX??canvas.clientWidth/2,clientY:event.clientY??canvas.clientHeight/2,altKey:altDown()||(!!event.altKey&&!/^Alt/.test(event.code||'')),ctrlKey:ctrlDown()||(!!event.ctrlKey&&!/^Control/.test(event.code||'')),shiftKey:shiftDown()||!!event.shiftKey,metaKey:!!event.metaKey,source,preventDefault(){event.preventDefault?.();},stopPropagation(){event.stopPropagation?.();}};}
 function setHudInput(enabled,source='keyboard'){
- if(enabled){if(hudInputActive||!window.qbitsSelectionHud?.available||story.mode!=='playing'||story.transition||!panel.hidden||!menu.hidden||!commandMenu.hidden)return;hudInputActive=true;hudReturnCapture=document.pointerLockElement===canvas;keys.clear();gamepadMove=[0,0];window.qbitsSelectionHud.setInteractive(true,source);if(hudReturnCapture){story.intentionalUnlock=true;story.preserveGrip=true;document.exitPointerLock();}}
+ if(enabled){if(hudInputActive||!window.qbitsSelectionHud?.available||story.mode!=='playing'||story.transition||!panel.hidden||!menu.hidden||!commandMenu.hidden)return;hudInputActive=true;hudReturnCapture=document.pointerLockElement===canvas;keys.clear();gamepadMove=[0,0];window.qbitsSelectionHud.setHint?.(source==='gamepad'?window.QBitsControls.gamepadHint(savedPreferences.controls.gamepad,'hud'):'← → · elegir · Enter · aislar · Ctrl + clic · quitar');window.qbitsSelectionHud.setInteractive(true,source);if(hudReturnCapture){story.intentionalUnlock=true;story.preserveGrip=true;document.exitPointerLock();}}
  else {if(!hudInputActive)return;hudInputActive=false;window.qbitsSelectionHud?.setInteractive(false,source);const capture=hudReturnCapture;hudReturnCapture=false;if(capture&&!document.hidden&&story.mode==='playing'&&!story.transition)captureMouse();}
 }
 function dispatchControlAction(id,down,source='keyboard',event={}){
@@ -354,7 +354,7 @@ function onPhysicalKeyDown(event){
  if(event.code==='Escape'){event.preventDefault();if(hudInputActive){hudReturnCapture=false;setHudInput(false);}handleKey(controlEvent('Escape',event));return;}
  if(hudInputActive&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter','Space'].includes(event.code)){event.preventDefault();if(event.code==='Enter'||event.code==='Space')window.qbitsSelectionHud?.activateFocused({toggle:ctrlDown()||event.ctrlKey,source:'keyboard'});else window.qbitsSelectionHud?.stepFocus(event.code==='ArrowLeft'||event.code==='ArrowUp'?-1:1);return;}
  if(radialOpen()&&event.code.startsWith('Arrow')){handleKey(event);return;}
- if(story.ready&&story.mode!=='playing')return;
+ if(story.ready&&story.mode!=='playing'&&!['pause','fullscreen'].includes(window.QBitsControls?.keyboardAction(savedPreferences.controls.keyboard,event.code)))return;
  gamepadActive=false;
  if(keyboardInput?.down(event.code,event))event.preventDefault();else if(!keyboardInput)handleKey(event);
 }
@@ -1067,6 +1067,7 @@ function openUnitRadial(){
  if(radialOpen()||!unitRadialAllowed())return false;
  cancelUnitCreation();initUnitRadial();for(const id of ['cube','tetra','pyramid','coupler','rotor'])unitRadial.setLocked?.(id,!creationChoiceAllowed(id));keys.clear();routeInspection=null;accumulator=0;
  unitRadial.open(creationShape(),{virtualPointer:gameInputActive()});
+ const radialHelp=document.querySelector('#unit-radial .radial-help');if(radialHelp)radialHelp.textContent=gamepadActive?window.QBitsControls.gamepadHint(savedPreferences.controls.gamepad,'radial')+' · suelta '+window.QBitsControls.labelFor('radial',savedPreferences,'gamepad')+' para elegir':'Suelta '+inputLabel('radial')+' para elegir · '+inputLabel('primary')+' para crear';
  document.body.dataset.unitRadial='open';hint.hidden=true;redraw=true;
  return true;
 }
@@ -1082,6 +1083,7 @@ function closeUnitRadial(commit=false){
 function cancelUnitCreation(){pendingUnitCreation=null;}
 function handleKeyUp(event){
  keys.delete(event.code);
+ if(event.code.startsWith('Alt'))routeInspection=null;
  if(event.code==='ShiftLeft'||event.code==='ShiftRight'){resetAssemblyShake();if(held&&!shiftDown())held.shakeSeparated=false;}
  if(event.code==='KeyQ'&&radialOpen()){event.preventDefault();closeUnitRadial(true);}
 }
@@ -2778,7 +2780,7 @@ function updateCargoCallout(){
  calloutText.style.left=x+'px';calloutText.style.top=(y-7)+'px';calloutText.style.opacity=String(clamp((t-.8)/.2,0,1));
  document.querySelector('#callout-count').textContent='Cuerpo · '+c.required+' u';document.querySelector('#callout-weight').textContent=c.job?c.job.activeCount+' / '+c.required+' Q-bits · '+(c.job.phase==='arrastrando'?'arrastrando':c.job.phase==='descansando'?'recuperando energía':'esperando'):'Requiere '+c.required+' Q-bits';callout.style.opacity='1';
 }
-document.addEventListener('keyup',event=>{if(event.code.startsWith('Alt'))routeInspection=null;});
+// Inspection release is handled by the canonical action, including remapped keys.
 
 // The first puzzle lives in the laboratory. Its previous contents are restored
 // when leaving the challenge; rewards and deliveries use a single transaction.

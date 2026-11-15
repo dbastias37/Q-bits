@@ -15,7 +15,15 @@
  function setPreset(c,device,name){const p=(device==='keyboard'?keyboardPresets:gamepadPresets)[name];if(!p)return false;c[device].bindings=copy(p.bindings);c[device].preset=name;return true;}
  function assignBinding(c,device,action,value){if(!ids.includes(action)||!c?.[device]||(device==='keyboard'&&value==='Escape'&&action!=='pause')||(value!==null&&!(device==='keyboard'?validKey(value):Number.isInteger(value)&&value>=0&&value<=16)))return false;const b=c[device].bindings,old=b[action],token=device==='keyboard'?normalize(value):value,other=value===null?null:ids.find(id=>id!==action&&(device==='keyboard'?normalize(b[id]):b[id])===token);b[action]=value;if(other)b[other]=old;c[device].preset='custom';return {swapped:other||null};}
  function keyLabel(code){if(code===null)return 'Sin asignar';const names={Mouse0:'Clic izquierdo',Mouse1:'Clic central',Mouse2:'Clic derecho',Space:'Espacio',Tab:'Tab',Escape:'Esc',ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→',ShiftLeft:'Shift',ShiftRight:'Shift derecho',ControlLeft:'Ctrl',ControlRight:'Ctrl derecho',AltLeft:'Alt',AltRight:'Alt derecho',BracketLeft:'[',BracketRight:']'};return names[code]||code.replace(/^Key|^Digit/,'');}
- function keyboard(getConfig,dispatch){const held=new Map();return {down(code,event={}){if(held.has(code)){if(event.repeat!==false)return true;this.up(code,{cancelled:true});}const b=getConfig().bindings,id=ids.find(id=>b[id]!==null&&normalize(b[id])===normalize(code));if(!id)return false;if(event.repeat)return true;const already=[...held.values()].includes(id);held.set(code,id);if(!already)dispatch(id,true,event);return true;},up(code,event={}){const id=held.get(code);if(!id)return false;held.delete(code);if(![...held.values()].includes(id))dispatch(id,false,event);return true;},clear(){const active=new Set(held.values());held.clear();for(const id of active)dispatch(id,false,{cancelled:true});},get held(){return held.size;}};}
+ function keyboardAction(config,code){return ids.find(id=>config.bindings[id]!==null&&normalize(config.bindings[id])===normalize(code))||null;}
+ function contextButtons(config,context){const hold=context==='hud'||context==='radial'?config.bindings[context]:null;return {hold,confirm:hold===0?3:0,back:hold===1?2:1};}
+ function gamepadHint(config,context){const {confirm,back}=contextButtons(config,context);return 'Cruceta · elegir · '+buttonLabels[confirm]+' confirmar · '+buttonLabels[back]+' volver';}
+ function contextAction(config,context,index){
+  if(context==='menu'){if(index===0)return 'confirm';if(index===1)return 'back';if(index===9||index===config.bindings.pause)return 'pause';return ({12:'up',13:'down',14:'left',15:'right'})[index];}
+  if(context==='hud'||context==='radial'){const {hold,confirm,back}=contextButtons(config,context);if(index===hold)return context;if(index===confirm)return 'confirm';if(index===back||index===9||index===config.bindings.pause)return 'back';return ({12:'up',13:'down',14:'left',15:'right'})[index];}
+  return ids.find(id=>config.bindings[id]===index);
+ }
+ function keyboard(getConfig,dispatch){const held=new Map();return {down(code,event={}){if(held.has(code)){if(event.repeat!==false)return true;this.up(code,{cancelled:true});}const id=keyboardAction(getConfig(),code);if(!id)return false;if(event.repeat)return true;const already=[...held.values()].includes(id);held.set(code,id);if(!already)dispatch(id,true,event);return true;},up(code,event={}){const id=held.get(code);if(!id)return false;held.delete(code);if(![...held.values()].includes(id))dispatch(id,false,event);return true;},clear(){const active=new Set(held.values());held.clear();for(const id of active)dispatch(id,false,{cancelled:true});},get held(){return held.size;}};}
  function stick(x,y,deadzone){const n=Math.hypot(x,y);if(!Number.isFinite(n)||n<=deadzone)return [0,0];const scale=Math.min(1,(n-deadzone)/(1-deadzone))/n;return [x*scale,y*scale];}
  function gamepad(){let index=null,previous=[],held=new Map(),mode=null,active=false,blocked=false;function release(events){for(const id of new Set(held.values()))events.push({id,down:false,cancelled:true});held.clear();}
   return {poll(list,config,context='game'){
@@ -31,7 +39,7 @@
    for(let i=0;i<buttons.length;i++){
     if(!buttons[i]&&previous[i]){const id=held.get(i);held.delete(i);if(id)events.push({id,down:false});}
     if(buttons[i]&&!previous[i]){
-     active=true;const id=context==='menu'?({0:'confirm',1:'back',9:'pause',12:'up',13:'down',14:'left',15:'right'})[i]:context==='hud'||context==='radial'?({0:'confirm',1:'back',12:'up',13:'down',14:'left',15:'right'})[i]||ids.find(id=>config.bindings[id]===i&&id===(context==='hud'?'hud':'radial')):ids.find(id=>config.bindings[id]===i);
+     active=true;const id=contextAction(config,context,i);
      if(id){held.set(i,id);events.push({id,down:true});}
     }
    }
@@ -40,5 +48,5 @@
   },reset(){index=null;previous=[];held.clear();active=false;mode=null;blocked=true;}};
  }
  function labelFor(action,preferences,device='keyboard'){const config=preferences?.controls||preferences||defaults(),value=config[device]?.bindings?.[action];return device==='keyboard'?keyLabel(value??null):value===null||value===undefined?'Sin asignar':buttonLabels[value];}
- const api={labelFor,actions,keyboardPresets,gamepadPresets,buttonLabels,defaults,sanitize,setPreset,assignBinding,validKey,keyLabel,keyboard,gamepad,stick};if(typeof module==='object'&&module.exports)module.exports=api;else root.QBitsControls=api;
+ const api={keyboardAction,contextButtons,gamepadHint,labelFor,actions,keyboardPresets,gamepadPresets,buttonLabels,defaults,sanitize,setPreset,assignBinding,validKey,keyLabel,keyboard,gamepad,stick};if(typeof module==='object'&&module.exports)module.exports=api;else root.QBitsControls=api;
 })(typeof window==='object'?window:globalThis);

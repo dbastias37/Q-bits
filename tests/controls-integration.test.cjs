@@ -10,3 +10,27 @@ test('capturing a gamepad binding blocks world actions and cannot replay a held 
 
 test('partial analog stick moves slower while full deflection keeps normal speed',()=>{function distance(amount){const {t,sandbox}=setup();let current=pad();sandbox.navigator.getGamepads=()=>[current];t.pollGamepadInput(.05);current=pad([],[0,-amount,0,0]);const before=[...t.position];t.frame(performance.now()+1000);return Math.hypot(...t.position.map((v,i)=>v-before[i]));}const half=distance(.5),full=distance(1);assert(half>0);assert(half<full*.5);assert(full>.1&&full<.2);});
 test('controller navigates the real main-screen scope and confirms its focused button',()=>{const {t,sandbox}=setup();t.story.mode='menu';const doc=sandbox.document,scope=doc.querySelector('#main-screen'),buttons=[doc.createElement('button'),doc.createElement('button')];let chosen=-1;buttons.forEach((el,i)=>{el.tagName='BUTTON';el.hidden=false;el.getClientRects=()=>[{}];el.focus=()=>{doc.activeElement=el;};el.click=()=>{chosen=i;};});scope.querySelectorAll=()=>buttons;let current=pad();sandbox.navigator.getGamepads=()=>[current];t.pollGamepadInput(.05);current=pad([13]);t.pollGamepadInput(.05);assert.equal(doc.activeElement,buttons[1]);current=pad([]);t.pollGamepadInput(.05);current=pad([0]);t.pollGamepadInput(.05);assert.equal(chosen,1);});
+
+test('radial accepts its own remapped modifier but still rejects an unrelated modified shortcut',()=>{
+ for(const [code,flag]of [['AltLeft','altKey'],['ControlLeft','ctrlKey']]){
+  const {t,sandbox}=setup(),d=P.defaults();C.assignBinding(d.controls,'keyboard','radial',code);t.applyPreferences(d);sandbox.document.pointerLockElement=t.canvas;
+  sandbox.document.dispatchEvent({type:'keydown',code,[flag]:true,repeat:false});assert(t.radialOpen(),code+' opens the wheel');sandbox.document.dispatchEvent({type:'keyup',code});assert(!t.radialOpen());
+ }
+ const {t,sandbox}=setup();sandbox.document.pointerLockElement=t.canvas;sandbox.document.dispatchEvent({type:'keydown',code:'KeyQ',ctrlKey:true,repeat:false});assert(!t.radialOpen());sandbox.document.dispatchEvent({type:'keyup',code:'KeyQ'});sandbox.document.dispatchEvent({type:'keydown',code:'KeyQ',altKey:true,repeat:false});assert(!t.radialOpen());
+});
+test('custom pause key both opens and resumes pause, and fullscreen is reachable from menu',()=>{
+ const game=setup(),{t,sandbox}=game,d=P.defaults();C.assignBinding(d.controls,'keyboard','pause','KeyZ');t.applyPreferences(d);sandbox.document.pointerLockElement=t.canvas;t.canvas.requestPointerLock=async()=>{};
+ keyboard(game,'keydown','KeyZ');assert.equal(t.story.mode,'pause');keyboard(game,'keyup','KeyZ');keyboard(game,'keydown','KeyZ');assert.equal(t.story.mode,'playing');keyboard(game,'keyup','KeyZ');
+ let full=0;sandbox.document.documentElement.requestFullscreen=async()=>{full++;};t.story.mode='menu';keyboard(game,'keydown','KeyF');assert.equal(full,1);
+});
+test('HUD held with X can navigate and confirm with triangle, and advertises the alternate button',()=>{
+ const {t,sandbox}=setup(),d=P.defaults();C.assignBinding(d.controls,'gamepad','hud',0);t.applyPreferences(d);let current=pad(),activated=0,moved=0,hint='';sandbox.navigator.getGamepads=()=>[current];sandbox.qbitsSelectionHud={available:true,setInteractive(){},setHint(text){hint=text;},stepFocus(){moved++;},activateFocused(){activated++;}};
+ t.pollGamepadInput(.05);current=pad([0]);t.pollGamepadInput(.05);assert(t.getInputState().hudInputActive);assert.match(hint,/△/);current=pad([0,15]);t.pollGamepadInput(.05);assert.equal(moved,1);current=pad([0]);t.pollGamepadInput(.05);current=pad([0,3]);t.pollGamepadInput(.05);assert.equal(activated,1);current=pad([]);t.pollGamepadInput(.05);assert(!t.getInputState().hudInputActive);
+});
+test('radial held with X confirms a highlighted choice with triangle',()=>{
+ const {t,sandbox}=setup(),d=P.defaults();C.assignBinding(d.controls,'gamepad','radial',0);t.applyPreferences(d);let current=pad();sandbox.navigator.getGamepads=()=>[current];t.pollGamepadInput(.05);current=pad([0]);t.pollGamepadInput(.05);assert(t.radialOpen());assert.match(sandbox.document.querySelector('#unit-radial .radial-help').textContent,/△/);current=pad([0,15]);t.pollGamepadInput(.05);const hovered=t.getUnitRadial().hovered;assert(hovered);current=pad([0]);t.pollGamepadInput(.05);current=pad([0,3]);t.pollGamepadInput(.05);assert(!t.radialOpen());assert.equal(t.creationShape(),hovered);
+});
+test('custom controller pause button resumes from pause while menu X and circle keep their roles',()=>{
+ const {t,sandbox}=setup(),d=P.defaults();C.assignBinding(d.controls,'gamepad','pause',3);t.applyPreferences(d);let current=pad();sandbox.navigator.getGamepads=()=>[current];t.pollGamepadInput(.05);current=pad([3]);t.pollGamepadInput(.05);assert.equal(t.story.mode,'pause');current=pad([]);t.pollGamepadInput(.05);current=pad([3]);t.pollGamepadInput(.05);assert.equal(t.story.mode,'playing');
+ const g=C.gamepad();g.poll([pad()],d.controls.gamepad,'menu');assert.deepEqual(g.poll([pad([0])],d.controls.gamepad,'menu').events,[{id:'confirm',down:true}]);g.poll([pad()],d.controls.gamepad,'menu');assert.deepEqual(g.poll([pad([1])],d.controls.gamepad,'menu').events,[{id:'back',down:true}]);
+});
