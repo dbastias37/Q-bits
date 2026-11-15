@@ -66,10 +66,9 @@
     // cardinal step, reserve its sweep, and rotate 90 degrees on the support edge.
     for(const p of pieces){
       if(p.yieldFor?.settled){p.target=p.home;p.home=null;p.yieldFor=null;p.settled=false;p.path=[];p.retry=0;}
+      // Every letter approaches on the same clock. The path reservations and
+      // local yielding below resolve congestion without freezing the whole Q.
       if(p.settled||time<p.delay)continue;
-      // Fill the enclosed dot of Q before closing its surrounding outline.
-      const inner=pieces.find(q=>q.target[0]>-6.8&&q.target[0]<-6.4&&q.target[2]>.3&&q.target[2]<.6);
-      if(inner&&inner!==p&&!inner.settled&&p.target[0]<-5.4)continue;
       if(!p.segment){
         if(Math.hypot(p.p[0]-p.target[0],p.p[2]-p.target[2])<.001){p.settled=true;continue;}
         if(time<p.retry)continue;
@@ -121,13 +120,13 @@
     const u=smoother(t),height=fitHeight(aspect);
     const surface=[target[0],SIZE+.002,target[2]],fov=mix(1.22,1.04,u);
     const distance=menuSize(aspect)[1]/(2*Math.tan(1.04/2)),end=[surface[0],surface[1]+distance,surface[2]];
-    // Restore the first opening's broad, tracked FPV arc. Orbit and approach
-    // share one clock, with a calm speed envelope rather than a terminal surge.
-    const angle=u*Math.PI*2,radius=reduced?0:8.8*Math.sin(Math.PI*u)*(1-u);
-    const eye=t===1?[...end]:lerp([0,height,0],end,u);
-    eye[0]+=Math.sin(angle)*radius;eye[2]+=Math.cos(angle)*radius;
-    const bank=reduced||t===1?0:-.045*Math.sin(Math.PI*u)**2;
-    return {eye,at:lerp([0,0,0],surface,u),roll:bank,fov,topDown:true};
+    // One descending spiral, with a strictly shrinking radius and fixed roll.
+    // The formation camera starts on this same outer point: there is no lateral
+    // launch, rising arc, bank, oscillation, or last-second camera switch.
+    const angle=u*Math.PI*2,radius=reduced?0:6.2*(1-u);
+    const at=lerp([target[0],0,target[2]],surface,u);
+    const eye=[at[0]+Math.sin(angle)*radius,mix(height,end[1],u),at[2]+Math.cos(angle)*radius];
+    return {eye,at,roll:0,fov,topDown:true};
   }
 
   function nearArrival(view,aspect,target) {
@@ -236,7 +235,7 @@
       if(settledAt===null){updatePieces(pieces,assemblyTime,dt);paths();if(assemblyTime>=TIMING.assemble&&pieces.every(p=>p.settled&&!p.home)){settledAt=clock;state='hold';}}
       const since=settledAt===null?-1:clock-settledAt;
       let emission=0;
-      const top={eye:[0,fitHeight(aspect),0],at:[0,0,0],roll:0,fov:1.22,topDown:true};
+      const top=flightCamera(0,aspect,diveTarget,reduced);
       let view=top;
       if(since>=TIMING.hold){
         const glowTime=since-TIMING.hold;emission=Math.sin(clamp(glowTime/TIMING.glow)*Math.PI)*1.8;state='glow';

@@ -66,7 +66,7 @@ attach=gl('glAttachShader',None,C.c_uint,C.c_uint)
 link=gl('glLinkProgram',None,C.c_uint)
 getProgram=gl('glGetProgramiv',None,C.c_uint,C.c_uint,C.POINTER(C.c_int))
 programLog=gl('glGetProgramInfoLog',None,C.c_uint,C.c_int,C.POINTER(C.c_int),C.c_char_p)
-pairs=[('vertexSource','fragmentSource'),('focusVertexSource','focusFragmentSource'),('vertex','fragment')]
+pairs=[('vertexSource','fragmentSource'),('focusVertexSource','focusFragmentSource'),('vertex','fragment'),('vertex','blurFragment')]
 for a,b in pairs:
  if a not in compiled or b not in compiled:continue
  p=createProgram();attach(p,compiled[a]);attach(p,compiled[b]);link(p);status=C.c_int();getProgram(p,0x8B82,C.byref(status));log=C.create_string_buffer(8192);programLog(p,len(log),None,log)
@@ -100,12 +100,13 @@ draw=gl('glDrawArrays',None,C.c_uint,C.c_int,C.c_int)
 read=gl('glReadPixels',None,C.c_int,C.c_int,C.c_int,C.c_int,C.c_uint,C.c_uint,C.c_void_p)
 error=gl('glGetError',C.c_uint)
 
-def tex(data=None):
+def tex(data=None,width=None,height=None):
+ width=W if width is None else width;height=H if height is None else height
  t=C.c_uint();genTextures(1,C.byref(t));bindTexture(0x0DE1,t)
  for key in [0x2801,0x2800]:parameter(0x0DE1,key,0x2601)
  for key in [0x2802,0x2803]:parameter(0x0DE1,key,0x812F)
  a=None if data is None else (C.c_ubyte*len(data))(*data)
- textureImage(0x0DE1,0,0x1908,W,H,0,0x1908,0x1401,a)
+ textureImage(0x0DE1,0,0x1908,width,height,0,0x1908,0x1401,a)
  return t.value
 out=tex();fb=C.c_uint();genFramebuffers(1,C.byref(fb));bindFramebuffer(0x8D40,fb);attachTexture(0x8D40,0x8CE0,0x0DE1,out,0);assert checkFramebuffer(0x8D40)==0x8CD5
 viewport(0,0,W,H)
@@ -151,10 +152,25 @@ print(json.dumps({'pixel_fixture':'PASS','size':[W,H],'disabled_max_pixel_error'
 # color-only bloom, and an unchanged neutral white room.
 post=createProgram();attach(post,compiled['vertex']);attach(post,compiled['fragment']);link(post);use(post)
 attr=getAttrib(post,b'aScreen');enableAttrib(attr);vertexAttribPointer(attr,2,0x1406,0,0,None)
-def post_render(scene,levels=255,dither=0,bloom=0):
- activeTexture(0x84C0);st=tex(scene);bindTexture(0x0DE1,st);uniform1i(getUniform(post,b'uImage'),0)
+blur=createProgram();attach(blur,compiled['vertex']);attach(blur,compiled['blurFragment']);link(blur)
+def post_render(scene,levels=255,dither=0,bloom=0,aa=0):
+ activeTexture(0x84C0);st=tex(scene)
+ halo=st
+ if bloom:
+  use(blur);attr=getAttrib(blur,b'aScreen');enableAttrib(attr);vertexAttribPointer(attr,2,0x1406,0,0,None)
+  targets=[tex(None,W//2,H//2),tex(None,W//2,H//2)];viewport(0,0,W//2,H//2)
+  for i in range(2):
+   attachTexture(0x8D40,0x8CE0,0x0DE1,targets[i],0);assert checkFramebuffer(0x8D40)==0x8CD5
+   bindTexture(0x0DE1,st if i==0 else targets[0]);uniform1i(getUniform(blur,b'uImage'),0)
+   uniform2f(getUniform(blur,b'uDirection'),2/W if i==0 else 0,2/H if i==1 else 0);uniform1f(getUniform(blur,b'uExtract'),1-i)
+   draw(0x0005,0,4);assert error()==0
+  halo=targets[1]
+ attachTexture(0x8D40,0x8CE0,0x0DE1,out,0);viewport(0,0,W,H);use(post)
+ attr=getAttrib(post,b'aScreen');enableAttrib(attr);vertexAttribPointer(attr,2,0x1406,0,0,None)
+ activeTexture(0x84C0);bindTexture(0x0DE1,st);uniform1i(getUniform(post,b'uImage'),0)
+ activeTexture(0x84C1);bindTexture(0x0DE1,halo);uniform1i(getUniform(post,b'uHalo'),1)
  uniform2f(getUniform(post,b'uPixel'),1/W,1/H)
- for key,value in [(b'uLevels',levels),(b'uDither',dither),(b'uBloom',bloom)]:uniform1f(getUniform(post,key),value)
+ for key,value in [(b'uLevels',levels),(b'uDither',dither),(b'uBloom',bloom),(b'uAA',aa)]:uniform1f(getUniform(post,key),value)
  draw(0x0005,0,4);data=(C.c_ubyte*(W*H*4))();read(0,0,W,H,0x1908,0x1401,data);assert error()==0
  return list(data)
 neutral=[240,240,240,255]*(W*H)
@@ -169,7 +185,30 @@ assert len(set(dithered[::4]))==2,'ordered dithering distributes adjacent levels
 colored=[value for y in range(H) for x in range(W) for value in ([0,230,160,255] if 28<x<34 and 28<y<34 else [12,12,12,255])]
 without=post_render(colored);with_bloom=post_render(colored,bloom=1)
 assert sum(with_bloom[1::4])>sum(without[1::4])+100,'bloom spreads colored light'
-print(json.dumps({'graphics_pixel_fixture':'PASS','quantized_levels':len(set(quantized[::4])),'dither_levels':len(set(dithered[::4])),'color_bloom':True,'neutral_room_preserved':True}))
+# A point/line must produce a connected, smoothly decaying halo, not separated
+# shifted copies. Luminance is checked outside the source square.
+tail=[with_bloom[(31*W+x)*4+1] for x in range(34,48)]
+assert all(a>=b for a,b in zip(tail,tail[1:])),('disconnected bloom tail',tail)
+assert len(set(tail))>=6,('halo must fade gradually',tail)
+slanted=[value for y in range(H) for x in range(W) for value in ([0,230,160,255] if abs(x-(y*.45+13))<1.5 else [12,12,12,255])]
+sharp=post_render(slanted);smooth=post_render(slanted,aa=1);neon=post_render(slanted,aa=1,bloom=.6,levels=63,dither=.35)
+assert len(set(smooth[1::4]))>len(set(sharp[1::4]))+4,'edge AA must create subpixel coverage'
+assert smooth[(0*W+63)*4:(0*W+63)*4+3]==sharp[(0*W+63)*4:(0*W+63)*4+3],'flat areas remain sharp'
+# Optional visual evidence uses only standard-library PNG encoding, not mocked pixels.
+import os,struct,zlib
+capture=os.environ.get('QBITS_GRAPHICS_CAPTURE_DIR')
+if capture:
+ folder=Path(capture);folder.mkdir(parents=True,exist_ok=True)
+ def save_png(name,pixels,width,height):
+  def chunk(kind,data):return struct.pack('!I',len(data))+kind+data+struct.pack('!I',zlib.crc32(kind+data)&0xffffffff)
+  raw=b''.join(b'\0'+bytes(pixels[y*width*4:(y+1)*width*4]) for y in range(height-1,-1,-1))
+  (folder/name).write_bytes(b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('!IIBBBBB',width,height,8,6,0,0,0))+chunk(b'IDAT',zlib.compress(raw))+chunk(b'IEND',b''))
+ sheet=[]
+ for y in range(H):
+  for pixels in [sharp,smooth,neon]:sheet.extend(pixels[y*W*4:(y+1)*W*4])
+ save_png('neon-edge-comparison.png',sheet,W*3,H)
+ save_png('neon-connected-halo.png',with_bloom,W,H)
+print(json.dumps({'graphics_pixel_fixture' :'PASS','quantized_levels':len(set(quantized[::4])),'dither_levels':len(set(dithered[::4])),'color_bloom':True,'neutral_room_preserved':True,'connected_halo_tail':tail,'antialias_levels':len(set(smooth[1::4]))}))
 
 egl('eglMakeCurrent',C.c_uint,C.c_void_p,C.c_void_p,C.c_void_p,C.c_void_p)(d,None,None,None)
 egl('eglDestroyContext',C.c_uint,C.c_void_p,C.c_void_p)(d,ctx)

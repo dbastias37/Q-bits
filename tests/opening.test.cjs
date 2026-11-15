@@ -66,16 +66,17 @@ test('reduced motion removes the orbit and banking while keeping the same menu l
  assert.deepEqual(opening.flightCamera(1,.45,target,true).eye,opening.flightCamera(1,.45,target,false).eye);
 });
 
-test('restored FPV arc travels around the title calmly, without a second orbit or alternating bank',()=>{
+test('descending spiral completes one calm orbit with zero bank and no radial or vertical reversals',()=>{
  assert.equal(opening.TIMING.flight,9.5);assert.equal(opening.TIMING.menuReveal,1.2);
  const target=[-.4408,.1675,0];
  for(const aspect of [.45,1,16/9,3]){
   let last=null,peakSpeed=0,quadrants=new Set();
   for(let i=0;i<=1000;i++){
    const t=i/1000,c=opening.flightCamera(t,aspect,target),u=t*t*t*(t*(t*6-15)+10);
-   const x=c.eye[0]-target[0]*u,z=c.eye[2]-target[2]*u;
+   const x=c.eye[0]-target[0],z=c.eye[2]-target[2];
    if(Math.hypot(x,z)>.001)quadrants.add((x>=0?'R':'L')+(z>=0?'F':'B'));
-   assert.ok(c.roll<=0&&Math.abs(c.roll)<=.0450001,'one subtle bank, not rocking');
+   assert.equal(c.roll,0,'no bank at any point');
+   if(last){assert.ok(c.eye[1]<=last.eye[1],'height never rises');assert.ok(Math.hypot(x,z)<=Math.hypot(last.eye[0]-target[0],last.eye[2]-target[2])+1e-10,'radius never expands');}
    if(last)peakSpeed=Math.max(peakSpeed,Math.hypot(...c.eye.map((v,j)=>v-last.eye[j]))/(opening.TIMING.flight/1000));
    last=c;
   }
@@ -84,4 +85,19 @@ test('restored FPV arc travels around the title calmly, without a second orbit o
   assert.equal(opening.nearArrival(opening.flightCamera(.5,aspect,target),aspect,target),false);
   assert.equal(opening.nearArrival(opening.flightCamera(1,aspect,target),aspect,target),true);
  }
+});
+
+test('one population approaches together, keeps rolling sweeps apart, and completes without a delayed Q batch',()=>{
+ const pieces=opening.makePieces(),half=.335/2;let finished=null;
+ const halfWidth=(p,axis)=>half*(Math.abs(p.rollAxis[axis===0?2:0])>.1?Math.abs(Math.sin(p.rollAngle))+Math.abs(Math.cos(p.rollAngle)):1);
+ for(let frame=1;frame<=60*24;frame++){
+  opening.updatePieces(pieces,frame/60,1/60);
+  if(frame===120)for(const p of pieces)assert.ok(Math.hypot(p.p[0]-p.start[0],p.p[2]-p.start[2])>.01,'every cube, including Q, approaches within the same opening interval');
+  for(let i=0;i<pieces.length;i++)for(let j=i+1;j<pieces.length;j++){
+   const a=pieces[i],b=pieces[j],dx=Math.abs(a.p[0]-b.p[0])-halfWidth(a,0)-halfWidth(b,0),dz=Math.abs(a.p[2]-b.p[2])-halfWidth(a,2)-halfWidth(b,2);
+   assert.ok(dx>=-.000001||dz>=-.000001,'no overlapping rolling footprints');
+  }
+  if(pieces.every(p=>p.settled&&!p.home)){finished=frame/60;break;}
+ }
+ assert.ok(finished!==null&&finished<24,'formation converges without a second frozen population');
 });

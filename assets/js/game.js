@@ -192,7 +192,10 @@ const fragmentSource = `
       gl_FragColor = vec4(mix(vec3(0.53,0.60,0.61),uTint.rgb,lit),1.0);
       return;
     }
-    if (uKind > 7.5) { gl_FragColor=vec4(uTint.rgb,uTint.a*exp(-abs(vLocal.x)*9.0)); return; }
+    if (uKind > 7.5) {
+      float feather=(1.0-smoothstep(.28,.5,abs(vLocal.x)))*(1.0-smoothstep(.40,.5,abs(vLocal.z)));
+      gl_FragColor=vec4(uTint.rgb,uTint.a*exp(-abs(vLocal.x)*9.0)*feather);return;
+    }
     if (uKind > 6.5) {
       float light = exp(-dot(vLocal.xz, vLocal.xz) * 10.0);
       gl_FragColor = vec4(uTint.rgb, uTint.a * light); return;
