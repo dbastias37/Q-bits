@@ -46,6 +46,7 @@ while(scene.getState().phase!=='complete'&&ticks<60*65){tick();ticks++;
  if(ticks===300)save('forming');
  if(state.phase==='glow'&&!formed){save('assembled');formed=true;}
  if(state.phase==='dive'&&!close){save('dive');close=true;}
+ for(const [progress,name] of [[.25,'arc-quarter'],[.5,'arc-half'],[.75,'arc-return']])if(state.flightProgress>=progress&&!snapshots.some(s=>s.name===name))save(name);
  if(state.flightProgress>=.8&&!snapshots.some(s=>s.name==='approach'))save('approach');
  if(state.phase==='reveal'&&state.menuOpacity>.45&&!snapshots.some(s=>s.name==='reveal'))save('reveal');
  if(state.flightProgress>=.95&&!snapshots.some(s=>s.name==='focus'))save('focus');

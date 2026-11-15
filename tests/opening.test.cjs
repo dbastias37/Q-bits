@@ -66,15 +66,22 @@ test('reduced motion removes the orbit and banking while keeping the same menu l
  assert.deepEqual(opening.flightCamera(1,.45,target,true).eye,opening.flightCamera(1,.45,target,false).eye);
 });
 
-test('four-second glide departs horizontally, accelerates and reveals only near the white face',()=>{
- assert.equal(opening.TIMING.flight,4);assert.equal(opening.TIMING.menuReveal,1.2);
+test('restored FPV arc travels around the title calmly, without a second orbit or alternating bank',()=>{
+ assert.equal(opening.TIMING.flight,9.5);assert.equal(opening.TIMING.menuReveal,1.2);
  const target=[-.4408,.1675,0];
  for(const aspect of [.45,1,16/9,3]){
-  const start=opening.flightCamera(0,aspect,target),early=opening.flightCamera(.15,aspect,target);
-  assert.ok(Math.hypot(early.eye[0]-start.eye[0],early.eye[2]-start.eye[2])>Math.abs(early.eye[1]-start.eye[1])*3,'departure is a glide');
-  const speed=t=>{const a=opening.flightCamera(t,aspect,target),b=opening.flightCamera(t+.001,aspect,target);return Math.hypot(...a.eye.map((v,i)=>v-b.eye[i]));};
-  assert.ok(speed(.5)>speed(.15)*5,'slow start builds speed');
-  for(const t of [0,.2,.5,.8]){const c=opening.flightCamera(t,aspect,target);assert.equal(c.roll,0);assert.equal(opening.nearArrival(c,aspect,target),false);}
+  let last=null,peakSpeed=0,quadrants=new Set();
+  for(let i=0;i<=1000;i++){
+   const t=i/1000,c=opening.flightCamera(t,aspect,target),u=t*t*t*(t*(t*6-15)+10);
+   const x=c.eye[0]-target[0]*u,z=c.eye[2]-target[2]*u;
+   if(Math.hypot(x,z)>.001)quadrants.add((x>=0?'R':'L')+(z>=0?'F':'B'));
+   assert.ok(c.roll<=0&&Math.abs(c.roll)<=.0450001,'one subtle bank, not rocking');
+   if(last)peakSpeed=Math.max(peakSpeed,Math.hypot(...c.eye.map((v,j)=>v-last.eye[j]))/(opening.TIMING.flight/1000));
+   last=c;
+  }
+  assert.equal(quadrants.size,4,'camera travels around the title instead of dropping straight down');
+  assert.ok(peakSpeed<9,'no aggressive speed spike');
+  assert.equal(opening.nearArrival(opening.flightCamera(.5,aspect,target),aspect,target),false);
   assert.equal(opening.nearArrival(opening.flightCamera(1,aspect,target),aspect,target),true);
  }
 });

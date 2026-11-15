@@ -13,7 +13,7 @@
   // to 15 world units. This exact outline-derived fallback also avoids tofu dots.
   const FONT_DOTS = [[-6.1765,-1.3245],[-5.7347,-.8827],[-6.6173,-1.3245],[-5.7347,-.4419],[-7.0592,-1.3245],[-5.7347,0],[-5.7347,.4408],[-7.5,-.8827],[-7.5,-.4419],[-6.6173,.4408],[-6.1765,.8827],[-5.7347,1.3245],[-7.5,0],[-7.5,.4408],[-6.6173,1.3245],[-7.5,.8827],[-7.0592,1.3245],[-3.0877,0],[-3.5296,0],[-3.9704,0],[-4.4123,0],[-4.8531,0],[-.8827,-.4419],[-.4408,0],[-2.2061,-1.3245],[-1.3235,-.4419],[-.4408,.4408],[-2.2061,-.8827],[-.4408,.8827],[-2.2061,-.4419],[-1.7653,0],[-2.2061,0],[-.8827,1.3245],[-2.2061,.4408],[-1.3235,1.3245],[-2.2061,.8827],[-1.7653,1.3245],[-2.2061,1.3245],[1.3235,-1.3245],[1.3235,-.4419],[.8816,-.4419],[1.3235,0],[1.3235,.4408],[1.3235,.8827],[1.7643,1.3245],[1.3235,1.3245],[.8816,1.3245],[3.9704,-1.3245],[3.9704,-.8827],[4.4112,-.4419],[3.9704,-.4419],[3.5285,-.4419],[3.9704,0],[4.8531,.8827],[3.9704,.4408],[3.9704,.8827],[4.4112,1.3245],[7.0581,-.4419],[6.6173,-.4419],[6.1755,-.4419],[7.0581,.4408],[7.5,.8827],[6.6173,.4408],[5.7347,0],[6.1755,.4408],[7.0581,1.3245],[6.6173,1.3245],[6.1755,1.3245],[5.7347,1.3245]];
   const SIZE = .335;
-  const TIMING = Object.freeze({ black: .8, assemble: 11.5, hold: .5, glow: 1.2, flight: 4, reducedFlight: 2, menuReveal: 1.2 });
+  const TIMING = Object.freeze({ black: .8, assemble: 11.5, hold: .5, glow: 1.2, flight: 9.5, reducedFlight: 3, menuReveal: 1.2 });
 
   function fontDots() {
     // Exact centers extracted from the bundled font contours, independent of
@@ -118,17 +118,18 @@
   function menuSize(aspect) { const width=SIZE*.88*Math.min(1,aspect);return [width,width/aspect]; }
   function flightCamera(t, aspect, target=[0,SIZE/2,0], reduced=false) {
     t=clamp(t);
-    const u=smoother(t*t),v=1-u,height=fitHeight(aspect);
-    const surface=[target[0],SIZE+.002,target[2]],fov=mix(1.22,1.04,smoother(t));
+    const u=smoother(t),height=fitHeight(aspect);
+    const surface=[target[0],SIZE+.002,target[2]],fov=mix(1.22,1.04,u);
     const distance=menuSize(aspect)[1]/(2*Math.tan(1.04/2)),end=[surface[0],surface[1]+distance,surface[2]];
-    // One horizontal glide: depart gently sideways, sweep toward the cube,
-    // and settle onto its face. No barrel roll or alternating bank.
-    const points=[[0,height,0],[height*.6,height*.95,height*.1],[height*.7,height*.16,height*.2],end];
-    const eye=t===1?[...end]:reduced?lerp(points[0],end,u):points[0].map((_,i)=>v*v*v*points[0][i]+3*v*v*u*points[1][i]+3*v*u*u*points[2][i]+u*u*u*end[i]);
-    const align=smoother((u-.55)/.4);
-    eye[0]=mix(eye[0],surface[0],align);eye[2]=mix(eye[2],surface[2],align);
-    return {eye,at:lerp([0,0,0],surface,u),roll:0,fov,topDown:true};
+    // Restore the first opening's broad, tracked FPV arc. Orbit and approach
+    // share one clock, with a calm speed envelope rather than a terminal surge.
+    const angle=u*Math.PI*2,radius=reduced?0:8.8*Math.sin(Math.PI*u)*(1-u);
+    const eye=t===1?[...end]:lerp([0,height,0],end,u);
+    eye[0]+=Math.sin(angle)*radius;eye[2]+=Math.cos(angle)*radius;
+    const bank=reduced||t===1?0:-.045*Math.sin(Math.PI*u)**2;
+    return {eye,at:lerp([0,0,0],surface,u),roll:bank,fov,topDown:true};
   }
+
   function nearArrival(view,aspect,target) {
     // All four corners of the central 90% of the viewport see the white face.
     // This ties the reveal to coverage, including portrait screens, not a timer.
