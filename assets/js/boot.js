@@ -7,25 +7,30 @@
   const progress = document.querySelector('#boot-progress');
   const play = document.querySelector('#boot-play');
   const retry = document.querySelector('#boot-retry');
-  const title = document.querySelector('#main-screen h1').cloneNode(true);
-  document.querySelector('#boot-title').append(title);
+  let opening, openingStarted = false;
+  let displayed = 0, elapsed = 0;
   const stages = { physics: 0, code: 0, scene: 0, music: 0, fonts: 0 };
-  const weights = { physics: 10, code: 15, scene: 45, music: 20, fonts: 10 };
   let ready = false, presentationDone = false, failed = false;
-  const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
   function update(key, value) {
     stages[key] = Math.max(stages[key], Math.min(1, value));
-    const valueNow = ready ? 100 : Math.min(99, Math.floor(Object.keys(stages).reduce((n, k) => n + stages[k] * weights[k], 0)));
+    const canBegin = ready && presentationDone && !failed;
+    const valueNow = canBegin ? 100 : Math.min(99, displayed);
     percent.textContent = valueNow + '%';
     progress.setAttribute('aria-valuenow', String(valueNow));
     progress.firstElementChild.style.width = valueNow + '%';
-    if (!failed) message.textContent = ready ? 'Todo está listo.' : stages.scene < 1 ? 'Preparando el encuentro…' : 'Cargando el ambiente…';
-    play.hidden = !(ready && presentationDone && !failed);
-    play.disabled = !ready || !presentationDone || failed;
+    opening?.setProgress(valueNow / 100);
+    opening?.setReady(canBegin);
+    if (!failed) message.textContent = '';
+    play.hidden = !canBegin;
+    play.disabled = !canBegin || openingStarted;
+    if (canBegin && !openingStarted) screen.dataset.stage = 'ready';
   }
+
   function fail(error) {
     if (failed || document.body.dataset.booting !== 'true') return;
     failed = true;
+    opening?.dispose();
+    screen.classList.remove('leaving');
     console.error('Q-bits: no se pudo preparar el juego.', error);
     screen.dataset.stage = 'loading';loading.hidden = false;
     message.textContent = /WebGL|tarjeta gráfica/i.test(error?.message || '') ? 'No se pudo iniciar la vista 3D. Activa la aceleración gráfica y reintenta.' : /fuentes/i.test(error?.message || '') ? 'No se pudieron cargar las fuentes del juego. Reintenta la carga.' : 'No se pudo completar la carga. Revisa la conexión y los archivos de música, y reintenta.';
@@ -37,7 +42,7 @@
   function loadScript(path) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = path + '?v=20261114-17';
+      script.src = path + '?v=20261115-opening-1';
       script.onload = resolve;
       script.onerror = () => reject(new Error('No se pudo cargar ' + path));
       document.head.append(script);
@@ -53,19 +58,22 @@
     if (faces.some(list => !list.length)) throw new Error('No se pudieron cargar las fuentes del juego.');
     update('fonts', 1);
   }
-  async function presentation() {
-    // These timings belong only to the cinematic. They never advance the load bar.
-    await wait(250);if(failed)return;
-    screen.dataset.stage = 'credit-visible';
-    await wait(3100);if(failed)return;
-    screen.dataset.stage = 'black';
-    await wait(2900);if(failed)return;
-    await typographyReady;if(failed)return;
-    screen.dataset.stage = 'title';
-    await wait(1600);if(failed)return;
-    screen.dataset.stage = 'loading';loading.hidden = false;presentationDone = true;
+  // Deliberately paced presentation, separate from actual asset readiness.
+  // Quantized jumps and small plateaus evoke an unpolished machine waking up.
+  function presentation() {
+    if (failed || openingStarted) return;
+    if (!document.hidden) elapsed += .08;
+    const stops = [[0,0],[.6,0],[1.5,17],[2,17],[3.1,38],[3.7,38],[5,68],[5.6,68],[7,91],[7.6,91],[8.4,100]];
+    let amount = 100;
+    for (let i = 1; i < stops.length; i++) if (elapsed < stops[i][0]) {
+      const a = stops[i-1], b = stops[i];
+      amount = a[1] + (b[1]-a[1]) * (elapsed-a[0]) / (b[0]-a[0]);break;
+    }
+    displayed = Math.max(displayed, Math.floor(amount));
+    presentationDone = elapsed >= 8.4;
     update('scene', stages.scene);
-    if (ready) play.focus({preventScroll:true});
+    if (!presentationDone) setTimeout(presentation, 80);
+    else if (ready) play.focus({preventScroll:true});
   }
   function musicControls() {
     for (const id of ['main-screen', 'pause-screen']) {
@@ -83,17 +91,30 @@
       });
     }
   }
-  play.addEventListener('click', () => {
-    if (!ready || !presentationDone || failed || play.disabled) return;
-    play.disabled = true;
-    // Keep media playback in this user gesture, as browsers require.
+  play.addEventListener('click', async () => {
+    if (!ready || !presentationDone || failed || openingStarted || play.disabled) return;
+    openingStarted = true;play.disabled = true;
+    // Unlock audio in the gesture; no NPC dialogue runs during this opening.
     QBitsMusic.start();
-    document.body.dataset.booting = 'false';
-    QBitsGame.play();screen.classList.add('leaving');
-    setTimeout(() => {screen.hidden = true;document.querySelector('#room').focus({preventScroll:true});}, 850);
+    screen.dataset.stage = 'cinematic';loading.hidden = true;
+    try {
+      await opening.play();
+      if (failed) return;
+      QBitsGame.menu();
+      document.body.dataset.booting = 'false';
+      screen.classList.add('leaving');
+      setTimeout(() => {
+        screen.hidden = true;opening.dispose();
+        document.querySelector('#main-play').focus({preventScroll:true});
+      }, 1100);
+    } catch (error) { fail(error); }
   });
+  try {
+    opening = QBitsOpening.create(document.querySelector('#opening-canvas'));
+  } catch (error) { fail(error);return; }
+  screen.dataset.stage = 'loading';loading.hidden = false;
   const typographyReady = loadTypography();
-  presentation().catch(fail);
+  presentation();
   Promise.all([
     typographyReady,
     (async () => {

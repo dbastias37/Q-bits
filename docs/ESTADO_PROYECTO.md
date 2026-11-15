@@ -1,6 +1,6 @@
 # Q-bits — punto de continuación
 
-Actualizado: 14 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
+Actualizado: 15 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
 ## Forma de trabajo acordada
 
@@ -82,3 +82,16 @@ Se añadieron siete regresiones con juego real y Cannon: montaje por agarre/Shif
 Primero recoger las pruebas del jugador sobre lo existente y revisar qué capacidades ya funcionan y cuáles necesitan correcciones o una enseñanza breve. Después se podrá estudiar, en el banco, una instalación con varias máquinas conectadas y al menos dos soluciones físicas verificables. Aprovechar dosificación, transformación, transporte, empaquetado y sensor existentes; no introducir piezas nuevas solo para llenar misiones.
 
 No construir todavía los galpones ni sus etapas definitivas, ni reescribir los diálogos actuales. La temperatura requiere implementar y comprobar un modelo temporal antes de convertirse en requisito. La reactivación puede ser el objetivo aparente del plan de los cubos; el cierre narrativo ahora es la liberación y fuga del jugador. El posjuego continúa pendiente y deberá respetar esa salida.
+
+
+## Apertura y menú — 15 de noviembre de 2026
+
+Nuevo flujo: cubo de vidrio sobre negro y relleno blanco de 0–100 % → «Comenzar» → cubos formando cada punto del título Q-bits → resplandor → órbita y picada → menú. La campaña empieza únicamente con «Comenzar campaña». Los accesos a niveles, banco, catálogo y música se conservan; continuar sigue disponible cuando existe una sesión de campaña iniciada.
+
+El porcentaje es una presentación temporizada solicitada por el usuario, con pausas y avances irregulares; el 100 % queda condicionado a la carga real de escena, dependencias, fuentes y música. Fallos conservan el reintento. La cinemática tiene su propio renderizador, sin modificar los cuerpos, inventario ni guardados del juego.
+
+Esta entrega se concentra en la apertura. El pack de pulido discutido (diálogos manuales en todos los tramos, subida/bajada de botones, arrastre de selección y colisiones de vidrio) sigue como especificación pendiente; no se presenta como implementado por esta entrega.
+
+Verificación de esta entrega: **285 pruebas automatizadas aprobadas** (`node --test tests/*.test.cjs`), sintaxis y `git diff --check`. La comprobación `python3 tests/validate-opening-gles.py` ejecuta el renderizador real con captura/reproducción de órdenes GLES: seis shaders y tres programas compilados/enlazados, cero errores, 69/69 cubos colocados, cara del cubo cubriendo toda la pantalla antes de blanquear y salida completamente blanca. Se revisaron nueve cuadros en 1280×720 y 390×844. Incluye regresiones de profundidad entre cuadros y límites de atributos de vértices.
+
+El navegador remoto pudo abrir la vista de prueba, pero no crear un contexto WebGL; por ello estas capturas GLES no se presentan como reproducción completa en navegador. Queda revisar la suavidad y duración subjetiva de la secuencia en el dispositivo del jugador. La carga dura como mínimo unos 8,4 s y la cinemática normal unos 30,4 s; la preferencia de movimiento reducido conserva la formación con cámara cenital y salida más breve.

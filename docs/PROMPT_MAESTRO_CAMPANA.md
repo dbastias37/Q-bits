@@ -8,6 +8,14 @@ La base revisada tiene prólogo y doce misiones: movimiento, órdenes, botones, 
 
 La experiencia principal será aprender a construir mecanismos y coordinarlos para completar encargos de producción. La campaña llevará gradualmente desde ejercicios breves hasta problemas abiertos. El giro narrativo futuro revela que los cubos aprovecharon esa cooperación para recuperar su producción y retener al jugador trabajando; el tramo final usa lo aprendido para escapar. Después, desafíos de dominio y encargos variables mantendrán útiles los inventos del jugador, con un encuadre por decidir que respete esa liberación. Este giro solo está documentado: no está implementado.
 
+## Apertura cinematográfica y acceso a campaña
+
+La apertura precede al menú y a la campaña. Fondo negro desde el primer cuadro; un cubo transparente de vidrio se llena de blanco desde abajo, acompañado únicamente por el porcentaje. La presentación usa un avance deliberadamente irregular de unos 8,4 segundos y no permite empezar hasta completar también los recursos reales. Al 100 %, iluminar por detrás y mostrar «Comenzar» sin marco.
+
+Ese botón inicia una escena silenciosa de diálogo: cubos blancos entran desde varios lados, se cruzan y chocan antes de formar «Q-bits». Cada punto de LED Calculator corresponde a un cubo tridimensional. Vista cenital durante la formación, rutas de líneas finas sin círculos de destino. Una vez colocados, esperar medio segundo, emitir un resplandor por cubo y hacer una órbita de dron de 360° con seguimiento al título; terminar con una picada acelerada hacia un cubo hasta cubrir la pantalla de blanco. Revelar el menú mediante fundido.
+
+El menú conserva los accesos existentes y su acción principal pasa a «Comenzar campaña». Solo esta acción inicia el prólogo; terminar la cinemática no debe iniciar diálogos, capturar el mouse ni activar la campaña. Respetar pestaña oculta, errores recuperables de carga y preferencia de movimiento reducido. Los cuerpos y recursos de esta escena visual son independientes del inventario, materia y físicas de la campaña.
+
 ## Geometría y límites del sistema
 
 Usa la geometría real del repositorio, no la propuesta preliminar de dos cuñas: un Q-bit cúbico de 9 cm se divide en seis pirámides de base cuadrada y 4,5 cm de altura. Cada pirámide se subdivide en dos triangulares complementarios, que son tetraedros no regulares. Seis pirámides o doce triangulares cierran un cubo. Una pirámide equivale a 1/6 y un triangular a 1/12 de la materia original.

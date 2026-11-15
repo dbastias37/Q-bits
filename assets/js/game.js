@@ -4785,6 +4785,7 @@ window.QBitsGame={
     gamePrepared=true;onProgress(1);
     previousTime=performance.now();accumulator=0;requestAnimationFrame(frame);
   },
+  menu(){if(!gamePrepared)return;previousTime=performance.now();accumulator=0;showMain();},
   play(){if(!gamePrepared)return;story.started=true;previousTime=performance.now();accumulator=0;resumeGame();}
 };
 

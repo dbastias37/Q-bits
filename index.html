@@ -184,26 +184,21 @@ body[data-transitioning='true'] #story-dialogue,body[data-transitioning='true'] 
 /* The opening is black from the first paint; gameplay keeps its original palette. */
 body[data-booting='true'] > :not(#boot-screen):not(script){visibility:hidden;pointer-events:none;}
 #boot-screen{background:#000;color:#e7ece9;gap:0;letter-spacing:0;opacity:1;transition:opacity .8s ease;overflow:hidden;}
-#boot-credit{position:absolute;margin:0;padding:24px;text-align:center;font:300 clamp(15px,2.2vw,23px)/1.6 var(--font-menu),sans-serif;letter-spacing:.045em;opacity:0;transition:opacity .9s ease;}
-#boot-screen[data-stage='credit-visible'] #boot-credit{opacity:1;}
-#boot-title{width:min(470px,65vw);opacity:0;transform:translateY(0);transition:opacity 1.4s ease,transform 1.2s ease;}
-#boot-title svg{display:block;width:100%;height:auto;fill:#e4eee8;}
-#boot-screen[data-stage='title'] #boot-title,#boot-screen[data-stage='loading'] #boot-title{opacity:1;}
-#boot-screen[data-stage='loading'] #boot-title{transform:translateY(-68px);}
-#boot-loading{position:absolute;top:calc(50% + 22px);width:min(360px,calc(100vw - 56px));animation:boot-reveal 1s ease both;}
-.boot-readout{display:flex;align-items:center;justify-content:space-between;gap:20px;font:11px/1.5 var(--font-menu),sans-serif;color:#8e9d94;}
-#boot-percent{font-variant-numeric:tabular-nums;color:#bdcec3;}
-#boot-screen .boot-track{width:100%;height:2px;margin:15px 0 24px;background:#1b231f;}
-#boot-screen .boot-track i{width:0;height:100%;background:#b9d4c5;animation:none;transform:none;transition:width .25s ease;}
-#boot-screen button{display:block;width:100%;padding:13px 17px;border:1px solid #45564b;background:#0c120e;color:#e3ece6;font:13px var(--font-menu),sans-serif;text-align:left;cursor:pointer;}
-#boot-screen button span{float:right;color:#91ad9b;}#boot-screen button:hover{background:#17231b;border-color:#91ad9b;}
-#boot-screen button:focus-visible{outline:2px solid #b9d4c5;outline-offset:5px;}
-#boot-screen.leaving{opacity:0;pointer-events:none;}
+#opening-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;}
+#boot-loading{position:absolute;top:calc(50% + min(25vh,180px));left:50%;transform:translateX(-50%);width:min(360px,calc(100vw - 48px));text-align:center;}
+.boot-readout{font:400 15px/1.6 var(--font-menu),sans-serif;color:#e8e8e8;letter-spacing:.1em;}
+#boot-percent{font-variant-numeric:tabular-nums;}
+#boot-screen .boot-track{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}
+#boot-message{font:12px/1.7 var(--font-info);color:#aeb3b1;margin:8px 0;}
+#boot-message:empty{display:none;}
+#boot-screen button{display:block;width:auto;margin:18px auto 0;padding:12px 22px;background:none;color:#fff;text-align:center;cursor:pointer;}
+#boot-screen[data-stage='ready'] #boot-play{animation:boot-reveal 1.1s ease both;}
+#boot-screen.leaving{opacity:0;pointer-events:none;transition:opacity 1.1s ease;}
 .music-settings{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:22px;font:11px var(--font-menu),sans-serif;color:#718176;}
 .game-screen .music-settings button{padding:7px 10px;border:1px solid #c9d7cd;border-radius:4px;font-size:11px;}
 .music-settings input{width:85px;accent-color:#648373;}
 @keyframes boot-reveal{from{opacity:0}to{opacity:1}}
-@media(prefers-reduced-motion:reduce){#boot-credit,#boot-title,#boot-screen{transition-duration:.15s;}#boot-loading{animation:none;}}
+@media(prefers-reduced-motion:reduce){#boot-screen{transition-duration:.4s;}#boot-play{animation:none!important;}}
 
 
 /* Original supplied fonts. Empty Spaceman glyphs fall back instead of hiding accents or signs. */
@@ -212,7 +207,7 @@ body[data-booting='true'] > :not(#boot-screen):not(script){visibility:hidden;poi
 @font-face{font-family:"Spaceman UI";src:url('assets/fonts/spaceman/Spaceman-Regular.ttf') format('truetype');unicode-range:U+20-21, U+27-29, U+2B-3B, U+3D, U+3F-5C, U+5F-7B, U+7D, U+A0-A1, U+B4, U+BF, U+D1, U+E1, U+E4, U+E9, U+ED, U+F1, U+F3, U+F6-F7, U+FA, U+FC, U+2010, U+2014, U+201C-201D;font-weight:400;font-style:normal;font-display:swap;}
 :root{--font-menu:"Spaceman UI",system-ui,sans-serif;--font-npc:Tengoku,system-ui,sans-serif;--font-title:"LED Calculator",system-ui,sans-serif;--font-info:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;}
 .game-screen h1.game-title{font:400 clamp(72px,14vw,150px)/1.2 var(--font-title);letter-spacing:.02em;padding:0;margin:12px 0 16px;max-width:95%;color:#18201c;font-synthesis:none;}
-#boot-title .game-title{font:400 clamp(72px,14vw,145px)/1.2 var(--font-title);text-align:center;margin:0;color:#e4eee8;letter-spacing:.02em;font-synthesis:none;}
+
 .game-screen h2,#panel h2,#completion-panel h2{font-family:var(--font-menu);font-weight:400;font-synthesis:none;letter-spacing:0;line-height:1.5;text-align:center;max-width:min(720px,90vw);overflow-wrap:anywhere;}
 .game-screen h2{font-size:clamp(18px,3vw,28px);}
 .menu-actions{width:min(340px,100%);gap:10px;}
@@ -305,13 +300,13 @@ input,select,textarea{font-family:var(--font-menu);}
 </style>
 </head>
 <body data-game-mode="boot" data-game-scene="lab" data-booting="true">
-  <section id="boot-screen" aria-label="Inicio de Q-bits" data-stage="credit">
-    <p id="boot-credit">Un juego imaginado por Diego Bastías</p>
-    <div id="boot-title" aria-label="Q-bits"></div>
-    <div id="boot-loading" hidden>
-      <div class="boot-readout"><span id="boot-message" role="status">Preparando el encuentro…</span><output id="boot-percent">0%</output></div>
-      <div id="boot-progress" class="boot-track" role="progressbar" aria-label="Carga del juego" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>
-      <button id="boot-play" type="button" hidden disabled>Jugar <span aria-hidden="true">↗</span></button>
+  <section id="boot-screen" aria-label="Inicio de Q-bits" data-stage="loading">
+    <canvas id="opening-canvas" aria-hidden="true"></canvas>
+    <div id="boot-loading">
+      <div class="boot-readout"><output id="boot-percent">0%</output></div>
+      <div id="boot-progress" class="boot-track" role="progressbar" aria-label="Preparación de Q-bits" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>
+      <p id="boot-message" role="status"></p>
+      <button id="boot-play" type="button" hidden disabled>Comenzar</button>
       <button id="boot-retry" type="button" hidden>Reintentar</button>
     </div>
     <noscript>Activa JavaScript para entrar a Q-bits.</noscript>
@@ -320,7 +315,7 @@ input,select,textarea{font-family:var(--font-menu);}
   <section id="main-screen" class="game-screen" hidden aria-label="Menú principal">
     <button id="title-qbit" class="title-emblem" aria-label="Saludar al Q-bit"><div class="portrait-cube"><i></i><i></i><i></i><i></i><i></i><i></i></div></button><div id="title-greeting" hidden role="status"></div>
     <p class="eyebrow">CADA PIEZA CUENTA</p><h1 aria-label="Q-bits" class="game-title">Q-bits</h1><p class="menu-subtitle">Todo comienza con un encuentro.</p>
-    <div class="menu-actions"><button id="main-play" class="primary">Jugar <span class="menu-arrow" aria-hidden="true"></span></button><button id="main-continue" hidden>Continuar</button><button id="main-levels">Seleccionar nivel</button><button id="main-lab">Banco de pruebas</button><button id="main-codex">Catálogo de materia</button></div>
+    <div class="menu-actions"><button id="main-play" class="primary">Comenzar campaña <span class="menu-arrow" aria-hidden="true"></span></button><button id="main-continue" hidden>Continuar</button><button id="main-levels">Seleccionar nivel</button><button id="main-lab">Banco de pruebas</button><button id="main-codex">Catálogo de materia</button></div>
     <small class="menu-foot">Versión de pruebas · Teclado y mouse<br>P abre las herramientas en cualquier momento</small>
   </section>
   <section id="pause-screen" class="game-screen frosted" hidden role="dialog" aria-modal="true" aria-label="Pausa">
@@ -451,6 +446,7 @@ input,select,textarea{font-family:var(--font-menu);}
     <div class="actions"><button id="create" type="button">Crear Q-bit</button><button id="remove" type="button">Borrar pieza</button><button id="split" type="button">Desarmar estructura</button></div>
     <button id="resume" type="button">Volver a la sala</button>
   </section>
-  <script src="assets/js/boot.js?v=20261114-17" defer></script>
+  <script src="assets/js/opening.js?v=20261115-opening-1" defer></script>
+  <script src="assets/js/boot.js?v=20261115-opening-1" defer></script>
 </body>
 </html>

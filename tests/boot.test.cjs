@@ -12,9 +12,9 @@ function deferred() {
   return { promise, resolve, reject };
 }
 async function flush() { for (let n = 0; n < 12; n++) await Promise.resolve(); }
-function environment({ autoFonts = true } = {}) {
+function environment({ autoFonts = true, openingFailure = null } = {}) {
   class Element extends EventTarget {
-    constructor() { super(); this.children = []; this.hidden = false; this.disabled = false; this.dataset = {}; this.style = {}; this.attributes = {}; this.textContent = ''; this.classes = new Set(); this.classList = { add: value => this.classes.add(value) }; }
+    constructor() { super(); this.children = []; this.hidden = false; this.disabled = false; this.dataset = {}; this.style = {}; this.attributes = {}; this.textContent = ''; this.classes = new Set(); this.classList = { add: value => this.classes.add(value), remove: value => this.classes.delete(value), toggle: (value, enabled) => enabled ? this.classes.add(value) : this.classes.delete(value) }; }
     append(...nodes) { this.children.push(...nodes); }
     get firstElementChild() { return this.children[0]; }
     setAttribute(key, value) { this.attributes[key] = value; }
@@ -23,21 +23,28 @@ function environment({ autoFonts = true } = {}) {
     click() { this.dispatchEvent(new Event('click')); }
   }
   const nodes = new Map();
-  for (const selector of ['#boot-screen', '#boot-loading', '#boot-message', '#boot-percent', '#boot-progress', '#boot-play', '#boot-retry', '#boot-title', '#room', '#wake-button', '#main-screen', '#pause-screen', '#main-screen h1']) nodes.set(selector, new Element());
+  for (const selector of ['#boot-screen', '#boot-loading', '#boot-message', '#boot-percent', '#boot-progress', '#boot-play', '#boot-retry', '#boot-title', '#room', '#wake-button', '#main-screen', '#pause-screen', '#main-screen h1', '#main-play', '#opening-canvas']) nodes.set(selector, new Element());
   nodes.get('#boot-play').hidden = true;
   nodes.get('#boot-play').disabled = true;
   nodes.get('#boot-retry').hidden = true;
-  nodes.get('#boot-loading').hidden = true;
+  nodes.get('#boot-loading').hidden = false;
   nodes.get('#boot-progress').append(new Element());
-  nodes.get('#boot-screen').dataset.stage = 'black';
+  nodes.get('#boot-screen').dataset.stage = 'loading';
   const scripts = [], events = [], errors = [], timers = new Map();
   let now = 0, nextTimer = 0, reloads = 0, sceneProgress, musicProgress;
-  const gameReady = deferred(), musicReady = deferred();
+  const gameReady = deferred(), musicReady = deferred(), cinematicReady = deferred();
+  const fillValues = [], readyValues = [];
+  const opening = {
+    setProgress: value => fillValues.push(value),
+    setReady: value => readyValues.push(value),
+    play: () => { events.push('opening.play'); return cinematicReady.promise; },
+    dispose: () => events.push('opening.dispose')
+  };
   const fontsReady = { Tengoku: deferred(), 'Spaceman UI': deferred(), 'LED Calculator': deferred() };
   const fontRequests = [];
   if (autoFonts) for (const [family, pending] of Object.entries(fontsReady)) pending.resolve([{ family }]);
   const document = {
-    body: { dataset: { booting: 'true' } },
+    body: { dataset: { booting: 'true' } }, hidden: false,
     head: { append: script => scripts.push(script) },
     querySelector: selector => { if (!nodes.has(selector)) throw new Error('Unexpected selector ' + selector); return nodes.get(selector); },
     getElementById: id => nodes.get('#' + id),
@@ -53,10 +60,19 @@ function environment({ autoFonts = true } = {}) {
     document,
     console: { error: (...values) => errors.push(values) },
     location: { reload: () => { reloads++; } },
+    performance: { now: () => now },
+    clearTimeout: id => timers.delete(id),
+    QBitsOpening: openingFailure === 'missing' ? undefined : { create: canvas => {
+      assert.equal(canvas, nodes.get('#opening-canvas'));
+      events.push('opening.create');
+      if (openingFailure === 'create') throw new Error('WebGL unavailable');
+      return opening;
+    } },
     setTimeout: (fn, delay) => { const id = ++nextTimer; timers.set(id, { at: now + delay, fn }); return id; },
     QBitsGame: {
       prepare: callback => { events.push('game.prepare'); sceneProgress = callback; return gameReady.promise; },
-      play: () => events.push('game.play')
+      play: () => events.push('game.play'),
+      menu: () => events.push('game.menu')
     },
     QBitsMusic: {
       preload: ({ onProgress }) => { events.push('music.preload'); musicProgress = onProgress; return musicReady.promise; },
@@ -101,41 +117,30 @@ function environment({ autoFonts = true } = {}) {
     now = end;
     await flush();
   }
-  return { nodes, events, errors, document, context, gameReady, musicReady, fontsReady, fontRequests, loadScripts, scriptResult, advance,
+  return { nodes, events, errors, document, context, gameReady, musicReady, cinematicReady, fillValues, readyValues, fontsReady, fontRequests, loadScripts, scriptResult, advance,
     sceneProgress: value => sceneProgress(value),
     musicProgress: value => musicProgress({ progress: value }),
     get reloads() { return reloads; }
   };
 }
 
-test('all three font faces, including the LED title, must finish before the title and Jugar can appear', async () => {
+test('all three fonts must resolve before the dot title cinematic can be started', async () => {
   const e = environment({ autoFonts: false });
   await e.loadScripts();
-  e.gameReady.resolve();
-  e.musicReady.resolve();
-  await e.advance(10000);
+  e.gameReady.resolve();e.musicReady.resolve();
+  await e.advance(20000);
   assertBlocked(e);
-  assert.equal(e.nodes.get('#boot-screen').dataset.stage, 'black');
-  assert.deepEqual(e.fontRequests, [
-    { font: '20px Tengoku', text: '¿Cómo estás, Q-bit?' },
-    { font: '14px "Spaceman UI"', text: '¿Qué? ¡Sí! Q-bits' },
-    { font: '90px "LED Calculator"', text: 'Q-bits' }
-  ]);
-  e.fontsReady.Tengoku.resolve([{ family: 'Tengoku' }]);
-  await flush();
-  assertBlocked(e);
-  assert.equal(e.nodes.get('#boot-screen').dataset.stage, 'black');
-  e.fontsReady['Spaceman UI'].resolve([{ family: 'Spaceman UI' }]);
-  await flush();
-  assertBlocked(e);
-  assert.equal(e.nodes.get('#boot-screen').dataset.stage, 'black', 'the title must not flash a fallback while LED Calculator is pending');
+  assert.equal(e.fontRequests.length, 3);
+  for (const family of ['Tengoku', 'Spaceman UI']) {
+    e.fontsReady[family].resolve([{ family }]);await flush();assertBlocked(e);
+  }
+  e.nodes.get('#boot-play').click();
+  assert.equal(e.events.includes('opening.play'), false);
   e.fontsReady['LED Calculator'].resolve([{ family: 'LED Calculator' }]);
-  await flush();
-  assert.equal(e.nodes.get('#boot-screen').dataset.stage, 'title');
-  assert.equal(e.nodes.get('#boot-play').hidden, true);
-  await e.advance(1600);
+  await flush();await e.advance(200);
   assert.equal(e.nodes.get('#boot-play').hidden, false);
   assert.equal(e.nodes.get('#boot-percent').textContent, '100%');
+  assert.equal(e.nodes.get('#boot-screen').dataset.stage, 'ready');
 });
 
 for (const family of ['Tengoku', 'Spaceman UI', 'LED Calculator']) for (const failure of ['rejected', 'empty']) {
@@ -166,7 +171,7 @@ function assertBlocked(e) {
 }
 
 const dependencies=['radial-menu.js','rotor-power.js','campaign-reconfiguration.js','progression.js','campaign-automation.js','campaign-production.js','workshop.js','contact-sensors.js'];
-for(const module of dependencies)test(`a missing ${module} blocks game preparation, 100 percent and Jugar even when music is ready`, async () => {
+for(const module of dependencies)test(`a missing ${module} blocks game preparation, 100 percent and Comenzar even when music is ready`, async () => {
   const e=environment();
   await e.scriptResult('cannon.min.js');
   for(const dependency of dependencies.slice(0,dependencies.indexOf(module)))await e.scriptResult(dependency);
@@ -220,37 +225,82 @@ test('pending music blocks 100 percent even after the scene and cinematic finish
   assert.equal(e.nodes.get('#boot-play').hidden, false);
 });
 
-test('ready assets wait for the cinematic; the click starts audio synchronously and plays once', async () => {
-  const e = environment();
-  await e.loadScripts();
-  e.gameReady.resolve();
-  e.musicReady.resolve();
-  await flush();
-  assert.equal(e.nodes.get('#boot-loading').hidden, true);
-  assert.equal(e.nodes.get('#boot-play').hidden, true);
-  assert.equal(e.nodes.get('#boot-play').disabled, true);
+test('ready assets still show a gradual fill before enabling Comenzar', async () => {
+  const e = environment();await e.loadScripts();
+  e.gameReady.resolve();e.musicReady.resolve();await flush();
+  assert.equal(e.nodes.get('#boot-loading').hidden, false);
+  assertBlocked(e);
   e.nodes.get('#boot-play').click();
-  assert.equal(e.events.includes('music.start'), false);
-  await e.advance(250);
-  assert.equal(e.nodes.get('#boot-screen').dataset.stage, 'credit-visible');
-  await e.advance(3100);
-  assert.equal(e.nodes.get('#boot-screen').dataset.stage, 'black');
-  await e.advance(2900);
-  assert.equal(e.nodes.get('#boot-screen').dataset.stage, 'title');
-  assert.equal(e.nodes.get('#boot-play').hidden, true);
-  await e.advance(1600);
-  assert.equal(e.nodes.get('#boot-screen').dataset.stage, 'loading');
+  assert.equal(e.events.includes('opening.play'), false);
+  await e.advance(2000);
+  const intermediate = parseInt(e.nodes.get('#boot-percent').textContent, 10);
+  assert.ok(intermediate > 0 && intermediate < 100, 'the first impression has a visible intermediate fill');
+  assertBlocked(e);
+  await e.advance(18000);
+  assert.equal(e.nodes.get('#boot-percent').textContent, '100%');
   assert.equal(e.nodes.get('#boot-play').disabled, false);
+  assert.ok(e.fillValues.length > 2);
+  assert.ok(e.fillValues.every((n, i) => n >= 0 && n <= 1 && (!i || n >= e.fillValues[i - 1])), 'the glass fills monotonically');
+  assert.equal(e.fillValues.at(-1), 1);
+  assert.equal(e.readyValues.at(-1), true);
+});
+
+test('Comenzar starts the cinematic once and reveals the menu only after its white finish', async () => {
+  const e = environment();await e.loadScripts();
+  e.gameReady.resolve();e.musicReady.resolve();await e.advance(20000);
   e.nodes.get('#boot-play').click();
-  // No promise/timer flush here: both calls must occur in the click call stack.
-  assert.deepEqual(e.events.slice(-2), ['music.start', 'game.play']);
+  // Media activation must stay in the user-gesture stack.
+  assert.ok(e.events.includes('music.start'));
+  assert.ok(e.events.includes('opening.play'));
+  assert.equal(e.events.includes('game.play'), false, 'opening must not begin the campaign');
+  assert.equal(e.events.includes('game.menu'), false, 'menu waits for the camera dive');
+  assert.equal(e.document.body.dataset.booting, 'true');
+  e.nodes.get('#boot-play').click();
+  assert.equal(e.events.filter(v => v === 'opening.play').length, 1);
+  await e.advance(10000);
+  assert.equal(e.events.includes('game.menu'), false);
+  e.cinematicReady.resolve();await flush();
+  assert.equal(e.events.filter(v => v === 'game.menu').length, 1);
   assert.equal(e.document.body.dataset.booting, 'false');
-  e.nodes.get('#boot-play').click();
-  assert.equal(e.events.filter(event => event === 'game.play').length, 1);
-  await e.advance(850);
+  assert.ok(e.nodes.get('#boot-screen').classes.has('leaving'));
+  await e.advance(1200);
   assert.equal(e.nodes.get('#boot-screen').hidden, true);
-  assert.equal(e.nodes.get('#room').focused, true);
-  assert.notEqual(e.nodes.get('#wake-button').focused, true, 'boot must not focus the prologue wake button early');
+  assert.equal(e.nodes.get('#main-play').focused, true);
+  assert.ok(e.events.includes('opening.dispose'));
+  assert.equal(e.events.includes('game.play'), false);
+});
+
+test('a hidden tab pauses the simulated fill instead of skipping the first impression', async () => {
+  const e = environment();await e.loadScripts();
+  e.gameReady.resolve();e.musicReady.resolve();await e.advance(1000);
+  e.document.hidden = true;
+  const before = e.nodes.get('#boot-percent').textContent;
+  await e.advance(30000);
+  assert.equal(e.nodes.get('#boot-percent').textContent, before);
+  assertBlocked(e);
+  e.document.hidden = false;await e.advance(20000);
+  assert.equal(e.nodes.get('#boot-percent').textContent, '100%');
+});
+
+test('cinematic failure keeps gameplay blocked and offers a retry', async () => {
+  const e = environment();await e.loadScripts();
+  e.gameReady.resolve();e.musicReady.resolve();await e.advance(20000);
+  e.nodes.get('#boot-play').click();
+  e.cinematicReady.reject(new Error('Opening renderer lost context'));await flush();
+  assert.equal(e.events.includes('game.menu'), false);
+  assert.equal(e.events.includes('game.play'), false);
+  assert.equal(e.document.body.dataset.booting, 'true');
+  assert.equal(e.nodes.get('#boot-retry').hidden, false);
+  assert.equal(e.nodes.get('#boot-play').disabled, true);
+  e.nodes.get('#boot-retry').click();assert.equal(e.reloads, 1);
+});
+
+for (const failure of ['missing', 'create']) test('opening ' + failure + ' failure offers retry without entering campaign', async () => {
+  const e = environment({ openingFailure: failure });await flush();
+  assert.equal(e.nodes.get('#boot-retry').hidden, false);
+  assert.equal(e.nodes.get('#boot-play').disabled, true);
+  assert.equal(e.events.includes('game.play'), false);
+  e.nodes.get('#boot-retry').click();assert.equal(e.reloads, 1);
 });
 
 for (const failure of ['script', 'music', 'scene']) {
