@@ -2,7 +2,7 @@
 (function(){'use strict';
  const P=window.QBitsPreferences;
  window.QBitsSettings={init(hooks){
-  const tx=P.transaction(localStorage),screen=document.querySelector('#settings-screen'),fields=document.querySelector('#settings-fields'),confirm=document.querySelector('#settings-confirm'),status=document.querySelector('#settings-status');
+  const tx=P.transaction(hooks.storage||localStorage),screen=document.querySelector('#settings-screen'),fields=document.querySelector('#settings-fields'),confirm=document.querySelector('#settings-confirm'),status=document.querySelector('#settings-status');
   let tab='look',returnMode='menu',returnFocus=null,open=false;
   const profileKeys=new Set(Object.keys(P.styles.clean));
   const tabs={look:[
