@@ -255,3 +255,11 @@ Las adaptaciones se conservan al unir, separar y recuperar la escena del banco. 
 La [revisión del taller y sensor](docs/REVISION_TALLER_SENSOR.md) documenta costes, pruebas y límites. Esta es una primera economía completa y alcanzable; su duración y dificultad todavía requieren prueba con jugador. No añade niveles para alargar artificialmente la campaña.
 
 La [síntesis de integración](docs/SINTESIS_INTEGRACION.md) reúne el estado de los bloques, las comprobaciones y la recuperación de errores. Al recuperar el laboratorio se conserva también si un sensor ya había reaccionado a un contacto. Reiniciar un lote suelta la materia de ese lote antes de retirarla, evitando dejar un agarre sobre un cuerpo eliminado.
+
+## Configuración de imagen y audio
+
+Abre **Configuración** desde el menú principal o la pausa. Apariencia permite elegir Original, PSX, Dithering + neón o Cel shading, con colores y grosores independientes para delineado y trayectoria. La punta de flecha sobre una estructura seleccionada usa el color del delineado; puedes apagarla o quitarle la flotación.
+
+El cubo giratorio del cuarto blanco muestra el borrador en tiempo real. **Guardar configuración** aplica y conserva los cambios; **Volver** pregunta si deseas descartar los ajustes pendientes. Cada estilo recuerda sus propios efectos. Audio reúne música y volumen.
+
+Rendimiento ofrece presets y ajustes de resolución, muestreo, escala y filtrado de texturas procedurales, anisotropía según GPU, sombras, iluminación y FPS. Las sombras altas proyectan siluetas definidas al suelo. La iluminación mejorada es aproximada, sin RTX. VSync lo administra el navegador. La resolución efectiva se limita a 4,5 MP y a la capacidad de la GPU; el escalado solicitado puede reducirse para respetar esos límites.

@@ -39,7 +39,7 @@ module.exports = function createGame() {
   function element(key = '') {
     if (elements.has(key)) return elements.get(key);
     if(key.startsWith('#')){
-      const created=[...elements.values()].find(el=>el.id===key.slice(1));
+      const created=[...elements.values()].reverse().find(el=>el.id===key.slice(1));
       if(created)return created;
     }
     const attributes = new Map(), classes = new Set();
@@ -47,7 +47,7 @@ module.exports = function createGame() {
       id: key, style: { setProperty() {} }, dataset: {},
       classList: { add(...names){names.forEach(name=>classes.add(name));}, remove(...names){names.forEach(name=>classes.delete(name));}, contains:name=>classes.has(name), toggle(name,force){const enabled=force??!classes.has(name);if(enabled)classes.add(name);else classes.delete(name);return enabled;} }, value: 1, hidden: true,
       checked: false, clientWidth: 1280, clientHeight: 720, offsetWidth: 150, offsetHeight: 30,
-      children: [], getContext: type => type==='2d'?canvas2d:gl,
+      get options(){return this.children;}, children: [], getContext: type => type==='2d'?canvas2d:gl,
       setAttribute(name,value) { attributes.set(name,String(value)); }, getAttribute:name=>attributes.get(name)??null,
       removeAttribute(name) { attributes.delete(name); },
       append(...items) { for(const item of items)this.appendChild(item); },
@@ -89,11 +89,12 @@ module.exports = function createGame() {
   if (fs.existsSync(gameFile)) {
     const wheelFile=path.join(root,'assets/js/radial-menu.js');
     scripts = [fs.readFileSync(path.join(root, 'assets/js/cannon.min.js'), 'utf8'),
-      ...(fs.existsSync(wheelFile)?[fs.readFileSync(wheelFile,'utf8')]:[]), fs.readFileSync(path.join(root,'assets/js/rotor-power.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/campaign-reconfiguration.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/progression.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/campaign-automation.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/campaign-production.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/workshop.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/contact-sensors.js'),'utf8'), fs.readFileSync(gameFile, 'utf8')];
+      ...(fs.existsSync(wheelFile)?[fs.readFileSync(wheelFile,'utf8')]:[]), fs.readFileSync(path.join(root,'assets/js/rotor-power.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/campaign-reconfiguration.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/progression.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/campaign-automation.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/campaign-production.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/workshop.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/contact-sensors.js'),'utf8'), ...['preferences','graphics','settings'].map(n=>fs.readFileSync(path.join(root,'assets/js/'+n+'.js'),'utf8')), fs.readFileSync(gameFile, 'utf8')];
   } else {
     scripts = [...fs.readFileSync(path.join(root, 'index.html'), 'utf8').matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
   }
   const hook = `window.__testGame={
+    setMultiSelection:value=>{multiSelection=value},selectionGroups,drawSelectionMarker,drawWideLines,visualResolution,applyPreferences,renderSettingsPreview,initSettingsScreen,getVisuals:()=>visuals,getSettingsScreen:()=>settingsScreen,
     getWorkshopProfile:()=>workshopProfile,setWorkshopProfile:value=>{workshopProfile=value},getWorkshopBench:()=>workshopBench,contactStates,
     awardWorkshopCredits,setupWorkshop,openWorkshopMenu,applyWorkshopUpgrade,purchaseWorkshopResearch,linkContactSensor,unlinkContactSensor,tickContactSensors,sensorContactActive,workshopTarget,drawWorkshop,
     setupProduction,tickProduction,productionForces,productionIntervention,productionObjective,startProduction,resetProduction,openProductionMenu,

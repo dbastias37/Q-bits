@@ -9,6 +9,9 @@ function readQbitsStorage(key){
 }
 const story={ready:false,mode:'menu',scene:'lab',phase:'idle',started:false,elapsed:0,phaseTime:0,dialogue:null,transition:null,intentionalUnlock:false,preserveGrip:false,progress:{},lab:null,guideId:null,dropAligned:false};
 let unitRadial=null,pendingUnitCreation=null;
+const preferences=window.QBitsPreferences;
+let savedPreferences=preferences.load(window.localStorage),visuals=preferences.effective(savedPreferences),settingsScreen=null,lastVisualFrame=0,previewViewport=null;
+const visualRGB=key=>preferences.rgb(visuals[key]);
 function radialOpen(){return !!unitRadial?.isOpen;}
 const storyWorld={walls:[],details:[],door:null,target:null,doorProgress:0};
 const ROOM_SIZE = 28; // Ancho y largo; las cuatro paredes se alejan del centro.
@@ -61,9 +64,14 @@ if (!gl) {
   throw new Error('WebGL unavailable');
 }
 
+const postEffects=window.QBitsGraphics?.create(gl),surfaceTexture=window.QBitsGraphics?.surface(gl);
 const vertexSource = `
   attribute vec3 aPosition;
   attribute vec3 aNormal;
+  uniform float uJitter;
+  uniform vec2 uResolution;
+  varying vec2 vSurfaceUV;
+  varying vec3 vAffineUV;
   uniform vec3 uCamera;
   uniform vec2 uLook;
   uniform float uAspect;
@@ -96,6 +104,11 @@ const vertexSource = `
         - 2.0 * farClip * nearClip / (farClip - nearClip),
       depth
     );
+    if(uJitter>0. && depth>nearClip){vec2 grid=max(vec2(1.),uResolution/(1.+uJitter*7.));vec2 ndc=gl_Position.xy/depth;gl_Position.xy=mix(ndc,floor(ndc*grid+.5)/grid,uJitter)*depth;}
+    vec3 texPos=uKind>.5?aPosition:world;
+    vec3 n=abs(aNormal);
+    vSurfaceUV=n.y>.5?texPos.xz:(n.x>.5?texPos.zy:texPos.xy);
+    vAffineUV=vec3(vSurfaceUV*depth,depth);
     vPosition = world;
     vNormal = uKind > 0.5 ? rotate(aNormal) : aNormal;
     vLocal = aPosition;
@@ -111,6 +124,10 @@ const fragmentSource = `
   uniform vec3 uLightColor[4];
   uniform float uGlow;
   uniform float uFocusMask;
+  uniform sampler2D uSurface;
+  uniform float uTextureMix,uTextureScale,uWarp,uCel,uLighting,uShadows;
+  varying vec2 vSurfaceUV;
+  varying vec3 vAffineUV;
   varying vec3 vPosition;
   varying vec3 vNormal;
   uniform float uSize;
@@ -122,9 +139,14 @@ const fragmentSource = `
   uniform vec4 uTint;
   varying vec3 vLocal;
   varying vec3 vLocalNormal;
+  float surfaceGrain(){
+    vec2 uv=mix(vSurfaceUV,vAffineUV.xy/max(.001,vAffineUV.z),uWarp)*uTextureScale;
+    return mix(1.,.965+.035*texture2D(uSurface,uv).r,uTextureMix);
+  }
+  float lightBands(float value){return uCel>1. ? floor(value*(uCel-1.)+.5)/(uCel-1.):value;}
   vec3 accentLight() {
     vec3 result = vec3(0.0);
-    for(int i=0;i<4;i++) { vec3 delta=uLightPos[i]-vPosition; float d=length(delta); result+=uLightColor[i]*max(0.0,dot(vNormal,delta/max(d,0.001)))*0.045*uGlow/(1.0+d*d*2.0); }
+    for(int i=0;i<4;i++) { vec3 delta=uLightPos[i]-vPosition; float d=length(delta); result+=uLightColor[i]*(max(0.0,dot(vNormal,delta/max(d,0.001)))+uLighting*.3)*0.045*uGlow/(1.0+d*d*2.0); }
     return result;
   }
   void main() {
@@ -185,7 +207,7 @@ const fragmentSource = `
     if (uKind > 4.5) {
       vec3 lightDir = normalize(vec3(-0.6, 1.0, 0.35));
       float light = 0.77 + 0.22 * max(0.0, dot(vNormal, lightDir)) + 0.06 * max(0.0, dot(vNormal, normalize(vec3(0.7,0.2,-0.6))));
-      gl_FragColor = vec4(clamp(uTint.rgb * light + accentLight(), 0.0, 1.0), uTint.a);
+      gl_FragColor = vec4(clamp(uTint.rgb * lightBands(light) * surfaceGrain() + accentLight(), 0.0, 1.0), uTint.a);
       return;
     }
     if (uKind > 2.5) {
@@ -195,7 +217,7 @@ const fragmentSource = `
     }
     if (uKind > 1.5) {
       vec2 uv = (vPosition.xz - uCenter.xz) / uScale;
-      float alpha = exp(-dot(uv, uv) * 7.0) * uShadow;
+      float alpha = exp(-dot(uv, uv) * 7.0) * uShadow * uShadows;
       gl_FragColor = vec4(vec3(0.06), alpha);
       return;
     }
@@ -209,7 +231,8 @@ const fragmentSource = `
       float fill = max(0.0, dot(vNormal, normalize(vec3(0.7,0.2,-0.6))));
       vec3 halfVector = normalize(lightDir + normalize(uCamera - vPosition));
       float sheen = 0.065 * pow(max(0.0, dot(vNormal, halfVector)), 24.0);
-      float black = 0.035 + 0.13 * light + 0.045 * fill + sheen + edgeLight;
+      float black = 0.035 + 0.13 * lightBands(light) + 0.045 * fill + sheen*(1.+uLighting*2.) + edgeLight;
+      black*=surfaceGrain();black+=uLighting*.025*max(vNormal.y,0.);
       gl_FragColor = vec4(vec3(black)+accentLight(), 1.0);
       return;
     }
@@ -227,8 +250,8 @@ const fragmentSource = `
     float softLight = 0.948 - 0.024 * vNormal.y
       + 0.012 * vNormal.x + 0.008 * vNormal.z + heightLight;
     float floorBounce = 0.009 * exp(-dot(vPosition.xz, vPosition.xz) / 55.0);
-    float white = clamp(softLight + floorBounce - contactShade, 0.0, 1.0);
-    gl_FragColor = vec4(clamp(vec3(white)+accentLight()*0.4,0.0,1.0), 1.0);
+    float white = clamp(softLight + floorBounce*(1.+uLighting*3.) - contactShade*(1.+uLighting), 0.0, 1.0);
+    gl_FragColor = vec4(clamp(vec3(white*surfaceGrain())+accentLight()*0.4,0.0,1.0), 1.0);
   }
 `;
 
@@ -269,7 +292,7 @@ for (const [name, offset] of [['aPosition', 0], ['aNormal', 12]]) {
   gl.enableVertexAttribArray(location);
   gl.vertexAttribPointer(location, 3, gl.FLOAT, false, 24, offset);
 }
-const uniforms = Object.fromEntries(['uFocal','uFocusMask','uGlow','uLightPos[0]','uLightColor[0]','uTime','uCamera','uLook','uAspect','uSize','uHeight','uKind','uCenter','uScale','uShadow','uDimensions','uQuaternion','uTint'].map(name => [name, gl.getUniformLocation(program, name)]));
+const uniforms = Object.fromEntries(['uJitter','uResolution','uSurface','uTextureMix','uTextureScale','uWarp','uCel','uLighting','uShadows','uFocal','uFocusMask','uGlow','uLightPos[0]','uLightColor[0]','uTime','uCamera','uLook','uAspect','uSize','uHeight','uKind','uCenter','uScale','uShadow','uDimensions','uQuaternion','uTint'].map(name => [name, gl.getUniformLocation(program, name)]));
 gl.uniform1f(uniforms.uFocal, heldFocus.focal);
 gl.uniform1f(uniforms.uFocusMask, 0);
 gl.uniform1f(uniforms.uSize, ROOM_SIZE);
@@ -324,7 +347,7 @@ function pause(release=true) {
 }
 
 function resize() {
-  const scale = Math.min(window.devicePixelRatio || 1, 2);
+  const scale = visualResolution(canvas.clientWidth,canvas.clientHeight,visuals);
   const width = Math.max(1, Math.round(canvas.clientWidth * scale));
   const height = Math.max(1, Math.round(canvas.clientHeight * scale));
   if (canvas.width !== width || canvas.height !== height) {
@@ -1853,6 +1876,7 @@ function handleWheel(event){
 }
 canvas.addEventListener('wheel',handleWheel,{passive:false});
 function handleKey(event){
+ if(settingsScreen?.isOpen)return;
  if(radialOpen()){
   event.preventDefault();
   if(event.code==='Escape')closeUnitRadial(false);
@@ -1971,6 +1995,8 @@ function drawGroupSolid(g){
 function drawQubits(){
  bindGeometry(shadowGeometry);gl.uniform1f(uniforms.uKind,2);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
  for(const g of groups)for(const p of poses(g)){
+  if(visuals.shadows==='off')continue;
+  if(visuals.shadows==='sharp'){drawSharpShadow(p);bindGeometry(shadowGeometry);gl.uniform1f(uniforms.uKind,2);continue;}
   const height=Math.max(0,p.p.y-HALF),scale=.23+Math.min(height,2)*.18;
   setPose(V(p.p.x,.001,p.p.z),Q(),V(scale,scale,scale));gl.uniform1f(uniforms.uScale,scale);gl.uniform1f(uniforms.uShadow,.22/(1+height*3));gl.drawArrays(gl.TRIANGLES,0,6);
  }
@@ -2020,7 +2046,7 @@ function findBlockSnap(source,target){
 }
 function cameraBasis(){return {forward:direction(),right:V(Math.cos(yaw),0,-Math.sin(yaw)),up:V(Math.sin(yaw)*Math.sin(pitch),Math.cos(pitch),Math.cos(yaw)*Math.sin(pitch))};}
 function screenRay(x,y){const b=cameraBasis(),w=canvas.clientWidth,h=canvas.clientHeight,xx=(2*x/w-1)*(w/h)/heldFocus.focal,yy=(1-2*y/h)/heldFocus.focal;const d=add(add(b.forward,mul(b.right,xx)),mul(b.up,yy));d.normalize();return d;}
-function project(p){const b=cameraBasis(),r=sub(p,V(...camera)),depth=r.dot(b.forward);if(depth<=.04)return null;const h=canvas.clientHeight,w=canvas.clientWidth;return {x:w/2+r.dot(b.right)*heldFocus.focal*h/2/depth,y:h/2-r.dot(b.up)*heldFocus.focal*h/2/depth,depth};}
+function project(p){const b=cameraBasis(),r=sub(p,V(...camera)),depth=r.dot(b.forward);if(depth<=.04)return null;const h=previewViewport?.height||canvas.clientHeight,w=previewViewport?.width||canvas.clientWidth;return {x:w/2+r.dot(b.right)*heldFocus.focal*h/2/depth,y:h/2-r.dot(b.up)*heldFocus.focal*h/2/depth,depth};}
 function screenBounds(g){
  const points=poses(g).flatMap(p=>corners(p)).map(project).filter(Boolean);if(!points.length)return null;
  return {left:Math.min(...points.map(p=>p.x)),right:Math.max(...points.map(p=>p.x)),top:Math.min(...points.map(p=>p.y)),bottom:Math.max(...points.map(p=>p.y))};
@@ -2124,17 +2150,23 @@ for(let axis=0;axis<3;axis++)for(const a of [-.5,.5])for(const b of [-.5,.5]){
 }
 const edgeGeometry=buffer(edgeData);
 function drawOutline(p,q,size,alpha=.85,selectedOutline=false){
- bindGeometry(edgeGeometry);gl.uniform1f(uniforms.uKind,3);setPose(p,q,add(size,V(.0009,.0009,.0009)));tint(selectedOutline ? .38 : .48,selectedOutline ? .56 : .51,selectedOutline ? .57 : .54,alpha);gl.drawArrays(gl.LINES,0,24);
+ const expanded=add(size,V(.0009,.0009,.0009)),points=[];
+ for(let i=0;i<edgeData.length;i+=6)points.push(add(p,q.vmult(V(edgeData[i]*expanded.x,edgeData[i+1]*expanded.y,edgeData[i+2]*expanded.z))));
+ drawWideLines(points,[...(selectedOutline?visualRGB('outlineColor'):visuals.style==='cel'?[.06,.09,.1]:[.48,.51,.54]),alpha],selectedOutline?visuals.outlineWidth:visuals.style==='cel'?visuals.outlineWidth:1);
 }
 function drawUnitOutline(pose,alpha=.7,selectedOutline=true){
  if(!isTBit(pose)){drawOutline(pose.p,pose.q,V(CUBE_SIZE,CUBE_SIZE,CUBE_SIZE),alpha,selectedOutline);return;}
- const mesh=unitMeshes[unitShape(pose)];bindGeometry(mesh.edgeBuffer);gl.uniform1f(uniforms.uKind,3);setPose(pose.p,pose.q,V(CUBE_SIZE+.0006,CUBE_SIZE+.0006,CUBE_SIZE+.0006));tint(selectedOutline?.38:.48,selectedOutline?.56:.51,selectedOutline?.57:.54,alpha);gl.drawArrays(gl.LINES,0,mesh.edgeCount);
+ const profile=unitProfile(pose),points=profile.edges.flatMap(edge=>edge.map(i=>add(pose.p,pose.q.vmult(mul(profile.vertices[i],1.008)))));
+ drawWideLines(points,[...(selectedOutline?visualRGB('outlineColor'):[.1,.15,.16]),alpha],visuals.outlineWidth);
 }
+function selectionGroups(){return groups.filter(g=>multiSelection.includes(g)||selected?.g===g);}
 function drawStructureOutlines(){
  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
- for(const g of groups){const chosen=multiSelection.includes(g);
+ const selectedGroups=selectionGroups();
+ for(const g of groups){const chosen=selectedGroups.includes(g);
   if(g.block){const p=moodVisualPose(g,blockPose(g));drawOutline(p.p,p.q,p.size,.88,chosen);}
-  else if(chosen)for(const pose of poses(g))drawUnitOutline(pose,.7,true);
+  else if(chosen||visuals.style==='cel')for(const pose of poses(g))drawUnitOutline(pose,.85,chosen);
+  if(chosen&&visuals.markers){const bb=bounds(g);drawSelectionMarker(V(bb.center.x,bb.max.y+.025,bb.center.z),simTime);}
  }
  gl.depthMask(true);gl.disable(gl.BLEND);
 }
@@ -2589,7 +2621,7 @@ function drawCargos(){
  for(const c of cargos){
   if(c.dimensions){drawMatter(c);continue;}
   gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);bindGeometry(shadowGeometry);gl.uniform1f(uniforms.uKind,2);const s=c.size*2;
-  setPose(V(c.body.position.x,.001,c.body.position.z),Q(),V(s,1,s));gl.uniform1f(uniforms.uScale,s);gl.uniform1f(uniforms.uShadow,.2);gl.drawArrays(gl.TRIANGLES,0,6);
+  if(visuals.shadows==='sharp'){drawProjectedShadow(unitProfile('cube').vertices.map(p=>add(c.body.position,c.body.quaternion.vmult(mul(p,c.size/CUBE_SIZE)))));}else if(visuals.shadows!=='off'){setPose(V(c.body.position.x,.001,c.body.position.z),Q(),V(s,1,s));gl.uniform1f(uniforms.uScale,s);gl.uniform1f(uniforms.uShadow,.2);gl.drawArrays(gl.TRIANGLES,0,6);}
   const intake=c.intake||0,drawSize=c.size*(1-intake*.85);gl.depthMask(intake===0);if(intake===0)gl.disable(gl.BLEND);bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,5);setPose(V(c.body.position.x,drawSize/2,c.body.position.z),c.body.quaternion,V(drawSize,drawSize,drawSize));
   const rgb=[1,3,5].map(i=>parseInt(c.color.slice(i,i+2),16)/255);tint(...rgb,1-intake*.8);gl.drawArrays(gl.TRIANGLES,0,36);
   gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);if(!intake)drawOutline(c.body.position,c.body.quaternion,V(c.size,c.size,c.size),.65,selectedCargo===c);gl.depthMask(true);gl.disable(gl.BLEND);
@@ -3275,9 +3307,10 @@ function drawAlphaButtons(buttons=puzzle.buttons){
 }
 function renderRouteMetrics(g){if(g.renderRouteCache?.route===g.route&&simTime<g.renderRouteCache.until)return g.renderRouteCache.info;const info=groupRouteMetrics(g);g.renderRouteCache={route:g.route,until:simTime+.18,info};return info;}
 function drawNeonPath(points,color=[.28,.68,.73]){
+ color=visualRGB('pathColor');
  if(!points.length)return;gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
  for(let i=0;i+1<points.length;i+=2){const a=points[i],b=points[i+1],d=sub(b,a),length=Math.hypot(d.x,d.z);if(length<.001)continue;const q=Q();q.setFromAxisAngle(V(0,1,0),Math.atan2(d.x,d.z));const center=mul(add(a,b),.5);center.y=Math.max(.006,center.y);
-  bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,8);setPose(center,q,V(.055,.001,length));tint(...color,.22*alphaSettings.glow);gl.drawArrays(gl.TRIANGLES,0,36);drawBox(add(center,V(0,.001,0)),q,V(.003,.001,length),[...color,.8]);
+  bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,8);setPose(center,q,V(.025*visuals.pathWidth,.001,length));tint(...color,.22*alphaSettings.glow);gl.drawArrays(gl.TRIANGLES,0,36);drawBox(add(center,V(0,.001,0)),q,V(.0015*visuals.pathWidth,.001,length),[...color,.8]);
  }gl.depthMask(true);gl.disable(gl.BLEND);
 }
 function drawAlpha(){
@@ -3548,7 +3581,7 @@ document.addEventListener('webkitfullscreenchange',syncFullscreenButton);
 // Campaign prologue. Scene state, narrative timers and test tools share one clock.
 const chapters=[['00','El primer encuentro','Prólogo · tomar, mover y enfriar'],['01','Primer contacto','Llevar un Q-bit a un destino'],['02','Cada uno por su camino','Dos destinos independientes'],['03','Dos lados','Dos botones simultáneos'],['04','Juntos pesamos más','Dos Q-bits en un botón'],['05','La primera unión','Dos piezas · circuito de líquido'],['06','Cambiar de forma','Tres puertas · L, cuadrado y T'],['07','Seis piezas','Rectángulo y escalera'],['08','Salimos juntos','Seis compañeros · fin del primer bloque'],['09','La fuente','Conocer al equipo · transformar materia'],['10','El camino de vuelta','Dos estaciones · transporte y descanso'],['11','Dos rutas','Elegir materia y organizar al equipo'],['12','La instalación','Tres estaciones · el equipo completo']];
 const ui={main:document.querySelector('#main-screen'),pause:document.querySelector('#pause-screen'),levels:document.querySelector('#levels-screen'),complete:document.querySelector('#chapter-complete'),dialogue:document.querySelector('#story-dialogue'),text:document.querySelector('#story-text'),speaker:document.querySelector('#story-speaker'),choices:document.querySelector('#story-choices'),objective:document.querySelector('#story-objective'),veil:document.querySelector('#scene-veil'),top:document.querySelector('#eye-top'),bottom:document.querySelector('#eye-bottom'),cooling:document.querySelector('#cooling-track'),marker:document.querySelector('#world-label')};
-function gameMode(mode){if(mode!=='playing')closeUnitRadial(false);story.mode=mode;window.QBitsMusic?.setPaused(!['playing','menu','levels','codex'].includes(mode));document.body.dataset.gameMode=mode;for(const [key,el] of [['menu',ui.main],['pause',ui.pause],['levels',ui.levels],['complete',ui.complete],['codex',document.querySelector('#codex-screen')]])el.hidden=mode!==key;document.querySelector('#pause-button').hidden=mode!=='playing';hint.hidden=true;redraw=true;}
+function gameMode(mode){if(mode!=='playing')closeUnitRadial(false);story.mode=mode;window.QBitsMusic?.setPaused(!['playing','menu','levels','codex','settings'].includes(mode));document.body.dataset.gameMode=mode;for(const [key,el] of [['menu',ui.main],['pause',ui.pause],['levels',ui.levels],['complete',ui.complete],['codex',document.querySelector('#codex-screen')]])el.hidden=mode!==key;document.querySelector('#pause-button').hidden=mode!=='playing';hint.hidden=true;redraw=true;}
 function gameScene(scene){story.scene=scene;document.body.dataset.gameScene=scene;const label=document.querySelector('#chapter-label');label.hidden=scene==='lab';document.querySelector('#chapter-number').textContent=scene==='intro'?'PRÓLOGO / 00':'NIVEL / '+String(story.level||1).padStart(2,'0');document.querySelector('#chapter-name').textContent=scene==='intro'?'El primer encuentro':chapters[story.level||1][1];}
 function storySuspended(){return radialOpen()||story.ready&&(story.mode!=='playing'||!panel.hidden||document.hidden);}
 function storyWalkAllowed(){return !story.ready||story.scene!=='intro'||['deliver','cooling','cooled','choice','repeat'].includes(story.phase);}
@@ -4597,6 +4630,90 @@ function showCodex(){
 }
 function closeCodex(){gameMode(story.codexReturn||'menu');if(story.mode==='playing')resumeGame();}
 
+// Shared renderer for the game and the settings specimen. No simulated scene is mutated.
+function visualResolution(w,h,s){
+ const max=Number(gl.getParameter(gl.MAX_TEXTURE_SIZE))||4096;
+ return Math.min(Math.min(window.devicePixelRatio||1,2)*s.resolution/100*s.sampling,Math.sqrt(4500000/Math.max(1,w*h)),max/Math.max(w,h,1));
+}
+function restoreSceneProgram(){gl.useProgram(program);for(const [location]of attributes)gl.enableVertexAttribArray(location);boundGeometry=null;}
+function applyVisualUniforms(){
+ surfaceTexture?.bind(visuals);gl.uniform1i(uniforms.uSurface,2);gl.uniform1f(uniforms.uTextureMix,surfaceTexture?1:0);
+ gl.uniform1f(uniforms.uTextureScale,visuals.textureScale);gl.uniform1f(uniforms.uWarp,visuals.warp/100);gl.uniform1f(uniforms.uJitter,visuals.jitter/100);gl.uniform2f(uniforms.uResolution,canvas.width,canvas.height);gl.uniform1f(uniforms.uCel,visuals.cel);gl.uniform1f(uniforms.uLighting,visuals.lighting/100);gl.uniform1f(uniforms.uShadows,visuals.shadows==='off'?0:1);
+}
+function applyPreferences(next){
+ savedPreferences=preferences.sanitize(next);visuals=preferences.effective(savedPreferences);
+ window.QBitsMusic?.setVolume(savedPreferences.volume/100);window.QBitsMusic?.setMuted(!savedPreferences.music);
+ restoreSceneProgram();resize();redraw=true;
+}
+function initSettingsScreen(){
+ if(settingsScreen||!window.QBitsSettings)return;
+ settingsScreen=window.QBitsSettings.init({capabilities:{anisotropy:surfaceTexture?.maxAnisotropy||1},
+  open(){closeCommandMenu(false);closeDetachMenu(false);gameMode('settings');pause(false);panel.hidden=true;},
+  close(mode){visuals=preferences.effective(savedPreferences);previewViewport=null;restoreSceneProgram();resize();gameMode(mode);redraw=true;},
+  apply:applyPreferences
+ });
+ for(const id of ['main-settings','pause-settings'])document.querySelector('#'+id).addEventListener('click',()=>{if(story.ready&&!story.transition)settingsScreen.open(story.mode);});
+}
+function drawWorldTriangles(data,color){
+ if(!data.length)return;gl.bindBuffer(gl.ARRAY_BUFFER,lineGeometry);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.DYNAMIC_DRAW);boundGeometry=null;bindGeometry(lineGeometry);gl.uniform1f(uniforms.uKind,3);setPose(V(),Q(),V(1,1,1));tint(...color);gl.drawArrays(gl.TRIANGLES,0,data.length/6);
+}
+function drawWideLines(points,color,width=1){
+ const basis=cameraBasis(),h=previewViewport?.height||canvas.clientHeight,data=[];
+ for(let i=0;i+1<points.length;i+=2){const a=points[i],b=points[i+1],pa=project(a),pb=project(b);if(!pa||!pb)continue;
+  const dx=pb.x-pa.x,dy=pb.y-pa.y,len=Math.hypot(dx,dy);if(len<.01)continue;
+  const axis=add(mul(basis.right,-dy/len),mul(basis.up,-dx/len));
+  const oa=mul(axis,width*pa.depth/(heldFocus.focal*h)),ob=mul(axis,width*pb.depth/(heldFocus.focal*h));
+  const aa=add(a,oa),ab=sub(a,oa),ba=add(b,ob),bb=sub(b,ob);
+  for(const v of [aa,ab,ba,ba,ab,bb])data.push(v.x,v.y,v.z,0,1,0);
+ }
+ drawWorldTriangles(data,color);
+}
+function drawSelectionMarker(anchor,time){
+ const projected=project(anchor);if(!projected)return;const h=previewViewport?.height||canvas.clientHeight;
+ const basis=cameraBasis(),unit=2*projected.depth/(heldFocus.focal*h),float=visuals.markerMotion?Math.sin(time*2)*3:0;
+ const center=add(anchor,mul(basis.up,(23+float)*unit));
+ const pts=[[-12,9],[0,2],[12,9],[0,-12]].map(([x,y])=>add(center,add(mul(basis.right,x*unit),mul(basis.up,y*unit))));
+ drawWideLines(pts.flatMap((p,i)=>[p,pts[(i+1)%pts.length]]),[...visualRGB('outlineColor'),.95],visuals.outlineWidth);
+}
+function shadowHull(points){
+ const sorted=points.map(p=>V(p.x+.6*Math.max(0,p.y),.0015,p.z-.35*Math.max(0,p.y))).sort((a,b)=>a.x-b.x||a.z-b.z),cross=(a,b,c)=>(b.x-a.x)*(c.z-a.z)-(b.z-a.z)*(c.x-a.x);
+ const half=list=>{const out=[];for(const p of list){while(out.length>1&&cross(out.at(-2),out.at(-1),p)<=0)out.pop();out.push(p);}out.pop();return out;};
+ return [...half(sorted),...half([...sorted].reverse())];
+}
+function drawProjectedShadow(points){
+ const hull=shadowHull(points),data=[];for(let i=1;i+1<hull.length;i++)for(const v of [hull[0],hull[i],hull[i+1]])data.push(v.x,v.y,v.z,0,1,0);
+ drawWorldTriangles(data,[.04,.06,.06,.23]);
+}
+function drawSharpShadow(pose){drawProjectedShadow(unitProfile(pose).vertices.map(p=>add(pose.p,pose.q.vmult(p))));}
+function renderSettingsPreview(time){
+ const target=document.querySelector('#settings-preview-canvas'),ctx=target.getContext('2d');if(!ctx)return;
+ const old={camera:[...camera],yaw,pitch,focal:heldFocus.focal,visuals};
+ try{
+  visuals=settingsScreen.draft;const w=target.clientWidth,h=target.clientHeight,scale=visualResolution(w,h,visuals);
+  previewViewport={width:w,height:h};const rw=Math.max(1,Math.floor(w*scale)),rh=Math.max(1,Math.floor(h*scale));if(canvas.width!==rw)canvas.width=rw;if(canvas.height!==rh)canvas.height=rh;
+  // Use a low eye level so the preview reads as a room with a floor and two walls.
+  camera.splice(0,3,1.65,1.32,2.5);yaw=.58;pitch=-.28;heldFocus.focal=1.65;
+  const destination=postEffects?.begin(canvas.width,canvas.height,visuals)||null;
+  restoreSceneProgram();applyVisualUniforms();gl.bindFramebuffer(gl.FRAMEBUFFER,destination);gl.viewport(0,0,canvas.width,canvas.height);gl.clearColor(1,1,1,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.disable(gl.BLEND);
+  gl.uniform1f(uniforms.uAspect,w/h);gl.uniform1f(uniforms.uFocal,heldFocus.focal);gl.uniform3fv(uniforms.uCamera,camera);gl.uniform2f(uniforms.uLook,yaw,pitch);gl.uniform1f(uniforms.uTime,time/1000);gl.uniform1f(uniforms.uGlow,1);gl.uniform1f(uniforms.uFocusMask,0);
+  gl.uniform3fv(uniforms['uLightPos[0]'],new Float32Array([0,.4,.6,0,0,0,0,0,0,0,0,0]));gl.uniform3fv(uniforms['uLightColor[0]'],new Float32Array([...visualRGB('pathColor'),0,0,0,0,0,0,0,0,0]));
+  bindGeometry(geometry);gl.uniform1f(uniforms.uKind,0);gl.drawArrays(gl.TRIANGLES,0,vertices.length/6);
+  // White panels close the sample room around the rotating specimen.
+  drawBox(V(0,1.4,-1.5),Q(),V(5,2.8,.03),[.94,.95,.94,1]);drawBox(V(-1.6,1.4,0),Q(),V(.03,2.8,4),[.91,.93,.92,1]);
+  const q=Q();q.setFromAxisAngle(V(0,1,0),time*.00028);const center=V(0,.3,0),size=V(.6,.6,.6);
+  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
+  if(visuals.shadows==='sharp')drawProjectedShadow(unitProfile('cube').vertices.map(p=>add(center,q.vmult(mul(p,.6/CUBE_SIZE)))));
+  else if(visuals.shadows==='soft'){bindGeometry(shadowGeometry);gl.uniform1f(uniforms.uKind,2);setPose(V(0,.001,0),Q(),V(1.45,1,1.45));gl.uniform1f(uniforms.uScale,1.45);gl.uniform1f(uniforms.uShadow,.32);gl.drawArrays(gl.TRIANGLES,0,6);}
+  gl.depthMask(true);gl.disable(gl.BLEND);bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,1);setPose(center,q,size);gl.drawArrays(gl.TRIANGLES,0,36);
+  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);drawOutline(center,q,size,1,true);if(visuals.markers)drawSelectionMarker(V(0,.67,0),time/1000);gl.depthMask(true);gl.disable(gl.BLEND);
+  drawNeonPath([V(-.1,.006,.65),V(.8,.006,.65),V(.8,.006,.65),V(.8,.006,-.5)]);
+  if(destination){postEffects.end(visuals);restoreSceneProgram();}
+  if(target.width!==canvas.width)target.width=canvas.width;if(target.height!==canvas.height)target.height=canvas.height;
+  ctx.drawImage(canvas,0,0,target.width,target.height);
+  document.querySelector('#settings-preview-state').textContent=(postEffects?.failed?'Efectos de pantalla no disponibles · ':visuals.style.toUpperCase()+' · ')+Math.round(visuals.resolution)+' %';
+ }finally{camera.splice(0,3,...old.camera);yaw=old.yaw;pitch=old.pitch;heldFocus.focal=old.focal;visuals=old.visuals;previewViewport=null;}
+}
+
 // One depth-tested mask keeps carried pieces sharp while the room softens. The
 // mask shares the scene depth buffer, so focus never reveals an occluded piece.
 const focusVertexSource = `
@@ -4685,7 +4802,7 @@ function ensureFocusPass(){
   return true;
  }catch{disableFocusPass();return false;}
 }
-function compositeHeldFocus(){
+function compositeHeldFocus(destination=null){
  gl.bindFramebuffer(gl.FRAMEBUFFER,focusPass.mask.framebuffer);
  gl.clearColor(0,0,0,1);gl.clear(gl.COLOR_BUFFER_BIT);gl.clearColor(1,1,1,1);
  gl.disable(gl.BLEND);gl.depthMask(false);gl.depthFunc(gl.LEQUAL);gl.uniform1f(uniforms.uFocusMask,1);
@@ -4695,7 +4812,7 @@ function compositeHeldFocus(){
   else if(multiSelection.includes(g))for(const pose of poses(g))drawUnitOutline(pose);
  }
  gl.uniform1f(uniforms.uFocusMask,0);gl.depthFunc(gl.LESS);gl.depthMask(true);
- gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,canvas.width,canvas.height);gl.disable(gl.DEPTH_TEST);
+ gl.bindFramebuffer(gl.FRAMEBUFFER,destination);gl.viewport(0,0,canvas.width,canvas.height);gl.disable(gl.DEPTH_TEST);
  for(const [location]of attributes)gl.disableVertexAttribArray(location);
  gl.useProgram(focusPass.program);gl.bindBuffer(gl.ARRAY_BUFFER,focusPass.quad);gl.enableVertexAttribArray(focusPass.location);gl.vertexAttribPointer(focusPass.location,2,gl.FLOAT,false,0,0);
  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,focusPass.scene.texture);gl.uniform1i(focusPass.uniforms.uScene,0);
@@ -4710,8 +4827,10 @@ function compositeHeldFocus(){
 initSpeech();
 let previousTime = performance.now();
 function renderScene(){
+  const destination=postEffects?.begin(canvas.width,canvas.height,visuals)||null;
   const focused=heldFocus.amount>.001&&ensureFocusPass();
-  gl.bindFramebuffer(gl.FRAMEBUFFER,focused?focusPass.scene.framebuffer:null);
+  restoreSceneProgram();applyVisualUniforms();
+  gl.bindFramebuffer(gl.FRAMEBUFFER,focused?focusPass.scene.framebuffer:destination);
   gl.viewport(0,0,focused?focusPass.width:canvas.width,focused?focusPass.height:canvas.height);
   gl.uniform1f(uniforms.uFocal,heldFocus.focal);
   updateAccentLights();
@@ -4722,7 +4841,8 @@ function renderScene(){
   gl.uniform1f(uniforms.uKind,0);
   gl.drawArrays(gl.TRIANGLES,0,vertices.length/6);
   drawStoryWorld();drawQubits();drawStoryGlass();
-  if(focused)compositeHeldFocus();
+  if(focused)compositeHeldFocus(destination);
+  if(destination){postEffects.end(visuals);restoreSceneProgram();}
   redraw=false;
 }
 function frame(time) {
@@ -4730,6 +4850,11 @@ function frame(time) {
   const dt = Math.min(Math.max((time - previousTime) / 1000, 0), 0.05);
   let distance = 0;
   previousTime = time;
+  if(settingsScreen?.isOpen){
+    accumulator=0;
+    if(!document.hidden && time-lastVisualFrame>=1000/30){renderSettingsPreview(time);lastVisualFrame=time;}
+    requestAnimationFrame(frame);return;
+  }
   if(radialOpen()){
     accumulator=0;if(!unitRadialAllowed())closeUnitRadial(false);
     updateHeldFocus(dt,false);if(redraw&&!document.hidden)renderScene();
@@ -4772,17 +4897,18 @@ function frame(time) {
     updateSpeech();updateStoryMarker();
     redraw = true;
   }
-  if (redraw && !document.hidden) {
-    renderScene();
+  if (redraw && !document.hidden && (!visuals.fps || time-lastVisualFrame>=1000/visuals.fps-.5)) {
+    lastVisualFrame=time;renderScene();
   }
   requestAnimationFrame(frame);
 }
 let gamePrepared=false;
 const nextPaint=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
 window.QBitsGame={
+  applyPreferences:()=>applyPreferences(savedPreferences),
   async prepare(onProgress=()=>{}){
     if(gamePrepared)return;
-    initUnitRadial();initStory();resize();onProgress(.25);
+    initUnitRadial();initStory();initSettingsScreen();resize();onProgress(.25);
     await nextPaint();
     // Build the actual prologue before Jugar, retaining its bodies and GPU assets.
     beginIntro();gameMode('boot');story.started=false;

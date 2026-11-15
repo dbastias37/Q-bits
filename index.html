@@ -11,6 +11,7 @@
   <link rel="preload" href="assets/fonts/spaceman/Spaceman-Regular.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="preload" href="assets/fonts/led-calculator/LEDCalculator.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="stylesheet" href="assets/css/radial-menu.css?v=20261114-17">
+  <link rel="stylesheet" href="assets/css/settings.css?v=20261115-settings-1">
   <style>
     * { box-sizing: border-box; }
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000; }
@@ -319,11 +320,11 @@ input,select,textarea{font-family:var(--font-menu);}
   <section id="main-screen" class="game-screen" hidden aria-label="Menú principal">
     <button id="title-qbit" class="title-emblem" aria-label="Saludar al Q-bit"><div class="portrait-cube"><i></i><i></i><i></i><i></i><i></i><i></i></div></button><div id="title-greeting" hidden role="status"></div>
     <p class="eyebrow">CADA PIEZA CUENTA</p><h1 aria-label="Q-bits" class="game-title">Q-bits</h1><p class="menu-subtitle">Todo comienza con un encuentro.</p>
-    <div class="menu-actions"><button id="main-play" class="primary">Comenzar campaña <span class="menu-arrow" aria-hidden="true"></span></button><button id="main-continue" hidden>Continuar</button><button id="main-levels">Seleccionar nivel</button><button id="main-lab">Banco de pruebas</button><button id="main-codex">Catálogo de materia</button></div>
+    <div class="menu-actions"><button id="main-play" class="primary">Comenzar campaña <span class="menu-arrow" aria-hidden="true"></span></button><button id="main-continue" hidden>Continuar</button><button id="main-levels">Seleccionar nivel</button><button id="main-lab">Banco de pruebas</button><button id="main-codex">Catálogo de materia</button><button id="main-settings">Configuración</button></div>
     <small class="menu-foot">Versión de pruebas · Teclado y mouse<br>P abre las herramientas en cualquier momento</small>
   </section>
   <section id="pause-screen" class="game-screen frosted" hidden role="dialog" aria-modal="true" aria-label="Pausa">
-    <p class="eyebrow">TÓMATE UN MOMENTO</p><h2>Pausa</h2><p id="pause-chapter" class="menu-subtitle"></p><div class="menu-actions"><button id="pause-resume" class="primary">Continuar <span class="menu-arrow" aria-hidden="true"></span></button><button id="pause-restart">Reiniciar nivel</button><button id="pause-levels">Seleccionar nivel</button><button id="pause-main">Menú principal</button><button id="pause-lab">Banco de pruebas</button><button id="pause-codex">Catálogo de materia</button></div><small class="menu-foot">Esc · volver &nbsp;&nbsp; P · herramientas de prueba</small>
+    <p class="eyebrow">TÓMATE UN MOMENTO</p><h2>Pausa</h2><p id="pause-chapter" class="menu-subtitle"></p><div class="menu-actions"><button id="pause-resume" class="primary">Continuar <span class="menu-arrow" aria-hidden="true"></span></button><button id="pause-restart">Reiniciar nivel</button><button id="pause-levels">Seleccionar nivel</button><button id="pause-main">Menú principal</button><button id="pause-lab">Banco de pruebas</button><button id="pause-codex">Catálogo de materia</button><button id="pause-settings">Configuración</button></div><small class="menu-foot">Esc · volver &nbsp;&nbsp; P · herramientas de prueba</small>
   </section>
   <section id="levels-screen" class="game-screen frosted" hidden role="dialog" aria-modal="true" aria-label="Seleccionar nivel"><div class="levels-content"><p class="eyebrow">EL RECORRIDO</p><h2>Seleccionar nivel</h2><p class="menu-subtitle">Tres bloques · quince niveles y un prólogo.</p><div id="level-list"></div><button id="levels-back" class="back-button">← Volver</button></div></section>
   <div id="chapter-label" hidden><span id="chapter-number"></span><strong id="chapter-name"></strong></div>
@@ -450,7 +451,19 @@ input,select,textarea{font-family:var(--font-menu);}
     <div class="actions"><button id="create" type="button">Crear Q-bit</button><button id="remove" type="button">Borrar pieza</button><button id="split" type="button">Desarmar estructura</button></div>
     <button id="resume" type="button">Volver a la sala</button>
   </section>
-  <script src="assets/js/opening.js?v=20261115-opening-6" defer></script>
-  <script src="assets/js/boot.js?v=20261115-opening-6" defer></script>
+
+  <section id="settings-screen" hidden role="dialog" aria-modal="true" aria-labelledby="settings-title">
+   <div class="settings-shell">
+    <header class="settings-header"><div><span class="settings-kicker">Q-bits / a tu manera</span><h2 id="settings-title">Configuración</h2></div><button id="settings-back" type="button">← Volver</button></header>
+    <div class="settings-grid">
+     <div><nav class="settings-tabs" role="tablist" aria-label="Configuración"><button role="tab" data-settings-tab="look" aria-selected="true" aria-controls="settings-fields">Apariencia</button><button role="tab" data-settings-tab="performance" aria-selected="false" aria-controls="settings-fields">Rendimiento</button><button role="tab" data-settings-tab="audio" aria-selected="false" aria-controls="settings-fields">Audio</button></nav><div id="settings-fields" role="tabpanel" aria-label="Ajustes"></div></div>
+     <aside class="settings-preview"><div class="settings-preview-frame"><canvas id="settings-preview-canvas" aria-label="Vista previa de un Q-bit girando en una sala blanca"></canvas><span class="settings-preview-label">VISTA PREVIA EN TIEMPO REAL</span></div><div class="settings-preview-footer"><span>Una habitación. Un Q-bit.</span><span id="settings-preview-state">Original</span></div><p class="settings-note">El marcador acompaña a la selección. Colores, trazos, sombras y efectos se muestran aquí con el mismo motor del juego.</p></aside>
+    </div>
+    <footer class="settings-footer"><span id="settings-status" role="status"></span><button id="settings-reset" type="button">Restaurar estilo</button><button id="settings-save" type="button">Guardar configuración</button></footer>
+   </div>
+   <div id="settings-confirm" hidden role="alertdialog" aria-modal="true" aria-labelledby="settings-confirm-title"><div class="settings-confirm-card"><h3 id="settings-confirm-title">¿Salir sin guardar?</h3><p>Tienes cambios pendientes en la configuración.</p><div class="settings-confirm-actions"><button id="settings-keep" type="button">Seguir editando</button><button id="settings-discard" type="button">Salir sin guardar</button><button id="settings-confirm-save" type="button">Guardar y salir</button></div></div></div>
+  </section>
+  <script src="assets/js/opening.js?v=20261115-settings-1" defer></script>
+  <script src="assets/js/boot.js?v=20261115-settings-1" defer></script>
 </body>
 </html>

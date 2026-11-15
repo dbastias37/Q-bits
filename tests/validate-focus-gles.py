@@ -50,7 +50,7 @@ getShader=gl('glGetShaderiv',None,C.c_uint,C.c_uint,C.POINTER(C.c_int))
 getLog=gl('glGetShaderInfoLog',None,C.c_uint,C.c_int,C.POINTER(C.c_int),C.c_char_p)
 compiled={}
 game_path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).resolve().parents[1] / 'assets/js/game.js'
-source=game_path.read_text()
+source=game_path.read_text()+'\n'+game_path.with_name('graphics.js').read_text()
 for name,body in re.findall(r'(?:const|let)\s+(\w+)\s*=\s*`([\s\S]*?)`',source):
  kind=0x8B31 if 'gl_Position' in body else 0x8B30 if 'gl_FragColor' in body else None
  if kind is None:continue
@@ -66,7 +66,7 @@ attach=gl('glAttachShader',None,C.c_uint,C.c_uint)
 link=gl('glLinkProgram',None,C.c_uint)
 getProgram=gl('glGetProgramiv',None,C.c_uint,C.c_uint,C.POINTER(C.c_int))
 programLog=gl('glGetProgramInfoLog',None,C.c_uint,C.c_int,C.POINTER(C.c_int),C.c_char_p)
-pairs=[('vertexSource','fragmentSource'),('focusVertexSource','focusFragmentSource')]
+pairs=[('vertexSource','fragmentSource'),('focusVertexSource','focusFragmentSource'),('vertex','fragment')]
 for a,b in pairs:
  if a not in compiled or b not in compiled:continue
  p=createProgram();attach(p,compiled[a]);attach(p,compiled[b]);link(p);status=C.c_int();getProgram(p,0x8B82,C.byref(status));log=C.create_string_buffer(8192);programLog(p,len(log),None,log)
@@ -146,6 +146,30 @@ foregroundMaximum=max(noBleed[(y*W+x)*4] for y in range(H) for x in range(W) if 
 assert backgroundMinimum>=254,(backgroundMinimum,'foreground must not bleed into background')
 assert foregroundMaximum<=1,foregroundMaximum
 print(json.dumps({'pixel_fixture':'PASS','size':[W,H],'disabled_max_pixel_error':allError,'held_foreground_max_pixel_error':foregroundError,'background_checker_contrast_original':255,'background_checker_contrast_focused':contrast,'white_background_min_after_dark_foreground_exclusion':backgroundMinimum,'black_foreground_max':foregroundMaximum}))
+
+# Verify actual post shaders: disabled identity, quantization, ordered dithering,
+# color-only bloom, and an unchanged neutral white room.
+post=createProgram();attach(post,compiled['vertex']);attach(post,compiled['fragment']);link(post);use(post)
+attr=getAttrib(post,b'aScreen');enableAttrib(attr);vertexAttribPointer(attr,2,0x1406,0,0,None)
+def post_render(scene,levels=255,dither=0,bloom=0):
+ activeTexture(0x84C0);st=tex(scene);bindTexture(0x0DE1,st);uniform1i(getUniform(post,b'uImage'),0)
+ uniform2f(getUniform(post,b'uPixel'),1/W,1/H)
+ for key,value in [(b'uLevels',levels),(b'uDither',dither),(b'uBloom',bloom)]:uniform1f(getUniform(post,key),value)
+ draw(0x0005,0,4);data=(C.c_ubyte*(W*H*4))();read(0,0,W,H,0x1908,0x1401,data);assert error()==0
+ return list(data)
+neutral=[240,240,240,255]*(W*H)
+assert max(abs(a-b) for a,b in zip(post_render(neutral,bloom=1),neutral))<=1,'bloom must not bleach the white room'
+gradient=[value for y in range(H) for x in range(W) for value in [x*4,x*4,x*4,255]]
+assert max(abs(a-b) for a,b in zip(post_render(gradient),gradient))<=1,'disabled effects preserve the image'
+quantized=post_render(gradient,levels=7)
+assert len(set(quantized[::4]))<=8,'3-bit quantization'
+flat=[120,120,120,255]*(W*H)
+dithered=post_render(flat,levels=7,dither=1)
+assert len(set(dithered[::4]))==2,'ordered dithering distributes adjacent levels'
+colored=[value for y in range(H) for x in range(W) for value in ([0,230,160,255] if 28<x<34 and 28<y<34 else [12,12,12,255])]
+without=post_render(colored);with_bloom=post_render(colored,bloom=1)
+assert sum(with_bloom[1::4])>sum(without[1::4])+100,'bloom spreads colored light'
+print(json.dumps({'graphics_pixel_fixture':'PASS','quantized_levels':len(set(quantized[::4])),'dither_levels':len(set(dithered[::4])),'color_bloom':True,'neutral_room_preserved':True}))
 
 egl('eglMakeCurrent',C.c_uint,C.c_void_p,C.c_void_p,C.c_void_p,C.c_void_p)(d,None,None,None)
 egl('eglDestroyContext',C.c_uint,C.c_void_p,C.c_void_p)(d,ctx)

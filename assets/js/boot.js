@@ -52,7 +52,7 @@
   function loadScript(path) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = path + '?v=20261115-opening-6';
+      script.src = path + '?v=20261115-settings-1';
       script.onload = resolve;
       script.onerror = () => reject(new Error('No se pudo cargar ' + path));
       document.head.append(script);
@@ -83,22 +83,6 @@
     update('scene', stages.scene);
     if (!presentationDone) setTimeout(presentation, 80);
     else if (ready) play.focus({preventScroll:true});
-  }
-  function musicControls() {
-    for (const id of ['main-screen', 'pause-screen']) {
-      const row = document.createElement('div');row.className = 'music-settings';
-      const mute = document.createElement('button');mute.type = 'button';
-      const label = document.createElement('label');label.textContent = 'Volumen ';
-      const volume = document.createElement('input');volume.type = 'range';volume.min = '0';volume.max = '100';volume.step = '1';volume.setAttribute('aria-label', 'Volumen de música');
-      label.append(volume);row.append(mute, label);document.getElementById(id).append(row);
-      mute.addEventListener('click', () => QBitsMusic.setMuted(!QBitsMusic.getState().muted));
-      volume.addEventListener('input', () => QBitsMusic.setVolume(Number(volume.value) / 100));
-      QBitsMusic.subscribe(state => {
-        mute.textContent = state.muted ? 'Música: apagada' : 'Música: encendida';
-        mute.setAttribute('aria-pressed', String(!state.muted));volume.value = String(Math.round(state.volume * 100));
-        row.hidden = state.trackCount === 0;
-      });
-    }
   }
   play.addEventListener('click', async () => {
     if (!ready || !presentationDone || failed || openingStarted || play.disabled) return;
@@ -142,6 +126,9 @@
       await loadScript('assets/js/campaign-production.js');
       await loadScript('assets/js/workshop.js');
       await loadScript('assets/js/contact-sensors.js');
+      await loadScript('assets/js/preferences.js');
+      await loadScript('assets/js/graphics.js');
+      await loadScript('assets/js/settings.js');
       await loadScript('assets/js/game.js');update('code', 1);
       if (!window.QBitsGame) throw new Error('El motor no pudo iniciarse.');
       await QBitsGame.prepare(value => update('scene', value));
@@ -149,10 +136,11 @@
     (async () => {
       await loadScript('assets/js/music.js');
       await QBitsMusic.preload({onProgress: event => update('music', event.progress)});
-      update('music', 1);musicControls();
+      update('music', 1);
     })()
   ]).then(() => {
     if(failed)return;
+    QBitsGame.applyPreferences?.();
     ready = true;update('scene', 1);
     if(presentationDone)play.focus({preventScroll:true});
   }).catch(fail);

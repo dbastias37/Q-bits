@@ -101,6 +101,9 @@ function environment({ autoFonts = true, openingFailure = null, randomValue = .5
     await scriptResult('campaign-production.js');
     await scriptResult('workshop.js');
     await scriptResult('contact-sensors.js');
+    await scriptResult('preferences.js');
+    await scriptResult('graphics.js');
+    await scriptResult('settings.js');
     await scriptResult('game.js');
     await scriptResult('music.js');
   }
