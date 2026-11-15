@@ -39,7 +39,7 @@ let now=100,frameStartProgram=null,surface=null;
 function tick(){frameStartProgram=current;frameCommands=[];now+=1000/60;const batch=[...frames.values()];frames.clear();for(const fn of batch)fn(now);}
 function save(name){snapshots.push({name,state:scene.getState(),surface,commands:[['viewport',0,0,width,height],...(frameStartProgram===null?[]:[['useProgram',frameStartProgram]]),...frameCommands]});}
 for(const [p,name]of[[0,'loading-0'],[.5,'loading-50'],[1,'loading-100']]){scene.setProgress(p);scene.setReady(p===1);tick();save(name);}
-scene.play({onFrame:value=>{if(value.progress<1&&value.opacity!==0)throw Error('Menu visible during descent');surface=value;}});
+scene.play({onFrame:value=>{if(!value.nearArrival&&value.opacity!==0)throw Error('Menu visible before white face fills the view');surface=value;}});
 let ticks=0,formed=false,close=false;
 while(scene.getState().phase!=='complete'&&ticks<60*65){tick();ticks++;
  const state=scene.getState();

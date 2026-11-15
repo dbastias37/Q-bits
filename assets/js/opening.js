@@ -13,7 +13,7 @@
   // to 15 world units. This exact outline-derived fallback also avoids tofu dots.
   const FONT_DOTS = [[-6.1765,-1.3245],[-5.7347,-.8827],[-6.6173,-1.3245],[-5.7347,-.4419],[-7.0592,-1.3245],[-5.7347,0],[-5.7347,.4408],[-7.5,-.8827],[-7.5,-.4419],[-6.6173,.4408],[-6.1765,.8827],[-5.7347,1.3245],[-7.5,0],[-7.5,.4408],[-6.6173,1.3245],[-7.5,.8827],[-7.0592,1.3245],[-3.0877,0],[-3.5296,0],[-3.9704,0],[-4.4123,0],[-4.8531,0],[-.8827,-.4419],[-.4408,0],[-2.2061,-1.3245],[-1.3235,-.4419],[-.4408,.4408],[-2.2061,-.8827],[-.4408,.8827],[-2.2061,-.4419],[-1.7653,0],[-2.2061,0],[-.8827,1.3245],[-2.2061,.4408],[-1.3235,1.3245],[-2.2061,.8827],[-1.7653,1.3245],[-2.2061,1.3245],[1.3235,-1.3245],[1.3235,-.4419],[.8816,-.4419],[1.3235,0],[1.3235,.4408],[1.3235,.8827],[1.7643,1.3245],[1.3235,1.3245],[.8816,1.3245],[3.9704,-1.3245],[3.9704,-.8827],[4.4112,-.4419],[3.9704,-.4419],[3.5285,-.4419],[3.9704,0],[4.8531,.8827],[3.9704,.4408],[3.9704,.8827],[4.4112,1.3245],[7.0581,-.4419],[6.6173,-.4419],[6.1755,-.4419],[7.0581,.4408],[7.5,.8827],[6.6173,.4408],[5.7347,0],[6.1755,.4408],[7.0581,1.3245],[6.6173,1.3245],[6.1755,1.3245],[5.7347,1.3245]];
   const SIZE = .335;
-  const TIMING = Object.freeze({ black: .8, assemble: 11.5, hold: .5, glow: 1.2, flight: 8, reducedFlight: 2.8, menuReveal: 1.3 });
+  const TIMING = Object.freeze({ black: .8, assemble: 11.5, hold: .5, glow: 1.2, flight: 4, reducedFlight: 2, menuReveal: 1.2 });
 
   function fontDots() {
     // Exact centers extracted from the bundled font contours, independent of
@@ -118,15 +118,30 @@
   function menuSize(aspect) { const width=SIZE*.88*Math.min(1,aspect);return [width,width/aspect]; }
   function flightCamera(t, aspect, target=[0,SIZE/2,0], reduced=false) {
     t=clamp(t);
-    const travel=smoother(t*t),turn=reduced?0:smoother(t)*Math.PI*2;
+    const u=smoother(t*t),v=1-u,height=fitHeight(aspect);
     const surface=[target[0],SIZE+.002,target[2]],fov=mix(1.22,1.04,smoother(t));
-    const distance=menuSize(aspect)[1]/(2*Math.tan(1.04/2));
-    // A shrinking helix around a vertical optical axis: one monotonic turn,
-    // without alternating bank, lateral excursions or target-tracking pitch.
-    const x=-surface[0]*(1-travel),z=-surface[2]*(1-travel);
-    const eye=[surface[0]+x*Math.cos(turn)-z*Math.sin(turn),mix(fitHeight(aspect),surface[1]+distance,travel),surface[2]+x*Math.sin(turn)+z*Math.cos(turn)];
-    return {eye,at:[eye[0],mix(0,surface[1],travel),eye[2]],roll:turn,fov,topDown:true};
+    const distance=menuSize(aspect)[1]/(2*Math.tan(1.04/2)),end=[surface[0],surface[1]+distance,surface[2]];
+    // One horizontal glide: depart gently sideways, sweep toward the cube,
+    // and settle onto its face. No barrel roll or alternating bank.
+    const points=[[0,height,0],[height*.6,height*.95,height*.1],[height*.7,height*.16,height*.2],end];
+    const eye=t===1?[...end]:reduced?lerp(points[0],end,u):points[0].map((_,i)=>v*v*v*points[0][i]+3*v*v*u*points[1][i]+3*v*u*u*points[2][i]+u*u*u*end[i]);
+    const align=smoother((u-.55)/.4);
+    eye[0]=mix(eye[0],surface[0],align);eye[2]=mix(eye[2],surface[2],align);
+    return {eye,at:lerp([0,0,0],surface,u),roll:0,fov,topDown:true};
   }
+  function nearArrival(view,aspect,target) {
+    // All four corners of the central 90% of the viewport see the white face.
+    // This ties the reveal to coverage, including portrait screens, not a timer.
+    const m=lookAt(view.eye,view.at,view.roll,true),x=[m[0],m[4],m[8]],y=[m[1],m[5],m[9]],z=[m[2],m[6],m[10]],f=Math.tan(view.fov/2);
+    for(const sx of [-.9,.9])for(const sy of [-.9,.9]){
+      const ray=z.map((v,i)=>-v+x[i]*sx*f*aspect+y[i]*sy*f);
+      if(ray[1]>=0)return false;
+      const length=(SIZE+.002-view.eye[1])/ray[1];
+      if(Math.abs(view.eye[0]+ray[0]*length-target[0])>SIZE/2||Math.abs(view.eye[2]+ray[2]*length-target[2])>SIZE/2)return false;
+    }
+    return true;
+  }
+
   // Project the live DOM menu onto the same world plane as the cube's top face.
   // CSS and WebGL share this homogeneous transform; at t=1 it is the identity.
   function menuSurface(view,aspect,width,height,target) {
@@ -196,7 +211,7 @@
       const w=Math.max(1,Math.round(bounds.width*dpr*limit)),h=Math.max(1,Math.round(bounds.height*dpr*limit));
       if(width!==w||height!==h){width=canvas.width=w;height=canvas.height=h;aspect=w/h;gl.viewport(0,0,w,h);}
     }
-    let state='loading',progress=0,ready=false,clock=0,last=0,raf=0,disposed=false,pieces=[],pathBuffer=null,pathCount=0,resolvePlay,rejectPlay,promise,onMenuFrame=null,flightProgress=0,menuOpacity=0;
+    let state='loading',progress=0,ready=false,clock=0,last=0,raf=0,disposed=false,pieces=[],pathBuffer=null,pathCount=0,resolvePlay,rejectPlay,promise,onMenuFrame=null,flightProgress=0,menuOpacity=0,menuRevealAt=null;
     let formationStart=TIMING.black,settledAt=null,diveTarget=[0,SIZE/2,0];
     const diveDuration=reduced?TIMING.reducedFlight:TIMING.flight;
     function finish(){if(state==='complete')return;state='complete';resolvePlay?.();}
@@ -228,9 +243,10 @@
           const flightTime=glowTime-TIMING.glow;
           state='dive';flightProgress=clamp(flightTime/diveDuration);
           view=flightCamera(flightProgress,aspect,diveTarget,reduced);
-          menuOpacity=smoother((flightTime-diveDuration)/TIMING.menuReveal);
+          if(menuRevealAt===null&&nearArrival(view,aspect,diveTarget))menuRevealAt=clock;
+          menuOpacity=menuRevealAt===null?0:smoother((clock-menuRevealAt)/TIMING.menuReveal);
           if(flightProgress===1)state='reveal';
-          if(menuOpacity===1)finish();
+          if(menuOpacity===1&&flightProgress===1)finish();
         }
       }
       camera(view);
@@ -241,7 +257,7 @@
       if(emission>.015){gl.disable(gl.DEPTH_TEST);gl.depthMask(false);gl.blendFunc(gl.SRC_ALPHA,gl.ONE);for(const p of pieces)glowAt(p.p,1.5,Math.min(.38,emission*.24));gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);}
       if(onMenuFrame&&since>=TIMING.hold+TIMING.glow){
         const bounds=canvas.getBoundingClientRect();
-        onMenuFrame({matrix:menuSurface(view,aspect,bounds.width,bounds.height,diveTarget),blur:6*(1-menuOpacity),opacity:menuOpacity,progress:flightProgress});
+        onMenuFrame({matrix:menuSurface(view,aspect,bounds.width,bounds.height,diveTarget),blur:6*(1-menuOpacity),opacity:menuOpacity,progress:flightProgress,nearArrival:nearArrival(view,aspect,diveTarget)});
       }
     }
     function frame(now){if(disposed)return;const dt=last?Math.min(.04,(now-last)/1000):0;last=now;if(!doc.hidden){if(state!=='loading'&&state!=='complete')clock+=dt;render(dt);}raf=win.requestAnimationFrame(frame);}
@@ -261,7 +277,7 @@
       dispose
     };
   }
-  const api = {plan,stepClear,obstacleBoxes,create,fontDots,makePieces,updatePieces,flightCamera,menuSurface,FONT_DOTS,TIMING};
+  const api = {plan,stepClear,obstacleBoxes,create,fontDots,makePieces,updatePieces,flightCamera,menuSurface,nearArrival,FONT_DOTS,TIMING};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   if(typeof window!=='undefined')window.QBitsOpening=api;
 })();

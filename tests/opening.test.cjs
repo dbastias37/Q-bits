@@ -66,14 +66,15 @@ test('reduced motion removes the orbit and banking while keeping the same menu l
  assert.deepEqual(opening.flightCamera(1,.45,target,true).eye,opening.flightCamera(1,.45,target,false).eye);
 });
 
-test('rocket descent keeps a vertical optical axis and a single monotonic turn',()=>{
- const target=[-.4408,.1675,0];let last=null;
- for(let i=0;i<=1000;i++){
-  const c=opening.flightCamera(i/1000,16/9,target);
-  assert.equal(c.eye[0],c.at[0]);assert.equal(c.eye[2],c.at[2]);
-  const radius=Math.hypot(c.eye[0]-target[0],c.eye[2]-target[2]);
-  if(last){assert.ok(c.eye[1]<=last.eye[1]+1e-9);assert.ok(c.roll>=last.roll);assert.ok(radius<=last.radius+1e-9);}
-  last={...c,radius};
+test('four-second glide departs horizontally, accelerates and reveals only near the white face',()=>{
+ assert.equal(opening.TIMING.flight,4);assert.equal(opening.TIMING.menuReveal,1.2);
+ const target=[-.4408,.1675,0];
+ for(const aspect of [.45,1,16/9,3]){
+  const start=opening.flightCamera(0,aspect,target),early=opening.flightCamera(.15,aspect,target);
+  assert.ok(Math.hypot(early.eye[0]-start.eye[0],early.eye[2]-start.eye[2])>Math.abs(early.eye[1]-start.eye[1])*3,'departure is a glide');
+  const speed=t=>{const a=opening.flightCamera(t,aspect,target),b=opening.flightCamera(t+.001,aspect,target);return Math.hypot(...a.eye.map((v,i)=>v-b.eye[i]));};
+  assert.ok(speed(.5)>speed(.15)*5,'slow start builds speed');
+  for(const t of [0,.2,.5,.8]){const c=opening.flightCamera(t,aspect,target);assert.equal(c.roll,0);assert.equal(opening.nearArrival(c,aspect,target),false);}
+  assert.equal(opening.nearArrival(opening.flightCamera(1,aspect,target),aspect,target),true);
  }
- assert.ok(Math.abs(last.roll-Math.PI*2)<1e-8);
 });
