@@ -193,7 +193,11 @@ body[data-booting='true'] > :not(#boot-screen):not(script){visibility:hidden;poi
 #boot-message:empty{display:none;}
 #boot-screen button{display:block;width:auto;margin:18px auto 0;padding:12px 22px;background:none;color:#fff;text-align:center;cursor:pointer;}
 #boot-screen[data-stage='ready'] #boot-play{animation:boot-reveal 1.1s ease both;}
-#boot-screen.leaving{opacity:0;pointer-events:none;transition:opacity 1.1s ease;}
+#main-screen{background:#fff;}
+body[data-booting='true'] #main-screen.cube-menu{visibility:visible;z-index:121;pointer-events:none;transform-origin:0 0;transition:none;will-change:transform,filter;overflow:hidden;}
+#main-screen.cube-menu *{pointer-events:none;}
+#wake-screen{transition:none;}
+#story-dialogue{transition:background .5s;}
 .music-settings{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:22px;font:11px var(--font-menu),sans-serif;color:#718176;}
 .game-screen .music-settings button{padding:7px 10px;border:1px solid #c9d7cd;border-radius:4px;font-size:11px;}
 .music-settings input{width:85px;accent-color:#648373;}
@@ -446,7 +450,7 @@ input,select,textarea{font-family:var(--font-menu);}
     <div class="actions"><button id="create" type="button">Crear Q-bit</button><button id="remove" type="button">Borrar pieza</button><button id="split" type="button">Desarmar estructura</button></div>
     <button id="resume" type="button">Volver a la sala</button>
   </section>
-  <script src="assets/js/opening.js?v=20261115-opening-2" defer></script>
-  <script src="assets/js/boot.js?v=20261115-opening-2" defer></script>
+  <script src="assets/js/opening.js?v=20261115-opening-3" defer></script>
+  <script src="assets/js/boot.js?v=20261115-opening-3" defer></script>
 </body>
 </html>

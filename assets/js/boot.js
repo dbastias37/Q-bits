@@ -7,6 +7,7 @@
   const progress = document.querySelector('#boot-progress');
   const play = document.querySelector('#boot-play');
   const retry = document.querySelector('#boot-retry');
+  const mainMenu=document.querySelector('#main-screen'),openingCanvas=document.querySelector('#opening-canvas');
   let opening, openingStarted = false;
   let displayed = 0, elapsed = 0;
   const stops = [[0,0]];
@@ -38,7 +39,8 @@
     if (failed || document.body.dataset.booting !== 'true') return;
     failed = true;
     opening?.dispose();
-    screen.classList.remove('leaving');
+    mainMenu.hidden=true;mainMenu.inert=false;mainMenu.classList.remove('cube-menu');
+    mainMenu.style.transform='';mainMenu.style.filter='';mainMenu.style.opacity='';openingCanvas.style.filter='';
     console.error('Q-bits: no se pudo preparar el juego.', error);
     screen.dataset.stage = 'loading';loading.hidden = false;
     message.textContent = /WebGL|tarjeta gráfica/i.test(error?.message || '') ? 'No se pudo iniciar la vista 3D. Activa la aceleración gráfica y reintenta.' : /fuentes/i.test(error?.message || '') ? 'No se pudieron cargar las fuentes del juego. Reintenta la carga.' : 'No se pudo completar la carga. Revisa la conexión y los archivos de música, y reintenta.';
@@ -50,7 +52,7 @@
   function loadScript(path) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = path + '?v=20261115-opening-2';
+      script.src = path + '?v=20261115-opening-3';
       script.onload = resolve;
       script.onerror = () => reject(new Error('No se pudo cargar ' + path));
       document.head.append(script);
@@ -105,15 +107,21 @@
     QBitsMusic.start();
     screen.dataset.stage = 'cinematic';loading.hidden = true;
     try {
-      await opening.play();
+      mainMenu.hidden=false;mainMenu.inert=true;mainMenu.classList.add('cube-menu');mainMenu.style.opacity='0';
+      await opening.play({onFrame:({matrix,blur,progress})=>{
+        mainMenu.style.transform='matrix3d('+matrix.join(',')+')';
+        mainMenu.style.filter='blur('+blur+'px)';mainMenu.style.opacity='1';
+        const focus=Math.max(0,Math.min(1,(progress-.65)/.35));
+        openingCanvas.style.filter='blur('+(8*Math.sin(Math.PI*focus)**2)+'px)';
+      }});
       if (failed) return;
+      // The same menu is already full-size and focused. Hand off input only.
       QBitsGame.menu();
       document.body.dataset.booting = 'false';
-      screen.classList.add('leaving');
-      setTimeout(() => {
-        screen.hidden = true;opening.dispose();
-        document.querySelector('#main-play').focus({preventScroll:true});
-      }, 1100);
+      mainMenu.classList.remove('cube-menu');mainMenu.inert=false;
+      mainMenu.style.transform='';mainMenu.style.filter='';mainMenu.style.opacity='';openingCanvas.style.filter='';
+      screen.hidden=true;opening.dispose();
+      document.querySelector('#main-play').focus({preventScroll:true});
     } catch (error) { fail(error); }
   });
   try {

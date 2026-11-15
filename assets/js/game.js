@@ -3556,6 +3556,7 @@ function storyLookAllowed(){return !story.ready||story.mode==='playing'&&!['asle
 function storyActionAllowed(){return !story.ready||story.mode==='playing'&&!story.transition&&!encounterLocksActions()&&(story.scene!=='intro'||['pickup','carry','deliver','cooling','cooled'].includes(story.phase));}
 function storyObjective(text){ui.objective.textContent=text;ui.objective.hidden=!text;}
 function say(text,{after=null,hold=false,mysterious=false,choices=null,onComplete=null}={}){
+ ui.dialogue.style.opacity='1';
  story.dialogue={text,time:0,count:-1,after,hold,choices,onComplete,done:false};ui.text.textContent='';ui.text.classList.add('typing');ui.dialogue.hidden=false;ui.dialogue.classList.toggle('mysterious',mysterious);ui.speaker.textContent=mysterious?'UNA VOZ…':'Q-BIT';ui.choices.hidden=true;ui.choices.replaceChildren();ui.cooling.hidden=true;document.querySelector('#dialogue-hint').textContent=after?'E · continuar':choices?'Elige una respuesta':'';
 }
 function hideStoryDialogue(){story.dialogue=null;ui.dialogue.hidden=true;ui.choices.hidden=true;ui.cooling.hidden=true;}
@@ -3583,14 +3584,20 @@ function tickSceneFade(dt){
  if(story.scene==='intro'&&['asleep','invocation'].includes(story.phase))ui.veil.style.opacity='1';
  if(v===1){story.transition=null;document.body.dataset.transitioning='false';if(story.phase==='asleep')showWakeButton();}
 }
-function showWakeButton(){if(story.scene!=='intro'||story.mode!=='playing'||story.phase!=='asleep'||story.transition)return;document.querySelector('#wake-screen').hidden=false;document.querySelector('#wake-button').focus({preventScroll:true});story.intentionalUnlock=true;pause(false);}
+function showWakeButton(){
+ if(story.scene!=='intro'||story.mode!=='playing'||story.phase!=='asleep'||story.transition||story.phaseTime<5.1)return;
+ const screen=document.querySelector('#wake-screen'),button=document.querySelector('#wake-button');
+ const wasDisabled=button.disabled||screen.hidden,t=clamp((story.phaseTime-5.1)/1.6,0,1);
+ screen.hidden=false;screen.style.opacity=String(t*t*(3-2*t));button.disabled=t<1;
+ if(t===1&&wasDisabled){button.focus({preventScroll:true});story.intentionalUnlock=true;pause(false);}
+}
 function wakeUp(){
- if(story.scene!=='intro'||story.mode!=='playing'||story.phase!=='asleep'||story.transition||!panel.hidden||document.hidden)return;
+ if(story.scene!=='intro'||story.mode!=='playing'||story.phase!=='asleep'||story.phaseTime<6.7||story.transition||!panel.hidden||document.hidden)return;
  document.querySelector('#wake-screen').hidden=true;story.phase='opening';story.phaseTime=0;hideStoryDialogue();captureMouse();
 }
 function beginCreationNarration(){
  // The opening lines play in darkness. The player's gesture creates the light.
- story.phase='invocation';document.querySelector('#wake-screen').hidden=true;
+ story.phase='invocation';document.querySelector('#wake-screen').hidden=true;document.querySelector('#wake-screen').style.opacity='0';document.querySelector('#wake-button').disabled=true;
  say('En el inicio no había nada…',{mysterious:true,after:()=>{
   say('Y un ser todopoderoso dijo: «Hágase la luz».',{mysterious:true,hold:true,onComplete:()=>{
    story.phase='asleep';story.phaseTime=0;document.querySelector('#dialogue-hint').textContent='';showWakeButton();
@@ -3702,6 +3709,10 @@ function tickStory(dt){
  story.elapsed+=dt;story.phaseTime+=dt;renderDialogue(dt);
  if(story.scene==='intro'){
   if(['asleep','invocation'].includes(story.phase))ui.veil.style.opacity='1';
+  if(story.phase==='asleep'){
+   if(story.dialogue){const fade=clamp((story.phaseTime-1.4)/1.2,0,1);ui.dialogue.style.opacity=String(1-fade*fade*(3-2*fade));if(fade===1)hideStoryDialogue();}
+   showWakeButton();
+  }
   if(story.phase==='opening'){
    const t=clamp(story.phaseTime/2.8,0,1),u=t*t*(3-2*t);ui.veil.style.opacity=String(1-u);ui.top.style.height=(52*(1-u))+'%';ui.bottom.style.height=(52*(1-u))+'%';canvas.style.filter='blur('+((1-u)*13).toFixed(2)+'px)';
    if(t===1){story.phase='light';canvas.style.filter='none';say('Bueno, era broma. Estoy acá atrás. Detrás tuyo.',{after:()=>{story.phase='look';storyObjective('Mueve el mouse para mirar detrás de ti.\nPor ahora, solo puedes mirar.');}});}

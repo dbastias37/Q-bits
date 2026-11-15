@@ -35,17 +35,19 @@ const win={devicePixelRatio:1,matchMedia:()=>({matches:false}),requestAnimationF
 const doc={defaultView:win,hidden:false,fonts:{check:()=>false}};
 const canvas={ownerDocument:doc,getContext:()=>gl,getBoundingClientRect:()=>({width,height}),addEventListener(){},removeEventListener(){}};
 const scene=opening.create(canvas);
-let now=100,frameStartProgram=null;
+let now=100,frameStartProgram=null,surface=null;
 function tick(){frameStartProgram=current;frameCommands=[];now+=1000/60;const batch=[...frames.values()];frames.clear();for(const fn of batch)fn(now);}
-function save(name){snapshots.push({name,state:scene.getState(),commands:[['viewport',0,0,width,height],...(frameStartProgram===null?[]:[['useProgram',frameStartProgram]]),...frameCommands]});}
+function save(name){snapshots.push({name,state:scene.getState(),surface,commands:[['viewport',0,0,width,height],...(frameStartProgram===null?[]:[['useProgram',frameStartProgram]]),...frameCommands]});}
 for(const [p,name]of[[0,'loading-0'],[.5,'loading-50'],[1,'loading-100']]){scene.setProgress(p);scene.setReady(p===1);tick();save(name);}
-scene.play();
+scene.play({onFrame:value=>{surface=value;}});
 let ticks=0,formed=false,close=false;
 while(scene.getState().phase!=='complete'&&ticks<60*65){tick();ticks++;
  const state=scene.getState();
  if(ticks===300)save('forming');
  if(state.phase==='glow'&&!formed){save('assembled');formed=true;}
  if(state.phase==='dive'&&!close){save('dive');close=true;}
+ if(state.flightProgress>=.8&&!snapshots.some(s=>s.name==='approach'))save('approach');
+ if(state.flightProgress>=.95&&!snapshots.some(s=>s.name==='focus'))save('focus');
 }
 if(scene.getState().phase!=='complete')throw Error('Formation did not finish');save('white');
 scene.dispose();fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,JSON.stringify({width,height,init,snapshots,validation}));

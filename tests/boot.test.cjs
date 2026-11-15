@@ -12,7 +12,7 @@ function deferred() {
   return { promise, resolve, reject };
 }
 async function flush() { for (let n = 0; n < 12; n++) await Promise.resolve(); }
-function environment({ autoFonts = true, openingFailure = null, randomValue } = {}) {
+function environment({ autoFonts = true, openingFailure = null, randomValue = .5 } = {}) {
   class Element extends EventTarget {
     constructor() { super(); this.children = []; this.hidden = false; this.disabled = false; this.dataset = {}; this.style = {}; this.attributes = {}; this.textContent = ''; this.classes = new Set(); this.classList = { add: value => this.classes.add(value), remove: value => this.classes.delete(value), toggle: (value, enabled) => enabled ? this.classes.add(value) : this.classes.delete(value) }; }
     append(...nodes) { this.children.push(...nodes); }
@@ -37,7 +37,7 @@ function environment({ autoFonts = true, openingFailure = null, randomValue } = 
   const opening = {
     setProgress: value => fillValues.push(value),
     setReady: value => readyValues.push(value),
-    play: () => { events.push('opening.play'); return cinematicReady.promise; },
+    play: ({onFrame}) => { events.push('opening.play');onFrame({matrix:[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1],blur:12,progress:.8});return cinematicReady.promise; },
     dispose: () => events.push('opening.dispose')
   };
   const fontsReady = { Tengoku: deferred(), 'Spaceman UI': deferred(), 'LED Calculator': deferred() };
@@ -246,7 +246,7 @@ test('ready assets still show a gradual fill before enabling Comenzar', async ()
   assert.equal(e.readyValues.at(-1), true);
 });
 
-test('Comenzar starts the cinematic once and reveals the menu only after its white finish', async () => {
+test('Comenzar starts the cinematic once and projects the inert live menu and hands off without a second animation', async () => {
   const e = environment();await e.loadScripts();
   e.gameReady.resolve();e.musicReady.resolve();await e.advance(20000);
   e.nodes.get('#boot-play').click();
@@ -254,7 +254,10 @@ test('Comenzar starts the cinematic once and reveals the menu only after its whi
   assert.ok(e.events.includes('music.start'));
   assert.ok(e.events.includes('opening.play'));
   assert.equal(e.events.includes('game.play'), false, 'opening must not begin the campaign');
-  assert.equal(e.events.includes('game.menu'), false, 'menu waits for the camera dive');
+  assert.equal(e.events.includes('game.menu'), false, 'menu input waits for the camera dive');
+  assert.equal(e.nodes.get('#main-screen').hidden,false);
+  assert.equal(e.nodes.get('#main-screen').inert,true);
+  assert.equal(e.nodes.get('#main-screen').style.filter,'blur(12px)');
   assert.equal(e.document.body.dataset.booting, 'true');
   e.nodes.get('#boot-play').click();
   assert.equal(e.events.filter(v => v === 'opening.play').length, 1);
@@ -263,8 +266,9 @@ test('Comenzar starts the cinematic once and reveals the menu only after its whi
   e.cinematicReady.resolve();await flush();
   assert.equal(e.events.filter(v => v === 'game.menu').length, 1);
   assert.equal(e.document.body.dataset.booting, 'false');
-  assert.ok(e.nodes.get('#boot-screen').classes.has('leaving'));
-  await e.advance(1200);
+  assert.equal(e.nodes.get('#main-screen').inert,false);
+  assert.equal(e.nodes.get('#main-screen').style.transform,'');
+  assert.equal(e.nodes.get('#main-screen').style.filter,'');
   assert.equal(e.nodes.get('#boot-screen').hidden, true);
   assert.equal(e.nodes.get('#main-play').focused, true);
   assert.ok(e.events.includes('opening.dispose'));

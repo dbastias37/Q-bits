@@ -37,27 +37,31 @@ test('rolling lifts the center around a support edge and replans around an obsta
  assert.equal(p[0].settled,true);assert.ok(p[0].replans>0);
 });
 
-test('camera completes a tracked 360 orbit without nonfinite transforms on narrow screens', () => {
-  for (const aspect of [.45, 1, 16 / 9, 3]) {
-    let angle = 0, previous = 0;
-    for (let i = 0; i <= 120; i++) {
-      const camera = opening.orbitCamera(i / 120, aspect);
-      assert.deepEqual(camera.at, [0, 0, 0]);
-      assert.ok([...camera.eye, camera.roll, camera.fov].every(Number.isFinite));
-      assert.ok(camera.eye[1] > 0);
-      if (i === 0) continue;
-      const current = Math.atan2(camera.eye[0], camera.eye[2]);
-      let delta = current - previous;
-      if (delta < -Math.PI) delta += 2 * Math.PI;
-      angle += delta; previous = current;
-    }
-    assert.ok(Math.abs(angle - 2 * Math.PI) < .001);
+test('one continuous flight lands on the menu without a projection jump',()=>{
+ const target=[-.4408,.1675,0];
+ for(const aspect of [.45,1,16/9,3]){
+  let previous=null;
+  for(let i=0;i<=1200;i++){
+   const view=opening.flightCamera(i/1200,aspect,target);
+   const m=opening.menuSurface(view,aspect,1280,1280/aspect,target);
+   assert.ok([...view.eye,...view.at,...m].every(Number.isFinite));
+   assert.ok(view.eye[1]>view.at[1]);
+   if(previous){
+    assert.ok(Math.hypot(...view.eye.map((v,k)=>v-previous.eye[k]))<.25,'position is continuous');
+    const corners=[[0,0],[1280,0],[1280,1280/aspect],[0,1280/aspect]];
+    const project=(matrix,[x,y])=>[(matrix[0]*x+matrix[4]*y+matrix[12])/(matrix[3]*x+matrix[7]*y+matrix[15]),(matrix[1]*x+matrix[5]*y+matrix[13])/(matrix[3]*x+matrix[7]*y+matrix[15])];
+    for(const c of corners){const now=project(m,c),before=project(previous.m,c);assert.ok(Math.hypot(now[0]-before[0],now[1]-before[1])<30,'no up-vector flip or surface jump');}
+   }
+   previous={...view,m};
   }
-  assert.ok(opening.orbitCamera(0, .45).eye[1] > opening.orbitCamera(0, 16 / 9).eye[1], 'portrait view must move back to fit the title');
+  const identity=[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
+  previous.m.forEach((v,i)=>assert.ok(Math.abs(v-identity[i])<.001,'menu lands at its unchanged DOM layout'));
+  for(const t of [0,1]){const a=opening.flightCamera(t,aspect,target),b=opening.flightCamera(t===0?.0001:.9999,aspect,target);assert.ok(Math.hypot(...a.eye.map((v,i)=>v-b.eye[i]))<.0001,'zero endpoint velocity');}
+ }
 });
 
-test('reduced motion holds an unbanked overhead camera while retaining the title target', () => {
-  const initial = opening.orbitCamera(0, .5, [0, 0, 0], true);
-  for (const t of [.1, .5, .9, 1]) assert.deepEqual(opening.orbitCamera(t, .5, [0, 0, 0], true), initial);
-  assert.equal(initial.roll, 0);
+test('reduced motion removes the orbit and banking while keeping the same menu landing',()=>{
+ const target=[0,.1675,0];
+ for(const t of [0,.2,.5,.8,1]){const c=opening.flightCamera(t,.45,target,true);assert.equal(c.eye[0],0);assert.equal(c.eye[2],0);assert.equal(c.roll,0);}
+ assert.deepEqual(opening.flightCamera(1,.45,target,true),opening.flightCamera(1,.45,target,false));
 });

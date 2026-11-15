@@ -13,7 +13,7 @@
   // to 15 world units. This exact outline-derived fallback also avoids tofu dots.
   const FONT_DOTS = [[-6.1765,-1.3245],[-5.7347,-.8827],[-6.6173,-1.3245],[-5.7347,-.4419],[-7.0592,-1.3245],[-5.7347,0],[-5.7347,.4408],[-7.5,-.8827],[-7.5,-.4419],[-6.6173,.4408],[-6.1765,.8827],[-5.7347,1.3245],[-7.5,0],[-7.5,.4408],[-6.6173,1.3245],[-7.5,.8827],[-7.0592,1.3245],[-3.0877,0],[-3.5296,0],[-3.9704,0],[-4.4123,0],[-4.8531,0],[-.8827,-.4419],[-.4408,0],[-2.2061,-1.3245],[-1.3235,-.4419],[-.4408,.4408],[-2.2061,-.8827],[-.4408,.8827],[-2.2061,-.4419],[-1.7653,0],[-2.2061,0],[-.8827,1.3245],[-2.2061,.4408],[-1.3235,1.3245],[-2.2061,.8827],[-1.7653,1.3245],[-2.2061,1.3245],[1.3235,-1.3245],[1.3235,-.4419],[.8816,-.4419],[1.3235,0],[1.3235,.4408],[1.3235,.8827],[1.7643,1.3245],[1.3235,1.3245],[.8816,1.3245],[3.9704,-1.3245],[3.9704,-.8827],[4.4112,-.4419],[3.9704,-.4419],[3.5285,-.4419],[3.9704,0],[4.8531,.8827],[3.9704,.4408],[3.9704,.8827],[4.4112,1.3245],[7.0581,-.4419],[6.6173,-.4419],[6.1755,-.4419],[7.0581,.4408],[7.5,.8827],[6.6173,.4408],[5.7347,0],[6.1755,.4408],[7.0581,1.3245],[6.6173,1.3245],[6.1755,1.3245],[5.7347,1.3245]];
   const SIZE = .335;
-  const TIMING = Object.freeze({ black: .8, assemble: 11.5, hold: .5, glow: 1.2, orbit: 12, dive: 3.5, white: .85 });
+  const TIMING = Object.freeze({ black: .8, assemble: 11.5, hold: .5, glow: 1.2, flight: 10, reducedFlight: 2.8 });
 
   function fontDots() {
     // Exact centers extracted from the bundled font contours, independent of
@@ -101,9 +101,9 @@
     const f = 1 / Math.tan(fov / 2), m = new Float32Array(16);
     m[0] = f / aspect; m[5] = f; m[10] = (far + near) / (near - far); m[11] = -1; m[14] = 2 * far * near / (near - far); return m;
   }
-  function lookAt(eye, at, roll = 0) {
+  function lookAt(eye, at, roll = 0, topDown = false) {
     const z = norm(sub(eye, at));
-    const up = Math.abs(z[1]) > .999 ? [Math.sin(roll), 0, -Math.cos(roll)] : [Math.sin(roll), Math.cos(roll), 0];
+    const up = topDown || Math.abs(z[1]) > .999 ? [Math.sin(roll), 0, -Math.cos(roll)] : [Math.sin(roll), Math.cos(roll), 0];
     const x = norm(cross(up, z)), y = cross(z, x);
     return new Float32Array([x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, -dot(x, eye), -dot(y, eye), -dot(z, eye), 1]);
   }
@@ -114,12 +114,27 @@
     return new Float32Array([c * size[0], 0, -s * size[0], 0, 0, size[1], 0, 0, s * size[2], 0, c * size[2], 0, ...pos, 1]);
   }
   function fitHeight(aspect) { return Math.max(10.2, 8.8 / (Math.tan(.61) * aspect)); }
-  function orbitCamera(t, aspect, target = [0, 0, 0], reduced = false) {
-    const u = clamp(t), height = fitHeight(aspect), ease = smooth(u), a = ease * Math.PI * 2;
-    if (reduced) return { eye: [0, height, .001], at: target, roll: 0, fov: 1.22 };
-    // Radius opens smoothly out of the top-down view, then makes one full orbit.
-    const r = 8.8 * smooth(u / .18), y = Math.max(height * .82, 8.4) + Math.sin(a * 1.5) * .55;
-    return { eye: [Math.sin(a) * r, mix(height, y, smooth(u / .18)), Math.cos(a) * r], at: target, roll: Math.sin(a) * .045, fov: 1.22 };
+  const smoother = x => { x=clamp(x);return x*x*x*(x*(x*6-15)+10); };
+  function menuSize(aspect) { const width=SIZE*.88*Math.min(1,aspect);return [width,width/aspect]; }
+  function flightCamera(t, aspect, target=[0,SIZE/2,0], reduced=false) {
+    t=clamp(t);
+    const travel=smoother(t*t),turn=smoother(t)*Math.PI*2;
+    const surface=[target[0],SIZE+.002,target[2]],fov=mix(1.22,1.04,smoother(t));
+    const distance=menuSize(aspect)[1]/(2*Math.tan(1.04/2));
+    const eye=lerp([0,fitHeight(aspect),0],[surface[0],surface[1]+distance,surface[2]],travel);
+    const radius=reduced?0:8.8*Math.sin(Math.PI*t)**2*(1-travel);
+    eye[0]+=Math.sin(turn)*radius;eye[2]+=Math.cos(turn)*radius;
+    return {eye,at:lerp([0,0,0],surface,smoother(t)),roll:reduced||t===1?0:Math.sin(turn)*.045*Math.sin(Math.PI*t)**2,fov,topDown:true};
+  }
+  // Project the live DOM menu onto the same world plane as the cube's top face.
+  // CSS and WebGL share this homogeneous transform; at t=1 it is the identity.
+  function menuSurface(view,aspect,width,height,target) {
+    const vp=multiply(perspective(view.fov,aspect),lookAt(view.eye,view.at,view.roll,true));
+    const [pw,ph]=menuSize(aspect);
+    const world=new Float32Array([pw/width,0,0,0, 0,0,ph/height,0, 0,1,0,0, target[0]-pw/2,SIZE+.002,target[2]-ph/2,1]);
+    const clip=multiply(vp,world),out=Array(16).fill(0),normal=clip[15];
+    for(const c of [0,1,3]){const i=c*4;out[i]=(clip[i]+clip[i+3])*width/2/normal;out[i+1]=(clip[i+3]-clip[i+1])*height/2/normal;out[i+3]=clip[i+3]/normal;}
+    out[10]=1;return out;
   }
 
   function create(canvas) {
@@ -160,7 +175,7 @@
     function use(p){if(activeProgram!==p){for(const l of enabledAttributes)gl.disableVertexAttribArray(l);enabledAttributes.clear();gl.useProgram(p);activeProgram=p;}}
     function attr(p, name, count, stride, offset = 0) { const l = loc(p, name); gl.enableVertexAttribArray(l);enabledAttributes.add(l);gl.vertexAttribPointer(l, count, gl.FLOAT, false, stride, offset); }
     let currentVP, currentEye, aspect = 1, width = 1, height = 1;
-    function camera(c) { currentEye = c.eye; currentVP = multiply(perspective(c.fov, aspect), lookAt(c.eye, c.at, c.roll)); }
+    function camera(c) { currentEye = c.eye; currentVP = multiply(perspective(c.fov, aspect), lookAt(c.eye, c.at, c.roll,c.topDown)); }
     function drawCube(pos, size, color, angle = 0, glass = false, emission = 0, rollAxis = null, rollAngle = 0) {
       use(solid); gl.bindBuffer(gl.ARRAY_BUFFER, cube); attr(solid,'aPosition',3,24);attr(solid,'aNormal',3,24,12);
       gl.uniformMatrix4fv(loc(solid,'uVP'),false,currentVP);gl.uniformMatrix4fv(loc(solid,'uModel'),false,model(pos,size,angle,rollAxis,rollAngle));
@@ -180,9 +195,9 @@
       const w=Math.max(1,Math.round(bounds.width*dpr*limit)),h=Math.max(1,Math.round(bounds.height*dpr*limit));
       if(width!==w||height!==h){width=canvas.width=w;height=canvas.height=h;aspect=w/h;gl.viewport(0,0,w,h);}
     }
-    let state='loading',progress=0,ready=false,clock=0,last=0,raf=0,disposed=false,pieces=[],pathBuffer=null,pathCount=0,resolvePlay,rejectPlay,promise;
+    let state='loading',progress=0,ready=false,clock=0,last=0,raf=0,disposed=false,pieces=[],pathBuffer=null,pathCount=0,resolvePlay,rejectPlay,promise,onMenuFrame=null,flightProgress=0;
     let formationStart=TIMING.black,settledAt=null,diveTarget=[0,SIZE/2,0];
-    const diveDuration=reduced?1.4:7;
+    const diveDuration=reduced?TIMING.reducedFlight:TIMING.flight;
     function finish(){if(state==='complete')return;state='complete';resolvePlay?.();}
     function paths(){const data=[];for(const p of pieces){let prev=p.p;for(const next of p.path){data.push(prev[0],.012,prev[2],next[0],.012,next[2]);prev=next;}}
       if(!pathBuffer)pathBuffer=buffer(data);else {gl.bindBuffer(gl.ARRAY_BUFFER,pathBuffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);}pathCount=data.length/3;}
@@ -203,32 +218,28 @@
       const assemblyTime=clock-formationStart;
       if(settledAt===null){updatePieces(pieces,assemblyTime,dt);paths();if(assemblyTime>=TIMING.assemble&&pieces.every(p=>p.settled&&!p.home)){settledAt=clock;state='hold';}}
       const since=settledAt===null?-1:clock-settledAt;
-      let emission=0,white=0;
-      const top={eye:[0,fitHeight(aspect),.001],at:[0,0,0],roll:0,fov:1.22};
+      let emission=0;
+      const top={eye:[0,fitHeight(aspect),0],at:[0,0,0],roll:0,fov:1.22,topDown:true};
       let view=top;
       if(since>=TIMING.hold){
         const glowTime=since-TIMING.hold;emission=Math.sin(clamp(glowTime/TIMING.glow)*Math.PI)*1.8;state='glow';
         if(glowTime>=TIMING.glow){
           const flightTime=glowTime-TIMING.glow;
-            state='dive';const t=clamp(flightTime/diveDuration);
-            const travel=t*t*t,at=lerp([0,0,0],diveTarget,smooth(t*1.8));
-            const end=[diveTarget[0],SIZE+.05,diveTarget[2]+.012];
-            const radius=reduced?0:8.8*Math.sin(Math.PI*t)*(1-travel),azimuth=t*Math.PI*2;
-            const eye=lerp(top.eye,end,travel);eye[0]+=Math.sin(azimuth)*radius;eye[2]+=Math.cos(azimuth)*radius;
-            view={eye,at,roll:reduced?0:Math.sin(t*Math.PI*2)*.045,fov:mix(1.22,1.32,smooth(t))};
-            // The lens reaches the cube first. Only then does its white face bloom
-            // across the frame; no distant fade is substituted for the dive.
-            white=smooth((flightTime-diveDuration-.12)/.55);emission=white*.8;
-            if(flightTime>=diveDuration+TIMING.white){finish();white=1;}
+          state='dive';flightProgress=clamp(flightTime/diveDuration);
+          view=flightCamera(flightProgress,aspect,diveTarget,reduced);
+          if(flightProgress===1)finish();
         }
       }
       camera(view);
       const enter=smooth(assemblyTime/.8),pathOpacity=settledAt===null?.19: .19*(1-smooth(since/.5));
       if(pathOpacity>0){gl.depthMask(false);drawLines(pathBuffer,pathCount,[.56,.67,.72,pathOpacity*enter]);gl.depthMask(true);}
-      for(const p of pieces){if(assemblyTime<p.delay)continue;drawCube(p.p,[SIZE,SIZE,SIZE],[.97,.985,1,enter],p.angle,false,emission,p.rollAxis,p.rollAngle);}
+      for(const p of pieces){if(assemblyTime<p.delay)continue;drawCube(p.p,[SIZE,SIZE,SIZE],[.97,.985,1,enter],p.angle,false,emission+smoother((flightProgress-.65)/.3),p.rollAxis,p.rollAngle);}
       // Soft bloom only during the synchronized pulse, with no halos on paths.
       if(emission>.015){gl.disable(gl.DEPTH_TEST);gl.depthMask(false);gl.blendFunc(gl.SRC_ALPHA,gl.ONE);for(const p of pieces)glowAt(p.p,1.5,Math.min(.38,emission*.24));gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);}
-      if(white>0){gl.disable(gl.DEPTH_TEST);gl.depthMask(false);use(glow);gl.bindBuffer(gl.ARRAY_BUFFER,quad);attr(glow,'aPosition',2,8);gl.uniform2f(loc(glow,'uCenter'),0,0);gl.uniform2f(loc(glow,'uScale'),20,20);gl.uniform4fv(loc(glow,'uColor'),[1,1,1,white]);gl.drawArrays(gl.TRIANGLES,0,6);}
+      if(onMenuFrame&&since>=TIMING.hold+TIMING.glow){
+        const bounds=canvas.getBoundingClientRect();
+        onMenuFrame({matrix:menuSurface(view,aspect,bounds.width,bounds.height,diveTarget),blur:22*(1-smoother((flightProgress-.65)/.35)),progress:flightProgress});
+      }
     }
     function frame(now){if(disposed)return;const dt=last?Math.min(.04,(now-last)/1000):0;last=now;if(!doc.hidden){if(state!=='loading'&&state!=='complete')clock+=dt;render(dt);}raf=win.requestAnimationFrame(frame);}
     function contextLost(event){event.preventDefault();const error=new Error('Se perdió el contexto WebGL de la presentación. Reintenta la carga.');if(rejectPlay)rejectPlay(error);else win.dispatchEvent(new win.ErrorEvent('error',{error,message:error.message}));dispose();}
@@ -237,17 +248,17 @@
     return {
       setProgress(value){progress=clamp(Number(value)||0);},
       setReady(value){ready=!!value;},
-      play(){
+      play({onFrame}={}){
         if(promise)return promise;
         if(disposed)return Promise.reject(new Error('La presentación ya se cerró.'));
         pieces=makePieces(fontDots(doc));paths();diveTarget=[...pieces.reduce((a,b)=>Math.hypot(a.target[0],a.target[2])<Math.hypot(b.target[0],b.target[2])?a:b).target];
-        state='fade';clock=0;promise=new Promise((resolve,reject)=>{resolvePlay=resolve;rejectPlay=reject;});return promise;
+        onMenuFrame=onFrame;state='fade';clock=0;promise=new Promise((resolve,reject)=>{resolvePlay=resolve;rejectPlay=reject;});return promise;
       },
-      getState(){return {phase:state,elapsed:clock,cubes:pieces.length,settled:pieces.filter(p=>p.settled).length,reducedMotion:reduced};},
+      getState(){return {phase:state,elapsed:clock,cubes:pieces.length,settled:pieces.filter(p=>p.settled).length,reducedMotion:reduced,flightProgress};},
       dispose
     };
   }
-  const api = {plan,stepClear,obstacleBoxes,create,fontDots,makePieces,updatePieces,orbitCamera,FONT_DOTS,TIMING};
+  const api = {plan,stepClear,obstacleBoxes,create,fontDots,makePieces,updatePieces,flightCamera,menuSurface,FONT_DOTS,TIMING};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   if(typeof window!=='undefined')window.QBitsOpening=api;
 })();
