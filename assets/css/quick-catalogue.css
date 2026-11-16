@@ -1,0 +1,9 @@
+/* Secondary sandbox catalogue, with the same individual glass surfaces. */
+#unit-radial .radial-tabs{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:10}
+#unit-radial .radial-tabs[hidden],#unit-radial .radial-paging[hidden]{display:none}
+#unit-radial .radial-tabs button{width:145px;height:34px;border:1px solid #ffffffa8;border-radius:12px;background:#e6f1f16b;color:#334d50;backdrop-filter:blur(16px);font:12px var(--font-menu,system-ui);cursor:pointer}
+#unit-radial .radial-tabs button[aria-selected=true]{background:#ffffffb8;border-color:#77959d}
+#unit-radial .radial-paging{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);width:200px;display:flex;align-items:center;justify-content:space-between;z-index:10;color:#334d50;font:12px var(--font-menu,system-ui)}
+#unit-radial .radial-paging button{width:36px;height:30px;border:1px solid #ffffffa8;border-radius:8px;background:#e6f1f199;color:#334d50;cursor:pointer}
+
+#unit-radial.quick-catalogue .radial-label strong,#unit-radial.quick-catalogue .radial-label small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}

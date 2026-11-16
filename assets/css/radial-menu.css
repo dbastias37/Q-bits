@@ -58,12 +58,3 @@ body[data-unit-radial='open'] #crosshair,body[data-unit-radial='open'] #tools,bo
 #unit-radial.glass-native .radial-crystal-back,#unit-radial.glass-native .radial-depth,#unit-radial.glass-native .radial-outline,#unit-radial.glass-native .radial-crystal-rim,#unit-radial.glass-native .radial-crystal-bevel{visibility:hidden;}
 @media(max-height:480px){#unit-radial .radial-description strong,#unit-radial .radial-description p{font-size:10px;}#unit-radial .radial-description p{line-height:1.4;margin-top:2px;}#unit-radial .radial-cancel span{font-size:24px;}#unit-radial.has-mechanisms .radial-label small{font-size:9px;line-height:1.2;}#unit-radial.has-mechanisms .radial-label strong{line-height:1.25;}#unit-radial .radial-mechanism-heading{font-size:8px;}}
 @media(prefers-reduced-motion:reduce){#unit-radial,#unit-radial.glass-native{transition:none;filter:none;transform:none;}#unit-radial .radial-label,#unit-radial .radial-cursor::after{transition:none;}}
-/* Secondary sandbox catalogue, with the same individual glass surfaces. */
-#unit-radial .radial-tabs{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:10}
-#unit-radial .radial-tabs[hidden],#unit-radial .radial-paging[hidden]{display:none}
-#unit-radial .radial-tabs button{width:145px;height:34px;border:1px solid #ffffffa8;border-radius:12px;background:#e6f1f16b;color:#334d50;backdrop-filter:blur(16px);font:12px var(--font-menu,system-ui);cursor:pointer}
-#unit-radial .radial-tabs button[aria-selected=true]{background:#ffffffb8;border-color:#77959d}
-#unit-radial .radial-paging{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);width:200px;display:flex;align-items:center;justify-content:space-between;z-index:10;color:#334d50;font:12px var(--font-menu,system-ui)}
-#unit-radial .radial-paging button{width:36px;height:30px;border:1px solid #ffffffa8;border-radius:8px;background:#e6f1f199;color:#334d50;cursor:pointer}
-
-#unit-radial.quick-catalogue .radial-label strong,#unit-radial.quick-catalogue .radial-label small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
