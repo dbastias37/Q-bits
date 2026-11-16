@@ -24,3 +24,31 @@ test('sleeping conveyor units reuse verified equilibrium and wake for contact or
  const now=rotor.restPose;pair[1].body.wakeUp();pair[1].body.applyImpulse(t.V(.003,0,0),t.V());t.stepPhysics(1/240);assert.notEqual(rotor.restPose,now);
  const a=t.couplerTip(t.rotorPart(rotor.aId)),b=t.couplerTip(t.rotorPart(rotor.bId));assert(a.point.distanceTo(b.point)<.001);
 });
+
+test('orientation bounds remain exact for every piece type, arbitrary positions and owned return values',()=>{
+ const {t}=lab(),parts=[];
+ for(let i=0;i<16;i++){const q=t.Q();q.setFromEuler(i*.17,i*.12,-i*.08);parts.push({id:t.allocateUnitId(),shape:['cube','tetra','pyramid','coupler'][i%4],weight:1,p:t.V(i%4*.17,.5+Math.floor(i/4)*.2,i%3*.13),q});}
+ const g=t.makeGroup(parts);
+ for(let i=0;i<36;i++){
+  const q=t.Q();q.setFromEuler(i*.14,-i*.07,i*.22);
+  for(const p of [t.V(),t.V(2,.6,-3),t.V(-.1,1,.2)]){const points=t.poses(g,p,q).flatMap(t.corners),b=t.bounds(g,p,q);for(const k of ['x','y','z']){assert(Math.abs(b.min[k]-Math.min(...points.map(v=>v[k])))<1e-9);assert(Math.abs(b.max[k]-Math.max(...points.map(v=>v[k])))<1e-9);}b.min.set(-99,-99,-99);assert(t.bounds(g,p,q).min.x>-99);}
+  assert(g.rotatedBoundsCache.entries.length<=12,'orientation cache remains bounded');
+ }
+});
+
+test('conveyor geometry caches follow surface removal, rebuild and body rotation',()=>{
+ const {t}=lab();assert(t.spawnSavedMechanism(t.conveyorBlueprintTemplate('right'),t.V()));const c=t.conveyors[0],g=t.rotorPart(c.baseId).g;
+ const verify=()=>{const points=t.physicalGroupPoses(g).flatMap(t.corners),b=t.physicalGroupBounds(g);for(const k of ['x','y','z']){assert(Math.abs(b.min[k]-Math.min(...points.map(v=>v[k])))<1e-9);assert(Math.abs(b.max[k]-Math.max(...points.map(v=>v[k])))<1e-9);}};
+ verify();const initial=g.physicalBoundsCache;t.conveyorRemoveSurfaces(c);verify();assert(t.conveyorEnsureSurfaces(c));verify();assert.notEqual(g.physicalBoundsCache,initial);
+ g.body.position.set(1,2,3);g.body.quaternion.setFromEuler(.7,-.3,1.1);verify();
+});
+
+test('translation contact intervals agree with full convex SAT for all shapes and thin surfaces',()=>{
+ const {t}=lab();let seed=318;const random=()=>{seed=(1664525*seed+1013904223)>>>0;return seed/2**32;};let overlapping=0,clear=0;
+ for(let n=0;n<240;n++){
+  const q=t.Q(),r=t.Q();q.setFromEuler(random()*6,random()*6,random()*6);r.setFromEuler(random()*6,random()*6,random()*6);
+  const a={shape:['cube','coupler','pyramid','tetra'][n%4],p:t.V((random()-.5)*.1,1+(random()-.5)*.1,(random()-.5)*.1),q},b={shape:'cube',p:t.V(0,1,0),q:r,half:n%3===0?t.V(.002,.3,.3):t.V(.045,.045,.045)},contact=t.gripTranslationContact(t.collisionEntry(a),t.collisionEntry(b));
+  assert(Math.abs(contact.depth-t.gripPenetration(a,b))<1e-9);
+  for(let i=0;i<6;i++){const shift=t.V((random()-.5)*.16,(random()-.5)*.16,(random()-.5)*.16),moved={...a,p:a.p.vadd(shift)},depth=t.gripPenetration(moved,b),cached=t.gripTranslatedDepth(contact,shift);assert(Math.abs(cached-(depth<=.00035?0:depth))<1e-9);depth>.00035?overlapping++:clear++;}
+ }assert(overlapping>40&&clear>40);
+});

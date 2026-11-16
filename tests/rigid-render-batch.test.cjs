@@ -77,3 +77,13 @@ test('restoring a battery to an ordinary solid block releases the now-unused cac
  const p=g.parts[0];p.mood.externalBattery={version:1,ownerId:p.id,packId:p.id,enabled:false};t.drawGroupSolid(g);const buffer=g.rigidCubeBatch.buffer;assert(live.has(buffer));
  delete p.mood.externalBattery;t.drawGroupSolid(g);assert.equal(live.has(buffer),false);assert.equal(g.rigidCubeBatch,undefined);
 });
+
+test('mixed T-bits and couplers batch by original material while preserving every vertex and releasing all buffers',()=>{
+ const {t,calls,uploads,live}=fixture(),g=assembly(t,16);for(let i=0;i<g.parts.length;i++)g.parts[i].shape=['cube','tetra','pyramid','coupler'][i%4];
+ const before=JSON.stringify(t.worldParts(g));t.drawGroupSolid(g);const batches=g.rigidCubeBatch.batches;
+ assert.equal(batches.length,4);assert.equal(calls.filter(c=>c[0]==='draw').length,4);
+ const vertices=batches.reduce((sum,b)=>sum+b.count,0);assert.equal(vertices,4*(36+12+18+42));
+ // Each local vertex stream must transform through the same original piece.
+ for(const batch of batches){const data=uploads.get(batch.buffer);for(let i=0;i<data.length;i+=12){const local=t.V(...data.slice(i,i+3)),piece=t.V(...data.slice(i+6,i+9));assert(g.parts.some(p=>{if(batch.key==='cube'&&p.shape!=='cube'||batch.key==='tbit'&&!['tetra','pyramid'].includes(p.shape)||['coupler','tip'].includes(batch.key)&&p.shape!=='coupler')return false;return p.q.vmult(piece.scale(.09)).vadd(p.offset).distanceTo(local)<2e-7;}));}}
+ assert.equal(JSON.stringify(t.worldParts(g)),before);const ids=batches.map(b=>b.buffer);g.body.position.y+=.2;calls.length=0;t.drawGroupSolid(g);assert.equal(calls.filter(c=>c[0]==='upload').length,0);t.removeGroup(g);assert(ids.every(id=>!live.has(id)));
+});

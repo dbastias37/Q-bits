@@ -1019,26 +1019,33 @@ function makeGroup(parts,reference=Q(),velocity=V(),spin=V()) {
 function addQubit(p,weight=settings.mass,shape='cube'){return makeGroup([{id:++serial,weight,shape:normalizeUnitShape(shape),p:V(...p),q:Q()}]);}
 function removeGroup(g){disposeRigidCubeBatch(g);robotBeforeRemoveGroup(g);invalidateMechanicalIndex();resetBatteryLiquids(g.body);invalidateRotorBody(g);undockCampaignGroup(g);removeSpeechGroup(g);leaveHaul(g);stopRoute(g);world.removeBody(g.body);const i=groups.indexOf(g);if(i>=0)groups.splice(i,1);if(selected?.g===g)selected=null;multiSelection=multiSelection.filter(item=>item!==g);}
 function corners(pose){if(isTBit(pose))return unitProfile(pose).vertices.map(v=>add(pose.p,pose.q.vmult(v)));const out=[],half=pose.half||V(HALF,HALF,HALF);for(const x of [-half.x,half.x])for(const y of [-half.y,half.y])for(const z of [-half.z,half.z])out.push(add(pose.p,pose.q.vmult(V(x,y,z))));return out;}
-function bounds(g,pos=g.body.position,quat=g.body.quaternion){
- // The absolute rotation matrix gives the exact same AABB as eight corners.
- // Reuse an unchanged body's bounds, but return owned vectors: callers move them.
- const cached=g.boundsCache,live=pos===g.body.position&&quat===g.body.quaternion;
- if(live&&cached&&cached.x===pos.x&&cached.y===pos.y&&cached.z===pos.z&&cached.qx===quat.x&&cached.qy===quat.y&&cached.qz===quat.z&&cached.qw===quat.w)
-  return {min:cached.min.clone(),max:cached.max.clone(),center:cached.center.clone(),size:cached.size.clone()};
+// Rigid geometry is immutable between makeGroup/removeGroup. A translation
+// never changes its rotated extents. Keep a bounded set of exact orientations
+// for hand sweeps, rotation previews, selection and all placement queries.
+function rotatedGroupBounds(g,quat){
+ let cache=g.rotatedBoundsCache;
+ if(!cache||cache.parts!==g.parts)cache=g.rotatedBoundsCache={parts:g.parts,entries:[]};
+ const found=cache.entries.find(c=>c.x===quat.x&&c.y===quat.y&&c.z===quat.z&&c.w===quat.w);if(found)return found;
  const min=V(Infinity,Infinity,Infinity),max=V(-Infinity,-Infinity,-Infinity);
- for(const part of g.parts){
-  const center=add(pos,quat.vmult(part.offset)),q=quat.mult(part.q),x=q.x,y=q.y,z=q.z,w=q.w;
-  if(isTBit(part)){for(const local of unitProfile(part).vertices){const v=add(center,q.vmult(local));min.x=Math.min(min.x,v.x);min.y=Math.min(min.y,v.y);min.z=Math.min(min.z,v.z);max.x=Math.max(max.x,v.x);max.y=Math.max(max.y,v.y);max.z=Math.max(max.z,v.z);}continue;}
-  const ex=HALF*(Math.abs(w*w+x*x-y*y-z*z)+Math.abs(2*(x*y-w*z))+Math.abs(2*(x*z+w*y)));
-  const ey=HALF*(Math.abs(2*(x*y+w*z))+Math.abs(w*w-x*x+y*y-z*z)+Math.abs(2*(y*z-w*x)));
-  const ez=HALF*(Math.abs(2*(x*z-w*y))+Math.abs(2*(y*z+w*x))+Math.abs(w*w-x*x-y*y+z*z));
-  min.x=Math.min(min.x,center.x-ex);min.y=Math.min(min.y,center.y-ey);min.z=Math.min(min.z,center.z-ez);
-  max.x=Math.max(max.x,center.x+ex);max.y=Math.max(max.y,center.y+ey);max.z=Math.max(max.z,center.z+ez);
+ for(const part of g.parts){const box=collisionPoseBounds({p:quat.vmult(part.offset),q:quat.mult(part.q),part});
+  for(const k of ['x','y','z']){min[k]=Math.min(min[k],box.min[k]);max[k]=Math.max(max[k],box.max[k]);}
  }
- const result={min,max,center:mul(add(min,max),.5),size:sub(max,min)};
- if(live)g.boundsCache={x:pos.x,y:pos.y,z:pos.z,qx:quat.x,qy:quat.y,qz:quat.z,qw:quat.w,min:min.clone(),max:max.clone(),center:result.center.clone(),size:result.size.clone()};
- return result;
+ const result={min,max,x:quat.x,y:quat.y,z:quat.z,w:quat.w};cache.entries.push(result);if(cache.entries.length>12)cache.entries.shift();return result;
 }
+function translatedBounds(box,pos){const min=add(box.min,pos),max=add(box.max,pos);return {min,max,center:mul(add(min,max),.5),size:sub(max,min)};}
+function bounds(g,pos=g.body.position,quat=g.body.quaternion){return translatedBounds(rotatedGroupBounds(g,quat),pos);}
+function collisionPoseBounds(pose){
+ const min=V(Infinity,Infinity,Infinity),max=V(-Infinity,-Infinity,-Infinity);
+ if(isTBit(pose)){for(const point of corners(pose))for(const k of ['x','y','z']){min[k]=Math.min(min[k],point[k]);max[k]=Math.max(max[k],point[k]);}}
+ else{
+  const {x,y,z,w}=pose.q,h=pose.half||V(HALF,HALF,HALF),p=pose.p;
+  const ex=h.x*Math.abs(w*w+x*x-y*y-z*z)+h.y*Math.abs(2*(x*y-w*z))+h.z*Math.abs(2*(x*z+w*y));
+  const ey=h.x*Math.abs(2*(x*y+w*z))+h.y*Math.abs(w*w-x*x+y*y-z*z)+h.z*Math.abs(2*(y*z-w*x));
+  const ez=h.x*Math.abs(2*(x*z-w*y))+h.y*Math.abs(2*(y*z+w*x))+h.z*Math.abs(w*w-x*x-y*y+z*z);
+  min.set(p.x-ex,p.y-ey,p.z-ez);max.set(p.x+ex,p.y+ey,p.z+ez);
+ }return {min,max};
+}
+function collisionEntry(pose){return {pose,...collisionPoseBounds(pose)};}
 function boundsOverlap(a,b){return a.min.x<=b.max.x&&a.max.x>=b.min.x&&a.min.y<=b.max.y&&a.max.y>=b.min.y&&a.min.z<=b.max.z&&a.max.z>=b.min.z;}
 function obbOverlap(a,b,epsilon=.0005){
  if(isTBit(a)||isTBit(b))return convexUnitOverlap(a,b,epsilon);
@@ -1062,11 +1069,7 @@ function convexPoseGeometry(pose){
 function rigidCollisionParts(g){
  const b=g.body,p=b.position,q=b.quaternion,cached=g.collisionPartsCache;
  if(cached&&cached.parts===g.parts&&cached.x===p.x&&cached.y===p.y&&cached.z===p.z&&cached.qx===q.x&&cached.qy===q.y&&cached.qz===q.z&&cached.qw===q.w)return cached.entries;
- const entries=poses(g).map(pose=>{
-  const points=corners(pose),min=V(Infinity,Infinity,Infinity),max=V(-Infinity,-Infinity,-Infinity);
-  for(const point of points)for(const k of ['x','y','z']){min[k]=Math.min(min[k],point[k]);max[k]=Math.max(max[k],point[k]);}
-  return {pose,min,max};
- });
+ const entries=poses(g).map(collisionEntry);
  g.collisionPartsCache={parts:g.parts,x:p.x,y:p.y,z:p.z,qx:q.x,qy:q.y,qz:q.z,qw:q.w,entries};return entries;
 }
 function rigidGroupsOverlap(a,b){
@@ -1092,16 +1095,21 @@ function conveyorGroupSurfaces(g,pos=g.body.position,quat=g.body.quaternion){
 }
 function physicalGroupPoses(g,pos=g.body.position,quat=g.body.quaternion){return poses(g,pos,quat).concat(conveyorGroupSurfaces(g,pos,quat));}
 function physicalGroupBounds(g,pos=g.body.position,quat=g.body.quaternion){
- const bb=bounds(g,pos,quat),surfaces=conveyorGroupSurfaces(g,pos,quat);if(!surfaces.length)return bb;
- for(const surface of surfaces)for(const point of corners(surface))for(const key of ['x','y','z']){bb.min[key]=Math.min(bb.min[key],point[key]);bb.max[key]=Math.max(bb.max[key],point[key]);}
- bb.center=mul(add(bb.min,bb.max),.5);bb.size=sub(bb.max,bb.min);return bb;
+ const modules=conveyors.filter(c=>c.surfaceBody===g.body&&c.surfaces?.length);if(!modules.length)return bounds(g,pos,quat);
+ let cache=g.physicalBoundsCache;
+ if(!cache||cache.parts!==g.parts||cache.sources.length!==modules.length||modules.some((c,i)=>cache.sources[i]!==c.surfaces))cache=g.physicalBoundsCache={parts:g.parts,sources:modules.map(c=>c.surfaces),entries:[]};
+ let box=cache.entries.find(c=>c.x===quat.x&&c.y===quat.y&&c.z===quat.z&&c.w===quat.w);
+ if(!box){box=bounds(g,V(),quat);
+  for(const surface of conveyorGroupSurfaces(g,V(),quat)){const extents=collisionPoseBounds(surface);for(const k of ['x','y','z']){box.min[k]=Math.min(box.min[k],extents.min[k]);box.max[k]=Math.max(box.max[k],extents.max[k]);}}
+  Object.assign(box,{x:quat.x,y:quat.y,z:quat.z,w:quat.w});cache.entries.push(box);if(cache.entries.length>12)cache.entries.shift();
+ }return translatedBounds(box,pos);
 }
 function validPose(g,pos,quat,exclude=[]){
  const bb=physicalGroupBounds(g,pos,quat);if(bb.min.y<-.001||bb.max.y>ROOM_HEIGHT||Math.max(Math.abs(bb.min.x),Math.abs(bb.max.x),Math.abs(bb.min.z),Math.abs(bb.max.z))>ROOM_SIZE/2-.001)return false;
- const src=physicalGroupPoses(g,pos,quat);
+ const src=physicalGroupPoses(g,pos,quat),entries=src.map(collisionEntry);
  if(!puzzlePoseClear(g,pos,quat,src,bb)||!alphaPoseClear(g,pos,quat)||!storyPoseClear(g,pos,quat,src,bb))return false;
  if(cargos.some(c=>boundsOverlap(bb,cargoBounds(c))&&src.some(a=>obbOverlap(a,cargoPose(c)))))return false;
- return !groups.some(other=>other!==g&&!exclude.includes(other)&&boundsOverlap(bb,physicalGroupBounds(other))&&physicalGroupPoses(other).some(b=>src.some(a=>obbOverlap(a,b))));
+ return !groups.some(other=>other!==g&&!exclude.includes(other)&&boundsOverlap(bb,physicalGroupBounds(other))&&physicalGroupPoses(other).map(collisionEntry).some(b=>entries.some(a=>boundsOverlap(a,b)&&obbOverlap(a.pose,b.pose))));
 }
 function mechanismsUnlocked(){return Object.keys(story.progress).some(key=>/^level\d+$/.test(key)&&Number(key.slice(5))>=5&&story.progress[key]);}
 function mechanismsAvailable(){return !certifiedAutomation()&&!puzzle.active&&(story.scene==='lab'||story.scene==='campaign'&&mechanismsUnlocked());}
@@ -1404,17 +1412,26 @@ function detachPart(hit,all=false){
  }
 }
 function resetAssemblyShake(){if(held)held.assemblyShake=null;}
+// One connected mechanism can have several articulated rigid units. An
+// unrelated multi-selection must never be destroyed by the same gesture.
+function heldAssemblyGroups(){
+ if(!held)return [];
+ const items=(held.items||[held]).map(item=>item.g),members=rotorConnectedGroups([held.g]);
+ if(new Set(items).size!==items.length||members.length!==items.length||members.some(g=>!items.includes(g))||members.reduce((n,g)=>n+g.parts.length,0)<2)return [];
+ return members;
+}
 function dismantleHeldAssembly(){
- const grip=held;if(!grip||grip.g.parts.length<2||(grip.items||[grip]).length!==1)return false;
- const g=grip.g,parts=worldParts(g),picked=grip.part.id,center=g.body.position.clone();
- const point=add(center,g.body.quaternion.vmult(grip.anchor)),distance=grip.distance;
+ const grip=held,members=heldAssemblyGroups();if(!members.length)return false;
+ const picked=grip.part.id,point=add(grip.g.body.position,grip.g.body.quaternion.vmult(grip.anchor)),distance=grip.distance;
  const bounded=(value,max)=>{const length=value.norm();return length>max?mul(value,max/length):value.clone();};
- const velocity=bounded(g.body.velocity,.35),spin=bounded(g.body.angularVelocity,2);
- // Drop old constraints before replacing the body, but keep the actual picked
- // unit in the same hand. Other units retain their world poses and settle freely.
- story.dockCandidate=null;releaseQubit(false);removeGroup(g);multiSelection=[];
+ const originals=members.map(g=>({g,parts:worldParts(g),center:g.body.position.clone(),velocity:bounded(g.body.velocity,.35),spin:bounded(g.body.angularVelocity,2)}));
+ // Retire motors, controllers, skins and all hand anchors before rebuilding.
+ // Disconnect explicitly so an intact pair of recovered tips stays separate.
+ story.dockCandidate=null;releaseQubit(false);
+ for(const rotor of [...rotors])if(rotorGroups(rotor).some(g=>members.includes(g)))disconnectRotor(rotor);
+ pruneConveyors();pruneRobotArms();for(const g of members)removeGroup(g);multiSelection=[];
  let pickedGroup=null;
- for(const part of parts){
+ for(const {parts,center,velocity,spin} of originals)for(const part of parts){
   const offset=sub(part.p,center),outward=offset.norm()>1e-6?mul(offset,.06/offset.norm()):V();
   const motion=bounded(add(add(velocity,spin.cross(offset)),outward),.45);
   const fragment=makeGroup([part],part.q,motion,spin);if(part.id===picked)pickedGroup=fragment;
@@ -1424,7 +1441,8 @@ function dismantleHeldAssembly(){
  snap=null;announce('Estructura desarmada · conservas la pieza que tomaste');redraw=true;return true;
 }
 function noteAssemblyShake(dx,dy,time){
- if(!held||held.age<.25||held.g.parts.length<2||(held.items||[held]).length!==1||!shiftDown()||!running||document.hidden||document.pointerLockElement!==canvas||!storyLookAllowed()||story.transition||radialOpen()||!panel.hidden||!menu.hidden||!commandMenu.hidden){resetAssemblyShake();return;}
+ if(!held||held.age<.25||!shiftDown()||!running||document.hidden||document.pointerLockElement!==canvas||!storyLookAllowed()||story.transition||radialOpen()||!panel.hidden||!menu.hidden||!commandMenu.hidden){resetAssemblyShake();return;}
+ if(!heldAssemblyGroups().length){resetAssemblyShake();return;}
  if(!Number.isFinite(dx)||!Number.isFinite(dy))return;
  const now=Number.isFinite(time)?time:performance.now(),axis=Math.abs(dx)>=Math.abs(dy)?'x':'y';
  const amount=axis==='x'?dx:dy;if(Math.abs(amount)<2)return;
@@ -2368,28 +2386,57 @@ function gripPenetration(a,b){
   if(amax<=bmin||bmax<=amin)return 0;depth=Math.min(depth,amax-bmin,bmax-amin);
  }return depth;
 }
+// During a translation, SAT axes and projected spans stay fixed. Prepare
+// their signed gaps once per candidate pair, then test only the displacement.
+// Keep every axis even if originally separated: that gap can close in a sweep.
+function gripTranslationContact(first,second){
+ const aa=first.geometry||=convexPoseGeometry(first.pose),bb=second.geometry||=convexPoseGeometry(second.pose),intervals=[];let depth=Infinity;
+ for(const rawAxis of [...aa.normals,...bb.normals,...aa.edges.flatMap(x=>bb.edges.map(y=>x.cross(y)))]){
+  if(rawAxis.norm2()<1e-14)continue;const axis=rawAxis.clone();axis.normalize();let amin=Infinity,amax=-Infinity,bmin=Infinity,bmax=-Infinity;
+  for(const v of aa.vertices){const d=v.dot(axis);amin=Math.min(amin,d);amax=Math.max(amax,d);}for(const v of bb.vertices){const d=v.dot(axis);bmin=Math.min(bmin,d);bmax=Math.max(bmax,d);}
+  const forward=amax-bmin,backward=bmax-amin;depth=Math.min(depth,forward,backward);intervals.push({axis,forward,backward});
+ }return {intervals,depth:Math.max(0,depth)};
+}
+function gripTranslatedDepth(contact,shift){
+ let depth=Infinity;for(const {axis,forward,backward}of contact.intervals){const d=axis.dot(shift);depth=Math.min(depth,forward+d,backward-d);if(depth<=.00035)return 0;}return depth;
+}
 function gripCollisionContext(item,region){
- const excluded=(held?.items||[item]).map(x=>x.g),sharedSurfaces=excluded.filter(g=>g!==item.g).flatMap(g=>conveyorGroupSurfaces(g)),obstacles=[],bb=physicalGroupBounds(item.g);
- // Each held roller has its own constraint. Its hand target must respect the
- // chassis skin too, or the other anchors can pull that chassis through a wall.
- for(const surface of sharedSurfaces)for(const point of corners(surface))for(const key of ['x','y','z']){bb.min[key]=Math.min(bb.min[key],point[key]);bb.max[key]=Math.max(bb.max[key],point[key]);if(region){region.min[key]=Math.min(region.min[key],point[key]-.1);region.max[key]=Math.max(region.max[key],point[key]+.1);}}
+ const excluded=(held?.items||[item]).map(x=>x.g),sharedGroups=excluded.filter(g=>g!==item.g),obstacles=[],bb=physicalGroupBounds(item.g);
+ // Every anchor respects the whole carried assembly, including its material
+ // outside the belt. A free roller must not pull a blocked corner chassis.
+ // Exact bounds and original penetrations are shared by every sample.
+ const sharedBounds={min:V(Infinity,Infinity,Infinity),max:V(-Infinity,-Infinity,-Infinity)};
+ for(const g of sharedGroups){const surface=physicalGroupBounds(g);for(const k of ['x','y','z']){sharedBounds.min[k]=Math.min(sharedBounds.min[k],surface.min[k]);sharedBounds.max[k]=Math.max(sharedBounds.max[k],surface.max[k]);bb.min[k]=Math.min(bb.min[k],surface.min[k]);bb.max[k]=Math.max(bb.max[k],surface.max[k]);if(region){region.min[k]=Math.min(region.min[k],surface.min[k]-.1);region.max[k]=Math.max(region.max[k],surface.max[k]+.1);}}}
  const near=box=>!region||boundsOverlap(region,box);
- for(const wall of [...(puzzle.active?puzzle.walls:[]),...storyWorld.walls])if(near(wall))obstacles.push({bb:wall,poses:[{p:wall.p,q:wall.q||Q(),half:wall.half}]});
- for(const c of cargos){const box=cargoBounds(c);if(near(box))obstacles.push({bb:box,poses:[cargoPose(c)]});}
- for(const g of groups)if(g!==item.g&&!excluded.includes(g)){const box=physicalGroupBounds(g);if(near(box))obstacles.push({bb:box,poses:physicalGroupPoses(g)});}
- return {item,obstacles,sharedSurfaces,source:physicalGroupPoses(item.g).concat(sharedSurfaces),bb};
+ for(const wall of [...(puzzle.active?puzzle.walls:[]),...storyWorld.walls])if(near(wall))obstacles.push({bb:wall,entries:[collisionEntry({p:wall.p,q:wall.q||Q(),half:wall.half})]});
+ for(const c of cargos){const box=cargoBounds(c);if(near(box))obstacles.push({bb:box,entries:[collisionEntry(cargoPose(c))]});}
+ for(const g of groups)if(g!==item.g&&!excluded.includes(g)){const box=physicalGroupBounds(g);if(near(box))obstacles.push({bb:box,entries:rigidCollisionParts(g).concat(conveyorGroupSurfaces(g).map(collisionEntry))});}
+ return {item,obstacles,sharedGroups,sharedParts:null,sharedBounds,source:null,penetrations:new Map(),translations:new Map(),bb};
 }
 function gripPoseClear(context,p,q){
- const {item,source,obstacles,sharedSurfaces}=context,bb=physicalGroupBounds(item.g,p,q),next=physicalGroupPoses(item.g,p,q),shift=sub(p,item.g.body.position);
- for(const surface of sharedSurfaces){const moved={...surface,p:add(surface.p,shift)};next.push(moved);for(const point of corners(moved))for(const key of ['x','y','z']){bb.min[key]=Math.min(bb.min[key],point[key]);bb.max[key]=Math.max(bb.max[key],point[key]);}}
+ const {item,obstacles,sharedGroups,sharedBounds}=context,bb=physicalGroupBounds(item.g,p,q),shift=sub(p,item.g.body.position);
+ if(sharedGroups.length)for(const k of ['x','y','z']){bb.min[k]=Math.min(bb.min[k],sharedBounds.min[k]+shift[k]);bb.max[k]=Math.max(bb.max[k],sharedBounds.max[k]+shift[k]);}
  if(bb.min.y<Math.min(-.0003,context.bb.min.y)-1e-7||bb.max.y>ROOM_HEIGHT-.001||Math.max(Math.abs(bb.min.x),Math.abs(bb.max.x),Math.abs(bb.min.z),Math.abs(bb.max.z))>ROOM_SIZE/2-.001||!alphaPoseClear(item.g,p,q))return false;
- for(const obstacle of obstacles){if(!boundsOverlap(bb,obstacle.bb))continue;
-  for(let i=0;i<next.length;i++)for(const other of obstacle.poses){
-   if(!obbOverlap(next[i],other,.00035))continue;
-   // A tiny pre-existing contact is allowed to separate or slide; it must never
-   // get deeper. This also lets a resting piece be lifted off a surface.
-   const before=gripPenetration(source[i],other),after=gripPenetration(next[i],other);
-   if(before<.00035||after>before+1e-7)return false;
+ // Most samples are in open air. Only expand a rigid unit into its exact parts
+ // when its physical bounds approach another body; holes stay genuinely open.
+ const nearby=obstacles.filter(o=>boundsOverlap(bb,o.bb));if(!nearby.length)return true;
+ const sharedParts=context.sharedParts||=sharedGroups.flatMap(g=>rigidCollisionParts(g).concat(conveyorGroupSurfaces(g).map(collisionEntry)));
+ context.source||=rigidCollisionParts(item.g).concat(conveyorGroupSurfaces(item.g).map(collisionEntry),sharedParts);
+ const current=item.g.body.quaternion,translation=q.x===current.x&&q.y===current.y&&q.z===current.z&&q.w===current.w;
+ const next=translation?context.source:physicalGroupPoses(item.g,p,q).map(collisionEntry).concat(sharedParts),ownCount=next.length-sharedParts.length,zero=V();
+ for(const obstacle of nearby)for(let i=0;i<next.length;i++)for(const other of obstacle.entries){
+  const entry=next[i],moved=translation||i>=ownCount,delta=moved?shift:zero;
+  if(entry.min.x+delta.x>other.max.x||entry.max.x+delta.x<other.min.x||entry.min.y+delta.y>other.max.y||entry.max.y+delta.y<other.min.y||entry.min.z+delta.z>other.max.z||entry.max.z+delta.z<other.min.z)continue;
+  if(translation){
+   let pairs=context.translations.get(other);if(!pairs){pairs=new Map();context.translations.set(other,pairs);}
+   let contact=pairs.get(i);if(!contact){contact=gripTranslationContact(entry,other);pairs.set(i,contact);}
+   const after=gripTranslatedDepth(contact,shift);if(after&&(contact.depth<.00035||after>contact.depth+1e-7))return false;
+  }else{
+   const pose=moved?{...entry.pose,p:add(entry.pose.p,delta)}:entry.pose,after=gripPenetration(pose,other.pose);if(after<=.00035)continue;
+   // Existing contact may separate or slide, but must never become deeper.
+   let before=context.penetrations.get(other);if(!before){before=new Map();context.penetrations.set(other,before);}
+   if(!before.has(i))before.set(i,gripPenetration(context.source[i].pose,other.pose));
+   const depth=before.get(i);if(depth<.00035||after>depth+1e-7)return false;
   }
  }return true;
 }
@@ -2410,9 +2457,14 @@ function safeGripSweep(item,target){
  for(const k of ['x','z','y']){const slide=safe.clone();slide[k]=wanted[k];safe=sweep(safe,slide);}
  return safe;
 }
+function gripRotationRadius(g){
+ const sources=conveyors.filter(c=>c.surfaceBody===g.body).map(c=>c.surfaces),cache=g.gripRadiusCache;
+ if(cache&&cache.parts===g.parts&&cache.sources.length===sources.length&&sources.every((s,i)=>s===cache.sources[i]))return cache.radius;
+ const radius=Math.max(...physicalGroupPoses(g,V(),Q()).flatMap(corners).map(v=>v.norm()));g.gripRadiusCache={parts:g.parts,sources,radius};return radius;
+}
 function safeGripRotation(item,desired){
  const b=item.g.body,dot=Math.min(1,Math.abs(b.quaternion.x*desired.x+b.quaternion.y*desired.y+b.quaternion.z*desired.z+b.quaternion.w*desired.w)),angle=2*Math.acos(dot);if(angle<1e-7)return desired;
- const radius=Math.max(...physicalGroupPoses(item.g,V(),Q()).flatMap(corners).map(v=>v.norm())),extent=V(radius,radius,radius),context=gripCollisionContext(item,{min:sub(b.position,extent),max:add(b.position,extent)});
+ const radius=gripRotationRadius(item.g),extent=V(radius,radius,radius),context=gripCollisionContext(item,{min:sub(b.position,extent),max:add(b.position,extent)});
  const steps=Math.max(1,Math.min(96,Math.ceil(angle*Math.max(radius,HALF)/.006)));let safe=b.quaternion.clone();
  for(let i=1;i<=steps;i++){const q=slerp(b.quaternion,desired,i/steps);if(!gripPoseClear(context,b.position,q))break;safe=q;}return safe;
 }
@@ -2858,8 +2910,8 @@ function updateTarget(){
  if(shelfPreview)targetLabel.textContent=shelfPreview.valid?(shelfPreview.snapped?'Repisa alineada · ':'')+'Clic / E · colocar · Esc · cancelar':shelfPreview.reason;
  else if(pendingUnitCreation)targetLabel.textContent='Clic izquierdo · crear '+creationTitle(pendingUnitCreation)+' · Esc / clic derecho · cancelar';
  else if(marquee)targetLabel.textContent='Suelta para seleccionar · hasta '+settings.maxSelect+' piezas';
- else if(held?.latched)targetLabel.textContent='Clic · soltar selección · Shift + WASD · girar'+(held.g.parts.length>1?' · Shift + sacudir · desarmar':' · rueda · enfocar');
- else if(held)targetLabel.textContent=snap?(snap.rotorTip?'Puntas alineadas · suelta para formar Rotor':snap.wholeFace?'Cara completa · suelta para unir':'Suelta para unir esta cara'):shiftDown()?'WASD · girar'+(held.g.parts.length>1?' · sacudir varias veces · desarmar':''):'Shift · girar / unir · rueda · enfocar · Ctrl · caída';
+ else if(held?.latched)targetLabel.textContent='Clic · soltar selección · Shift + WASD · girar'+(heldAssemblyGroups().length?' · Shift + sacudir · desarmar':' · rueda · enfocar');
+ else if(held)targetLabel.textContent=snap?(snap.rotorTip?'Puntas alineadas · suelta para formar Rotor':snap.wholeFace?'Cara completa · suelta para unir':'Suelta para unir esta cara'):shiftDown()?'WASD · girar'+(heldAssemblyGroups().length?' · sacudir varias veces · desarmar':''):'Shift · girar / unir · rueda · enfocar · Ctrl · caída';
  else if(hit&&isExternalBattery(hit.part)){const info=externalBatteryPackInfo(hit.part.id);targetLabel.textContent=info.label+' · '+info.percent+' % · '+(info.enabled?'activa':'apagada')+' · clic derecho: batería';}
  else if(shelfTarget&&(!hit||shelfTarget.distance<(hit.distance??Infinity))){const cell=shelfTarget.shelf.cells[shelfTarget.cellIndex];targetLabel.textContent='Compartimento '+(shelfTarget.cellIndex+1)+' · '+(cell.category?.label||'Vacío')+' · '+cell.items.length+'/50 · clic derecho: organizar';}
  else if(selectedRotors().length)targetLabel.textContent=(activeRotorSet()?.name||'Selección de rotores')+' · '+selectedRotors().length+' · Ctrl + clic: añadir / quitar · clic derecho o P: controles';
@@ -2881,12 +2933,12 @@ face([[.5,-.5,-.5],[-.5,-.5,-.5],[-.5,.5,-.5],[.5,.5,-.5]],[0,0,-1]);
 face([[-.5,-.5,.5],[.5,-.5,.5],[.5,.5,.5],[-.5,.5,.5]],[0,0,1]);
 function buffer(data){const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);return b;}
 const cubeVertexData=vertices.slice(roomVertexCount),cubeGeometry=buffer(cubeVertexData);vertices.length=roomVertexCount;
-const unitMeshes={cube:{buffer:cubeGeometry,count:36}};
+const unitMeshes={cube:{buffer:cubeGeometry,count:36,data:cubeVertexData}};
 for(const shape of ['tetra','pyramid','coupler']){
  const profile=unitProfile(shape),data=[],edges=[];
  for(let i=0;i<profile.faces.length;i++){const f=profile.faces[i],n=profile.faceNormals[i];for(let j=1;j<f.length-1;j++)for(const k of [f[0],f[j],f[j+1]]){const v=profile.vertices[k];data.push(v.x/CUBE_SIZE,v.y/CUBE_SIZE,v.z/CUBE_SIZE,n.x,n.y,n.z);}}
  for(const edge of profile.edges)for(const k of edge){const v=profile.vertices[k];edges.push(v.x/CUBE_SIZE,v.y/CUBE_SIZE,v.z/CUBE_SIZE,0,1,0);}
- unitMeshes[shape]={buffer:buffer(data),count:data.length/6,edgeBuffer:buffer(edges),edgeCount:edges.length/6};
+ unitMeshes[shape]={buffer:buffer(data),count:data.length/6,data,edgeBuffer:buffer(edges),edgeCount:edges.length/6};
 }
 const faceGuideGeometry=gl.createBuffer();
 face([[-.5,0,-.5],[.5,0,-.5],[.5,0,.5],[-.5,0,.5]],[0,1,0]);
@@ -3064,42 +3116,48 @@ function drawConveyorBlueprintArrows(bp,targets){
   }
  }
 }
-// A rigid assembly moves as one body. Keep its real cube surfaces, including
-// each cube's original local coordinates for edge/texture shading, in a single
-// immutable GPU mesh. Loose pieces, batteries and the existing solid-block
-// renderer retain their individual paths. No collider or saved part is merged.
+// One immutable mesh per material for any rigid assembly: cubes, both T-bits
+// and both coupler finishes. Original piece-local shading stays intact. Battery
+// glass/liquid and gripper markings retain their own dynamic render passes.
 function disposeRigidCubeBatch(g){
  const entry=g.rigidCubeBatch;if(!entry)return;
- if(entry.buffer)gl.deleteBuffer(entry.buffer);if(boundGeometry===entry.buffer)boundGeometry=null;delete g.rigidCubeBatch;
+ for(const batch of entry.batches||[entry])if(batch.buffer){gl.deleteBuffer(batch.buffer);if(boundGeometry===batch.buffer)boundGeometry=null;}
+ delete g.rigidCubeBatch;
 }
 function rigidCubeBatch(g){
  if(g.parts.length<4){disposeRigidCubeBatch(g);return null;}
  let entry=g.rigidCubeBatch,valid=entry?.parts===g.parts&&entry.local.length===g.parts.length;
  if(valid)for(let i=0;i<g.parts.length;i++){
   const p=g.parts[i],local=entry.local[i];
-  if(local.part!==p||local.cube!==(unitShape(p)==='cube'&&!isExternalBattery(p))||local.x!==p.offset.x||local.y!==p.offset.y||local.z!==p.offset.z||local.qx!==p.q.x||local.qy!==p.q.y||local.qz!==p.q.z||local.qw!==p.q.w){valid=false;break;}
+  if(local.part!==p||local.shape!==unitShape(p)||local.battery!==isExternalBattery(p)||local.x!==p.offset.x||local.y!==p.offset.y||local.z!==p.offset.z||local.qx!==p.q.x||local.qy!==p.q.y||local.qz!==p.q.z||local.qw!==p.q.w){valid=false;break;}
  }
- if(valid)return entry.count?entry:null;
+ if(valid)return entry.batches.length?entry:null;
  disposeRigidCubeBatch(g);
- const cubes=g.parts.filter(p=>unitShape(p)==='cube'&&!isExternalBattery(p));
- const local=g.parts.map(p=>({part:p,cube:unitShape(p)==='cube'&&!isExternalBattery(p),x:p.offset.x,y:p.offset.y,z:p.offset.z,qx:p.q.x,qy:p.q.y,qz:p.q.z,qw:p.q.w}));
- if(cubes.length<4){g.rigidCubeBatch={parts:g.parts,local,count:0,buffer:null};return null;}
- const data=new Float32Array(cubes.length*36*12);let at=0;
- for(const part of cubes)for(let i=0;i<cubeVertexData.length;i+=6){
-  const position=add(part.offset,part.q.vmult(V(cubeVertexData[i]*CUBE_SIZE,cubeVertexData[i+1]*CUBE_SIZE,cubeVertexData[i+2]*CUBE_SIZE))),normal=part.q.vmult(V(...cubeVertexData.slice(i+3,i+6)));
-  data[at++]=position.x;data[at++]=position.y;data[at++]=position.z;data[at++]=normal.x;data[at++]=normal.y;data[at++]=normal.z;
-  for(let j=0;j<6;j++)data[at++]=cubeVertexData[i+j];
+ const local=g.parts.map(p=>({part:p,shape:unitShape(p),battery:isExternalBattery(p),x:p.offset.x,y:p.offset.y,z:p.offset.z,qx:p.q.x,qy:p.q.y,qz:p.q.z,qw:p.q.w}));
+ const materials=new Map(),append=(key,kind,color,part,first,count)=>{
+  let material=materials.get(key);if(!material){material={kind,color,data:[]};materials.set(key,material);}
+  const data=unitMeshes[unitShape(part)].data;
+  for(let i=first*6;i<(first+count)*6;i+=6){
+   const position=add(part.offset,part.q.vmult(V(data[i]*CUBE_SIZE,data[i+1]*CUBE_SIZE,data[i+2]*CUBE_SIZE))),normal=part.q.vmult(V(data[i+3],data[i+4],data[i+5]));
+   material.data.push(position.x,position.y,position.z,normal.x,normal.y,normal.z,...data.slice(i,i+6));
+  }
+ };
+ for(const part of g.parts)if(!isExternalBattery(part)){
+  const shape=unitShape(part);
+  if(shape==='coupler'){append('coupler',5,[.20,.23,.24,1],part,0,30);append('tip',5,[.53,.59,.58,1],part,30,12);}
+  else append(shape==='cube'?'cube':'tbit',shape==='cube'?1:5,shape==='cube'?null:[.48,.48,.48,1],part,0,unitMeshes[shape].count);
  }
- const mesh=buffer(data);boundGeometry=null;
- return g.rigidCubeBatch={parts:g.parts,local,count:cubes.length*36,buffer:mesh};
+ const batches=[];for(const [key,material]of materials)batches.push({key,kind:material.kind,color:material.color,count:material.data.length/12,buffer:buffer(material.data)});
+ boundGeometry=null;const cubes=batches.find(b=>b.key==='cube');
+ g.rigidCubeBatch={parts:g.parts,local,batches,count:cubes?.count||0,buffer:cubes?.buffer||null};return batches.length?g.rigidCubeBatch:null;
 }
 function drawGroupSolid(g){
  const batteries=batteryVisualPacks(g);
  if(g.block&&!batteries.length){disposeRigidCubeBatch(g);const p=moodVisualPose(g,blockPose(g));bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,1);setPose(p.p,p.q,p.size);gl.drawArrays(gl.TRIANGLES,0,36);}
  else {
   const batch=rigidCubeBatch(g);
-  if(batch){bindGeometry(batch.buffer,true);gl.uniform1f(uniforms.uKind,1);setPose(g.body.position,g.body.quaternion,V(1,1,1));gl.drawArrays(gl.TRIANGLES,0,batch.count);}
-  for(const part of g.parts)if(!isExternalBattery(part)&&(!batch||unitShape(part)!=='cube')){const p=partPose(g,part);drawUnitMesh(g.parts.length===1?{...moodVisualPose(g,p),part}:p);}
+  if(batch)for(const material of batch.batches){bindGeometry(material.buffer,true);gl.uniform1f(uniforms.uKind,material.kind);setPose(g.body.position,g.body.quaternion,V(1,1,1));if(material.color)tint(...material.color);gl.drawArrays(gl.TRIANGLES,0,material.count);}
+  for(const part of g.parts)if(!isExternalBattery(part)&&!batch){const p=partPose(g,part);drawUnitMesh(g.parts.length===1?{...moodVisualPose(g,p),part}:p);}
  }
  for(const battery of batteries)drawBatteryOpaque(battery);
  for(const part of g.parts)if(part.mood.gripper)drawGripperMark(partPose(g,part));
@@ -3278,6 +3336,21 @@ function drawUnitOutline(pose,alpha=.7,selectedOutline=true){
  const profile=unitProfile(pose),points=profile.edges.flatMap(edge=>edge.map(i=>add(pose.p,pose.q.vmult(mul(profile.vertices[i],1.008)))));
  drawWideLines(points,[...(selectedOutline?visualRGB('outlineColor'):[.1,.15,.16]),alpha],visuals.outlineWidth);
 }
+function drawRigidOutline(g,alpha,chosen){
+ let cache=g.outlineCache;
+ if(!cache||cache.parts!==g.parts){
+  const pieces=g.parts.map(part=>{
+   const tbit=isTBit(part),points=[];
+   if(tbit){const profile=unitProfile(part);for(const edge of profile.edges)for(const i of edge)points.push(add(part.offset,part.q.vmult(mul(profile.vertices[i],1.008))));}
+   else for(let i=0;i<edgeData.length;i+=6)points.push(add(part.offset,part.q.vmult(V(edgeData[i]*(CUBE_SIZE+.0009),edgeData[i+1]*(CUBE_SIZE+.0009),edgeData[i+2]*(CUBE_SIZE+.0009)))));
+   return {tbit,points};
+  });cache=g.outlineCache={parts:g.parts,pieces};
+ }
+ let points=[],type=null;
+ const flush=()=>{if(!points.length)return;drawWideLines(points,[...(chosen?visualRGB('outlineColor'):type?[.1,.15,.16]:[.06,.09,.1]),alpha],visuals.outlineWidth);points=[];};
+ for(const piece of cache.pieces){if(!chosen&&type!==null&&type!==piece.tbit)flush();type=piece.tbit;for(const point of piece.points)points.push(add(g.body.position,g.body.quaternion.vmult(point)));}
+ flush();
+}
 function selectionGroups(){return selectedRotors().length?[]:groups.filter(g=>multiSelection.includes(g)||selected?.g===g);}
 function selectionHudSnapshot(team=selectionGroups()){
  return team.map(g=>{
@@ -3316,7 +3389,7 @@ function drawStructureOutlines(){
  const rotorParts=new Set(selectedRotors().flatMap(r=>[r.aId,r.bId]));
  for(const g of groups){const chosen=selectedGroups.includes(g);
   if(g.block){const p=moodVisualPose(g,blockPose(g));drawOutline(p.p,p.q,p.size,.88,chosen);}
-  else if(chosen||visuals.style==='cel')for(const pose of poses(g))drawUnitOutline(pose,.85,chosen);
+  else if(chosen||visuals.style==='cel')drawRigidOutline(g,.85,chosen);
   if(chosen&&visuals.markers){const bb=bounds(g);drawSelectionMarker(V(bb.center.x,bb.max.y+.025,bb.center.z),simTime);}
   if(rotorParts.size)for(const pose of poses(g))if(rotorParts.has(pose.part.id))drawUnitOutline(pose,1,true);
  }
@@ -4680,18 +4753,23 @@ function spawnSavedMechanism(record,point){
  if(story.scene==='campaign'&&record.groups.some(group=>group.parts.some(part=>part.shape!=='coupler'))){announce('Los mecanismos con Q-bits o T-bits añadidos se crean solo en el banco de pruebas. En campaña, monta esas piezas con los recursos del nivel.');return null;}
  const count=mechanismPartCount(record);if(groups.reduce((sum,g)=>sum+g.parts.length,0)+count>MAX_QUBITS){announce('Máximo de '+MAX_QUBITS+' piezas en la sala.');return null;}
  const data=mechanismRecordParts(record,V(point.x,point.y+.003,point.z)),ids=new Map(),made=[],joints=[];
+ // Probe candidate space before allocating physics bodies, IDs or GPU state.
+ // The quick catalogue may try twenty positions in a crowded laboratory.
+ for(const parts of data){const probe={body:{position:V(),quaternion:Q()},parts:parts.map(part=>({...part,offset:part.p}))};
+  if(!validPose(probe,probe.body.position,probe.body.quaternion)){announce('No hay espacio libre para el mecanismo.');return null;}
+ }
  try{
   for(const parts of data)for(const part of parts)ids.set(part.key,allocateUnitId());
   for(const [i,parts]of data.entries()){const created=parts.map((part,j)=>{const id=ids.get(part.key),config=record.groups[i].parts[j].gripper,mood=part.battery?{...newMood(id),energy:0,externalBattery:{version:1,ownerId:id,packId:ids.get(part.battery.pack),enabled:part.battery.enabled}}:config?{...newMood(id),gripper:{...config}}:null;return {id,shape:part.shape,weight:part.weight,p:part.p,q:part.q,mood};});made.push(makeGroup(created));}
-  if(made.some(g=>!validPose(g,g.body.position,g.body.quaternion,made)))throw new Error('No hay espacio libre para el mecanismo.');
   for(const joint of record.joints){const rotor=connectRotorTips(ids.get(joint.a),ids.get(joint.b),{...joint,...storedRotorDrive(joint),enabled:false});if(!rotor)throw new Error('Las puntas del mecanismo ya no encajan.');joints.push(rotor);}
   for(let i=0;i<joints.length;i++)configureRotor(joints[i],record.joints[i]);
   for(const set of record.rotorSets||[])createRotorSet(set.name,set.joints.map(index=>joints[index]));
   if(record.robotArm&&typeof restoreRobotArmTemplate==='function')restoreRobotArmTemplate(record.robotArm,ids,joints);
   if(record.conveyors&&typeof restoreConveyorTemplate==='function'){const modules=restoreConveyorTemplate(record.conveyors,ids,joints);if(!Array.isArray(modules)||modules.length!==record.conveyors.length)throw new Error('La cinta no pudo recuperar sus rodillos.');}
+  if(made.some(g=>!validPose(g,g.body.position,g.body.quaternion,made)))throw new Error('No hay espacio libre para la superficie del mecanismo.');
   clearRotorSelection();multiSelection=made;selected={g:made[0],part:made[0].parts[0]};announce(record.name+' creado · '+count+' piezas'+(made.some(g=>g.parts.some(isExternalBattery))?' · baterías vacías: apágalas y déjalas sobre el piso':''));return joints[0]||made[0];
  }catch(error){
-  for(const rotor of joints)disconnectRotor(rotor);for(const g of made)removeGroup(g);if(typeof pruneConveyors==='function')pruneConveyors();refreshRotors();announce(error.message||'No se pudo crear el mecanismo.');return null;
+  for(const rotor of joints)disconnectRotor(rotor);for(const g of made)removeGroup(g);if(typeof pruneConveyors==='function')pruneConveyors();pruneRobotArms();refreshRotors();announce(error.message||'No se pudo crear el mecanismo.');return null;
  }
 }
 function duplicateMechanism(subject){

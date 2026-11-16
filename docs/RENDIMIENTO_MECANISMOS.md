@@ -41,3 +41,45 @@ El entorno usa DOM/GPU simulados. Estos valores **no son FPS**, no representan e
 - 19 escenas del render real reproducidas en GLES/Mesa; dos shaders y un programa sin errores GL. Capturas de brazo y esquina inspeccionadas. Esto no equivale a una partida en navegador.
 
 Siguiente verificación útil: repetir la instalación del jugador en su PC, probar las cintas apagadas, activas y al moverlas, con las mismas preferencias gráficas. Si persiste un cuello de botella, separar tiempo de CPU y GPU antes de ampliar la arquitectura o el límite de piezas.
+
+
+## Extensión a todos los tipos y esquinas — segunda entrega del 16 de noviembre
+
+Referencia de esta entrega: `3264913563a71763cf8e6f762f11e50e2668ebc7`, que ya incluye la primera optimización y el freno. Estos porcentajes no se suman a los de la tabla anterior.
+
+Las consultas de colocación y de la mano utilizan primero cada cuerpo completo. Sus dimensiones rotadas y el alcance del giro se reutilizan; las cachés de orientación se limitan a 12 entradas por cuerpo. Solo al acercarse a un obstáculo se expanden las piezas candidatas. En un desplazamiento, se preparan una vez los intervalos SAT de cada pareja y las muestras siguientes solo desplazan esos intervalos. Se conservan el barrido contra paneles finos, el deslizamiento y la salida de un contacto existente. No se rellenan huecos ni se sustituyen las formas por un cubo grande.
+
+El dibujo rígido ahora agrupa también T-bits triangulares/de base cuadrada y enganches, con un buffer por material. Las dos terminaciones del enganche, las normales y las coordenadas locales de textura se conservan. Las líneas de selección se agrupan manteniendo sus triángulos y orden. Baterías, líquido y marcas de agarre mantienen sus pases propios; los cuerpos coloreados y mobiliario conservan sus rutas existentes. Al desmontar o reconstruir se liberan los buffers. Los ejes siguen separando cuerpos que necesitan girar: agrupar un mecanismo no significa inmovilizar sus articulaciones.
+
+**Sacudir:** sostener un conjunto conectado, mantener Shift y mover repetidamente el ratón de lado a lado o arriba/abajo. Se conservan umbral, espera inicial y protección contra vibraciones. Funciona tomando el chasis o un rodillo/punta. Recupera cada identidad, forma, peso, energía y adaptación; la pieza tomada queda en la mano. Retira primero anclajes de la mano, rotores, controladores y superficies de cinta. Las puntas recuperadas no vuelven a conectarse automáticamente. No se aplica a una selección de conjuntos independientes, ni a mobiliario o cargas que ya tienen sus propios controles.
+
+**Esquinas:** se reprodujo penetración y vibración al empujar ambos modelos contra un panel: otros anclajes seguían tirando del material del chasis que sobresale de la banda. Ahora cada anclaje respeta el volumen físico completo del conjunto sostenido, consultando sus piezas exactas al acercarse. La creación rápida descarta posiciones ocupadas antes de reservar IDs/cuerpos y vuelve a validar la banda terminada. Un rechazo elimina todo el montaje temporal, incluidas superficies y controladores.
+
+### Medición de esta entrega
+
+`node tests/benchmark-all-elements.cjs`
+
+Tres repeticiones alternadas, 120 subpasos de calentamiento y 30 cuadros medidos; cada cuadro contiene cuatro subpasos a 240 Hz, dibujo real y actualización de objetivo. Mismo código de escena, cámara y opciones. Las escenas de agarre se prueban elevadas, sin gravedad, para aislar el movimiento. Datos completos: [benchmarks/all-elements-20261116.json](benchmarks/all-elements-20261116.json).
+
+| Escenario | Piezas | CPU antes → ahora, ms/cuadro | Llamadas de dibujo antes → ahora |
+| --- | ---: | ---: | ---: |
+| Dos rectas y esquina seleccionadas | 101 | 8,57 → 8,69 | 312 → 193 |
+| Esquina en movimiento junto a dos rectas | 101 | 35,64 → 19,42 (−45,5 %) | 232 → 171 |
+| Brazo sostenido y tres cintas | 127 | 22,58 → 16,30 (−27,8 %) | 257 → 219 |
+| Tres conjuntos mixtos seleccionados | 192 | 11,12 → 10,23 | 583 → 211 |
+| Esquina sostenida contra un panel | 41 | 81,54 → 54,54 (−33,1 %) | 111 → 70 |
+
+La reducción de dibujo en los conjuntos mixtos es del 63,8 %. Sus tiempos de CPU y los de la escena seleccionada están dentro de la variación entre ejecuciones: no se atribuye una mejora general de CPU a esos casos. El contacto sostenido mejora y deja de vibrar en la prueba, pero sigue siendo costoso; no se afirma haber eliminado todos los cuellos de botella. En ese escenario, la penetración máxima medida durante el intervalo baja de 4,80 mm a 0,33 mm, dentro de la tolerancia de contacto de 0,35 mm de la mano.
+
+Son mediciones Node/Cannon con DOM/GPU simulados, **no FPS del navegador**. Las piezas sueltas siguen siendo cuerpos individuales; permanecen los colliders exactos, sombras, transparencias, postprocesado y el límite de 256 piezas. Una escena con muchos cuerpos activos o contactos complejos puede seguir limitada por física o GPU.
+
+### Verificación adicional
+
+- 628 pruebas de la suite completa aprobadas, sin fallos ni omisiones; incluye rechazo por solapamiento exclusivo de la banda y retirada atómica de los montajes temporales.
+- Comparación de intervalos contra SAT completo: 240 parejas y seis traslaciones cada una, cuatro formas, orientaciones variadas y paneles delgados.
+- Ambas esquinas sostenidas contra paneles de 4 mm, colocación ocupada sin asignar identidades, rollback de bandas, cachés tras quitar/reconstruir/girar superficies, huecos y límites del mundo.
+- Desarme de recta, ambas esquinas, brazo, rotor, sólidos mixtos y batería adaptada; sin pérdida de piezas/energía ni restricciones o buffers huérfanos. Se conservan los frenos de rotores apagados.
+- 21 escenas GLES/Mesa, dos shaders y un programa, cero errores. La comparación mixta no cambia ningún píxel más de dos niveles de color; error medio por canal 0,0000011. Referencias de cubos, líneas, formas mixtas y capturas de esquina inspeccionadas.
+- Una comparación adicional de transporte activo contra `3264913` conserva exactamente posiciones, orientaciones y energía finales. No se realizó una partida completa de navegador.
+
+Siguiente comprobación: probar en el PC del jugador crear, sostener y sacudir una esquina junto a sus otras secciones. Si persiste la lentitud, medir el contacto sostenido y el tiempo real de GPU; la separación vuelve a activar cuerpos individuales por diseño.

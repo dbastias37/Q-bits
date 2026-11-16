@@ -276,3 +276,16 @@ La solicitud adicional cambia el comportamiento de apagado: el rotor conserva el
 Medición contra `bc1324b`, con todos los mecanismos seleccionados: CPU por cuadro simulado baja 40,94 → 8,78 ms con 101 piezas detenidas (−78,5 %); 53,22 → 19,62 ms con 107 piezas, baterías y cargas en marcha (−63,1 %); 94,01 → 18,55 ms con 240 piezas detenidas (−80,3 %). La escena accionada conserva exactamente posiciones, orientaciones y energía. Son mediciones Node/Cannon con DOM/GPU simulados, no FPS en el PC del jugador. Los rodillos detenidos sí cambian de respuesta porque ahora tienen freno.
 
 Verificación: 610 pruebas completas + una adicional de equivalencia visual de vértices, todas aprobadas; carga de recursos, sintaxis y diff correctos. 19 escenas GLES, dos shaders/un programa y cero errores GL; brazo/esquina inspeccionados. Sin partida de navegador ni promesa de capacidad ilimitada. Se conserva el límite de 256 piezas. Método, números, alcance y siguiente comprobación en [RENDIMIENTO_MECANISMOS.md](RENDIMIENTO_MECANISMOS.md).
+
+
+## 2026-11-16 — Unidades de todos los tipos, sacudida y esquinas
+
+Extendida la optimización a colocación y agarre de todos los conjuntos rígidos, con dimensiones rotadas cacheadas, expansión de piezas solo cerca de obstáculos e intervalos SAT reutilizados durante el barrido. Render por material para cubos, ambos T-bits y las dos terminaciones del enganche; líneas agrupadas sin alterar geometría ni calidad. Baterías/líquido y marcas dinámicas mantienen sus pases; no se colapsan articulaciones ni colliders exactos.
+
+Shift + sacudida recupera todas las piezas de un mecanismo conectado, incluso si se toma un rodillo/punta. Conserva identidad, forma, masa, energía y adaptaciones, mantiene la pieza tomada en la mano y retira motores, controladores, bandas y buffers. Mantiene la protección contra giros normales; selecciones de conjuntos independientes no se desarman juntas.
+
+Corregida la vibración/penetración de ambas esquinas contra paneles: cada anclaje considera todo el material sostenido, además de la banda. Creación rápida con descarte previo de posiciones ocupadas y validación de la superficie final, con retirada completa si falla.
+
+Contra la entrega `3264913`, CPU al mover esquina con 101 piezas: 35,64 → 19,42 ms/cuadro simulado (−45,5 %); brazo con 127 piezas: −27,8 %; esquina contra panel: −33,1 %, todavía costosa. Con 192 piezas mixtas, llamadas de dibujo 583 → 211 (−63,8 %); no se atribuye una mejora concluyente de CPU en reposo. Gráficos, física precisa y límite de 256 conservados. Detalles y datos reproducibles en `docs/RENDIMIENTO_MECANISMOS.md`.
+
+Verificación: 628 pruebas distintas aprobadas, 21 escenas GLES sin errores y comparación gráfica de cubos/mixtos/líneas. El transporte activo conserva exactamente física y energía frente a la entrega anterior. Son pruebas automatizadas de lógica/render real con DOM/GPU simulados y reproducción GLES, no una partida completa en navegador. Siguiente paso: comprobar la instalación del jugador en su equipo, especialmente contacto sostenido y piezas sueltas después de sacudir.

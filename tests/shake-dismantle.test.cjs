@@ -117,3 +117,31 @@ test('the dismantling gesture works with character dialogue disabled', () => {
   assert.equal(game.t.groups.length, 3);
   assert.equal(game.t.getHeld().part.id, 101);
 });
+
+for(const kind of ['straight','left','right','arm','rotor'])test(`shaking the ${kind} mechanism recovers every original piece and removes controllers and invisible surfaces`,()=>{
+ const game=setup({single:true}),{t,sandbox}=game;t.releaseQubit();t.removeGroup(game.group);t.settings.maxCarry=256;
+ if(kind==='rotor')assert(t.spawnRotor(t.V(0,1,0)));
+ else assert(t.spawnSavedMechanism(kind==='arm'?t.robotArmBlueprintTemplate():t.conveyorBlueprintTemplate(kind),t.V()));
+ const originals=t.groups.slice();originals.forEach((g,i)=>{g.body.position.y+=.6;g.parts.forEach((p,j)=>{p.mood.energy=.2+(i+j)%5*.1;p.mood.name='Recovered '+p.id;});t.drawGroupSolid(g);});
+ // Pick a tip/roller, not only the main chassis, including a one-part rotor end.
+ const picked=t.rotorPart(t.rotors[0].bId),before=originals.flatMap(g=>t.worldParts(g)),buffers=originals.flatMap(g=>g.rigidCubeBatch?.batches.map(b=>b.buffer)||[]);
+ t.setMultiSelection([]);t.grabQubit({...picked,point:picked.p.clone(),distance:.9});assert(t.getHeld());t.getHeld().age=.4;
+ const anchors=t.getHeld().items.map(i=>i.anchorBody);press(game);burst(game);
+ assert.equal(t.groups.length,before.length);assert(t.groups.every(g=>g.parts.length===1));assert.equal(t.rotors.length,0);assert.equal(t.conveyors.length,0);assert.equal(t.robotArms.length,0);assert.equal(t.robotGrips.size,0);
+ assert.equal(t.getHeld().part.id,picked.part.id);assert.equal(t.getHeld().distance,.9);assert.equal(t.getHeld().items.length,1);assert.equal(t.world.constraints.length,1);
+ for(const anchor of anchors)assert(!t.world.bodies.includes(anchor));for(const buffer of buffers)assert(!game.buffers.has(buffer));
+ for(const original of before){const g=t.groups.find(g=>g.parts[0].id===original.id),after=t.worldParts(g)[0];assert.equal(g.body.shapes.length,1,'no invisible conveyor skin');assert.equal(after.shape,original.shape);assert.equal(after.weight,original.weight);assert.equal(after.mood.energy,original.mood.energy);assert.equal(after.mood.name,original.mood.name);assert(after.p.distanceTo(original.p)<1e-9);assert(Math.abs(['x','y','z','w'].reduce((n,k)=>n+after.q[k]*original.q[k],0))>1-1e-9);}
+ t.releaseQubit();t.stepPhysics(1/240);assert.equal(t.rotors.length,0,'coincident recovered tips must not reconnect automatically');
+});
+
+test('shaking unrelated selected assemblies leaves both intact',()=>{
+ const game=setup(),{t}=game;t.releaseQubit();const other=t.makeGroup(t.worldParts(game.group).map(p=>({...p,id:t.allocateUnitId(),p:p.p.vadd(t.V(1,0,0))})));t.setMultiSelection([game.group,other]);t.grabQubit({g:game.group,part:game.group.parts[0],point:game.group.body.position.clone(),distance:.8});t.getHeld().age=.4;press(game);burst(game);assert.equal(t.groups.length,2);assert.equal(t.getHeld().items.length,2);
+});
+
+test('a battery pack retains charge, ownership and adaptations after the shake',()=>{
+ const game=setup(),{t}=game;
+ for(const p of game.group.parts){p.mood.externalBattery={version:1,ownerId:p.id,packId:game.group.parts[0].id,enabled:false};p.mood.workshop={version:1,ownerId:p.id,sensor:true,battery:1,lightweight:1,movement:1,baseWeight:1,ballast:0};p.mood.energy=.37;}
+ const metadata=JSON.stringify(t.worldParts(game.group).map(p=>({id:p.id,weight:p.weight,battery:p.mood.externalBattery,workshop:p.mood.workshop,energy:p.mood.energy})));
+ press(game);burst(game);assert.equal(t.groups.length,3);
+ assert.equal(JSON.stringify(t.groups.flatMap(g=>t.worldParts(g)).map(p=>({id:p.id,weight:p.weight,battery:p.mood.externalBattery,workshop:p.mood.workshop,energy:p.mood.energy}))),metadata);
+});

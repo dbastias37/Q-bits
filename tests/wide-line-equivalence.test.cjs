@@ -24,3 +24,16 @@ test('optimized selection strokes upload exactly the same triangles as the previ
  }
  assert(a.uploads.length>3);assert.deepEqual(b.uploads,a.uploads);
 });
+
+test('batched rigid outlines preserve the per-piece triangles and style while reducing selected draws',()=>{
+ const a=fixture(source),b=fixture(source);
+ for(const chosen of [false,true]){for(const game of [a,b]){
+  const {t}=game;t.clearNarrativeScene();t.setLook({camera:[.2,1.4,2.2],yaw:.15,pitch:-.3});Object.assign(t.getVisuals(),{style:'cel',outlineWidth:3});
+  const g=t.makeGroup(Array.from({length:16},(_,i)=>{const q=t.Q();q.setFromEuler(i*.13,i*.07,-i*.1);return {id:t.allocateUnitId(),shape:['cube','tetra','pyramid','coupler'][i%4],weight:1,p:t.V(i%4*.14,.3+Math.floor(i/4)*.14,i%3*.12),q};}));
+  g.body.quaternion.setFromEuler(.2,-.3,.1);game.uploads.length=0;
+  if(game===a)for(const pose of t.poses(g))t.drawUnitOutline(pose,.85,chosen);else t.drawRigidOutline(g,.85,chosen);
+ }
+ const aa=a.uploads.flat(),bb=b.uploads.flat();assert.equal(bb.length,aa.length);for(let i=0;i<aa.length;i++)assert(Math.abs(aa[i]-bb[i])<2e-7,'triangle component '+i);
+ assert.equal(b.uploads.length,chosen?1:8);assert.equal(a.uploads.length,16);
+ }
+});
