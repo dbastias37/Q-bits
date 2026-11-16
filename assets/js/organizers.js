@@ -4,7 +4,7 @@
  const round=n=>Math.round(n*10000)/10000;
  const rotate=(q,p)=>{const [x,y,z,w]=q,[a,b,c]=p,tx=2*(y*c-z*b),ty=2*(z*a-x*c),tz=2*(x*b-y*a);return [a+w*tx+y*tz-z*ty,b+w*ty+z*tx-x*tz,c+w*tz+x*ty-y*tx];};
  const multiply=(a,b)=>[a[3]*b[0]+a[0]*b[3]+a[1]*b[2]-a[2]*b[1],a[3]*b[1]-a[0]*b[2]+a[1]*b[3]+a[2]*b[0],a[3]*b[2]+a[0]*b[1]-a[1]*b[0]+a[2]*b[3],a[3]*b[3]-a[0]*b[0]-a[1]*b[1]-a[2]*b[2]];
- const kind=p=>p.shape+(p.mood?.externalBattery?':battery':'')+(p.mood?.workshop?.sensor?':sensor':'');
+ const kind=p=>p.shape+(p.mood?.externalBattery?':battery':'')+(p.mood?.workshop?.sensor?':sensor':'')+(p.mood?.gripper?':gripper':'');
  const count=item=>Array.isArray(item?.groups)?item.groups.reduce((sum,g)=>sum+(g.parts?.length||0),0):0;
  function category(item){
   const parts=item.groups.flatMap(g=>g.parts),labels=[],ports=new Map();
@@ -20,8 +20,8 @@
   }
   const edges=labels.map(()=>[]);for(const joint of item.joints||[]){const a=ports.get(joint.aId),b=ports.get(joint.bId);if(a&&b){edges[a.index].push({to:b.index,from:a.value,target:b.value});edges[b.index].push({to:a.index,from:b.value,target:a.value});}}
   const branch=(index,parent)=>[labels[index],edges[index].filter(e=>e.to!==parent).map(e=>[e.from,e.target,branch(e.to,index)]).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)))];
-  const key=labels.map((_,i)=>JSON.stringify(branch(i,-1))).sort()[0];
-  const label=parts.length===1?(parts[0].mood?.externalBattery?'Batería':{cube:'Q-bit',tetra:'T-bit triangular',pyramid:'T-bit de base cuadrada',coupler:'Enganche'}[parts[0].shape]):parts.every(p=>p.mood?.externalBattery)?'Batería de '+parts.length+' celdas':parts.length===2&&item.joints?.length===1?'Rotor':'Mecanismo de '+parts.length+' piezas';
+  const key=labels.map((_,i)=>JSON.stringify(branch(i,-1))).sort()[0]+(item.robotArms?.length?':robot-arm':'');
+  const label=item.robotArms?.length?'Brazo de '+parts.length+' piezas':parts.length===1?(parts[0].mood?.gripper?'Cubo de agarre':parts[0].mood?.externalBattery?'Batería':{cube:'Q-bit',tetra:'T-bit triangular',pyramid:'T-bit de base cuadrada',coupler:'Enganche'}[parts[0].shape]):parts.every(p=>p.mood?.externalBattery)?'Batería de '+parts.length+' celdas':parts.length===2&&item.joints?.length===1?'Rotor':'Mecanismo de '+parts.length+' piezas';
   return {key,label};
  }
  function validItem(item){
@@ -32,11 +32,23 @@
    if(!Array.isArray(g.parts)||!g.parts.length||!vector(g.q,4)||Math.abs(Math.hypot(...g.q)-1)>.001)return false;
    for(const p of g.parts){if(!Number.isSafeInteger(p.id)||p.id<=0||ids.has(p.id)||!SHAPES.includes(p.shape)||!Number.isFinite(p.weight)||p.weight<=0||p.weight>1000||!vector(p.p,3)||!vector(p.q,4)||Math.abs(Math.hypot(...p.q)-1)>.001||!p.mood||typeof p.mood!=='object'||typeof p.mood.name!=='string'||!Number.isFinite(p.mood.energy)||p.mood.energy<0||p.mood.energy>1)return false;
     const b=p.mood.externalBattery;if(b&&(p.shape!=='cube'||b.version!==1||b.ownerId!==p.id||!Number.isSafeInteger(b.packId)||b.packId<=0||typeof b.enabled!=='boolean'))return false;
+    const grip=p.mood.gripper;if(grip&&(p.shape!=='cube'||b||grip.version!==1||!['any','color','piece','shape','form'].includes(grip.mode)||!/^#[0-9a-f]{6}$/i.test(grip.color)||!SHAPES.includes(grip.shape)||(grip.targetId!==null&&(!Number.isSafeInteger(grip.targetId)||grip.targetId===0))||!Number.isInteger(grip.capacity)||grip.capacity<1||grip.capacity>16||(grip.formSignature!==undefined&&(typeof grip.formSignature!=='string'||grip.formSignature.length>32000))||(grip.mode==='form'&&!grip.formSignature)))return false;
     ids.set(p.id,p);owners.set(p.id,index);
    }
   }
   const used=new Set(),links=item.groups.map(()=>[]);
   for(const j of item.joints){if(!ids.has(j.aId)||!ids.has(j.bId)||j.aId===j.bId||used.has(j.aId)||used.has(j.bId)||ids.get(j.aId).shape!=='coupler'||ids.get(j.bId).shape!=='coupler'||owners.get(j.aId)===owners.get(j.bId))return false;used.add(j.aId);used.add(j.bId);links[owners.get(j.aId)].push(owners.get(j.bId));links[owners.get(j.bId)].push(owners.get(j.aId));}
+  if(item.robotArms!==undefined){
+   if(!Array.isArray(item.robotArms)||item.robotArms.length>item.groups.length)return false;
+   const grippers=new Set(),jointKeys=new Set(item.joints.map(j=>j.aId+':'+j.bId)),claimed=new Set();
+   for(const arm of item.robotArms){
+    if(!arm||!ids.get(arm.gripperId)?.mood.gripper||!ids.has(arm.baseId)||grippers.has(arm.gripperId)||typeof arm.repeat!=='boolean'||!Array.isArray(arm.joints)||!arm.joints.length||arm.joints.length>4||!arm.poses||typeof arm.poses!=='object'||Array.isArray(arm.poses))return false;
+    grippers.add(arm.gripperId);
+    for(const joint of arm.joints){const key=joint?.aId+':'+joint?.bId;if(!jointKeys.has(key)||claimed.has(key))return false;claimed.add(key);}
+    const poseValid=pose=>Array.isArray(pose)&&pose.length===arm.joints.length&&pose.every(q=>vector(q,4)&&Math.abs(Math.hypot(...q)-1)<.01);
+    if(!poseValid(arm.poses.pick)||arm.poses.place!==null&&!poseValid(arm.poses.place))return false;
+   }
+  }
   const seen=new Set([0]),queue=[0];for(const at of queue)for(const next of links[at])if(!seen.has(next)){seen.add(next);queue.push(next);}return seen.size===item.groups.length;
  }
  const api={CAPACITY,MAX_SHELVES,count,category,validItem};root.QBitsOrganizers=api;if(typeof module==='object'&&module.exports)module.exports=api;

@@ -226,3 +226,18 @@ Se multiplican el seguimiento y la velocidad del objetivo de agarre y la respues
 Verificación: **481 pruebas Node aprobadas**, sin fallos ni omisiones; sintaxis y `git diff --check` correctos. Diez nuevas comprobaciones de movimiento real y dos de preferencias/UI cubren llegada de cuerpo y selección de tres, asentamiento, límites de fuerza, retorno a ×1 sin acumulación, piso/panel delgado, liberación bloqueada y conservación del reloj y cuerpos ajenos. Persistencia, migración, descartar y restauración aislada comprobados. La suite ejecuta Cannon real con DOM/GPU simulados; la vista aislada `tests/settings-layout.html?tab=game` permite revisar el menú sin una partida WebGL.
 
 Siguiente comprobación del jugador: elegir Normal, guardar y mover sus vehículos; comparar con Rápido en un espacio despejado antes de organizar piezas cerca de otras.
+
+
+## Brazo Q-bits y blueprints de mecanismos — 16 de noviembre de 2026
+
+Bloque solicitado a partir del croquis del jugador: base 4×3, cuatro rotores, segmentos de cubos y un cubo adaptado como agarre. Plantilla de **18 cubos + 8 enganches**, sin nuevas geometrías. La batería se acopla después usando el sistema existente. El plano consume piezas reales y conserva identidades, masa y energía; habilita el mecanismo solo después del último encaje. La integración secuencial sustituye las rutas simultáneas que se bloquearon durante la prueba inicial.
+
+Panel en P → Mecanismos: filtro por color, pieza/cuerpo específico, tipo o forma aprendida; giro físico por pasos de 15/45/90°; enseñanza A/B; secuencia esperar → tomar → ir B → soltar → volver A y repetir. La plantilla parte con B a 90°. Agarre corto por restricción física, carga 1–16 u, consumo, bloqueo y agotamiento reales; peso sostenido incluido en los rotores. El cubo conserva su geometría y muestra un marco naranja en su cara activa. El programa conserva posiciones relativas a los enganches, incluso al soldar una batería o restaurar cuerpos.
+
+Formas guardadas separadas en **Formas / Mecanismos**, conservando archivos anteriores. Los catálogos colocan blueprints; duplicación explícita del banco sigue separada. Guardado de montajes, importación/exportación, instantánea del banco y repisas conservan agarre y programa; los brazos se recuperan detenidos y sin carga sujeta. Los cuerpos sólidos que ya fueron levantados conservan su altura/orientación físicas al volver al laboratorio.
+
+Optimización de índices mecánicos por subpaso, geometría de blueprint cacheada y búsqueda de objetivos a 10 Hz. Benchmark de CPU con 256 piezas/20 rotores: −36,8 % detenidos y −54,9 % accionados; estado físico final idéntico con y sin caché. Es una medición con DOM/GPU simulados, no FPS. Guía, comportamiento y método en [BRAZO_QBITS.md](BRAZO_QBITS.md).
+
+Este bloque sustituye el pendiente de un primer panel autónomo del brazo; no implementa un programador universal, galpones ni nuevas misiones. **Cinta recta y esquina por secciones siguen como siguiente bloque**, después de probar agarre, ajuste A/B y alimentación con los montajes del jugador.
+
+Verificación final: **527 pruebas Node aprobadas, sin fallos ni omisiones**; sintaxis JavaScript y `git diff --check` correctos. **Seis escenas GLES** (incluido cuerpo coloreado elevado a la misma altura que su física), dos shaders/un programa, cero errores gráficos. La revisión adicional corrigió arranque por controles antiguos contra frenos, recuperación de energía durante agarre, incompatibilidad con adaptación de batería y cambios de peso de una carga sujeta. Las pruebas automatizadas no sustituyen una partida visual completa del jugador.

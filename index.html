@@ -11,7 +11,7 @@
   <link rel="preload" href="assets/fonts/spaceman/Spaceman-Regular.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="preload" href="assets/fonts/led-calculator/LEDCalculator.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="stylesheet" href="assets/css/radial-menu.css?v=20261115-glass-3">
-  <link rel="stylesheet" href="assets/css/settings.css?v=20261116-grab-speed-1">
+  <link rel="stylesheet" href="assets/css/settings.css?v=20261116-robot-arm-1">
   <style>
     * { box-sizing: border-box; }
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000; }
@@ -303,11 +303,12 @@ input,select,textarea{font-family:var(--font-menu);}
 #callout-count{color:#59625f;}
 #codex-screen{z-index:51;justify-content:flex-start;overflow-y:auto;padding:clamp(24px,5vh,60px) 24px;} .codex-content{width:min(850px,100%);margin:auto;} #codex-title{font-size:clamp(26px,5vw,44px);line-height:1.25;} #codex-entries{display:grid;gap:16px;margin:24px 0;} #codex-entries article{border-top:1px solid #96ada050;padding:16px 0;text-align:left;} #codex-entries h3{font:17px/1.5 var(--font-menu);margin:0 0 9px;} #codex-entries p,.codex-note{font:14px/1.7 system-ui,sans-serif;color:#53675b;max-width:70ch;margin:0 0 10px;} #codex-entries button{font-size:13px;text-align:left;white-space:normal;line-height:1.5;} #codex-back{position:sticky;bottom:0;background:#f4f8f4ee;} @media(max-width:620px){#codex-screen{padding:24px 18px;}#codex-entries p{font-size:13px;}}
 </style>
-<link rel="stylesheet" href="assets/css/selection-hud.css?v=20261116-grab-speed-1">
-<link rel="stylesheet" href="assets/css/hud.css?v=20261116-grab-speed-1">
-<link rel="stylesheet" href="assets/css/subtitles.css?v=20261116-grab-speed-1">
-<link rel="stylesheet" href="assets/css/glass-panels.css?v=20261116-grab-speed-1">
-<link rel="stylesheet" href="assets/css/workshop-panel.css?v=20261116-grab-speed-1">
+<link rel="stylesheet" href="assets/css/selection-hud.css?v=20261116-robot-arm-1">
+<link rel="stylesheet" href="assets/css/hud.css?v=20261116-robot-arm-1">
+<link rel="stylesheet" href="assets/css/subtitles.css?v=20261116-robot-arm-1">
+<link rel="stylesheet" href="assets/css/glass-panels.css?v=20261116-robot-arm-1">
+<link rel="stylesheet" href="assets/css/workshop-panel.css?v=20261116-robot-arm-1">
+<link rel="stylesheet" href="assets/css/robot-arm-panel.css?v=20261116-arm-1">
 </head>
 <body data-game-mode="boot" data-game-scene="lab" data-booting="true">
   <section id="boot-screen" aria-label="Inicio de Q-bits" data-stage="loading">
@@ -398,6 +399,35 @@ input,select,textarea{font-family:var(--font-menu);}
     </div>
     <div id="page-mechanisms" role="tabpanel" hidden>
       <p id="mechanism-unlock"></p>
+      <section id="arm-panel" aria-labelledby="arm-title">
+        <p class="arm-kicker">Construir · enseñar · repetir</p><h3 id="arm-title">Brazo Q-bits</h3>
+        <p id="arm-target">Selecciona el brazo o un Q-bit para adaptarlo.</p>
+        <p>Plano: 18 cubos + 8 enganches sueltos. Al completar el montaje se forman cuatro rotores. La batería se acopla después con Shift.</p>
+        <div class="arm-actions"><button id="arm-blueprint" type="button">Colocar blueprint del brazo</button><button id="arm-convert" type="button">Convertir cubo en agarre</button></div>
+        <p id="arm-status" role="status" aria-live="polite">El plano necesita piezas existentes antes de funcionar.</p>
+        <button id="arm-register" type="button">Usar este montaje como brazo</button>
+        <div id="arm-gripper-controls" hidden>
+          <details open><summary id="arm-gripper-id">Cubo de agarre</summary>
+            <p>La cara inferior toma un sólido cercano. No atrae objetos a distancia.</p>
+            <label>Qué puede tomar<select id="arm-filter-mode"><option value="any">Cualquier sólido</option><option value="color">Un color</option><option value="piece">Una pieza específica</option><option value="shape">Un tipo de pieza</option><option value="form">Una forma aprendida</option></select></label>
+            <label id="arm-color-row" hidden>Color objetivo<input id="arm-filter-color" type="color" value="#b36b4d"></label>
+            <div id="arm-piece-row" hidden><label>Pieza objetivo<select id="arm-filter-piece"><option value="">Elige una pieza de la sala</option></select></label><button id="arm-capture-piece" type="button">Usar pieza seleccionada</button></div>
+            <div id="arm-shape-row" hidden><label id="arm-shape-type-row">Tipo de pieza<select id="arm-filter-shape"><option value="cube">Cubo</option><option value="pyramid">Pirámide de base cuadrada</option><option value="tetra">Triangular</option><option value="coupler">Enganche</option></select></label><div id="arm-form-row" hidden><button id="arm-capture-shape" type="button">Aprender forma seleccionada</button><p id="arm-shape-memory"></p><p>Selecciona una estructura de la sala y vuelve a este panel para aprender su disposición.</p></div></div>
+            <label>Carga máxima <output id="arm-capacity-value">4 u</output><input id="arm-capacity" type="range" min="1" max="16" step="1" value="4"></label>
+            <button id="arm-apply-filter" type="button">Aplicar filtro y carga</button>
+            <div class="arm-actions"><button id="arm-grab" type="button">Tomar ahora</button><button id="arm-release" type="button">Soltar</button></div>
+          </details>
+        </div>
+        <div id="arm-controls" hidden>
+          <ol class="arm-sequence" aria-label="Secuencia del brazo"><li id="arm-phase-detect">1 · Detectar</li><li id="arm-phase-grab">2 · Tomar</li><li id="arm-phase-move">3 · Ir a B</li><li id="arm-phase-release">4 · Soltar</li><li id="arm-phase-return">5 · Volver a A</li></ol>
+          <details open><summary>Enseñar dos posiciones</summary><p>Los giros y el ciclo cierran el panel para mover el brazo; P vuelve a abrirlo. Guarda A cerca del objeto y B sobre el lugar de entrega.</p><label>Paso de giro<select id="arm-jog-step"><option value="15">15° · ajuste fino</option><option value="45">45° · ajuste medio</option><option value="90">90° · cuarto de vuelta</option></select></label><div id="arm-joints" aria-label="Articulaciones del brazo"></div><div class="arm-poses"><div><button id="arm-teach-pick" type="button">Guardar A · tomar</button><span id="arm-pick-state">Por enseñar</span></div><div><button id="arm-teach-place" type="button">Guardar B · soltar</button><span id="arm-place-state">Por enseñar</span></div></div></details>
+          <label><input id="arm-repeat" type="checkbox" checked> Repetir la secuencia</label><div class="arm-actions"><button id="arm-start" type="button">Iniciar secuencia</button><button id="arm-stop" type="button">Detener</button></div>
+          <p>Acopla y activa una batería como en tus otros mecanismos. Si falta energía, sobra carga o se bloquea el recorrido, revisa el estado antes de reiniciar.</p>
+        </div>
+        <dl class="arm-facts"><div><dt>Carga sostenida / límite</dt><dd id="arm-load">0 u / —</dd></div><div><dt>Energía disponible</dt><dd id="arm-energy">—</dd></div><div><dt>Entregas completas</dt><dd id="arm-cycles">0</dd></div><div><dt>Capacidad de agarre libre</dt><dd id="arm-efficiency">—</dd></div></dl>
+        <p id="arm-feedback" role="status" aria-live="polite"></p>
+      </section>
+
       <div class="actions"><button id="create-coupler" type="button">Crear enganche</button><button id="create-rotor" type="button">Crear rotor</button></div>
       <p id="rotor-status"></p>
       <label>Nombre del conjunto<input id="rotor-set-name" type="text" maxlength="40" placeholder="Ej. Automóvil" autocomplete="off"></label>
@@ -466,7 +496,9 @@ input,select,textarea{font-family:var(--font-menu);}
     <div id="page-alpha" role="tabpanel" hidden>
       <label>Nombre del Q-bit seleccionado<input id="qubit-name" type="text" maxlength="24" placeholder="Selecciona un Q-bit"></label><button id="rename-qubit" type="button">Guardar nombre</button>
       <p>El nombre y el estado acompañan a cada pieza al unirla o separarla.</p>
-      <button id="save-shape" type="button">Guardar estructura seleccionada</button><div id="saved-shape-list"></div>
+      <button id="save-shape" type="button">Guardar estructura seleccionada</button>
+      <div class="saved-library-tabs" role="tablist" aria-label="Formas guardadas"><button id="saved-library-forms-tab" type="button" role="tab" aria-selected="true" aria-controls="saved-shape-list">Formas</button><button id="saved-library-mechanisms-tab" type="button" role="tab" aria-selected="false" aria-controls="saved-library-mechanisms" tabindex="-1">Mecanismos</button></div>
+      <div id="saved-shape-list" role="tabpanel" aria-labelledby="saved-library-forms-tab"></div><div id="saved-library-mechanisms" role="tabpanel" aria-labelledby="saved-library-mechanisms-tab" hidden></div>
       <p>Clic derecho en el piso → Formas guardadas. Después, clic derecho en el blueprint → Integrar cercanos. Acerca Q-bits sueltos, descansados y apoyados en el piso.</p>
       <label>Radio de integración <output id="alpha-blueprintRangeValue"></output><input id="alpha-blueprintRange" type="range" min="0.5" max="3" step="0.1" value="1.5"></label>
       <button id="export-shapes" type="button">Exportar formas</button><label>Importar copia de formas<input id="import-shapes" type="file" accept=".json,application/json"></label>
@@ -497,7 +529,7 @@ input,select,textarea{font-family:var(--font-menu);}
    </div>
    <div id="settings-confirm" hidden role="alertdialog" aria-modal="true" aria-labelledby="settings-confirm-title"><div class="settings-confirm-card"><h3 id="settings-confirm-title">¿Salir sin guardar?</h3><p>Tienes cambios pendientes en la configuración.</p><div class="settings-confirm-actions"><button id="settings-keep" type="button">Seguir editando</button><button id="settings-discard" type="button">Salir sin guardar</button><button id="settings-confirm-save" type="button">Guardar y salir</button></div></div></div>
   </section>
-  <script src="assets/js/opening.js?v=20261116-grab-speed-1" defer></script>
-  <script src="assets/js/boot.js?v=20261116-grab-speed-1" defer></script>
+  <script src="assets/js/opening.js?v=20261116-robot-arm-1" defer></script>
+  <script src="assets/js/boot.js?v=20261116-robot-arm-1" defer></script>
 </body>
 </html>

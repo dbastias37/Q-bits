@@ -82,6 +82,7 @@
   const fail=error=>({error});
   if(!record(part)||!Number.isSafeInteger(part.id)||part.id<1||!Number.isFinite(part.weight)||part.weight<=0||part.weight>128||!['cube','pyramid','tetra','coupler'].includes(part.shape||'cube')||!record(part.mood)||!Number.isFinite(part.mood.energy)||part.mood.energy<0||part.mood.energy>1)return fail('La pieza tiene datos inválidos.');
   if(part.mood.production)return fail('La materia de los pedidos no admite adaptaciones.');
+  if(part.mood.gripper)return fail('El cubo de agarre mantiene su función. Usa un cubo normal para otra adaptación.');
   if(part.mood.externalBattery)return fail('Usa los controles de batería: una batería externa no admite adaptaciones de Q-bit.');
   if(!record(patch)||Object.keys(patch).some(key=>!['sensor','battery','lightweight','movement'].includes(key)))return fail('Adaptación desconocida.');
   const saved=part.mood.workshop;if(saved&&!stateValid(part,saved))return fail('La calibración guardada no corresponde a esta pieza.');

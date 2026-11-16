@@ -309,3 +309,10 @@ En el **banco de pruebas**, las tres versiones están disponibles desde el princ
 Al cambiar la fuente se detienen los motores: vuelve a iniciarlos cuando esté lista. Una batería externa activa pero vacía detiene los rotores sin gastar sus reservas internas; apágala para volver a ellas. Varias baterías activas conectadas comparten el suministro. Los sensores mantienen sus enlaces individuales.
 
 El recordatorio de conexión y recarga está disponible en el taller, el menú de cada batería y el panel de mecanismos. Las baterías pueden separarse, volver a unirse, guardarse y exportarse con el montaje. Las copias y plantillas aparecen vacías; recuperar la instantánea del laboratorio conserva su carga real. Para volver a usar esos cubos como compañeros, restáuralos en el taller; la energía debe caber en sus reservas originales.
+
+
+## Brazo Q-bits — banco de pruebas
+
+En **P → Mecanismos** coloca el blueprint de **18 cubos + 8 enganches**. Acerca esas piezas reales e integra desde el clic derecho del plano. Al terminar se forman cuatro articulaciones y un cubo de agarre; acopla y activa una batería existente. La plantilla incluye un traslado de 90°, configurable con posiciones A/B, filtros y repetición.
+
+**Formas guardadas → Formas / Mecanismos** organiza las plantillas anteriores y los montajes con articulaciones. Guardado y repisas conservan el programa. [Guía para construir, programar y recuperar el brazo](docs/BRAZO_QBITS.md). Las cintas rectas/esquinas se desarrollarán en el próximo bloque.
