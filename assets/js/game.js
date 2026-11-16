@@ -463,7 +463,7 @@ function lockFailed() {
 }
 
 function pause(release=true) {
-  window.QBitsGuideAudio?.setPaused(true);
+  window.QBitsGuideAudio?.setPaused(true);window.QBitsFootsteps?.setPaused(true);
   resetAssemblyShake();
   closeUnitRadial(false);
   if(story.ready){story.preserveGrip=!release;if(document.pointerLockElement===canvas)story.intentionalUnlock=true;}
@@ -2714,6 +2714,20 @@ function makeRollSegment(g,dir){
  if(!sweepClear(box,box,box.max.y+.002,navigationObstacles(g)))return null;
  return {...motion,t:0,duration:Math.max(.16,motion.stride/settings.speed*Math.sqrt(totalWeight(g)))};
 }
+function cubeIsHeld(g){return !!held&&(held.items||[held]).some(item=>item.g===g);}
+function emitCubeFootstep(g){if(!cubeIsHeld(g)&&!g.storyFloat)window.QBitsFootsteps?.step(g);}
+function* walkingAudioGroups(){
+ for(const g of groups)if((g.route||g.haulJob&&Math.hypot(g.body.velocity.x,g.body.velocity.z)>.015)&&!cubeIsHeld(g)&&!g.storyFloat)yield {key:g,position:g.body.position};
+}
+function recordHaulFootstep(slot,grounded){
+ const p=slot.g.body.position,old=slot.footstepPosition;
+ if(!old){slot.footstepPosition={x:p.x,z:p.z};slot.footstepDistance=0;return;}
+ const distance=Math.hypot(p.x-old.x,p.z-old.z);old.x=p.x;old.z=p.z;
+ // Actual ground travel, not pushing force, elapsed time or a teleport.
+ if(!grounded||cubeIsHeld(slot.g)||distance>.15){slot.footstepDistance=0;return;}
+ slot.footstepDistance+=distance;
+ if(slot.footstepDistance>=.11){slot.footstepDistance%=.11;emitCubeFootstep(slot.g);}
+}
 function updateRoutes(dt){
  for(const g of groups){const r=g.route;if(!r)continue;const b=g.body;
   if(!groupWilling(g)&&!r.segment&&!r.align){queueMoodRoute(g,r.goal);continue;}
@@ -2730,7 +2744,7 @@ function updateRoutes(dt){
   const nextP=pose.p,nextQ=pose.q;
   if(!validPose(g,nextP,nextQ)) {queueMoodRoute(g,r.goal,'bloqueo');announce('Paso bloqueado · espera o pulsa R para cancelar.');continue;}
   b.position.copy(nextP);b.quaternion.copy(nextQ);b.aabbNeedsUpdate=true;b.updateInertiaWorld(true);
-  if(s.t>=1){b.position.copy(s.endP);b.quaternion.copy(s.endQ);r.segment=null;r.index++;}
+  if(s.t>=1){b.position.copy(s.endP);b.quaternion.copy(s.endQ);r.segment=null;r.index++;emitCubeFootstep(g);}
  }
 }
 function landingProjection(g){
@@ -3608,6 +3622,7 @@ function updateHauling(dt){
 
   for(const slot of job.slots){const g=slot.g,b=g.body,bb=crewBounds.get(g),target=add(c.body.position,slot.offset),error=V(target.x-bb.center.x,0,target.z-bb.center.z),distance=error.norm();
    if(g.route)stopRoute(g);
+   recordHaulFootstep(slot,bb.min.y<.055&&groupWilling(g));
    if(!groupWilling(g)){slot.ready=false;b.velocity.x*=Math.exp(-12*dt);b.velocity.z*=Math.exp(-12*dt);continue;}
    if(!b.fixedRotation){b.fixedRotation=true;b.updateMassProperties();}
    const crew=job.slots.map(s=>s.g);
@@ -5401,7 +5416,7 @@ document.addEventListener('webkitfullscreenchange',syncFullscreenButton);
 // Campaign prologue. Scene state, narrative timers and test tools share one clock.
 const chapters=[['00','El primer encuentro','Prólogo · tomar, mover y enfriar'],['01','Primer contacto','Llevar un Q-bit a un destino'],['02','Cada uno por su camino','Dos destinos independientes'],['03','Dos lados','Dos botones simultáneos'],['04','Juntos pesamos más','Dos Q-bits en un botón'],['05','La primera unión','Dos piezas · circuito de líquido'],['06','Cambiar de forma','Tres puertas · L, cuadrado y T'],['07','Seis piezas','Rectángulo y escalera'],['08','Salimos juntos','Seis compañeros · fin del primer bloque'],['09','La fuente','Conocer al equipo · transformar materia'],['10','El camino de vuelta','Dos estaciones · transporte y descanso'],['11','Dos rutas','Elegir materia y organizar al equipo'],['12','La instalación','Tres estaciones · el equipo completo']];
 const ui={main:document.querySelector('#main-screen'),pause:document.querySelector('#pause-screen'),levels:document.querySelector('#levels-screen'),complete:document.querySelector('#chapter-complete'),dialogue:document.querySelector('#story-dialogue'),text:document.querySelector('#story-text'),speaker:document.querySelector('#story-speaker'),choices:document.querySelector('#story-choices'),objective:document.querySelector('#story-objective'),veil:document.querySelector('#scene-veil'),top:document.querySelector('#eye-top'),bottom:document.querySelector('#eye-bottom'),cooling:document.querySelector('#cooling-track'),marker:document.querySelector('#world-label')};
-function gameMode(mode){if(mode!=='playing')window.QBitsGuideAudio?.setPaused(true);if(mode!=='playing')closeUnitRadial(false);story.mode=mode;window.QBitsMusic?.setPaused(!['playing','menu','levels','codex','settings'].includes(mode));document.body.dataset.gameMode=mode;for(const [key,el] of [['menu',ui.main],['pause',ui.pause],['levels',ui.levels],['complete',ui.complete],['codex',document.querySelector('#codex-screen')]])el.hidden=mode!==key;document.querySelector('#pause-button').hidden=mode!=='playing';hint.hidden=true;redraw=true;}
+function gameMode(mode){if(mode!=='playing'){window.QBitsGuideAudio?.setPaused(true);window.QBitsFootsteps?.setPaused(true);}if(mode!=='playing')closeUnitRadial(false);story.mode=mode;window.QBitsMusic?.setPaused(!['playing','menu','levels','codex','settings'].includes(mode));document.body.dataset.gameMode=mode;for(const [key,el] of [['menu',ui.main],['pause',ui.pause],['levels',ui.levels],['complete',ui.complete],['codex',document.querySelector('#codex-screen')]])el.hidden=mode!==key;document.querySelector('#pause-button').hidden=mode!=='playing';hint.hidden=true;redraw=true;}
 function gameScene(scene){story.scene=scene;document.body.dataset.gameScene=scene;const label=document.querySelector('#chapter-label');label.hidden=scene==='lab';document.querySelector('#chapter-number').textContent=scene==='intro'?'PRÓLOGO / 00':'NIVEL / '+String(story.level||1).padStart(2,'0');document.querySelector('#chapter-name').textContent=scene==='intro'?'El primer encuentro':chapters[story.level||1][1];}
 function storySuspended(){return !!workshopPanel?.isOpen||radialOpen()||story.ready&&(story.mode!=='playing'||!panel.hidden||document.hidden);}
 function storyWalkAllowed(){return !story.ready||story.scene!=='intro'||['deliver','cooling','cooled','choice','repeat'].includes(story.phase);}
@@ -5448,7 +5463,7 @@ function showWakeButton(){
 }
 function wakeUp(){
  if(story.scene!=='intro'||story.mode!=='playing'||story.phase!=='asleep'||story.phaseTime<6.7||story.transition||!panel.hidden||document.hidden)return;
- window.QBitsMusic?.start();window.QBitsGuideAudio?.unlock();
+ window.QBitsMusic?.start();window.QBitsGuideAudio?.unlock();window.QBitsFootsteps?.unlock();
  document.querySelector('#wake-screen').hidden=true;story.phase='opening';story.phaseTime=0;hideStoryDialogue();captureMouse();
 }
 // Shortcut only for startup/menu and the opening narration; never resets active play.
@@ -5507,6 +5522,7 @@ function drawStoryGlass(){
 }
 const storyTargetMesh=buildLathe([[.88,.006],[1,.006]],72);
 function clearNarrativeScene(){
+ window.QBitsFootsteps?.reset();
  clearRobotArms();if(typeof clearConveyors==='function')clearConveyors();
  closeWorkshopPanel(false);cancelShelfPlacement();
  workshopBench=null;contactStates.clear();rotorContactStates.clear();
@@ -5576,7 +5592,7 @@ function storyInput(event){
  return false;
 }
 function tickStory(dt){
- window.QBitsGuideAudio?.setPaused(storySuspended()||!!story.transition);
+ window.QBitsGuideAudio?.setPaused(storySuspended()||!!story.transition);window.QBitsFootsteps?.setPaused(document.hidden||storySuspended()||!!story.transition);
  if(story.transition){if(panel.hidden)tickSceneFade(dt);return;}if(storySuspended())return;
  story.elapsed+=dt;story.phaseTime+=dt;renderDialogue(dt);
  if(story.scene==='intro'){
@@ -6789,7 +6805,7 @@ function applyPreferences(next){
  savedPreferences=preferences.sanitize(next);visuals=preferences.effective(savedPreferences);
  window.qbitsSelectionHud?.setHint?.('Mantén '+inputLabel('hud')+' para elegir · Ctrl + clic para quitar');
  window.QBitsSubtitles?.apply(savedPreferences);
- window.QBitsGuideAudio?.configure(savedPreferences);
+ window.QBitsGuideAudio?.configure(savedPreferences);window.QBitsFootsteps?.configure(savedPreferences);
  for(const b of encounterBubbles)b.size=null;
  for(const slot of speech.slots)slot.sizeDirty=true;
  window.QBitsMusic?.setVolume(savedPreferences.volume/100);window.QBitsMusic?.setMuted(!savedPreferences.music);
@@ -7034,7 +7050,7 @@ function frame(time) {
   const dt = Math.min(Math.max((time - previousTime) / 1000, 0), 0.05);
   let distance = 0;
   previousTime = time;
-  window.QBitsGuideAudio?.setPaused(storySuspended()||!!story.transition);
+  window.QBitsGuideAudio?.setPaused(storySuspended()||!!story.transition);window.QBitsFootsteps?.setPaused(document.hidden||storySuspended()||!!story.transition);
   pollGamepadInput(dt);
   updateSelectionHud(dt);
   if(radialGlassFrame(time).stamp!==radialGlassStamp)redraw=true;
@@ -7081,6 +7097,7 @@ function frame(time) {
   updateHeldFocus(dt,active);
   if(shelfPreview&&!frozen){updateShelfPlacement(wallAim());redraw=true;}
   if (!document.hidden&&!frozen) {
+    window.QBitsFootsteps?.update(camera,yaw,walkingAudioGroups(),dt);
     accumulator += dt;
     let simulatedDt=0;
     while (accumulator >= FIXED_STEP) { stepPhysics(FIXED_STEP); accumulator -= FIXED_STEP; simulatedDt+=FIXED_STEP; }
