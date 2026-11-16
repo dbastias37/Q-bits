@@ -64,7 +64,7 @@ test('compatible square and triangular faces snap from noisy alignment to exact 
     const joined=t.weld(snap);assert(joined);
     assert.equal(t.groups.length,1);assert.equal(joined.parts.length,2);
     assert.deepEqual(Array.from(joined.parts,p=>p.shape).sort(),[sourceShape,targetShape].sort());
-    assert.equal(joined.body.shapes.length,2);
+    assert.equal(joined.body.shapes.length,sourceShape==='cube'&&targetShape==='cube'?1:2);
     t.detachPart({g:joined,part:joined.parts[0]},true);
     assert.equal(t.groups.length,2);
     assert(t.groups.every(g=>g.parts.length===1&&g.body.shapes.length===1));

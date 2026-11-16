@@ -1,0 +1,500 @@
+{
+  "baseline": "050660fa24742779ea7407c3609f2b9daee3fd18",
+  "node": "v24.22.1",
+  "repetitions": 7,
+  "method": "Median process CPU milliseconds. 20 snap queries per run; idle frame = four 240 Hz physics substeps, after three seconds settling, ten seconds measured. No GPU, render, DOM or browser FPS measurements.",
+  "reports": [
+    {
+      "scenario": "single-on-192",
+      "median": {
+        "baseline": {
+          "createCpuMs": 39.218,
+          "snapCpuMs": 1.3411,
+          "weldCpuMs": 36.038,
+          "pieces": 193,
+          "colliders": 193
+        },
+        "optimized": {
+          "createCpuMs": 7.741,
+          "snapCpuMs": 1.30955,
+          "weldCpuMs": 4.611,
+          "pieces": 193,
+          "colliders": 2
+        }
+      },
+      "runs": {
+        "baseline": [
+          {
+            "createCpuMs": 40.986,
+            "snapCpuMs": 1.37465,
+            "weldCpuMs": 26.139,
+            "pieces": 193,
+            "colliders": 193
+          },
+          {
+            "createCpuMs": 36.336,
+            "snapCpuMs": 1.3411,
+            "weldCpuMs": 28.568,
+            "pieces": 193,
+            "colliders": 193
+          },
+          {
+            "createCpuMs": 43.291,
+            "snapCpuMs": 1.3048,
+            "weldCpuMs": 26.644,
+            "pieces": 193,
+            "colliders": 193
+          },
+          {
+            "createCpuMs": 39.218,
+            "snapCpuMs": 1.15275,
+            "weldCpuMs": 36.038,
+            "pieces": 193,
+            "colliders": 193
+          },
+          {
+            "createCpuMs": 38.566,
+            "snapCpuMs": 1.21395,
+            "weldCpuMs": 40.336,
+            "pieces": 193,
+            "colliders": 193
+          },
+          {
+            "createCpuMs": 36.305,
+            "snapCpuMs": 3.33715,
+            "weldCpuMs": 42.249,
+            "pieces": 193,
+            "colliders": 193
+          },
+          {
+            "createCpuMs": 43.057,
+            "snapCpuMs": 3.7542999999999997,
+            "weldCpuMs": 56.386,
+            "pieces": 193,
+            "colliders": 193
+          }
+        ],
+        "optimized": [
+          {
+            "createCpuMs": 7.741,
+            "snapCpuMs": 1.30065,
+            "weldCpuMs": 4.314,
+            "pieces": 193,
+            "colliders": 2
+          },
+          {
+            "createCpuMs": 7.025,
+            "snapCpuMs": 1.30955,
+            "weldCpuMs": 4.584,
+            "pieces": 193,
+            "colliders": 2
+          },
+          {
+            "createCpuMs": 7.306,
+            "snapCpuMs": 1.20165,
+            "weldCpuMs": 4.399,
+            "pieces": 193,
+            "colliders": 2
+          },
+          {
+            "createCpuMs": 6.896,
+            "snapCpuMs": 1.2952,
+            "weldCpuMs": 4.957,
+            "pieces": 193,
+            "colliders": 2
+          },
+          {
+            "createCpuMs": 8.232,
+            "snapCpuMs": 1.33725,
+            "weldCpuMs": 4.611,
+            "pieces": 193,
+            "colliders": 2
+          },
+          {
+            "createCpuMs": 8.676,
+            "snapCpuMs": 1.5303499999999999,
+            "weldCpuMs": 4.769,
+            "pieces": 193,
+            "colliders": 2
+          },
+          {
+            "createCpuMs": 10.13,
+            "snapCpuMs": 3.1422999999999996,
+            "weldCpuMs": 7.745,
+            "pieces": 193,
+            "colliders": 2
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "single-on-192-mixed",
+      "median": {
+        "baseline": {
+          "createCpuMs": 39.642,
+          "snapCpuMs": 1.52345,
+          "weldCpuMs": 25.148,
+          "pieces": 193,
+          "colliders": 193
+        },
+        "optimized": {
+          "createCpuMs": 11.67,
+          "snapCpuMs": 1.6271,
+          "weldCpuMs": 8.312,
+          "pieces": 193,
+          "colliders": 105
+        }
+      },
+      "runs": {
+        "baseline": [
+          {
+            "createCpuMs": 36.183,
+            "snapCpuMs": 1.56365,
+            "weldCpuMs": 25.148,
+            "pieces": 193,
+            "colliders": 193
+          },
+          {
+            "createCpuMs": 42.085,
+            "snapCpuMs": 1.44485,
+            "weldCpuMs": 25.989,
+            "pieces": 193,
+            "colliders": 193
+          },
+          {
+            "createCpuMs": 41.666,
+            "snapCpuMs": 1.4797,
+            "weldCpuMs": 22.884,
+            "pieces": 193,
+            "colliders": 193
+          },
+          {
+            "createCpuMs": 39.165,
+            "snapCpuMs": 1.5889,
+            "weldCpuMs": 24.597,
+            "pieces": 193,
+            "colliders": 193
+          },
+          {
+            "createCpuMs": 50.614,
+            "snapCpuMs": 1.4426,
+            "weldCpuMs": 23.203,
+            "pieces": 193,
+            "colliders": 193
+          },
+          {
+            "createCpuMs": 36.65,
+            "snapCpuMs": 1.52345,
+            "weldCpuMs": 31.636,
+            "pieces": 193,
+            "colliders": 193
+          },
+          {
+            "createCpuMs": 39.642,
+            "snapCpuMs": 1.5459,
+            "weldCpuMs": 27.651,
+            "pieces": 193,
+            "colliders": 193
+          }
+        ],
+        "optimized": [
+          {
+            "createCpuMs": 12.669,
+            "snapCpuMs": 1.5766,
+            "weldCpuMs": 10.059,
+            "pieces": 193,
+            "colliders": 105
+          },
+          {
+            "createCpuMs": 10.787,
+            "snapCpuMs": 1.6863499999999998,
+            "weldCpuMs": 8.968,
+            "pieces": 193,
+            "colliders": 105
+          },
+          {
+            "createCpuMs": 11.101,
+            "snapCpuMs": 1.6271,
+            "weldCpuMs": 7.851,
+            "pieces": 193,
+            "colliders": 105
+          },
+          {
+            "createCpuMs": 12.165,
+            "snapCpuMs": 1.70905,
+            "weldCpuMs": 9.236,
+            "pieces": 193,
+            "colliders": 105
+          },
+          {
+            "createCpuMs": 11.67,
+            "snapCpuMs": 1.4571999999999998,
+            "weldCpuMs": 8.312,
+            "pieces": 193,
+            "colliders": 105
+          },
+          {
+            "createCpuMs": 11.436,
+            "snapCpuMs": 1.72225,
+            "weldCpuMs": 7.511,
+            "pieces": 193,
+            "colliders": 105
+          },
+          {
+            "createCpuMs": 12.269,
+            "snapCpuMs": 1.6001,
+            "weldCpuMs": 7.559,
+            "pieces": 193,
+            "colliders": 105
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "96-on-96",
+      "median": {
+        "baseline": {
+          "createCpuMs": 20.094,
+          "snapCpuMs": 11.58005,
+          "weldCpuMs": 74.26,
+          "pieces": 192,
+          "colliders": 192
+        },
+        "optimized": {
+          "createCpuMs": 6.179,
+          "snapCpuMs": 1.3547,
+          "weldCpuMs": 6.81,
+          "pieces": 192,
+          "colliders": 1
+        }
+      },
+      "runs": {
+        "baseline": [
+          {
+            "createCpuMs": 20.094,
+            "snapCpuMs": 11.30135,
+            "weldCpuMs": 75.034,
+            "pieces": 192,
+            "colliders": 192
+          },
+          {
+            "createCpuMs": 20.464,
+            "snapCpuMs": 11.58005,
+            "weldCpuMs": 85.566,
+            "pieces": 192,
+            "colliders": 192
+          },
+          {
+            "createCpuMs": 19.598,
+            "snapCpuMs": 11.258,
+            "weldCpuMs": 124.201,
+            "pieces": 192,
+            "colliders": 192
+          },
+          {
+            "createCpuMs": 19.014,
+            "snapCpuMs": 11.636849999999999,
+            "weldCpuMs": 74.26,
+            "pieces": 192,
+            "colliders": 192
+          },
+          {
+            "createCpuMs": 21.698,
+            "snapCpuMs": 12.79755,
+            "weldCpuMs": 64.056,
+            "pieces": 192,
+            "colliders": 192
+          },
+          {
+            "createCpuMs": 17.722,
+            "snapCpuMs": 13.416,
+            "weldCpuMs": 70.302,
+            "pieces": 192,
+            "colliders": 192
+          },
+          {
+            "createCpuMs": 25.286,
+            "snapCpuMs": 11.3234,
+            "weldCpuMs": 72.169,
+            "pieces": 192,
+            "colliders": 192
+          }
+        ],
+        "optimized": [
+          {
+            "createCpuMs": 6.179,
+            "snapCpuMs": 1.3547,
+            "weldCpuMs": 7.286,
+            "pieces": 192,
+            "colliders": 1
+          },
+          {
+            "createCpuMs": 14.512,
+            "snapCpuMs": 1.4351,
+            "weldCpuMs": 6.589,
+            "pieces": 192,
+            "colliders": 1
+          },
+          {
+            "createCpuMs": 7.01,
+            "snapCpuMs": 1.3435000000000001,
+            "weldCpuMs": 7.379,
+            "pieces": 192,
+            "colliders": 1
+          },
+          {
+            "createCpuMs": 6.084,
+            "snapCpuMs": 1.30045,
+            "weldCpuMs": 6.92,
+            "pieces": 192,
+            "colliders": 1
+          },
+          {
+            "createCpuMs": 5.885,
+            "snapCpuMs": 1.4919,
+            "weldCpuMs": 6.392,
+            "pieces": 192,
+            "colliders": 1
+          },
+          {
+            "createCpuMs": 5.183,
+            "snapCpuMs": 1.201,
+            "weldCpuMs": 6.168,
+            "pieces": 192,
+            "colliders": 1
+          },
+          {
+            "createCpuMs": 7.494,
+            "snapCpuMs": 1.7582,
+            "weldCpuMs": 6.81,
+            "pieces": 192,
+            "colliders": 1
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "idle-arm",
+      "median": {
+        "baseline": {
+          "idleCpuMsPerFrame": 2.9506216666666667,
+          "maxDisplacementMeters": 0.008607534226237617,
+          "sleepingBodies": 1,
+          "bodies": 5,
+          "constraints": 8
+        },
+        "optimized": {
+          "idleCpuMsPerFrame": 0.8098416666666666,
+          "maxDisplacementMeters": 0,
+          "sleepingBodies": 5,
+          "bodies": 5,
+          "constraints": 4
+        }
+      },
+      "runs": {
+        "baseline": [
+          {
+            "idleCpuMsPerFrame": 2.964398333333333,
+            "maxDisplacementMeters": 0.008607534226237617,
+            "sleepingBodies": 1,
+            "bodies": 5,
+            "constraints": 8
+          },
+          {
+            "idleCpuMsPerFrame": 2.9506216666666667,
+            "maxDisplacementMeters": 0.008607534226237617,
+            "sleepingBodies": 1,
+            "bodies": 5,
+            "constraints": 8
+          },
+          {
+            "idleCpuMsPerFrame": 3.2175333333333334,
+            "maxDisplacementMeters": 0.008607534226237617,
+            "sleepingBodies": 1,
+            "bodies": 5,
+            "constraints": 8
+          },
+          {
+            "idleCpuMsPerFrame": 2.8675,
+            "maxDisplacementMeters": 0.008607534226237617,
+            "sleepingBodies": 1,
+            "bodies": 5,
+            "constraints": 8
+          },
+          {
+            "idleCpuMsPerFrame": 2.937046666666667,
+            "maxDisplacementMeters": 0.008607534226237617,
+            "sleepingBodies": 1,
+            "bodies": 5,
+            "constraints": 8
+          },
+          {
+            "idleCpuMsPerFrame": 3.023145,
+            "maxDisplacementMeters": 0.008607534226237617,
+            "sleepingBodies": 1,
+            "bodies": 5,
+            "constraints": 8
+          },
+          {
+            "idleCpuMsPerFrame": 2.8645549999999997,
+            "maxDisplacementMeters": 0.008607534226237617,
+            "sleepingBodies": 1,
+            "bodies": 5,
+            "constraints": 8
+          }
+        ],
+        "optimized": [
+          {
+            "idleCpuMsPerFrame": 0.840325,
+            "maxDisplacementMeters": 0,
+            "sleepingBodies": 5,
+            "bodies": 5,
+            "constraints": 4
+          },
+          {
+            "idleCpuMsPerFrame": 0.798825,
+            "maxDisplacementMeters": 0,
+            "sleepingBodies": 5,
+            "bodies": 5,
+            "constraints": 4
+          },
+          {
+            "idleCpuMsPerFrame": 0.922735,
+            "maxDisplacementMeters": 0,
+            "sleepingBodies": 5,
+            "bodies": 5,
+            "constraints": 4
+          },
+          {
+            "idleCpuMsPerFrame": 0.8072483333333333,
+            "maxDisplacementMeters": 0,
+            "sleepingBodies": 5,
+            "bodies": 5,
+            "constraints": 4
+          },
+          {
+            "idleCpuMsPerFrame": 0.7960416666666666,
+            "maxDisplacementMeters": 0,
+            "sleepingBodies": 5,
+            "bodies": 5,
+            "constraints": 4
+          },
+          {
+            "idleCpuMsPerFrame": 0.8379183333333333,
+            "maxDisplacementMeters": 0,
+            "sleepingBodies": 5,
+            "bodies": 5,
+            "constraints": 4
+          },
+          {
+            "idleCpuMsPerFrame": 0.8098416666666666,
+            "maxDisplacementMeters": 0,
+            "sleepingBodies": 5,
+            "bodies": 5,
+            "constraints": 4
+          }
+        ]
+      }
+    }
+  ]
+}
