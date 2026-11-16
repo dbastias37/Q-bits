@@ -265,3 +265,14 @@ Nueva pestaña secundaria del selector Q: **Banco rápido**, con tarjetas indivi
 La creación libre es exclusiva del laboratorio, valida espacio y límite de materia y conserva los componentes físicos. Los motores aparecen detenidos y las baterías de estas copias se cargan expresamente para pruebas, con interruptor apagado. Las plantillas originales, sus piezas y los blueprints no se consumen. Repisa mantiene la confirmación en pared; Mesa abre el taller existente. Campaña y puzzles mantienen sus restricciones.
 
 Verificación: **604 pruebas Node aprobadas**, sin fallos ni omisiones; sintaxis y diff correctos. Reproducción GLES del compositor real con 12 y 6 paneles (1280×720 y 375×667), tres fondos cada uno: refracción, desenfoque y píxeles externos correctos. Se extendió la captura para comprobar la geometría de la cuadrícula. No se completó una partida en navegador: Chromium local no inicia por la restricción de sockets del entorno.
+
+
+## 2026-11-16 — Consultas de mecanismos como unidades y freno al apagar
+
+Corregido el cuello de botella encontrado al reproducir dos cintas y una esquina: la estabilización de rotores comprobaba pares de piezas exhaustivamente a 240 Hz, incluso con cuerpos dormidos. Ahora filtra primero cuerpos y piezas por sus volúmenes, reutiliza geometría y omite estabilización ya verificada hasta que el cuerpo cambie o despierte. La agrupación rígida existente conserva todas sus piezas, colliders y ejes. Las líneas de selección producen los mismos triángulos con menos asignaciones temporales; gráficos y calidad conservados.
+
+La solicitud adicional cambia el comportamiento de apagado: el rotor conserva el ángulo con un freno angular pasivo dentro de su articulación. Encender libera el freno; detener captura el ángulo alcanzado, también por falta de energía. El conjunto sigue dinámico y transportable, con consumo del motor cero cuando está apagado. Se conservan los frenos del brazo y sus posiciones A/B.
+
+Medición contra `bc1324b`, con todos los mecanismos seleccionados: CPU por cuadro simulado baja 40,94 → 8,78 ms con 101 piezas detenidas (−78,5 %); 53,22 → 19,62 ms con 107 piezas, baterías y cargas en marcha (−63,1 %); 94,01 → 18,55 ms con 240 piezas detenidas (−80,3 %). La escena accionada conserva exactamente posiciones, orientaciones y energía. Son mediciones Node/Cannon con DOM/GPU simulados, no FPS en el PC del jugador. Los rodillos detenidos sí cambian de respuesta porque ahora tienen freno.
+
+Verificación: 610 pruebas completas + una adicional de equivalencia visual de vértices, todas aprobadas; carga de recursos, sintaxis y diff correctos. 19 escenas GLES, dos shaders/un programa y cero errores GL; brazo/esquina inspeccionados. Sin partida de navegador ni promesa de capacidad ilimitada. Se conserva el límite de 256 piezas. Método, números, alcance y siguiente comprobación en [RENDIMIENTO_MECANISMOS.md](RENDIMIENTO_MECANISMOS.md).

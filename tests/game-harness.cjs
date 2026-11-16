@@ -120,7 +120,7 @@ module.exports = function createGame(options = {}) {
     savedMechanisms,mechanismSnapshot,mechanismGroups,mechanismPartCount,savedMechanismValid,saveMechanism,spawnSavedMechanism,persistMechanisms,loadSavedMechanisms,mechanismsExportData,importMechanismsData,serializeRotorState,restoreRotorState,clearPuzzleScene,leavePuzzle,
     beginCampaignLevel,beginIntro,showMain,hideStoryDialogue,
     aimQubit,planRoute,planCargoPath,startRoute,stopRoute,stepPhysics,groups,cargos,V,Q,world,story,bounds,
-    poses,corners,drawQubits,drawCargos,drawStoryWorld,drawStoryGlass,updateTarget,updateSpeech,updateStoryMarker,
+    ...(typeof rigidGroupsOverlap==='function'?{rigidCollisionParts,rigidGroupsOverlap}:{}),stabilizeRotors,poses,corners,drawQubits,drawCargos,drawStoryWorld,drawStoryGlass,updateTarget,updateSpeech,updateStoryMarker,
     measureEncounterBubbles,placeEncounterBubble,addEncounterBubble,encounterBubbles,
     findSnap,weld,makeFragments,detachPart,validPose,physicalGroupPoses,physicalGroupBounds,conveyorGroupSurfaces,settings,spawnQubit,creationShape,updateAlphaHUD,
     rotors,rotorPart,couplerTip,rotorForGroup,rotorForPart,rotorGroups,rotorConnectedGroups,connectRotorTips,configureRotor,disconnectRotor,refreshRotors,spawnRotor,findRotorSnap,updateRotorMotors,allocateUnitId,rotorPowerState,prepareRotorPower,updateRotorPower,updateMoods,mechanismDefaults,
@@ -144,6 +144,7 @@ module.exports = function createGame(options = {}) {
     setRunning:value=>{running=value}};`;
   scripts = scripts.map(source => {
     if (!source.includes('function beginCampaignLevel(')) return source;
+    if(options.gameSource)source=options.gameSource;
     const at = source.lastIndexOf('})();');
     if (at < 0) throw new Error('Game closure not found');
     return source.slice(0, at) + hook + source.slice(at);
