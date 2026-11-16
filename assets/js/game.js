@@ -380,6 +380,7 @@ function resetGameInputs(){keyboardInput?.clear();releaseInputSource('gamepad');
 function onPhysicalKeyDown(event){
  if(workshopPanel?.isOpen){if(['Escape','KeyE','KeyP'].includes(event.code)&&(!editableTarget(event.target)||event.code==='Escape')){event.preventDefault();closeWorkshopPanel(true);}return;}
  if(event.defaultPrevented||settingsScreen?.isOpen||editableTarget(event.target)||editableTarget(document.activeElement))return;
+ if(!event.repeat&&!event.ctrlKey&&!event.altKey&&!event.metaKey&&(event.code==='Backquote'||event.key==='º')&&quickWake()){event.preventDefault();return;}
  if(event.code==='Escape'){event.preventDefault();if(hudInputActive){hudReturnCapture=false;setHudInput(false);}handleKey(controlEvent('Escape',event));return;}
  if(hudInputActive&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter','Space'].includes(event.code)){event.preventDefault();if(event.code==='Enter'||event.code==='Space')window.qbitsSelectionHud?.activateFocused({toggle:ctrlDown()||event.ctrlKey,source:'keyboard'});else window.qbitsSelectionHud?.stepFocus(event.code==='ArrowLeft'||event.code==='ArrowUp'?-1:1);return;}
  if(radialOpen()&&(event.code.startsWith('Arrow')||['Tab','PageUp','PageDown'].includes(event.code))){handleKey(event);return;}
@@ -462,6 +463,7 @@ function lockFailed() {
 }
 
 function pause(release=true) {
+  window.QBitsGuideAudio?.setPaused(true);
   resetAssemblyShake();
   closeUnitRadial(false);
   if(story.ready){story.preserveGrip=!release;if(document.pointerLockElement===canvas)story.intentionalUnlock=true;}
@@ -5399,7 +5401,7 @@ document.addEventListener('webkitfullscreenchange',syncFullscreenButton);
 // Campaign prologue. Scene state, narrative timers and test tools share one clock.
 const chapters=[['00','El primer encuentro','Prólogo · tomar, mover y enfriar'],['01','Primer contacto','Llevar un Q-bit a un destino'],['02','Cada uno por su camino','Dos destinos independientes'],['03','Dos lados','Dos botones simultáneos'],['04','Juntos pesamos más','Dos Q-bits en un botón'],['05','La primera unión','Dos piezas · circuito de líquido'],['06','Cambiar de forma','Tres puertas · L, cuadrado y T'],['07','Seis piezas','Rectángulo y escalera'],['08','Salimos juntos','Seis compañeros · fin del primer bloque'],['09','La fuente','Conocer al equipo · transformar materia'],['10','El camino de vuelta','Dos estaciones · transporte y descanso'],['11','Dos rutas','Elegir materia y organizar al equipo'],['12','La instalación','Tres estaciones · el equipo completo']];
 const ui={main:document.querySelector('#main-screen'),pause:document.querySelector('#pause-screen'),levels:document.querySelector('#levels-screen'),complete:document.querySelector('#chapter-complete'),dialogue:document.querySelector('#story-dialogue'),text:document.querySelector('#story-text'),speaker:document.querySelector('#story-speaker'),choices:document.querySelector('#story-choices'),objective:document.querySelector('#story-objective'),veil:document.querySelector('#scene-veil'),top:document.querySelector('#eye-top'),bottom:document.querySelector('#eye-bottom'),cooling:document.querySelector('#cooling-track'),marker:document.querySelector('#world-label')};
-function gameMode(mode){if(mode!=='playing')closeUnitRadial(false);story.mode=mode;window.QBitsMusic?.setPaused(!['playing','menu','levels','codex','settings'].includes(mode));document.body.dataset.gameMode=mode;for(const [key,el] of [['menu',ui.main],['pause',ui.pause],['levels',ui.levels],['complete',ui.complete],['codex',document.querySelector('#codex-screen')]])el.hidden=mode!==key;document.querySelector('#pause-button').hidden=mode!=='playing';hint.hidden=true;redraw=true;}
+function gameMode(mode){if(mode!=='playing')window.QBitsGuideAudio?.setPaused(true);if(mode!=='playing')closeUnitRadial(false);story.mode=mode;window.QBitsMusic?.setPaused(!['playing','menu','levels','codex','settings'].includes(mode));document.body.dataset.gameMode=mode;for(const [key,el] of [['menu',ui.main],['pause',ui.pause],['levels',ui.levels],['complete',ui.complete],['codex',document.querySelector('#codex-screen')]])el.hidden=mode!==key;document.querySelector('#pause-button').hidden=mode!=='playing';hint.hidden=true;redraw=true;}
 function gameScene(scene){story.scene=scene;document.body.dataset.gameScene=scene;const label=document.querySelector('#chapter-label');label.hidden=scene==='lab';document.querySelector('#chapter-number').textContent=scene==='intro'?'PRÓLOGO / 00':'NIVEL / '+String(story.level||1).padStart(2,'0');document.querySelector('#chapter-name').textContent=scene==='intro'?'El primer encuentro':chapters[story.level||1][1];}
 function storySuspended(){return !!workshopPanel?.isOpen||radialOpen()||story.ready&&(story.mode!=='playing'||!panel.hidden||document.hidden);}
 function storyWalkAllowed(){return !story.ready||story.scene!=='intro'||['deliver','cooling','cooled','choice','repeat'].includes(story.phase);}
@@ -5407,13 +5409,14 @@ function storyLookAllowed(){return !workshopPanel?.isOpen&&(!story.ready||story.
 function storyActionAllowed(){return !story.ready||story.mode==='playing'&&!story.transition&&!encounterLocksActions()&&(story.scene!=='intro'||['pickup','carry','deliver','cooling','cooled'].includes(story.phase));}
 function storyObjective(text){ui.objective.textContent=text;ui.objective.hidden=!text;}
 function say(text,{after=null,hold=false,mysterious=false,choices=null,onComplete=null}={}){
+ window.QBitsGuideAudio?.begin(text,{voice:!mysterious});
  ui.dialogue.style.opacity='1';
  story.dialogue={text,time:0,count:-1,after,hold,choices,onComplete,done:false};ui.text.textContent='';ui.text.classList.add('typing');ui.dialogue.hidden=false;ui.dialogue.classList.toggle('mysterious',mysterious);ui.speaker.textContent=mysterious?'UNA VOZ…':'Q-BIT';ui.choices.hidden=true;ui.choices.replaceChildren();ui.cooling.hidden=true;document.querySelector('#dialogue-hint').textContent=after?'E · continuar':choices?'Elige una respuesta':'';
 }
-function hideStoryDialogue(){story.dialogue=null;ui.dialogue.hidden=true;ui.choices.hidden=true;ui.cooling.hidden=true;}
-function advanceDialogue(){const d=story.dialogue;if(!d||story.mode!=='playing'||!panel.hidden)return;const end=d.text.length/34;if(d.time<end){d.time=end;renderDialogue(0);return;}if(d.after){const after=d.after;d.after=null;after();}}
+function hideStoryDialogue(){window.QBitsGuideAudio?.stop();story.dialogue=null;ui.dialogue.hidden=true;ui.choices.hidden=true;ui.cooling.hidden=true;}
+function advanceDialogue(){const d=story.dialogue;if(!d||story.mode!=='playing'||!panel.hidden)return;const end=d.text.length/34;if(d.time<end){window.QBitsGuideAudio?.reveal(d.text.length,{skip:true});d.time=end;renderDialogue(0);return;}if(d.after){const after=d.after;d.after=null;after();}}
 function renderDialogue(dt){
- const d=story.dialogue;if(!d)return;d.time+=dt;const count=Math.min(d.text.length,Math.floor(d.time*34));if(count!==d.count){ui.text.textContent=d.text.slice(0,count);d.count=count;ui.text.classList.toggle('typing',count<d.text.length);}
+ const d=story.dialogue;if(!d)return;d.time+=dt;const count=Math.min(d.text.length,Math.floor(d.time*34));if(count!==d.count){window.QBitsGuideAudio?.reveal(count);ui.text.textContent=d.text.slice(0,count);d.count=count;ui.text.classList.toggle('typing',count<d.text.length);}
  if(count===d.text.length&&!d.done){d.done=true;if(d.choices){ui.choices.hidden=false;for(const choice of d.choices){const button=document.createElement('button');button.textContent=choice.label;button.addEventListener('click',choice.run);ui.choices.appendChild(button);}document.querySelector('#dialogue-hint').textContent='Elige una respuesta';story.intentionalUnlock=true;pause(false);ui.choices.querySelector('button')?.focus({preventScroll:true});}if(d.onComplete){const complete=d.onComplete;d.onComplete=null;complete();}}
  if(!d.hold&&d.after&&d.time>d.text.length/34+2.6){const after=d.after;d.after=null;after();}
 }
@@ -5444,7 +5447,21 @@ function showWakeButton(){
 }
 function wakeUp(){
  if(story.scene!=='intro'||story.mode!=='playing'||story.phase!=='asleep'||story.phaseTime<6.7||story.transition||!panel.hidden||document.hidden)return;
+ window.QBitsMusic?.start();window.QBitsGuideAudio?.unlock();
  document.querySelector('#wake-screen').hidden=true;story.phase='opening';story.phaseTime=0;hideStoryDialogue();captureMouse();
+}
+// Shortcut only for startup/menu and the opening narration; never resets active play.
+function quickWake(){
+ if(!gamePrepared||document.hidden||settingsScreen?.isOpen)return false;
+ const initial=story.scene==='intro'&&['invocation','asleep'].includes(story.phase);
+ if(!['boot','menu'].includes(story.mode)&&!(story.mode==='playing'&&initial))return false;
+ if(story.transition&&!initial)return false;
+ story.transition=null;document.body.dataset.transitioning='false';document.querySelector('#scene-loading').hidden=true;
+ resetGameInputs();pause(false);panel.hidden=true;
+ if(!initial)beginIntro();else{gameMode('playing');story.started=true;}
+ hideStoryDialogue();storyObjective('');story.phase='asleep';story.phaseTime=6.7;
+ ui.veil.style.opacity='1';ui.top.style.height='52%';ui.bottom.style.height='52%';canvas.style.filter='none';
+ previousTime=performance.now();accumulator=0;showWakeButton();return true;
 }
 function beginCreationNarration(){
  // The opening lines play in darkness. The player's gesture creates the light.
@@ -5558,6 +5575,7 @@ function storyInput(event){
  return false;
 }
 function tickStory(dt){
+ window.QBitsGuideAudio?.setPaused(storySuspended()||!!story.transition);
  if(story.transition){if(panel.hidden)tickSceneFade(dt);return;}if(storySuspended())return;
  story.elapsed+=dt;story.phaseTime+=dt;renderDialogue(dt);
  if(story.scene==='intro'){
@@ -6770,6 +6788,7 @@ function applyPreferences(next){
  savedPreferences=preferences.sanitize(next);visuals=preferences.effective(savedPreferences);
  window.qbitsSelectionHud?.setHint?.('Mantén '+inputLabel('hud')+' para elegir · Ctrl + clic para quitar');
  window.QBitsSubtitles?.apply(savedPreferences);
+ window.QBitsGuideAudio?.configure(savedPreferences);
  for(const b of encounterBubbles)b.size=null;
  for(const slot of speech.slots)slot.sizeDirty=true;
  window.QBitsMusic?.setVolume(savedPreferences.volume/100);window.QBitsMusic?.setMuted(!savedPreferences.music);
@@ -7014,6 +7033,7 @@ function frame(time) {
   const dt = Math.min(Math.max((time - previousTime) / 1000, 0), 0.05);
   let distance = 0;
   previousTime = time;
+  window.QBitsGuideAudio?.setPaused(storySuspended()||!!story.transition);
   pollGamepadInput(dt);
   updateSelectionHud(dt);
   if(radialGlassFrame(time).stamp!==radialGlassStamp)redraw=true;
@@ -7076,6 +7096,7 @@ function frame(time) {
 let gamePrepared=false;
 const nextPaint=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
 window.QBitsGame={
+  quickWake,
   applyPreferences:()=>applyPreferences(savedPreferences),
   async prepare(onProgress=()=>{}){
     if(gamePrepared)return;

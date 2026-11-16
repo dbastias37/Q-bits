@@ -93,3 +93,13 @@ test('gameplay speed is a shared saved setting with visible collision guidance, 
  select().value='2';select().dispatchEvent({type:'change'});settings.requestClose();click('settings-discard');assert.equal(t.getVisuals().grabSpeed,3.5);assert.equal(P.load(store).grabSpeed,3.5);
  settings.open('pause');assert.equal(select().value,3.5);click('settings-reset');assert.equal(settings.draft.grabSpeed,1);assert.equal(settings.draft.controls.keyboard.sensitivity,2.2);assert.equal(settings.draft.controls.gamepad.sensitivity,1.7);assert.equal(settings.draft.volume,64);assert.equal(P.load(store).grabSpeed,3.5);settings.requestClose();click('settings-confirm-save');assert.equal(P.load(store).grabSpeed,1);assert.equal(t.getVisuals().grabSpeed,1);
 });
+
+test('guide voice has independent persisted volume, mute, validation and audio reset',()=>{
+ const legacy=P.sanitize({volume:63,music:false});assert.equal(legacy.guideVolume,35);assert.equal(legacy.guideVoice,true);
+ assert.equal(P.sanitize({guideVolume:999}).guideVolume,100);assert.equal(P.sanitize({guideVolume:NaN}).guideVolume,35);
+ const {settings,tabs,doc,click,store,t}=uiSetup();settings.open('pause');tabs[3].dispatchEvent({type:'click'});
+ const volume=doc.querySelector('#pref-guideVolume');volume.value='52';volume.dispatchEvent({type:'input'});
+ const enabled=doc.querySelector('#pref-guideVoice');enabled.checked=false;enabled.dispatchEvent({type:'change'});
+ assert.equal(t.getVisuals().guideVolume,35);click('settings-save');assert.equal(P.load(store).guideVolume,52);assert.equal(P.load(store).guideVoice,false);
+ assert.equal(P.load(store).volume,30);click('settings-reset');assert.equal(settings.draft.guideVolume,35);assert.equal(settings.draft.guideVoice,true);
+});

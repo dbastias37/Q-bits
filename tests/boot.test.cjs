@@ -38,6 +38,7 @@ function environment({ autoFonts = true, openingFailure = null, randomValue = .5
     setProgress: value => fillValues.push(value),
     setReady: value => readyValues.push(value),
     play: ({onFrame}) => { events.push('opening.play');onFrame({matrix:[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1],blur:6,opacity:0,progress:.8});return cinematicReady.promise; },
+    skip: () => { events.push('opening.skip');cinematicReady.resolve(); },
     dispose: () => events.push('opening.dispose')
   };
   const fontsReady = { Tengoku: deferred(), 'Spaceman UI': deferred(), 'LED Calculator': deferred() };
@@ -72,6 +73,7 @@ function environment({ autoFonts = true, openingFailure = null, randomValue = .5
     QBitsGame: {
       prepare: callback => { events.push('game.prepare'); sceneProgress = callback; return gameReady.promise; },
       play: () => events.push('game.play'),
+      quickWake: () => {events.push('game.quickWake');return true;},
       menu: () => events.push('game.menu')
     },
     QBitsMusic: {
@@ -109,6 +111,7 @@ function environment({ autoFonts = true, openingFailure = null, randomValue = .5
     await scriptResult('contact-sensors.js');
     await scriptResult('controls.js');
     await scriptResult('subtitles.js');
+    await scriptResult('guide-audio.js');
     await scriptResult('selection-hud.js');
     await scriptResult('preferences.js');
     await scriptResult('graphics.js');
@@ -184,7 +187,7 @@ function assertBlocked(e) {
   assert.notEqual(e.nodes.get('#boot-percent').textContent, '100%');
 }
 
-const dependencies=['radial-menu.js','rotor-power.js','campaign-reconfiguration.js','progression.js','campaign-automation.js','campaign-production.js','workshop.js','furniture-models.js','organizers.js','workshop-panel.js','robot-arm-panel.js','conveyor-panel.js','battery-liquid.js','contact-sensors.js','controls.js','subtitles.js','selection-hud.js'];
+const dependencies=['radial-menu.js','rotor-power.js','campaign-reconfiguration.js','progression.js','campaign-automation.js','campaign-production.js','workshop.js','furniture-models.js','organizers.js','workshop-panel.js','robot-arm-panel.js','conveyor-panel.js','battery-liquid.js','contact-sensors.js','controls.js','subtitles.js','guide-audio.js','selection-hud.js'];
 for(const module of dependencies)test(`a missing ${module} blocks game preparation, 100 percent and Comenzar even when music is ready`, async () => {
   const e=environment();
   await e.scriptResult('cannon.min.js');
@@ -357,4 +360,31 @@ test('short loading presentation finishes within 4.2 seconds even with longest r
  const e=environment({randomValue:.999});await e.loadScripts();e.gameReady.resolve();e.musicReady.resolve();await flush();
  await e.advance(2000);assertBlocked(e);
  await e.advance(2200);assert.equal(e.nodes.get('#boot-percent').textContent,'100%');assert.equal(e.nodes.get('#boot-play').disabled,false);
+});
+
+function quickKey(e,extra={}) {
+ const event=new Event('keydown',{cancelable:true});Object.assign(event,{code:'Backquote',key:'º',...extra});e.context.dispatchEvent(event);return event;
+}
+test('º during loading waits for actual resources then skips straight to Despertar',async()=>{
+ const e=environment();quickKey(e);await e.loadScripts();e.gameReady.resolve();await flush();
+ assert.equal(e.events.includes('game.quickWake'),false,'music is still loading');
+ e.musicReady.resolve();await flush();
+ assert.equal(e.events.filter(v=>v==='game.quickWake').length,1);
+ assert.equal(e.events.includes('opening.play'),false);assert.equal(e.events.includes('game.play'),false);
+ assert.equal(e.document.body.dataset.booting,'false');assert.equal(e.nodes.get('#boot-screen').hidden,true);
+ assert.equal(e.nodes.get('#wake-button').focused,true);
+ quickKey(e);assert.equal(e.events.filter(v=>v==='game.quickWake').length,1);
+});
+test('º cancels a running cinematic and its late promise cannot return to the menu',async()=>{
+ const e=environment();await e.loadScripts();e.gameReady.resolve();e.musicReady.resolve();await e.advance(20000);
+ e.nodes.get('#boot-play').click();quickKey(e);await flush();
+ assert(e.events.includes('game.quickWake'));assert(e.events.includes('opening.skip'));
+ assert.equal(e.events.includes('game.menu'),false);assert.equal(e.nodes.get('#main-screen').inert,false);
+ assert.equal(e.nodes.get('#main-screen').style.transform,'');
+});
+test('º ignores repeat/modifier shortcuts and cannot bypass failed loading',async()=>{
+ const e=environment();quickKey(e,{repeat:true});quickKey(e,{altKey:true});await e.loadScripts();
+ e.gameReady.resolve();e.musicReady.resolve();await e.advance(20000);assert.equal(e.events.includes('game.quickWake'),false);
+ const bad=environment();await bad.scriptResult('cannon.min.js',false);quickKey(bad);await bad.advance(1000);
+ assert.equal(bad.events.includes('game.quickWake'),false);assert.equal(bad.nodes.get('#boot-retry').hidden,false);
 });

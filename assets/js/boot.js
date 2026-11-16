@@ -8,7 +8,7 @@
   const play = document.querySelector('#boot-play');
   const retry = document.querySelector('#boot-retry');
   const mainMenu=document.querySelector('#main-screen'),openingCanvas=document.querySelector('#opening-canvas');
-  let opening, openingStarted = false;
+  let opening, openingStarted = false, quickRequested = false, quickDone = false;
   let displayed = 0, elapsed = 0;
   const stops = [[0,0]];
   let loadTime = .2 + Math.random()*.1, loadValue = 0;
@@ -29,7 +29,7 @@
     progress.firstElementChild.style.width = valueNow + '%';
     opening?.setProgress(valueNow / 100);
     opening?.setReady(canBegin);
-    if (!failed) message.textContent = '';
+    if (!failed) message.textContent = quickRequested ? 'Preparando Despertar…' : '';
     play.hidden = !canBegin;
     play.disabled = !canBegin || openingStarted;
     if (canBegin && !openingStarted) screen.dataset.stage = 'ready';
@@ -47,12 +47,30 @@
     play.hidden = true;play.disabled = true;retry.hidden = false;
     retry.focus({preventScroll:true});
   }
+  function jumpToWake() {
+    if (!ready || failed || quickDone || !QBitsGame.quickWake()) return false;
+    quickDone=true;openingStarted=true;
+    opening?.skip?.();opening?.dispose();
+    mainMenu.classList.remove('cube-menu');mainMenu.inert=false;
+    mainMenu.style.transform='';mainMenu.style.filter='';mainMenu.style.opacity='';openingCanvas.style.filter='';
+    screen.hidden=true;document.body.dataset.booting='false';
+    document.querySelector('#wake-button').focus({preventScroll:true});
+    // The next explicit Despertar gesture unlocks the guide voice.
+    return true;
+  }
+  window.addEventListener('keydown', event => {
+    if(document.body.dataset.booting!=='true'||failed||event.repeat||event.ctrlKey||event.altKey||event.metaKey)return;
+    if(event.code!=='Backquote'&&event.key!=='º')return;
+    if(['INPUT','TEXTAREA','SELECT'].includes(event.target?.tagName)||event.target?.isContentEditable)return;
+    event.preventDefault();event.stopImmediatePropagation();quickRequested=true;
+    if(!jumpToWake())message.textContent='Preparando Despertar…';
+  },true);
   retry.addEventListener('click', () => location.reload());
   window.addEventListener('error', event => fail(event.error || new Error(event.message)));
   function loadScript(path) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = path + '?v=20261116-large-assemblies-1';
+      script.src = path + '?v=20261116-guide-audio-1';
       script.onload = resolve;
       script.onerror = () => reject(new Error('No se pudo cargar ' + path));
       document.head.append(script);
@@ -88,7 +106,7 @@
     if (!ready || !presentationDone || failed || openingStarted || play.disabled) return;
     openingStarted = true;play.disabled = true;
     // Unlock audio in the gesture; no NPC dialogue runs during this opening.
-    QBitsMusic.start();
+    QBitsMusic.start();window.QBitsGuideAudio?.unlock();
     screen.dataset.stage = 'cinematic';loading.hidden = true;
     try {
       mainMenu.hidden=false;mainMenu.inert=true;mainMenu.classList.add('cube-menu');mainMenu.style.opacity='0';
@@ -98,7 +116,7 @@
         const focus=Math.max(0,Math.min(1,(progress-.65)/.35));
         openingCanvas.style.filter='blur('+(8*Math.sin(Math.PI*focus)**2)+'px)';
       }});
-      if (failed) return;
+      if (failed || quickDone) return;
       // The landing and subtle reveal are finished. Hand off input without moving the camera.
       QBitsGame.menu();
       document.body.dataset.booting = 'false';
@@ -134,6 +152,9 @@
       await loadScript('assets/js/contact-sensors.js');
       await loadScript('assets/js/controls.js');
       await loadScript('assets/js/subtitles.js');
+      await loadScript('assets/js/guide-audio.js');
+      // Optional clips must never gate startup; missing files remain silent.
+      window.QBitsGuideAudio?.preload();
       await loadScript('assets/js/selection-hud.js');
       await loadScript('assets/js/preferences.js');
       await loadScript('assets/js/graphics.js');
@@ -151,7 +172,9 @@
   ]).then(() => {
     if(failed)return;
     QBitsGame.applyPreferences?.();
-    ready = true;update('scene', 1);
+    ready = true;
+    if(quickRequested&&jumpToWake())return;
+    update('scene', 1);
     if(presentationDone)play.focus({preventScroll:true});
   }).catch(fail);
 })();
