@@ -274,6 +274,7 @@
         onMenuFrame=onFrame;state='fade';clock=0;promise=new Promise((resolve,reject)=>{resolvePlay=resolve;rejectPlay=reject;});return promise;
       },
       getState(){return {phase:state,elapsed:clock,cubes:pieces.length,settled:pieces.filter(p=>p.settled).length,reducedMotion:reduced,flightProgress,menuOpacity};},
+      skip(){finish();},
       dispose
     };
   }

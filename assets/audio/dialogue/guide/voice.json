@@ -1,0 +1,4 @@
+{
+  "clips": ["blip_01.wav", "blip_02.wav", "blip_03.wav", "blip_04.wav", "blip_05.wav"],
+  "end": "end.wav"
+}
