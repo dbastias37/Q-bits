@@ -44,7 +44,8 @@ const compatible = [
 
 test('compatible square and triangular faces snap from noisy alignment to exact vertex-for-vertex joins', () => {
   for(const [targetShape,targetFaceIndex,sourceShape,sourceFaceIndex] of compatible)for(const rotated of [false,true]) {
-    const {t}=createGame();t.clearNarrativeScene();
+    const {t,sandbox}=createGame();t.clearNarrativeScene();Object.assign(t.story,{ready:false,mode:'playing'});
+    let joins=0;sandbox.QBitsJoinAudio.play=()=>joins++;
     const q=t.Q();if(rotated)q.setFromEuler(.31,-.48,.22);
     const target=t.makeGroup([{id:100,shape:targetShape,weight:1,p:t.V(0,1,0),q}]);
     const targetPose=t.worldParts(target)[0],face=t.unitFaces(targetPose)[targetFaceIndex];
@@ -61,7 +62,7 @@ test('compatible square and triangular faces snap from noisy alignment to exact 
     assert.equal(t.obbOverlap(pose,targetPose),false,'joined interiors must not intersect');
     assert(t.touchingUnitFaces(pose,targetPose));
     t.setHeld(null);
-    const joined=t.weld(snap);assert(joined);
+    const joined=t.weld(snap);assert(joined);assert.equal(joins,1,'one impact for each valid face family');
     assert.equal(t.groups.length,1);assert.equal(joined.parts.length,2);
     assert.deepEqual(Array.from(joined.parts,p=>p.shape).sort(),[sourceShape,targetShape].sort());
     assert.equal(joined.body.shapes.length,sourceShape==='cube'&&targetShape==='cube'?1:2);
