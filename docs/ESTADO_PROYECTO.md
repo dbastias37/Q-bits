@@ -311,7 +311,7 @@ Motor Web Audio con una carga/decodificación por sesión, muestras cortas reuti
 
 La tecla **º / Backquote** permite llegar a **Despertar** desde carga, cinemática, menú principal o invocación inicial. Espera los recursos reales si aún no están listos; cancela la presentación y deja el botón habilitado, con ojos cerrados hasta E/clic. Conserva el inicio normal y el progreso guardado; no reinicia el prólogo ya jugable, el banco ni niveles activos. No responde al escribir, editar controles, mantener la tecla ni usar Ctrl/Alt/Meta.
 
-Verificación actualizada: **657 pruebas Node aprobadas, sin fallos ni omisiones**, incluyendo selección por longitud, estabilidad de la variante dentro de una palabra, reemplazo por bases disponibles, tres finales, ritmo de puntuación, Unicode, audio con contextos simulados, cancelación, despertar y carga/cinemática. Sintaxis JavaScript, `git diff --check` y `validate-focus-gles.py` correctos. Estas comprobaciones no certifican audio real ni una partida visual en navegador. Siguiente paso: subir al menos `blip_01.wav`, esperar la publicación, recargar y probar º → Despertar; ajustar el carácter y volumen escuchando los clips reales.
+Verificación actualizada: **657 pruebas Node aprobadas, sin fallos ni omisiones**, incluyendo selección por longitud, estabilidad de la variante dentro de una palabra, reemplazo por bases disponibles, tres finales, ritmo de puntuación, Unicode, audio con contextos simulados, cancelación, despertar y carga/cinemática. Sintaxis JavaScript, `git diff --check` y `validate-focus-gles.py` correctos. Estas comprobaciones no certifican audio real ni una partida visual en navegador. El banco del guía ya fue subido en `19a33f5`; el ajuste de carácter y volumen se realiza escuchando los clips reales.
 
 
 ## Última entrega — pisadas espaciales de los Q-bits (16 de noviembre)
@@ -326,4 +326,17 @@ Espacialización estéreo respecto de la cámara, con distancia 3D: nivel cercan
 
 Verificación: **668 pruebas de lógica/Cannon aprobadas**, incluyendo carga opcional, rango, giro de cámara, prioridad estable, fundidos, límite de recursos, pausa, movimiento real, ajustes y arranque. `python3 tests/validate-focus-gles.py` aprobó compilación, enlace y fixtures de píxeles. Las pruebas de audio usan nodos simulados; no equivalen a una escucha ni a una medición de FPS en el navegador del jugador.
 
-Siguiente paso: el usuario añade las ocho pisadas y recarga la página. Comprobar con sus muestras el volumen relativo a música/guía, los impactos al rodar y el tránsito entre dos equipos con auriculares; ajustar mezcla o alcance si esa escucha lo requiere. No se modifica física, campaña ni guardado de construcciones.
+Las ocho pisadas ya fueron subidas por el usuario en `2dd6f3e` y se conservan intactas. Comprobar con sus muestras el volumen relativo a música/guía, los impactos al rodar y el tránsito entre dos equipos con auriculares; ajustar mezcla o alcance si esa escucha lo requiere. No se modifica física, campaña ni guardado de construcciones.
+
+
+## Última entrega — cuatro variantes de unión de bloques (16 de noviembre)
+
+Preparadas las carpetas `assets/audio/joins/qbits/` y `audio-source/joins/qbits/`, con `joins.json` y guía de exportación para `join_01.wav` a `join_04.wav`. El usuario añadirá los cuatro impactos; son variantes equivalentes válidas para todos los tipos de bloques. La selección evita la repetición inmediata. Los archivos ausentes, inválidos o inaccesibles no impiden jugar ni unir piezas. Grabaciones del guía y pisadas previamente subidas conservadas sin cambios.
+
+Un evento después de confirmar cada unión manual de caras cuadradas/triangulares, enganches de rotor y conjuntos compuestos. Un conjunto grande produce un solo impacto. También suenan el montaje completo de un plano rígido o de mecanismo y el empaquetado físico A+B. La extensión automática de cinta silencia su soldadura interna para no duplicar el evento del montaje. Previsualización, choques, intentos fallidos, aparición de piezas y restauración de guardados no disparan el banco. Un fallo de reproducción no puede revertir una construcción física confirmada.
+
+`join-audio.js` comparte el contexto del guía y la función espacial de las pisadas: estéreo según la cámara, caída suave hasta silencio a 6 m y seguimiento de las colas de sonido hasta 20 Hz. Máximo tres fuentes y 40 ms entre eventos, sin cola de recuperación. Cuatro muestras cargadas/decodificadas una vez, de hasta 512 KiB y 2 s; reproducción limitada a 800 ms con envolvente. Pausa, pestaña oculta y cambio de escena cancelan las fuentes. Configuración → Audio añade Unión de bloques y Volumen de uniones (60 %), guardados y restaurables de forma independiente.
+
+Verificación: **681 pruebas Node de lógica/Cannon aprobadas, cero fallos u omisiones**, incluyendo las familias de caras, unión de 192 piezas, enganches, planos, extensión de cinta sin duplicación, producción, fallo del dispositivo, límites de fuentes, rango, caché y preferencias. `validate-focus-gles.py` aprobó shaders y fixtures de píxeles; sintaxis y diff correctos. Audio y DOM simulados en las pruebas: no es una escucha real ni una certificación de FPS.
+
+Siguiente paso: subir los cuatro `join_*.wav`, recargar la página y escuchar el encaje junto a música, guía y pisadas; ajustar Volumen de uniones según el nivel de las grabaciones. No quedan pendientes de implementación de este bloque.

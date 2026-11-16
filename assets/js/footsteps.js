@@ -119,7 +119,7 @@
    enabled=settings.footsteps!==false;volume=Number.isFinite(settings.footstepVolume)?clamp(settings.footstepVolume,0,100)/100:.55;
    if(master)ramp(master.gain,volume,.01);if(!enabled||!volume)reset();
   }
-  return {preload,unlock,update,step,reset,setPaused,configure,getState:()=>({...stats,loaded:buffers.length,active:live.size,selected:channels.filter(c=>c.wanted).length,channels:channels.length,enabled,volume})};
+  return {spatial,preload,unlock,update,step,reset,setPaused,configure,getState:()=>({...stats,loaded:buffers.length,active:live.size,selected:channels.filter(c=>c.wanted).length,channels:channels.length,enabled,volume})};
  }
  if(typeof module==='object'&&module.exports)module.exports={create,spatial};
  else root.QBitsFootsteps=create();

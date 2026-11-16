@@ -70,7 +70,7 @@
   function loadScript(path) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = path + '?v=20261116-spatial-footsteps-1';
+      script.src = path + '?v=20261116-block-joins-1';
       script.onload = resolve;
       script.onerror = () => reject(new Error('No se pudo cargar ' + path));
       document.head.append(script);
@@ -106,7 +106,7 @@
     if (!ready || !presentationDone || failed || openingStarted || play.disabled) return;
     openingStarted = true;play.disabled = true;
     // Unlock audio in the gesture; no NPC dialogue runs during this opening.
-    QBitsMusic.start();window.QBitsGuideAudio?.unlock();window.QBitsFootsteps?.unlock();
+    QBitsMusic.start();window.QBitsGuideAudio?.unlock();window.QBitsFootsteps?.unlock();window.QBitsJoinAudio?.unlock();
     screen.dataset.stage = 'cinematic';loading.hidden = true;
     try {
       mainMenu.hidden=false;mainMenu.inert=true;mainMenu.classList.add('cube-menu');mainMenu.style.opacity='0';
@@ -155,8 +155,9 @@
       await loadScript('assets/js/dialogue-timing.js');
       await loadScript('assets/js/guide-audio.js');
       await loadScript('assets/js/footsteps.js');
+      await loadScript('assets/js/join-audio.js');
       // Optional clips must never gate startup; missing files remain silent.
-      window.QBitsGuideAudio?.preload();window.QBitsFootsteps?.preload();
+      window.QBitsGuideAudio?.preload();window.QBitsFootsteps?.preload();window.QBitsJoinAudio?.preload();
       await loadScript('assets/js/selection-hud.js');
       await loadScript('assets/js/preferences.js');
       await loadScript('assets/js/graphics.js');

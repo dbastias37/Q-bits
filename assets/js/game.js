@@ -463,7 +463,7 @@ function lockFailed() {
 }
 
 function pause(release=true) {
-  window.QBitsGuideAudio?.setPaused(true);window.QBitsFootsteps?.setPaused(true);
+  window.QBitsGuideAudio?.setPaused(true);window.QBitsFootsteps?.setPaused(true);window.QBitsJoinAudio?.setPaused(true);
   resetAssemblyShake();
   closeUnitRadial(false);
   if(story.ready){story.preserveGrip=!release;if(document.pointerLockElement===canvas)story.intentionalUnlock=true;}
@@ -2385,7 +2385,11 @@ function findSnap(){
   }
  }return candidate;
 }
-function weld(candidate){
+function emitJoinSound(point){
+ // Optional audio must never roll back an already committed physical assembly.
+ try{if(story.mode==='playing'&&!storySuspended()&&!story.transition)window.QBitsJoinAudio?.play(point,camera,yaw);}catch{}
+}
+function weld(candidate,{sound=true}={}){
  automationIntervention();
  if(!candidate)return null;
  if([candidate.source,candidate.target].some(g=>g?.parts.some(p=>p.mood.production))){announce('La materia de este lote se combina dentro de la cámara.');return null;}
@@ -2397,7 +2401,7 @@ function weld(candidate){
   const rotor=connectRotorTips(candidate.aId,candidate.bId);
   if(!rotor){placeSnappedMechanism(before);return null;}
   settleSnappedMechanisms(source,target);
-  selected={g:source,part:source.parts.find(p=>p.id===candidate.aId)||source.parts[0]};announce('Rotor unido · clic derecho → Rotación');return source;
+  selected={g:source,part:source.parts.find(p=>p.id===candidate.aId)||source.parts[0]};announce('Rotor unido · clic derecho → Rotación');if(sound)emitJoinSound(candidate.face?.p||position);return source;
  }
  const sourceParts=poses(source,position,quaternion),targetParts=poses(target);
  const sourceEntries=sourceParts.map(collisionEntry),targetEntries=targetParts.map(collisionEntry);
@@ -2409,7 +2413,7 @@ function weld(candidate){
  const parts=sourceParts.map(o=>({id:o.part.id,weight:o.part.weight,shape:o.part.shape,p:o.p,q:o.q,mood:copyMood(o.part.mood)})).concat(worldParts(target));
  const placement=mechanismSnapPoses(source,position,quaternion);settleSnappedMechanisms(source,target);placeSnappedMechanism(placement);
  const ref=target.body.quaternion.clone();removeGroup(source);removeGroup(target);const joined=makeGroup(parts,ref);refreshRotors();
- selected={g:joined,part:joined.parts[0]};queueSpeech(joined,'happy',{kind:'joined',indices:[7,9,15,17]});announce('Unidos · '+joined.parts.length+' '+groupUnitLabel(joined)+' · '+totalWeight(joined)+' u');return joined;
+ selected={g:joined,part:joined.parts[0]};queueSpeech(joined,'happy',{kind:'joined',indices:[7,9,15,17]});announce('Unidos · '+joined.parts.length+' '+groupUnitLabel(joined)+' · '+totalWeight(joined)+' u');if(sound)emitJoinSound(candidate.face?.p||position);return joined;
 }
 function applyOrientation(g,desired,strength=160){
  const b=g.body;let error=desired.mult(b.quaternion.inverse());if(error.w<0)error.set(-error.x,-error.y,-error.z,-error.w);
@@ -4026,7 +4030,7 @@ function conveyorPanelAction(action,payload={}){
 }
 function joinCompletedConveyorBlueprint(bp,made){
  if(!bp.conveyorLink)return;const previous=rotorPart(bp.conveyorLink),next=conveyors.find(c=>made.includes(rotorPart(c.baseId)?.g)),incoming=next&&rotorPart(next.baseId);if(!previous||!incoming||previous.g===incoming.g)return;
- const joined=weld({source:incoming.g,target:previous.g,position:incoming.g.body.position.clone(),quaternion:incoming.g.body.quaternion.clone()});
+ const joined=weld({source:incoming.g,target:previous.g,position:incoming.g.body.position.clone(),quaternion:incoming.g.body.quaternion.clone()},{sound:false});
  if(joined){made.splice(made.indexOf(incoming.g),1,joined);pruneConveyors();}else announce('Tramo completo. Une los laterales con Shift para compartir la batería.');
 }
 function updateConveyorPanel(){if(!window.QBitsConveyorPanel||typeof conveyorBlueprintTemplate!=='function')return;if(!conveyorPanel)conveyorPanel=QBitsConveyorPanel.create({snapshot:conveyorPanelSnapshot,action:conveyorPanelAction});conveyorPanel.refresh();}
@@ -4982,7 +4986,7 @@ function completeMechanismBlueprint(bp,targets){
   if(record.conveyors&&typeof restoreConveyorTemplate==='function'){const modules=restoreConveyorTemplate(record.conveyors,ids,joints);if(!Array.isArray(modules)||modules.length!==record.conveyors.length)throw new Error('La cinta no pudo recuperar sus rodillos.');}
   if(record.conveyors?.length&&typeof joinCompletedConveyorBlueprint==='function')joinCompletedConveyorBlueprint(bp,made);
   clearRotorSelection();multiSelection=made;selected={g:made[0],part:made[0].parts[0]};blueprints.splice(blueprints.indexOf(bp),1);
-  announce(record.name+' construido · '+flat.length+' piezas · '+(record.conveyors?.length?'detenido; acopla una batería y activa la cinta.':'detenido; configura el agarre y acopla tu batería.'));return true;
+  announce(record.name+' construido · '+flat.length+' piezas · '+(record.conveyors?.length?'detenido; acopla una batería y activa la cinta.':'detenido; configura el agarre y acopla tu batería.'));if(flat.length>1)emitJoinSound(bp.p);return true;
  }catch{
   for(const rotor of joints)disconnectRotor(rotor);for(const g of made)removeGroup(g);if(typeof pruneConveyors==='function')pruneConveyors();
   for(const p of originals)makeGroup([p]);blueprints.splice(blueprints.indexOf(bp),1);announce('Montaje interrumpido. Se conservaron todas las piezas.');return true;
@@ -5049,7 +5053,7 @@ function updateBlueprints(dt){
    if(bp.shape.mechanism){if(!completeMechanismBlueprint(bp,targets)){cancelBlueprint(bp);announce('Montaje cancelado: revisa las piezas. Se conservaron separadas.');}continue;}
    const parts=bp.slots.flatMap(s=>worldParts(s.g));
    if(!assemblyValid(parts)){cancelBlueprint(bp);announce('Montaje cancelado: las caras ya no coinciden. Las piezas se mantienen separadas.');continue;}
-   for(const s of bp.slots){s.g.blueprintJob=null;removeGroup(s.g);}const g=makeGroup(parts,bp.q);blueprints.splice(blueprints.indexOf(bp),1);selected={g,part:g.parts[0]};multiSelection=[g];queueSpeech(g,'happy',{kind:'built'});announce(bp.shape.name+' construida · '+parts.length+' unidades');}
+   for(const s of bp.slots){s.g.blueprintJob=null;removeGroup(s.g);}const g=makeGroup(parts,bp.q);blueprints.splice(blueprints.indexOf(bp),1);selected={g,part:g.parts[0]};multiSelection=[g];queueSpeech(g,'happy',{kind:'built'});announce(bp.shape.name+' construida · '+parts.length+' unidades');if(parts.length>1)emitJoinSound(g.body.position);}
  }
 }
 function alphaSceneSnapshot(){return {coolers:coolers.map(c=>({p:[c.p.x,c.p.z],capacity:c.capacity,enabled:c.enabled})),blueprints:blueprints.map(b=>({shape:b.shape,p:[b.p.x,b.p.z],height:Math.max(0,b.p.y-.002),quarterTurns:((Math.round(2*Math.atan2(b.q.y,b.q.w)/(Math.PI/2))%4)+4)%4,...(b.conveyorLink?{conveyorLink:b.conveyorLink}:{})}))};}
@@ -5416,7 +5420,7 @@ document.addEventListener('webkitfullscreenchange',syncFullscreenButton);
 // Campaign prologue. Scene state, narrative timers and test tools share one clock.
 const chapters=[['00','El primer encuentro','Prólogo · tomar, mover y enfriar'],['01','Primer contacto','Llevar un Q-bit a un destino'],['02','Cada uno por su camino','Dos destinos independientes'],['03','Dos lados','Dos botones simultáneos'],['04','Juntos pesamos más','Dos Q-bits en un botón'],['05','La primera unión','Dos piezas · circuito de líquido'],['06','Cambiar de forma','Tres puertas · L, cuadrado y T'],['07','Seis piezas','Rectángulo y escalera'],['08','Salimos juntos','Seis compañeros · fin del primer bloque'],['09','La fuente','Conocer al equipo · transformar materia'],['10','El camino de vuelta','Dos estaciones · transporte y descanso'],['11','Dos rutas','Elegir materia y organizar al equipo'],['12','La instalación','Tres estaciones · el equipo completo']];
 const ui={main:document.querySelector('#main-screen'),pause:document.querySelector('#pause-screen'),levels:document.querySelector('#levels-screen'),complete:document.querySelector('#chapter-complete'),dialogue:document.querySelector('#story-dialogue'),text:document.querySelector('#story-text'),speaker:document.querySelector('#story-speaker'),choices:document.querySelector('#story-choices'),objective:document.querySelector('#story-objective'),veil:document.querySelector('#scene-veil'),top:document.querySelector('#eye-top'),bottom:document.querySelector('#eye-bottom'),cooling:document.querySelector('#cooling-track'),marker:document.querySelector('#world-label')};
-function gameMode(mode){if(mode!=='playing'){window.QBitsGuideAudio?.setPaused(true);window.QBitsFootsteps?.setPaused(true);}if(mode!=='playing')closeUnitRadial(false);story.mode=mode;window.QBitsMusic?.setPaused(!['playing','menu','levels','codex','settings'].includes(mode));document.body.dataset.gameMode=mode;for(const [key,el] of [['menu',ui.main],['pause',ui.pause],['levels',ui.levels],['complete',ui.complete],['codex',document.querySelector('#codex-screen')]])el.hidden=mode!==key;document.querySelector('#pause-button').hidden=mode!=='playing';hint.hidden=true;redraw=true;}
+function gameMode(mode){if(mode!=='playing'){window.QBitsGuideAudio?.setPaused(true);window.QBitsFootsteps?.setPaused(true);window.QBitsJoinAudio?.setPaused(true);}if(mode!=='playing')closeUnitRadial(false);story.mode=mode;window.QBitsMusic?.setPaused(!['playing','menu','levels','codex','settings'].includes(mode));document.body.dataset.gameMode=mode;for(const [key,el] of [['menu',ui.main],['pause',ui.pause],['levels',ui.levels],['complete',ui.complete],['codex',document.querySelector('#codex-screen')]])el.hidden=mode!==key;document.querySelector('#pause-button').hidden=mode!=='playing';hint.hidden=true;redraw=true;}
 function gameScene(scene){story.scene=scene;document.body.dataset.gameScene=scene;const label=document.querySelector('#chapter-label');label.hidden=scene==='lab';document.querySelector('#chapter-number').textContent=scene==='intro'?'PRÓLOGO / 00':'NIVEL / '+String(story.level||1).padStart(2,'0');document.querySelector('#chapter-name').textContent=scene==='intro'?'El primer encuentro':chapters[story.level||1][1];}
 function storySuspended(){return !!workshopPanel?.isOpen||radialOpen()||story.ready&&(story.mode!=='playing'||!panel.hidden||document.hidden);}
 function storyWalkAllowed(){return !story.ready||story.scene!=='intro'||['deliver','cooling','cooled','choice','repeat'].includes(story.phase);}
@@ -5463,7 +5467,7 @@ function showWakeButton(){
 }
 function wakeUp(){
  if(story.scene!=='intro'||story.mode!=='playing'||story.phase!=='asleep'||story.phaseTime<6.7||story.transition||!panel.hidden||document.hidden)return;
- window.QBitsMusic?.start();window.QBitsGuideAudio?.unlock();window.QBitsFootsteps?.unlock();
+ window.QBitsMusic?.start();window.QBitsGuideAudio?.unlock();window.QBitsFootsteps?.unlock();window.QBitsJoinAudio?.unlock();
  document.querySelector('#wake-screen').hidden=true;story.phase='opening';story.phaseTime=0;hideStoryDialogue();captureMouse();
 }
 // Shortcut only for startup/menu and the opening narration; never resets active play.
@@ -5522,7 +5526,7 @@ function drawStoryGlass(){
 }
 const storyTargetMesh=buildLathe([[.88,.006],[1,.006]],72);
 function clearNarrativeScene(){
- window.QBitsFootsteps?.reset();
+ window.QBitsFootsteps?.reset();window.QBitsJoinAudio?.stop();
  clearRobotArms();if(typeof clearConveyors==='function')clearConveyors();
  closeWorkshopPanel(false);cancelShelfPlacement();
  workshopBench=null;contactStates.clear();rotorContactStates.clear();
@@ -5592,7 +5596,7 @@ function storyInput(event){
  return false;
 }
 function tickStory(dt){
- window.QBitsGuideAudio?.setPaused(storySuspended()||!!story.transition);window.QBitsFootsteps?.setPaused(document.hidden||storySuspended()||!!story.transition);
+ window.QBitsGuideAudio?.setPaused(storySuspended()||!!story.transition);window.QBitsFootsteps?.setPaused(document.hidden||storySuspended()||!!story.transition);window.QBitsJoinAudio?.setPaused(document.hidden||storySuspended()||!!story.transition);
  if(story.transition){if(panel.hidden)tickSceneFade(dt);return;}if(storySuspended())return;
  story.elapsed+=dt;story.phaseTime+=dt;renderDialogue(dt);
  if(story.scene==='intro'){
@@ -6591,7 +6595,7 @@ function tickProduction(dt){
   }
   if(s.buffer.length===2&&!s.packJob){const item=QBitsProduction.package(s.ledger,s.buffer.map(p=>({id:p.id,kind:p.mood.production.kind,weight:p.weight})));if(item.error){productionFail(s,item.error);return;}s.packJob={item,time:0,parts:s.buffer};s.buffer=[];}
   if(s.packJob){const job=s.packJob;if(job.time<.7)useful=true;job.time=Math.min(.7,job.time+dt*Math.abs(s.rotor.actualRpm)/30);const a=V(.15,s.surface+HALF+.006,s.z-.045),b=V(.15,s.surface+HALF+.006,s.z+.045);
-   if(job.time>=.7&&productionClear(s,a)&&productionClear(s,b)){makeGroup(job.parts.map((p,i)=>({...p,p:i?b:a,q:Q(),mood:{...p.mood,production:{...p.mood.production,role:'package'}}})));s.packJob=null;useful=true;}
+   if(job.time>=.7&&productionClear(s,a)&&productionClear(s,b)){makeGroup(job.parts.map((p,i)=>({...p,p:i?b:a,q:Q(),mood:{...p.mood,production:{...p.mood.production,role:'package'}}})));s.packJob=null;useful=true;emitJoinSound(a);}
   }
  }
  for(const g of [...productionGroups(s)]){
@@ -6805,7 +6809,7 @@ function applyPreferences(next){
  savedPreferences=preferences.sanitize(next);visuals=preferences.effective(savedPreferences);
  window.qbitsSelectionHud?.setHint?.('Mantén '+inputLabel('hud')+' para elegir · Ctrl + clic para quitar');
  window.QBitsSubtitles?.apply(savedPreferences);
- window.QBitsGuideAudio?.configure(savedPreferences);window.QBitsFootsteps?.configure(savedPreferences);
+ window.QBitsGuideAudio?.configure(savedPreferences);window.QBitsFootsteps?.configure(savedPreferences);window.QBitsJoinAudio?.configure(savedPreferences);
  for(const b of encounterBubbles)b.size=null;
  for(const slot of speech.slots)slot.sizeDirty=true;
  window.QBitsMusic?.setVolume(savedPreferences.volume/100);window.QBitsMusic?.setMuted(!savedPreferences.music);
@@ -7050,7 +7054,7 @@ function frame(time) {
   const dt = Math.min(Math.max((time - previousTime) / 1000, 0), 0.05);
   let distance = 0;
   previousTime = time;
-  window.QBitsGuideAudio?.setPaused(storySuspended()||!!story.transition);window.QBitsFootsteps?.setPaused(document.hidden||storySuspended()||!!story.transition);
+  window.QBitsGuideAudio?.setPaused(storySuspended()||!!story.transition);window.QBitsFootsteps?.setPaused(document.hidden||storySuspended()||!!story.transition);window.QBitsJoinAudio?.setPaused(document.hidden||storySuspended()||!!story.transition);
   pollGamepadInput(dt);
   updateSelectionHud(dt);
   if(radialGlassFrame(time).stamp!==radialGlassStamp)redraw=true;
@@ -7097,7 +7101,7 @@ function frame(time) {
   updateHeldFocus(dt,active);
   if(shelfPreview&&!frozen){updateShelfPlacement(wallAim());redraw=true;}
   if (!document.hidden&&!frozen) {
-    window.QBitsFootsteps?.update(camera,yaw,walkingAudioGroups(),dt);
+    window.QBitsFootsteps?.update(camera,yaw,walkingAudioGroups(),dt);window.QBitsJoinAudio?.update(camera,yaw,dt);
     accumulator += dt;
     let simulatedDt=0;
     while (accumulator >= FIXED_STEP) { stepPhysics(FIXED_STEP); accumulator -= FIXED_STEP; simulatedDt+=FIXED_STEP; }

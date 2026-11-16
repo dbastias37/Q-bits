@@ -114,3 +114,14 @@ test('footstep settings persist independently and reset only the audio draft',()
  assert.equal(P.load(store).guideVolume,35);assert.equal(P.load(store).volume,30);
  click('settings-reset');assert.equal(settings.draft.footstepVolume,55);assert.equal(settings.draft.footsteps,true);assert.equal(P.load(store).footsteps,false);
 });
+
+test('joining audio has independent persisted settings and audio reset',()=>{
+ const old=P.sanitize({guideVolume:63,footstepVolume:44});assert.equal(old.joinSounds,true);assert.equal(old.joinVolume,60);
+ assert.equal(P.sanitize({joinVolume:999}).joinVolume,100);assert.equal(P.sanitize({joinVolume:NaN}).joinVolume,60);
+ const {settings,tabs,doc,click,store,t}=uiSetup();settings.open('pause');tabs[3].dispatchEvent({type:'click'});
+ const volume=doc.querySelector('#pref-joinVolume');volume.value='48';volume.dispatchEvent({type:'input'});
+ const enabled=doc.querySelector('#pref-joinSounds');enabled.checked=false;enabled.dispatchEvent({type:'change'});
+ assert.equal(t.getVisuals().joinVolume,60);click('settings-save');assert.equal(P.load(store).joinVolume,48);assert.equal(P.load(store).joinSounds,false);
+ assert.equal(P.load(store).guideVolume,35);assert.equal(P.load(store).footstepVolume,55);
+ click('settings-reset');assert.equal(settings.draft.joinVolume,60);assert.equal(settings.draft.joinSounds,true);assert.equal(P.load(store).joinSounds,false);
+});
