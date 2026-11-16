@@ -9,13 +9,13 @@
   const project=(x,y,z)=>[width/2+(x-z)*scale*.86,(height-46)/2+(x+z)*scale*.34-y*scale];
   const offset=[-sx/2,-sy/2,-sz/2],P=(x,y,z)=>project(x+offset[0],y+offset[1],z+offset[2]);
   const polygon=(points,fill,stroke='rgba(58,89,79,.32)')=>{ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.closePath();ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=stroke;ctx.lineWidth=1.3;ctx.stroke();};
-  const vessel=(x,y,z,color)=>{polygon([P(0,0,0),P(x,0,0),P(x,y,0),P(0,y,0)],color[0]);polygon([P(x,0,0),P(x,0,z),P(x,y,z),P(x,y,0)],color[1]);polygon([P(0,y,0),P(x,y,0),P(x,y,z),P(0,y,z)],color[2]);};
+  const vessel=(x,y,z,color)=>{polygon([P(0,0,z),P(x,0,z),P(x,y,z),P(0,y,z)],color[0]);polygon([P(x,0,0),P(x,0,z),P(x,y,z),P(x,y,0)],color[1]);polygon([P(0,y,0),P(x,y,0),P(x,y,z),P(0,y,z)],color[2]);};
   const shadow=ctx.createRadialGradient(width/2,height*.78,2,width/2,height*.78,170);if(shadow?.addColorStop){shadow.addColorStop(0,'rgba(42,80,64,.12)');shadow.addColorStop(1,'rgba(42,80,64,0)');ctx.fillStyle=shadow;ctx.fillRect(60,height*.63,width-120,100);}
   if(preview.kind==='battery'){
    const charge=Math.max(0,Math.min(1,Number(preview.energy)||0));
    if(charge>0)vessel(sx,sy*charge,sz,['rgba(41,184,111,.67)','rgba(23,148,88,.70)','rgba(99,234,155,.80)']);
    vessel(sx,sy,sz,['rgba(220,247,236,.15)','rgba(189,226,211,.18)','rgba(249,255,252,.34)']);
-   ctx.strokeStyle='rgba(250,255,252,.88)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(...P(0,0,0));ctx.lineTo(...P(0,sy,0));ctx.lineTo(...P(sx,sy,0));ctx.stroke();
+   ctx.strokeStyle='rgba(250,255,252,.88)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(...P(0,0,sz));ctx.lineTo(...P(0,sy,sz));ctx.lineTo(...P(sx,sy,sz));ctx.stroke();
   }else if(preview.mesh?.vertices?.length&&preview.mesh?.faces?.length){
    const vertices=preview.mesh.vertices.map(([x,y,z])=>project(x,y,z)),faces=preview.mesh.faces.map(face=>({face,depth:face.reduce((n,i)=>n+preview.mesh.vertices[i].reduce((a,b)=>a+b,0),0)/face.length})).sort((a,b)=>a.depth-b.depth);
    for(const {face}of faces){const points=face.map(i=>vertices[i]);polygon(points,['#717d77','#4f5e56','#a1afa6'][face.length%3]);}
@@ -24,8 +24,8 @@
    vessel(sx,sy,sz,preview.kind==='research'?['#bdd5c8','#8fac9e','#e5f0e9']:['#717d77','#4f5e56','#a1afa6']);
    ctx.strokeStyle='rgba(225,242,231,.32)';ctx.lineWidth=1;
    const line=(a,b)=>{ctx.beginPath();ctx.moveTo(...a);ctx.lineTo(...b);ctx.stroke();};
-   for(let x=1;x<sx;x++){line(P(x,0,0),P(x,sy,0));line(P(x,sy,0),P(x,sy,sz));}
-   for(let y=1;y<sy;y++){line(P(0,y,0),P(sx,y,0));line(P(sx,y,0),P(sx,y,sz));}
+   for(let x=1;x<sx;x++){line(P(x,0,sz),P(x,sy,sz));line(P(x,sy,0),P(x,sy,sz));}
+   for(let y=1;y<sy;y++){line(P(0,y,sz),P(sx,y,sz));line(P(sx,y,0),P(sx,y,sz));}
    for(let z=1;z<sz;z++){line(P(sx,0,z),P(sx,sy,z));line(P(0,sy,z),P(sx,sy,z));}
    if(preview.sensor){const p=P(sx,sy*.52,sz*.46);ctx.fillStyle='#69e6ac';ctx.beginPath();ctx.arc(p[0],p[1],7,0,Math.PI*2);ctx.fill();}
   }
