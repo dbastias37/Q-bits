@@ -262,11 +262,13 @@ La [revisión del taller y sensor](docs/REVISION_TALLER_SENSOR.md) documenta cos
 
 La [síntesis de integración](docs/SINTESIS_INTEGRACION.md) reúne el estado de los bloques, las comprobaciones y la recuperación de errores. Al recuperar el laboratorio se conserva también si un sensor ya había reaccionado a un contacto. Reiniciar un lote suelta la materia de ese lote antes de retirarla, evitando dejar un agarre sobre un cuerpo eliminado.
 
-## Configuración de imagen y audio
+## Configuración de juego, imagen y audio
 
 Abre **Configuración** desde el menú principal o la pausa. Apariencia permite elegir Original, PSX, Dithering + neón o Cel shading, con colores y grosores independientes para delineado y trayectoria. La punta de flecha sobre una estructura seleccionada usa el color del delineado; puedes apagarla o quitarle la flotación.
 
 El cubo giratorio del cuarto blanco muestra el borrador en tiempo real. **Guardar configuración** aplica y conserva los cambios; **Volver** pregunta si deseas descartar los ajustes pendientes. Cada estilo recuerda sus propios efectos. Audio reúne música y volumen.
+
+En **Juego → Velocidad al mover piezas**, elige **Lento · Actual (×1)**, **Normal (×2)** o **Rápido (×3,5)**. Ajusta la rapidez con que las piezas y conjuntos sujetos siguen tu mano, tanto con teclado/ratón como con mando; caminar y girar conservan sus ajustes propios. Lento mantiene el comportamiento anterior y es el valor inicial. Guarda la configuración para aplicarlo. Con velocidades altas, los choques pueden lanzar las piezas cercanas: mueve con cuidado.
 
 Rendimiento ofrece presets y ajustes de resolución, muestreo, escala y filtrado de texturas procedurales, anisotropía según GPU, sombras, iluminación y FPS. Las sombras altas proyectan siluetas definidas al suelo. La iluminación mejorada es aproximada, sin RTX. VSync lo administra el navegador. La resolución efectiva se limita a 4,5 MP y a la capacidad de la GPU; el escalado solicitado puede reducirse para respetar esos límites.
 

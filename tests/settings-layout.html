@@ -9,11 +9,12 @@
  const source=new DOMParser().parseFromString(await response.text(),'text/html');
  for(const node of source.head.querySelectorAll('style,link[rel="stylesheet"]'))document.head.append(node.cloneNode(true));
  document.body.append(source.querySelector('#settings-screen').cloneNode(true));
- for(const file of ['controls','subtitles','preferences','settings'])await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='assets/js/'+file+'.js?v=layout-input-20261115';script.onload=resolve;script.onerror=reject;document.head.append(script);});
+ for(const file of ['controls','subtitles','preferences','settings'])await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='assets/js/'+file+'.js?v=20261116-grab-speed-1';script.onload=resolve;script.onerror=reject;document.head.append(script);});
  const memory=new Map(),storage={getItem:key=>memory.get(key)||null,setItem:(key,value)=>memory.set(key,value)};
  const fixture=QBitsSettings.init({storage,capabilities:{anisotropy:8},open(){},close(){document.querySelector('#reopen').hidden=false;},apply(){}});
  const button=document.createElement('button');button.id='reopen';button.textContent='Abrir configuración';button.hidden=true;button.onclick=()=>{button.hidden=true;fixture.open('menu');};document.body.append(button);
  fixture.open('menu');
+ const initialTab=new URLSearchParams(location.search).get('tab');if(initialTab)document.querySelector('[data-settings-tab="'+initialTab.replace(/[^a-z]/g,'')+'"]')?.click();
  document.querySelector('#settings-preview-state').textContent='Prueba de interfaz · sin render 3D';
  const canvas=document.querySelector('#settings-preview-canvas'),ctx=canvas.getContext('2d');canvas.width=640;canvas.height=480;ctx.fillStyle='#e7ebe7';ctx.fillRect(0,0,640,480);ctx.fillStyle='#647871';ctx.textAlign='center';ctx.font='16px system-ui';ctx.fillText('Prueba de interfaz y desplazamiento',320,235);ctx.font='13px system-ui';ctx.fillText('Los efectos 3D se verifican por separado.',320,265);
 })().catch(error=>{document.body.textContent=error.message;console.error(error);});

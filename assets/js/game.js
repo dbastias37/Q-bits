@@ -1816,6 +1816,7 @@ function safeGripRotation(item,desired){
 }
 function updateGrab(dt){
  if(!held)return;held.age+=dt;
+ const grabSpeed=savedPreferences.grabSpeed||1;
  if(shiftDown()){
   const tilt=Number(keys.has('KeyW'))-Number(keys.has('KeyS')),turn=Number(keys.has('KeyA'))-Number(keys.has('KeyD'));
   if(tilt||turn){const axis=V(Math.cos(yaw)*tilt,turn,-Math.sin(yaw)*tilt);axis.normalize();const q=Q();q.setFromAxisAngle(axis,dt*settings.rotationSpeed);held.rotation=q.mult(held.rotation);}
@@ -1844,11 +1845,15 @@ function updateGrab(dt){
    applyOrientation(item.g,safeGripRotation(item,desired),strength);
   }
   if(item.anchorBody){
-   const delta=sub(target,item.anchorBody.position),distance=delta.norm(),step=Math.min(distance*(1-Math.exp(-16*dt)),2.8*dt);
+   const delta=sub(target,item.anchorBody.position),distance=delta.norm(),step=Math.min(distance*(1-Math.exp(-16*grabSpeed*dt)),2.8*grabSpeed*dt);
    if(distance>1e-8)item.anchorBody.position.vadd(mul(delta,step/distance),item.anchorBody.position);
    item.anchorBody.position.copy(safeGripSweep(item,safeGripTarget(item,item.anchorBody.position,[b.quaternion])));
    const force=settings.force*workshopGrip(item.g)*b.mass/(held.weight*.25);
-   for(const equation of item.joint.equations){equation.maxForce=force;equation.minForce=-force;}
+   // Match the physical body's positional response to the faster hand target.
+   // Keep the original coefficients once: switching back to slow is exact, and
+   // repeated frames never compound the multiplier or increase the grip force.
+   item.gripResponseBase||=item.joint.equations.map(equation=>equation.a);
+   for(let i=0;i<item.joint.equations.length;i++){const equation=item.joint.equations[i];equation.a=item.gripResponseBase[i]*grabSpeed;equation.maxForce=force;equation.minForce=-force;}
   }
  }
 }

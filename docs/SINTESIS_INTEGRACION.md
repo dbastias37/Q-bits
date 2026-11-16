@@ -94,3 +94,10 @@ Revisión visual del panel en navegador a 1363 × 936: pestañas, vista previa, 
 Baterías I–III con líquido que conserva el horizonte mundial y su volumen al inclinar o invertir el recipiente. Movimiento, giro y choque producen una oscilación breve amortiguada, acotada a 12°. Malla interior cerrada, sin partículas y sin cambios a carga o física; buffers persistentes, reconstrucción solo al cambiar la superficie y limpieza al retirar cuerpos. Pausa y menús congelan la animación.
 
 **469 pruebas Node aprobadas** y **25 escenas GLES sin errores**, con volumen triangulado, orientación 90°/180°, caída real, asentamiento, oclusión, conservación de energía y limpieza de recursos. Enfoque/postproceso también aprobado. Capturas inspeccionadas del renderizador; no se afirma una partida completa en navegador. Comprobación del jugador: girar y soltar una batería a media carga para valorar la suavidad en su equipo.
+
+
+## Actualización: velocidad de manipulación — 16 de noviembre de 2026
+
+Configuración → Juego permite Lento ×1 (predeterminado y comportamiento anterior), Normal ×2 y Rápido ×3,5 para piezas y conjuntos sujetos. Se guarda como preferencia global, común a teclado y mando; incluye aviso de choques que pueden lanzar otras piezas. Guardar/descartar/restaurar mantienen sus transacciones. El ajuste acelera objetivo y respuesta física del agarre, conservando fuerza, colisiones, giro y reloj de simulación.
+
+**481 pruebas Node aprobadas**, incluidas llegada física, selección múltiple, retorno exacto a Lento, piso/paneles y liberación sin impulso acumulado al bloquearse, más migración y persistencia. Pruebas de lógica/Cannon con DOM/GPU simulados; no representan una partida visual completa. Evaluar Normal y Rápido con los vehículos del jugador.
