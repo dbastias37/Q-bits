@@ -23,3 +23,23 @@ test('real held conveyor anchors stop together before the band crosses a thin ve
   assert(base.g.body.position[axis]-start[axis]<.025,axis+' body remains on the starting side');assert(base.g.body.velocity.norm()<.02);t.releaseQubit();
  }
 });
+
+for(const kind of ['left','right'])test(`${kind} corner hand movement preserves both legs against a thin panel`,()=>{
+ const {t}=setup();for(const g of [...t.groups])t.removeGroup(g);t.pruneConveyors();t.refreshRotors();assert(t.spawnSavedMechanism(t.conveyorBlueprintTemplate(kind),t.V()));const c=t.conveyors[0],base=t.rotorPart(c.baseId);t.settings.gravity=0;t.world.gravity.set(0,0,0);for(const g of t.groups)g.body.position.y+=.8;
+ const bb=t.physicalGroupBounds(base.g),center=t.V(bb.max.x+.023,(bb.min.y+bb.max.y)/2,(bb.min.z+bb.max.z)/2),wall=t.storyWall(center,t.V(.002,.5,.8)),item=grab(t,base.g,base.part),target=base.g.body.position.vadd(t.V(.5,0,0));
+ assert(t.safeGripSweep(item,target).x-base.g.body.position.x<.023);aimAt(t,target);
+ for(let i=0;i<180;i++){t.stepPhysics(1/120);assert(!t.physicalGroupPoses(base.g).some(p=>t.obbOverlap(p,{p:wall.p,q:wall.q,half:wall.half},.001)));}assert(base.g.body.velocity.norm()<.03);assert(t.conveyors.includes(c));
+});
+
+test('spawning a corner rejects occupied space before allocating temporary bodies or identities',()=>{
+ const {t}=setup(),before=t.groups.slice(),ids=t.allocateUnitId(),bodies=t.world.bodies.slice(),joints=t.world.constraints.slice();
+ assert.equal(t.spawnSavedMechanism(t.conveyorBlueprintTemplate('left'),t.V()),null);assert.equal(t.allocateUnitId(),ids+1);assert.deepEqual(t.groups,before);assert.deepEqual(t.world.bodies,bodies);assert.deepEqual(t.world.constraints,joints);
+});
+
+for(const kind of ['left','right'])test(`${kind} corner creation rejects skin-only overlap and rolls back every temporary controller`,()=>{
+ const {t}=setup();for(const g of [...t.groups])t.removeGroup(g);t.pruneConveyors();t.refreshRotors();const record=t.conveyorBlueprintTemplate(kind);assert(t.spawnSavedMechanism(record,t.V()));
+ const c=t.conveyors[0],skin=t.conveyorSurfacePoses(c)[0],point=skin.p.vadd(t.V(0,skin.half.y+.045-.001,0));
+ assert(t.groups.every(g=>t.poses(g).every(p=>!t.obbOverlap({p:point,q:t.Q()},p))),'obstacle intersects only the completed skin');
+ for(const g of [...t.groups])t.removeGroup(g);t.pruneConveyors();t.refreshRotors();const obstacle=t.addQubit([point.x,point.y,point.z]),bodies=t.world.bodies.slice();
+ assert.equal(t.spawnSavedMechanism(record,t.V()),null);assert.equal(t.groups.length,1);assert.equal(t.groups[0],obstacle);assert.equal(t.conveyors.length,0);assert.equal(t.rotors.length,0);assert.equal(t.world.constraints.length,0);assert.deepEqual(t.world.bodies,bodies);assert.equal(obstacle.body.shapes.length,1);
+});

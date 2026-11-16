@@ -77,6 +77,11 @@ if(batchGroup.block)throw Error('Batch fixture must retain individual cube silho
 const batchInfo={parts:12,bodies:1,joints:0},batchEye=[1.05,.94,1.1],batchTarget=[.23,.31,.11];
 capture('rigid-batch-reference',batchEye,batchTarget,()=>{for(const pose of t.poses(batchGroup))t.drawUnitMesh(pose);},batchInfo);
 capture('rigid-batch-merged',batchEye,batchTarget,()=>t.drawGroupSolid(batchGroup),batchInfo);
+// Identical mixed solids: cube texture coordinates, T-bit normals and both
+// coupler finishes must survive material batching without any visual downgrade.
+lab();const mixedParts=batchParts.map((part,i)=>({...part,id:t.allocateUnitId(),shape:['cube','tetra','pyramid','coupler'][i%4]})),mixed=t.makeGroup(mixedParts,batchOrientation);
+capture('mixed-batch-reference',batchEye,batchTarget,()=>{for(const pose of t.poses(mixed))t.drawUnitMesh(pose);},batchInfo);
+capture('mixed-batch-merged',batchEye,batchTarget,()=>t.drawGroupSolid(mixed),batchInfo);
 // Production conveyor templates use the same render path and real part/joint
 // graph. The payload is placed with the real gripper and released for this
 // render fixture; contact transport itself is checked by the runtime tests.

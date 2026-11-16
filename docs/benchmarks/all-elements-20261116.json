@@ -1,0 +1,144 @@
+{
+  "baseline": "3264913563a71763cf8e6f762f11e50e2668ebc7",
+  "node": "v24.22.1",
+  "frames": 30,
+  "repetitions": 3,
+  "measures": "CPU for four 240 Hz physics substeps, render and target UI per simulated frame. GPU/DOM stubs; no FPS claim.",
+  "reports": [
+    {
+      "scenario": "selected",
+      "pieces": 101,
+      "baselineCpuMsPerFrame": 8.565533333333333,
+      "optimizedCpuMsPerFrame": 8.6928,
+      "cpuReductionPercent": -1.4857996777783988,
+      "drawCallsPerFrame": {
+        "baseline": 312,
+        "optimized": 193
+      },
+      "maxPanelPenetration": {
+        "baseline": 0,
+        "optimized": 0
+      },
+      "runs": {
+        "baseline": [
+          10.159533333333334,
+          8.190433333333333,
+          8.565533333333333
+        ],
+        "optimized": [
+          8.833633333333333,
+          8.6928,
+          8.306066666666666
+        ]
+      }
+    },
+    {
+      "scenario": "corner",
+      "pieces": 101,
+      "baselineCpuMsPerFrame": 35.637233333333334,
+      "optimizedCpuMsPerFrame": 19.41753333333333,
+      "cpuReductionPercent": 45.513353543157585,
+      "drawCallsPerFrame": {
+        "baseline": 232,
+        "optimized": 171
+      },
+      "maxPanelPenetration": {
+        "baseline": 0,
+        "optimized": 0
+      },
+      "runs": {
+        "baseline": [
+          36.81836666666666,
+          35.637233333333334,
+          33.739266666666666
+        ],
+        "optimized": [
+          19.41753333333333,
+          19.685233333333333,
+          19.346533333333333
+        ]
+      }
+    },
+    {
+      "scenario": "arm",
+      "pieces": 127,
+      "baselineCpuMsPerFrame": 22.5792,
+      "optimizedCpuMsPerFrame": 16.298633333333335,
+      "cpuReductionPercent": 27.81571830120937,
+      "drawCallsPerFrame": {
+        "baseline": 257,
+        "optimized": 219
+      },
+      "maxPanelPenetration": {
+        "baseline": 0,
+        "optimized": 0
+      },
+      "runs": {
+        "baseline": [
+          23.80953333333333,
+          22.5792,
+          21.821166666666667
+        ],
+        "optimized": [
+          15.793433333333333,
+          18.844766666666665,
+          16.298633333333335
+        ]
+      }
+    },
+    {
+      "scenario": "mixed",
+      "pieces": 192,
+      "baselineCpuMsPerFrame": 11.116566666666667,
+      "optimizedCpuMsPerFrame": 10.2319,
+      "cpuReductionPercent": 7.958092576544928,
+      "drawCallsPerFrame": {
+        "baseline": 583,
+        "optimized": 211
+      },
+      "maxPanelPenetration": {
+        "baseline": 0,
+        "optimized": 0
+      },
+      "runs": {
+        "baseline": [
+          11.116566666666667,
+          10.5413,
+          11.190233333333333
+        ],
+        "optimized": [
+          10.2319,
+          9.999333333333334,
+          11.458966666666667
+        ]
+      }
+    },
+    {
+      "scenario": "blocked",
+      "pieces": 41,
+      "baselineCpuMsPerFrame": 81.5418,
+      "optimizedCpuMsPerFrame": 54.5445,
+      "cpuReductionPercent": 33.10854065031676,
+      "drawCallsPerFrame": {
+        "baseline": 111,
+        "optimized": 70
+      },
+      "maxPanelPenetration": {
+        "baseline": 0.0048046952613964855,
+        "optimized": 0.0003282509482911977
+      },
+      "runs": {
+        "baseline": [
+          81.5418,
+          80.18383333333333,
+          83.7011
+        ],
+        "optimized": [
+          61.1665,
+          54.106300000000005,
+          54.5445
+        ]
+      }
+    }
+  ]
+}
