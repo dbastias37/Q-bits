@@ -10,7 +10,12 @@ function contactAtBench() {
   sandbox.document.pointerLockElement = t.canvas;
   t.world.defaultContactMaterial.friction = 0;
   t.world.defaultContactMaterial.restitution = 0;
-  const bench = t.setupWorkshop(), g = t.addQubit([bench.p.x - .53, .046, bench.p.z]);
+  const bench = t.setupWorkshop();
+  // The minimal desk is open below its working surface. Exercise real contact
+  // against the rear support, rather than the former solid pedestal's empty space.
+  const support = bench.walls[bench.model.parts.findIndex(part => part.name === 'rear-panel')];
+  assert(support);
+  const g = t.addQubit([support.min.x - .05, .046, support.p.z]);
   const W = sandbox.QBitsWorkshop, profile = W.purchase(W.awardCompleted({}, t.story.progress).profile, 'sensor').profile;
   const part = g.parts[0], id = part.id, plan = W.planPartUpgrade(part, { sensor: true }, profile);
   assert(!plan.error, plan.error);

@@ -74,3 +74,13 @@ Taller con recipientes de cristal de 1/2/3 Q-bits y capacidades proporcionales, 
 Persistencia validada: instantánea conserva energía; copias/plantillas nuevas están vacías; IDs y paquetes remapeados, también al separar celdas sobre un mismo chasis. Cubos convertidos quedan fuera de trabajos, reconfiguración y recarga ordinaria. La vuelta a cubos normales en el taller conserva julios o se rechaza si no caben. Las tres versiones pueden reutilizarse sin comprar investigación.
 
 Verificación final: **410 pruebas Node aprobadas**, sin fallos ni omisiones; sintaxis y `git diff --check` correctos. La suite ejecuta lógica y Cannon reales con DOM/GPU simulados. GPU real por EGL/Mesa: 15 escenas, cristal, cuatro alturas de líquido, profundidad delante/detrás, sin errores GL. Son capturas del renderizador, no una partida completa en navegador. Comandos: `node --test tests/*.test.cjs`, `python3 tests/validate-battery-gles.py`, `python3 tests/validate-focus-gles.py`.
+
+## Actualización: taller y organización — 16 de noviembre de 2026
+
+Mesa L y repisa de quince hexágonos adaptadas de los modelos entregados, con sólidos visibles y colliders orientados coincidentes. No se cargan los GLB originales. [Créditos y licencias por modelo](FURNITURE_MODELS.md). E en la mesa abre Baterías, Mejoras y Cuerpos, con vista previa, validación y aplicación explícita. El resultado queda sobre la mesa; cerrar no aplica borradores. Cuerpos reorganiza los Q-bits disponibles conservando volumen, identidad, masa y carga.
+
+Organización desde clic derecho en pared permite instalar hasta 16 repisas. Cada compartimento almacena hasta 50 objetos de un mismo tipo; un montaje conectado cuenta como uno. Guardar suspende los objetos reales y retirar los devuelve delante, conservando piezas, articulaciones y carga. Una retirada bloqueada conserva el inventario. El borrado requiere confirmar la pérdida de contenido. La instantánea del laboratorio conserva repisas y objetos durante la sesión; no añade guardado completo entre recargas. Los [controles y condiciones](../README.md#repisas-y-organización) describen el flujo del jugador.
+
+El agarre comprueba el recorrido de traslación y giro ante mesa, repisas y otros cuerpos para evitar atravesarlos; no sustituye la simulación libre de Cannon. Prueba visual aislada del panel: `tests/workshop-layout.html`; render de muebles: `python3 tests/validate-furniture-gles.py`. La interfaz HTML y la partida completa requieren evidencia separada del replay GLES.
+
+Verificación final del bloque: **454 pruebas Node aprobadas, sin fallos ni omisiones; sintaxis y git diff --check correctos. Cinco escenas de muebles y regresiones de enfoque/postproceso en GLES sin errores gráficos**.

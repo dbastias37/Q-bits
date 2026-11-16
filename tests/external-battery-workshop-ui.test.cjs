@@ -31,9 +31,10 @@ test('conversion validates whole released straight structure before any mutation
 
 test('workshop buttons expose three material choices without research and teach external activation',()=>{
  const game=lab(),{t}=game,g=bar(t,2);t.setSelected({g,part:g.parts[0]});t.showWorkshopBatteries();
- const choices=node(game,'command-actions').children.filter(b=>/^Batería [I]+ ·/.test(b.textContent));assert.equal(choices.length,3);assert.equal(choices[0].disabled,true);assert.equal(choices[1].disabled,false);assert.equal(choices[2].disabled,true);
- choices[1].dispatchEvent({type:'click'});assert(g.parts.every(t.isExternalBattery));assert.match(node(game,'command-title').textContent,/antes de arrancar/);
- const instructions=node(game,'command-actions').children.map(b=>b.textContent).join(' ');assert.match(instructions,/actívala/);assert.match(instructions,/Sin una activa usa las internas/);assert.match(instructions,/tocando el piso/);
+ const choices=node(game,'workshop-options').children;assert.equal(choices.length,3);assert.equal(t.getWorkshopPanel().model.allowed,true);assert.equal(g.parts.some(t.isExternalBattery),false);
+ choices[0].dispatchEvent({type:'click'});assert.equal(node(game,'workshop-apply').disabled,true);choices[1].dispatchEvent({type:'click'});node(game,'workshop-apply').dispatchEvent({type:'click'});assert(g.parts.every(t.isExternalBattery));assert.equal(t.getWorkshopPanel().isOpen,true);
+ assert.match(node(game,'workshop-help').textContent,/actívala/);assert.match(node(game,'workshop-help').textContent,/piso/);t.closeWorkshopPanel(false);t.showExternalBatteryGuide(g.parts[0].id);
+ const instructions=node(game,'command-actions').children.map(b=>b.textContent).join(' ');assert.match(instructions,/Sin una activa usa las internas/);
  button(game,'Volver a la batería').dispatchEvent({type:'click'});button(game,'Activar batería').dispatchEvent({type:'click'});assert(g.parts.every(p=>t.externalBatteryState(p).enabled));assert.match(node(game,'command-title').textContent,/Batería II/);
  button(game,'Apagar batería').dispatchEvent({type:'click'});assert(g.parts.every(p=>!t.externalBatteryState(p).enabled));
 });

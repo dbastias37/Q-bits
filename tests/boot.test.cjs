@@ -100,6 +100,9 @@ function environment({ autoFonts = true, openingFailure = null, randomValue = .5
     await scriptResult('campaign-automation.js');
     await scriptResult('campaign-production.js');
     await scriptResult('workshop.js');
+    await scriptResult('furniture-models.js');
+    await scriptResult('organizers.js');
+    await scriptResult('workshop-panel.js');
     await scriptResult('contact-sensors.js');
     await scriptResult('controls.js');
     await scriptResult('subtitles.js');
@@ -178,7 +181,7 @@ function assertBlocked(e) {
   assert.notEqual(e.nodes.get('#boot-percent').textContent, '100%');
 }
 
-const dependencies=['radial-menu.js','rotor-power.js','campaign-reconfiguration.js','progression.js','campaign-automation.js','campaign-production.js','workshop.js','contact-sensors.js','controls.js','subtitles.js','selection-hud.js'];
+const dependencies=['radial-menu.js','rotor-power.js','campaign-reconfiguration.js','progression.js','campaign-automation.js','campaign-production.js','workshop.js','furniture-models.js','organizers.js','workshop-panel.js','contact-sensors.js','controls.js','subtitles.js','selection-hud.js'];
 for(const module of dependencies)test(`a missing ${module} blocks game preparation, 100 percent and Comenzar even when music is ready`, async () => {
   const e=environment();
   await e.scriptResult('cannon.min.js');

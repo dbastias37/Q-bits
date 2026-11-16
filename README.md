@@ -88,6 +88,8 @@ El [estado del proyecto](docs/ESTADO_PROYECTO.md) concentra lo terminado y el si
 | Detener una orden | R |
 | Avanzar o completar el texto del diálogo | E o Espacio |
 | Operar la cámara de reconfiguración | Dejar las piezas en ENTRADA y pulsar E mirando la cámara; también clic derecho. |
+| Abrir el taller del banco | Apuntar a la mesa y pulsar E; dejar y soltar las piezas sobre ella antes de aplicar cambios. |
+| Colocar una repisa en el banco | Clic derecho en una pared → Organización → Repisa modular; clic o E para confirmar. |
 | Consultar el catálogo de materia | J durante la partida, o desde los menús principal y de pausa. |
 | Asignar un equipo al material señalado | E, cuando no hay diálogo activo |
 | Saltar la presentación del grupo | O, durante esa presentación |
@@ -214,7 +216,7 @@ node --check assets/js/rotor-power.js
 
 Las pruebas automatizadas cubren lógica y coordinación de la carga; no sustituyen una prueba visual de WebGL ni una medición de FPS en el equipo del jugador.
 
-En Linux con EGL/GLES (por ejemplo Mesa), `python tests/validate-focus-gles.py` compila los shaders reales y comprueba píxeles de una escena de prueba: enfoque desactivado sin alteración, piezas nítidas, fondo suavizado y ausencia de halos. Usa la biblioteca estándar de Python y no añade dependencias al juego.
+En Linux con EGL/GLES (por ejemplo Mesa), `python tests/validate-focus-gles.py` compila los shaders reales y comprueba píxeles de una escena de prueba: enfoque desactivado sin alteración, piezas nítidas, fondo suavizado y ausencia de halos. `python3 tests/validate-furniture-gles.py` reproduce los dibujos reales de mesa y repisa, incluidos sus quince huecos abiertos. Usa la biblioteca estándar de Python y no añade dependencias al juego. Estas capturas no certifican la interacción ni la disposición del panel HTML en un navegador.
 
 El progreso y las formas del nombre anterior se recuperan cuando están disponibles en el almacenamiento del mismo navegador y origen.
 
@@ -242,7 +244,11 @@ El tiempo de trabajo útil se acumula dentro de un único lote sin intervención
 
 ## Mesa de trabajo y sensor de contacto
 
-Entra al **Banco de pruebas**. La mesa está a la izquierda, cerca de la entrada. Apunta a ella y pulsa **E** para investigar; deja una pieza sobre la mesa y suéltala para adaptar esa misma pieza. Los ejercicios certificados de campaña mantienen sus configuraciones.
+Entra al **Banco de pruebas**. La mesa está a la izquierda, cerca de la entrada. Deja las piezas sobre ella y suéltalas; apunta a la mesa y pulsa **E** para abrir el panel del taller. Sus pestañas **Baterías**, **Mejoras** y **Cuerpos** muestran las opciones, una vista previa y el motivo de cualquier bloqueo. Elegir una opción o mover un control todavía no modifica las piezas: pulsa el botón de aplicación para confirmar. El resultado permanece sobre la mesa, con el panel abierto. **Volver**, el botón de cierre o **Esc** regresan al juego sin aplicar elecciones pendientes. La simulación queda pausada mientras trabajas en el panel. Los ejercicios certificados de campaña mantienen sus configuraciones.
+
+En **Mejoras**, la sección **Investigaciones** desbloquea una opción y **Adaptaciones** la instala en la pieza. En **Cuerpos**, un grupo de Q-bits normales puede reorganizarse con medidas enteras de largo, ancho y alto. El producto de las tres medidas debe coincidir con la cantidad de cubos del grupo y el resultado debe caber sobre la mesa. Por ejemplo, cuatro cubos permiten un cuerpo de 2 × 2 × 1. Se conservan las piezas, su masa y su energía; no se añaden cubos al cambiar el tamaño. Usa un grupo quieto, sin rotores, baterías externas ni adaptaciones, y deja libre el volumen del resultado.
+
+La mesa conserva el perfil en L del modelo aportado, con acabado gris claro, banda plomiza y un pequeño acento verde. Su superficie mide 1,40 × 0,80 m y está a 0,60 m del suelo. El hueco bajo la tapa es real. Las adaptaciones ligeras de mesa y repisa no cargan los GLB originales durante la partida; su [procedencia y licencias](docs/FURNITURE_MODELS.md) se conservan por modelo.
 
 Cada primera finalización de un nivel otorga **12 créditos**. El taller reconoce también las misiones ya guardadas y no vuelve a pagarlas al repetirlas. La investigación se compra una vez; aplicar una calibración investigada no vuelve a consumir créditos. El taller II cuesta 24 créditos y requiere completar el nivel 8; el III cuesta 48 y requiere el nivel 16. El sensor cuesta 8 créditos; las tres ramas II cuestan 20 cada una y las III, 32 cada una, con su nivel anterior como requisito.
 
@@ -278,12 +284,22 @@ Abre **P → Mecanismos**, escribe un nombre y pulsa **Crear conjunto**. Puedes 
 El banco admite **256 piezas**, selección inicial 64/máxima 256, carga manual inicial 32/máxima 128 y carga máxima de rotor256 (inicial 32). Catálogos: 64 formas y 64 mecanismos; hasta 12 planos y 12 enfriadores, con 16 plazas máximas por enfriador. La autonomía de batería es el doble a igual trabajo y configuración; la recarga necesita el tiempo correspondiente a la reserva mayor. La campaña certificada conserva su calibración. Los sensores siguen enlazados a sus rotores individuales; un panel de automatización de conjuntos queda para una mejora posterior.
 
 
+## Repisas y organización
+
+En el banco, acércate a una pared y usa **clic derecho → Organización → Repisa modular**. La vista previa acompaña la mira: azul indica una posición libre y rojo, un obstáculo. Las repisas cercanas pueden alinearse entre sí. Confirma con **clic izquierdo** o **E**; cancela con **Esc** o clic derecho. Caben hasta 16 repisas por banco, cada una con quince compartimentos hexagonales.
+
+Selecciona las piezas que quieras ordenar y haz clic derecho en un compartimento → **Guardar selección**. Si estás sosteniendo objetos y no hay otra selección, se usan esos objetos. Un Q-bit, T-bit o enganche suelto ocupa un lugar; un mecanismo conectado completo también ocupa un lugar, conservando todas sus piezas y articulaciones. Debes detener sus motores antes de guardarlo. Cada compartimento acepta hasta **50 elementos del mismo tipo**: la primera entrada fija el tipo y vaciarlo permite cambiarlo. La miniatura y el contador indican su contenido.
+
+**Retirar 1**, **Retirar tanda** o **Retirar todo** devuelve los objetos al suelo delante de la repisa. Si falta espacio o se supera el límite de piezas activas del banco, la operación se rechaza y el contenido permanece guardado. Son los objetos existentes, con su identidad, materia y carga; guardarlos no crea plantillas ni copias. Repisas y contenido se recuperan al volver al laboratorio durante la misma sesión. Esto no añade guardado de toda la sala entre recargas del navegador.
+
+**Eliminar repisa** abre una confirmación. Si contiene objetos, indica cuántos se perderán; retira primero lo que quieras conservar. Cancelar conserva la repisa y todo su contenido.
+
 ## Baterías externas de cristal
 
 En el **banco de pruebas**, las tres versiones están disponibles desde el principio: **I** usa un cubo, **II** dos y **III** tres. Las capacidades son proporcionales: 120, 240 y 360 J. El recipiente crece con las piezas y el líquido verde baja según la carga; vacío queda transparente.
 
 1. Une uno, dos o tres Q-bits normales en una barra recta. Déjalos sobre la mesa del taller y suéltalos.
-2. Abre el taller → **Baterías externas I, II y III** y elige la versión correspondiente. La conversión conserva materia y energía: amplía capacidad, no entrega una carga completa gratis.
+2. Abre el taller con **E** → **Baterías**, elige la versión correspondiente y pulsa **Crear batería**. La conversión conserva materia y energía: amplía capacidad, no entrega una carga completa gratis.
 3. Acopla la batería al vehículo con **Shift**, como cualquier pieza. Clic derecho sobre ella → **Activar batería**. También puedes activarla en **P → Mecanismos**, desde las baterías conectadas.
 4. Comprueba que el panel de rotores indique **Batería externa** y pon el conjunto en marcha. Sin una batería externa activa, se usan las reservas internas de los rotores.
 5. Para recargar, apaga la batería y los motores, suelta el mecanismo y deja la propia batería quieta sobre el piso. Basta que una celda del recipiente toque el suelo; se recarga completo en unos 30 segundos desde vacío. El contacto de las ruedas o el chasis por sí solo no lo recarga.
