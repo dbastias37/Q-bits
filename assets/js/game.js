@@ -72,6 +72,8 @@ const postEffects=window.QBitsGraphics?.create(gl),surfaceTexture=window.QBitsGr
 const vertexSource = `
   attribute vec3 aPosition;
   attribute vec3 aNormal;
+  attribute vec3 aPiecePosition;
+  attribute vec3 aPieceNormal;
   uniform float uJitter;
   uniform vec2 uResolution;
   varying vec2 vSurfaceUV;
@@ -109,14 +111,14 @@ const vertexSource = `
       depth
     );
     if(uJitter>0. && depth>nearClip){vec2 grid=max(vec2(1.),uResolution/(1.+uJitter*7.));vec2 ndc=gl_Position.xy/depth;gl_Position.xy=mix(ndc,floor(ndc*grid+.5)/grid,uJitter)*depth;}
-    vec3 texPos=uKind>.5?aPosition:world;
-    vec3 n=abs(aNormal);
+    vec3 texPos=uKind>.5?aPiecePosition:world;
+    vec3 n=abs(aPieceNormal);
     vSurfaceUV=n.y>.5?texPos.xz:(n.x>.5?texPos.zy:texPos.xy);
     vAffineUV=vec3(vSurfaceUV*depth,depth);
     vPosition = world;
     vNormal = uKind > 0.5 ? rotate(aNormal) : aNormal;
-    vLocal = aPosition;
-    vLocalNormal = aNormal;
+    vLocal = aPiecePosition;
+    vLocalNormal = aPieceNormal;
   }
 `;
 
@@ -319,7 +321,7 @@ face([[-h,0,h], [h,0,h], [h,top,h], [-h,top,h]], [0,0,-1]);
 const geometry = gl.createBuffer();
 gl.bindBuffer(gl.ARRAY_BUFFER, geometry);
 gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-for (const [name, offset] of [['aPosition', 0], ['aNormal', 12]]) {
+for (const [name, offset] of [['aPosition', 0], ['aNormal', 12], ['aPiecePosition', 0], ['aPieceNormal', 12]]) {
   const location = gl.getAttribLocation(program, name);
   gl.enableVertexAttribArray(location);
   gl.vertexAttribPointer(location, 3, gl.FLOAT, false, 24, offset);
@@ -1015,7 +1017,7 @@ function makeGroup(parts,reference=Q(),velocity=V(),spin=V()) {
  const g={body,parts:local,route:null,pin:null};body.qubitGroup=g;g.block=analyzeBlock(g);groups.push(g);registerSpeechGroup(g);return g;
 }
 function addQubit(p,weight=settings.mass,shape='cube'){return makeGroup([{id:++serial,weight,shape:normalizeUnitShape(shape),p:V(...p),q:Q()}]);}
-function removeGroup(g){robotBeforeRemoveGroup(g);invalidateMechanicalIndex();resetBatteryLiquids(g.body);invalidateRotorBody(g);undockCampaignGroup(g);removeSpeechGroup(g);leaveHaul(g);stopRoute(g);world.removeBody(g.body);const i=groups.indexOf(g);if(i>=0)groups.splice(i,1);if(selected?.g===g)selected=null;multiSelection=multiSelection.filter(item=>item!==g);}
+function removeGroup(g){disposeRigidCubeBatch(g);robotBeforeRemoveGroup(g);invalidateMechanicalIndex();resetBatteryLiquids(g.body);invalidateRotorBody(g);undockCampaignGroup(g);removeSpeechGroup(g);leaveHaul(g);stopRoute(g);world.removeBody(g.body);const i=groups.indexOf(g);if(i>=0)groups.splice(i,1);if(selected?.g===g)selected=null;multiSelection=multiSelection.filter(item=>item!==g);}
 function corners(pose){if(isTBit(pose))return unitProfile(pose).vertices.map(v=>add(pose.p,pose.q.vmult(v)));const out=[],half=pose.half||V(HALF,HALF,HALF);for(const x of [-half.x,half.x])for(const y of [-half.y,half.y])for(const z of [-half.z,half.z])out.push(add(pose.p,pose.q.vmult(V(x,y,z))));return out;}
 function bounds(g,pos=g.body.position,quat=g.body.quaternion){
  // The absolute rotation matrix gives the exact same AABB as eight corners.
@@ -1062,12 +1064,25 @@ function convexUnitOverlap(a,b,epsilon=.0005){
   if(amax<=bmin+epsilon||bmax<=amin+epsilon)return false;
  }return true;
 }
+// Completed skins are physical surfaces, not extra inventory pieces. Include
+// them in manual placement/sweep checks without changing saved material poses.
+function conveyorGroupSurfaces(g,pos=g.body.position,quat=g.body.quaternion){
+ const result=[];for(const conveyor of conveyors){const base=g.parts.find(part=>part.id===conveyor.baseId);if(!base)continue;
+  for(const surface of conveyor.surfaces||[]){const offset=add(base.offset,base.q.vmult(surface.center));result.push({p:add(pos,quat.vmult(offset)),q:quat.mult(base.q.mult(surface.q)),half:surface.half});}
+ }return result;
+}
+function physicalGroupPoses(g,pos=g.body.position,quat=g.body.quaternion){return poses(g,pos,quat).concat(conveyorGroupSurfaces(g,pos,quat));}
+function physicalGroupBounds(g,pos=g.body.position,quat=g.body.quaternion){
+ const bb=bounds(g,pos,quat),surfaces=conveyorGroupSurfaces(g,pos,quat);if(!surfaces.length)return bb;
+ for(const surface of surfaces)for(const point of corners(surface))for(const key of ['x','y','z']){bb.min[key]=Math.min(bb.min[key],point[key]);bb.max[key]=Math.max(bb.max[key],point[key]);}
+ bb.center=mul(add(bb.min,bb.max),.5);bb.size=sub(bb.max,bb.min);return bb;
+}
 function validPose(g,pos,quat,exclude=[]){
- const bb=bounds(g,pos,quat);if(bb.min.y<-.001||bb.max.y>ROOM_HEIGHT||Math.max(Math.abs(bb.min.x),Math.abs(bb.max.x),Math.abs(bb.min.z),Math.abs(bb.max.z))>ROOM_SIZE/2-.001)return false;
- const src=poses(g,pos,quat);
+ const bb=physicalGroupBounds(g,pos,quat);if(bb.min.y<-.001||bb.max.y>ROOM_HEIGHT||Math.max(Math.abs(bb.min.x),Math.abs(bb.max.x),Math.abs(bb.min.z),Math.abs(bb.max.z))>ROOM_SIZE/2-.001)return false;
+ const src=physicalGroupPoses(g,pos,quat);
  if(!puzzlePoseClear(g,pos,quat,src,bb)||!alphaPoseClear(g,pos,quat)||!storyPoseClear(g,pos,quat,src,bb))return false;
  if(cargos.some(c=>boundsOverlap(bb,cargoBounds(c))&&src.some(a=>obbOverlap(a,cargoPose(c)))))return false;
- return !groups.some(other=>other!==g&&!exclude.includes(other)&&boundsOverlap(bb,bounds(other))&&poses(other).some(b=>src.some(a=>obbOverlap(a,b))));
+ return !groups.some(other=>other!==g&&!exclude.includes(other)&&boundsOverlap(bb,physicalGroupBounds(other))&&physicalGroupPoses(other).some(b=>src.some(a=>obbOverlap(a,b))));
 }
 function mechanismsUnlocked(){return Object.keys(story.progress).some(key=>/^level\d+$/.test(key)&&Number(key.slice(5))>=5&&story.progress[key]);}
 function mechanismsAvailable(){return !certifiedAutomation()&&!puzzle.active&&(story.scene==='lab'||story.scene==='campaign'&&mechanismsUnlocked());}
@@ -1163,6 +1178,16 @@ function rayPart(origin,dir,pose,max=40,half=pose.half?.x||HALF){
 function aimQubit(max=2.7,dir=direction()){
  const origin=V(...camera);let hit=null,best=Math.min(puzzleRayLimit(max,dir),raycastCargo(max,dir)?.distance??max);
  for(const g of groups)for(const pose of poses(g)){const r=rayPart(origin,dir,pose,best);if(r&&r.distance<best){best=r.distance;hit={...r,g,part:pose.part};}}
+ // A completed band's visible surface selects its own module, including when
+ // several modules share one welded chassis. Closer solids still occlude it.
+ if(typeof conveyorSurfacePoses==='function')for(const conveyor of conveyors){
+  const base=rotorPart(conveyor.baseId);if(!base)continue;
+  for(const pose of conveyorSurfacePoses(conveyor)){const distance=rayPuzzleBox(origin,dir,pose,best);if(distance===null||distance>=best)continue;
+   const point=add(origin,mul(dir,distance)),local=pose.q.inverse().vmult(sub(point,pose.p)),normal=V();let axis='y',gap=Infinity;
+   for(const key of ['x','y','z']){const edge=Math.abs(Math.abs(local[key])-pose.half[key]);if(edge<gap){axis=key;gap=edge;}}
+   normal[axis]=local[axis]<0?-1:1;best=distance;hit={distance,point,normal:pose.q.vmult(normal),g:base.g,part:base.part};
+  }
+ }
  return hit;
 }
 function carrySet(hit){return rotorConnectedGroups(multiSelection.includes(hit.g)&&multiSelection.length>1?multiSelection.filter(g=>groups.includes(g)):[hit.g]);}
@@ -1484,8 +1509,8 @@ function spendGripperEnergy(hit,joules){
  return true;
 }
 function robotGripLoad(component){return [...robotGrips.values()].reduce((sum,grip)=>sum+(component.includes(robotGripperHit(grip.id)?.g)?grip.weight:0),0);}
-function robotLockConstraint(a,b,maxForce){
- const constraint=new CANNON.LockConstraint(a,b,{maxForce}),relative=b.quaternion.inverse().mult(a.quaternion),local=[V(0,1,0),V(0,0,1),V(1,0,0)].map(axis=>relative.vmult(axis)),update=constraint.update;
+function robotLockConstraint(a,b,maxForce,targetRelative=null){
+ const constraint=new CANNON.LockConstraint(a,b,{maxForce}),relative=targetRelative||b.quaternion.inverse().mult(a.quaternion),local=[V(0,1,0),V(0,0,1),V(1,0,0)].map(axis=>relative.vmult(axis)),update=constraint.update;
  // Cannon 0.6's bundled LockConstraint assumes equal initial orientations.
  // Retain the actual contact posture (including a tilted payload or joint).
  constraint.update=function(){update.call(this);[this.rotationalEquation1,this.rotationalEquation2,this.rotationalEquation3].forEach((equation,i)=>b.vectorToWorldFrame(local[i],equation.axisB));};
@@ -1534,14 +1559,26 @@ function robotRelativePose(rotor){const a=rotorPart(rotor.aId),b=rotorPart(rotor
 function robotReadPose(arm){return robotArmRotors(arm).map(r=>{const q=robotRelativePose(r);return [q.x,q.y,q.z,q.w];});}
 function robotPoseValid(pose,count){return Array.isArray(pose)&&pose.length===count&&pose.every(q=>Array.isArray(q)&&q.length===4&&q.every(Number.isFinite)&&Math.abs(Math.hypot(...q)-1)<.01);}
 function robotRemoveBrakes(arm){for(const constraint of arm.brakes||[])world.removeConstraint(constraint);for(const constraint of arm.jointBrakes?.values()||[])world.removeConstraint(constraint);arm.brakes=[];arm.jointBrakes=new Map();}
-function robotApplyBrakes(arm){
- robotRemoveBrakes(arm);for(const rotor of robotArmRotors(arm)){const pair=rotorGroups(rotor);if(pair.some(g=>!g))continue;const constraint=robotLockConstraint(pair[0].body,pair[1].body,1000);constraint.collideConnected=false;arm.brakes.push(constraint);world.addConstraint(constraint);}
+// A joint brake holds the current twist at the actual coupler pivots. Its
+// target axes are coaxial: copying a deformed body's entire pose would freeze
+// solver drift and make the brake fight its own hinge. Only constraint targets
+// change here; Cannon corrects the real bodies during subsequent substeps.
+function robotJointBrake(rotor){
+ const a=rotorPart(rotor.aId),b=rotorPart(rotor.bId);if(!a||!b)return null;
+ const turn=Q();turn.setFromVectors(b.q.vmult(V(0,1,0)),a.q.vmult(V(0,-1,0)));turn.normalize();
+ const alignedB=turn.mult(b.g.body.quaternion),relative=alignedB.inverse().mult(a.g.body.quaternion),brake=robotLockConstraint(a.g.body,b.g.body,1000,relative),tip=V(0,CUBE_SIZE*51/56,0);
+ brake.pivotA.copy(add(a.part.offset,a.part.q.vmult(tip)));brake.pivotB.copy(add(b.part.offset,b.part.q.vmult(tip)));
+ for(const equation of brake.equations)equation.setSpookParams(1e10,4,FIXED_STEP);
+ return brake;
 }
-function robotReleaseBase(arm){if(!arm.pin)return;const {body,type,fixedRotation}=arm.pin;body.type=type;body.fixedRotation=fixedRotation;body.updateMassProperties();body.wakeUp();arm.pin=null;}
+function robotApplyBrakes(arm){
+ robotRemoveBrakes(arm);for(const rotor of robotArmRotors(arm)){const pair=rotorGroups(rotor);if(pair.some(g=>!g))continue;const constraint=robotJointBrake(rotor);if(!constraint)continue;arm.brakes.push(constraint);world.addConstraint(constraint);}
+}
+function robotReleaseBase(arm){conveyorReleaseBase(arm);}
 function createRobotArm(options={}){
  const hit=robotGripperHit(options.gripperId),base=robotGripperHit(options.baseId);if(!hit||!base||!validGripperConfig(hit.part.mood.gripper))return null;
  const members=(options.joints||[]).map(j=>rotors.find(r=>r===j||r.aId===j.aId&&r.bId===j.bId)).filter(Boolean),component=rotorConnectedGroups([hit.g]);
- if(!members.length||members.length>4||new Set(members).size!==members.length||!component.includes(base.g)||members.some(r=>rotorGroups(r).some(g=>!component.includes(g)))||robotArms.some(a=>a.gripperId===hit.part.id||a.joints.some(j=>members.some(r=>r.aId===j.aId&&r.bId===j.bId))))return null;
+ if(!members.length||members.length>4||new Set(members).size!==members.length||!component.includes(base.g)||members.some(r=>rotorGroups(r).some(g=>!component.includes(g)))||robotArms.some(a=>a.gripperId===hit.part.id||a.joints.some(j=>members.some(r=>r.aId===j.aId&&r.bId===j.bId)))||conveyors.some(c=>c.joints.some(j=>members.some(r=>r.aId===j.aId&&r.bId===j.bId))))return null;
  const arm={id:++robotArmSerial,gripperId:hit.part.id,baseId:base.part.id,joints:members.map(r=>({aId:r.aId,bId:r.bId})),repeat:options.repeat!==false,poses:{},running:false,jogging:false,state:'idle',status:'Listo · enseña Tomar y Dejar',brakes:[],cycles:0};
  const pose=robotReadPose(arm);arm.poses.pick=robotPoseValid(options.poses?.pick,members.length)?JSON.parse(JSON.stringify(options.poses.pick)):pose;
  arm.poses.place=robotPoseValid(options.poses?.place,members.length)?JSON.parse(JSON.stringify(options.poses.place)):null;
@@ -1561,7 +1598,9 @@ function registerRobotArm(gripperId){
 function configureRobotArm(arm,patch={}){if(!robotArms.includes(arm)||patch.repeat!==undefined&&typeof patch.repeat!=='boolean')return false;if(patch.repeat!==undefined)arm.repeat=patch.repeat;return true;}
 function stopRobotArm(arm,reason='Detenido'){
  if(!robotArms.includes(arm))return false;arm.running=false;arm.jogging=false;arm.state='idle';arm.status=reason;
- for(const rotor of robotArmRotors(arm))configureRotor(rotor,{enabled:false},true);
+ // Stopping is safe inside a weld transaction, while an old body may already
+ // be absent. Do not refresh/prune the shared topology until rebuilding ends.
+ for(const rotor of robotArmRotors(arm)){rotor.enabled=false;rotor.actualRpm=0;rotor.driveVelocity=0;rotor.constraint?.disableMotor();unpinRotor(rotor);for(const g of rotorGroups(rotor))if(g){g.body.angularVelocity.set(0,0,0);g.body.wakeUp();}}
  releaseGripper(arm.gripperId);robotReleaseBase(arm);robotApplyBrakes(arm);return true;
 }
 function teachRobotArmPose(arm,name){if(!robotArms.includes(arm)||!['pick','place'].includes(name)||arm.running||arm.jogging)return false;arm.poses[name]=robotReadPose(arm);arm.status=name==='pick'?'Postura Tomar guardada':'Postura Dejar guardada';return true;}
@@ -1569,7 +1608,7 @@ function robotBeginMotion(arm,target,jogging=false){
  const members=robotArmRotors(arm),base=robotGripperHit(arm.baseId),hit=robotGripperHit(arm.gripperId),component=hit?rotorConnectedGroups([hit.g]):[];
  if(members.length!==arm.joints.length||!base||!hit||!component.includes(base.g)||!robotPoseValid(target,members.length)||component.some(g=>(held?.items||[]).some(item=>item.g===g)))return false;
  if(members.some(r=>rotorPowerState({...r,enabled:true}).stopReason)){arm.status='Revisa batería y carga de los rotores';return false;}
- robotRemoveBrakes(arm);robotReleaseBase(arm);arm.pin={body:base.g.body,type:base.g.body.type,fixedRotation:base.g.body.fixedRotation,p:base.g.body.position.clone(),q:base.g.body.quaternion.clone()};
+ robotRemoveBrakes(arm);robotReleaseBase(arm);conveyorAcquireBase(arm,base.g.body);
  arm.target=JSON.parse(JSON.stringify(target));arm.running=!jogging;arm.jogging=jogging;arm.elapsed=0;arm.settled=0;arm.lastError=Infinity;arm.stuck=0;
  for(const rotor of members)if(!configureRotor(rotor,{enabled:true,mount:'wheel'},true)){stopRobotArm(arm,'No se pudo iniciar');return false;}
  return true;
@@ -1616,15 +1655,14 @@ function driveRobotArms(dt){
    const error=robotTargetError(rotor,arm.target[i]),limit=Math.min(rotor.rpm,robotGrips.has(arm.gripperId)?12:20)*2*Math.PI/60;
    let brake=arm.jointBrakes.get(rotor.id);
    if(brake&&Math.abs(error)>.05){world.removeConstraint(brake);arm.jointBrakes.delete(rotor.id);brake=null;}
-   if(!brake&&Math.abs(error)<.012&&Math.abs(rotor.actualRpm||0)<1.2){const pair=rotorGroups(rotor);brake=robotLockConstraint(pair[0].body,pair[1].body,1000);arm.jointBrakes.set(rotor.id,brake);world.addConstraint(brake);}
+   if(!brake&&Math.abs(error)<.012&&Math.abs(rotor.actualRpm||0)<1.2){brake=robotJointBrake(rotor);if(brake){arm.jointBrakes.set(rotor.id,brake);world.addConstraint(brake);}}
    if(brake){rotor.driveVelocity=0;rotor.motorImpulse=0;rotor.constraint.disableMotor();continue;}
    const speed=-clamp(error*5,-limit,limit);rotor.driveVelocity=speed;rotor.constraint.enableMotor();rotor.constraint.setMotorSpeed(speed);rotor.constraint.setMotorMaxForce(rotor.maxTorque*dt);
   }
-  const pin=arm.pin;if(pin){const b=pin.body;b.type=CANNON.Body.KINEMATIC;b.fixedRotation=true;b.updateMassProperties();b.position.copy(pin.p);b.quaternion.copy(pin.q);b.velocity.set(0,0,0);b.angularVelocity.set(0,0,0);b.force.set(0,0,0);b.torque.set(0,0,0);b.aabbNeedsUpdate=true;}
  }
 }
 function robotArmStatus(arm){return arm?arm.status:'Selecciona un cubo de agarre o un brazo';}
-function robotStopForGroups(list){for(const arm of robotArms)if(rotorConnectedGroups([robotGripperHit(arm.gripperId)?.g].filter(Boolean)).some(g=>list.includes(g)))stopRobotArm(arm,'Detenido para manipular');for(const grip of [...robotGrips.values()])if(list.includes(grip.g)||list.includes(robotGripperHit(grip.id)?.g))releaseGripper(grip.id);}
+function robotStopForGroups(list){conveyorStopForGroups(list);for(const arm of robotArms)if(rotorConnectedGroups([robotGripperHit(arm.gripperId)?.g].filter(Boolean)).some(g=>list.includes(g)))stopRobotArm(arm,'Detenido para manipular');for(const grip of [...robotGrips.values()])if(list.includes(grip.g)||list.includes(robotGripperHit(grip.id)?.g))releaseGripper(grip.id);}
 function robotBeforeRemoveGroup(g){robotStopForGroups([g]);for(const arm of robotArms)if(arm.brakes.some(c=>c.bodyA===g.body||c.bodyB===g.body))robotRemoveBrakes(arm);}
 function clearRobotArms(){for(const arm of [...robotArms]){stopRobotArm(arm);robotRemoveBrakes(arm);}for(const id of [...robotGrips.keys()])releaseGripper(id);robotArms.length=0;robotWorkingParts.clear();}
 function pruneRobotArms(){for(const arm of [...robotArms])if(!robotGripperHit(arm.gripperId)||!robotGripperHit(arm.baseId)||robotArmRotors(arm).length!==arm.joints.length){stopRobotArm(arm,'Brazo incompleto');robotRemoveBrakes(arm);robotArms.splice(robotArms.indexOf(arm),1);}}
@@ -1639,6 +1677,207 @@ function restoreRobotArmTemplate(data,keyToId,joints){
  if(arm&&!data.poses){const pose=robotReadPose(arm),rotor=robotArmRotors(arm)[0],axis=V(0,1,0),turn=Q();turn.setFromAxisAngle(axis,Math.PI/2);const q=turn.mult(new CANNON.Quaternion(...pose[0]));pose[0]=[q.x,q.y,q.z,q.w];arm.poses.place=pose;arm.status='Listo · Tomar aquí y Dejar a 90°';}
  return arm;
 }
+
+// A completed conveyor retains its real chassis and hinged Q-bit rollers.
+// Its final belt adds a visible contact surface; bounded powered traction
+// moves touching loads while Cannon resolves gravity, support and collisions.
+const conveyors=[],conveyorPins=new Map();let conveyorSerial=0;
+function conveyorRotors(conveyor){return (conveyor?.joints||[]).map(j=>rotors.find(r=>r.aId===j.aId&&r.bId===j.bId)).filter(Boolean);}
+function conveyorForGroup(g){return conveyors.find(c=>conveyorRotors(c).some(r=>rotorGroups(r).includes(g)&&rotorPart(c.baseId)?.g!==g))||conveyors.find(c=>rotorPart(c.baseId)?.g===g)||null;}
+function conveyorStatus(conveyor){return conveyor?.status||'Selecciona una cinta';}
+function conveyorPortsValid(ports){return !ports||['entry','exit'].every(name=>{const port=ports[name];return port&&Array.isArray(port.p)&&port.p.length===3&&port.p.every(n=>Number.isFinite(n)&&Math.abs(n)<=10)&&Array.isArray(port.direction)&&port.direction.length===3&&port.direction.every(Number.isFinite)&&Math.abs(Math.hypot(...port.direction)-1)<.001;});}
+function conveyorPath(conveyor){
+ const ports=conveyor.ports;if(!ports)return [];const entry=V(...ports.entry.p),exit=V(...ports.exit.p),dir=V(...ports.entry.direction),lift=V(0,HALF*Math.SQRT2+.004,0);
+ const points=conveyor.kind==='straight'?[entry,exit]:[entry,add(entry,mul(dir,sub(exit,entry).dot(dir))),exit];return points.map(p=>add(p,lift));
+}
+function conveyorRemoveSurfaces(conveyor){
+ const body=conveyor.surfaceBody;if(body)for(const surface of conveyor.surfaces||[]){const index=body.shapes.indexOf(surface.shape);if(index>=0){body.shapes.splice(index,1);body.shapeOffsets.splice(index,1);body.shapeOrientations.splice(index,1);surface.shape.body=null;}}
+ if(body){body.updateMassProperties();body.updateBoundingRadius();body.aabbNeedsUpdate=true;}conveyor.surfaces=[];conveyor.surfaceBody=null;conveyor.surfaceParts=null;conveyor.worldGeometry=null;
+}
+function conveyorComplete(conveyor){const base=rotorPart(conveyor.baseId),members=conveyorRotors(conveyor);if(!base||members.length!==conveyor.joints.length)return false;const owned=new Set([base.g,...members.flatMap(r=>rotorGroups(r))]);return conveyor.required.every(id=>owned.has(rotorPart(id)?.g));}
+function conveyorEnsureSurfaces(conveyor){
+ const hit=rotorPart(conveyor.baseId);if(!hit||!conveyorComplete(conveyor))return false;if(conveyor.surfaceBody===hit.g.body&&conveyor.surfaceParts===hit.g.parts)return true;
+ conveyorRemoveSurfaces(conveyor);const path=conveyorPath(conveyor);if(path.length<2)return false;
+ const members=conveyorRotors(conveyor),material=rotorConnectedGroups([hit.g]).flatMap(g=>poses(g)),rollers=members.flatMap(r=>rotorGroups(r).filter(g=>g&&g!==hit.g)).flatMap(g=>poses(g));
+ if(typeof conveyorPortGeometryValid==='function'&&!conveyorPortGeometryValid(conveyor.kind,conveyor.ports,partPose(hit.g,hit.part),material,rollers))return false;
+ conveyor.path=path;conveyor.surfaces=[];conveyor.surfaceBody=hit.g.body;conveyor.surfaceParts=hit.g.parts;
+ for(let i=0;i<path.length-1;i++){const delta=sub(path[i+1],path[i]),length=delta.norm();if(length<.01)continue;delta.scale(1/length,delta);const q=Q();q.setFromVectors(V(1,0,0),delta);q.normalize();const center=add(mul(add(path[i],path[i+1]),.5),V(0,-.002,0)),half=V(length/2,.002,CUBE_SIZE*1.5),shape=new CANNON.Box(half);
+  const offset=add(hit.part.offset,hit.part.q.vmult(center)),orientation=hit.part.q.mult(q);hit.g.body.addShape(shape,offset,orientation);conveyor.surfaces.push({center,half,q,shape,index:i});
+ }
+ hit.g.body.updateMassProperties();hit.g.body.updateBoundingRadius();hit.g.body.aabbNeedsUpdate=true;return conveyor.surfaces.length===path.length-1;
+}
+// Read-only world geometry is shared by contact queries, picking and drawing.
+// Compare the live base pose on every read: moving/rebuilding a stopped section
+// cannot leave an old contact plane behind, even outside a physics substep.
+function conveyorWorldGeometry(conveyor){
+ const hit=rotorPart(conveyor.baseId);if(!hit){conveyor.worldGeometry=null;return null;}
+ const p=hit.p,q=hit.q,cached=conveyor.worldGeometry;
+ if(cached&&cached.body===hit.g.body&&cached.part===hit.part&&cached.sourceSurfaces===conveyor.surfaces&&cached.sourcePath===conveyor.path&&cached.x===p.x&&cached.y===p.y&&cached.z===p.z&&cached.qx===q.x&&cached.qy===q.y&&cached.qz===q.z&&cached.qw===q.w)return cached;
+ const surfaces=(conveyor.surfaces||[]).map(surface=>{const rotation=q.mult(surface.q);return {p:add(p,q.vmult(surface.center)),q:rotation,inverse:rotation.inverse(),up:rotation.vmult(V(0,1,0)),half:surface.half.clone(),size:mul(surface.half,2),surface};});
+ return conveyor.worldGeometry={body:hit.g.body,part:hit.part,sourceSurfaces:conveyor.surfaces,sourcePath:conveyor.path,x:p.x,y:p.y,z:p.z,qx:q.x,qy:q.y,qz:q.z,qw:q.w,surfaces,path:(conveyor.path||[]).map(point=>add(p,q.vmult(point)))};
+}
+function conveyorSurfacePoses(conveyor){return conveyorWorldGeometry(conveyor)?.surfaces||[];}
+function conveyorPathPoses(conveyor){return conveyorWorldGeometry(conveyor)?.path||[];}
+function conveyorSurfaceContact(conveyor,contact){
+ const body=conveyor.surfaceBody;if(!body||contact.bi!==body&&contact.bj!==body)return null;
+ const isA=contact.bi===body,point=add(body.position,isA?contact.ri:contact.rj),normal=mul(contact.ni,isA?1:-1),other=isA?contact.bj:contact.bi;
+ for(const pose of conveyorSurfacePoses(conveyor)){const local=pose.inverse.vmult(sub(point,pose.p));if(normal.dot(pose.up)>.6&&Math.abs(local.x)<=pose.half.x+.006&&Math.abs(local.z)<=pose.half.z+.006&&Math.abs(local.y-pose.half.y)<.012)return {body:other,point,normal,surface:pose.surface};}
+ return null;
+}
+function conveyorContactLoads(conveyor){
+ const byBody=new Map(),component=new Set(rotorConnectedGroups([rotorPart(conveyor.baseId)?.g].filter(Boolean)).map(g=>g.body));
+ for(const contact of world.contacts){const hit=conveyorSurfaceContact(conveyor,contact);if(!hit||component.has(hit.body)||hit.body.mass<=0)continue;const g=hit.body.qubitGroup,c=hit.body.cargoRef;if(!g&&!c||g?.robotHeld||c?.robotHeld||(held?.items||[]).some(item=>item.g===g))continue;byBody.set(hit.body,{...hit,weight:g?totalWeight(g):c.required});}
+ return [...byBody.values()];
+}
+function conveyorSpendTraction(conveyor,joules){
+ const supply=externalBatterySummary(rotorPart(conveyor.baseId)?.g);if(!supply.active||supply.storedJ+1e-9<joules)return false;const fraction=supply.storedJ?joules/supply.storedJ:0;
+ for(const part of supply.cells){part.mood.energy=Math.max(0,part.mood.energy*(1-fraction));part.mood.idle=0;}return true;
+}
+function conveyorDriveSurface(conveyor,dt){
+ const members=conveyorRotors(conveyor),rpm=members.length?Math.min(...members.map(r=>Math.abs(r.actualRpm||0))):0;conveyor.speed=rpm*2*Math.PI/60*HALF;conveyor.tractionWatts=0;
+ if(conveyor.speed<.002||!conveyor.running)return;conveyor.phase=(conveyor.phase||0)+conveyor.speed*dt*conveyor.direction;
+ const loads=conveyorContactLoads(conveyor),load=loads.reduce((sum,item)=>sum+item.weight,0);if(load>conveyor.capacity){stopConveyor(conveyor,'Sobrecarga · retira objetos');return;}
+ const hit=rotorPart(conveyor.baseId),pose=partPose(hit.g,hit.part),inverse=pose.q.inverse(),points=conveyor.direction===1?conveyor.path:[...conveyor.path].reverse(),forceBudget=members.reduce((sum,r)=>sum+Math.max(0,r.maxTorque-Math.abs(r.actualTorque||0))/HALF,0);
+ for(const item of loads){const body=item.body,local=inverse.vmult(sub(body.position,pose.p));let nearest=null;
+  for(let i=0;i<points.length-1;i++){const delta=sub(points[i+1],points[i]),length=delta.norm(),axis=mul(delta,1/length),along=clamp(sub(local,points[i]).dot(axis),0,length),point=add(points[i],mul(axis,along)),distance=Math.hypot(local.x-point.x,local.z-point.z);if(!nearest||distance<nearest.distance)nearest={point,axis,length,along,index:i,distance};}
+  if(!nearest)continue;const remaining=nearest.length-nearest.along;
+  // Follow the visible bend while there is real contact with its skin. A
+  // bounded lateral correction keeps loads on the lane; walls still collide.
+  let target=add(nearest.point,mul(nearest.axis,Math.max(.05,conveyor.speed*.5)));
+  if(nearest.index<points.length-2&&remaining<.07){const next=points[nearest.index+2],axis=sub(next,points[nearest.index+1]);axis.normalize();target=add(points[nearest.index+1],mul(axis,.07-remaining));}
+  const delta=V(target.x-local.x,0,target.z-local.z);if(delta.norm()<1e-8)continue;delta.normalize();const desired=pose.q.vmult(mul(delta,conveyor.speed)),velocity=body.velocity,up=pose.q.vmult(V(0,1,0)),relative=sub(sub(desired,velocity),mul(up,sub(desired,velocity).dot(up))),force=mul(relative,body.mass*24),limit=Math.min(body.mass*settings.gravity*.9,forceBudget*(load?item.weight/load:1)),length=force.norm();if(length>limit)force.scale(limit/length,force);
+  const watts=Math.max(0,force.dot(desired))/.7+force.norm()*.005;if(!conveyorSpendTraction(conveyor,watts*dt)){stopConveyor(conveyor,'Sin energía');return;}
+  conveyor.tractionWatts+=watts;body.force.vadd(force,body.force);body.wakeUp();
+ }
+}
+function conveyorFrictionPairs(physicsWorld){
+ const pairs=new Map();for(const conveyor of conveyors){if(!conveyor.running||conveyor.speed<.002)continue;for(const contact of physicsWorld.contacts){const hit=conveyorSurfaceContact(conveyor,contact);if(!hit)continue;if(!pairs.has(conveyor.surfaceBody))pairs.set(conveyor.surfaceBody,new Set());pairs.get(conveyor.surfaceBody).add(hit.body);}}
+ return pairs;
+}
+
+function conveyorReleaseBase(conveyor){
+ const pin=conveyor.pin;if(!pin)return;conveyor.pin=null;pin.owners.delete(conveyor);if(pin.owners.size)return;
+ conveyorPins.delete(pin.body);const {body,type,fixedRotation}=pin;body.type=type;body.fixedRotation=fixedRotation;body.updateMassProperties();body.wakeUp();
+}
+function conveyorAcquireBase(conveyor,body){let pin=conveyorPins.get(body);if(!pin){pin={body,type:body.type,fixedRotation:body.fixedRotation,p:body.position.clone(),q:body.quaternion.clone(),owners:new Set()};conveyorPins.set(body,pin);}pin.owners.add(conveyor);conveyor.pin=pin;}
+
+function createConveyor(options={}){
+ const base=rotorPart(options.baseId),source=options.joints;if(!base||!Array.isArray(source)||source.length<1||source.length>16||!['straight','left','right'].includes(options.kind)||options.direction!==undefined&&![1,-1].includes(options.direction)||options.capacity!==undefined&&(!Number.isInteger(options.capacity)||options.capacity<1||options.capacity>32)||!conveyorPortsValid(options.ports))return null;
+ const members=source.map(j=>rotors.find(r=>r===j||r.aId===j?.aId&&r.bId===j?.bId));
+ if(members.some(r=>!r)||new Set(members).size!==members.length||members.some(r=>!rotorGroups(r).includes(base.g))||conveyors.some(c=>c.baseId===base.part.id||c.joints.some(j=>members.some(r=>r.aId===j.aId&&r.bId===j.bId)))||robotArms.some(a=>a.joints.some(j=>members.some(r=>r.aId===j.aId&&r.bId===j.bId))))return null;
+ const drives=options.drives||source.map((j,i)=>j.forward??members[i].direction);if(!Array.isArray(drives)||drives.length!==members.length||drives.some(n=>![1,-1].includes(n)))return null;
+ const owned=new Set([base.g,...members.flatMap(r=>rotorGroups(r))]),required=options.required||[...owned].flatMap(g=>g.parts.map(p=>p.id));if(!Array.isArray(required)||required.length<1||required.length>MAX_QUBITS||new Set(required).size!==required.length||!required.includes(base.part.id)||required.some(id=>!Number.isSafeInteger(id)||!owned.has(rotorPart(id)?.g))||members.some(r=>!required.includes(r.aId)||!required.includes(r.bId)||rotorGroups(r).filter(g=>g!==base.g).some(g=>g.parts.some(p=>!required.includes(p.id)))))return null;
+ const conveyor={id:++conveyorSerial,baseId:base.part.id,required:[...required],joints:members.map((r,i)=>({aId:r.aId,bId:r.bId,forward:drives[i]})),kind:options.kind,direction:options.direction??1,capacity:options.capacity??8,ports:options.ports?JSON.parse(JSON.stringify(options.ports)):null,running:false,status:'Listo · acopla y enciende una batería',load:0,watts:0,payloads:new Map(),pin:null,surfaces:[],path:[],phase:0,speed:0};
+ conveyors.push(conveyor);if(!conveyorEnsureSurfaces(conveyor)){conveyorRemoveSurfaces(conveyor);conveyors.splice(conveyors.indexOf(conveyor),1);return null;}for(const rotor of members)configureRotor(rotor,{enabled:false,mount:'wheel'},true);return conveyor;
+}
+function stopConveyor(conveyor,reason='Detenido'){
+ if(!conveyors.includes(conveyor))return false;conveyor.running=false;conveyor.status=reason;conveyor.watts=0;conveyor.speed=0;
+ for(const rotor of conveyorRotors(conveyor)){rotor.enabled=false;rotor.actualRpm=0;rotor.driveVelocity=0;rotor.constraint?.disableMotor();unpinRotor(rotor);}conveyorReleaseBase(conveyor);return true;
+}
+function configureConveyor(conveyor,patch={}){
+ if(!conveyors.includes(conveyor)||patch.direction!==undefined&&![1,-1].includes(patch.direction)||patch.capacity!==undefined&&(!Number.isInteger(patch.capacity)||patch.capacity<1||patch.capacity>32))return false;
+ const resume=conveyor.running;if(resume)stopConveyor(conveyor,'Ajustado');if(patch.direction!==undefined)conveyor.direction=patch.direction;if(patch.capacity!==undefined)conveyor.capacity=patch.capacity;
+ return resume?startConveyor(conveyor):true;
+}
+// Powered anchoring holds a supported installation steady; it cannot suspend
+// a loose conveyor in midair. Remember static supports because Cannon does not
+// generate fresh contacts between a kinematic chassis and a static tabletop.
+function conveyorSupportReady(conveyor){
+ const base=rotorPart(conveyor?.baseId);if(!base)return false;
+ const up=base.q.vmult(V(0,1,0));if(up.y<.98){conveyor.supportStatus='Coloca la cinta horizontal antes de iniciar';return false;}
+ const grounded=body=>{const g=body.qubitGroup;if(!g||!groups.includes(g))return false;const bottom=bounds(g).min.y;return bottom>=-.02&&bottom<=.008;};
+ if(grounded(base.g.body)){conveyor.support={base:base.g.body,chain:[]};return true;}
+ const previous=conveyor.support;
+ if(conveyor.running&&previous?.base===base.g.body&&previous.chain.length&&previous.chain.every(saved=>world.bodies.includes(saved.body)&&saved.body.position.distanceTo(saved.p)<.008&&Math.abs(saved.body.quaternion.x*saved.q.x+saved.body.quaternion.y*saved.q.y+saved.body.quaternion.z*saved.q.z+saved.body.quaternion.w*saved.q.w)>.9995&&(saved.body.type!==CANNON.Body.DYNAMIC||saved.body.velocity.norm()<.05&&saved.body.angularVelocity.norm()<.1)))return true;
+ const machine=new Set(rotorConnectedGroups([base.g]).map(g=>g.body)),visited=new Set();
+ const support=(body,depth=0)=>{
+  if(depth>6||visited.has(body))return null;visited.add(body);
+  for(const contact of world.contacts){
+   if(contact.bi!==body&&contact.bj!==body)continue;
+   const other=contact.bi===body?contact.bj:contact.bi,normalY=contact.ni.y*(contact.bj===body?1:-1);
+   if(normalY<.65||machine.has(other)||!world.bodies.includes(other)||other.velocity.norm()>=.05||other.angularVelocity.norm()>=.1)continue;
+   const saved={body:other,p:other.position.clone(),q:other.quaternion.clone()};
+   if(other.type===CANNON.Body.STATIC||grounded(other))return [saved];
+   const chain=support(other,depth+1);if(chain)return [saved,...chain];
+  }
+  // Sleeping dynamic/static pairs also stop emitting contacts. Probe only
+  // actual lowest vertices/face centers, never the empty space in an AABB.
+  const group=body.qubitGroup;
+  if(group){
+   const minimum=bounds(group).min.y,candidates=[];
+   for(const pose of poses(group)){const vertices=corners(pose).filter(p=>p.y<=minimum+.003);if(vertices.length){candidates.push(vertices.reduce((sum,p)=>add(sum,mul(p,1/vertices.length)),V()),...vertices);}}
+   const targets=world.bodies.filter(other=>other!==body&&!machine.has(other)&&other.velocity.norm()<.05&&other.angularVelocity.norm()<.1);
+   for(const point of candidates){
+    const ray=new CANNON.Ray(add(point,V(0,.004,0)),add(point,V(0,-.012,0))),result=new CANNON.RaycastResult();ray.mode=CANNON.Ray.ALL;ray.skipBackfaces=true;let found=null;
+    ray.callback=hit=>{if(found||hit.hitNormalWorld.y<.65)return;const other=hit.body,saved={body:other,p:other.position.clone(),q:other.quaternion.clone()};if(other.type===CANNON.Body.STATIC||grounded(other)){found=[saved];return;}const chain=support(other,depth+1);if(chain)found=[saved,...chain];};
+    ray.intersectBodies(targets,result);if(found)return found;
+   }
+  }
+  return null;
+ };
+ const chain=support(base.g.body);if(chain){conveyor.support={base:base.g.body,chain};return true;}
+ conveyor.support=null;conveyor.supportStatus='Apoya la cinta en el suelo, una mesa o una estructura estable';return false;
+}
+function startConveyor(conveyor){
+ if(!conveyors.includes(conveyor))return false;if(conveyor.running)return true;
+ const base=rotorPart(conveyor.baseId),members=conveyorRotors(conveyor),component=base?rotorConnectedGroups([base.g]):[];
+ if(!base||!conveyorComplete(conveyor)||members.some(r=>!rotorGroups(r).includes(base.g))){conveyor.status='Cinta incompleta';return false;}
+ if(!conveyorSupportReady(conveyor)){conveyor.status=conveyor.supportStatus;return false;}
+ if(component.some(g=>(held?.items||(held?[held]:[])).some(item=>item.g===g))){conveyor.status='Suelta el mecanismo antes de iniciar';return false;}
+ const supply=externalBatterySummary(base.g);if(!supply.active||supply.storedJ<=.001){conveyor.status='Acopla y enciende una batería con energía';return false;}
+ conveyorReadLoad(conveyor);if(conveyor.load>conveyor.capacity){conveyor.status='Sobrecarga · retira objetos';return false;}
+ // All rollers turn at one calm speed. Their finite torque and actual contact
+ // surfaces determine transport; the numeric rate is not a teleport speed.
+ for(let i=0;i<members.length;i++)if(!configureRotor(members[i],{rpm:30,direction:conveyor.joints[i].forward*conveyor.direction,maxTorque:1,capacity:256,mount:'wheel',enabled:true},true)){stopConveyor(conveyor,'No se pudo iniciar el motor');return false;}
+ conveyorAcquireBase(conveyor,base.g.body);conveyor.running=true;conveyor.status=conveyor.direction===1?'En marcha':'En marcha · sentido inverso';return true;
+}
+function conveyorContactMap(){
+ if(mechanicalStepCache?.conveyorContacts)return mechanicalStepCache.conveyorContacts;
+ const map=new Map();for(const contact of world.contacts)for(const [body,other]of [[contact.bi,contact.bj],[contact.bj,contact.bi]]){if(!map.has(body))map.set(body,new Set());map.get(body).add(other);}
+ if(mechanicalStepCache)mechanicalStepCache.conveyorContacts=map;return map;
+}
+function conveyorReadLoad(conveyor){
+ const base=rotorPart(conveyor.baseId);if(!base){conveyor.load=0;return;}
+ const component=new Set(rotorConnectedGroups([base.g]).map(g=>g.body)),rollers=new Set(conveyorRotors(conveyor).flatMap(r=>rotorGroups(r).filter(g=>g&&g!==base.g)).map(g=>g.body)),contacts=conveyorContactMap();
+ for(const item of conveyorContactLoads(conveyor))conveyor.payloads.set(item.body,{at:simTime,weight:item.weight});
+ for(const roller of rollers)for(const other of contacts.get(roller)||[]){if(component.has(other)||other.position.y<roller.position.y-.015)continue;
+  const g=other.qubitGroup,c=other.cargoRef;if(!g&&!c||g?.robotHeld||c?.robotHeld||(held?.items||[]).some(item=>item.g===g))continue;
+  const weight=g?totalWeight(g):c.required;conveyor.payloads.set(other,{at:simTime,weight});
+ }
+ for(const [body,data]of conveyor.payloads)if(!world.bodies.includes(body)||simTime-data.at>.25)conveyor.payloads.delete(body);
+ conveyor.load=[...conveyor.payloads.values()].reduce((sum,item)=>sum+item.weight,0);
+}
+
+function updateConveyors(dt){
+ for(const conveyor of [...conveyors]){
+  const base=rotorPart(conveyor.baseId),members=conveyorRotors(conveyor);if(!base||!conveyorComplete(conveyor)||members.some(r=>!rotorGroups(r).includes(base.g))){stopConveyor(conveyor,'Cinta incompleta');conveyorRemoveSurfaces(conveyor);conveyors.splice(conveyors.indexOf(conveyor),1);continue;}
+  if(!conveyorEnsureSurfaces(conveyor)){stopConveyor(conveyor,'Revisa la superficie de la cinta');continue;}conveyorReadLoad(conveyor);if(!conveyor.running)continue;
+  if(!conveyorSupportReady(conveyor)){stopConveyor(conveyor,conveyor.supportStatus);continue;}
+  if(conveyor.pin?.body!==base.g.body){stopConveyor(conveyor,'Detenida para ajustar el montaje');continue;}
+  if((held?.items||(held?[held]:[])).some(item=>rotorConnectedGroups([base.g]).includes(item.g))){stopConveyor(conveyor,'Detenida para manipular');continue;}
+  const supply=externalBatterySummary(base.g);if(!supply.active||supply.storedJ<=.001){stopConveyor(conveyor,'Sin batería activa o sin energía');continue;}
+  if(conveyor.load>conveyor.capacity){stopConveyor(conveyor,'Sobrecarga · '+formatWeight(conveyor.load)+' / '+conveyor.capacity+' u');continue;}
+  if(members.some(r=>!r.enabled)){stopConveyor(conveyor,'Motor detenido');continue;}
+  conveyor.watts=members.reduce((sum,r)=>sum+(r.power?.inputWatts||0),0)+(conveyor.tractionWatts||0);
+ }
+}
+function driveConveyors(dt){
+ for(const pin of conveyorPins.values()){const b=pin.body;
+  if(b.type!==CANNON.Body.KINEMATIC||!b.fixedRotation){b.type=CANNON.Body.KINEMATIC;b.fixedRotation=true;b.updateMassProperties();}
+  b.position.copy(pin.p);b.quaternion.copy(pin.q);b.velocity.set(0,0,0);b.angularVelocity.set(0,0,0);b.force.set(0,0,0);b.torque.set(0,0,0);b.aabbNeedsUpdate=true;
+ }
+ for(const conveyor of conveyors)if(conveyor.running)conveyorDriveSurface(conveyor,dt);
+}
+
+function conveyorStopForGroups(list){for(const conveyor of conveyors){const base=rotorPart(conveyor.baseId);if(base&&rotorConnectedGroups([base.g]).some(g=>list.includes(g)))stopConveyor(conveyor,'Detenida para manipular');}}
+function clearConveyors(){for(const conveyor of [...conveyors]){stopConveyor(conveyor);conveyorRemoveSurfaces(conveyor);}conveyors.length=0;}
+function pruneConveyors(){for(const conveyor of [...conveyors])if(!conveyorComplete(conveyor)){stopConveyor(conveyor,'Cinta incompleta');conveyorRemoveSurfaces(conveyor);conveyors.splice(conveyors.indexOf(conveyor),1);}}
+function serializeConveyors(){pruneConveyors();return conveyors.map(c=>({baseId:c.baseId,required:[...c.required],joints:c.joints.map(j=>({...j})),kind:c.kind,direction:c.direction,capacity:c.capacity,...(c.ports?{ports:JSON.parse(JSON.stringify(c.ports))}:{})}));}
+function restoreConveyors(records){for(const data of Array.isArray(records)?records:[])if(!conveyors.some(c=>c.baseId===data.baseId))createConveyor(data);}
+function conveyorTemplate(subject,idToKey,linkedRotors){
+ const component=mechanismGroups(subject);return conveyors.filter(c=>component.includes(rotorPart(c.baseId)?.g)).map(c=>({version:1,base:idToKey.get(c.baseId),required:c.required.map(id=>idToKey.get(id)),joints:conveyorRotors(c).map(r=>linkedRotors.indexOf(r)),drives:c.joints.map(j=>j.forward),kind:c.kind,direction:c.direction,capacity:c.capacity,...(c.ports?{ports:JSON.parse(JSON.stringify(c.ports))}:{})}));
+}
+function restoreConveyorTemplate(records,keyToId,joints){return (Array.isArray(records)?records:[]).map(data=>createConveyor({baseId:keyToId.get(data.base),required:data.required?.map(key=>keyToId.get(key)),joints:data.joints.map(index=>joints[index]),drives:data.drives,kind:data.kind,direction:data.direction,capacity:data.capacity,ports:data.ports})).filter(Boolean);}
 
 // Mechanical connections remain separate rigid bodies: stable unit IDs survive
 // ordinary weld/split operations, and the hinge is rebuilt before the next step.
@@ -1705,6 +1944,7 @@ function configureRotorSet(set,patch={}){
  const requested=[...new Set(set.rotorIds)];refreshRotors();
  const members=rotorSetMembers({rotorIds:requested});if(!members.length||members.length!==requested.length){announce('Revisa los rotores del conjunto.');return false;}
  if(['rpm','maxTorque','capacity'].some(key=>patch[key]!==undefined&&!Number.isFinite(patch[key]))||patch.enabled!==undefined&&typeof patch.enabled!=='boolean'||patch.invert!==undefined&&typeof patch.invert!=='boolean')return false;
+ const belts=conveyors.filter(c=>c.joints.some(j=>members.some(r=>r.aId===j.aId&&r.bId===j.bId)));if(belts.length&&patch.enabled===true){announce('Usa Iniciar cinta en Mecanismos.');return false;}for(const belt of belts)if(belt.running)stopConveyor(belt,'Detenida para ajustar');
  const arms=robotArms.filter(arm=>arm.joints.some(j=>members.some(r=>r.aId===j.aId&&r.bId===j.bId)));
  // Sets are a public control surface too: their automatic internal apply must
  // never bypass the arm's sequencer and drive against its passive brakes.
@@ -1787,6 +2027,7 @@ function refreshRotors(){
 }
 function configureRotor(rotor,patch={},automatic=false){
  if(!rotor||!rotors.includes(rotor))return false;
+ if(!automatic){const conveyor=conveyors.find(c=>c.joints.some(j=>j.aId===rotor.aId&&j.bId===rotor.bId));if(conveyor){if(patch.enabled===true){announce('Usa Iniciar cinta en Mecanismos.');return false;}if(conveyor.running)stopConveyor(conveyor,'Detenida para ajustar');}}
  if(!automatic){const arm=robotArms.find(a=>a.joints.some(j=>j.aId===rotor.aId&&j.bId===rotor.bId));if(arm){if(patch.enabled===true){announce('Usa Ajustar ejes o Iniciar secuencia del brazo.');return false;}if(arm.running||arm.jogging)stopRobotArm(arm,'Detenido para ajustar');}}
  patch={...patch};if(story.scene==='campaign')patch.maxTorque=Math.min(patch.maxTorque??rotor.maxTorque,campaignTorqueCap());
  if(!rotors.includes(rotor)||patch.rpm!==undefined&&!Number.isFinite(patch.rpm)||patch.direction!==undefined&&![1,-1].includes(patch.direction)||patch.moving!==undefined&&!['a','b'].includes(patch.moving)||patch.mount!==undefined&&!['wheel','fixed'].includes(patch.mount)||patch.maxTorque!==undefined&&!Number.isFinite(patch.maxTorque)||patch.capacity!==undefined&&!Number.isFinite(patch.capacity))return false;
@@ -1825,7 +2066,7 @@ const solveRotorContacts=world.solver.solve;
 world.solver.solve=function(dt,physicsWorld){
  const driven=new Set();for(const rotor of rotors)if(rotor.enabled&&rotor.mount==='wheel')for(const g of rotorConnectedGroups(rotorGroups(rotor)))driven.add(g.body);
  for(const grip of robotGrips.values())if(driven.has(robotGripperHit(grip.id)?.g.body))driven.add(grip.body);
- const changed=[];for(const eq of physicsWorld.frictionEquations)if(driven.has(eq.bi)||driven.has(eq.bj)){changed.push([eq,eq.minForce,eq.maxForce]);eq.minForce*=dt;eq.maxForce*=dt;}
+ const skinPairs=conveyorFrictionPairs(physicsWorld),changed=[];for(const eq of physicsWorld.frictionEquations){if(skinPairs.get(eq.bi)?.has(eq.bj)||skinPairs.get(eq.bj)?.has(eq.bi)){changed.push([eq,eq.minForce,eq.maxForce]);eq.minForce=0;eq.maxForce=0;}else if(driven.has(eq.bi)||driven.has(eq.bj)){changed.push([eq,eq.minForce,eq.maxForce]);eq.minForce*=dt;eq.maxForce*=dt;}}
  try{return solveRotorContacts.call(this,dt,physicsWorld);}finally{for(const [eq,min,max]of changed){eq.minForce=min;eq.maxForce=max;}}
 };
 function updateRotorMotors(dt=0){
@@ -1846,7 +2087,7 @@ function updateRotorMotors(dt=0){
   rotor.motorImpulse=0;rotor.motorStep=dt;
   if(rotor.mount==='wheel'){
    rotor.obstructed=false;unpinRotor(rotor);
-   for(const g of pair){stopRoute(g);leaveHaul(g);if(g.body.type!==CANNON.Body.DYNAMIC||g.body.fixedRotation){g.body.type=CANNON.Body.DYNAMIC;g.body.fixedRotation=false;g.body.updateMassProperties();}g.body.wakeUp();}
+   for(const g of pair){stopRoute(g);leaveHaul(g);if(conveyorPins.has(g.body))continue;if(g.body.type!==CANNON.Body.DYNAMIC||g.body.fixedRotation){g.body.type=CANNON.Body.DYNAMIC;g.body.fixedRotation=false;g.body.updateMassProperties();}g.body.wakeUp();}
    const target=rotor.direction*rotor.effectiveRpm*Math.PI*2/60,previous=rotor.driveVelocity||0;rotor.driveVelocity=previous+clamp(target-previous,-16*dt,16*dt);
    constraint.enableMotor();constraint.setMotorMaxForce(rotor.maxTorque*dt);constraint.setMotorSpeed(rotor.driveVelocity);
    continue;
@@ -2035,16 +2276,20 @@ function gripPenetration(a,b){
  }return depth;
 }
 function gripCollisionContext(item,region){
- const excluded=(held?.items||[item]).map(x=>x.g),obstacles=[],near=bb=>!region||boundsOverlap(region,bb);
+ const excluded=(held?.items||[item]).map(x=>x.g),sharedSurfaces=excluded.filter(g=>g!==item.g).flatMap(g=>conveyorGroupSurfaces(g)),obstacles=[],bb=physicalGroupBounds(item.g);
+ // Each held roller has its own constraint. Its hand target must respect the
+ // chassis skin too, or the other anchors can pull that chassis through a wall.
+ for(const surface of sharedSurfaces)for(const point of corners(surface))for(const key of ['x','y','z']){bb.min[key]=Math.min(bb.min[key],point[key]);bb.max[key]=Math.max(bb.max[key],point[key]);if(region){region.min[key]=Math.min(region.min[key],point[key]-.1);region.max[key]=Math.max(region.max[key],point[key]+.1);}}
+ const near=box=>!region||boundsOverlap(region,box);
  for(const wall of [...(puzzle.active?puzzle.walls:[]),...storyWorld.walls])if(near(wall))obstacles.push({bb:wall,poses:[{p:wall.p,q:wall.q||Q(),half:wall.half}]});
- for(const c of cargos){const bb=cargoBounds(c);if(near(bb))obstacles.push({bb,poses:[cargoPose(c)]});}
- for(const g of groups)if(g!==item.g&&!excluded.includes(g)){const bb=bounds(g);if(near(bb))obstacles.push({bb,poses:poses(g)});}
- return {item,obstacles,source:poses(item.g),bb:bounds(item.g)};
+ for(const c of cargos){const box=cargoBounds(c);if(near(box))obstacles.push({bb:box,poses:[cargoPose(c)]});}
+ for(const g of groups)if(g!==item.g&&!excluded.includes(g)){const box=physicalGroupBounds(g);if(near(box))obstacles.push({bb:box,poses:physicalGroupPoses(g)});}
+ return {item,obstacles,sharedSurfaces,source:physicalGroupPoses(item.g).concat(sharedSurfaces),bb};
 }
 function gripPoseClear(context,p,q){
- const {item,source,obstacles}=context,bb=bounds(item.g,p,q);
+ const {item,source,obstacles,sharedSurfaces}=context,bb=physicalGroupBounds(item.g,p,q),next=physicalGroupPoses(item.g,p,q),shift=sub(p,item.g.body.position);
+ for(const surface of sharedSurfaces){const moved={...surface,p:add(surface.p,shift)};next.push(moved);for(const point of corners(moved))for(const key of ['x','y','z']){bb.min[key]=Math.min(bb.min[key],point[key]);bb.max[key]=Math.max(bb.max[key],point[key]);}}
  if(bb.min.y<Math.min(-.0003,context.bb.min.y)-1e-7||bb.max.y>ROOM_HEIGHT-.001||Math.max(Math.abs(bb.min.x),Math.abs(bb.max.x),Math.abs(bb.min.z),Math.abs(bb.max.z))>ROOM_SIZE/2-.001||!alphaPoseClear(item.g,p,q))return false;
- const next=poses(item.g,p,q);
  for(const obstacle of obstacles){if(!boundsOverlap(bb,obstacle.bb))continue;
   for(let i=0;i<next.length;i++)for(const other of obstacle.poses){
    if(!obbOverlap(next[i],other,.00035))continue;
@@ -2056,7 +2301,7 @@ function gripPoseClear(context,p,q){
  }return true;
 }
 function safeGripSweep(item,target){
- const b=item.g.body,q=b.quaternion,anchor=q.vmult(item.anchor),start=add(b.position,anchor),bb=bounds(item.g),context=gripCollisionContext(item,{min:sub(bb.min,V(.1,.1,.1)),max:add(bb.max,V(.1,.1,.1))});
+ const b=item.g.body,q=b.quaternion,anchor=q.vmult(item.anchor),start=add(b.position,anchor),bb=physicalGroupBounds(item.g),context=gripCollisionContext(item,{min:sub(bb.min,V(.1,.1,.1)),max:add(bb.max,V(.1,.1,.1))});
  let wanted=target.clone(),delta=sub(wanted,start);const distance=delta.norm();
  // Bound target lag as well as its per-frame speed. A blocked hand cannot leave
  // a spring target on the far side of a thin shelf or another body.
@@ -2074,7 +2319,7 @@ function safeGripSweep(item,target){
 }
 function safeGripRotation(item,desired){
  const b=item.g.body,dot=Math.min(1,Math.abs(b.quaternion.x*desired.x+b.quaternion.y*desired.y+b.quaternion.z*desired.z+b.quaternion.w*desired.w)),angle=2*Math.acos(dot);if(angle<1e-7)return desired;
- const radius=Math.max(...poses(item.g,V(),Q()).flatMap(corners).map(v=>v.norm())),extent=V(radius,radius,radius),context=gripCollisionContext(item,{min:sub(b.position,extent),max:add(b.position,extent)});
+ const radius=Math.max(...physicalGroupPoses(item.g,V(),Q()).flatMap(corners).map(v=>v.norm())),extent=V(radius,radius,radius),context=gripCollisionContext(item,{min:sub(b.position,extent),max:add(b.position,extent)});
  const steps=Math.max(1,Math.min(96,Math.ceil(angle*Math.max(radius,HALF)/.006)));let safe=b.quaternion.clone();
  for(let i=1;i<=steps;i++){const q=slerp(b.quaternion,desired,i/steps);if(!gripPoseClear(context,b.position,q))break;safe=q;}return safe;
 }
@@ -2098,8 +2343,8 @@ function updateGrab(dt){
   const rotations=[b.quaternion];
   if(desired){for(let i=1;i<=8;i++)rotations.push(slerp(b.quaternion,desired,i/8));}
   target=safeGripTarget(item,target,rotations);
-  const currentFloor=bounds(item.g).min.y;
-  const turning=shiftDown()||!!snap,turnClear=desired?bounds(item.g,b.position,desired).min.y>=.004:true;
+  const currentFloor=physicalGroupBounds(item.g).min.y;
+  const turning=shiftDown()||!!snap,turnClear=desired?physicalGroupBounds(item.g,b.position,desired).min.y>=.004:true;
   const docking=!!story.dockCandidate&&item.g===held.g;
   if(docking){b.quaternion.copy(slerp(b.quaternion,story.dockCandidate.quaternion,1-Math.exp(-8*dt)));b.aabbNeedsUpdate=true;}
   const lockFloor=docking||currentFloor<.015&&(!turning||!turnClear);
@@ -2420,10 +2665,10 @@ function rechargeExternalBatteries(dt){
 function stepPhysics(dt){
  mechanicalStepCache={parts:null,components:new Map()};
  try{
- simTime+=dt;refreshRotors();updateRobotGrips(dt);updateRobotArms(dt);tutorialFloat(dt);updateGrab(dt);updateRoutes(dt);updateHauling(dt);
+ simTime+=dt;refreshRotors();updateConveyors(dt);updateRobotGrips(dt);updateRobotArms(dt);tutorialFloat(dt);updateGrab(dt);updateRoutes(dt);updateHauling(dt);
  // Bound substep travel to avoid tunnelling through a 9 cm piece.
  for(const g of groups){const b=g.body,speed=b.velocity.norm();if(speed>6)b.velocity.scale(6/speed,b.velocity);const spin=b.angularVelocity.norm();if(spin>30)b.angularVelocity.scale(30/spin,b.angularVelocity);}
- updateCampaignPressure(dt);updateButtonPhysics();prepareRotorPower();updateRotorMotors(dt);driveRobotArms(dt);productionForces(dt);world.step(dt);stabilizeRotors();updateRotorPower(dt);tickContactSensors(dt);
+ updateCampaignPressure(dt);updateButtonPhysics();prepareRotorPower();updateRotorMotors(dt);driveRobotArms(dt);driveConveyors(dt);productionForces(dt);world.step(dt);stabilizeRotors();updateRotorPower(dt);tickContactSensors(dt);
  // Correct only tiny solver penetration of a hand-held shape; free bodies keep
  // their normal collision response. A hand cannot push its attachment underground.
  if(held)for(const item of held.items||[held]){const b=item.g.body,low=bounds(item.g).min.y;if(low<.001){b.position.y+=.001-low;if(b.velocity.y<0)b.velocity.y=0;b.aabbNeedsUpdate=true;}if(item.floorLocked)b.angularVelocity.set(0,0,0);}
@@ -2540,7 +2785,7 @@ face([[.5,-.5,.5],[.5,-.5,-.5],[.5,.5,-.5],[.5,.5,.5]],[1,0,0]);
 face([[.5,-.5,-.5],[-.5,-.5,-.5],[-.5,.5,-.5],[.5,.5,-.5]],[0,0,-1]);
 face([[-.5,-.5,.5],[.5,-.5,.5],[.5,.5,.5],[-.5,.5,.5]],[0,0,1]);
 function buffer(data){const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);return b;}
-const cubeGeometry=buffer(vertices.slice(roomVertexCount));vertices.length=roomVertexCount;
+const cubeVertexData=vertices.slice(roomVertexCount),cubeGeometry=buffer(cubeVertexData);vertices.length=roomVertexCount;
 const unitMeshes={cube:{buffer:cubeGeometry,count:36}};
 for(const shape of ['tetra','pyramid','coupler']){
  const profile=unitProfile(shape),data=[],edges=[];
@@ -2553,9 +2798,9 @@ face([[-.5,0,-.5],[.5,0,-.5],[.5,0,.5],[-.5,0,.5]],[0,1,0]);
 const shadowGeometry=buffer(vertices.slice(roomVertexCount));vertices.length=roomVertexCount;
 const ringVertices=[];for(let i=0;i<48;i++)for(const n of [i,i+1]){const t=n/48*Math.PI*2;ringVertices.push(Math.cos(t),0,Math.sin(t),0,1,0);}
 const ringGeometry=buffer(ringVertices),lineGeometry=gl.createBuffer();
-const attributes=[['aPosition',0],['aNormal',12]].map(([name,offset])=>[gl.getAttribLocation(program,name),offset]);
+const attributes=[['aPosition',0],['aNormal',12],['aPiecePosition',0],['aPieceNormal',12]].map(([name,offset])=>[gl.getAttribLocation(program,name),offset]);
 let boundGeometry=null;
-function bindGeometry(b){if(boundGeometry===b)return;gl.bindBuffer(gl.ARRAY_BUFFER,b);for(const [loc,offset]of attributes)gl.vertexAttribPointer(loc,3,gl.FLOAT,false,24,offset);boundGeometry=b;}
+function bindGeometry(b,batched=false){if(boundGeometry===b)return;gl.bindBuffer(gl.ARRAY_BUFFER,b);for(let i=0;i<attributes.length;i++){const [loc,offset]=attributes[i];gl.vertexAttribPointer(loc,3,gl.FLOAT,false,batched?48:24,offset+(batched&&i>1?24:0));}boundGeometry=b;}
 function setPose(pos,q=Q(),dimensions=V(CUBE_SIZE,CUBE_SIZE,CUBE_SIZE)){
  gl.uniform3f(uniforms.uCenter,pos.x,pos.y,pos.z);gl.uniform4f(uniforms.uQuaternion,q.x,q.y,q.z,q.w);gl.uniform3f(uniforms.uDimensions,dimensions.x,dimensions.y,dimensions.z);
 }
@@ -2697,10 +2942,70 @@ function drawGripperMark(pose){
  const sensor=config.mode==='color'?[1,3,5].map(i=>parseInt(config.color.slice(i,i+2),16)/255).concat(1):color;
  drawBox(at(V(0,-.026,HALF+.0003)),pose.q,V(.026,.006,.001),sensor);
 }
+// The completed blueprint's skin sits exactly on its finite contact surface.
+// Roller bodies remain visible below it; these boxes add no Q-bit or reservoir.
+function drawConveyors(){
+ if(typeof conveyorSurfacePoses!=='function')return;
+ for(const conveyor of conveyors){let travelled=0;
+  for(const pose of conveyorSurfacePoses(conveyor)){
+   drawAsset({buffer:cubeGeometry,count:36},pose.p,pose.q,pose.size,[.115,.14,.135,1]);
+   const length=pose.size.x,spacing=.18,phase=Number.isFinite(conveyor.phase)?conveyor.phase:0,offset=((phase-travelled)%spacing+spacing)%spacing;
+   const color=conveyor.running?[.80,.47,.17,1]:[.46,.34,.21,1];
+   for(let x=-length/2+offset;x<length/2-.012;x+=spacing){if(x<-length/2+.012)continue;
+    const p=add(pose.p,pose.q.vmult(V(x,pose.size.y/2+.0006,0)));
+    drawBox(p,pose.q,V(.012,.001,.045),color);
+   }
+   travelled+=length;
+  }
+ }
+}
+function drawConveyorBlueprintArrows(bp,targets){
+ for(const conveyor of bp.shape.mechanism?.conveyors||[]){
+  const base=targets.find(part=>part.key===conveyor.base);if(!base||!conveyor.ports)continue;
+  for(const name of ['entry','exit']){const port=conveyor.ports[name];if(!port)continue;
+   const local=add(V(...port.p),V(0,HALF*Math.SQRT2+.01,0)),p=add(base.p,base.q.vmult(local)),direction=mul(V(...port.direction),conveyor.direction===-1?-1:1),turn=Q();turn.setFromVectors(V(1,0,0),direction);turn.normalize();const q=base.q.mult(turn),color=[.86,.50,.18,.8];
+   drawBox(p,q,V(.075,.002,.005),color);
+   for(const sign of [-1,1]){const head=Q();head.setFromAxisAngle(V(0,1,0),sign*Math.atan2(.02,.03));drawBox(add(p,q.vmult(V(.03,0,sign*.01))),q.mult(head),V(Math.hypot(.03,.02),.002,.007),color);}
+  }
+ }
+}
+// A rigid assembly moves as one body. Keep its real cube surfaces, including
+// each cube's original local coordinates for edge/texture shading, in a single
+// immutable GPU mesh. Loose pieces, batteries and the existing solid-block
+// renderer retain their individual paths. No collider or saved part is merged.
+function disposeRigidCubeBatch(g){
+ const entry=g.rigidCubeBatch;if(!entry)return;
+ if(entry.buffer)gl.deleteBuffer(entry.buffer);if(boundGeometry===entry.buffer)boundGeometry=null;delete g.rigidCubeBatch;
+}
+function rigidCubeBatch(g){
+ if(g.parts.length<4){disposeRigidCubeBatch(g);return null;}
+ let entry=g.rigidCubeBatch,valid=entry?.parts===g.parts&&entry.local.length===g.parts.length;
+ if(valid)for(let i=0;i<g.parts.length;i++){
+  const p=g.parts[i],local=entry.local[i];
+  if(local.part!==p||local.cube!==(unitShape(p)==='cube'&&!isExternalBattery(p))||local.x!==p.offset.x||local.y!==p.offset.y||local.z!==p.offset.z||local.qx!==p.q.x||local.qy!==p.q.y||local.qz!==p.q.z||local.qw!==p.q.w){valid=false;break;}
+ }
+ if(valid)return entry.count?entry:null;
+ disposeRigidCubeBatch(g);
+ const cubes=g.parts.filter(p=>unitShape(p)==='cube'&&!isExternalBattery(p));
+ const local=g.parts.map(p=>({part:p,cube:unitShape(p)==='cube'&&!isExternalBattery(p),x:p.offset.x,y:p.offset.y,z:p.offset.z,qx:p.q.x,qy:p.q.y,qz:p.q.z,qw:p.q.w}));
+ if(cubes.length<4){g.rigidCubeBatch={parts:g.parts,local,count:0,buffer:null};return null;}
+ const data=new Float32Array(cubes.length*36*12);let at=0;
+ for(const part of cubes)for(let i=0;i<cubeVertexData.length;i+=6){
+  const position=add(part.offset,part.q.vmult(V(cubeVertexData[i]*CUBE_SIZE,cubeVertexData[i+1]*CUBE_SIZE,cubeVertexData[i+2]*CUBE_SIZE))),normal=part.q.vmult(V(...cubeVertexData.slice(i+3,i+6)));
+  data[at++]=position.x;data[at++]=position.y;data[at++]=position.z;data[at++]=normal.x;data[at++]=normal.y;data[at++]=normal.z;
+  for(let j=0;j<6;j++)data[at++]=cubeVertexData[i+j];
+ }
+ const mesh=buffer(data);boundGeometry=null;
+ return g.rigidCubeBatch={parts:g.parts,local,count:cubes.length*36,buffer:mesh};
+}
 function drawGroupSolid(g){
  const batteries=batteryVisualPacks(g);
- if(g.block&&!batteries.length){const p=moodVisualPose(g,blockPose(g));bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,1);setPose(p.p,p.q,p.size);gl.drawArrays(gl.TRIANGLES,0,36);}
- else for(const p of poses(g))if(!isExternalBattery(p.part))drawUnitMesh(g.parts.length===1?{...moodVisualPose(g,p),part:p.part}:p);
+ if(g.block&&!batteries.length){disposeRigidCubeBatch(g);const p=moodVisualPose(g,blockPose(g));bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,1);setPose(p.p,p.q,p.size);gl.drawArrays(gl.TRIANGLES,0,36);}
+ else {
+  const batch=rigidCubeBatch(g);
+  if(batch){bindGeometry(batch.buffer,true);gl.uniform1f(uniforms.uKind,1);setPose(g.body.position,g.body.quaternion,V(1,1,1));gl.drawArrays(gl.TRIANGLES,0,batch.count);}
+  for(const part of g.parts)if(!isExternalBattery(part)&&(!batch||unitShape(part)!=='cube')){const p=partPose(g,part);drawUnitMesh(g.parts.length===1?{...moodVisualPose(g,p),part}:p);}
+ }
  for(const battery of batteries)drawBatteryOpaque(battery);
  for(const part of g.parts)if(part.mood.gripper)drawGripperMark(partPose(g,part));
 }
@@ -2714,7 +3019,7 @@ function drawQubits(){
  }
  gl.depthMask(true);gl.disable(gl.BLEND);
  for(const g of groups){if(g.parts.some(p=>p.mood.production)){for(const p of poses(g))drawBox(p.p,p.q,V(CUBE_SIZE-.002,CUBE_SIZE-.002,CUBE_SIZE-.002),p.part.mood.production?.kind==='A'?[.27,.56,.67,1]:p.part.mood.production?[.72,.53,.26,1]:[.12,.14,.13,1]);if(g.parts.length===2)drawOutline(g.body.position,g.body.quaternion,sub(bounds(g,V(),Q()).max,bounds(g,V(),Q()).min),.8,false);}else drawGroupSolid(g);}
- drawCargos();drawPuzzle();drawAlpha();drawWorkshop();drawShelves();drawBatteriesTransparent();drawStructureOutlines();drawGuides();drawTaskGuides();
+ drawConveyors();drawCargos();drawPuzzle();drawAlpha();drawWorkshop();drawShelves();drawBatteriesTransparent();drawStructureOutlines();drawGuides();drawTaskGuides();
 }
 addQubit([position[0]-Math.sin(yaw)*1.25,HALF+.003,position[2]-Math.cos(yaw)*1.25]);
 
@@ -3285,7 +3590,8 @@ function handleSecondary(event){
   selectedCargo=null;pendingCargo=null;selected=hit;if(!multiSelection.includes(hit.g))multiSelection=[];
   if(event.altKey||altDown()){openDetachMenu(hit);return;}
   if(isExternalBattery(hit.part)){showExternalBatteryMenu(hit.part.id);return;}
-  const arm=robotArmForGroup(hit.g),gripperId=arm?.gripperId||(hit.part.mood.gripper?hit.part.id:null);
+  const ownedConveyor=conveyors.find(c=>c.baseId===hit.part.id||c.required?.includes(hit.part.id));
+  const arm=ownedConveyor&&!hit.part.mood.gripper?null:robotArmForGroup(hit.g),gripperId=arm?.gripperId||(hit.part.mood.gripper?hit.part.id:null);
   if(gripperId){
    robotPanelGripperId=gripperId;
    openCommandMenu(partPose(hit.g,hit.part).p,arm?'Brazo Q-bits · '+robotArmStatus(arm):'Cubo de agarre',[
@@ -3295,6 +3601,18 @@ function handleSecondary(event){
     {label:'Tomar mecanismo',disabled:!canCarry(rotorConnectedGroups([hit.g]))||hit.distance>2.8,run:()=>takeSelection(hit)},
     {label:'Guardar mecanismo',run:()=>{saveMechanism(hit.g);captureMouse();}},
     {label:'Separar pieza…',run:()=>{if(arm)stopRobotArm(arm);openDetachMenu(hit);}},
+    {label:'Cerrar',run:()=>captureMouse()}
+   ]);return;
+  }
+  const conveyor=ownedConveyor||conveyorForGroup(hit.g);
+  if(conveyor){
+   openCommandMenu(partPose(hit.g,hit.part).p,'Cinta Q-bits · '+conveyorStatus(conveyor),[
+    {label:'Configurar cinta y extender…',run:()=>{closeCommandMenu(false);pause();panel.hidden=false;updatePanel();switchPanelTab('mechanisms');}},
+    {label:conveyor.running?'Detener tramo':'Iniciar tramo',run:()=>{if(conveyor.running)stopConveyor(conveyor);else startConveyor(conveyor);announce(conveyorStatus(conveyor));captureMouse();}},
+    {label:'Invertir sentido del tramo',run:()=>{configureConveyor(conveyor,{direction:-conveyor.direction});announce(conveyorStatus(conveyor));captureMouse();}},
+    {label:'Tomar mecanismo',disabled:!canCarry(rotorConnectedGroups([hit.g]))||hit.distance>2.8,run:()=>takeSelection(hit)},
+    {label:'Guardar mecanismo',run:()=>{saveMechanism(hit.g);captureMouse();}},
+    {label:'Separar pieza…',run:()=>{stopConveyor(conveyor);openDetachMenu(hit);}},
     {label:'Cerrar',run:()=>captureMouse()}
    ]);return;
   }
@@ -3425,8 +3743,47 @@ function updateRobotArmPanel(){
  if(!robotArmPanel)robotArmPanel=QBitsRobotArmPanel.create({snapshot:robotPanelSnapshot,action:robotPanelAction});
  robotArmPanel.refresh();
 }
+// Construction controls share the same blueprints and real materials as the arm.
+let conveyorPanel=null;
+function conveyorPanelSubject(){const hit=held||selected,g=hit?.g;return g?(conveyors.find(c=>c.baseId===hit.part?.id||c.required?.includes(hit.part?.id))||conveyorForGroup(g)):null;}
+function conveyorPanelSnapshot(){
+ const c=conveyorPanelSubject(),base=c?rotorPart(c.baseId):null,component=base?rotorConnectedGroups([base.g]):[],supply=base?externalBatterySummary(base.g):null;
+ const materials={},materialsWithSupports={};for(const kind of ['straight','left','right']){const recipe=conveyorBlueprintTemplate(kind,false),supported=conveyorBlueprintTemplate(kind,true);materials[kind]=recipe?blueprintMaterials(mechanismBlueprintShape(recipe)):'Plano en preparación';materialsWithSupports[kind]=supported?blueprintMaterials(mechanismBlueprintShape(supported)):materials[kind];}
+ return {available:story.scene==='lab'&&!puzzle.active,supportsAvailable:true,materials,materialsWithSupports,selectedLabel:c?(c.kind==='straight'?'Cinta recta':c.kind==='left'?'Esquina izquierda':'Esquina derecha')+' · tramo '+c.id:'Selecciona un rodillo del tramo para configurarlo.',conveyor:c?{id:c.id,kind:c.kind,enabled:c.running,direction:c.direction,status:conveyorStatus(c),load:c.load,capacity:c.capacity,speed:conveyorRotors(c).reduce((sum,r)=>sum+Math.abs(r.actualRpm||0)*Math.PI*CUBE_SIZE/60,0)/Math.max(1,c.joints.length),energy:supply?.storedJ||0,connected:conveyors.filter(other=>component.includes(rotorPart(other.baseId)?.g)).length}:null};
+}
+function conveyorPortWorld(c,name){const base=rotorPart(c?.baseId),port=c?.ports?.[name];return base&&port?{p:add(base.p,base.q.vmult(V(...port.p))),direction:base.q.vmult(V(...port.direction))}:null;}
+function conveyorBlueprintPlacement(record,c){
+ const input=record?.conveyors?.[0],part=input&&record.groups.flatMap(g=>g.parts).find(p=>p.key===input.base),exit=conveyorPortWorld(c,c?.direction===-1?'entry':'exit');if(!part||!input.ports?.entry||!exit)return null;exit.direction.scale(c.direction===-1?-1:1,exit.direction);
+ const baseQ=Q();baseQ.set(...part.q);const entry=input.ports.entry,local=add(V(...part.p),baseQ.vmult(V(...entry.p))),incoming=baseQ.vmult(V(...entry.direction));
+ // Connections are orthogonal and level; a tilted machine must be placed by hand.
+ if(Math.abs(exit.direction.y)>.01||Math.abs(incoming.y)>.01)return null;
+ let best=null;for(let turns=0;turns<4;turns++){const q=Q();q.setFromAxisAngle(V(0,1,0),turns*Math.PI/2);if(q.vmult(incoming).dot(exit.direction)<.999)continue;const origin=sub(exit.p,q.vmult(local));if(origin.y<-.001)return null;best={point:origin,height:Math.max(0,origin.y-.002),quarterTurns:turns};break;}return best;
+}
+function conveyorPanelAction(action,payload={}){
+ const c=conveyorPanelSubject(),finish=(ok,message)=>({ok:!!ok,message});if(story.scene!=='lab'||puzzle.active)return finish(false,'Disponible en el banco de pruebas.');
+ if(action==='blueprint'){
+  if(!['straight','left','right'].includes(payload.kind)||!Number.isInteger(payload.quarterTurns)||payload.quarterTurns<0||payload.quarterTurns>3||!Number.isFinite(payload.height)||payload.height<0||payload.height>6)return finish(false,'Revisa el tipo, la orientación y la altura.');
+  const record=conveyorBlueprintTemplate(payload.kind,payload.supports===true);if(!record)return finish(false,'No se pudo preparar este plano.');
+  let placement={point:floorAim()||V(position[0]-Math.sin(yaw)*1.4,0,position[2]-Math.cos(yaw)*1.4),height:payload.height,quarterTurns:payload.quarterTurns};
+  if(payload.extend){if(!c)return finish(false,'Selecciona primero una cinta.');placement=conveyorBlueprintPlacement(record,c);if(!placement)return finish(false,'Coloca el tramo nivelado para prolongar su salida.');}
+  const bp=placeBlueprint(mechanismBlueprintShape(record),placement.point,placement);if(bp){if(payload.extend)bp.conveyorLink=c.baseId;panel.hidden=true;captureMouse();}
+  return finish(bp,bp?'Plano colocado. Acerca las piezas e integra con clic derecho. Acopla la batería al terminar.':'No hay espacio libre para ese tramo.');
+ }
+ if(!c)return finish(false,'Selecciona un rodillo de la cinta.');
+ if(action==='direction'){const ok=configureConveyor(c,{direction:payload.direction});return finish(ok,conveyorStatus(c));}
+ if(action==='toggle'){const ok=payload.enabled===true?startConveyor(c):stopConveyor(c);if(ok&&payload.enabled===true){panel.hidden=true;captureMouse();announce('Cinta en marcha · P para detener o invertir.');}return finish(ok,conveyorStatus(c));}
+ return finish(false,'Orden no disponible.');
+}
+function joinCompletedConveyorBlueprint(bp,made){
+ if(!bp.conveyorLink)return;const previous=rotorPart(bp.conveyorLink),next=conveyors.find(c=>made.includes(rotorPart(c.baseId)?.g)),incoming=next&&rotorPart(next.baseId);if(!previous||!incoming||previous.g===incoming.g)return;
+ const joined=weld({source:incoming.g,target:previous.g,position:incoming.g.body.position.clone(),quaternion:incoming.g.body.quaternion.clone()});
+ if(joined){made.splice(made.indexOf(incoming.g),1,joined);pruneConveyors();}else announce('Tramo completo. Une los laterales con Shift para compartir la batería.');
+}
+function updateConveyorPanel(){if(!window.QBitsConveyorPanel||typeof conveyorBlueprintTemplate!=='function')return;if(!conveyorPanel)conveyorPanel=QBitsConveyorPanel.create({snapshot:conveyorPanelSnapshot,action:conveyorPanelAction});conveyorPanel.refresh();}
+function builtInMechanismRecipes(){return [robotArmBlueprintTemplate(),...(typeof conveyorBlueprintTemplate==='function'?['straight','left','right'].map(kind=>conveyorBlueprintTemplate(kind,false)):[])].filter(Boolean);}
+
 function updateMechanismPanel(){
- updateRobotArmPanel();
+ updateRobotArmPanel();updateConveyorPanel();
  const targets=controlRotors(),rotor=targets[0]||selectedRotor(),set=activeRotorSet(),available=mechanismsAvailable(),rpm=rotor?.rpm??mechanismDefaults.rpm;
  const common=(field,format)=>targets.length>1&&targets.some(r=>r[field]!==targets[0][field])?'Varios':format(rotor?.[field]??mechanismDefaults[field]);
  document.querySelector('#mechanism-unlock').textContent=story.scene==='lab'?'Disponibles en el banco. En campaña: completa el nivel 5, La primera unión.':mechanismsUnlocked()?'Enganche y Rotor desbloqueados.':'Completa el nivel 5, La primera unión, para desbloquearlos en campaña.';
@@ -3577,7 +3934,7 @@ function updateCargoCallout(){
 // when leaving the challenge; rewards and deliveries use a single transaction.
 const puzzleConfig={frameSeconds:12,energySeconds:8};
 function puzzleBlockedEdit(kind='edit'){if(certifiedAutomation()){announce('Ensayo certificado: usa las piezas del banco. Reinicia el nivel para restaurarlas.');return true;}if(kind==='mechanism'&&mechanismsAvailable())return false;if(story.ready&&story.scene==='campaign'&&panel.hidden){announce('La materia genera nuevos Q-bits. P abre el banco de herramientas de prueba.');return true;}if(!puzzle.active||kind==='qubit'&&alphaSettings.allowPuzzleSpawn)return false;announce('Puzle activo · los recursos se obtienen en los portales. P → Puzle para volver al banco.');return true;}
-function saveLab(){return {mechanismDefaults:typeof mechanismDefaults==='undefined'?null:{...mechanismDefaults},rotors:serializeRotorState(),rotorSets:serializeRotorSets(),robotArms:serializeRobotArms(),contacts:serializeContactState(),shelves:serializeShelves(),alphaScene:alphaSceneSnapshot(),settings:{...settings},moodSettings:{...moodSettings},position:[...position],yaw,pitch,groups:groups.map(g=>({parts:worldParts(g),q:g.body.quaternion.clone(),v:g.body.velocity.clone(),w:g.body.angularVelocity.clone()})),cargos:cargos.map(c=>({id:c.id,p:c.body.position.clone(),side:c.side,required:c.required,color:c.color,...(c.robotPhysical?{robotPhysical:true,q:c.body.quaternion.clone(),v:c.body.velocity.clone(),w:c.body.angularVelocity.clone()}:{} )}))};}
+function saveLab(){return {mechanismDefaults:typeof mechanismDefaults==='undefined'?null:{...mechanismDefaults},rotors:serializeRotorState(),rotorSets:serializeRotorSets(),robotArms:serializeRobotArms(),conveyors:typeof serializeConveyors==='function'?serializeConveyors():[],contacts:serializeContactState(),shelves:serializeShelves(),alphaScene:alphaSceneSnapshot(),settings:{...settings},moodSettings:{...moodSettings},position:[...position],yaw,pitch,groups:groups.map(g=>({parts:worldParts(g),q:g.body.quaternion.clone(),v:g.body.velocity.clone(),w:g.body.angularVelocity.clone()})),cargos:cargos.map(c=>({id:c.id,p:c.body.position.clone(),side:c.side,required:c.required,color:c.color,...(c.robotPhysical?{robotPhysical:true,q:c.body.quaternion.clone(),v:c.body.velocity.clone(),w:c.body.angularVelocity.clone()}:{} )}))};}
 function clearPuzzleScene(){
  resetBatteryLiquids();
  clearShelves();
@@ -3997,7 +4354,7 @@ function restoreLabMechanisms(saved){
    mechanismDefaults[key]=storedRotorOptionsValid(candidate)?candidate[key]:defaults[key];
   }
  }
- const restored=restoreRotorState(saved?.rotors);restoreRotorSets(saved?.rotorSets);restoreContactState(saved?.contacts);restoreShelves(saved?.shelves);if(typeof restoreRobotArms==='function')restoreRobotArms(saved?.robotArms);return restored;
+ const restored=restoreRotorState(saved?.rotors);restoreRotorSets(saved?.rotorSets);restoreContactState(saved?.contacts);restoreShelves(saved?.shelves);if(typeof restoreRobotArms==='function')restoreRobotArms(saved?.robotArms);if(typeof restoreConveyors==='function')restoreConveyors(saved?.conveyors);return restored;
 }
 function mechanismGroups(subject){
  if(typeof rotors==='undefined')return [];
@@ -4051,6 +4408,57 @@ function storedRobotArmValid(record,keys){
  if(arm.poses!==undefined){for(const name of ['pick','place'])if(arm.poses?.[name]!==null&&(!Array.isArray(arm.poses?.[name])||arm.poses[name].length!==arm.joints.length||arm.poses[name].some(q=>!Array.isArray(q)||q.length!==4||!q.every(Number.isFinite)||Math.abs(Math.hypot(...q)-1)>.0001)))return false;}
  return true;
 }
+function storedConveyorPortsValid(ports){
+ if(ports===undefined)return true;
+ if(!ports||typeof ports!=='object'||Array.isArray(ports))return false;
+ return ['entry','exit'].every(key=>{const port=ports[key];return port&&Array.isArray(port.p)&&port.p.length===3&&port.p.every(n=>Number.isFinite(n)&&Math.abs(n)<=10)&&Array.isArray(port.direction)&&port.direction.length===3&&port.direction.every(Number.isFinite)&&Math.abs(Math.hypot(...port.direction)-1)<.0001;});
+}
+// The final belt is a surface of the supplied machine. Imported ports cannot
+// manufacture an unrelated platform elsewhere or outside its own rollers.
+function conveyorPortGeometryValid(kind,ports,basePose,materialPoses,rollerPoses){
+ if(ports===undefined||ports===null)return true;
+ if(!storedConveyorPortsValid(ports)||!basePose?.p||!basePose?.q||!materialPoses?.length||!rollerPoses?.length)return false;
+ const e=ports.entry,x=ports.exit,tolerance=.0001,cardinal=d=>Math.abs(d[1])<tolerance&&((Math.abs(Math.abs(d[0])-1)<tolerance&&Math.abs(d[2])<tolerance)||(Math.abs(Math.abs(d[2])-1)<tolerance&&Math.abs(d[0])<tolerance));
+ if(!cardinal(e.direction)||!cardinal(x.direction)||Math.abs(e.p[1]-x.p[1])>tolerance)return false;
+ const delta=x.p.map((n,i)=>n-e.p[i]),dot=(a,b)=>a.reduce((v,n,i)=>v+n*b[i],0);let path;
+ if(kind==='straight'){
+  const length=dot(delta,e.direction);if(length<.02||length>2||e.direction.some((n,i)=>Math.abs(n-x.direction[i])>tolerance)||delta.some((n,i)=>Math.abs(n-length*e.direction[i])>tolerance))return false;
+  path=[e.p,x.p];
+ }else{
+  if(!['left','right'].includes(kind)||Math.abs(e.direction[0])<.9999||Math.abs(x.direction[2])<.9999||Math.abs(e.direction[0]*x.direction[2]-(kind==='right'?1:-1))>tolerance)return false;
+  const lengths=[delta[0]*e.direction[0],delta[2]*x.direction[2]];if(lengths.some(n=>n<.02||n>2))return false;path=[e.p,[x.p[0],e.p[1],e.p[2]],x.p];
+ }
+ const inv=basePose.q.inverse(),local=p=>inv.vmult(sub(p,basePose.p));
+ const box=poses=>{const points=poses.flatMap(p=>corners(p).map(local));return {min:['x','y','z'].map(k=>Math.min(...points.map(p=>p[k]))),max:['x','y','z'].map(k=>Math.max(...points.map(p=>p[k])))};};
+ const material=box(materialPoses),rollers=box(rollerPoses),top=e.p[1]+HALF*Math.SQRT2+.004,width=3*CUBE_SIZE;
+ for(let i=1;i<path.length;i++){
+  const a=path[i-1],b=path[i],alongX=Math.abs(a[0]-b[0])>tolerance;
+  const low=[Math.min(a[0],b[0])-(alongX?0:width/2),top-.004,Math.min(a[2],b[2])-(alongX?width/2:0)],high=[Math.max(a[0],b[0])+(alongX?0:width/2),top,Math.max(a[2],b[2])+(alongX?width/2:0)];
+  for(let axis=0;axis<3;axis++)if(low[axis]<material.min[axis]-.0301||high[axis]>material.max[axis]+.0301||low[axis]<rollers.min[axis]-.1001||high[axis]>rollers.max[axis]+.1001)return false;
+ }
+ return true;
+}
+function storedConveyorGeometryValid(modules,groupsData,readId,readPose){
+ if(!modules?.length)return true;
+ const poses=groupsData.map(group=>group.parts.map(readPose)),byId=new Map(),owners=new Map();groupsData.forEach((g,i)=>g.parts.forEach((p,j)=>{byId.set(readId(p),poses[i][j]);owners.set(readId(p),i);}));
+ return modules.every(module=>{const base=byId.get(module.baseId),owner=owners.get(module.baseId),moving=new Set(module.joints.map(j=>owners.get(j.aId)===owner?owners.get(j.bId):owners.get(j.aId)));return !!base&&conveyorPortGeometryValid(module.kind,module.ports,base,poses.flat(),[...moving].flatMap(i=>poses[i]||[]));});
+}
+function storedShelfConveyorsValid(item){
+ return storedConveyorGeometryValid(item.conveyors,item.groups,p=>p.id,p=>{const q=Q();q.set(...p.q);return {shape:p.shape,p:V(...p.p),q};});
+}
+function storedConveyorsValid(record,keys,owners){
+ if(record.conveyors===undefined)return true;
+ if(!Array.isArray(record.conveyors)||!record.conveyors.length||record.conveyors.length>record.joints.length)return false;
+ const bases=new Set(),claimed=new Set(record.robotArm?.joints||[]);
+ for(const module of record.conveyors){
+  if(!module||module.version!==1||!keys.has(module.base)||bases.has(module.base)||!['straight','left','right'].includes(module.kind)||![1,-1].includes(module.direction)||!Number.isInteger(module.capacity)||module.capacity<1||module.capacity>32||!Array.isArray(module.joints)||!module.joints.length||module.joints.length>16||!storedConveyorPortsValid(module.ports))return false;
+  bases.add(module.base);
+  if(module.drives!==undefined&&(!Array.isArray(module.drives)||module.drives.length!==module.joints.length||module.drives.some(n=>![1,-1].includes(n))))return false;
+  for(const index of module.joints){if(!Number.isInteger(index)||index<0||index>=record.joints.length||claimed.has(index))return false;const joint=record.joints[index];if(!joint||![owners.get(joint.a),owners.get(joint.b)].includes(owners.get(module.base)))return false;claimed.add(index);}
+  if(module.required!==undefined){const allowed=new Set([owners.get(module.base),...module.joints.flatMap(index=>[owners.get(record.joints[index].a),owners.get(record.joints[index].b)])]);if(!Array.isArray(module.required)||!module.required.length||module.required.length>MAX_QUBITS||new Set(module.required).size!==module.required.length||module.required.some(key=>!keys.has(key)||!allowed.has(owners.get(key)))||![module.base,...module.joints.flatMap(index=>[record.joints[index].a,record.joints[index].b]),...record.groups.flatMap((group,index)=>allowed.has(index)&&index!==owners.get(module.base)?group.parts.map(part=>part.key):[])].every(key=>module.required.includes(key)))return false;}
+ }
+ return true;
+}
 function savedMechanismValid(record){
  try{
   if(!record||record.version!==1||!['rotor','coupler','battery','gripper'].includes(record.type)||typeof record.name!=='string'||!record.name.trim()||record.name.length>40||/[\u0000-\u001f]/.test(record.name))return false;
@@ -4067,7 +4475,7 @@ function savedMechanismValid(record){
    }
   }
   if(record.type==='battery'?![...keys.values()].some(part=>part.battery!==undefined):record.type==='gripper'?![...keys.values()].some(part=>part.gripper!==undefined):![...keys.values()].some(part=>part.shape==='coupler'))return false;
-  if(!storedRobotArmValid(record,keys))return false;
+  if(!storedRobotArmValid(record,keys)||!storedConveyorsValid(record,keys,owners))return false;
   const powered=record.joints.filter(j=>j?.enabled===true);if(powered.length>1&&powered.some(j=>j.mount==='fixed'))return false;
   const attached=new Set(),graph=record.groups.map(()=>new Set()),parents=record.groups.map((_,i)=>i),root=i=>parents[i]===i?i:parents[i]=root(parents[i]);
   for(const joint of record.joints){
@@ -4078,6 +4486,8 @@ function savedMechanismValid(record){
   const reached=new Set([0]),queue=[0];for(let i=0;i<queue.length;i++)for(const n of graph[queue[i]])if(!reached.has(n)){reached.add(n);queue.push(n);}
   if(reached.size!==record.groups.length||typeof couplerTip!=='function')return false;
   const rigid=mechanismRecordParts(record),all=rigid.flat(),byKey=new Map(all.map(part=>[part.key,part]));
+  const modules=(record.conveyors||[]).map(module=>({...module,baseId:module.base,joints:module.joints.map(index=>({aId:record.joints[index].a,bId:record.joints[index].b}))}));
+  if(!storedConveyorGeometryValid(modules,record.groups,p=>p.key,p=>byKey.get(p.key)))return false;
   if(!storedBatteryPacksValid(keys,owners,byKey))return false;
   if(!rigid.every(assemblyValid))return false;
   for(let i=0;i<all.length;i++)for(let j=i+1;j<all.length;j++)if(obbOverlap(all[i],all[j],.00001))return false;
@@ -4086,7 +4496,7 @@ function savedMechanismValid(record){
  }catch{return false;}
 }
 function copySavedMechanism(record){
- return {version:1,type:record.type,name:record.name,groups:record.groups.map(g=>({parts:g.parts.map(p=>({key:p.key,shape:p.shape,weight:p.weight,p:[...p.p],q:[...p.q],...(p.battery?{battery:{pack:p.battery.pack,enabled:p.battery.enabled}}:{}),...(p.gripper?{gripper:{...p.gripper}}:{})}))})),joints:record.joints.map(j=>({a:j.a,b:j.b,rpm:j.rpm,direction:j.direction,moving:j.moving,...storedRotorDrive(j),enabled:j.enabled})),...(record.rotorSets?{rotorSets:record.rotorSets.map(set=>({name:set.name,joints:[...set.joints]}))}:{}),...(record.robotArm?{robotArm:JSON.parse(JSON.stringify(record.robotArm))}:{})};
+ return {version:1,type:record.type,name:record.name,groups:record.groups.map(g=>({parts:g.parts.map(p=>({key:p.key,shape:p.shape,weight:p.weight,p:[...p.p],q:[...p.q],...(p.battery?{battery:{pack:p.battery.pack,enabled:p.battery.enabled}}:{}),...(p.gripper?{gripper:{...p.gripper}}:{})}))})),joints:record.joints.map(j=>({a:j.a,b:j.b,rpm:j.rpm,direction:j.direction,moving:j.moving,...storedRotorDrive(j),enabled:j.enabled})),...(record.rotorSets?{rotorSets:record.rotorSets.map(set=>({name:set.name,joints:[...set.joints]}))}:{}),...(record.robotArm?{robotArm:JSON.parse(JSON.stringify(record.robotArm))}:{}),...(record.conveyors?{conveyors:JSON.parse(JSON.stringify(record.conveyors))}:{})};
 }
 function alignMechanismSnapshot(record){
  // A live hinge solver may leave millimetres of drift. Canonicalize only this
@@ -4094,6 +4504,7 @@ function alignMechanismSnapshot(record){
  if(!record.joints.length)return true;
  const rigid=mechanismRecordParts(record),parts=new Map(),owners=new Map();
  rigid.forEach((group,i)=>group.forEach(part=>{parts.set(part.key,part);owners.set(part.key,i);}));
+ const links=rigid.map(()=>[]);for(const joint of record.joints){const a=owners.get(joint.a),b=owners.get(joint.b);links[a].push(b);links[b].push(a);}
  const reached=new Set([0]);let changed=true;
  while(changed){changed=false;for(const joint of record.joints){
   const ai=owners.get(joint.a),bi=owners.get(joint.b),knownA=reached.has(ai),knownB=reached.has(bi);
@@ -4102,7 +4513,10 @@ function alignMechanismSnapshot(record){
   const a=couplerTip(parent),b=couplerTip(child);
   if(a.point.distanceTo(b.point)>.005||a.axis.dot(b.axis)>-.995)return false;
   const rotation=Q();rotation.setFromVectors(b.axis,mul(a.axis,-1));rotation.normalize();
-  for(const part of rigid[index]){part.p=add(a.point,rotation.vmult(sub(part.p,b.point)));part.q=rotation.mult(part.q);part.q.normalize();}
+  // Correct the complete descendant branch together. Moving only the first
+  // body would manufacture a larger gap at its otherwise sound next hinge.
+  const branch=[index],seen=new Set(branch);for(const at of branch)for(const next of links[at])if(!reached.has(next)&&!seen.has(next)){seen.add(next);branch.push(next);}
+  for(const childIndex of branch)for(const part of rigid[childIndex]){part.p=add(a.point,rotation.vmult(sub(part.p,b.point)));part.q=rotation.mult(part.q);part.q.normalize();}
   reached.add(index);changed=true;
  }}
  if(reached.size!==rigid.length)return false;
@@ -4143,6 +4557,7 @@ function mechanismSnapshot(subject,name=null){
  const sets=rotorSets.map(set=>({name:set.name,joints:linked.map((r,index)=>set.rotorIds.includes(r.id)?index:-1).filter(index=>index>=0)})).filter(set=>set.joints.length);
  if(sets.length)record.rotorSets=sets;
  if(typeof robotArmTemplate==='function'){const arm=robotArmTemplate(subject,keys,linked);if(arm)record.robotArm=arm;}
+ if(typeof conveyorTemplate==='function'){const modules=conveyorTemplate(subject,keys,linked);if(modules.length)record.conveyors=modules;}
  return alignMechanismSnapshot(record)&&savedMechanismValid(record)?record:null;
 }
 function loadSavedMechanisms(){
@@ -4173,9 +4588,10 @@ function spawnSavedMechanism(record,point){
   for(let i=0;i<joints.length;i++)configureRotor(joints[i],record.joints[i]);
   for(const set of record.rotorSets||[])createRotorSet(set.name,set.joints.map(index=>joints[index]));
   if(record.robotArm&&typeof restoreRobotArmTemplate==='function')restoreRobotArmTemplate(record.robotArm,ids,joints);
+  if(record.conveyors&&typeof restoreConveyorTemplate==='function'){const modules=restoreConveyorTemplate(record.conveyors,ids,joints);if(!Array.isArray(modules)||modules.length!==record.conveyors.length)throw new Error('La cinta no pudo recuperar sus rodillos.');}
   clearRotorSelection();multiSelection=made;selected={g:made[0],part:made[0].parts[0]};announce(record.name+' creado · '+count+' piezas'+(made.some(g=>g.parts.some(isExternalBattery))?' · baterías vacías: apágalas y déjalas sobre el piso':''));return joints[0]||made[0];
  }catch(error){
-  for(const rotor of joints)disconnectRotor(rotor);for(const g of made)removeGroup(g);refreshRotors();announce(error.message||'No se pudo crear el mecanismo.');return null;
+  for(const rotor of joints)disconnectRotor(rotor);for(const g of made)removeGroup(g);if(typeof pruneConveyors==='function')pruneConveyors();refreshRotors();announce(error.message||'No se pudo crear el mecanismo.');return null;
  }
 }
 function duplicateMechanism(subject){
@@ -4232,6 +4648,49 @@ function robotArmBlueprintTemplate(){
  if(!savedMechanismValid(record))return null;
  builtInArmRecipe=copySavedMechanism(record);return copySavedMechanism(record);
 }
+// Conveyor recipes use only existing cubes and pointed couplers. One driven
+// bearing per roller avoids a redundant closed constraint loop; the other pair
+// is the matching passive support. The underframe clears the rotating corners.
+function conveyorBlueprintTemplate(kind='straight',supports=false){
+ if(!['straight','left','right'].includes(kind))return null;
+ const C=CUBE_SIZE,corner=kind!=='straight',record={version:1,type:'rotor',name:'Cinta Q-bits · '+(corner?(kind==='left'?'esquina izquierda':'esquina derecha'):'recta'),groups:Array.from({length:4},()=>({parts:[]})),joints:[]};let key=0;const legKeys=new Set();
+ const part=(group,shape,x,y,z,axis=V(0,1,0))=>{const q=Q();if(shape==='coupler')q.setFromVectors(V(0,1,0),axis);q.normalize();const p=add(V(x*C,y*C,z*C),shape==='coupler'?mul(axis,C*5/56):V());const item={key:key++,shape,weight:1,p:[p.x,p.y,p.z],q:[q.x,q.y,q.z,q.w]};record.groups[group].parts.push(item);return item;};
+ const cube=(group,x,y,z)=>part(group,'cube',x,y,z),couple=(group,x,y,z,axis)=>part(group,'coupler',x,y,z,axis);
+ const base=cube(0,-1,1.5,-3),fixed=new Map(),occupied=new Set(['-1,-3']);
+ const rail=(x,z,axis)=>{const k=x+','+z;if(occupied.has(k))return;occupied.add(k);const p=axis?couple(0,x,1.5,z,axis):cube(0,x,1.5,z);if(axis)fixed.set(k,p);};
+ if(!corner){
+  for(const z of [-3,3])for(let x=-2;x<=3;x++)rail(x,z,[-2,0,2].includes(x)?V(0,0,z<0?1:-1):null);
+ }else{
+  for(let x=-2;x<=5;x++)rail(x,-3,[-2,0].includes(x)?V(0,0,1):null);
+  for(let z=-2;z<=6;z++)rail(5,z,z===5?V(-1,0,0):null);
+  for(let x=-2;x<=0;x++)rail(x,3,[-2,0].includes(x)?V(0,0,-1):null);
+  for(let z=4;z<=6;z++)rail(-1,z,z===5?V(1,0,0):null);
+ }
+ const bridgeX=corner?-2:0;
+ for(let z=-3;z<=3;z++)cube(0,bridgeX,-.5,z);
+ for(const z of [-3,3]){cube(0,bridgeX,.5,z);if(supports)for(const y of [-1.5,-2.5])legKeys.add(cube(0,bridgeX,y,z).key);}
+ const rollers=corner?[{x:-2,z:0,axis:V(0,0,1),fixed:'-2,-3',drive:1},{x:0,z:0,axis:V(0,0,1),fixed:'0,-3',drive:1},{x:2,z:5,axis:V(1,0,0),fixed:'-1,5',drive:-1}]:[-2,0,2].map(x=>({x,z:0,axis:V(0,0,1),fixed:x+',-3',drive:1}));
+ for(const [i,roller]of rollers.entries()){
+  const {x,z,axis}=roller,a=fixed.get(roller.fixed),b=couple(i+1,x-axis.x,1.5,z-axis.z,mul(axis,-1));
+  cube(i+1,x,1.5,z);couple(i+1,x+axis.x,1.5,z+axis.z,axis);
+  const phase=Q();phase.setFromAxisAngle(axis,i*Math.PI/4);const pivot=V(x*C,1.5*C,z*C);
+  for(const item of record.groups[i+1].parts){const q=Q();q.set(...item.q);const p=add(pivot,phase.vmult(sub(V(...item.p),pivot))),next=phase.mult(q);item.p=[p.x,p.y,p.z];item.q=[next.x,next.y,next.z,next.w];}
+  record.joints.push({a:a.key,b:b.key,rpm:30,direction:roller.drive,moving:'b',mount:'wheel',maxTorque:1,capacity:128,enabled:false});
+ }
+ const points=corner?[[-2.5,1.5,0],[2,1.5,0],[2,1.5,6.5]]:[[-2.5,1.5,0],[3.5,1.5,0]],relative=p=>p.map((n,i)=>+(n*C-base.p[i]).toFixed(9));
+ const ports={entry:{p:relative(points[0]),direction:[1,0,0]},exit:{p:relative(points[points.length-1]),direction:corner?[0,0,1]:[1,0,0]}};
+ const drives=rollers.map(r=>r.drive);
+ if(kind==='left'){
+  for(const group of record.groups)for(const item of group.parts){item.p[2]*=-1;item.q[0]*=-1;item.q[1]*=-1;}
+  for(const port of Object.values(ports)){port.p[2]*=-1;port.direction[2]*=-1;}
+  for(const joint of record.joints)joint.direction*=-1;for(let i=0;i<drives.length;i++)drives[i]*=-1;
+ }
+ record.conveyors=[{version:1,base:base.key,joints:[0,1,2],kind,direction:1,capacity:8,ports,drives,required:record.groups.flatMap(g=>g.parts).filter(p=>!legKeys.has(p.key)).map(p=>p.key)}];
+ record.rotorSets=[{name:'Cinta Q-bits',joints:[0,1,2]}];
+ const origin=V((corner?1.5:.5)*C,(supports?-3:-1)*C,(corner?(kind==='left'?-1.5:1.5):0)*C);
+ for(const group of record.groups)for(const item of group.parts)item.p=item.p.map((n,i)=>+(n-origin[['x','y','z'][i]]).toFixed(9));
+ return savedMechanismValid(record)?record:null;
+}
 function mechanismBlueprintShape(record){return {name:record.name,geometryVersion:4,mechanism:copySavedMechanism(record),parts:record.groups.flatMap((g,group)=>g.parts.map(part=>({...part,group}))) };}
 function blueprintMaterials(shape){
  const counts=new Map();for(const part of shape.parts)counts.set(normalizeUnitShape(part.shape),(counts.get(normalizeUnitShape(part.shape))||0)+1);
@@ -4265,10 +4724,12 @@ function completeMechanismBlueprint(bp,targets){
   for(const joint of record.joints){const rotor=connectRotorTips(ids.get(joint.a),ids.get(joint.b),{...joint,enabled:false});if(!rotor)throw new Error('Las puntas ya no coinciden');joints.push(rotor);}
   for(const set of record.rotorSets||[])createRotorSet(set.name,set.joints.map(i=>joints[i]));
   if(record.robotArm&&typeof restoreRobotArmTemplate==='function')restoreRobotArmTemplate(record.robotArm,ids,joints);
+  if(record.conveyors&&typeof restoreConveyorTemplate==='function'){const modules=restoreConveyorTemplate(record.conveyors,ids,joints);if(!Array.isArray(modules)||modules.length!==record.conveyors.length)throw new Error('La cinta no pudo recuperar sus rodillos.');}
+  if(record.conveyors?.length&&typeof joinCompletedConveyorBlueprint==='function')joinCompletedConveyorBlueprint(bp,made);
   clearRotorSelection();multiSelection=made;selected={g:made[0],part:made[0].parts[0]};blueprints.splice(blueprints.indexOf(bp),1);
-  announce(record.name+' construido · '+flat.length+' piezas · detenido; configura el agarre y acopla tu batería.');return true;
+  announce(record.name+' construido · '+flat.length+' piezas · '+(record.conveyors?.length?'detenido; acopla una batería y activa la cinta.':'detenido; configura el agarre y acopla tu batería.'));return true;
  }catch{
-  for(const rotor of joints)disconnectRotor(rotor);for(const g of made)removeGroup(g);
+  for(const rotor of joints)disconnectRotor(rotor);for(const g of made)removeGroup(g);if(typeof pruneConveyors==='function')pruneConveyors();
   for(const p of originals)makeGroup([p]);blueprints.splice(blueprints.indexOf(bp),1);announce('Montaje interrumpido. Se conservaron todas las piezas.');return true;
  }
 }
@@ -4290,11 +4751,14 @@ function blueprintTargets(bp){
  bp.targetCache={shape:bp.shape,stamp,targets};return targets;
 }
 function blueprintBox(bp){const targets=blueprintTargets(bp);if(bp.boxCache?.targets===targets)return bp.boxCache.box;const pts=targets.flatMap(corners),min=V(Infinity,Infinity,Infinity),max=V(-Infinity,-Infinity,-Infinity);for(const p of pts)for(const k of ['x','y','z']){min[k]=Math.min(min[k],p[k]);max[k]=Math.max(max[k],p[k]);}const box={...alphaBox(mul(add(min,max),.5),mul(sub(max,min),.5)),size:sub(max,min)};bp.boxCache={targets,box};return box;}
-function placeBlueprint(shape,p){
+function placeBlueprint(shape,p,placement={}){
+ if(shape?.mechanism?.conveyors&&story.scene!=='lab'){announce('Las cintas modulares se construyen en el banco de pruebas.');return null;}
  automationIntervention();
  if((shape?.mechanism?!savedMechanismValid(shape.mechanism)||!mechanismsAvailable():!savedShapeValid(shape))||!p||![p.x,p.z].every(Number.isFinite)||blueprints.length>=12){announce('No se puede colocar otro blueprint aquí.');return null;}
  if(shape.mechanism)shape=mechanismBlueprintShape(shape.mechanism);
- const bp={id:++alphaSerial,shape:JSON.parse(JSON.stringify(shape)),p:V(p.x,.002,p.z),q:Q(),slots:[],active:false,nextScan:0,status:'Esperando unidades'};const box=blueprintBox(bp);
+ const elevation=placement.height??0,turns=placement.quarterTurns??0;if(!Number.isFinite(elevation)||elevation<0||elevation>ROOM_HEIGHT||!Number.isInteger(turns)||turns<0||turns>3)return null;
+ const rotation=Q();rotation.setFromAxisAngle(V(0,1,0),turns*Math.PI/2);
+ const bp={id:++alphaSerial,shape:JSON.parse(JSON.stringify(shape)),p:V(p.x,elevation+.002,p.z),q:rotation,slots:[],active:false,nextScan:0,status:'Esperando unidades'};const box=blueprintBox(bp);
  if(!shape.mechanism&&!assemblyValid(blueprintTargets(bp))){announce('La forma guardada tiene caras incompatibles con las medidas actuales. Se conserva para exportarla; vuelve a armarla.');return null;}
  if(box.min.y<-.001||box.max.y>ROOM_HEIGHT||Math.max(Math.abs(box.min.x),Math.abs(box.max.x),Math.abs(box.min.z),Math.abs(box.max.z))>13.85||cargos.some(c=>obbOverlap(box,cargoPose(c)))||puzzleObstacleBounds().some(w=>obbOverlap(box,{p:w.p,q:w.q||Q(),half:w.half}))||alphaObstacles().some(w=>obbOverlap(box,w))||blueprints.some(other=>obbOverlap(box,blueprintBox(other)))){announce('La forma necesita más espacio libre.');return null;}
  blueprints.push(bp);announce(shape.name+' · '+blueprintMaterials(shape)+' · acerca piezas sueltas y usa clic derecho → Integrar');return bp;
@@ -4333,16 +4797,16 @@ function updateBlueprints(dt){
    for(const s of bp.slots){s.g.blueprintJob=null;removeGroup(s.g);}const g=makeGroup(parts,bp.q);blueprints.splice(blueprints.indexOf(bp),1);selected={g,part:g.parts[0]};multiSelection=[g];queueSpeech(g,'happy',{kind:'built'});announce(bp.shape.name+' construida · '+parts.length+' unidades');}
  }
 }
-function alphaSceneSnapshot(){return {coolers:coolers.map(c=>({p:[c.p.x,c.p.z],capacity:c.capacity,enabled:c.enabled})),blueprints:blueprints.map(b=>({shape:b.shape,p:[b.p.x,b.p.z]}))};}
+function alphaSceneSnapshot(){return {coolers:coolers.map(c=>({p:[c.p.x,c.p.z],capacity:c.capacity,enabled:c.enabled})),blueprints:blueprints.map(b=>({shape:b.shape,p:[b.p.x,b.p.z],height:Math.max(0,b.p.y-.002),quarterTurns:((Math.round(2*Math.atan2(b.q.y,b.q.w)/(Math.PI/2))%4)+4)%4,...(b.conveyorLink?{conveyorLink:b.conveyorLink}:{})}))};}
 function clearAlphaScene(){for(const b of [...blueprints])cancelBlueprint(b);for(const c of [...coolers])removeCooler(c);for(const b of buttonBodies)world.removeBody(b);buttonBodies.length=0;document.querySelector('#completion-panel').hidden=true;}
-function restoreAlphaScene(data){if(!data)return;for(const d of data.coolers||[]){const c=createCooler(V(d.p[0],0,d.p[1]));if(c){c.capacity=d.capacity;c.enabled=d.enabled;}}for(const d of data.blueprints||[])placeBlueprint(d.shape,V(d.p[0],0,d.p[1]));}
+function restoreAlphaScene(data){if(!data)return;for(const d of data.coolers||[]){const c=createCooler(V(d.p[0],0,d.p[1]));if(c){c.capacity=d.capacity;c.enabled=d.enabled;}}for(const d of data.blueprints||[]){const bp=placeBlueprint(d.shape,V(d.p[0],0,d.p[1]),{height:d.height??0,quarterTurns:d.quarterTurns??0});if(bp&&Number.isSafeInteger(d.conveyorLink))bp.conveyorLink=d.conveyorLink;}}
 function showSavedShapes(point,category=null){
  if(!category){openCommandMenu(point,'Formas guardadas',[
   {label:'Formas · '+savedShapes.length,run:()=>showSavedShapes(point,'shapes')},
-  {label:'Mecanismos · '+savedMechanisms.length+' guardados + brazo',run:()=>showSavedShapes(point,'mechanisms')},
+  {label:'Mecanismos · '+savedMechanisms.length+' guardados + planos iniciales',run:()=>showSavedShapes(point,'mechanisms')},
   {label:'Cerrar',run:()=>captureMouse()}
  ]);return;}
- const mechanisms=category==='mechanisms',records=mechanisms?[robotArmBlueprintTemplate(),...savedMechanisms].filter(Boolean):savedShapes;
+ const mechanisms=category==='mechanisms',records=mechanisms?[...builtInMechanismRecipes(),...savedMechanisms]:savedShapes;
  openCommandMenu(point,mechanisms?'Mecanismos':'Formas',records.map(record=>({label:record.name+' · '+(mechanisms?mechanismPartCount(record):record.parts.length)+' piezas',run:()=>{if(mechanisms)placeMechanismBlueprint(record,point);else placeBlueprint(record,point);captureMouse();}})).concat(!records.length?[{label:'Guarda una estructura para verla aquí',disabled:true,run:()=>{}}]:[],[{label:'← Categorías',run:()=>showSavedShapes(point)},{label:'Cerrar',run:()=>captureMouse()}]));
 }
 function alphaHit(max=4,dir=direction()){
@@ -4365,9 +4829,9 @@ function updateAlphaPanel(){
  document.querySelector('#alpha-coolingOn').checked=alphaSettings.coolingOn;document.querySelector('#alpha-allowPuzzleSpawn').checked=alphaSettings.allowPuzzleSpawn;
  const list=document.querySelector('#saved-shape-list');list.replaceChildren();for(const shape of savedShapes){const row=document.createElement('div'),button=document.createElement('button');button.type='button';button.textContent=shape.name+' · '+shape.parts.length+' u';button.addEventListener('click',()=>{const p=floorAim()||V(position[0]-Math.sin(yaw)*1.4,0,position[2]-Math.cos(yaw)*1.4);placeBlueprint(shape,p);panel.hidden=true;captureMouse();});row.appendChild(button);
   const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Borrar '+shape.name);remove.addEventListener('click',()=>{savedShapes.splice(savedShapes.indexOf(shape),1);persistShapes();updateAlphaPanel();});row.appendChild(remove);list.appendChild(row);}
- const mechanisms=document.querySelector('#saved-library-mechanisms');if(mechanisms){mechanisms.replaceChildren();const builtin=robotArmBlueprintTemplate();
-  for(const mechanism of [builtin,...savedMechanisms].filter(Boolean)){const row=document.createElement('div'),button=document.createElement('button');button.type='button';button.textContent=mechanism.name+' · '+mechanismPartCount(mechanism)+' piezas'+(mechanism===builtin?' · plano inicial':'');button.disabled=!mechanismsAvailable();button.addEventListener('click',()=>{const p=floorAim()||V(position[0]-Math.sin(yaw)*1.4,0,position[2]-Math.cos(yaw)*1.4);if(placeMechanismBlueprint(mechanism,p)){panel.hidden=true;captureMouse();}});row.appendChild(button);
-   if(mechanism!==builtin){const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Borrar '+mechanism.name);remove.addEventListener('click',()=>{savedMechanisms.splice(savedMechanisms.indexOf(mechanism),1);persistMechanisms();updateAlphaPanel();});row.appendChild(remove);}mechanisms.appendChild(row);
+ const mechanisms=document.querySelector('#saved-library-mechanisms');if(mechanisms){mechanisms.replaceChildren();const builtin=builtInMechanismRecipes();
+  for(const mechanism of [...builtin,...savedMechanisms]){const row=document.createElement('div'),button=document.createElement('button');button.type='button';button.textContent=mechanism.name+' · '+mechanismPartCount(mechanism)+' piezas'+(builtin.includes(mechanism)?' · plano inicial':'');button.disabled=!mechanismsAvailable();button.addEventListener('click',()=>{const p=floorAim()||V(position[0]-Math.sin(yaw)*1.4,0,position[2]-Math.cos(yaw)*1.4);if(placeMechanismBlueprint(mechanism,p)){panel.hidden=true;captureMouse();}});row.appendChild(button);
+   if(!builtin.includes(mechanism)){const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Borrar '+mechanism.name);remove.addEventListener('click',()=>{savedMechanisms.splice(savedMechanisms.indexOf(mechanism),1);persistMechanisms();updateAlphaPanel();});row.appendChild(remove);}mechanisms.appendChild(row);
   }
  }
 }
@@ -4377,8 +4841,11 @@ function showPuzzleComplete(){
  pause();panel.hidden=true;document.querySelector('#completion-panel').hidden=false;document.querySelector('#completion-detail').textContent='Tres materiales entregados · '+puzzle.earned+' nuevos Q-bits. La última recompensa te espera al volver a la sala.';
 }
 function updateAlphaHUD(){
- let qCount=0,tCount=0,mCount=0,rCount=0;for(const g of groups)for(const part of g.parts){if(part.mood.production){rCount++;continue;}if(unitShape(part)==='coupler')mCount++;else if(isTBit(part))tCount++;else qCount++;}
- document.querySelector('#alpha-census-text').textContent='× '+qCount+' Q'+(tCount?' · '+tCount+' T':'')+(mCount?' · '+mCount+' M':'')+(rCount?' · '+rCount+' bloques de materia':'');
+ const machineGroups=new Set(),arms=robotArms.filter(a=>rotorPart(a.baseId)),belts=conveyors.filter(c=>rotorPart(c.baseId));
+ for(const machine of arms)for(const rotor of robotArmRotors(machine))for(const g of rotorGroups(rotor))if(g)machineGroups.add(g);
+ for(const machine of belts)for(const rotor of conveyorRotors(machine))for(const g of rotorGroups(rotor))if(g)machineGroups.add(g);
+ let qCount=0,tCount=0,mCount=0,rCount=0,materialCount=0;for(const g of groups)for(const part of g.parts){if(machineGroups.has(g)){materialCount++;continue;}if(part.mood.production){rCount++;continue;}if(unitShape(part)==='coupler')mCount++;else if(isTBit(part))tCount++;else qCount++;}
+ const census=document.querySelector('#alpha-census-text');census.textContent='× '+qCount+' Q'+(tCount?' · '+tCount+' T':'')+(mCount?' · '+mCount+' M':'')+(arms.length?' · '+arms.length+' brazos':'')+(belts.length?' · '+belts.length+' cintas':'')+(rCount?' · '+rCount+' bloques de materia':'');census.title=materialCount+' piezas integradas en mecanismos; se conservan al desarmarlos y dentro del límite de la sala.';
  if(!panel.hidden||!commandMenu.hidden||held)return;const h=alphaHit(5);if(!h)return;
  if(h.bp)targetLabel.textContent=h.bp.shape.name+' · '+h.bp.status+' · clic derecho';
  if(h.cooler){const c=h.cooler,values=[...c.entries.values()],remaining=values.length?Math.ceil(Math.max(0,...values.map(v=>(v.duration||c.coolSeconds||alphaSettings.coolSeconds)-v.elapsed))):c.coolSeconds||alphaSettings.coolSeconds;targetLabel.textContent='Enfriador · '+c.occupants+'/'+c.capacity+' · '+(!c.enabled||!alphaSettings.coolingOn?'apagado':values.length&&remaining===0?'listos · energía '+Math.round(alphaSettings.exitEnergy*100)+' %':remaining+' s');}
@@ -4428,7 +4895,7 @@ function drawNeonPath(points,color=[.28,.68,.73]){
 function drawAlpha(){
  for(const c of coolers){drawAsset(coolerBodyMesh,c.p,Q(),V(1,1,1),[.93,.94,.94,1]);drawAsset(coolerTrayMesh,c.p,Q(),V(1,1,1),[.24,.27,.28,1]);drawAsset(coolerBaseMesh,c.p,Q(),V(1,1,1),[.23,.25,.26,1]);drawAsset(coolerRimMesh,c.p,Q(),V(1,1,1),[.35,.38,.39,1]);drawAsset(coolerAccentMesh,c.p,Q(),V(1,1,1),c.enabled&&alphaSettings.coolingOn?[.53,.75,.79,1]:[.4,.43,.44,1]);}
  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
- for(const bp of blueprints){const occupied=new Set(bp.slots.filter(s=>s.state==='placed').map(s=>s.index));const targets=blueprintTargets(bp);for(let i=0;i<targets.length;i++){if(occupied.has(i))continue;const t=targets[i];if(isTBit(t)){drawUnitMesh(t,[.27,.67,.73,.07],4);drawUnitOutline(t,.4,true);}else{drawBox(t.p,t.q,V(.088,.088,.088),[.27,.67,.73,.07]);drawOutline(t.p,t.q,V(.09,.09,.09),.4,true);}}const bb=blueprintBox(bp);drawRing(V(bp.p.x,.007,bp.p.z),Math.max(.1,Math.min(.65,Math.max(bb.size.x,bb.size.z)/2+.08)),.35);}
+ for(const bp of blueprints){const occupied=new Set(bp.slots.filter(s=>s.state==='placed').map(s=>s.index));const targets=blueprintTargets(bp);for(let i=0;i<targets.length;i++){if(occupied.has(i))continue;const t=targets[i];if(isTBit(t)){drawUnitMesh(t,[.27,.67,.73,.07],4);drawUnitOutline(t,.4,true);}else{drawBox(t.p,t.q,V(.088,.088,.088),[.27,.67,.73,.07]);drawOutline(t.p,t.q,V(.09,.09,.09),.4,true);}}drawConveyorBlueprintArrows(bp,targets);const bb=blueprintBox(bp);drawRing(V(bp.p.x,.007,bp.p.z),Math.max(.1,Math.min(.65,Math.max(bb.size.x,bb.size.z)/2+.08)),.35);}
  for(const c of coolers)if(c.enabled&&alphaSettings.coolingOn){bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,7);setPose(add(c.p,V(0,.002,0)),Q(),V(1.15,.001,1.15));tint(.2,.63,.73,.13*alphaSettings.glow);gl.drawArrays(gl.TRIANGLES,0,36);}
  gl.depthMask(true);gl.disable(gl.BLEND);
 }
@@ -4784,7 +5251,7 @@ function drawStoryGlass(){
 }
 const storyTargetMesh=buildLathe([[.88,.006],[1,.006]],72);
 function clearNarrativeScene(){
- clearRobotArms();
+ clearRobotArms();if(typeof clearConveyors==='function')clearConveyors();
  closeWorkshopPanel(false);cancelShelfPlacement();
  workshopBench=null;contactStates.clear();rotorContactStates.clear();
  closeUnitRadial(false);
@@ -5352,6 +5819,7 @@ function shelfSnapshot(component){
  const ids=new Set(component.flatMap(g=>g.parts.map(p=>p.id))),joints=serializeRotorState().filter(r=>ids.has(r.aId)&&ids.has(r.bId)),contacts=serializeContactState(),keys=new Set(joints.map(r=>r.aId+':'+r.bId));
  const item={version:1,groups:component.map(g=>({q:[g.body.quaternion.x,g.body.quaternion.y,g.body.quaternion.z,g.body.quaternion.w],parts:worldParts(g).map(p=>({id:p.id,shape:unitShape(p),weight:p.weight,p:[p.p.x,p.p.y,p.p.z],q:[p.q.x,p.q.y,p.q.z,p.q.w],mood:shelfClone(p.mood)}))})),joints:shelfClone(joints),sets:serializeRotorSets().map(set=>({name:set.name,members:set.members.filter(r=>ids.has(r.aId)&&ids.has(r.bId))})).filter(set=>set.members.length),contacts:{sensors:contacts.sensors.filter(s=>ids.has(s.id)),rotors:contacts.rotors.filter(r=>keys.has(r.key))}};
  const arms=serializeRobotArms().filter(arm=>ids.has(arm.gripperId));if(arms.length)item.robotArms=shelfClone(arms);
+ const modules=typeof serializeConveyors==='function'?serializeConveyors().filter(c=>ids.has(c.baseId)):[];if(modules.length)item.conveyors=shelfClone(modules);
  if(!QBitsOrganizers.validItem(item))return null;
  const points=component.flatMap(g=>poses(g).flatMap(corners)),origin=V((Math.min(...points.map(p=>p.x))+Math.max(...points.map(p=>p.x)))/2,Math.min(...points.map(p=>p.y)),(Math.min(...points.map(p=>p.z))+Math.max(...points.map(p=>p.z)))/2);for(const group of item.groups)for(const part of group.parts)part.p=part.p.map((v,i)=>v-[origin.x,origin.y,origin.z][i]);item.category=QBitsOrganizers.category(item);return item;
 }
@@ -5361,6 +5829,7 @@ function shelfSelectionPlan(shelf,cellIndex=0){
  const components=[],seen=new Set();for(const g of team)if(!seen.has(g)){const component=rotorConnectedGroups([g]);components.push(component);component.forEach(x=>seen.add(x));}
  if(components.some(component=>component.some(g=>!groups.includes(g)||g.route||g.haulJob||g.cooler||g.blueprintJob||g.pendingMoodOrder||g.parts.some(p=>p.mood.production))))return fail('Termina las rutas, enfriamiento o trabajos antes de guardar.');
  if([...seen].some(g=>{const arm=robotArmForGroup(g);return arm&&(arm.running||arm.jogging);}))return fail('Detén la secuencia del brazo antes de guardarlo.');
+ if(typeof conveyors!=='undefined'&&conveyors.some(c=>c.running&&seen.has(rotorPart(c.baseId)?.g)))return fail('Detén las cintas antes de guardar la línea.');
  if([...robotGrips.values()].some(grip=>seen.has(grip.g)||seen.has(robotGripperHit(grip.id)?.g)))return fail('Suelta el objeto del cubo de agarre antes de guardar.');
  if(rotors.some(r=>r.enabled&&rotorGroups(r).some(g=>seen.has(g))))return fail('Detén los rotores antes de guardar el mecanismo.');
  const items=components.map(shelfSnapshot);if(items.some(item=>!QBitsOrganizers.validItem(item)))return fail('No se puede guardar esta estructura.');
@@ -5372,7 +5841,7 @@ function storeShelfSelection(shelf,cellIndex=0){
  if(story.scene!=='lab'||puzzle.active)return false;const plan=shelfSelectionPlan(shelf,cellIndex);if(!plan.ok){announce(plan.error);return false;}
  const stored=new Set(plan.components.flat());if((held?.items||(held?[held]:[])).some(item=>stored.has(item.g)))releaseQubit(false);
  for(const rotor of [...rotors])if(rotorGroups(rotor).some(g=>stored.has(g)))disconnectRotor(rotor);
- for(const g of stored)removeGroup(g);const cell=shelf.cells[cellIndex];cell.category=shelfClone(plan.category);cell.items.push(...plan.items);clearSelection();redraw=true;announce(plan.items.length+' elemento'+(plan.items.length===1?'':'s')+' guardado'+(plan.items.length===1?'':'s')+' · '+cell.items.length+' / 50');return true;
+ for(const g of stored)removeGroup(g);if(typeof pruneConveyors==='function')pruneConveyors();const cell=shelf.cells[cellIndex];cell.category=shelfClone(plan.category);cell.items.push(...plan.items);clearSelection();redraw=true;announce(plan.items.length+' elemento'+(plan.items.length===1?'':'s')+' guardado'+(plan.items.length===1?'':'s')+' · '+cell.items.length+' / 50');return true;
 }
 function shelfItemBounds(item){const points=item.groups.flatMap(g=>g.parts.flatMap(p=>corners({shape:p.shape,p:V(...p.p),q:shelfQuaternion(p.q)})));return {min:V(...['x','y','z'].map(k=>Math.min(...points.map(p=>p[k])))),max:V(...['x','y','z'].map(k=>Math.max(...points.map(p=>p[k]))))};}
 function shelfRestoreJoint(state){
@@ -5382,8 +5851,8 @@ function shelfRestoreJoint(state){
 }
 function withdrawShelf(shelf,cellIndex=0,count=1){
  if(story.scene!=='lab'||puzzle.active||!shelves.includes(shelf))return false;const cell=shelf.cells[cellIndex];if(!cell||!Number.isInteger(count)||count<1||count>cell.items.length)return false;
- pruneRobotArms();
- const items=cell.items.slice(0,count),liveIds=new Set(groups.flatMap(g=>g.parts.map(p=>p.id)));if(items.some(item=>!QBitsOrganizers.validItem(item)||item.joints.some(j=>!storedRotorOptionsValid(j))||item.groups.some(g=>g.parts.some(p=>{if(liveIds.has(p.id))return true;liveIds.add(p.id);return false;})))){announce('No se puede recuperar este contenido: hay identidades o datos incompatibles.');return false;}
+ pruneRobotArms();if(typeof pruneConveyors==='function')pruneConveyors();
+ const items=cell.items.slice(0,count),liveIds=new Set(groups.flatMap(g=>g.parts.map(p=>p.id)));if(items.some(item=>!QBitsOrganizers.validItem(item)||!storedShelfConveyorsValid(item)||item.joints.some(j=>!storedRotorOptionsValid(j))||item.groups.some(g=>g.parts.some(p=>{if(liveIds.has(p.id))return true;liveIds.add(p.id);return false;})))){announce('No se puede recuperar este contenido: hay identidades o datos incompatibles.');return false;}
  if(groups.reduce((n,g)=>n+g.parts.length,0)+items.reduce((n,item)=>n+QBitsOrganizers.count(item),0)>MAX_QUBITS){announce('No hay capacidad libre en el banco. Guarda otras piezas antes de retirar.');return false;}
  const made=[],madeRotors=[],oldContacts=serializeContactState(),origin=shelfCellPoint(shelf,cellIndex),normal=shelf.q.vmult(V(0,0,1)),tangent=shelf.q.vmult(V(1,0,0)),sizes=items.map(shelfItemBounds),spacing=Math.max(...sizes.map(b=>Math.hypot(b.max.x-b.min.x,b.max.z-b.min.z)))+.15,columns=Math.min(5,count);
  const rollback=()=>{madeRotors.forEach(disconnectRotor);made.forEach(removeGroup);restoreContactState(oldContacts);announce('No hay espacio libre delante de la repisa. Aparta los objetos o retira una tanda menor.');return false;};
@@ -5396,6 +5865,7 @@ function withdrawShelf(shelf,cellIndex=0,count=1){
  for(const item of items)for(const saved of item.sets||[]){const members=(saved.members||[]).map(m=>madeRotors.find(r=>r.aId===m.aId&&r.bId===m.bId)).filter(Boolean);if(members.length)createRotorSet(saved.name,members);}
  restoreContactState({sensors:[...oldContacts.sensors,...items.flatMap(item=>item.contacts?.sensors||[])],rotors:[...oldContacts.rotors,...items.flatMap(item=>item.contacts?.rotors||[])]});
  restoreRobotArms(items.flatMap(item=>item.robotArms||[]));
+ if(typeof restoreConveyors==='function')restoreConveyors(items.flatMap(item=>item.conveyors||[]));
  cell.items.splice(0,count);if(!cell.items.length)cell.category=null;clearSelection();multiSelection=made;selected={g:made[0],part:made[0].parts[0]};redraw=true;announce(count+' elemento'+(count===1?' retirado':'s retirados')+' · delante de la repisa');return true;
 }
 function deleteShelf(shelf,confirmed=false){
@@ -6051,6 +6521,7 @@ function visualResolution(w,h,s){
  const max=Number(gl.getParameter(gl.MAX_TEXTURE_SIZE))||4096;
  return Math.min(Math.min(window.devicePixelRatio||1,2)*s.resolution/100*s.sampling,Math.sqrt(4500000/Math.max(1,w*h)),max/Math.max(w,h,1));
 }
+function suspendSceneAttributes(){for(const [location]of attributes)gl.disableVertexAttribArray(location);}
 function restoreSceneProgram(){gl.useProgram(program);for(const [location]of attributes)gl.enableVertexAttribArray(location);boundGeometry=null;}
 function applyVisualUniforms(){
  surfaceTexture?.bind(visuals);gl.uniform1i(uniforms.uSurface,2);gl.uniform1f(uniforms.uTextureMix,surfaceTexture?1:0);
@@ -6141,7 +6612,7 @@ function renderSettingsPreview(time){
   gl.depthMask(true);gl.disable(gl.BLEND);bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,1);setPose(center,q,size);gl.drawArrays(gl.TRIANGLES,0,36);
   gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);drawOutline(center,q,size,1,true);if(visuals.markers)drawSelectionMarker(V(0,.67,0),time/1000);gl.depthMask(true);gl.disable(gl.BLEND);
   drawNeonPath([V(-.1,.006,.65),V(.8,.006,.65),V(.8,.006,.65),V(.8,.006,-.5)]);
-  if(destination){postEffects.end(visuals);restoreSceneProgram();}
+  if(destination){suspendSceneAttributes();postEffects.end(visuals);restoreSceneProgram();}
   if(target.width!==canvas.width)target.width=canvas.width;if(target.height!==canvas.height)target.height=canvas.height;
   ctx.drawImage(canvas,0,0,target.width,target.height);
   document.querySelector('#settings-preview-state').textContent=(postEffects?.failed?'Efectos de pantalla no disponibles · ':visuals.style.toUpperCase()+' · ')+Math.round(visuals.resolution)+' %';
@@ -6285,9 +6756,10 @@ function renderScene(time=performance.now()){
   gl.drawArrays(gl.TRIANGLES,0,vertices.length/6);
   drawStoryWorld();drawQubits();drawStoryGlass();
   if(focused)compositeHeldFocus(destination);
-  if(destination){postEffects.end(visuals);restoreSceneProgram();}
+  if(destination){suspendSceneAttributes();postEffects.end(visuals);restoreSceneProgram();}
   const glass=radialGlassFrame(time);
   if(glass.panels.length&&radialGlass){
+    suspendSceneAttributes();
     const success=radialGlass.render(canvas.width,canvas.height,canvas.clientWidth,canvas.clientHeight,glass.panels.map(panel=>({...panel,opacity:glass.opacity})));
     radialGlassAllocated=success;
     unitRadial.setGlassActive(success);

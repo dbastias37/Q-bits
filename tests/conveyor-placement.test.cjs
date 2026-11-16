@@ -1,0 +1,86 @@
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const createGame=require('./game-harness.cjs');
+function setup(){const game=createGame();game.t.clearNarrativeScene();Object.assign(game.t.story,{ready:false,scene:'lab',mode:'playing',phase:'idle'});return game;}
+function inventory(t){return t.groups.flatMap(g=>g.parts).map(p=>({id:p.id,shape:p.shape,weight:p.weight,joules:p.mood.energy*t.gameBatteryCapacity(p)})).sort((a,b)=>a.id-b.id);}
+function supply(t,bp,skip=-1){for(const [index,target]of t.blueprintTargets(bp).entries()){if(index===skip)continue;const g=t.makeGroup([{id:t.allocateUnitId(),shape:target.shape,weight:1,p:target.p.clone(),q:target.q.clone()}]);g.parts[0].mood.energy=.3+index*.005;const slot={g,bp,index,state:'placed'};g.blueprintJob=slot;bp.slots.push(slot);}return inventory(t);}
+function finish(t,bp){bp.active=true;t.updateBlueprints(0);assert(!t.blueprints.includes(bp),'all supplied pieces must complete the real blueprint');}
+function build(t,options={}){const recipe=t.conveyorBlueprintTemplate('straight',options.supports===true),bp=t.placeBlueprint(t.mechanismBlueprintShape(recipe),options.point||t.V(),{height:options.height||0,quarterTurns:options.quarterTurns||0});assert(bp);const before=supply(t,bp);finish(t,bp);assert.deepEqual(inventory(t),before);return t.conveyors.at(-1);}
+function extend(t,c,kind='straight'){const base=t.rotorPart(c.baseId);t.setSelected({g:base.g,part:base.part});const result=t.conveyorPanelAction('blueprint',{kind,height:0,quarterTurns:0,supports:false,extend:true});assert(result.ok,result.message);const bp=t.blueprints.at(-1),before=supply(t,bp);finish(t,bp);assert.deepEqual(inventory(t),before);return t.conveyors.at(-1);}
+function battery(t,c){const base=t.rotorPart(c.baseId),p=base.p.clone();p.y+=.09;const g=t.makeGroup([{id:t.allocateUnitId(),shape:'cube',weight:1,p,q:base.q.clone()}]),cell=g.parts[0];cell.mood.energy=.8;cell.mood.externalBattery={version:1,ownerId:cell.id,packId:cell.id,enabled:true};const before=inventory(t),joined=t.weld({source:g,target:base.g,position:g.body.position.clone(),quaternion:g.body.quaternion.clone()});assert(joined,'battery must physically weld to a free chassis face');assert.deepEqual(inventory(t),before);return t.rotorPart(cell.id).part;}
+const vector=(a,b,tolerance=1e-7)=>assert(a.distanceTo(b)<tolerance,JSON.stringify({actual:[a.x,a.y,a.z],expected:[b.x,b.y,b.z]}));
+
+test('straight conveyor and optional short supports require only the listed real cubes and couplers',()=>{
+ const {t}=setup();for(const supports of [false,true]){const r=t.conveyorBlueprintTemplate('straight',supports);assert(r&&t.savedMechanismValid(r));const parts=r.groups.flatMap(g=>g.parts);assert.equal(parts.filter(p=>p.shape==='cube').length,supports?22:18);assert.equal(parts.filter(p=>p.shape==='coupler').length,12);assert.equal(r.groups.length,4);assert.equal(r.joints.length,3);assert(r.joints.every(j=>!j.enabled));}
+ const mutable=t.conveyorBlueprintTemplate('straight');mutable.groups[0].parts[0].p[0]+=10;assert(t.savedMechanismValid(t.conveyorBlueprintTemplate('straight')),'caller cannot corrupt the next template');
+});
+
+test('incomplete conveyor cannot start and final supplied piece activates only a stopped controller',()=>{
+ const {t}=setup(),r=t.conveyorBlueprintTemplate('straight'),bp=t.placeMechanismBlueprint(r,t.V());assert(bp);const last=t.blueprintTargets(bp).length-1;const before=supply(t,bp,last);bp.active=true;t.updateBlueprints(0);assert.equal(t.conveyors.length,0);assert.equal(t.rotors.length,0);assert.deepEqual(inventory(t),before);
+ const target=t.blueprintTargets(bp)[last],g=t.makeGroup([{id:t.allocateUnitId(),shape:target.shape,weight:1,p:target.p.clone(),q:target.q.clone()}]),slot={g,bp,index:last,state:'placed'};g.blueprintJob=slot;bp.slots.push(slot);const all=inventory(t);finish(t,bp);assert.equal(t.conveyors.length,1);assert.equal(t.conveyors[0].running,false);assert.equal(t.rotors.length,3);assert(t.rotors.every(r=>!r.enabled));assert.deepEqual(inventory(t),all);
+});
+
+test('manual orientation and elevation survive a blueprint scene roundtrip',()=>{
+ for(const quarterTurns of [0,1,2,3]){const {t}=setup(),shape=t.mechanismBlueprintShape(t.conveyorBlueprintTemplate('straight')),bp=t.placeBlueprint(shape,t.V(1,0,-1),{height:1.08,quarterTurns});assert(bp);const targets=t.blueprintTargets(bp).map(p=>({p:p.p.clone(),q:p.q.clone()}));bp.conveyorLink=123;const saved=t.alphaSceneSnapshot();assert.equal(saved.blueprints[0].quarterTurns,quarterTurns);assert.equal(saved.blueprints[0].height,1.08);t.clearAlphaScene();t.restoreAlphaScene(saved);assert.equal(t.blueprints.length,1);const restored=t.blueprints[0];assert.equal(restored.conveyorLink,123);t.blueprintTargets(restored).forEach((p,i)=>{vector(p.p,targets[i].p);assert(Math.abs(['x','y','z','w'].reduce((sum,key)=>sum+p.q[key]*targets[i].q[key],0))>.999999);});}
+});
+
+test('extension aligns entry and exit at all four orientations and elevated levels',()=>{
+ for(const quarterTurns of [0,1,2,3]){const {t}=setup(),c=build(t,{quarterTurns,height:1.08}),recipe=t.conveyorBlueprintTemplate('straight'),placement=t.conveyorBlueprintPlacement(recipe,c);assert(placement);assert.equal(placement.quarterTurns,quarterTurns);assert(Math.abs(placement.height-1.08)<1e-8);const bp=t.placeBlueprint(t.mechanismBlueprintShape(recipe),placement.point,placement);assert(bp);const before=supply(t,bp);finish(t,bp);assert.deepEqual(inventory(t),before);const next=t.conveyors.at(-1),exit=t.conveyorPortWorld(c,'exit'),entry=t.conveyorPortWorld(next,'entry');vector(exit.p,entry.p);vector(exit.direction,entry.direction);assert.equal(t.conveyors.length,2);}
+});
+
+test('finishing an extension welds both real frames, retains six rotors and shares one battery without matter loss',()=>{
+ const {t}=setup(),first=build(t),second=extend(t,first);assert.equal(t.conveyors.length,2);assert.equal(t.rotors.length,6);assert.equal(t.groups.length,7);assert.equal(t.rotorPart(first.baseId).g,t.rotorPart(second.baseId).g,'frames physically become one rigid chassis');assert.equal(inventory(t).length,60);const cell=battery(t,first);assert.equal(inventory(t).length,61);assert.equal(t.rotors.length,6);assert.equal(t.conveyors.length,2);
+ for(const c of [first,second]){const supply=t.externalBatterySummary(t.rotorPart(c.baseId).g);assert.equal(supply.cells.length,1);assert.equal(supply.cells[0].id,cell.id);assert.equal(supply.storedJ,cell.mood.energy*t.gameBatteryCapacity(cell));}
+ const rotorIds=new Set(t.rotors.flatMap(r=>[r.aId,r.bId])),internal=inventory(t).filter(p=>rotorIds.has(p.id));assert(t.startConveyor(first),first.status);assert(t.startConveyor(second),second.status);const energy=cell.mood.energy;for(let i=0;i<40;i++)t.stepPhysics(1/240);assert(cell.mood.energy<energy,'both sections consume the shared real battery');assert.equal(first.running,true);assert.equal(second.running,true);assert.deepEqual(inventory(t).filter(p=>rotorIds.has(p.id)),internal,'active external supply preserves rotor internal reserves');t.stopConveyor(first);assert.equal(second.running,true,'stopping one section preserves its neighbour');
+});
+
+test('joined conveyor save and import preserve both controllers and remap their endpoints',()=>{
+ const {t}=setup(),first=build(t),second=extend(t,first);t.configureConveyor(second,{direction:-1});const record=t.mechanismSnapshot(t.rotorPart(first.baseId).g);assert(record&&t.savedMechanismValid(record));assert.equal(record.conveyors.length,2);assert.equal(record.joints.length,6);t.importMechanismsData({version:1,mechanisms:[record]});const copy=t.spawnSavedMechanism(t.savedMechanisms[0],t.V(3,0,3));assert(copy);assert.equal(t.conveyors.length,4);assert.equal(t.rotors.length,12);const copies=t.conveyors.slice(2);assert(copies.every(c=>c.baseId!==first.baseId&&c.baseId!==second.baseId&&!c.running));assert.deepEqual(Array.from(copies,c=>c.direction),[1,-1]);assert(copies.every(c=>t.conveyorRotors(c).length===3));
+});
+
+test('panel rejects unavailable construction and invalid placement without creating hidden blueprints',()=>{
+ const {t}=setup();for(const payload of [{kind:'unknown',quarterTurns:0,height:0},{kind:'straight',quarterTurns:4,height:0},{kind:'straight',quarterTurns:0,height:-.1},{kind:'straight',quarterTurns:0,height:Infinity},{kind:'straight',quarterTurns:0,height:0,extend:true}])assert.equal(t.conveyorPanelAction('blueprint',payload).ok,false);assert.equal(t.blueprints.length,0);t.story.scene='campaign';assert.equal(t.conveyorPanelAction('blueprint',{kind:'straight',quarterTurns:0,height:0}).ok,false);assert.equal(t.blueprints.length,0);
+});
+
+test('selecting each roller configures its own section and reports real connected energy',()=>{
+ const {t}=setup(),first=build(t),second=extend(t,first);battery(t,first);const roller=t.rotorPart(t.conveyorRotors(second)[0].bId);t.setSelected({g:roller.g,part:roller.part});const snapshot=t.conveyorPanelSnapshot();assert.equal(snapshot.conveyor.id,second.id);assert.equal(snapshot.conveyor.connected,2);assert(snapshot.conveyor.energy>0);assert.equal(t.conveyorPanelAction('direction',{direction:-1}).ok,true);assert.equal(second.direction,-1);assert.equal(first.direction,1);assert.match(snapshot.materials.straight,/18 cubos.*12 enganches/);
+});
+
+test('an elevated conveyor blueprint assembles from loose floor materials through the real construction animation',()=>{
+ const {t}=setup(),recipe=t.conveyorBlueprintTemplate('straight'),bp=t.placeBlueprint(t.mechanismBlueprintShape(recipe),t.V(),{height:.27,quarterTurns:1});assert(bp);
+ const parts=recipe.groups.flatMap(g=>g.parts);parts.forEach((part,i)=>{const angle=i*2*Math.PI/parts.length;t.addQubit([Math.cos(angle)*1.1,t.unitGroundHeight(part.shape)+.003,Math.sin(angle)*1.1],1,part.shape);});
+ const ids=inventory(t).map(p=>p.id);t.activateBlueprint(bp);let ticks=0;
+ while(t.blueprints.includes(bp)&&ticks<240*150){t.runNavigationJobs();t.stepPhysics(1/240);ticks++;if(t.blueprints.includes(bp)){assert.equal(t.conveyors.length,0);assert.equal(t.rotors.length,0);}}
+ assert(!t.blueprints.includes(bp),bp.status);assert.equal(t.conveyors.length,1);assert.equal(t.rotors.length,3);assert.equal(t.groups.length,4);assert(t.rotors.every(r=>!r.enabled));assert.deepEqual(inventory(t).map(p=>p.id),ids);assert(ticks>240*20,'real materials must travel to the elevated assembly');
+});
+
+test('extending a reversed section uses its actual output and conserves all pieces and joints',()=>{
+ const {t}=setup(),first=build(t);assert(t.configureConveyor(first,{direction:-1}));const output=t.conveyorPortWorld(first,'entry'),second=extend(t,first),input=t.conveyorPortWorld(second,'entry');vector(output.p,input.p);const reverse=output.direction.clone();reverse.scale(-1,reverse);vector(reverse,input.direction);assert.equal(t.conveyors.length,2);assert.equal(t.rotors.length,6);assert.equal(t.rotorPart(first.baseId).g,t.rotorPart(second.baseId).g);assert.equal(inventory(t).length,60);assert.equal(first.direction,-1);assert.equal(second.direction,1);
+});
+
+test('right click on a roller exposes conveyor controls instead of incompatible generic rotor commands',()=>{
+ const {t,sandbox}=setup(),c=build(t),rotor=t.conveyorRotors(c)[1],roller=t.rotorPart(rotor.bId),cube=roller.g.parts.find(p=>p.shape==='cube'),point=t.rotorPart(cube.id).p;
+ t.story.ready=true;sandbox.document.body.dataset.booting='false';sandbox.document.pointerLockElement=t.canvas;t.setLook({camera:[point.x,point.y+.8,point.z],yaw:0,pitch:-Math.PI/2});t.handleSecondary({clientX:640,clientY:360});let menu=t.getCommandState();assert.match(menu.title,/Cinta Q-bits/);assert(menu.items.some(item=>item.label==='Configurar cinta y extender…'));assert(!menu.items.some(item=>/Rotación|conjunto/i.test(item.label)));menu.items.find(item=>item.label==='Invertir sentido del tramo').run();assert.equal(c.direction,-1);
+});
+
+test('both corner recipes extend into a further straight section with one conserved connected frame',()=>{
+ for(const kind of ['left','right']){const {t}=setup(),first=build(t),corner=extend(t,first,kind),last=extend(t,corner);assert.equal(corner.kind,kind);assert.equal(t.conveyors.length,3);assert.equal(t.rotors.length,9);assert.equal(t.groups.length,10);assert.equal(inventory(t).length,101);const base=t.rotorPart(first.baseId).g;assert.equal(t.rotorPart(corner.baseId).g,base);assert.equal(t.rotorPart(last.baseId).g,base);vector(t.conveyorPortWorld(first,'exit').p,t.conveyorPortWorld(corner,'entry').p);vector(t.conveyorPortWorld(corner,'exit').p,t.conveyorPortWorld(last,'entry').p);vector(t.conveyorPortWorld(corner,'exit').direction,t.conveyorPortWorld(last,'entry').direction);
+  const cell=battery(t,first);for(const c of [first,corner,last]){const supply=t.externalBatterySummary(t.rotorPart(c.baseId).g);assert.equal(supply.cells.length,1);assert.equal(supply.cells[0].id,cell.id);}assert.equal(inventory(t).length,102);
+ }
+});
+
+test('laboratory roundtrip preserves an elevated extension plan and its connection to the restored section',()=>{
+ const {t}=setup(),first=build(t,{height:.54,quarterTurns:3}),base=t.rotorPart(first.baseId);t.setSelected({g:base.g,part:base.part});assert(t.conveyorPanelAction('blueprint',{kind:'straight',height:0,quarterTurns:0,supports:false,extend:true}).ok);const old=t.blueprints[0],point=old.p.clone(),q=old.q.clone(),link=old.conveyorLink,saved=t.saveLab();t.clearNarrativeScene();t.story.scene='campaign';t.story.lab=saved;t.enterLab(false);assert.equal(t.conveyors.length,1);assert.equal(t.blueprints.length,1);const restored=t.blueprints[0];assert.equal(restored.conveyorLink,link);assert(t.rotorPart(link));vector(restored.p,point);assert(Math.abs(['x','y','z','w'].reduce((sum,key)=>sum+restored.q[key]*q[key],0))>.999999);const before=supply(t,restored);finish(t,restored);assert.deepEqual(inventory(t),before);assert.equal(t.conveyors.length,2);assert.equal(t.rotors.length,6);assert.equal(t.rotorPart(t.conveyors[0].baseId).g,t.rotorPart(t.conveyors[1].baseId).g);
+});
+
+test('the second visible band selects its own controller on a shared frame and respects closer solids',()=>{
+ const {t,sandbox}=setup(),first=build(t),second=extend(t,first);assert.equal(typeof t.conveyorSurfacePoses,'function');const surface=t.conveyorSurfacePoses(second)[0];assert(surface);const origin=surface.p.clone();origin.y+=.8;t.setLook({camera:[origin.x,origin.y,origin.z],yaw:0,pitch:-Math.PI/2});const hit=t.aimQubit(2,t.V(0,-1,0));assert(hit);assert.equal(hit.part.id,second.baseId);assert.equal(hit.g,t.rotorPart(first.baseId).g);assert(Math.abs(hit.point.y-(surface.p.y+surface.half.y))<1e-6);assert(hit.normal.y>.99);t.setSelected(hit);assert.equal(t.conveyorPanelSnapshot().conveyor.id,second.id);
+ t.story.ready=true;sandbox.document.body.dataset.booting='false';sandbox.document.pointerLockElement=t.canvas;t.handleSecondary({clientX:640,clientY:360});const menu=t.getCommandState();assert.match(menu.title,/Cinta Q-bits/);menu.items.find(item=>item.label==='Invertir sentido del tramo').run();assert.equal(second.direction,-1);assert.equal(first.direction,1);
+ const obstruction=t.addQubit([surface.p.x,surface.p.y+.3,surface.p.z]);const nearer=t.aimQubit(2,t.V(0,-1,0));assert.equal(nearer.g,obstruction,'the band must not steal a click through a closer physical solid');
+});
+
+test('a conveyor welded to an arm keeps its own context menu while the real gripper still selects the arm',()=>{
+ const {t,sandbox}=setup(),c=build(t);assert(t.spawnSavedMechanism(t.robotArmBlueprintTemplate(),t.V(3,0,0)));const arm=t.robotArms[0],armBase=t.rotorPart(arm.baseId),beltBase=t.rotorPart(c.baseId),mount=t.poses(beltBase.g).filter(p=>p.part.shape==='cube').sort((a,b)=>b.p.x-a.p.x||a.p.z-b.p.z)[0],desired=mount.p.clone();desired.z+=.09;const delta=desired.vsub(armBase.p),before=inventory(t),joined=t.weld({source:armBase.g,target:beltBase.g,position:armBase.g.body.position.vadd(delta),quaternion:armBase.g.body.quaternion.clone()});assert(joined);assert.deepEqual(inventory(t),before);assert.equal(t.rotors.length,7);assert.equal(t.robotArmForGroup(joined),arm,'the arm belongs to this connected mechanism');
+ const surface=t.conveyorSurfacePoses(c)[0];t.story.ready=true;sandbox.document.body.dataset.booting='false';sandbox.document.pointerLockElement=t.canvas;t.setLook({camera:[surface.p.x-.1,surface.p.y+.6,surface.p.z],yaw:0,pitch:-Math.PI/2});const beltHit=t.aimQubit(2,t.V(0,-1,0));assert.equal(beltHit.part.id,c.baseId);t.handleSecondary({clientX:640,clientY:360});let menu=t.getCommandState();assert.match(menu.title,/Cinta Q-bits/);assert(menu.items.some(item=>item.label==='Configurar cinta y extender…'));menu.items.find(item=>item.label==='Invertir sentido del tramo').run();assert.equal(c.direction,-1);
+ const grip=t.rotorPart(arm.gripperId);sandbox.document.pointerLockElement=t.canvas;t.setLook({camera:[grip.p.x,grip.p.y-.2,grip.p.z],yaw:0,pitch:Math.PI/2});const gripHit=t.aimQubit(2,t.V(0,1,0));assert.equal(gripHit.part.id,arm.gripperId);t.handleSecondary({clientX:640,clientY:360});menu=t.getCommandState();assert.match(menu.title,/Brazo Q-bits/);assert(menu.items.some(item=>item.label==='Configurar agarre y secuencia…'));assert(!menu.items.some(item=>item.label==='Invertir sentido del tramo'));
+});

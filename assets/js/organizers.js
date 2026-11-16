@@ -20,8 +20,8 @@
   }
   const edges=labels.map(()=>[]);for(const joint of item.joints||[]){const a=ports.get(joint.aId),b=ports.get(joint.bId);if(a&&b){edges[a.index].push({to:b.index,from:a.value,target:b.value});edges[b.index].push({to:a.index,from:b.value,target:a.value});}}
   const branch=(index,parent)=>[labels[index],edges[index].filter(e=>e.to!==parent).map(e=>[e.from,e.target,branch(e.to,index)]).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)))];
-  const key=labels.map((_,i)=>JSON.stringify(branch(i,-1))).sort()[0]+(item.robotArms?.length?':robot-arm':'');
-  const label=item.robotArms?.length?'Brazo de '+parts.length+' piezas':parts.length===1?(parts[0].mood?.gripper?'Cubo de agarre':parts[0].mood?.externalBattery?'Batería':{cube:'Q-bit',tetra:'T-bit triangular',pyramid:'T-bit de base cuadrada',coupler:'Enganche'}[parts[0].shape]):parts.every(p=>p.mood?.externalBattery)?'Batería de '+parts.length+' celdas':parts.length===2&&item.joints?.length===1?'Rotor':'Mecanismo de '+parts.length+' piezas';
+  const key=labels.map((_,i)=>JSON.stringify(branch(i,-1))).sort()[0]+(item.robotArms?.length?':robot-arm':'')+(item.conveyors?.length?':conveyor:'+item.conveyors.map(c=>c.kind).sort().join(','):'');
+  const label=item.conveyors?.length?'Línea de '+item.conveyors.length+' cinta'+(item.conveyors.length===1?'':'s')+' · '+parts.length+' piezas':item.robotArms?.length?'Brazo de '+parts.length+' piezas':parts.length===1?(parts[0].mood?.gripper?'Cubo de agarre':parts[0].mood?.externalBattery?'Batería':{cube:'Q-bit',tetra:'T-bit triangular',pyramid:'T-bit de base cuadrada',coupler:'Enganche'}[parts[0].shape]):parts.every(p=>p.mood?.externalBattery)?'Batería de '+parts.length+' celdas':parts.length===2&&item.joints?.length===1?'Rotor':'Mecanismo de '+parts.length+' piezas';
   return {key,label};
  }
  function validItem(item){
@@ -47,6 +47,17 @@
     for(const joint of arm.joints){const key=joint?.aId+':'+joint?.bId;if(!jointKeys.has(key)||claimed.has(key))return false;claimed.add(key);}
     const poseValid=pose=>Array.isArray(pose)&&pose.length===arm.joints.length&&pose.every(q=>vector(q,4)&&Math.abs(Math.hypot(...q)-1)<.01);
     if(!poseValid(arm.poses.pick)||arm.poses.place!==null&&!poseValid(arm.poses.place))return false;
+   }
+  }
+  if(item.conveyors!==undefined){
+   if(!Array.isArray(item.conveyors)||!item.conveyors.length||item.conveyors.length>item.joints.length)return false;
+   const bases=new Set(),jointKeys=new Set(item.joints.map(j=>j.aId+':'+j.bId)),claimed=new Set((item.robotArms||[]).flatMap(a=>a.joints.map(j=>j.aId+':'+j.bId)));
+   for(const module of item.conveyors){
+    if(!module||(module.version!==undefined&&module.version!==1)||!ids.has(module.baseId)||bases.has(module.baseId)||!['straight','left','right'].includes(module.kind)||![1,-1].includes(module.direction)||!Number.isInteger(module.capacity)||module.capacity<1||module.capacity>32||!Array.isArray(module.joints)||!module.joints.length||module.joints.length>16)return false;
+    bases.add(module.baseId);
+    for(const joint of module.joints){const key=joint?.aId+':'+joint?.bId;if(!jointKeys.has(key)||claimed.has(key)||(joint.forward!==undefined&&![1,-1].includes(joint.forward))||![owners.get(joint.aId),owners.get(joint.bId)].includes(owners.get(module.baseId)))return false;claimed.add(key);}
+    if(module.required!==undefined){const allowed=new Set([owners.get(module.baseId),...module.joints.flatMap(j=>[owners.get(j.aId),owners.get(j.bId)])]);if(!Array.isArray(module.required)||!module.required.length||module.required.length>256||new Set(module.required).size!==module.required.length||module.required.some(id=>!ids.has(id)||!allowed.has(owners.get(id)))||![module.baseId,...module.joints.flatMap(j=>[j.aId,j.bId]),...item.groups.flatMap((group,index)=>allowed.has(index)&&index!==owners.get(module.baseId)?group.parts.map(part=>part.id):[])].every(id=>module.required.includes(id)))return false;}
+    if(module.ports!==undefined){const ports=module.ports;if(!ports||typeof ports!=='object'||Array.isArray(ports)||!['entry','exit'].every(key=>{const port=ports[key];return port&&vector(port.p,3)&&port.p.every(n=>Math.abs(n)<=10)&&vector(port.direction,3)&&Math.abs(Math.hypot(...port.direction)-1)<.0001;}))return false;}
    }
   }
   const seen=new Set([0]),queue=[0];for(const at of queue)for(const next of links[at])if(!seen.has(next)){seen.add(next);queue.push(next);}return seen.size===item.groups.length;

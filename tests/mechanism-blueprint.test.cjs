@@ -47,7 +47,7 @@ test('malformed arm and gripper import data is rejected atomically',()=>{
 test('saved library exposes separate forms and mechanisms and keeps legacy shape entries',()=>{
  const {t,sandbox}=setup(),g=t.addQubit([2,.045,2]);t.saveShape(g);t.showSavedShapes(t.V());let menu=t.getCommandState();assert.equal(menu.title,'Formas guardadas');assert(menu.items[0].label.startsWith('Formas'));assert(menu.items[1].label.startsWith('Mecanismos'));
  menu.items[0].run();assert(t.getCommandState().items.some(i=>i.label.startsWith('Forma 1')));t.showSavedShapes(t.V(),'mechanisms');assert(t.getCommandState().items.some(i=>i.label.startsWith('Brazo Q-bits')));
- t.updateAlphaPanel();assert.equal(sandbox.document.querySelector('#saved-shape-list').children.length,1);assert.equal(sandbox.document.querySelector('#saved-library-mechanisms').children.length,1);
+ t.updateAlphaPanel();assert.equal(sandbox.document.querySelector('#saved-shape-list').children.length,1);const recipes=t.builtInMechanismRecipes();assert.equal(sandbox.document.querySelector('#saved-library-mechanisms').children.length,recipes.length);const names=recipes.map(r=>r.name);assert(names.includes('Brazo Q-bits'));assert(recipes.some(r=>r.conveyors?.some(c=>c.kind==='straight')));for(const kind of ['left','right'])assert(recipes.some(r=>r.conveyors?.some(c=>c.kind===kind)));
 });
 
 test('a saved battery blueprint converts supplied cubes while conserving their joules and starts switched off',()=>{

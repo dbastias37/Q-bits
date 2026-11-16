@@ -68,5 +68,39 @@ if(!renderedCenter||Math.abs(renderedCenter[1]-cargo.body.position.y)>1e-9||rend
 snapshots[snapshots.length-1].cargoRenderedCenter=renderedCenter;
 lab();if(!t.placeMechanismBlueprint(template,t.V(0,0,0)))throw Error('Could not place the ghost blueprint');
 capture('arm-blueprint',[target[0]+distance*.40,target[1]+distance*.25,target[2]+distance],target,()=>t.drawAlpha(),info);
+// Compare the identical irregular rigid assembly drawn per piece and in its
+// cached combined mesh. Rotations exercise both world and per-piece normals.
+lab();const batchParts=[];
+for(let i=0;i<12;i++){const q=t.Q();q.setFromEuler(i*.17,i*.09,i*.05);batchParts.push({id:t.allocateUnitId(),shape:'cube',weight:1,p:t.V((i%4)*.15,.18+Math.floor(i/4)*.12,(i%3)*.11),q});}
+const batchOrientation=t.Q();batchOrientation.setFromEuler(.12,.26,-.31);const batchGroup=t.makeGroup(batchParts,batchOrientation);
+if(batchGroup.block)throw Error('Batch fixture must retain individual cube silhouettes');
+const batchInfo={parts:12,bodies:1,joints:0},batchEye=[1.05,.94,1.1],batchTarget=[.23,.31,.11];
+capture('rigid-batch-reference',batchEye,batchTarget,()=>{for(const pose of t.poses(batchGroup))t.drawUnitMesh(pose);},batchInfo);
+capture('rigid-batch-merged',batchEye,batchTarget,()=>t.drawGroupSolid(batchGroup),batchInfo);
+// Production conveyor templates use the same render path and real part/joint
+// graph. The payload is placed with the real gripper and released for this
+// render fixture; contact transport itself is checked by the runtime tests.
+for(const variant of [{kind:'straight',supports:false},{kind:'left',supports:false},{kind:'right',supports:false},{kind:'straight',supports:true}]){
+ const recipe=t.conveyorBlueprintTemplate(variant.kind,variant.supports);if(!recipe)throw Error('Missing conveyor variant '+variant.kind);
+ lab();const built=t.spawnSavedMechanism(recipe,t.V(0,0,0));if(!built)throw Error('Could not instantiate conveyor '+variant.kind);
+ const list=t.groups.slice(),boxes=list.map(g=>t.bounds(g)),lo=[0,1,2].map(i=>Math.min(...boxes.map(b=>b.min[['x','y','z'][i]]))),hi=[0,1,2].map(i=>Math.max(...boxes.map(b=>b.max[['x','y','z'][i]]))),center=lo.map((v,i)=>(v+hi[i])/2),extent=Math.max(...hi.map((v,i)=>v-lo[i])),d=Math.max(.8,extent*1.55),eye=[center[0]+d*.55,center[1]+d*.7,center[2]+d];
+ const name='conveyor-'+variant.kind+(variant.supports?'-supports':''),details={parts:list.reduce((n,g)=>n+g.parts.length,0),bodies:list.length,joints:t.rotors.length};
+ const render=()=>{for(const group of t.groups)t.drawGroupSolid(group);t.drawConveyors();t.drawCargos();t.drawBatteriesTransparent();};
+ capture(name,eye,center,render,details);
+ if(!variant.supports){
+  const roller=t.rotorPart(t.rotors[0].bId).g,pose=t.poses(roller).find(p=>p.part.shape==='cube');
+  const surface=t.conveyorSurfacePoses(t.conveyors[0])[0];if(!surface)throw Error('Missing physical conveyor skin');const point=surface.p.vadd(surface.q.vmult(t.V(-surface.size.x*.2,surface.size.y/2+.045,0)));
+  const payload=t.newCargo(point,1,1,'#1a99d6');payload.body.position.copy(point);
+  const fixtureGrip=t.addQubit([payload.body.position.x,payload.body.position.y+.09,payload.body.position.z]),gripId=fixtureGrip.parts[0].id;
+  if(!t.configureGripper(gripId,{mode:'piece',targetId:-payload.id,capacity:8})||!t.gripperGrab(gripId))throw Error('Conveyor render fixture cargo could not be handled');
+  t.releaseGripper(gripId);t.removeGroup(fixtureGrip);capture(name+'-cargo',eye,center,render,{...details,cargoY:payload.body.position.y,fixture:'released gripper load; transport tested separately'});
+  lab();if(!t.placeMechanismBlueprint(recipe,t.V(0,0,0)))throw Error('Could not place conveyor ghost '+variant.kind);capture(name+'-blueprint',eye,center,()=>t.drawAlpha(),{...details,directionalArrows:true});
+  if(variant.kind==='left'){
+   lab();const elevated=t.placeBlueprint(t.mechanismBlueprintShape(recipe),t.V(0,0,0),{height:.45,quarterTurns:1});if(!elevated)throw Error('Could not place rotated elevated blueprint');
+   const targets=t.blueprintTargets(elevated),middle=['x','y','z'].map(axis=>(Math.min(...targets.map(part=>part.p[axis]))+Math.max(...targets.map(part=>part.p[axis])))/2);
+   capture('conveyor-left-rotated-elevated-blueprint',[middle[0]+d*.55,middle[1]+d*.7,middle[2]+d],middle,()=>t.drawAlpha(),{...details,directionalArrows:true,height:.45,quarterTurns:1});
+  }
+ }
+}
 fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,JSON.stringify({width,height,init,snapshots,validation}));
 console.log(JSON.stringify({output,frames:snapshots.length,validationErrors:validation.length}));if(validation.length)process.exitCode=1;

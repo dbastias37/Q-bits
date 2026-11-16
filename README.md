@@ -315,4 +315,11 @@ El recordatorio de conexión y recarga está disponible en el taller, el menú d
 
 En **P → Mecanismos** coloca el blueprint de **18 cubos + 8 enganches**. Acerca esas piezas reales e integra desde el clic derecho del plano. Al terminar se forman cuatro articulaciones y un cubo de agarre; acopla y activa una batería existente. La plantilla incluye un traslado de 90°, configurable con posiciones A/B, filtros y repetición.
 
-**Formas guardadas → Formas / Mecanismos** organiza las plantillas anteriores y los montajes con articulaciones. Guardado y repisas conservan el programa. [Guía para construir, programar y recuperar el brazo](docs/BRAZO_QBITS.md). Las cintas rectas/esquinas se desarrollarán en el próximo bloque.
+**Formas guardadas → Formas / Mecanismos** organiza las plantillas anteriores y los montajes con articulaciones. Guardado y repisas conservan el programa. [Guía para construir, programar y recuperar el brazo](docs/BRAZO_QBITS.md).
+
+
+## Cintas modulares — banco de pruebas
+
+**P → Mecanismos → Cinta Q-bits** incluye planos rectos y esquinas izquierda/derecha, orientación, altura, patas opcionales y prolongación desde otro tramo. Los planos consumen piezas existentes; la banda aparece al terminar el montaje y los rodillos se alimentan con baterías externas. Los tramos unidos comparten alimentación y mantienen controles independientes de marcha y sentido. [Construcción, materiales y funcionamiento](docs/CINTAS_QBITS.md).
+
+El renderizador agrupa los cubos de cuerpos rígidos irregulares en una malla cacheada, conservando las piezas y sus físicas. Los mecanismos completos se muestran separados de los Q-bits sueltos en el contador.

@@ -89,12 +89,18 @@ module.exports = function createGame(options = {}) {
   if (fs.existsSync(gameFile)) {
     const wheelFile=path.join(root,'assets/js/radial-menu.js');
     scripts = [fs.readFileSync(path.join(root, 'assets/js/cannon.min.js'), 'utf8'),
-      ...(fs.existsSync(wheelFile)?[fs.readFileSync(wheelFile,'utf8')]:[]), fs.readFileSync(path.join(root,'assets/js/rotor-power.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/campaign-reconfiguration.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/progression.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/campaign-automation.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/campaign-production.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/workshop.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/contact-sensors.js'),'utf8'), ...['furniture-models','organizers','workshop-panel','robot-arm-panel','battery-liquid'].filter(n=>fs.existsSync(path.join(root,'assets/js/'+n+'.js'))).map(n=>fs.readFileSync(path.join(root,'assets/js/'+n+'.js'),'utf8')), ...['controls','subtitles','selection-hud','preferences','graphics','settings'].map(n=>fs.readFileSync(path.join(root,'assets/js/'+n+'.js'),'utf8')), fs.readFileSync(gameFile, 'utf8')];
+      ...(fs.existsSync(wheelFile)?[fs.readFileSync(wheelFile,'utf8')]:[]), fs.readFileSync(path.join(root,'assets/js/rotor-power.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/campaign-reconfiguration.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/progression.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/campaign-automation.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/campaign-production.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/workshop.js'),'utf8'), fs.readFileSync(path.join(root,'assets/js/contact-sensors.js'),'utf8'), ...['furniture-models','organizers','workshop-panel','robot-arm-panel','conveyor-panel','battery-liquid'].filter(n=>fs.existsSync(path.join(root,'assets/js/'+n+'.js'))).map(n=>fs.readFileSync(path.join(root,'assets/js/'+n+'.js'),'utf8')), ...['controls','subtitles','selection-hud','preferences','graphics','settings'].map(n=>fs.readFileSync(path.join(root,'assets/js/'+n+'.js'),'utf8')), fs.readFileSync(gameFile, 'utf8')];
   } else {
     scripts = [...fs.readFileSync(path.join(root, 'index.html'), 'utf8').matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
   }
   const hook = `window.__testGame={
-    robotArmBlueprintTemplate,placeMechanismBlueprint,mechanismBlueprintShape,completeMechanismBlueprint,mechanismRecordParts,showSavedShapes,updateAlphaPanel,cancelBlueprint,copySavedMechanism,
+    ...(typeof conveyorSurfacePoses==='function'?{conveyorSurfacePoses,conveyorPathPoses,conveyorEnsureSurfaces,conveyorRemoveSurfaces}:{}),
+    ...(typeof drawConveyors==='function'?{drawConveyors}:{}),
+    ...(typeof conveyorBlueprintTemplate==='function'?{conveyorBlueprintTemplate}:{}),
+    ...(typeof createConveyor==='function'?{conveyors,createConveyor,conveyorForGroup,conveyorRotors,conveyorStatus,conveyorReadLoad,configureConveyor,startConveyor,stopConveyor,serializeConveyors,restoreConveyors,conveyorTemplate,restoreConveyorTemplate,clearConveyors,pruneConveyors}:{}),
+    ...(typeof conveyorSurfacePoses==='function'?{conveyorSurfacePoses}:{}),
+    ...(typeof conveyorPanelAction==='function'?{conveyorPanelAction,conveyorPanelSnapshot,joinCompletedConveyorBlueprint,conveyorBlueprintPlacement,conveyorPortWorld,builtInMechanismRecipes,alphaSceneSnapshot,restoreAlphaScene,clearAlphaScene}:{}),
+    conveyorSupportReady,conveyorBlueprintTemplate,robotArmBlueprintTemplate,placeMechanismBlueprint,mechanismBlueprintShape,completeMechanismBlueprint,mechanismRecordParts,showSavedShapes,updateAlphaPanel,cancelBlueprint,copySavedMechanism,
     pruneRobotArms,robotArms,robotGrips,copyGripperConfig,validGripperConfig,configureGripper,gripperGrab,releaseGripper,gripperMatches,gripperFormSignature,gripperFaceDistance,robotArmForGroup,createRobotArm,registerRobotArm,configureRobotArm,teachRobotArmPose,jogRobotArm,startRobotArm,stopRobotArm,robotArmStatus,robotArmRotors,robotReadPose,robotTargetError,serializeRobotArms,restoreRobotArms,robotArmTemplate,restoreRobotArmTemplate,newCargo,
     robotPanelSnapshot,robotPanelAction,updateRobotArmPanel,drawGripperMark,
     shelves,shelfModel,shelfSnapshot,shelfSelectionPlan,shelfPlacementValid,shelfCellPoint,createShelf,beginShelfPlacement,updateShelfPlacement,confirmShelfPlacement,cancelShelfPlacement,aimShelf,openShelfMenu,storeShelfSelection,withdrawShelf,deleteShelf,requestDeleteShelf,serializeShelves,restoreShelves,clearShelves,drawShelves,getShelfPreview:()=>shelfPreview,
@@ -113,10 +119,10 @@ module.exports = function createGame(options = {}) {
     chapters,LEVELS,beginReconfiguration,reconfigurationInput,tickReconfiguration,setupReconfiguration,reconfigurationObjective,showCodex,closeCodex,catalogueRecipe,rememberCatalogueRecipe,groupWorkUnits,showCampaignResults,
     savedMechanisms,mechanismSnapshot,mechanismGroups,mechanismPartCount,savedMechanismValid,saveMechanism,spawnSavedMechanism,persistMechanisms,loadSavedMechanisms,mechanismsExportData,importMechanismsData,serializeRotorState,restoreRotorState,clearPuzzleScene,leavePuzzle,
     beginCampaignLevel,beginIntro,showMain,hideStoryDialogue,
-    planRoute,planCargoPath,startRoute,stopRoute,stepPhysics,groups,cargos,V,Q,world,story,bounds,
+    aimQubit,planRoute,planCargoPath,startRoute,stopRoute,stepPhysics,groups,cargos,V,Q,world,story,bounds,
     poses,corners,drawQubits,drawCargos,drawStoryWorld,drawStoryGlass,updateTarget,updateSpeech,updateStoryMarker,
     measureEncounterBubbles,placeEncounterBubble,addEncounterBubble,encounterBubbles,
-    findSnap,weld,makeFragments,detachPart,validPose,settings,spawnQubit,creationShape,updateAlphaHUD,
+    findSnap,weld,makeFragments,detachPart,validPose,physicalGroupPoses,physicalGroupBounds,conveyorGroupSurfaces,settings,spawnQubit,creationShape,updateAlphaHUD,
     rotors,rotorPart,couplerTip,rotorForGroup,rotorForPart,rotorGroups,rotorConnectedGroups,connectRotorTips,configureRotor,disconnectRotor,refreshRotors,spawnRotor,findRotorSnap,updateRotorMotors,allocateUnitId,rotorPowerState,prepareRotorPower,updateRotorPower,updateMoods,mechanismDefaults,
     rotorSets,selectedRotors,rotorSetFor,activeRotorSet,rotorSetMembers,createRotorSet,renameRotorSet,dissolveRotorSet,configureRotorSet,selectRotorSet,toggleRotorSelection,clearRotorSelection,controlRotors,serializeRotorSets,restoreRotorSets,
     externalBatteryState,isExternalBattery,externalBatteryCapacity,externalBatteryCells,externalBatterySummary,externallyPoweredInternalIds,gameBatteryCapacity,rechargeExternalBatteries,

@@ -100,7 +100,7 @@ def png(path,pixels):
  raw=b''.join(b'\0'+pixels[y*W*4:(y+1)*W*4] for y in range(H-1,-1,-1))
  path.write_bytes(b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('!2I5B',W,H,8,6,0,0,0))+chunk(b'IDAT',zlib.compress(raw,6))+chunk(b'IEND',b''))
 for command in data['init']:replay(command)
-results=[]
+results=[];reference_pixels=None;batch_equivalence=None
 for shot in data['snapshots']:
  # Replay the actual command list; state remains live across captures as in WebGL.
  for command in shot['commands']:replay(command)
@@ -109,12 +109,22 @@ for shot in data['snapshots']:
  foreground=sum(abs(r-237)+abs(g-242)+abs(b-240)>25 for r,g,b in zip(raw[0::4],raw[1::4],raw[2::4]))
  assert foreground>500,(shot['name'],'empty mechanism frame',foreground)
  blue=sum(b>r+15 and g>r+8 for r,g,b in zip(raw[0::4],raw[1::4],raw[2::4]))
- if shot['name']=='arm-blueprint':assert blue>500,('missing cyan blueprint',blue)
+ if shot['name'].endswith('-blueprint'):assert blue>500,('missing cyan blueprint',blue)
+ if shot.get('directionalArrows'):
+  orange=sum(r>g+25 and g>b+10 for r,g,b in zip(raw[0::4],raw[1::4],raw[2::4]));assert orange>20,('missing conveyor direction arrows',shot['name'],orange)
+ if shot['name'].startswith('conveyor-') and shot['name'].endswith('-cargo'):assert blue>50,('missing conveyor payload',blue)
  if shot['name']=='arm-cargo':
   assert blue>500,('missing elevated blue cargo',blue)
   assert .3<shot['cargoY']<.5 and abs(shot['cargoRenderedCenter'][1]-shot['cargoY'])<1e-9,('cargo center differs from physics',shot['cargoRenderedCenter'],shot['cargoY'])
+ if shot['name']=='rigid-batch-reference':reference_pixels=raw
+ if shot['name']=='rigid-batch-merged':
+  assert reference_pixels is not None
+  changed=sum(any(abs(raw[i+c]-reference_pixels[i+c])>2 for c in range(3)) for i in range(0,len(raw),4))
+  mean=sum(abs(a-b) for a,b in zip(raw,reference_pixels))/len(raw)
+  assert changed<W*H*.0005 and mean<.01,('rigid batch changes rendered appearance',changed,mean)
+  batch_equivalence={'pixelsChangedOverTwoLevels':changed,'meanChannelError':mean,'comparedPixels':W*H}
  results.append({'name':shot['name'],'parts':shot['parts'],'bodies':shot['bodies'],'joints':shot['joints'],'foregroundPixels':foreground,'bluePixels':blue,'path':str(OUT/(shot['name']+'.png'))})
 assert not data['validation'],'invalid attributes or depth clear'
-print(json.dumps({'compiledShaders':compiled,'linkedPrograms':linked,'gpuErrors':0,'snapshots':results}))
+print(json.dumps({'compiledShaders':compiled,'linkedPrograms':linked,'gpuErrors':0,'rigidBatchEquivalence':batch_equivalence,'snapshots':results}))
 egl('eglMakeCurrent',U,P,P,P,P)(d,None,None,None)
 egl('eglDestroyContext',U,P,P)(d,ctx);egl('eglDestroySurface',U,P,P)(d,surf);egl('eglTerminate',U,P)(d)
