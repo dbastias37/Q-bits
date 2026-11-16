@@ -103,3 +103,14 @@ test('guide voice has independent persisted volume, mute, validation and audio r
  assert.equal(t.getVisuals().guideVolume,35);click('settings-save');assert.equal(P.load(store).guideVolume,52);assert.equal(P.load(store).guideVoice,false);
  assert.equal(P.load(store).volume,30);click('settings-reset');assert.equal(settings.draft.guideVolume,35);assert.equal(settings.draft.guideVoice,true);
 });
+
+test('footstep settings persist independently and reset only the audio draft',()=>{
+ const old=P.sanitize({guideVolume:63,volume:27});assert.equal(old.footsteps,true);assert.equal(old.footstepVolume,55);
+ assert.equal(P.sanitize({footstepVolume:999}).footstepVolume,100);assert.equal(P.sanitize({footstepVolume:NaN}).footstepVolume,55);
+ const {settings,tabs,doc,click,store,t}=uiSetup();settings.open('pause');tabs[3].dispatchEvent({type:'click'});
+ const volume=doc.querySelector('#pref-footstepVolume');volume.value='44';volume.dispatchEvent({type:'input'});
+ const enabled=doc.querySelector('#pref-footsteps');enabled.checked=false;enabled.dispatchEvent({type:'change'});
+ assert.equal(t.getVisuals().footstepVolume,55);click('settings-save');assert.equal(P.load(store).footstepVolume,44);assert.equal(P.load(store).footsteps,false);
+ assert.equal(P.load(store).guideVolume,35);assert.equal(P.load(store).volume,30);
+ click('settings-reset');assert.equal(settings.draft.footstepVolume,55);assert.equal(settings.draft.footsteps,true);assert.equal(P.load(store).footsteps,false);
+});

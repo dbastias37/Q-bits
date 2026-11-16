@@ -134,7 +134,7 @@
    if(master){master.gain.cancelScheduledValues(context.currentTime);master.gain.setTargetAtTime(volume,context.currentTime,.01);}
    if(!enabled||!volume)silence();
   }
-  return {preload,unlock,begin,reveal,stop,setPaused,configure,getState:()=>({...stats,clips:buffers.length,hasEnd:endings.length>0,ends:endings.length,active:live.size,enabled,volume})};
+  return {getContext:ensureContext,preload,unlock,begin,reveal,stop,setPaused,configure,getState:()=>({...stats,clips:buffers.length,hasEnd:endings.length>0,ends:endings.length,active:live.size,enabled,volume})};
  }
  if(typeof module==='object'&&module.exports)module.exports={create};
  else root.QBitsGuideAudio=create();
