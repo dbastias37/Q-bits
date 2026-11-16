@@ -382,7 +382,7 @@ function onPhysicalKeyDown(event){
  if(event.defaultPrevented||settingsScreen?.isOpen||editableTarget(event.target)||editableTarget(document.activeElement))return;
  if(event.code==='Escape'){event.preventDefault();if(hudInputActive){hudReturnCapture=false;setHudInput(false);}handleKey(controlEvent('Escape',event));return;}
  if(hudInputActive&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter','Space'].includes(event.code)){event.preventDefault();if(event.code==='Enter'||event.code==='Space')window.qbitsSelectionHud?.activateFocused({toggle:ctrlDown()||event.ctrlKey,source:'keyboard'});else window.qbitsSelectionHud?.stepFocus(event.code==='ArrowLeft'||event.code==='ArrowUp'?-1:1);return;}
- if(radialOpen()&&event.code.startsWith('Arrow')){handleKey(event);return;}
+ if(radialOpen()&&(event.code.startsWith('Arrow')||['Tab','PageUp','PageDown'].includes(event.code))){handleKey(event);return;}
  if(story.ready&&story.mode!=='playing'&&!['pause','fullscreen'].includes(window.QBitsControls?.keyboardAction(savedPreferences.controls.keyboard,event.code)))return;
  gamepadActive=false;
  if(keyboardInput?.down(event.code,event))event.preventDefault();else if(!keyboardInput)handleKey(event);
@@ -1088,14 +1088,58 @@ function mechanismsUnlocked(){return Object.keys(story.progress).some(key=>/^lev
 function mechanismsAvailable(){return !certifiedAutomation()&&!puzzle.active&&(story.scene==='lab'||story.scene==='campaign'&&mechanismsUnlocked());}
 function isMechanismChoice(id){return id==='coupler'||id==='rotor';}
 function normalizeCreationChoice(id){return id==='rotor'?'rotor':normalizeUnitShape(id);}
-function creationChoiceAllowed(id){return ['cube','tetra','pyramid','coupler','rotor'].includes(id)&&(isMechanismChoice(id)?mechanismsAvailable():story.scene==='lab'&&!puzzle.active);}
-function creationTitle(id){return {cube:'Q-bit',tetra:'T-bit triangular',pyramid:'T-bit de base cuadrada',coupler:'Enganche',rotor:'Rotor'}[id]||'Q-bit';}
+function creationChoiceAllowed(id){if(typeof id==='string'&&id.startsWith('quick-'))return story.scene==='lab'&&!puzzle.active&&quickEntries.has(id);return ['cube','tetra','pyramid','coupler','rotor'].includes(id)&&(isMechanismChoice(id)?mechanismsAvailable():story.scene==='lab'&&!puzzle.active);}
+function creationTitle(id){if(quickEntries.has(id))return quickEntries.get(id).title;return {cube:'Q-bit',tetra:'T-bit triangular',pyramid:'T-bit de base cuadrada',coupler:'Enganche',rotor:'Rotor'}[id]||'Q-bit';}
 function creationShape(){const id=normalizeCreationChoice(settings.unitShape);return creationChoiceAllowed(id)?id:'cube';}
 function unitLabel(part){if(part?.mood?.production)return part.mood.production.role==='package'?'Paquete':'Materia';if(isExternalBattery(part))return 'Batería';return unitShape(part)==='coupler'?'Enganche':isTBit(part)?'T-bit':'Q-bit';}
 function groupUnitLabel(g){if(g.parts.some(p=>p.mood.production))return g.parts.every(p=>p.mood.production)?'bloques de materia':'piezas';const c=g.parts.filter(p=>unitShape(p)==='coupler').length;if(c)return c===g.parts.length?'Enganche'+(c===1?'':'s'):'piezas';const t=g.parts.filter(isTBit).length;return t===g.parts.length?'T-bit'+(t===1?'':'s'):t?'piezas':'Q-bit'+(g.parts.length===1?'':'s');}
 function syncUnitControls(){const shape=creationShape(),select=document.querySelector('#unit-shape');select.value=shape;select.disabled=puzzle.active||story.scene!=='lab'&&!mechanismsAvailable();for(const option of select.querySelectorAll('option'))option.disabled=!creationChoiceAllowed(option.value);document.querySelector('#create').textContent='Crear '+creationTitle(shape);}
+// Explicit sandbox copies: construction blueprints and campaign resources remain separate.
+let quickCatalogueStamp='';
+const quickEntries=new Map();
+function quickSingleRecord(type,count=1){
+ const parts=Array.from({length:count},(_,key)=>({key,shape:'cube',weight:1,p:[(key-(count-1)/2)*CUBE_SIZE,HALF,0],q:[0,0,0,1],...(type==='battery'?{battery:{pack:0,enabled:false}}:type==='gripper'?{gripper:copyGripperConfig()}: {})}));
+ return {version:1,type,name:type==='battery'?'Batería '+['','I','II','III'][count]:'Cubo de agarre',groups:[{parts}],joints:[]};
+}
+function quickCatalogue(){
+ const list=[{id:'quick-arm',title:'Brazo Q-bits',record:robotArmBlueprintTemplate()},...['straight','left','right'].map((kind,i)=>({id:'quick-conveyor-'+kind,title:['Cinta recta','Esquina izquierda','Esquina derecha'][i],record:conveyorBlueprintTemplate(kind)})),
+ {id:'quick-gripper',title:'Cubo de agarre',record:quickSingleRecord('gripper')},...[1,2,3].map(n=>({id:'quick-battery-'+n,title:'Batería '+['','I','II','III'][n],record:quickSingleRecord('battery',n),subtitle:'100 % · apagada'})),
+ {id:'quick-sensor',title:'Sensor de contacto',action:'sensor'},{id:'quick-cargo',title:'Cuerpo sólido',action:'cargo'},{id:'quick-cooler',title:'Enfriador',action:'cooler'},{id:'quick-shelf',title:'Repisa',action:'shelf',subtitle:'Colocar en pared'},
+ {id:'quick-workshop',title:'Mesa de trabajo',action:'workshop',subtitle:'Taller del banco'},
+ ...savedMechanisms.map((record,i)=>({id:'quick-saved-mechanism-'+i,title:record.name,record:copySavedMechanism(record),subtitle:'Mecanismo guardado'})),
+ ...savedShapes.map((shape,i)=>({id:'quick-saved-shape-'+i,title:shape.name,shape:JSON.parse(JSON.stringify(shape)),subtitle:'Forma guardada'}))];
+ return list;
+}
+function quickProfile(entry){
+ const source=entry.record?.groups.flatMap(g=>g.parts)||entry.shape?.parts||[{shape:'cube',p:[0,0,0],q:[0,0,0,1]}],vertices=[],faces=[];
+ for(const part of source){const profile=unitProfile(part.shape||'cube'),q=Q();q.set(...part.q);const offset=vertices.length;for(const v of profile.vertices){const p=add(V(...part.p),q.vmult(v));vertices.push([p.x/CUBE_SIZE,p.y/CUBE_SIZE,p.z/CUBE_SIZE]);}for(const face of profile.faces)faces.push(face.map(i=>i+offset));}
+ return {id:entry.id,title:entry.title,subtitle:entry.subtitle||'Montaje completo',section:'quick',vertices,faces,color:entry.id.includes('battery')?[54,139,105]:[66,82,85],description:entry.action==='shelf'?'Selecciona y apunta a una pared; clic para colocar.':entry.action==='workshop'?'Acceso directo a la mesa existente del banco.':'Copia de prueba: suelta Q y haz clic para crear una unidad completa. Los motores quedan detenidos. Tab cambia de pestaña; flechas recorren las tarjetas.'};
+}
+function spawnQuickElement(id){
+ if(story.scene!=='lab'||puzzle.active||!creationChoiceAllowed(id))return null;const entry=quickEntries.get(id);if(!entry)return null;
+ if(entry.action==='shelf'){const ok=beginShelfPlacement(wallAim());if(ok)cancelUnitCreation();return ok;}
+ if(entry.action==='workshop'){if(!workshopBench)setupWorkshop();if(workshopBench){cancelUnitCreation();openWorkshopPanel();return workshopBench;}return null;}
+ if(entry.action==='cargo'){const made=spawnCargo();if(made)cancelUnitCreation();return made;}
+ const count=entry.record?mechanismPartCount(entry.record):entry.shape?.parts.length||1;
+ if(!entry.action&&groups.reduce((n,g)=>n+g.parts.length,0)+count>MAX_QUBITS){announce('No caben más piezas. Guarda o retira un montaje y vuelve a hacer clic.');return null;}
+ const record=entry.record?copySavedMechanism(entry.record):null;if(record){for(const joint of record.joints)joint.enabled=false;for(const p of record.groups.flatMap(g=>g.parts))if(p.battery)p.battery.enabled=false;}
+ for(let row=0;row<4;row++)for(const col of [0,1,-1,2,-2]){
+  const p=V(position[0]-Math.sin(yaw)*(1.5+row*.85)+Math.cos(yaw)*col*.85,0,position[2]-Math.cos(yaw)*(1.5+row*.85)-Math.sin(yaw)*col*.85);let made=null;
+  if(record){const before=new Set(groups);made=spawnSavedMechanism(record,p);if(made)for(const g of groups)if(!before.has(g))for(const part of g.parts)if(isExternalBattery(part))part.mood.energy=1;}
+  else if(entry.action==='cooler')made=createCooler(p);
+  else if(entry.action==='sensor'){
+   if(groups.reduce((n,g)=>n+g.parts.length,0)>=MAX_QUBITS)break;
+   const g=addQubit([p.x,HALF+.003,p.z],1);if(!validPose(g,g.body.position,g.body.quaternion)){removeGroup(g);continue;}const part=g.parts[0];part.mood.workshop={version:1,ownerId:part.id,sensor:true,battery:1,lightweight:1,movement:1,baseWeight:1,ballast:0};made=g;
+  }else if(entry.shape){
+   const parts=entry.shape.parts.map(part=>{const q=Q();q.set(...part.q);return {id:allocateUnitId(),shape:part.shape||'cube',weight:1,p:add(p,V(part.p[0],part.p[1]+.003,part.p[2])),q};});if(!assemblyValid(parts)){announce('Esta forma necesita volver a guardarse con sus piezas actuales.');return null;}const g=makeGroup(parts);if(validPose(g,g.body.position,g.body.quaternion))made=g;else removeGroup(g);
+  }
+  if(made){cancelUnitCreation();redraw=true;announce(entry.title+' creado · copia de prueba'+(record?' · motores detenidos; baterías cargadas y apagadas':''));return made;}
+ }
+ announce('No hay espacio libre delante. Muévete y vuelve a hacer clic.');return null;
+}
+
 function initUnitRadial(){
- if(unitRadial)return;
+ const catalogue=story.scene==='lab'?quickCatalogue():[],stamp=JSON.stringify(catalogue);if(unitRadial&&quickCatalogueStamp===stamp)return;if(unitRadial)unitRadial.dispose();unitRadial=null;quickCatalogueStamp=stamp;quickEntries.clear();for(const entry of catalogue)quickEntries.set(entry.id,entry);
  if(!window.QBitsRadial)throw new Error('No se pudo preparar el selector de piezas.');
  const entries=[
   {id:'cube',title:'Q-bit',subtitle:'Cubo',description:'Módulo de 9 × 9 × 9 cm. Seis pirámides o doce T-bits triangulares completan este volumen.',color:[43,46,49]},
@@ -1113,7 +1157,7 @@ function initUnitRadial(){
    faces=faces.concat(faces.map(f=>f.map(i=>i+half)));
   }
   return {...entry,vertices,faces,locked,lockedDescription:isMechanismChoice(entry.id)?'Se desbloquea al completar el nivel 5: La primera unión. Disponible desde el inicio en el banco de pruebas.':'Las piezas de la campaña se obtienen dentro del nivel.'};
- })});
+ }).concat(catalogue.map(quickProfile))});
 }
 function unitRadialAllowed(){
  return running&&gameInputActive()&&story.ready&&story.mode==='playing'&&(story.scene==='lab'||story.scene==='campaign'&&mechanismsUnlocked())&&!puzzle.active&&!story.transition&&!document.hidden&&document.body.dataset.booting!=='true'&&panel.hidden&&menu.hidden&&commandMenu.hidden&&!held&&!marquee&&!pendingPickup&&!moveChoice&&!pendingCargo&&!editableTarget(document.activeElement);
@@ -1122,7 +1166,7 @@ function openUnitRadial(){
  if(radialOpen()||!unitRadialAllowed())return false;
  cancelUnitCreation();initUnitRadial();for(const id of ['cube','tetra','pyramid','coupler','rotor'])unitRadial.setLocked?.(id,!creationChoiceAllowed(id));keys.clear();routeInspection=null;accumulator=0;
  unitRadial.open(creationShape(),{virtualPointer:gameInputActive()});
- const radialHelp=document.querySelector('#unit-radial .radial-help');if(radialHelp)radialHelp.textContent=gamepadActive?window.QBitsControls.gamepadHint(savedPreferences.controls.gamepad,'radial')+' · suelta '+window.QBitsControls.labelFor('radial',savedPreferences,'gamepad')+' para elegir':'Suelta '+inputLabel('radial')+' para elegir · '+inputLabel('primary')+' para crear';
+ const radialHelp=document.querySelector('#unit-radial .radial-help');if(radialHelp)radialHelp.textContent=gamepadActive?window.QBitsControls.gamepadHint(savedPreferences.controls.gamepad,'radial')+' · suelta '+window.QBitsControls.labelFor('radial',savedPreferences,'gamepad')+' para elegir':'Suelta '+inputLabel('radial')+' para elegir · '+inputLabel('primary')+' para crear · Tab: Banco rápido';
  document.body.dataset.unitRadial='open';hint.hidden=true;redraw=true;
  return true;
 }
@@ -1132,7 +1176,7 @@ function closeUnitRadial(commit=false){
  const choice=unitRadial.hovered;
  const valid=commit&&unitRadialAllowed()&&creationChoiceAllowed(choice);
  unitRadial.close();document.body.dataset.unitRadial='closed';keys.clear();accumulator=0;
- if(valid){settings.unitShape=choice;pendingUnitCreation=choice;syncUnitControls();announce(creationTitle(choice)+' · clic izquierdo para crear · Esc cancela');}
+ if(valid){if(!choice.startsWith('quick-'))settings.unitShape=choice;pendingUnitCreation=choice;syncUnitControls();announce(creationTitle(choice)+' · clic izquierdo para crear · Esc cancela');}
  redraw=true;return valid;
 }
 function cancelUnitCreation(){pendingUnitCreation=null;}
@@ -1144,6 +1188,7 @@ function handleKeyUp(event){
 }
 function spawnQubit(){
  automationIntervention();
+ if(pendingUnitCreation?.startsWith('quick-'))return spawnQuickElement(pendingUnitCreation);
  const shape=creationShape();if(puzzleBlockedEdit(isMechanismChoice(shape)?'mechanism':'qubit'))return;
  if(isMechanismChoice(shape)&&!mechanismsAvailable()){announce('Completa La primera unión para desbloquear los mecanismos.');return;}
  if(shape==='rotor'){
@@ -2731,6 +2776,8 @@ function handleKey(event){
  if(radialOpen()){
   event.preventDefault();
   if(event.code==='Escape')closeUnitRadial(false);
+  else if(event.code==='Tab')unitRadial.switchTab();
+  else if(['PageUp','PageDown'].includes(event.code))unitRadial.changePage(event.code==='PageUp'?-1:1);
   else if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.code))unitRadial.chooseNext(event.code==='ArrowLeft'||event.code==='ArrowUp'?-1:1);
   return;
  }
@@ -3487,7 +3534,7 @@ function onCanvasMouseDown(event){
  if(workshopPanel?.isOpen)return;
  if(shelfPreview){event.preventDefault();if(event.button===2)cancelShelfPlacement();else if(event.button===0){updateShelfPlacement(wallAim());confirmShelfPlacement();}return;}
  if(hudInputActive)return;
- if(radialOpen()){event.preventDefault();return;}
+ if(radialOpen()){event.preventDefault();if(event.button===0)unitRadial.activate();return;}
  if(event.button!==0&&event.button!==2)return;
  if(!storyActionAllowed())return;
  if(story.scene==='intro'&&event.button===2)return;
@@ -3495,7 +3542,7 @@ function onCanvasMouseDown(event){
  if(pendingUnitCreation){
   if(!unitRadialAllowed()){cancelUnitCreation();return;}
   if(event.button===2){cancelUnitCreation();announce('Creación cancelada');return;}
-  settings.unitShape=pendingUnitCreation;
+  if(!pendingUnitCreation.startsWith('quick-'))settings.unitShape=pendingUnitCreation;
   if(spawnQubit())clearSelection();
   return;
  }
@@ -3515,7 +3562,7 @@ function onCanvasMouseDown(event){
 }
 function onCanvasMouseUp(event){
  if(hudInputActive)return;
- if(radialOpen()){event.preventDefault();return;}
+ if(radialOpen()){event.preventDefault();if(event.button===0)unitRadial.activate();return;}
  if(event.button!==0||held?.reward||held?.latched)return;
  if(marquee)finishMarquee();else releaseQubit(shiftDown());
 }

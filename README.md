@@ -323,3 +323,10 @@ En **P → Mecanismos** coloca el blueprint de **18 cubos + 8 enganches**. Acerc
 **P → Mecanismos → Cinta Q-bits** incluye planos rectos y esquinas izquierda/derecha, orientación, altura, patas opcionales y prolongación desde otro tramo. Los planos consumen piezas existentes; la banda aparece al terminar el montaje y los rodillos se alimentan con baterías externas. Los tramos unidos comparten alimentación y mantienen controles independientes de marcha y sentido. [Construcción, materiales y funcionamiento](docs/CINTAS_QBITS.md).
 
 El renderizador agrupa los cubos de cuerpos rígidos irregulares en una malla cacheada, conservando las piezas y sus físicas. Los mecanismos completos se muestran separados de los Q-bits sueltos en el contador.
+
+
+## Banco rápido — catálogo en Q
+
+Mantén **Q**, pulsa **Tab** para abrir **Banco rápido**, señala una tarjeta, suelta **Q** y haz clic para crear una copia completa. Las flechas recorren las tarjetas y **RePág / AvPág** cambian de página. También puedes pulsar las pestañas y botones de página con el puntero del selector.
+
+Incluye brazo, cintas recta y de esquina, agarre, baterías, sensor, sólido, enfriador y tus formas/mecanismos guardados. Las copias del banco aparecen con motores detenidos y baterías cargadas pero apagadas. La repisa requiere confirmar su ubicación en una pared; Taller abre el taller existente. Las tarjetas de vidrio se paginan y solo se animan las visibles. Esta creación libre es exclusiva del banco: respeta el límite de piezas y conserva la construcción mediante blueprints en la campaña.

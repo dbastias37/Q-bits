@@ -151,7 +151,7 @@ def render(mode,thickness_scale=1):
 reports=[]
 for mode,name in [(0,'room'),(1,'dark'),(2,'diagnostic')]:
  before,after=render(mode);png(name+'-before',before);png(name,after)
- g=data['layout'];hole=(g['cx'],g['cy']-g['inner']*.20)
+ g=data['layout'];hole=(W/2,50) if data.get('quick') else (g['cx'],g['cy']-g['inner']*.20)
  for x,y in [(2,2),(W-3,2),(2,H-3),(W-3,H-3),hole]:
   assert pixel(before,x,y)==pixel(after,x,y),(name,'pixels outside the material changed',(x,y))
  reports.append({'scene':name,'path':str(OUT/(name+'.png'))})

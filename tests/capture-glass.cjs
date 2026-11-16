@@ -4,14 +4,17 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const output=process.argv[2]||'/tmp/qbits-glass/geometry.json';
 const width=Number(process.argv[3])||1280,height=Number(process.argv[4])||720;
 const game=require('./game-harness.cjs')();
+if(process.env.QBITS_QUICK_GLASS)game.t.story.scene='lab';
 game.sandbox.innerWidth=width;game.sandbox.innerHeight=height;
 game.t.initUnitRadial();
 const radial=game.t.getUnitRadial();radial.open('cube');
+if(process.env.QBITS_QUICK_GLASS)radial.switchTab('quick');
 const sandbox={window:{},Float32Array,Uint8Array,console};vm.createContext(sandbox);
 vm.runInContext(fs.readFileSync(path.join(__dirname,'../assets/js/glass.js'),'utf8'),sandbox);
 const api=sandbox.window.QBitsGlass,panels=radial.getGlassPanels();
 if(!panels.length)throw Error('No glass panels exported');
 const data={width,height,layout:game.sandbox.QBitsRadial.layout(width,height,3,2),vertex:api.vertex,fragment:api.fragment,panels:panels.map(panel=>({...panel,vertices:Array.from(api.mesh(panel.points,panel.thickness))})),figures:radial.getState().figures};
+if(process.env.QBITS_QUICK_GLASS){data.quick=true;data.layout.cards=panels.map(p=>{const xs=p.points.map(v=>v[0]),ys=p.points.map(v=>v[1]);return {left:Math.min(...xs),top:Math.min(...ys),width:Math.max(...xs)-Math.min(...xs),height:Math.max(...ys)-Math.min(...ys)};});}
 // Record the production compositor too: Python replays allocation, scene copy,
 // any blur passes, uniforms, attributes and draws against a real framebuffer.
 const constants={VERTEX_SHADER:0x8b31,FRAGMENT_SHADER:0x8b30,COMPILE_STATUS:0x8b81,LINK_STATUS:0x8b82,ARRAY_BUFFER:0x8892,STATIC_DRAW:0x88e4,DYNAMIC_DRAW:0x88e8,FLOAT:0x1406,TRIANGLES:4,TRIANGLE_STRIP:5,DEPTH_TEST:0xb71,BLEND:0xbe2,CULL_FACE:0xb44,SCISSOR_TEST:0xc11,SRC_ALPHA:0x302,ONE_MINUS_SRC_ALPHA:0x303,ONE:1,ZERO:0,NO_ERROR:0,TEXTURE0:0x84c0,TEXTURE1:0x84c1,TEXTURE_2D:0x0de1,TEXTURE_MIN_FILTER:0x2801,TEXTURE_MAG_FILTER:0x2800,TEXTURE_WRAP_S:0x2802,TEXTURE_WRAP_T:0x2803,LINEAR:0x2601,CLAMP_TO_EDGE:0x812f,RGBA:0x1908,UNSIGNED_BYTE:0x1401,FRAMEBUFFER:0x8d40,COLOR_ATTACHMENT0:0x8ce0,FRAMEBUFFER_COMPLETE:0x8cd5,MAX_TEXTURE_SIZE:0xd33,MAX_RENDERBUFFER_SIZE:0x84e8,BLEND_SRC_RGB:0x80c9,BLEND_DST_RGB:0x80c8,BLEND_SRC_ALPHA:0x80cb,BLEND_DST_ALPHA:0x80ca};

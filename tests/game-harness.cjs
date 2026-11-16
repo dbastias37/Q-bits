@@ -133,7 +133,7 @@ module.exports = function createGame(options = {}) {
     setHeld:value=>{held=value},setSelected:value=>{selected=value},getSelected:()=>selected,
     setLook:value=>{if(value.camera)camera.splice(0,3,...value.camera);if(value.yaw!==undefined)yaw=value.yaw;if(value.pitch!==undefined)pitch=value.pitch},getCommandState:()=>commandState,handleSecondary,
     puzzle,getLook:()=>({yaw,pitch,camera:[...camera]}),setMarquee:value=>{marquee=value},
-    initUnitRadial,openUnitRadial,closeUnitRadial,handleKeyUp,getUnitRadial:()=>unitRadial,
+    quickCatalogue,quickSingleRecord,spawnQuickElement,initUnitRadial,openUnitRadial,closeUnitRadial,handleKeyUp,getUnitRadial:()=>unitRadial,
     radialOpen,unitRadialAllowed,storySuspended,onCanvasMouseDown,onCanvasMouseUp,pause,getSimTime:()=>simTime,
     makeGroup,worldParts,addQubit,removeGroup,orientations,clearNarrativeScene,rollGeometry,beginHaul,stopHaul,assignCrew,
     navigationJobs,runNavigationJobs,updatePosture,handleKey,handleWheel,grabQubit,releaseQubit,
