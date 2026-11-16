@@ -1,4 +1,43 @@
 {
-  "clips": ["blip_01.wav", "blip_02.wav", "blip_03.wav", "blip_04.wav", "blip_05.wav"],
-  "end": "end.wav"
+  "clips": [
+    "blip_01.wav",
+    "blip_02.wav",
+    "blip_03.wav",
+    "blip_04.wav",
+    "blip_05.wav",
+    "blip_06.wav"
+  ],
+  "ends": [
+    "end_01.wav",
+    "end_02.wav",
+    "end_03.wav"
+  ],
+  "wordGroups": [
+    {
+      "maxLetters": 3,
+      "clips": [
+        "blip_01.wav",
+        "blip_02.wav"
+      ]
+    },
+    {
+      "maxLetters": 6,
+      "clips": [
+        "blip_03.wav",
+        "blip_04.wav"
+      ]
+    },
+    {
+      "maxLetters": 9,
+      "clips": [
+        "blip_05.wav"
+      ]
+    },
+    {
+      "maxLetters": null,
+      "clips": [
+        "blip_06.wav"
+      ]
+    }
+  ]
 }
