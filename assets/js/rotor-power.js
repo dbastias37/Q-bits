@@ -93,5 +93,37 @@
     };
   }
 
-  return Object.freeze({ DEFAULTS, LIMITS, MODEL, evaluate });
+  // An external supply replaces both internal reservoirs. This evaluates one
+  // motor's demand; the game allocates a shared supply across the entire network
+  // before debiting it, so motor iteration order cannot spend the same joules.
+  function evaluateExternal(state = {}, supply = {}, dt = 0) {
+    state = state && typeof state === 'object' ? state : {};
+    supply = supply && typeof supply === 'object' ? supply : {};
+    const seconds = Math.max(0, finite(dt, 0));
+    const externalCapacityJ = Math.max(0, finite(supply.capacity, 0));
+    const externalStoredJ = clamp(finite(supply.storedJ, 0), 0, externalCapacityJ);
+    const empty = externalStoredJ <= MODEL.emptyEpsilon;
+    const base = evaluate({ ...state, energyA: 1, energyB: 1 }, 0);
+    const stopReason = base.stopReason || (state.enabled && empty ? 'empty' : null);
+    const powered = !!state.enabled && !stopReason;
+    const inputWatts = powered ? base.inputWatts : 0;
+    const spentJoules = Math.min(externalStoredJ, inputWatts * seconds);
+    const exhausted = powered && seconds > 0 && spentJoules >= externalStoredJ;
+    return {
+      ...base, source: 'external', external: true, externalCapacityJ, externalStoredJ,
+      externalEnergy: externalCapacityJ > 0 ? externalStoredJ / externalCapacityJ : 0,
+      externalDrainPerSecond: externalCapacityJ > 0 ? inputWatts / externalCapacityJ : 0,
+      energyA: clamp(finite(state.energyA, 0), 0, 1), energyB: clamp(finite(state.energyB, 0), 0, 1),
+      drainA: 0, drainB: 0, drainPerSecondA: 0, drainPerSecondB: 0,
+      drainPerSide: spentJoules / (MODEL.joulesPerSide * 2),
+      drainPerSecond: inputWatts / (MODEL.joulesPerSide * 2),
+      inputWatts, mechanicalWatts: powered ? base.mechanicalWatts : 0,
+      heatWatts: powered ? base.heatWatts : 0, spentJoules,
+      suppliedSeconds: inputWatts > 0 ? spentJoules / inputWatts : 0,
+      remainingSeconds: inputWatts > 0 ? (externalStoredJ - spentJoules) / inputWatts : empty ? 0 : null,
+      stopReason: exhausted ? 'empty' : stopReason
+    };
+  }
+
+  return Object.freeze({ DEFAULTS, LIMITS, MODEL, evaluate, evaluateExternal });
 });

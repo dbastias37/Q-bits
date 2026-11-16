@@ -11,7 +11,7 @@
   <link rel="preload" href="assets/fonts/spaceman/Spaceman-Regular.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="preload" href="assets/fonts/led-calculator/LEDCalculator.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="stylesheet" href="assets/css/radial-menu.css?v=20261115-glass-3">
-  <link rel="stylesheet" href="assets/css/settings.css?v=20261116-rotor-sets-1">
+  <link rel="stylesheet" href="assets/css/settings.css?v=20261116-external-batteries-1">
   <style>
     * { box-sizing: border-box; }
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000; }
@@ -303,10 +303,10 @@ input,select,textarea{font-family:var(--font-menu);}
 #callout-count{color:#59625f;}
 #codex-screen{z-index:51;justify-content:flex-start;overflow-y:auto;padding:clamp(24px,5vh,60px) 24px;} .codex-content{width:min(850px,100%);margin:auto;} #codex-title{font-size:clamp(26px,5vw,44px);line-height:1.25;} #codex-entries{display:grid;gap:16px;margin:24px 0;} #codex-entries article{border-top:1px solid #96ada050;padding:16px 0;text-align:left;} #codex-entries h3{font:17px/1.5 var(--font-menu);margin:0 0 9px;} #codex-entries p,.codex-note{font:14px/1.7 system-ui,sans-serif;color:#53675b;max-width:70ch;margin:0 0 10px;} #codex-entries button{font-size:13px;text-align:left;white-space:normal;line-height:1.5;} #codex-back{position:sticky;bottom:0;background:#f4f8f4ee;} @media(max-width:620px){#codex-screen{padding:24px 18px;}#codex-entries p{font-size:13px;}}
 </style>
-<link rel="stylesheet" href="assets/css/selection-hud.css?v=20261116-rotor-sets-1">
-<link rel="stylesheet" href="assets/css/hud.css?v=20261116-rotor-sets-1">
-<link rel="stylesheet" href="assets/css/subtitles.css?v=20261116-rotor-sets-1">
-<link rel="stylesheet" href="assets/css/glass-panels.css?v=20261116-rotor-sets-1">
+<link rel="stylesheet" href="assets/css/selection-hud.css?v=20261116-external-batteries-1">
+<link rel="stylesheet" href="assets/css/hud.css?v=20261116-external-batteries-1">
+<link rel="stylesheet" href="assets/css/subtitles.css?v=20261116-external-batteries-1">
+<link rel="stylesheet" href="assets/css/glass-panels.css?v=20261116-external-batteries-1">
 </head>
 <body data-game-mode="boot" data-game-scene="lab" data-booting="true">
   <section id="boot-screen" aria-label="Inicio de Q-bits" data-stage="loading">
@@ -399,6 +399,15 @@ input,select,textarea{font-family:var(--font-menu);}
       <label>Fuerza <output id="rotor-force-value">40</output><input id="rotor-force" type="range" min="2" max="400" step="1" value="40"></label>
       <label>Carga máxima <output id="rotor-capacity-value">32</output><input id="rotor-capacity" type="range" min="2" max="256" step="1" value="32"></label>
       <p id="rotor-power-readout" role="status" aria-live="polite"></p>
+      <p id="rotor-supply-status"></p>
+      <div id="connected-batteries" class="actions" aria-label="Baterías conectadas"></div>
+      <details><summary>Baterías externas · guía</summary>
+        <p>En el taller, convierte 1, 2 o 3 cubos unidos en línea en una batería transparente. Las tres versiones están disponibles desde el principio; la doble almacena el doble y la triple, el triple. El líquido verde baja con la carga.</p>
+        <p>Acóplala al mecanismo con Shift y actívala desde su clic derecho o desde este panel. Verifica «Batería externa activa» antes de arrancar. Sin una batería externa activa, cada rotor usa su reserva interna.</p>
+        <p>Una batería externa activa y vacía detiene los motores. Para recargarla, apágala, detén el mecanismo y déjala quieta con la carcasa tocando el piso. Para volver a usar las reservas internas, apaga la batería externa.</p>
+        <p>La conversión conserva la energía de los cubos, por lo que la nueva batería puede empezar parcialmente llena. Las copias guardadas se crean vacías y deben recargarse.</p>
+        <button id="battery-guide" type="button">Ver instrucciones paso a paso</button>
+      </details>
       <p>Los ajustes se aplican a todos los rotores elegidos. «Varios» indica valores distintos. Iniciar conserva el sentido de cada rueda; invertir cambia todos los sentidos. La carga máxima es el límite de cada rotor, no se suma entre motores.</p>
       <label id="rotor-tier-row">Nivel de fuerza<select id="rotor-tier"><option value="1">I · 40</option><option value="2">II · 65</option><option value="3">III · 100</option></select></label>
       <p id="rotor-tier-status"></p>
@@ -479,7 +488,7 @@ input,select,textarea{font-family:var(--font-menu);}
    </div>
    <div id="settings-confirm" hidden role="alertdialog" aria-modal="true" aria-labelledby="settings-confirm-title"><div class="settings-confirm-card"><h3 id="settings-confirm-title">¿Salir sin guardar?</h3><p>Tienes cambios pendientes en la configuración.</p><div class="settings-confirm-actions"><button id="settings-keep" type="button">Seguir editando</button><button id="settings-discard" type="button">Salir sin guardar</button><button id="settings-confirm-save" type="button">Guardar y salir</button></div></div></div>
   </section>
-  <script src="assets/js/opening.js?v=20261116-rotor-sets-1" defer></script>
-  <script src="assets/js/boot.js?v=20261116-rotor-sets-1" defer></script>
+  <script src="assets/js/opening.js?v=20261116-external-batteries-1" defer></script>
+  <script src="assets/js/boot.js?v=20261116-external-batteries-1" defer></script>
 </body>
 </html>

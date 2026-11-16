@@ -59,6 +59,7 @@
       new Set(parts.map(p=>p.id)).size===parts.length;
   }
   function plan(action, parts) {
+    if(Array.isArray(parts)&&parts.some(p=>p?.mood?.externalBattery))return {error:'Las baterías externas no se dividen ni se recomponen.'};
     if(!eligible(parts))return {error:'Usa las piezas marcadas de esta cámara.'};
     const first=parts[0], origin=first.mood.matter;
     if(parts.some(p=>p.mood.matter.root!==origin.root || p.mood.matter.rootWeight!==origin.rootWeight))return {error:'Estas piezas tienen orígenes distintos.'};

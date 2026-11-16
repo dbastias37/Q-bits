@@ -65,3 +65,12 @@ Se agrega selección exacta de ejes con Ctrl + clic/T/△, conjuntos con nombre,
 El banco duplica autonomía de batería, creación (256), selección (64 inicial, 256 máximo) y agarre (32 inicial, 128 máximo); carga rotor hasta 256. Catálogos 64 por tipo, planos/enfriadores 12 y plazas de enfriador 16. Campaña certificada conserva sus condiciones; la reserva mayor requiere recarga proporcional.
 
 Suite actual: **378 pruebas aprobadas** de lógica y Cannon con DOM/GPU simulados. Incluye control de veinte rotores y regresiones de energía, persistencia, teclado/mando y selección dentro de un mismo chasis. No se verificó una partida visual: Chromium local continúa bloqueado al crear sockets. Ver [estado vigente](ESTADO_PROYECTO.md) y [controles](../README.md#conjuntos-de-rotores).
+
+
+## Actualización: baterías externas — 16 de noviembre de 2026
+
+Taller con recipientes de cristal de 1/2/3 Q-bits y capacidades proporcionales, disponibles de inmediato. El verde muestra carga real y desaparece al vaciarse. Conversión conserva materia y energía; recarga al apagar y apoyar el recipiente quieto en el suelo. Acoplamiento con Shift y activación explícita alimentan la red física de rotores; fuente activa vacía detiene el montaje sin consumir reservas internas. El panel P indica la fuente y controla las baterías conectadas. Incluye tutorial breve persistente en los menús.
+
+Persistencia validada: instantánea conserva energía; copias/plantillas nuevas están vacías; IDs y paquetes remapeados, también al separar celdas sobre un mismo chasis. Cubos convertidos quedan fuera de trabajos, reconfiguración y recarga ordinaria. La vuelta a cubos normales en el taller conserva julios o se rechaza si no caben. Las tres versiones pueden reutilizarse sin comprar investigación.
+
+Verificación final: **410 pruebas Node aprobadas**, sin fallos ni omisiones; sintaxis y `git diff --check` correctos. La suite ejecuta lógica y Cannon reales con DOM/GPU simulados. GPU real por EGL/Mesa: 15 escenas, cristal, cuatro alturas de líquido, profundidad delante/detrás, sin errores GL. Son capturas del renderizador, no una partida completa en navegador. Comandos: `node --test tests/*.test.cjs`, `python3 tests/validate-battery-gles.py`, `python3 tests/validate-focus-gles.py`.

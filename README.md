@@ -2,7 +2,7 @@
 
 Juego de puzles en primera persona, ambientado en salas blancas minimalistas. Mueve y une Q-bits, organiza al equipo, activa circuitos y transforma materia para abrir nuevas rutas.
 
-Versión actualizada el 14 de noviembre de 2026: prólogo, 20 niveles y laboratorio de pruebas.
+Versión actualizada el 16 de noviembre de 2026: prólogo, 20 niveles y laboratorio de pruebas.
 
 ## Jugar
 
@@ -276,3 +276,18 @@ Abre **P → Mecanismos**, escribe un nombre y pulsa **Crear conjunto**. Puedes 
 - El banco recupera los nombres y miembros al volver de campaña o puzle. **Guardar mecanismo** conserva los conjuntos de un montaje conectado en sus plantillas, copias y exportaciones. Los conjuntos de mecanismos separados se conservan en la escena, pero no se exportan juntos como una plantilla física. Las adaptaciones de taller mantienen sus restricciones de exportación.
 
 El banco admite **256 piezas**, selección inicial 64/máxima 256, carga manual inicial 32/máxima 128 y carga máxima de rotor256 (inicial 32). Catálogos: 64 formas y 64 mecanismos; hasta 12 planos y 12 enfriadores, con 16 plazas máximas por enfriador. La autonomía de batería es el doble a igual trabajo y configuración; la recarga necesita el tiempo correspondiente a la reserva mayor. La campaña certificada conserva su calibración. Los sensores siguen enlazados a sus rotores individuales; un panel de automatización de conjuntos queda para una mejora posterior.
+
+
+## Baterías externas de cristal
+
+En el **banco de pruebas**, las tres versiones están disponibles desde el principio: **I** usa un cubo, **II** dos y **III** tres. Las capacidades son proporcionales: 120, 240 y 360 J. El recipiente crece con las piezas y el líquido verde baja según la carga; vacío queda transparente.
+
+1. Une uno, dos o tres Q-bits normales en una barra recta. Déjalos sobre la mesa del taller y suéltalos.
+2. Abre el taller → **Baterías externas I, II y III** y elige la versión correspondiente. La conversión conserva materia y energía: amplía capacidad, no entrega una carga completa gratis.
+3. Acopla la batería al vehículo con **Shift**, como cualquier pieza. Clic derecho sobre ella → **Activar batería**. También puedes activarla en **P → Mecanismos**, desde las baterías conectadas.
+4. Comprueba que el panel de rotores indique **Batería externa** y pon el conjunto en marcha. Sin una batería externa activa, se usan las reservas internas de los rotores.
+5. Para recargar, apaga la batería y los motores, suelta el mecanismo y deja la propia batería quieta sobre el piso. Basta que una celda del recipiente toque el suelo; se recarga completo en unos 30 segundos desde vacío. El contacto de las ruedas o el chasis por sí solo no lo recarga.
+
+Al cambiar la fuente se detienen los motores: vuelve a iniciarlos cuando esté lista. Una batería externa activa pero vacía detiene los rotores sin gastar sus reservas internas; apágala para volver a ellas. Varias baterías activas conectadas comparten el suministro. Los sensores mantienen sus enlaces individuales.
+
+El recordatorio de conexión y recarga está disponible en el taller, el menú de cada batería y el panel de mecanismos. Las baterías pueden separarse, volver a unirse, guardarse y exportarse con el montaje. Las copias y plantillas aparecen vacías; recuperar la instantánea del laboratorio conserva su carga real. Para volver a usar esos cubos como compañeros, restáuralos en el taller; la energía debe caber en sus reservas originales.

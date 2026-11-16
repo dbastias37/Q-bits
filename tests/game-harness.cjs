@@ -28,7 +28,7 @@ module.exports = function createGame(options = {}) {
     };
     return target;
   }
-  const gl = new Proxy({
+  const gl = options.gl || new Proxy({
     getShaderParameter: () => true, getProgramParameter: () => true,
     getAttribLocation: () => 0, getUniformLocation: () => 0,
     createBuffer: () => { buffers.add(++nextBuffer); return nextBuffer; },
@@ -94,6 +94,8 @@ module.exports = function createGame(options = {}) {
     scripts = [...fs.readFileSync(path.join(root, 'index.html'), 'utf8').matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
   }
   const hook = `window.__testGame={
+    batteryWorkshopCheck,createExternalBattery,restoreExternalBattery,toggleExternalBattery,externalBatteryPack,externalBatteryPackInfo,showWorkshopBatteries,showExternalBatteryMenu,showExternalBatteryGuide,
+    batteryVisualPacks,drawBatteryOpaque,drawBatteryGlass,drawBatteriesTransparent,drawGroupSolid,drawBox,
     selectionHudSnapshot,selectFromHud,initSelectionHud,updateSelectionHud,onPhysicalKeyDown,onPhysicalKeyUp,keyboardInput,dispatchControlAction,pollGamepadInput,resetGameInputs,gameInputActive,getInputState:()=>({gamepadActive,hudInputActive,gamepadMove:[...gamepadMove]}),setMultiSelection:value=>{multiSelection=value},selectionGroups,drawSelectionMarker,drawWideLines,visualResolution,applyPreferences,renderSettingsPreview,initSettingsScreen,getVisuals:()=>visuals,getSettingsScreen:()=>settingsScreen,
     getWorkshopProfile:()=>workshopProfile,setWorkshopProfile:value=>{workshopProfile=value},getWorkshopBench:()=>workshopBench,contactStates,
     awardWorkshopCredits,setupWorkshop,openWorkshopMenu,applyWorkshopUpgrade,purchaseWorkshopResearch,linkContactSensor,unlinkContactSensor,tickContactSensors,sensorContactActive,workshopTarget,drawWorkshop,
@@ -108,6 +110,7 @@ module.exports = function createGame(options = {}) {
     findSnap,weld,makeFragments,detachPart,validPose,settings,spawnQubit,creationShape,updateAlphaHUD,
     rotors,rotorPart,couplerTip,rotorForGroup,rotorForPart,rotorGroups,rotorConnectedGroups,connectRotorTips,configureRotor,disconnectRotor,refreshRotors,spawnRotor,findRotorSnap,updateRotorMotors,allocateUnitId,rotorPowerState,prepareRotorPower,updateRotorPower,updateMoods,mechanismDefaults,
     rotorSets,selectedRotors,rotorSetFor,activeRotorSet,rotorSetMembers,createRotorSet,renameRotorSet,dissolveRotorSet,configureRotorSet,selectRotorSet,toggleRotorSelection,clearRotorSelection,controlRotors,serializeRotorSets,restoreRotorSets,
+    externalBatteryState,isExternalBattery,externalBatteryCapacity,externalBatteryCells,externalBatterySummary,externallyPoweredInternalIds,gameBatteryCapacity,rechargeExternalBatteries,
     unitProfile,unitFaces,unitGroundHeight,isTBit,normalizeUnitShape,rayPart,obbOverlap,drawUnitMesh,drawUnitOutline,
     touchingUnitFaces,findConvexSnap,duplicateSelection,saveLab,enterLab,rememberLab,updateCooling,createCooler,
     rollPoseAt,updateRoutes,makeRollSegment,savedShapeValid,saveShape,savedShapes,blueprintTargets,
@@ -130,7 +133,10 @@ module.exports = function createGame(options = {}) {
     return source.slice(0, at) + hook + source.slice(at);
   });
   if(options.glass)sandbox.QBitsGlass=options.glass;
-  for (const source of scripts) vm.runInContext(source, sandbox, { timeout: 10000 });
+  for (const source of scripts) {
+    if(options.graphics===false&&source.includes('function beginCampaignLevel('))sandbox.QBitsGraphics=null;
+    vm.runInContext(source, sandbox, { timeout: 10000 });
+  }
   return {
     t: sandbox.__testGame, api: sandbox.QBitsGame, sandbox, buffers,
     get radial() { return sandbox.__testGame.getUnitRadial(); },
