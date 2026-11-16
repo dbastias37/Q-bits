@@ -32,7 +32,7 @@ test('capacity changes neither motor demand nor available energy when absolute c
 });
 
 test('upgraded capacity stays finite and bounded, with off and paused states spending no charge',()=>{
- for(const [input,expected] of [[undefined,20],[NaN,20],[Infinity,20],['30',20],[-1,20],[0,20],[100,40]]){
+ for(const [input,expected] of [[undefined,20],[NaN,20],[Infinity,20],['30',20],[-1,20],[0,20],[100,80]]){
   const state={...base,capacityJoulesA:input,capacityJoulesB:input};
   const result=power.evaluate(state,1);assert.equal(result.capacityJoulesA,expected);assert.equal(result.capacityJoulesB,expected);
   for(const value of Object.values(result))if(typeof value==='number')assert(Number.isFinite(value));
@@ -65,13 +65,13 @@ function stepRuntime(t,seconds){for(let i=0;i<seconds*240;i++)t.stepPhysics(1/24
 test('workshop fitting preserves stored joules and real rotor batteries pay equal joules with unequal capacities',()=>{
  const game=workshopGame(),{t,sandbox}=game,p=t.getWorkshopBench().p;
  const rotor=t.spawnRotor(t.V(p.x,p.y+.1,p.z),{mount:'fixed'});assert(rotor);
- const id=rotor.aId,old=t.rotorPart(id).part.mood.energy*20;assert(t.applyWorkshopUpgrade(id,{battery:3}));
- near(t.rotorPart(id).part.mood.energy*40,old);assert.equal(sandbox.QBitsWorkshop.batteryCapacity(t.rotorPart(rotor.bId).part),20);
- const before=[rotor.aId,rotor.bId].map((id,i)=>t.rotorPart(id).part.mood.energy*(i?20:40));
+ const id=rotor.aId,old=t.rotorPart(id).part.mood.energy*40;assert(t.applyWorkshopUpgrade(id,{battery:3}));
+ near(t.rotorPart(id).part.mood.energy*80,old);assert.equal(sandbox.QBitsWorkshop.batteryCapacity(t.rotorPart(rotor.bId).part),20);
+ const before=[rotor.aId,rotor.bId].map((id,i)=>t.rotorPart(id).part.mood.energy*(i?40:80));
  assert(t.configureRotor(rotor,{enabled:true}));stepRuntime(t,1);
- const after=[rotor.aId,rotor.bId].map((id,i)=>t.rotorPart(id).part.mood.energy*(i?20:40));
+ const after=[rotor.aId,rotor.bId].map((id,i)=>t.rotorPart(id).part.mood.energy*(i?40:80));
  assert(after[0]<before[0]);near(before[0]-after[0],before[1]-after[1],1e-8);
- assert.equal(rotor.power.capacityJoulesA,40);assert.equal(rotor.power.capacityJoulesB,20);assert(rotor.power.drainA<rotor.power.drainB);
+ assert.equal(rotor.power.capacityJoulesA,80);assert.equal(rotor.power.capacityJoulesB,40);assert(rotor.power.drainA<rotor.power.drainB);
 });
 
 test('walking expenditure and passive recharge use fixed joules instead of granting a larger battery free energy',()=>{
@@ -80,11 +80,11 @@ test('walking expenditure and passive recharge use fixed joules instead of grant
   g.body.position.set(i*.3,.045,0);g.moodLastPosition=g.body.position.clone();g.body.position.x+=.1;g.route={};Object.assign(g.parts[0].mood,{energy:.8,personality:.5});
  }
  t.updateMoods(.2);
- const spentOrdinary=(.8-ordinary.parts[0].mood.energy)*20,spentUpgraded=(.8-upgraded.parts[0].mood.energy)*40;
+ const spentOrdinary=(.8-ordinary.parts[0].mood.energy)*40,spentUpgraded=(.8-upgraded.parts[0].mood.energy)*80;
  assert(spentOrdinary>0);near(spentOrdinary,spentUpgraded);
  for(const g of [ordinary,upgraded]){g.route=null;g.moodLastPosition=g.body.position.clone();g.parts[0].mood.energy=.4;}
  t.updateMoods(.2);
- const gainedOrdinary=(ordinary.parts[0].mood.energy-.4)*20,gainedUpgraded=(upgraded.parts[0].mood.energy-.4)*40;
+ const gainedOrdinary=(ordinary.parts[0].mood.energy-.4)*40,gainedUpgraded=(upgraded.parts[0].mood.energy-.4)*80;
  assert(gainedOrdinary>0);near(gainedOrdinary,gainedUpgraded);
 });
 

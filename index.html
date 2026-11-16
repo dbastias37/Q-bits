@@ -11,7 +11,7 @@
   <link rel="preload" href="assets/fonts/spaceman/Spaceman-Regular.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="preload" href="assets/fonts/led-calculator/LEDCalculator.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="stylesheet" href="assets/css/radial-menu.css?v=20261115-glass-3">
-  <link rel="stylesheet" href="assets/css/settings.css?v=20261115-glass-1">
+  <link rel="stylesheet" href="assets/css/settings.css?v=20261116-rotor-sets-1">
   <style>
     * { box-sizing: border-box; }
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000; }
@@ -303,10 +303,10 @@ input,select,textarea{font-family:var(--font-menu);}
 #callout-count{color:#59625f;}
 #codex-screen{z-index:51;justify-content:flex-start;overflow-y:auto;padding:clamp(24px,5vh,60px) 24px;} .codex-content{width:min(850px,100%);margin:auto;} #codex-title{font-size:clamp(26px,5vw,44px);line-height:1.25;} #codex-entries{display:grid;gap:16px;margin:24px 0;} #codex-entries article{border-top:1px solid #96ada050;padding:16px 0;text-align:left;} #codex-entries h3{font:17px/1.5 var(--font-menu);margin:0 0 9px;} #codex-entries p,.codex-note{font:14px/1.7 system-ui,sans-serif;color:#53675b;max-width:70ch;margin:0 0 10px;} #codex-entries button{font-size:13px;text-align:left;white-space:normal;line-height:1.5;} #codex-back{position:sticky;bottom:0;background:#f4f8f4ee;} @media(max-width:620px){#codex-screen{padding:24px 18px;}#codex-entries p{font-size:13px;}}
 </style>
-<link rel="stylesheet" href="assets/css/selection-hud.css?v=20261115-glass-1">
-<link rel="stylesheet" href="assets/css/hud.css?v=20261115-glass-1">
-<link rel="stylesheet" href="assets/css/subtitles.css?v=20261115-glass-1">
-<link rel="stylesheet" href="assets/css/glass-panels.css?v=20261115-glass-1">
+<link rel="stylesheet" href="assets/css/selection-hud.css?v=20261116-rotor-sets-1">
+<link rel="stylesheet" href="assets/css/hud.css?v=20261116-rotor-sets-1">
+<link rel="stylesheet" href="assets/css/subtitles.css?v=20261116-rotor-sets-1">
+<link rel="stylesheet" href="assets/css/glass-panels.css?v=20261116-rotor-sets-1">
 </head>
 <body data-game-mode="boot" data-game-scene="lab" data-booting="true">
   <section id="boot-screen" aria-label="Inicio de Q-bits" data-stage="loading">
@@ -371,8 +371,8 @@ input,select,textarea{font-family:var(--font-menu);}
       <label>Fuerza de agarre <output id="forceValue"></output><input id="force" type="range" min="4" max="300" step="1" value="60"></label>
       <label>Estabilidad del agarre <output id="gripValue"></output><input id="grip" type="range" min="0" max="1" step="0.05" value="0.95"></label>
       <label>Velocidad de giro con Shift <output id="rotationSpeedValue"></output><input id="rotationSpeed" type="range" min="1" max="5" step="0.1" value="2.8"></label>
-      <label>Capacidad de carga <output id="maxCarryValue"></output><input id="maxCarry" type="range" min="1" max="64" step="1" value="16"></label>
-      <label>Límite de selección <output id="maxSelectValue"></output><input id="maxSelect" type="range" min="1" max="128" step="1" value="32"></label>
+      <label>Capacidad de carga <output id="maxCarryValue"></output><input id="maxCarry" type="range" min="1" max="128" step="1" value="32"></label>
+      <label>Límite de selección <output id="maxSelectValue"></output><input id="maxSelect" type="range" min="1" max="256" step="1" value="64"></label>
       <label>Proyección al mantener Ctrl<select id="guide"><option value="ghost">Pieza semitransparente</option><option value="dot">Punto</option><option value="x">X</option><option value="none">Sin marca</option></select></label>
       <label>Línea de caída<select id="line"><option value="dashed">Segmentada y animada</option><option value="solid">Continua</option><option value="none">Sin línea</option></select></label>
       <details><summary>Estados y energía</summary>
@@ -390,22 +390,32 @@ input,select,textarea{font-family:var(--font-menu);}
     <div id="page-mechanisms" role="tabpanel" hidden>
       <p id="mechanism-unlock"></p>
       <div class="actions"><button id="create-coupler" type="button">Crear enganche</button><button id="create-rotor" type="button">Crear rotor</button></div>
-      <p>El enganche combina una base cúbica y una punta. Une dos puntas con Shift para formar un rotor. Une las piezas de tu rueda a las caras cuadradas del lado que girará.</p>
-      <p>Puedes montar varios rotores completos en un mismo chasis. Toma el enganche que quieres fijar, acerca una de sus caras cuadradas al cuerpo y suelta con Shift. La otra mitad conserva su eje libre para la rueda.</p>
       <p id="rotor-status"></p>
-      <label>Montaje<select id="rotor-mount"><option value="wheel">Rueda libre · el conjunto puede moverse</option><option value="fixed">Eje fijo · base anclada al banco</option></select></label>
-      <label>Velocidad objetivo <output id="rotor-rpm-value">30 rpm</output><input id="rotor-rpm" type="range" min="1" max="120" step="1" value="30"></label>
-      <label id="rotor-tier-row">Certificación de torque<select id="rotor-tier"><option value="1">I · 0.40 N·m</option><option value="2">II · 0.65 N·m</option><option value="3">III · 1.00 N·m</option></select></label>
-      <p id="rotor-tier-status"></p>
-      <label>Torque máximo <output id="rotor-torque-value">0.40 N·m</output><input id="rotor-torque" type="range" min="0.02" max="4" step="0.02" value="0.4"></label>
-      <label>Capacidad de carga <output id="rotor-capacity-value">16 u</output><input id="rotor-capacity" type="range" min="2" max="128" step="1" value="16"></label>
-      <label>Lado que gira<select id="rotor-side"><option value="a">Lado A · lado B como base</option><option value="b">Lado B · lado A como base</option></select></label>
+      <label>Nombre del conjunto<input id="rotor-set-name" type="text" maxlength="40" placeholder="Ej. Automóvil" autocomplete="off"></label>
+      <div class="actions"><button id="rotor-set-create" type="button">Crear conjunto</button><button id="rotor-set-dissolve" type="button">Disolver conjunto</button></div>
+      <p>Ctrl + clic en cada rotor: añadir o quitar. Después, escribe un nombre y crea el conjunto. Cada rotor pertenece a un conjunto; si lo incluyes en otro, se traslada.</p>
+      <div class="actions"><button id="rotor-start" type="button">Iniciar marcha</button><button id="rotor-stop" type="button">Detener</button><button id="rotor-invert" type="button">Invertir marcha</button></div>
+      <label>Velocidad <output id="rotor-rpm-value">30</output><input id="rotor-rpm" type="range" min="1" max="120" step="1" value="30"></label>
+      <label>Fuerza <output id="rotor-force-value">40</output><input id="rotor-force" type="range" min="2" max="400" step="1" value="40"></label>
+      <label>Carga máxima <output id="rotor-capacity-value">32</output><input id="rotor-capacity" type="range" min="2" max="256" step="1" value="32"></label>
       <p id="rotor-power-readout" role="status" aria-live="polite"></p>
-      <p>La carga suma todas las piezas conectadas, incluidos ambos enganches. Un Q-bit de peso normal equivale a 1 u. Superar la capacidad corta el motor; con poco torque, gira más lento o se atasca.</p>
-      <p>Los dos enganches suministran energía. Encendido consume incluso si está bloqueado; apagado recupera energía. Al agotarse se detiene y debes volver a encenderlo. Para rodar, coloca el eje horizontal y deja espacio para el giro. Una rueda hecha de cubos avanzará a saltos sobre sus aristas.</p>
+      <p>Los ajustes se aplican a todos los rotores elegidos. «Varios» indica valores distintos. Iniciar conserva el sentido de cada rueda; invertir cambia todos los sentidos. La carga máxima es el límite de cada rotor, no se suma entre motores.</p>
+      <label id="rotor-tier-row">Nivel de fuerza<select id="rotor-tier"><option value="1">I · 40</option><option value="2">II · 65</option><option value="3">III · 100</option></select></label>
+      <p id="rotor-tier-status"></p>
+      <details><summary>Conjuntos de esta sala</summary><div id="rotor-set-list" class="actions"></div></details>
+      <details><summary>Montaje y ajustes avanzados</summary>
+      <p id="rotor-individual-note"></p>
+      <label>Montaje<select id="rotor-mount"><option value="wheel">Rueda libre · el conjunto puede moverse</option><option value="fixed">Eje fijo · base anclada al banco</option></select></label>
+      <label>Torque máximo <output id="rotor-torque-value">0.40 N·m</output><input id="rotor-torque" type="range" min="0.02" max="4" step="0.02" value="0.4"></label>
+      <label>Lado que gira<select id="rotor-side"><option value="a">Lado A · lado B como base</option><option value="b">Lado B · lado A como base</option></select></label>
+      <p>Velocidad representa vueltas por minuto. Fuerza 40 equivale al torque 0,40; carga 1 equivale al peso de un Q-bit normal. La carga incluye todas las piezas conectadas. Sin batería o con sobrecarga, el motor se detiene.</p>
+      <p id="rotor-technical-readout"></p>
       <p>El sentido se observa desde el lado que gira, mirando hacia su punta. Al tomar el mecanismo se detiene para poder transportarlo.</p>
-      <div class="actions"><button id="rotor-clockwise" type="button">Horario</button><button id="rotor-counterclockwise" type="button">Antihorario</button><button id="rotor-stop" type="button">Detener</button></div>
-      <div class="actions"><button id="rotor-save" type="button">Guardar mecanismo</button><button id="rotor-disconnect" type="button">Separar enganches</button></div>
+      <div class="actions"><button id="rotor-clockwise" type="button">Horario</button><button id="rotor-counterclockwise" type="button">Antihorario</button><button id="rotor-disconnect" type="button">Separar enganches</button></div>
+      </details>
+      <details><summary>Cómo montar un vehículo</summary><p>Une dos puntas de enganche con Shift para formar un rotor. Fija una cara cuadrada de una mitad al chasis; la otra queda libre para la rueda. Repite con los demás rotores y deja espacio para que giren. Para rodar, coloca los ejes horizontales. Una rueda de cubos avanza sobre sus aristas.</p><p>Selecciona cada rotor por separado si necesitas ajustar el lado o el sentido de giro antes de crear el conjunto. Los sensores existentes conservan sus enlaces individuales.</p></details>
+      <div class="actions"><button id="rotor-save" type="button">Guardar mecanismo</button></div>
+      <p id="rotor-save-note"></p>
       <details open><summary>Mecanismos guardados</summary><div id="saved-mechanism-list"></div><div class="actions"><button id="export-mechanisms" type="button">Exportar mecanismos</button><label>Importar mecanismos<input id="import-mechanisms" type="file" accept="application/json,.json"></label></div></details>
     </div>
     <div id="page-route" role="tabpanel" hidden>
@@ -417,7 +427,7 @@ input,select,textarea{font-family:var(--font-menu);}
       <p id="cargo-editing"></p>
       <label>Lado de los nuevos cuerpos <output id="cargoSideValue"></output><input id="cargoSide" type="range" min="1" max="12" step="1" value="4"></label>
       <p>Un paso equivale al lado de un Q-bit. Los tres lados siempre tienen la misma longitud.</p>
-      <label>Peso / Q-bits necesarios <output id="cargoRequiredValue"></output><input id="cargoRequired" type="range" min="1" max="128" step="1" value="8"></label>
+      <label>Peso / Q-bits necesarios <output id="cargoRequiredValue"></output><input id="cargoRequired" type="range" min="1" max="256" step="1" value="8"></label>
       <label>Color <input id="cargoColor" type="color" value="#f4f4f1"></label>
       <label>Velocidad base de arrastre <output id="haulSpeedValue"></output><input id="haulSpeed" type="range" min="0.08" max="0.4" step="0.01" value="0.2"></label>
       <label>Fuerza por Q-bit <output id="haulForceValue"></output><input id="haulForce" type="range" min="1.5" max="5" step="0.1" value="2"></label>
@@ -444,7 +454,7 @@ input,select,textarea{font-family:var(--font-menu);}
       <button id="export-shapes" type="button">Exportar formas</button><label>Importar copia de formas<input id="import-shapes" type="file" accept=".json,application/json"></label>
       <p>Las formas se conservan en este navegador cuando permite almacenamiento local. Exporta una copia para trasladarlas a otra versión o equipo. Importar reemplaza la lista guardada.</p>
       <label><input id="alpha-coolingOn" type="checkbox" checked> Enfriadores activos</label><button id="place-cooler" type="button">Colocar enfriador donde apunto</button>
-      <label>Capacidad de nuevos enfriadores <output id="alpha-capacityValue"></output><input id="alpha-capacity" type="range" min="1" max="8" step="1" value="4"></label>
+      <label>Capacidad de nuevos enfriadores <output id="alpha-capacityValue"></output><input id="alpha-capacity" type="range" min="1" max="16" step="1" value="4"></label>
       <label>Tiempo de enfriamiento <output id="alpha-coolSecondsValue"></output><input id="alpha-coolSeconds" type="range" min="5" max="60" step="1" value="35"></label>
       <label>Energía al salir <output id="alpha-exitEnergyValue"></output><input id="alpha-exitEnergy" type="range" min="0.25" max="0.75" step="0.05" value="0.5"></label>
       <label>Calma natural al tercer enfado <output id="alpha-maxRestValue"></output><input id="alpha-maxRest" type="range" min="15" max="180" step="5" value="180"></label>
@@ -452,7 +462,7 @@ input,select,textarea{font-family:var(--font-menu);}
       <label><input id="alpha-allowPuzzleSpawn" type="checkbox"> Permitir crear Q-bits durante el puzle</label><p>Actívalo para usar N o Crear Q-bit sin salir del desafío.</p>
       <label>Brillo sutil <output id="alpha-glowValue"></output><input id="alpha-glow" type="range" min="0" max="1" step="0.05" value="0.6"></label>
     </div>
-    <details><summary>Controles</summary><p>Mantener Q y soltar sobre una figura: elegir. El siguiente clic izquierdo crea una pieza; Esc o clic derecho cancelan. Clic sin selección: tomar. Mantener C: agacharse, con las manos libres o sosteniendo una pieza. C + rueda: ajustar altura (abajo baja, arriba sube). Soltar C: levantarse. Tomar o unir piezas no cambia la postura. Con una pieza en la mano, Shift + WASD: girar sin caminar. Shift + soltar junto a una cara compatible: unir. Shift + sacudir rápidamente una estructura de un lado a otro varias veces: desarmar; la pieza tomada permanece en la mano. Rueda: acercar o alejar, con enfoque progresivo y barras de energía visibles de cerca. El ajuste alinea caras compatibles. Dos triangulares completan una pirámide; seis pirámides o doce triangulares completan un cubo. Arrastrar con clic izquierdo desde un espacio vacío: seleccionar varias piezas visibles, hasta 4 m. Clic izquierdo con una selección activa: deseleccionar. Clic derecho en la selección → Tomar selección: levantar el conjunto; clic para soltar. Alt, apuntando a una estructura: opciones de separación. V: duplicar selección. Supr: borrar pieza. Ctrl: guía de caída. Clic derecho en el suelo → Ir a este punto: recorrido individual o en grupo. R: detener. Esc: liberar mouse.<br>La selección para órdenes respeta el límite de piezas; el peso máximo se aplica al agarre manual. La orden en el suelo mueve todas las estructuras seleccionadas. Alt cerca del pin muestra el camino y las mediciones. B crea un cuerpo que solo puede arrastrar un equipo. Máximo de 128 Q-bits en la sala.</p></details>
+    <details><summary>Controles</summary><p>Mantener Q y soltar sobre una figura: elegir. El siguiente clic izquierdo crea una pieza; Esc o clic derecho cancelan. Clic sin selección: tomar. Mantener C: agacharse, con las manos libres o sosteniendo una pieza. C + rueda: ajustar altura (abajo baja, arriba sube). Soltar C: levantarse. Tomar o unir piezas no cambia la postura. Con una pieza en la mano, Shift + WASD: girar sin caminar. Shift + soltar junto a una cara compatible: unir. Shift + sacudir rápidamente una estructura de un lado a otro varias veces: desarmar; la pieza tomada permanece en la mano. Rueda: acercar o alejar, con enfoque progresivo y barras de energía visibles de cerca. El ajuste alinea caras compatibles. Dos triangulares completan una pirámide; seis pirámides o doce triangulares completan un cubo. Arrastrar con clic izquierdo desde un espacio vacío: seleccionar varias piezas visibles, hasta 4 m. Ctrl + clic sobre enganches: añadir o quitar rotores de la selección; P → Mecanismos permite crear un conjunto con nombre. Clic izquierdo con una selección activa: deseleccionar. Clic derecho en la selección → Tomar selección: levantar el conjunto; clic para soltar. Alt, apuntando a una estructura: opciones de separación. V: duplicar selección. Supr: borrar pieza. Ctrl: guía de caída. Clic derecho en el suelo → Ir a este punto: recorrido individual o en grupo. R: detener. Esc: liberar mouse.<br>La selección para órdenes respeta el límite de piezas; el peso máximo se aplica al agarre manual. La orden en el suelo mueve todas las estructuras seleccionadas. Alt cerca del pin muestra el camino y las mediciones. B crea un cuerpo que solo puede arrastrar un equipo. Máximo de 128 Q-bits en la sala.</p></details>
     <div class="actions"><button id="create" type="button">Crear Q-bit</button><button id="remove" type="button">Borrar pieza</button><button id="split" type="button">Desarmar estructura</button></div>
     <button id="resume" type="button">Volver a la sala</button>
   </section>
@@ -469,7 +479,7 @@ input,select,textarea{font-family:var(--font-menu);}
    </div>
    <div id="settings-confirm" hidden role="alertdialog" aria-modal="true" aria-labelledby="settings-confirm-title"><div class="settings-confirm-card"><h3 id="settings-confirm-title">¿Salir sin guardar?</h3><p>Tienes cambios pendientes en la configuración.</p><div class="settings-confirm-actions"><button id="settings-keep" type="button">Seguir editando</button><button id="settings-discard" type="button">Salir sin guardar</button><button id="settings-confirm-save" type="button">Guardar y salir</button></div></div></div>
   </section>
-  <script src="assets/js/opening.js?v=20261115-glass-1" defer></script>
-  <script src="assets/js/boot.js?v=20261115-glass-1" defer></script>
+  <script src="assets/js/opening.js?v=20261116-rotor-sets-1" defer></script>
+  <script src="assets/js/boot.js?v=20261116-rotor-sets-1" defer></script>
 </body>
 </html>

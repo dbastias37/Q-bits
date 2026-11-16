@@ -19,14 +19,14 @@ function coolerGame(tiers=[1,2,3],seconds=1){
 
 test('cooling keeps the configured exit percentage but takes longer for larger battery capacities',()=>{
  const {t,sandbox,cooler,parts}=coolerGame(),workshop=sandbox.QBitsWorkshop;
- const joules=part=>part.mood.energy*workshop.batteryCapacity(part);
- for(const part of parts)near(joules(part),2);
- t.updateCooling(1);assert.equal(cooler.occupants,3);
- near(parts[0].mood.coolProgress,1);near(joules(parts[0]),10);assert.equal(parts[0].mood.state,'neutral');
- near(parts[1].mood.coolProgress,2/3);near(joules(parts[1]),2);assert.equal(parts[1].mood.state,'restless');
- near(parts[2].mood.coolProgress,.5);near(joules(parts[2]),2);assert.equal(parts[2].mood.state,'restless');
- t.updateCooling(.5);near(joules(parts[1]),15);near(parts[2].mood.coolProgress,.75);near(joules(parts[2]),2);
- t.updateCooling(.5);near(joules(parts[2]),20);
+ const joules=part=>part.mood.energy*workshop.batteryCapacity(part)*2;
+ for(const part of parts)near(joules(part),4);
+ t.updateCooling(2);assert.equal(cooler.occupants,3);
+ near(parts[0].mood.coolProgress,1);near(joules(parts[0]),20);assert.equal(parts[0].mood.state,'neutral');
+ near(parts[1].mood.coolProgress,2/3);near(joules(parts[1]),4);assert.equal(parts[1].mood.state,'restless');
+ near(parts[2].mood.coolProgress,.5);near(joules(parts[2]),4);assert.equal(parts[2].mood.state,'restless');
+ t.updateCooling(1);near(joules(parts[1]),30);near(parts[2].mood.coolProgress,.75);near(joules(parts[2]),4);
+ t.updateCooling(1);near(joules(parts[2]),40);
  for(const part of parts){near(part.mood.energy,.5);near(part.mood.coolProgress,1);assert.equal(part.mood.state,'neutral');}
 });
 
@@ -41,8 +41,8 @@ function lookAt(game,p){
 
 test('a cooler with mixed batteries reports time remaining for the last actual occupant',()=>{
  const game=coolerGame([1,3],5),{t,sandbox}=game;lookAt(game,t.V(0,.08,0));
- t.updateCooling(5);t.updateAlphaHUD();
- assert.match(sandbox.document.querySelector('#target').textContent,/Enfriador.* · 5 s$/);
- t.updateCooling(5);t.updateAlphaHUD();
+ t.updateCooling(10);t.updateAlphaHUD();
+ assert.match(sandbox.document.querySelector('#target').textContent,/Enfriador.* · 10 s$/);
+ t.updateCooling(10);t.updateAlphaHUD();
  assert.match(sandbox.document.querySelector('#target').textContent,/listos · energía 50 %$/);
 });

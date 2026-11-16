@@ -86,7 +86,7 @@ test('invalid imports are atomic and reject malformed references, values, geomet
     s=>{s.joints[0].moving='both';},s=>{s.joints[0].enabled='true';},
     ...['up',null,1].map(value=>s=>{s.joints[0].mount=value;}),
     ...[NaN,Infinity,.019,4.001,null,'0.4'].map(value=>s=>{s.joints[0].maxTorque=value;}),
-    ...[NaN,Infinity,1.99,128.01,null,'16'].map(value=>s=>{s.joints[0].capacity=value;}),
+    ...[NaN,Infinity,1.99,256.01,null,'16'].map(value=>s=>{s.joints[0].capacity=value;}),
     s=>{s.groups[0].parts[0].p[0]=NaN;},s=>{s.groups[0].parts[0].q=[0,0,0,2];},
     s=>{s.groups[0].parts[0].shape='wheel';},s=>{s.groups[0].parts[0].weight=-1;},
     s=>{s.groups[1].parts[0].p[1]+=.03;},

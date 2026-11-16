@@ -30,8 +30,8 @@ test('removing a selection keeps its inverse plop until exit ends, then clears i
 test('hover greetings are rare and remain absent during pointer-lock mode',()=>{
  const s=setup();s.hud.update([item(1)],.1);const button=s.nodes.find(n=>n.className==='selection-hud-unit'),speech=s.nodes.find(n=>n.className==='selection-hud-speech');button.dispatch('pointerenter');assert(speech.hidden);s.hud.setInteractive(true);button.dispatch('pointerenter');assert.equal(speech.textContent,'Hola.');for(let i=0;i<30;i++)s.hud.update([item(1)],.1);assert(speech.hidden);button.dispatch('pointerenter');assert(speech.hidden);s.hud.setInteractive(false);assert(speech.hidden);
 });
-test('untrusted or oversized geometry cannot exceed 128 part budget',()=>{
- const s=setup();const many=Array.from({length:200},(_,i)=>item(i));s.hud.update(many,.1);assert.equal(s.root.dataset.count,'128');assert(s.hud.visibleCount<=8);assert.doesNotThrow(()=>HUD.geometry({parts:[{vertices:[[0,0,0],[0,1,0],[1,0,0]],faces:[[0,1,9999]]}]}));
+test('untrusted or oversized geometry cannot exceed 256 part budget',()=>{
+ const s=setup();const many=Array.from({length:300},(_,i)=>item(i));s.hud.update(many,.1);assert.equal(s.root.dataset.count,'256');assert(s.hud.visibleCount<=8);assert.doesNotThrow(()=>HUD.geometry({parts:[{vertices:[[0,0,0],[0,1,0],[1,0,0]],faces:[[0,1,9999]]}]}));
 });
 
 test('overflow remains visible outside interaction and names the total selected piece count',()=>{

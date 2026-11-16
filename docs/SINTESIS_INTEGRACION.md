@@ -57,3 +57,11 @@ La suite ejecuta el juego y Cannon reales con DOM/GPU simulados. Comprueba lógi
 Unas diez misiones grandes en galpones, construcción abierta de líneas, coordinación avanzada, temperatura y desafíos posteriores siguen pendientes. El giro de manipulación de los cubos y la fuga final también es diseño documentado. El detalle narrativo contiene spoilers en el [prompt maestro](PROMPT_MAESTRO_CAMPANA.md#giro-narrativo-y-fuga).
 
 Al retomar: revisar primero los errores y sensaciones que reporte el jugador, comprobar las correcciones y luego estudiar una instalación de varias máquinas en el banco. No convertir una propuesta futura en contenido anunciado como disponible. El [estado del proyecto](ESTADO_PROYECTO.md) conserva las decisiones y el punto de continuación.
+
+## Actualización: conjuntos y banco ampliado — 16 de noviembre de 2026
+
+Se agrega selección exacta de ejes con Ctrl + clic/T/△, conjuntos con nombre, arranque/parada/inversión y ajustes comunes de velocidad, fuerza y carga con enteros. La orientación individual se conserva; el arranque valida todos los miembros antes de aplicar la orden. Los conjuntos sobreviven a recuperación del banco y a plantillas/copia/exportación del montaje, con validación retrocompatible. Sensores y automatización colectiva permanecen separados: los sensores existentes siguen controlando sus ejes individuales.
+
+El banco duplica autonomía de batería, creación (256), selección (64 inicial, 256 máximo) y agarre (32 inicial, 128 máximo); carga rotor hasta 256. Catálogos 64 por tipo, planos/enfriadores 12 y plazas de enfriador 16. Campaña certificada conserva sus condiciones; la reserva mayor requiere recarga proporcional.
+
+Suite actual: **378 pruebas aprobadas** de lógica y Cannon con DOM/GPU simulados. Incluye control de veinte rotores y regresiones de energía, persistencia, teclado/mando y selección dentro de un mismo chasis. No se verificó una partida visual: Chromium local continúa bloqueado al crear sockets. Ver [estado vigente](ESTADO_PROYECTO.md) y [controles](../README.md#conjuntos-de-rotores).

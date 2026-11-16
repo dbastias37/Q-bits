@@ -27,7 +27,7 @@ const posture = { height:EYE_HEIGHT, crouchHeight:.78 };
 // Inspection follows the wheel-driven hand distance, not the selection state.
 const heldFocus = { amount:0, target:0, focal:1.48256097, groups:[], active:false };
 const menuFocus={amount:0};
-const mechanismDefaults={rpm:30,direction:1,moving:'b',mount:'wheel',maxTorque:.4,capacity:16};
+const mechanismDefaults={rpm:30,direction:1,moving:'b',mount:'wheel',maxTorque:.4,capacity:32};
 
 function updatePosture(dt, active, crouching) {
   // C controls posture independently of grabbing, rotating and joining pieces.
@@ -342,7 +342,7 @@ function dispatchControlAction(id,down,source='keyboard',event={}){
  if(id==='fullscreen'){toggleFullscreen();return;}
  if(hudInputActive)return;
  if(id==='select'&&storyActionAllowed()&&gameInputActive()){
-  const hit=aimQubit();if(!hit)return;let team=selectedTeam();team=team.includes(hit.g)?team.filter(g=>g!==hit.g):[...team,hit.g];if(team.reduce((n,g)=>n+g.parts.length,0)>settings.maxSelect){announce('Máximo '+settings.maxSelect+' piezas seleccionadas');return;}multiSelection=team;selected=team.length?{g:team.includes(hit.g)?hit.g:team[0],part:team.includes(hit.g)?hit.part:team[0].parts[0]}:null;speech.nextHud=0;return;
+  const hit=aimQubit();if(!hit)return;const rotor=rotorForPart(hit.part.id);if(rotor){toggleRotorSelection(rotor);announce(selectedRotors().length+' rotores seleccionados · clic derecho o P para controles');return;}clearRotorSelection();let team=selectedTeam();team=team.includes(hit.g)?team.filter(g=>g!==hit.g):[...team,hit.g];if(team.reduce((n,g)=>n+g.parts.length,0)>settings.maxSelect){announce('Máximo '+settings.maxSelect+' piezas seleccionadas');return;}multiSelection=team;selected=team.length?{g:team.includes(hit.g)?hit.g:team[0],part:team.includes(hit.g)?hit.part:team[0].parts[0]}:null;speech.nextHud=0;return;
  }
  if(id==='clear'&&storyActionAllowed()){if(held)releaseQubit(false);clearSelection();return;}
  if((id==='near'||id==='far')&&storyLookAllowed()){handleWheel({...e,deltaY:id==='near'?-1:1});return;}
@@ -536,7 +536,7 @@ canvas.addEventListener('webglcontextlost', event => {
 canvas.addEventListener('webglcontextrestored', () => window.location.reload());
 
 // Q-bits lab · rigid bodies, compound structures, face rolling and drop guides.
-const CUBE_SIZE=.09, HALF=.045, MAX_QUBITS=128, FIXED_STEP=1/240;
+const CUBE_SIZE=.09, HALF=.045, MAX_QUBITS=256, FIXED_STEP=1/240;
 const V=(x=0,y=0,z=0)=>new CANNON.Vec3(x,y,z), Q=()=>new CANNON.Quaternion();
 const add=(a,b)=>a.vadd(b), sub=(a,b)=>a.vsub(b), mul=(a,s)=>a.scale(s);
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
@@ -570,8 +570,9 @@ const UNIT_PROFILES={
 function unitProfile(shape){return UNIT_PROFILES[unitShape(shape)];}
 function unitGroundHeight(shape){return -Math.min(...unitProfile(shape).vertices.map(v=>v.y));}
 function unitFaces(pose){const profile=unitProfile(pose);return profile.faces.map((face,index)=>({index,kind:profile.faceKinds[index],vertices:face.map(i=>add(pose.p,pose.q.vmult(profile.vertices[i]))),center:add(pose.p,pose.q.vmult(profile.faceCenters[index])),normal:pose.q.vmult(profile.faceNormals[index])}));}
-const settings={mass:1,unitShape:'cube',gravity:9.8,bounce:.12,force:60,friction:.38,damping:.12,speed:.32,guide:'ghost',line:'dashed',maxCarry:16,maxSelect:32,rotationSpeed:2.8,grip:.95,cargoSide:4,cargoRequired:8,cargoColor:'#f4f4f1',haulSpeed:.2,haulForce:2};
+const settings={mass:1,unitShape:'cube',gravity:9.8,bounce:.12,force:60,friction:.38,damping:.12,speed:.32,guide:'ghost',line:'dashed',maxCarry:32,maxSelect:64,rotationSpeed:2.8,grip:.95,cargoSide:4,cargoRequired:8,cargoColor:'#f4f4f1',haulSpeed:.2,haulForce:2};
 const groups=[],cargos=[],rotors=[];let rotorSerial=0;
+const rotorSets=[];let rotorSetSerial=0,selectedRotorIds=[];
 const alphaSettings={maxRest:180,coolSeconds:35,capacity:4,blueprintRange:1.5,exitEnergy:.5,glow:.6,coolingOn:true,allowPuzzleSpawn:false};
 const coolers=[],blueprints=[],savedShapes=[],savedMechanisms=[],buttonBodies=[];let alphaSerial=0;
 const moodSettings={drain:.035,recovery:.06,idleSeconds:90},moodLabels=[];
@@ -1383,6 +1384,73 @@ function rotorConnectedGroups(initial){
  for(let i=0;i<result.length;i++)for(const rotor of rotors){const pair=rotorGroups(rotor);if(pair.includes(result[i]))for(const g of pair)if(g&&!result.includes(g))result.push(g);}
  return result;
 }
+// Control sets reference hinges, not rigid bodies: several selected axles may
+// share one chassis, and welding must never change their membership.
+function rotorSetName(name){return String(name??'').replace(/[\u0000-\u001f\u007f]/g,'').trim().slice(0,40)||'Conjunto de rotores';}
+function rotorSetMembers(set){return [...new Set(Array.isArray(set?.rotorIds)?set.rotorIds:[])].map(id=>rotors.find(r=>r.id===id)).filter(Boolean);}
+function selectedRotors(){return rotorSetMembers({rotorIds:selectedRotorIds});}
+function rotorSetFor(rotor){return rotor&&rotorSets.find(set=>set.rotorIds.includes(rotor.id))||null;}
+function activeRotorSet(){
+ const chosen=selectedRotors();
+ if(chosen.length){const set=rotorSetFor(chosen[0]);return set&&set.rotorIds.length===chosen.length&&chosen.every(r=>set.rotorIds.includes(r.id))?set:null;}
+ return rotorSetFor(selectedRotor());
+}
+function controlRotors(){const chosen=selectedRotors();if(chosen.length)return chosen;const set=activeRotorSet();return set?rotorSetMembers(set):selectedRotor()?[selectedRotor()]:[];}
+function clearRotorSelection(){selectedRotorIds=[];redraw=true;}
+function selectRotorSet(set){const members=rotorSetMembers(set);selectedRotorIds=members.map(r=>r.id);multiSelection=[];selectedCargo=null;const hit=members.length&&rotorPart(members[0].aId);selected=hit?{g:hit.g,part:hit.part}:null;redraw=true;return members.length>0;}
+function toggleRotorSelection(rotor){
+ if(!rotors.includes(rotor))return false;
+ const at=selectedRotorIds.indexOf(rotor.id);
+ if(at<0&&selectedRotors().length>=settings.maxSelect){announce('Máximo '+settings.maxSelect+' rotores seleccionados');return false;}
+ if(at<0)selectedRotorIds.push(rotor.id);else selectedRotorIds.splice(at,1);
+ multiSelection=[];selectedCargo=null;const first=selectedRotors()[0],hit=first&&rotorPart(first.aId);selected=hit?{g:hit.g,part:hit.part}:null;redraw=true;return true;
+}
+function cleanRotorSets(){
+ const hadSelection=selectedRotorIds.length>0,valid=new Set(rotors.map(r=>r.id));selectedRotorIds=selectedRotorIds.filter(id=>valid.has(id));
+ if(hadSelection){const first=selectedRotors()[0],hit=first&&rotorPart(first.aId);selected=hit?{g:hit.g,part:hit.part}:null;}
+ for(const set of [...rotorSets]){set.rotorIds=set.rotorIds.filter(id=>valid.has(id));if(!set.rotorIds.length)rotorSets.splice(rotorSets.indexOf(set),1);}
+}
+function createRotorSet(name,members=selectedRotors()){
+ const ids=[...new Set((Array.isArray(members)?members:[]).filter(r=>rotors.includes(r)).map(r=>r.id))];if(!ids.length)return null;
+ for(const set of [...rotorSets]){set.rotorIds=set.rotorIds.filter(id=>!ids.includes(id));if(!set.rotorIds.length)rotorSets.splice(rotorSets.indexOf(set),1);}
+ const set={id:++rotorSetSerial,name:rotorSetName(name),rotorIds:ids};rotorSets.push(set);return set;
+}
+function renameRotorSet(set,name){if(!rotorSets.includes(set))return false;set.name=rotorSetName(name);return true;}
+function dissolveRotorSet(set){const at=rotorSets.indexOf(set);if(at<0)return false;rotorSets.splice(at,1);return true;}
+function configureRotorSet(set,patch={}){
+ if(!patch||typeof patch!=='object'||!Array.isArray(set?.rotorIds))return false;
+ const requested=[...new Set(set.rotorIds)];refreshRotors();
+ const members=rotorSetMembers({rotorIds:requested});if(!members.length||members.length!==requested.length){announce('Revisa los rotores del conjunto.');return false;}
+ if(['rpm','maxTorque','capacity'].some(key=>patch[key]!==undefined&&!Number.isFinite(patch[key]))||patch.enabled!==undefined&&typeof patch.enabled!=='boolean'||patch.invert!==undefined&&typeof patch.invert!=='boolean')return false;
+ const plans=members.map(rotor=>{
+  const next={};for(const key of ['rpm','maxTorque','capacity'])if(patch[key]!==undefined){const limits=QBitsRotorPower.LIMITS[key];next[key]=clamp(patch[key],limits[0],limits[1]);}
+  if(next.maxTorque!==undefined&&story.scene==='campaign')next.maxTorque=Math.min(next.maxTorque,campaignTorqueCap());
+  if(patch.enabled!==undefined)next.enabled=patch.enabled;
+  if(patch.invert)next.direction=-rotor.direction;
+  return {rotor,next,proposed:{...rotor,...next}};
+ });
+ // Validate the whole command before touching any member, including existing
+ // motors outside this set which a fixed mount would otherwise switch off.
+ for(const {rotor,proposed}of plans){
+  if(!proposed.enabled)continue;
+  const component=rotorConnectedGroups(rotorGroups(rotor));
+  if((held?.items||(held?[held]:[])).some(item=>component.includes(item.g))){announce('Suelta el conjunto antes de iniciar la marcha.');return false;}
+  const power=rotorPowerState(proposed);
+  if(power.stopReason){announce('No se aplicó la orden · '+rotorStopLabel(power.stopReason)+'. Revisa los rotores del conjunto.');return false;}
+  const conflict=rotors.some(other=>{
+   if(other===rotor||!rotorGroups(other).some(g=>component.includes(g)))return false;
+   const future=plans.find(plan=>plan.rotor===other)?.proposed||other;
+   return future.enabled&&(proposed.mount==='fixed'||future.mount==='fixed');
+  });
+  if(conflict){announce('El conjunto tiene ejes fijos incompatibles. Usa rueda libre para un vehículo.');return false;}
+ }
+ const before=members.map(rotor=>({rpm:rotor.rpm,maxTorque:rotor.maxTorque,capacity:rotor.capacity,direction:rotor.direction,enabled:rotor.enabled}));
+ for(const {rotor,next}of plans)if(!configureRotor(rotor,next,true)){
+  members.forEach((r,i)=>configureRotor(r,{...before[i],enabled:false},true));members.forEach((r,i)=>{if(before[i].enabled)configureRotor(r,{enabled:true},true);});
+  announce('No se pudo aplicar la orden al conjunto.');return false;
+ }
+ automationIntervention('Conjunto ajustado: ensayo reiniciado.');return true;
+}
 function unpinRotor(rotor){
  const pin=rotor.pin;if(!pin)return;const b=pin.body;b.type=pin.type;b.fixedRotation=pin.fixedRotation;b.updateMassProperties();b.velocity.set(0,0,0);b.angularVelocity.set(0,0,0);b.wakeUp();rotor.pin=null;
 }
@@ -1393,7 +1461,7 @@ function invalidateRotorBody(g){
 }
 function disconnectRotor(rotor){
  if(!rotors.includes(rotor))return false;
- if(rotor.constraint)world.removeConstraint(rotor.constraint);rotor.constraint=null;unpinRotor(rotor);rotors.splice(rotors.indexOf(rotor),1);return true;
+ if(rotor.constraint)world.removeConstraint(rotor.constraint);rotor.constraint=null;unpinRotor(rotor);rotors.splice(rotors.indexOf(rotor),1);cleanRotorSets();return true;
 }
 function rotorTipsCompatible(a,b,tolerance=.002){
  if(!a||!b||unitShape(a)!=='coupler'||unitShape(b)!=='coupler'||a.g===b.g)return false;
@@ -1405,7 +1473,7 @@ function connectRotorTips(aId,bId,options={}){
  if(poses(a.g).some(pa=>poses(b.g).some(pb=>obbOverlap(pa,pb,.000001))))return null;
  if(options.rpm!==undefined&&!Number.isFinite(options.rpm)||options.direction!==undefined&&![1,-1].includes(options.direction)||options.moving!==undefined&&!['a','b'].includes(options.moving)||options.mount!==undefined&&!['wheel','fixed'].includes(options.mount)||options.maxTorque!==undefined&&!Number.isFinite(options.maxTorque)||options.capacity!==undefined&&!Number.isFinite(options.capacity))return null;
  if(story.scene==='campaign')options={...options,maxTorque:Math.min(options.maxTorque??.4,campaignTorqueCap())};
- const rotor={id:++rotorSerial,aId,bId,rpm:clamp(options.rpm??30,1,120),direction:options.direction??1,moving:options.moving??'b',mount:options.mount??'wheel',maxTorque:clamp(options.maxTorque??.4,.02,4),capacity:clamp(options.capacity??16,2,128),enabled:false,constraint:null,pin:null};
+ const rotor={id:++rotorSerial,aId,bId,rpm:clamp(options.rpm??30,1,120),direction:options.direction??1,moving:options.moving??'b',mount:options.mount??'wheel',maxTorque:clamp(options.maxTorque??.4,.02,4),capacity:clamp(options.capacity??(story.scene==='lab'?32:16),2,256),enabled:false,constraint:null,pin:null};
  stopRoute(a.g);stopRoute(b.g);leaveHaul(a.g);leaveHaul(b.g);rotors.push(rotor);for(const [part,label]of [[a.part,'A'],[b.part,'B']])if(/^Enganche (?:\d+|[AB] · \d+)$/.test(part.mood.name))part.mood.name='Enganche '+label+' · '+part.id;refreshRotors();
  if(options.enabled)configureRotor(rotor,{enabled:true});return rotor;
 }
@@ -1442,7 +1510,7 @@ function configureRotor(rotor,patch={},automatic=false){
  if(patch.moving!==undefined)rotor.moving=patch.moving;
  if(patch.mount!==undefined)rotor.mount=patch.mount;
  if(patch.maxTorque!==undefined)rotor.maxTorque=clamp(patch.maxTorque,.02,4);
- if(patch.capacity!==undefined)rotor.capacity=clamp(patch.capacity,2,128);
+ if(patch.capacity!==undefined)rotor.capacity=clamp(patch.capacity,2,256);
  if(patch.enabled&&typeof checkRotorPower==='function'&&!checkRotorPower(rotor))return false;
  if(patch.enabled!==undefined){rotor.enabled=!!patch.enabled;rotor.stopReason=null;}
  if(rotor.enabled)for(const other of rotors)if(other!==rotor&&(rotor.mount==='fixed'||other.mount==='fixed')&&rotorGroups(other).some(g=>connected.includes(g))){other.enabled=false;other.constraint?.disableMotor();unpinRotor(other);}
@@ -1881,14 +1949,19 @@ function landingProjection(g){
 }
 // Motor batteries belong to the two enganches. Other attached pieces add load,
 // not free energy. The same mood energy powers the existing close-up bars.
+// Lab snapshots contain their own pieces and charge percentages. Capacity is
+// calibrated per scene, so leaving/re-entering the lab cannot refill a battery
+// or grant its extra reserve to campaign pieces. Workshop tier ratios stay the
+// same and therefore preserve absolute stored energy when fitting an upgrade.
+function gameBatteryCapacity(part){return QBitsWorkshop.batteryCapacity(part)*(story.scene==='lab'?2:1);}
 function rotorPowerState(rotor,dt=0){
  const a=rotorPart(rotor.aId),b=rotorPart(rotor.bId),component=rotorConnectedGroups(rotorGroups(rotor));
  const load=component.reduce((sum,g)=>sum+totalWeight(g),0);
- return QBitsRotorPower.evaluate({enabled:rotor.enabled,rpm:rotor.rpm,actualRpm:rotor.actualRpm||0,actualTorque:rotor.actualTorque||0,stalled:rotor.stalled,maxTorque:rotor.maxTorque,load,capacity:rotor.capacity,energyA:a?.part.mood.energy??0,energyB:b?.part.mood.energy??0,capacityJoulesA:QBitsWorkshop.batteryCapacity(a?.part),capacityJoulesB:QBitsWorkshop.batteryCapacity(b?.part)},dt);
+ return QBitsRotorPower.evaluate({enabled:rotor.enabled,rpm:rotor.rpm,actualRpm:rotor.actualRpm||0,actualTorque:rotor.actualTorque||0,stalled:rotor.stalled,maxTorque:rotor.maxTorque,load,capacity:rotor.capacity,energyA:a?.part.mood.energy??0,energyB:b?.part.mood.energy??0,capacityJoulesA:gameBatteryCapacity(a?.part),capacityJoulesB:gameBatteryCapacity(b?.part)},dt);
 }
 function rotorPowerDescription(rotor,compact=false){
  const power=rotorPowerState(rotor),energy=[rotor.aId,rotor.bId].map(id=>Math.round((rotorPart(id)?.part.mood.energy||0)*100));
- const load=rotorConnectedGroups(rotorGroups(rotor)).reduce((sum,g)=>sum+totalWeight(g),0),consumption=power.drainPerSecond*100;
+ const load=rotorConnectedGroups(rotorGroups(rotor)).reduce((sum,g)=>sum+totalWeight(g),0),consumption=Math.max(power.drainPerSecondA,power.drainPerSecondB)*100;
  const state=rotor.stopReason?rotorStopLabel(rotor.stopReason):rotor.enabled?(rotor.stalled?'atascado':'encendido'):'apagado';
  if(compact)return 'Rotor '+state+' · '+Math.abs(rotor.actualRpm||0).toFixed(0)+' rpm · '+load.toFixed(1)+' / '+rotor.capacity+' u · −'+consumption.toFixed(2)+' %/s';
  return (story.campaign?.production?.rotor===rotor?'Motor: el objetivo suma también el consumo de la línea. ':'')+'Energía A '+energy[0]+' % · B '+energy[1]+' % · consumo '+consumption.toFixed(2)+' %/s ('+power.inputWatts.toFixed(2)+' W). Carga '+load.toFixed(1)+' / '+rotor.capacity+' u. Torque usado '+(rotor.actualTorque||0).toFixed(2)+' / '+rotor.maxTorque.toFixed(2)+' N·m. Giro real '+Math.abs(rotor.actualRpm||0).toFixed(1)+' / '+rotor.rpm+' rpm objetivo.';
@@ -1942,7 +2015,7 @@ function updatePanel(){
  updateCargoPanel();updatePuzzlePanel();updateMoodPanel();updateAlphaPanel();updateMechanismPanel();
  document.querySelector('#remove').disabled=puzzle.active||!selected;document.querySelector('#split').disabled=!selected||selected.g.parts.length===1;
 }
-function openPanel(){closeCommandMenu(false);selectedCargo=aimCargo(4)?.cargo||selectedCargo;selected=held?{g:held.g,part:held.part}:aimQubit()||selected;pause();panel.hidden=false;updatePanel();}
+function openPanel(){closeCommandMenu(false);selectedCargo=aimCargo(4)?.cargo||selectedCargo;if(!selectedRotors().length)selected=held?{g:held.g,part:held.part}:aimQubit()||selected;pause();panel.hidden=false;updatePanel();if(selectedRotors().length||activeRotorSet())switchPanelTab('mechanisms');}
 for(const name of ['mass','gravity','bounce','force','friction','damping','speed','maxCarry','maxSelect','rotationSpeed','grip'])document.querySelector('#'+name).addEventListener('input',event=>{
  if(story.scene==='campaign'&&story.campaign?.automation){announce('Ensayo certificado: masa y físicas permanecen fijas. Ajusta el motor.');updatePanel();return;}
  automationIntervention();settings[name]=Number(event.target.value);
@@ -2016,6 +2089,7 @@ function updateTarget(){
  else if(marquee)targetLabel.textContent='Suelta para seleccionar · hasta '+settings.maxSelect+' piezas';
  else if(held?.latched)targetLabel.textContent='Clic · soltar selección · Shift + WASD · girar'+(held.g.parts.length>1?' · Shift + sacudir · desarmar':' · rueda · enfocar');
  else if(held)targetLabel.textContent=snap?(snap.rotorTip?'Puntas alineadas · suelta para formar Rotor':snap.wholeFace?'Cara completa · suelta para unir':'Suelta para unir esta cara'):shiftDown()?'WASD · girar'+(held.g.parts.length>1?' · sacudir varias veces · desarmar':''):'Shift · girar / unir · rueda · enfocar · Ctrl · caída';
+ else if(selectedRotors().length)targetLabel.textContent=(activeRotorSet()?.name||'Selección de rotores')+' · '+selectedRotors().length+' · Ctrl + clic: añadir / quitar · clic derecho o P: controles';
  else if(aimWorkshop()){targetLabel.textContent='E · mesa de trabajo · investigar y adaptar';crosshair.classList.add('ready');}
  else if(selectedTeam().length)targetLabel.textContent='Clic derecho en el suelo · dar destino | clic izquierdo · deseleccionar';
  else if(hit)targetLabel.textContent=totalWeight(hit.g)>settings.maxCarry?'Supera la capacidad de '+formatWeight(settings.maxCarry)+' u':'Clic · tomar | clic derecho · seleccionar';else targetLabel.textContent=aimCargo(4)?'Clic derecho · órdenes del cuerpo':'';
@@ -2160,6 +2234,7 @@ function visibleFromCamera(g){
  }return false;
 }
 function selectRectangle(rect){
+ clearRotorSelection();
  const candidates=groups.filter(g=>{const b=screenBounds(g);return b&&b.right>=rect.left&&b.left<=rect.right&&b.bottom>=rect.top&&b.top<=rect.bottom&&visibleFromCamera(g);}).sort((a,b)=>a.body.position.distanceTo(V(...camera))-b.body.position.distanceTo(V(...camera)));
  const accepted=[];let pieces=0,weight=0;
  for(const g of candidates){const w=totalWeight(g);if(pieces+g.parts.length>settings.maxSelect)continue;accepted.push(g);pieces+=g.parts.length;weight+=w;}
@@ -2262,7 +2337,7 @@ function drawUnitOutline(pose,alpha=.7,selectedOutline=true){
  const profile=unitProfile(pose),points=profile.edges.flatMap(edge=>edge.map(i=>add(pose.p,pose.q.vmult(mul(profile.vertices[i],1.008)))));
  drawWideLines(points,[...(selectedOutline?visualRGB('outlineColor'):[.1,.15,.16]),alpha],visuals.outlineWidth);
 }
-function selectionGroups(){return groups.filter(g=>multiSelection.includes(g)||selected?.g===g);}
+function selectionGroups(){return selectedRotors().length?[]:groups.filter(g=>multiSelection.includes(g)||selected?.g===g);}
 function selectionHudSnapshot(team=selectionGroups()){
  return team.map(g=>{
   let geometry=selectionHudGeometry.get(g);
@@ -2276,6 +2351,7 @@ function selectionHudSnapshot(team=selectionGroups()){
 }
 function selectFromHud(id,{toggle=false}={}){
  const g=groups.find(item=>item.body.id===id);if(!g||story.transition||story.mode!=='playing')return false;
+ clearRotorSelection();
  if(toggle){const team=selectionGroups();multiSelection=team.includes(g)?team.filter(item=>item!==g):[...team,g];selected=multiSelection.length?{g:multiSelection[0],part:multiSelection[0].parts[0]}:null;}
  else {multiSelection=[g];selected={g,part:g.parts[0]};}
  selectedCargo=null;selectionHudStamp='';redraw=true;return true;
@@ -2296,11 +2372,14 @@ function updateSelectionHud(dt){
 function drawStructureOutlines(){
  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
  const selectedGroups=selectionGroups();
+ const rotorParts=new Set(selectedRotors().flatMap(r=>[r.aId,r.bId]));
  for(const g of groups){const chosen=selectedGroups.includes(g);
   if(g.block){const p=moodVisualPose(g,blockPose(g));drawOutline(p.p,p.q,p.size,.88,chosen);}
   else if(chosen||visuals.style==='cel')for(const pose of poses(g))drawUnitOutline(pose,.85,chosen);
   if(chosen&&visuals.markers){const bb=bounds(g);drawSelectionMarker(V(bb.center.x,bb.max.y+.025,bb.center.z),simTime);}
+  if(rotorParts.size)for(const pose of poses(g))if(rotorParts.has(pose.part.id))drawUnitOutline(pose,1,true);
  }
+ if(visuals.markers)for(const rotor of selectedRotors()){const p=rotorMenuPoint(rotor);drawSelectionMarker(V(p.x,p.y+CUBE_SIZE*1.5,p.z),simTime);}
  gl.depthMask(true);gl.disable(gl.BLEND);
 }
 document.addEventListener('pointerlockchange',()=>{if(document.pointerLockElement!==canvas)finishMarquee(true);});
@@ -2551,6 +2630,7 @@ function updateMenuConnector(){
 }
 // Selection is persistent for orders; a primary click clears it.
 function clearSelection(){
+ clearRotorSelection();
  multiSelection=[];selected=null;selectedCargo=null;pendingCargo=null;pendingPickup=null;moveChoice=null;routeInspection=null;
  speech.nextHud=0;document.querySelector('#selection').textContent='';
 }
@@ -2569,8 +2649,14 @@ function onCanvasMouseDown(event){
   return;
  }
  if((held?.reward||held?.latched)){releaseQubit(shiftDown());clearSelection();return;}
+ if(!held&&event.button===0&&(event.ctrlKey||event.metaKey||ctrlDown())&&gameInputActive()){
+  const hit=aimQubit(4),rotor=hit&&rotorForPart(hit.part.id);
+  if(rotor){toggleRotorSelection(rotor);announce(selectedRotors().length+' rotores seleccionados · clic derecho o P para crear un conjunto');}
+  else announce('Apunta a un enganche de rotor · Ctrl + clic para añadirlo');
+  return;
+ }
  if(event.button===2){if(marquee)finishMarquee(true);handleSecondary(event);return;}
- const hadSelection=selectedTeam().length>0;
+ const hadSelection=selectedTeam().length>0||selectedRotors().length>0;
  if(!menu.hidden||!commandMenu.hidden){closeDetachMenu(false);closeCommandMenu(false);}
  if(hadSelection){clearSelection();if(document.pointerLockElement===canvas&&!aimQubit()&&!aimCargo(3))startMarquee();return;}
  if(!gameInputActive())return;
@@ -2613,6 +2699,7 @@ function openFloorOrders(point){
 function handleSecondary(event){
  const rect=canvas.getBoundingClientRect();
  const dir=gameInputActive()?direction():screenRay(clamp(event.clientX-rect.left,0,canvas.clientWidth),clamp(event.clientY-rect.top,0,canvas.clientHeight));
+ if(selectedRotors().length){showRotorSetMenu();return;}
  if(openWorkshopMenu(dir)||openReconfigurationMenu(dir)||openProductionMenu(dir)||alphaSecondary(dir))return;
  const cargoHit=aimCargo(4,dir),hit=aimQubit(4,dir);
  if(cargoHit){
@@ -2635,6 +2722,7 @@ function handleSecondary(event){
    {label:'Nombrar '+unitLabel(hit.part),run:()=>openAlphaPanel(hit)}];
   if(QBitsWorkshop.partState(hit.part).sensor)items.unshift({label:'Sensor · conectar punta…',run:()=>showSensorMenu(hit)});
   const rotor=rotorForPart(hit.part.id)||rotorForGroup(hit.g);
+  if(rotor&&rotorSetFor(rotor)&&!QBitsWorkshop.partState(hit.part).sensor){selectRotorSet(rotorSetFor(rotor));showRotorSetMenu();return;}
   if(rotor){items.splice(items.findIndex(item=>item.label==='Guardar forma'),1);items.unshift({label:'Rotación…',run:()=>showRotorRotation(rotor,partPose(hit.g,hit.part).p)});items.push({label:'Guardar mecanismo · Rotor',run:()=>{saveMechanism(rotor);captureMouse();}},{label:'Separar enganches del rotor',run:()=>{disconnectRotor(rotor);captureMouse();}});}
   else if(hit.g.parts.some(part=>unitShape(part)==='coupler'))items.unshift({label:'Guardar mecanismo · Enganche',run:()=>{saveMechanism(hit.g);captureMouse();}},{label:'Enganche · une su punta con otra usando Shift',disabled:true,run:()=>{}});
   if(hit.g.parts.length>1)items.push({label:'Separar…',run:()=>openDetachMenu(hit)});
@@ -2646,6 +2734,30 @@ function handleSecondary(event){
 
 function selectedRotor(){return selected?.g?(rotorForPart(selected.part?.id)||rotorForGroup(selected.g)):null;}
 function rotorMenuPoint(rotor){const members=rotorGroups(rotor);return members.length?members.reduce((v,g)=>add(v,mul(g.body.position,1/members.length)),V()):V(...camera);}
+function rotorControlSubject(){return activeRotorSet()||{name:'Selección de rotores',rotorIds:controlRotors().map(r=>r.id)};}
+function individualControlRotor(){const members=controlRotors();return members.length===1?members[0]:null;}
+function openRotorControls(){closeCommandMenu(false);pause();panel.hidden=false;updatePanel();switchPanelTab('mechanisms');}
+function runRotorControls(patch){
+ const members=controlRotors();if(!members.length)return false;
+ const subject=rotorControlSubject(),ok=configureRotorSet(subject,patch);
+ if(ok)announce((activeRotorSet()?.name||'Rotores')+(patch.enabled===false?' · detenidos':patch.invert?' · marcha invertida':patch.enabled?' · en marcha':' · ajustes aplicados'));
+ return ok;
+}
+function showRotorSetMenu(){
+ const members=controlRotors();if(!members.length)return;
+ const set=activeRotorSet(),point=rotorMenuPoint(members[0]);
+ openCommandMenu(point,(set?.name||'Selección de rotores')+' · '+members.length,[
+  {label:'Iniciar marcha',run:()=>{runRotorControls({enabled:true});captureMouse();}},
+  {label:'Detener conjunto',run:()=>{runRotorControls({enabled:false});captureMouse();}},
+  {label:'Invertir marcha',run:()=>{runRotorControls({invert:true});captureMouse();}},
+  {label:'Velocidad, fuerza y carga…',run:openRotorControls},
+  {label:set?'Nombre y miembros…':'Crear conjunto con nombre…',run:()=>{openRotorControls();document.querySelector('#rotor-set-name').focus();}},
+  {label:'Tomar mecanismo',disabled:!canCarry(rotorConnectedGroups(rotorGroups(members[0])))||!members.every(r=>rotorConnectedGroups(rotorGroups(members[0])).includes(rotorGroups(r)[0])),run:()=>{const hit=rotorPart(members[0].aId);clearRotorSelection();if(hit){selected={g:hit.g,part:hit.part};takeSelection({...hit,distance:hit.p.distanceTo(V(...camera)),point:hit.p});}}},
+  {label:'Ajustar un rotor por separado…',run:()=>{clearSelection();captureMouse();announce('Ctrl + clic sobre un solo rotor y después P · ajustes individuales');}},
+  {label:'Deseleccionar',run:()=>{clearSelection();captureMouse();}},
+  {label:'Cerrar',run:()=>captureMouse()}
+ ]);
+}
 function showRotorRotation(rotor,point=rotorMenuPoint(rotor)){
  if(!rotors.includes(rotor)){announce('Ese rotor ya no está unido.');return;}
  const run=direction=>{const started=configureRotor(rotor,{direction,enabled:true});captureMouse();if(started)announce('Rotor · '+(direction===1?'horario':'antihorario')+' · '+rotor.rpm+' rpm · gira lado '+rotor.moving.toUpperCase());};
@@ -2666,23 +2778,38 @@ function showRotorSide(rotor,point=rotorMenuPoint(rotor)){
  ]);
 }
 function updateMechanismPanel(){
- const rotor=selectedRotor(),available=mechanismsAvailable(),rpm=rotor?.rpm??mechanismDefaults.rpm;
+ const targets=controlRotors(),rotor=targets[0]||selectedRotor(),set=activeRotorSet(),available=mechanismsAvailable(),rpm=rotor?.rpm??mechanismDefaults.rpm;
+ const common=(field,format)=>targets.length>1&&targets.some(r=>r[field]!==targets[0][field])?'Varios':format(rotor?.[field]??mechanismDefaults[field]);
  document.querySelector('#mechanism-unlock').textContent=story.scene==='lab'?'Disponibles en el banco. En campaña: completa el nivel 5, La primera unión.':mechanismsUnlocked()?'Enganche y Rotor desbloqueados.':'Completa el nivel 5, La primera unión, para desbloquearlos en campaña.';
- document.querySelector('#rotor-status').textContent=rotor?'Rotor seleccionado · '+(rotor.stopReason?rotorStopLabel(rotor.stopReason):rotor.stalled?'atascado: revisa torque y espacio':rotor.enabled?'encendido':'detenido')+' · lado '+rotor.moving.toUpperCase()+' móvil'+(rotor.speedLimited?' · hasta '+Math.round(rotor.effectiveRpm)+' rpm para esta estructura':''):'Clic derecho sobre un rotor para seleccionarlo. También puedes crear uno aquí.';
- document.querySelector('#rotor-rpm').value=rpm;document.querySelector('#rotor-rpm-value').textContent=rpm+' rpm';
+ document.querySelector('#rotor-status').textContent=targets.length?(set?.name||'Selección')+' · '+targets.length+' rotor'+(targets.length===1?'':'es')+' · '+targets.filter(r=>r.enabled).length+' en marcha'+(targets.some(r=>r.stalled)?' · revisa los rotores atascados':''):'Ctrl + clic sobre cada rotor para añadirlo o quitarlo. También puedes usar '+inputLabel('select')+'.';
+ const nameInput=document.querySelector('#rotor-set-name');if(document.activeElement!==nameInput)nameInput.value=set?.name||'';
+ document.querySelector('#rotor-set-create').disabled=!targets.length;document.querySelector('#rotor-set-create').textContent=set?'Renombrar conjunto':'Crear conjunto';
+ document.querySelector('#rotor-set-dissolve').disabled=!set;
+ const setList=document.querySelector('#rotor-set-list');setList.replaceChildren();
+ for(const item of rotorSets){const button=document.createElement('button');button.type='button';button.textContent=item.name+' · '+rotorSetMembers(item).length+' rotores';button.setAttribute('aria-pressed',String(item===set));button.addEventListener('click',()=>{selectRotorSet(item);updateMechanismPanel();});setList.appendChild(button);}
+ document.querySelector('#rotor-rpm').value=rpm;document.querySelector('#rotor-rpm-value').textContent=common('rpm',v=>String(Math.round(v)));
  document.querySelector('#rotor-side').value=rotor?.moving??mechanismDefaults.moving;
  document.querySelector('#rotor-mount').value=rotor?.mount??mechanismDefaults.mount;
  const torque=rotor?.maxTorque??mechanismDefaults.maxTorque,capacity=rotor?.capacity??mechanismDefaults.capacity;
  const tier=QBitsProgression.effectiveTier(Number(story.progress.torqueTier||1),story.progress),availableTier=QBitsProgression.availableTier(story.progress);
  document.querySelector('#rotor-tier-row').hidden=story.scene==='lab';document.querySelector('#rotor-tier').value=certifiedAutomation()?1:tier;document.querySelector('#rotor-tier').disabled=certifiedAutomation();
  for(const option of document.querySelector('#rotor-tier').children)option.disabled=Number(option.value)>availableTier;
- document.querySelector('#rotor-tier-status').textContent=story.scene==='lab'?'Banco libre · hasta 4 N·m':certifiedAutomation()?'Ensayo certificado · torque I, máximo 0,40 N·m':'Certificación '+tier+' · máximo '+campaignTorqueCap().toFixed(2)+' N·m. II: nivel 16; III: nivel 18.';
+ document.querySelector('#rotor-tier-status').textContent=story.scene==='lab'?'Banco libre · fuerza hasta 400':certifiedAutomation()?'Ensayo certificado · fuerza máxima 40':'Certificación '+tier+' · fuerza máxima '+Math.round(campaignTorqueCap()*100)+'. II: nivel 16; III: nivel 18.';
+ document.querySelector('#rotor-force').max=Math.round((story.scene==='campaign'?campaignTorqueCap():4)*100);
+ document.querySelector('#rotor-force').value=Math.round(torque*100);document.querySelector('#rotor-force-value').textContent=common('maxTorque',v=>String(Math.round(v*100)));
  document.querySelector('#rotor-torque').max=story.scene==='campaign'?campaignTorqueCap():4;
  document.querySelector('#rotor-torque').value=torque;document.querySelector('#rotor-torque-value').textContent=torque.toFixed(2)+' N·m';
- document.querySelector('#rotor-capacity').value=capacity;document.querySelector('#rotor-capacity-value').textContent=capacity+' u';
- document.querySelector('#rotor-power-readout').textContent=rotor?rotorPowerDescription(rotor):'Ajusta los valores de los próximos rotores o selecciona uno para ver su consumo y carga.';
- for(const id of ['rotor-clockwise','rotor-counterclockwise','rotor-stop','rotor-disconnect'])document.querySelector('#'+id).disabled=!rotor;
- document.querySelector('#rotor-save').disabled=!rotor&&!selected?.g?.parts.some(part=>unitShape(part)==='coupler');
+ document.querySelector('#rotor-capacity').value=capacity;document.querySelector('#rotor-capacity-value').textContent=common('capacity',v=>String(Math.round(v)));
+ const component=targets.length?rotorConnectedGroups(rotorGroups(targets[0])):[],sameMechanism=targets.every(r=>rotorGroups(r).every(g=>component.includes(g)));
+ const load=targets.length?Math.max(...targets.map(r=>rotorConnectedGroups(rotorGroups(r)).reduce((n,g)=>n+totalWeight(g),0))):0;
+ const battery=targets.length?Math.min(...targets.flatMap(r=>[r.aId,r.bId]).map(id=>rotorPart(id)?.part.mood.energy??0)):0;
+ document.querySelector('#rotor-power-readout').textContent=targets.length?'Carga conectada '+Math.ceil(load)+(sameMechanism?'':' como máximo por mecanismo')+' · batería mínima '+Math.round(battery*100)+' %'+(targets.some(r=>r.stopReason)?' · '+[...new Set(targets.filter(r=>r.stopReason).map(r=>rotorStopLabel(r.stopReason)))].join(', '):''):'Estos ajustes se usarán en los próximos rotores.';
+ document.querySelector('#rotor-technical-readout').textContent=rotor?rotorPowerDescription(rotor):'';
+ document.querySelector('#rotor-individual-note').textContent=targets.length>1?'Selecciona un solo rotor con Ctrl + clic para cambiar su montaje o lado.':'Montaje del rotor seleccionado. El conjunto conserva la orientación de cada eje.';
+ for(const id of ['rotor-clockwise','rotor-counterclockwise','rotor-disconnect','rotor-side','rotor-mount'])document.querySelector('#'+id).disabled=targets.length>1||(!rotor&&!['rotor-side','rotor-mount'].includes(id));
+ for(const id of ['rotor-start','rotor-invert','rotor-stop'])document.querySelector('#'+id).disabled=!targets.length;
+ document.querySelector('#rotor-save').disabled=!sameMechanism||!rotor&&!selected?.g?.parts.some(part=>unitShape(part)==='coupler');
+ document.querySelector('#rotor-save-note').textContent=sameMechanism?'Guardar mecanismo conserva su nombre y conjuntos en la plantilla.':'Para guardar una plantilla, selecciona rotores de un solo montaje conectado. Este conjunto sigue disponible en la sala.';
  for(const id of ['create-coupler','create-rotor'])document.querySelector('#'+id).disabled=!available;
  const list=document.querySelector('#saved-mechanism-list');list.replaceChildren();
  for(const mechanism of savedMechanisms){
@@ -2691,18 +2818,23 @@ function updateMechanismPanel(){
   const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Eliminar '+mechanism.name);remove.addEventListener('click',()=>{savedMechanisms.splice(savedMechanisms.indexOf(mechanism),1);persistMechanisms();updateMechanismPanel();});row.append(create,remove);list.appendChild(row);
  }
 }
-function createMechanismChoice(kind){if(!mechanismsAvailable())return;settings.unitShape=kind;spawnQubit();updatePanel();}
+function createMechanismChoice(kind){if(!mechanismsAvailable())return;clearRotorSelection();settings.unitShape=kind;spawnQubit();updatePanel();}
 document.querySelector('#create-coupler').addEventListener('click',()=>createMechanismChoice('coupler'));
 document.querySelector('#create-rotor').addEventListener('click',()=>createMechanismChoice('rotor'));
 document.querySelector('#rotor-tier').addEventListener('change',event=>{if(certifiedAutomation()){updateMechanismPanel();return;}const tier=QBitsProgression.effectiveTier(Number(event.target.value),story.progress);story.progress.torqueTier=tier;try{localStorage.setItem('qbits.campaign.v1',JSON.stringify(story.progress));}catch{}if(story.scene==='campaign'){for(const r of rotors)if(r.maxTorque>campaignTorqueCap())configureRotor(r,{maxTorque:campaignTorqueCap()});mechanismDefaults.maxTorque=Math.min(mechanismDefaults.maxTorque,campaignTorqueCap());}updateMechanismPanel();});
-document.querySelector('#rotor-rpm').addEventListener('input',event=>{const value=Number(event.target.value);if(!Number.isFinite(value))return;mechanismDefaults.rpm=clamp(value,1,120);const rotor=selectedRotor();if(rotor)configureRotor(rotor,{rpm:mechanismDefaults.rpm});updateMechanismPanel();});
-document.querySelector('#rotor-side').addEventListener('change',event=>{if(!['a','b'].includes(event.target.value))return;mechanismDefaults.moving=event.target.value;const rotor=selectedRotor();if(rotor)configureRotor(rotor,{moving:mechanismDefaults.moving});updateMechanismPanel();});
-document.querySelector('#rotor-mount').addEventListener('change',event=>{if(!['wheel','fixed'].includes(event.target.value))return;mechanismDefaults.mount=event.target.value;const rotor=selectedRotor();if(rotor)configureRotor(rotor,{mount:mechanismDefaults.mount});updateMechanismPanel();});
-for(const [id,field,min,max]of [['rotor-torque','maxTorque',.02,4],['rotor-capacity','capacity',2,128]])document.querySelector('#'+id).addEventListener('input',event=>{const value=Number(event.target.value);if(!Number.isFinite(value))return;mechanismDefaults[field]=clamp(value,min,max);const rotor=selectedRotor();if(rotor)configureRotor(rotor,{[field]:mechanismDefaults[field]});updateMechanismPanel();});
-for(const [id,direction] of [['rotor-clockwise',1],['rotor-counterclockwise',-1]])document.querySelector('#'+id).addEventListener('click',()=>{const rotor=selectedRotor();if(rotor){mechanismDefaults.direction=direction;configureRotor(rotor,{direction,enabled:true});updateMechanismPanel();}});
-document.querySelector('#rotor-stop').addEventListener('click',()=>{const rotor=selectedRotor();if(rotor)configureRotor(rotor,{enabled:false});updateMechanismPanel();});
-document.querySelector('#rotor-save').addEventListener('click',()=>{const rotor=selectedRotor();if(rotor||selected?.g?.parts.some(part=>unitShape(part)==='coupler'))saveMechanism(rotor||selected.g);updateMechanismPanel();});
-document.querySelector('#rotor-disconnect').addEventListener('click',()=>{const rotor=selectedRotor();if(rotor)disconnectRotor(rotor);updateMechanismPanel();});
+document.querySelector('#rotor-rpm').addEventListener('input',event=>{const value=Number(event.target.value);if(!Number.isFinite(value))return;mechanismDefaults.rpm=clamp(Math.round(value),1,120);if(controlRotors().length)runRotorControls({rpm:mechanismDefaults.rpm});updateMechanismPanel();});
+document.querySelector('#rotor-force').addEventListener('input',event=>{const value=Number(event.target.value);if(!Number.isFinite(value))return;mechanismDefaults.maxTorque=clamp(Math.round(value)/100,.02,story.scene==='campaign'?campaignTorqueCap():4);if(controlRotors().length)runRotorControls({maxTorque:mechanismDefaults.maxTorque});updateMechanismPanel();});
+document.querySelector('#rotor-side').addEventListener('change',event=>{if(!['a','b'].includes(event.target.value)||controlRotors().length>1)return;mechanismDefaults.moving=event.target.value;const rotor=individualControlRotor();if(rotor)configureRotor(rotor,{moving:mechanismDefaults.moving});updateMechanismPanel();});
+document.querySelector('#rotor-mount').addEventListener('change',event=>{if(!['wheel','fixed'].includes(event.target.value)||controlRotors().length>1)return;mechanismDefaults.mount=event.target.value;const rotor=individualControlRotor();if(rotor)configureRotor(rotor,{mount:mechanismDefaults.mount});updateMechanismPanel();});
+for(const [id,field,min,max]of [['rotor-torque','maxTorque',.02,4],['rotor-capacity','capacity',2,256]])document.querySelector('#'+id).addEventListener('input',event=>{const value=Number(event.target.value);if(!Number.isFinite(value))return;mechanismDefaults[field]=clamp(field==='capacity'?Math.round(value):value,min,max);if(controlRotors().length)runRotorControls({[field]:mechanismDefaults[field]});updateMechanismPanel();});
+for(const [id,direction] of [['rotor-clockwise',1],['rotor-counterclockwise',-1]])document.querySelector('#'+id).addEventListener('click',()=>{const rotor=individualControlRotor();if(rotor){mechanismDefaults.direction=direction;configureRotor(rotor,{direction,enabled:true});updateMechanismPanel();}});
+document.querySelector('#rotor-start').addEventListener('click',()=>{runRotorControls({enabled:true});updateMechanismPanel();});
+document.querySelector('#rotor-invert').addEventListener('click',()=>{runRotorControls({invert:true});updateMechanismPanel();});
+document.querySelector('#rotor-stop').addEventListener('click',()=>{runRotorControls({enabled:false});updateMechanismPanel();});
+document.querySelector('#rotor-set-create').addEventListener('click',()=>{const name=document.querySelector('#rotor-set-name').value,set=activeRotorSet();const result=set?renameRotorSet(set,name):createRotorSet(name,controlRotors());if(result){if(!set)selectRotorSet(result);announce('Conjunto guardado · '+(set||result).name);updateMechanismPanel();}});
+document.querySelector('#rotor-set-dissolve').addEventListener('click',()=>{const set=activeRotorSet();if(set){dissolveRotorSet(set);announce('Conjunto disuelto · los rotores conservan sus ajustes');}updateMechanismPanel();});
+document.querySelector('#rotor-save').addEventListener('click',()=>{const targets=controlRotors(),rotor=targets[0]||selectedRotor();if(targets.length&&targets.some(r=>!rotorConnectedGroups(rotorGroups(rotor)).includes(rotorGroups(r)[0])))return;if(rotor||selected?.g?.parts.some(part=>unitShape(part)==='coupler'))saveMechanism(rotor||selected.g,activeRotorSet()?.name);updateMechanismPanel();});
+document.querySelector('#rotor-disconnect').addEventListener('click',()=>{const rotor=individualControlRotor();if(rotor)disconnectRotor(rotor);updateMechanismPanel();});
 document.querySelector('#export-mechanisms').addEventListener('click',()=>exportMechanisms());
 document.querySelector('#import-mechanisms').addEventListener('change',async event=>{try{const file=event.target.files?.[0];if(!file)return;if(file.size>1000000)throw new Error('Archivo demasiado grande');const count=importMechanismsData(JSON.parse(await file.text()));announce(count+' mecanismos importados');updateMechanismPanel();}catch(error){announce('No se pudo importar: '+error.message);}event.target.value='';});
 
@@ -2787,7 +2919,7 @@ function updateCargoCallout(){
 // when leaving the challenge; rewards and deliveries use a single transaction.
 const puzzleConfig={frameSeconds:12,energySeconds:8};
 function puzzleBlockedEdit(kind='edit'){if(certifiedAutomation()){announce('Ensayo certificado: usa las piezas del banco. Reinicia el nivel para restaurarlas.');return true;}if(kind==='mechanism'&&mechanismsAvailable())return false;if(story.ready&&story.scene==='campaign'&&panel.hidden){announce('La materia genera nuevos Q-bits. P abre el banco de herramientas de prueba.');return true;}if(!puzzle.active||kind==='qubit'&&alphaSettings.allowPuzzleSpawn)return false;announce('Puzle activo · los recursos se obtienen en los portales. P → Puzle para volver al banco.');return true;}
-function saveLab(){return {mechanismDefaults:typeof mechanismDefaults==='undefined'?null:{...mechanismDefaults},rotors:serializeRotorState(),contacts:serializeContactState(),alphaScene:alphaSceneSnapshot(),settings:{...settings},moodSettings:{...moodSettings},position:[...position],yaw,pitch,groups:groups.map(g=>({parts:worldParts(g),q:g.body.quaternion.clone(),v:g.body.velocity.clone(),w:g.body.angularVelocity.clone()})),cargos:cargos.map(c=>({p:c.body.position.clone(),side:c.side,required:c.required,color:c.color}))};}
+function saveLab(){return {mechanismDefaults:typeof mechanismDefaults==='undefined'?null:{...mechanismDefaults},rotors:serializeRotorState(),rotorSets:serializeRotorSets(),contacts:serializeContactState(),alphaScene:alphaSceneSnapshot(),settings:{...settings},moodSettings:{...moodSettings},position:[...position],yaw,pitch,groups:groups.map(g=>({parts:worldParts(g),q:g.body.quaternion.clone(),v:g.body.velocity.clone(),w:g.body.angularVelocity.clone()})),cargos:cargos.map(c=>({p:c.body.position.clone(),side:c.side,required:c.required,color:c.color}))};}
 function clearPuzzleScene(){
  clearAlphaScene();releaseQubit();closeCommandMenu(false);closeDetachMenu(false);pendingCargo=null;moveChoice=null;routeInspection=null;multiSelection=[];selected=null;selectedCargo=null;
  for(const r of (typeof rotors==='undefined'?[]:[...rotors]))disconnectRotor(r);
@@ -2987,8 +3119,8 @@ function updateMoods(dt){
   for(const part of g.parts){const m=part.mood;if(m.production)continue;
    if(g.moodHadTask&&!task){m.calm=2;m.idle=0;m.fullTime=0;if(m.state!=='restless')m.state='neutral';}
    m.calm=Math.max(0,m.calm-dt);
-   if(working&&moving){m.energy=clamp(m.energy-travel*moodSettings.drain*effort*QBitsWorkshop.movementFactors(part).energy*20/QBitsWorkshop.batteryCapacity(part)-dt*.0015*20/QBitsWorkshop.batteryCapacity(part),0,1);m.idle=0;m.boredOnce=false;}
-   else if(!rotorForPart(part.id)?.powerActive)m.energy=clamp(m.energy+dt*moodSettings.recovery*(.9+.2*m.personality)*20/QBitsWorkshop.batteryCapacity(part),0,1);
+   if(working&&moving){m.energy=clamp(m.energy-travel*moodSettings.drain*effort*QBitsWorkshop.movementFactors(part).energy*20/gameBatteryCapacity(part)-dt*.0015*20/gameBatteryCapacity(part),0,1);m.idle=0;m.boredOnce=false;}
+   else if(!rotorForPart(part.id)?.powerActive)m.energy=clamp(m.energy+dt*moodSettings.recovery*(.9+.2*m.personality)*20/gameBatteryCapacity(part),0,1);
    if(task||carried||duty||rotorForPart(part.id)?.powerActive){m.idle=0;m.boredOnce=false;}else m.idle+=dt;
    m.blocked=blocked?m.blocked+dt:Math.max(0,m.blocked-dt*2);
    m.agitation=clamp(m.agitation+(blocked&&m.blocked>3?dt*.09:-dt*.20),0,1);
@@ -3122,7 +3254,7 @@ function alphaSupport(g,center,q){
 }
 function createCooler(p){
  if(certifiedAutomation()){announce('El ensayo usa las estaciones existentes.');return null;}
- if(coolers.length>=6){announce('Máximo de seis enfriadores en esta sala.');return null;}
+ if(coolers.length>=12){announce('Máximo de 12 enfriadores en esta sala.');return null;}
  if(!p||Math.max(Math.abs(p.x),Math.abs(p.z))>13.4||!cargoPlacementClear(p,.84)||coolers.some(c=>c.p.distanceTo(p)<.9)){announce('Busca un espacio libre para el enfriador.');return null;}
  const c={id:++alphaSerial,p:V(p.x,0,p.z),capacity:alphaSettings.capacity,enabled:true,bodies:[],entries:new Map(),occupants:0};coolers.push(c);
  const floor=new CANNON.Body({mass:0});floor.addShape(new CANNON.Cylinder(.32,.32,.018,20),V(),new CANNON.Quaternion().setFromEuler(-Math.PI/2,0,0));floor.position.set(p.x,.009,p.z);floor.collisionFilterMask=-1;world.addBody(floor);c.bodies.push(floor);
@@ -3136,7 +3268,7 @@ function updateCooling(dt){
   const candidates=groups.filter(g=>!g.route&&!g.haulJob&&!g.blueprintJob&&!(held?.items||[]).some(i=>i.g===g)).map(g=>({g,b:bounds(g)})).filter(o=>o.b.min.y>=-.005&&o.b.min.y<.05&&Math.max(...poses(o.g).flatMap(corners).map(v=>Math.hypot(v.x-c.p.x,v.z-c.p.z)))<.315).sort((a,b)=>Number(c.entries.has(b.g.parts[0].id))-Number(c.entries.has(a.g.parts[0].id)));
   for(const {g} of candidates){if(count+g.parts.length>c.capacity)continue;count+=g.parts.length;
    if(!c.enabled||!alphaSettings.coolingOn)continue;g.cooler=c;
-   for(const part of g.parts){seen.add(part.id);if(rotorForPart(part.id)?.powerActive)continue;let e=c.entries.get(part.id);if(!e){e={elapsed:0,done:false};c.entries.set(part.id,e);}const coolingSeconds=(c.coolSeconds||alphaSettings.coolSeconds)*QBitsWorkshop.batteryCapacity(part)/20;e.duration=coolingSeconds;e.elapsed=Math.min(coolingSeconds,e.elapsed+dt);
+   for(const part of g.parts){seen.add(part.id);if(rotorForPart(part.id)?.powerActive)continue;let e=c.entries.get(part.id);if(!e){e={elapsed:0,done:false};c.entries.set(part.id,e);}const coolingSeconds=(c.coolSeconds||alphaSettings.coolSeconds)*gameBatteryCapacity(part)/20;e.duration=coolingSeconds;e.elapsed=Math.min(coolingSeconds,e.elapsed+dt);
     const m=part.mood;m.coolProgress=e.elapsed/coolingSeconds;
     if(e.elapsed>=coolingSeconds){if(!e.done){m.energy=alphaSettings.exitEnergy;m.state='neutral';m.reason='';m.restLeft=0;m.agitation=0;m.strikes=0;m.severity=0;m.fullTime=0;m.calm=4;e.done=true;}m.energy=Math.min(m.energy,alphaSettings.exitEnergy);}
    }
@@ -3152,11 +3284,24 @@ function storedRotorOptionsValid(config){
  return !!config&&Number.isFinite(config.rpm)&&config.rpm>=1&&config.rpm<=120&&[1,-1].includes(config.direction)&&['a','b'].includes(config.moving)&&typeof config.enabled==='boolean'&&
   (config.mount===undefined||['wheel','fixed'].includes(config.mount))&&
   (config.maxTorque===undefined||Number.isFinite(config.maxTorque)&&config.maxTorque>=.02&&config.maxTorque<=4)&&
-  (config.capacity===undefined||Number.isFinite(config.capacity)&&config.capacity>=2&&config.capacity<=128);
+  (config.capacity===undefined||Number.isFinite(config.capacity)&&config.capacity>=2&&config.capacity<=256);
 }
 function serializeRotorState(){
  if(typeof rotors==='undefined')return [];
  return rotors.filter(r=>rotorGroups(r).every(g=>g&&groups.includes(g))).map(r=>({aId:r.aId,bId:r.bId,rpm:r.rpm,direction:r.direction,moving:r.moving,...storedRotorDrive(r),enabled:r.enabled}));
+}
+function serializeRotorSets(){return rotorSets.map(set=>({name:set.name,members:rotorSetMembers(set).map(r=>({aId:r.aId,bId:r.bId}))})).filter(set=>set.members.length);}
+function restoreRotorSets(records){
+ rotorSets.length=0;clearRotorSelection();if(!Array.isArray(records))return;
+ const assigned=new Set();
+ for(const record of records.slice(0,rotors.length)){
+  if(!record||typeof record.name!=='string'||!Array.isArray(record.members))continue;
+  const members=[];for(const pair of record.members.slice(0,rotors.length)){
+   const rotor=rotors.find(r=>r.aId===pair?.aId&&r.bId===pair?.bId);
+   if(rotor&&!assigned.has(rotor.id)){members.push(rotor);assigned.add(rotor.id);}
+  }
+  if(members.length)createRotorSet(record.name,members);
+ }
 }
 function restoreRotorState(data){
  if(typeof rotors==='undefined')return [];
@@ -3188,7 +3333,7 @@ function restoreLabMechanisms(saved){
    mechanismDefaults[key]=storedRotorOptionsValid(candidate)?candidate[key]:defaults[key];
   }
  }
- const restored=restoreRotorState(saved?.rotors);restoreContactState(saved?.contacts);return restored;
+ const restored=restoreRotorState(saved?.rotors);restoreRotorSets(saved?.rotorSets);restoreContactState(saved?.contacts);return restored;
 }
 function mechanismGroups(subject){
  if(typeof rotors==='undefined')return [];
@@ -3201,11 +3346,21 @@ function mechanismPartCount(record){return Array.isArray(record?.groups)?record.
 function mechanismRecordParts(record,origin=V()){
  return record.groups.map(group=>group.parts.map(part=>{const q=Q();q.set(...part.q);q.normalize();return {key:part.key,shape:part.shape,weight:part.weight,p:add(origin,V(...part.p)),q};}));
 }
+function storedRotorSetsValid(record){
+ if(record.rotorSets===undefined)return true;
+ if(!Array.isArray(record.rotorSets)||record.rotorSets.length>record.joints.length)return false;
+ const used=new Set();
+ for(const set of record.rotorSets){
+  if(!set||typeof set.name!=='string'||!set.name.trim()||set.name.length>40||/[\u0000-\u001f\u007f]/.test(set.name)||!Array.isArray(set.joints)||!set.joints.length||set.joints.length>record.joints.length)return false;
+  for(const index of set.joints){if(!Number.isSafeInteger(index)||index<0||index>=record.joints.length||used.has(index))return false;used.add(index);}
+ }
+ return true;
+}
 function savedMechanismValid(record){
  try{
   if(!record||record.version!==1||!['rotor','coupler'].includes(record.type)||typeof record.name!=='string'||!record.name.trim()||record.name.length>40||/[\u0000-\u001f]/.test(record.name))return false;
   if(!Array.isArray(record.groups)||record.groups.length<1||record.groups.length>MAX_QUBITS||!Array.isArray(record.joints)||record.joints.length>=record.groups.length)return false;
-  if(record.type==='coupler'&&(record.groups.length!==1||record.joints.length!==0)||record.type==='rotor'&&(record.groups.length<2||!record.joints.length))return false;
+  if(record.type==='coupler'&&(record.groups.length!==1||record.joints.length!==0)||record.type==='rotor'&&(record.groups.length<2||!record.joints.length)||!storedRotorSetsValid(record))return false;
   const keys=new Map(),owners=new Map();let count=0;
   for(const [groupIndex,group]of record.groups.entries()){
    if(!Array.isArray(group?.parts)||!group.parts.length)return false;
@@ -3233,7 +3388,7 @@ function savedMechanismValid(record){
  }catch{return false;}
 }
 function copySavedMechanism(record){
- return {version:1,type:record.type,name:record.name,groups:record.groups.map(g=>({parts:g.parts.map(p=>({key:p.key,shape:p.shape,weight:p.weight,p:[...p.p],q:[...p.q]}))})),joints:record.joints.map(j=>({a:j.a,b:j.b,rpm:j.rpm,direction:j.direction,moving:j.moving,...storedRotorDrive(j),enabled:j.enabled}))};
+ return {version:1,type:record.type,name:record.name,groups:record.groups.map(g=>({parts:g.parts.map(p=>({key:p.key,shape:p.shape,weight:p.weight,p:[...p.p],q:[...p.q]}))})),joints:record.joints.map(j=>({a:j.a,b:j.b,rpm:j.rpm,direction:j.direction,moving:j.moving,...storedRotorDrive(j),enabled:j.enabled})),...(record.rotorSets?{rotorSets:record.rotorSets.map(set=>({name:set.name,joints:[...set.joints]}))}:{})};
 }
 function alignMechanismSnapshot(record){
  // A live hinge solver may leave millimetres of drift. Canonicalize only this
@@ -3260,15 +3415,17 @@ function alignMechanismSnapshot(record){
 function mechanismSnapshot(subject,name=null){
  const connected=mechanismGroups(subject);if(!connected.length||!connected.some(g=>g.parts.some(p=>p.shape==='coupler')))return null;
  const linked=rotors.filter(r=>rotorGroups(r).every(g=>connected.includes(g)));
- const type=linked.length?'rotor':'coupler',defaultName=linked.length?'Rotor':'Enganche';
+ const type=linked.length?'rotor':'coupler',commonSet=linked.length&&rotorSetFor(linked[0]),defaultName=commonSet&&linked.every(r=>commonSet.rotorIds.includes(r.id))?commonSet.name:linked.length?'Rotor':'Enganche';
  const min=V(Infinity,Infinity,Infinity),max=V(-Infinity,-Infinity,-Infinity);
  for(const g of connected){const box=bounds(g);for(const axis of ['x','y','z']){min[axis]=Math.min(min[axis],box.min[axis]);max[axis]=Math.max(max[axis],box.max[axis]);}}
  const origin=V((min.x+max.x)/2,min.y,(min.z+max.z)/2),keys=new Map();let key=0;
  const record={version:1,type,name:String(name||defaultName).replace(/[\u0000-\u001f]/g,'').trim().slice(0,40)||defaultName,groups:connected.map(g=>({parts:worldParts(g).map(p=>{const current=key++;keys.set(p.id,current);return {key:current,shape:p.shape,weight:p.weight,p:[p.p.x-origin.x,p.p.y-origin.y,p.p.z-origin.z].map(n=>+n.toFixed(8)),q:[p.q.x,p.q.y,p.q.z,p.q.w].map(n=>+n.toFixed(10))};})})),joints:linked.map(r=>({a:keys.get(r.aId),b:keys.get(r.bId),rpm:r.rpm,direction:r.direction,moving:r.moving,...storedRotorDrive(r),enabled:r.enabled}))};
+ const sets=rotorSets.map(set=>({name:set.name,joints:linked.map((r,index)=>set.rotorIds.includes(r.id)?index:-1).filter(index=>index>=0)})).filter(set=>set.joints.length);
+ if(sets.length)record.rotorSets=sets;
  return alignMechanismSnapshot(record)&&savedMechanismValid(record)?record:null;
 }
 function loadSavedMechanisms(){
- try{const data=JSON.parse(window.localStorage.getItem('qbits.mechanisms.v1')||'[]');if(Array.isArray(data))savedMechanisms.push(...data.slice(0,32).filter(savedMechanismValid).map(copySavedMechanism));}catch{}
+ try{const data=JSON.parse(window.localStorage.getItem('qbits.mechanisms.v1')||'[]');if(Array.isArray(data))savedMechanisms.push(...data.slice(0,64).filter(savedMechanismValid).map(copySavedMechanism));}catch{}
 }
 function persistMechanisms(){
  try{window.localStorage.setItem('qbits.mechanisms.v1',JSON.stringify(savedMechanisms));return true;}catch{announce('Mecanismo guardado en esta sesión · expórtalo para conservarlo');return false;}
@@ -3276,7 +3433,7 @@ function persistMechanisms(){
 function saveMechanism(subject,name=null){
  if(mechanismGroups(subject).some(g=>g.parts.some(QBitsWorkshop.hasAdaptation))){announce('Retira las adaptaciones antes de guardar el montaje. La investigación permanece disponible.');return null;}
 
- if(savedMechanisms.length>=32){announce('Hay 32 mecanismos guardados. Exporta o elimina uno antes de añadir otro.');return null;}
+ if(savedMechanisms.length>=64){announce('Hay 64 mecanismos guardados. Exporta o elimina uno antes de añadir otro.');return null;}
  const record=mechanismSnapshot(subject,name);if(!record){announce('No se puede guardar: revisa el encaje de las puntas del rotor.');return null;}
  savedMechanisms.push(record);const durable=persistMechanisms();updateAlphaPanel();announce(record.name+' guardado · '+mechanismPartCount(record)+' piezas'+(durable?'':' · solo en esta sesión'));return record;
 }
@@ -3292,7 +3449,8 @@ function spawnSavedMechanism(record,point){
   if(made.some(g=>!validPose(g,g.body.position,g.body.quaternion,made)))throw new Error('No hay espacio libre para el mecanismo.');
   for(const joint of record.joints){const rotor=connectRotorTips(ids.get(joint.a),ids.get(joint.b),{...joint,...storedRotorDrive(joint),enabled:false});if(!rotor)throw new Error('Las puntas del mecanismo ya no encajan.');joints.push(rotor);}
   for(let i=0;i<joints.length;i++)configureRotor(joints[i],record.joints[i]);
-  multiSelection=made;selected={g:made[0],part:made[0].parts[0]};announce(record.name+' creado · '+count+' piezas');return joints[0]||made[0];
+  for(const set of record.rotorSets||[])createRotorSet(set.name,set.joints.map(index=>joints[index]));
+  clearRotorSelection();multiSelection=made;selected={g:made[0],part:made[0].parts[0]};announce(record.name+' creado · '+count+' piezas');return joints[0]||made[0];
  }catch(error){
   for(const rotor of joints)disconnectRotor(rotor);for(const g of made)removeGroup(g);refreshRotors();announce(error.message||'No se pudo crear el mecanismo.');return null;
  }
@@ -3313,16 +3471,16 @@ function mechanismsExportData(){return {version:1,mechanisms:savedMechanisms.map
 function exportMechanisms(){const blob=new Blob([JSON.stringify(mechanismsExportData(),null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Q-bits_mecanismos.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function importMechanismsData(data){
  const input=data?.version===1?data.mechanisms:null;
- if(!Array.isArray(input)||input.length>32||!input.every(savedMechanismValid))throw new Error('Archivo de mecanismos inválido');
+ if(!Array.isArray(input)||input.length>64||!input.every(savedMechanismValid))throw new Error('Archivo de mecanismos inválido');
  const normalized=input.map(copySavedMechanism);savedMechanisms.splice(0,savedMechanisms.length,...normalized);persistMechanisms();updateAlphaPanel();return normalized.length;
 }
 
 function savedShapeValid(shape){return shape&&typeof shape.name==='string'&&shape.name.length<=40&&Array.isArray(shape.parts)&&shape.parts.length>0&&shape.parts.length<=MAX_QUBITS&&shape.parts.every(p=>(p.shape===undefined||['cube','tetra','pyramid','coupler'].includes(p.shape))&&Array.isArray(p.p)&&p.p.length===3&&p.p.every(Number.isFinite)&&p.p.every(n=>Math.abs(n)<6)&&Array.isArray(p.q)&&p.q.length===4&&p.q.every(Number.isFinite)&&Math.abs(Math.hypot(...p.q)-1)<.01);}
-function loadSavedShapes(){try{const list=JSON.parse(readQbitsStorage('qbits.shapes.v1')||'[]');if(Array.isArray(list))savedShapes.push(...list.filter(savedShapeValid).slice(0,32));}catch{} }
+function loadSavedShapes(){try{const list=JSON.parse(readQbitsStorage('qbits.shapes.v1')||'[]');if(Array.isArray(list))savedShapes.push(...list.filter(savedShapeValid).slice(0,64));}catch{} }
 function persistShapes(){try{window.localStorage.setItem('qbits.shapes.v1',JSON.stringify(savedShapes));return true;}catch{announce('Forma guardada en esta sesión · Exportar formas permite conservar una copia.');return false;}}
 function saveShape(g){
  if(g&&typeof rotorForGroup==='function'&&rotorForGroup(g))return saveMechanism(g);
- if(!g||!groups.includes(g))return;if(savedShapes.length>=32){announce('Hay 32 formas guardadas. Exporta o elimina una antes de añadir otra.');return;}
+ if(!g||!groups.includes(g))return;if(savedShapes.length>=64){announce('Hay 64 formas guardadas. Exporta o elimina una antes de añadir otra.');return;}
  if(!assemblyValid(poses(g))){announce('Esta forma tiene caras incompatibles. Desármala y vuelve a encajar las piezas.');return;}
  const bb=bounds(g,V(),Q()),origin=V(bb.center.x,bb.min.y,bb.center.z),shape={name:'Forma '+(savedShapes.length+1),geometryVersion:3,parts:poses(g,V(),Q()).map(o=>({shape:normalizeUnitShape(o.part.shape),p:[o.p.x-origin.x,o.p.y-origin.y,o.p.z-origin.z].map(n=>+n.toFixed(5)),q:[o.q.x,o.q.y,o.q.z,o.q.w].map(n=>+n.toFixed(7))}))};
  savedShapes.push(shape);const durable=persistShapes();updateAlphaPanel();announce(shape.name+' guardada · '+shape.parts.length+' unidades'+(durable?'':' · solo en esta sesión; exporta una copia'));
@@ -3331,7 +3489,7 @@ function blueprintTargets(bp){return bp.shape.parts.map(part=>{const q=Q();q.set
 function blueprintBox(bp){const pts=blueprintTargets(bp).flatMap(corners),min=V(Infinity,Infinity,Infinity),max=V(-Infinity,-Infinity,-Infinity);for(const p of pts)for(const k of ['x','y','z']){min[k]=Math.min(min[k],p[k]);max[k]=Math.max(max[k],p[k]);}return {...alphaBox(mul(add(min,max),.5),mul(sub(max,min),.5)),size:sub(max,min)};}
 function placeBlueprint(shape,p){
  automationIntervention();
- if(!savedShapeValid(shape)||!p||blueprints.length>=6){announce('No se puede colocar otro blueprint aquí.');return null;}
+ if(!savedShapeValid(shape)||!p||blueprints.length>=12){announce('No se puede colocar otro blueprint aquí.');return null;}
  const bp={id:++alphaSerial,shape:JSON.parse(JSON.stringify(shape)),p:V(p.x,.002,p.z),q:Q(),slots:[],active:false,nextScan:0,status:'Esperando unidades'};const box=blueprintBox(bp);
  if(!assemblyValid(blueprintTargets(bp))){announce('La forma guardada tiene caras incompatibles con las medidas actuales. Se conserva para exportarla; vuelve a armarla.');return null;}
  if(box.min.y<-.001||box.max.y>ROOM_HEIGHT||Math.max(Math.abs(box.min.x),Math.abs(box.max.x),Math.abs(box.min.z),Math.abs(box.max.z))>13.85||cargos.some(c=>obbOverlap(box,cargoPose(c)))||puzzleObstacleBounds().some(w=>obbOverlap(box,{p:w.p,q:Q(),half:w.half}))||alphaObstacles().some(w=>obbOverlap(box,w))||blueprints.some(other=>obbOverlap(box,blueprintBox(other)))){announce('La forma necesita más espacio libre.');return null;}
@@ -3395,7 +3553,7 @@ function updateAlphaPanel(){
   const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Borrar '+shape.name);remove.addEventListener('click',()=>{savedShapes.splice(savedShapes.indexOf(shape),1);persistShapes();updateAlphaPanel();});row.appendChild(remove);list.appendChild(row);}
 }
 function exportShapes(){const blob=new Blob([JSON.stringify({version:1,shapes:savedShapes},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Q-bits_formas.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-function importShapesData(data){const input=data?.version===1?data.shapes:null;if(!Array.isArray(input)||input.length>32||!input.every(savedShapeValid))throw new Error('Archivo de formas inválido');savedShapes.splice(0,savedShapes.length,...input.map(s=>JSON.parse(JSON.stringify(s))));persistShapes();updateAlphaPanel();return input.length;}
+function importShapesData(data){const input=data?.version===1?data.shapes:null;if(!Array.isArray(input)||input.length>64||!input.every(savedShapeValid))throw new Error('Archivo de formas inválido');savedShapes.splice(0,savedShapes.length,...input.map(s=>JSON.parse(JSON.stringify(s))));persistShapes();updateAlphaPanel();return input.length;}
 function showPuzzleComplete(){
  pause();panel.hidden=true;document.querySelector('#completion-panel').hidden=false;document.querySelector('#completion-detail').textContent='Tres materiales entregados · '+puzzle.earned+' nuevos Q-bits. La última recompensa te espera al volver a la sala.';
 }
@@ -3462,7 +3620,7 @@ document.querySelector('#save-shape').addEventListener('click',()=>saveShape(sel
 document.querySelector('#place-cooler').addEventListener('click',()=>{const p=floorAim()||V(position[0]-Math.sin(yaw)*1.3,0,position[2]-Math.cos(yaw)*1.3);createCooler(p);});
 document.querySelector('#export-shapes').addEventListener('click',exportShapes);
 document.querySelector('#import-shapes').addEventListener('change',async e=>{try{const file=e.target.files?.[0];if(!file)return;if(file.size>1000000)throw new Error('Archivo demasiado grande');const count=importShapesData(JSON.parse(await file.text()));announce(count+' formas importadas');}catch(error){announce('No se pudo importar: '+error.message);}e.target.value='';});
-for(const key of ['maxRest','coolSeconds','capacity','blueprintRange','exitEnergy','glow'])document.querySelector('#alpha-'+key).addEventListener('input',e=>{if(certifiedAutomation()){updateAlphaPanel();return;}const n=Number(e.target.value),ranges={maxRest:[15,180],coolSeconds:[5,60],capacity:[1,8],blueprintRange:[.5,3],exitEnergy:[.25,.75],glow:[0,1]};if(Number.isFinite(n))alphaSettings[key]=clamp(n,...ranges[key]);updateAlphaPanel();});
+for(const key of ['maxRest','coolSeconds','capacity','blueprintRange','exitEnergy','glow'])document.querySelector('#alpha-'+key).addEventListener('input',e=>{if(certifiedAutomation()){updateAlphaPanel();return;}const n=Number(e.target.value),ranges={maxRest:[15,180],coolSeconds:[5,60],capacity:[1,16],blueprintRange:[.5,3],exitEnergy:[.25,.75],glow:[0,1]};if(Number.isFinite(n))alphaSettings[key]=clamp(n,...ranges[key]);updateAlphaPanel();});
 for(const key of ['coolingOn','allowPuzzleSpawn'])document.querySelector('#alpha-'+key).addEventListener('change',e=>{if(certifiedAutomation()){updateAlphaPanel();return;}alphaSettings[key]=!!e.target.checked;updatePuzzlePanel();updateAlphaPanel();});
 document.querySelector('#completion-continue').addEventListener('click',()=>{document.querySelector('#completion-panel').hidden=true;captureMouse();});
 document.querySelector('#completion-restart').addEventListener('click',()=>{document.querySelector('#completion-panel').hidden=true;startPuzzle();captureMouse();});
@@ -3849,7 +4007,7 @@ function finishFirstLevel(){saveStoryProgress('level1');story.phase='complete';h
 function enterLab(capture=true){
  if(story.scene==='lab'){setupWorkshop();gameMode('playing');panel.hidden=true;if(capture)captureMouse();return;}
  clearNarrativeScene();gameScene('lab');gameMode('playing');story.started=true;const saved=story.lab;
- if(saved){Object.assign(settings,saved.settings);Object.assign(moodSettings,saved.moodSettings||{});Object.assign(alphaSettings,story.labAlpha||{});position.splice(0,3,...saved.position);yaw=saved.yaw;pitch=saved.pitch;camera.splice(0,3,...position);for(const g of saved.groups)makeGroup(g.parts,g.q,g.v,g.w);restoreLabMechanisms(saved);for(const c of saved.cargos)newCargo(c.p,c.side,c.required,c.color);restoreAlphaScene(saved.alphaScene);}else addQubit([0,HALF+.003,0]);
+ if(saved){Object.assign(settings,saved.settings);Object.assign(moodSettings,saved.moodSettings||{});Object.assign(alphaSettings,story.labAlpha||{});position.splice(0,3,...saved.position);yaw=saved.yaw;pitch=saved.pitch;camera.splice(0,3,...position);for(const g of saved.groups)makeGroup(g.parts,g.q,g.v,g.w);restoreLabMechanisms(saved);for(const c of saved.cargos)newCargo(c.p,c.side,c.required,c.color);restoreAlphaScene(saved.alphaScene);}else{settings.maxCarry=32;settings.maxSelect=64;addQubit([0,HALF+.003,0]);}
  world.gravity.y=-settings.gravity;world.defaultContactMaterial.friction=settings.friction;world.defaultContactMaterial.restitution=settings.bounce;world.broadphase.dirty=true;ui.veil.style.opacity='0';setupWorkshop();updatePanel();if(capture)captureMouse();
 }
 function showMain(){document.querySelector('#wake-screen').hidden=true;gameMode('menu');pause(false);panel.hidden=true;document.querySelector('#main-continue').hidden=!story.started;ui.veil.style.opacity='0';ui.top.style.height='0';ui.bottom.style.height='0';canvas.style.filter='none';document.querySelector('#main-play').focus({preventScroll:true});}
@@ -4355,7 +4513,7 @@ function applyWorkshopUpgrade(id,patch){
  if(plan.error){announce(plan.error);return false;}
  parts[at]=plan.part;if(!QBitsWorkshop.partState(plan.part).sensor){delete parts[at].mood.sensorLink;contactStates.delete(id);}
  const ref=hit.g.body.quaternion.clone(),velocity=hit.g.body.velocity.clone(),spin=hit.g.body.angularVelocity.clone();removeGroup(hit.g);const made=makeGroup(parts,ref,velocity,spin);refreshRotors();selected={g:made,part:made.parts.find(p=>p.id===id)};
- announce('Adaptación aplicada · '+plan.storedJ.toFixed(1)+' / '+plan.capacity+' J conservados · '+plan.material.piece.toFixed(2)+' u + '+plan.material.bench.toFixed(2)+' u reservadas en mesa');updatePanel();return true;
+ const batteryScale=story.scene==='lab'?2:1;announce('Adaptación aplicada · '+Math.round(plan.storedJ*batteryScale)+' / '+plan.capacity*batteryScale+' de batería conservada · '+plan.material.piece.toFixed(2)+' u + '+plan.material.bench.toFixed(2)+' u reservadas en mesa');updatePanel();return true;
 }
 function aimWorkshop(dir=direction()){if(story.scene!=='lab'||puzzle.active||!workshopBench)return false;const half=V(.5,.4,.35),center=add(workshopBench.p,V(0,-.1,0));return rayPuzzleBox(V(...camera),dir,{p:center,half,min:sub(center,half),max:add(center,half)},3.5)!==null;}
 function openWorkshopMenu(dir=direction()){
@@ -4748,7 +4906,7 @@ function rememberCatalogueRecipe(kind){
  const entry=Object.entries(catalogueLessons).find(([,value])=>value.recipe===kind);
  if(!entry||!catalogueKnown(entry[0]))return false;
  if(savedShapes.some(shape=>shape.catalogueId===kind)){announce('Ese plano ya está entre tus formas guardadas.');return true;}
- if(savedShapes.length>=32){announce('Libera un espacio entre tus formas guardadas.');return false;}
+ if(savedShapes.length>=64){announce('Libera un espacio entre tus formas guardadas.');return false;}
  const recipe=catalogueRecipe(kind);if(!savedShapeValid(recipe)||!assemblyValid(blueprintTargets({shape:recipe,p:V(),q:Q()})))return false;
  savedShapes.push(recipe);persistShapes();updateAlphaPanel();announce('Plano añadido · clic derecho en el suelo → Formas guardadas');return true;
 }

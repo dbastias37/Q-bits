@@ -8,11 +8,11 @@
  const RESEARCH=Object.freeze([
   {id:'sensor',label:'Sensor de contacto',cost:8,bench:1,minLevel:0,requires:[]},
   {id:'bench2',label:'Mesa de trabajo II',cost:24,bench:1,minLevel:8,requires:[]},
-  {id:'battery2',label:'Batería II · 30 J',cost:20,bench:2,minLevel:0,requires:[]},
+  {id:'battery2',label:'Batería II · +50 % de capacidad',cost:20,bench:2,minLevel:0,requires:[]},
   {id:'lightweight2',label:'Estructura ligera II · 90 % de masa',cost:20,bench:2,minLevel:0,requires:[]},
   {id:'movement2',label:'Movimiento II · +10 % de velocidad',cost:20,bench:2,minLevel:0,requires:[]},
   {id:'bench3',label:'Mesa de trabajo III',cost:48,bench:2,minLevel:16,requires:[]},
-  {id:'battery3',label:'Batería III · 40 J',cost:32,bench:3,minLevel:0,requires:['battery2']},
+  {id:'battery3',label:'Batería III · doble capacidad',cost:32,bench:3,minLevel:0,requires:['battery2']},
   {id:'lightweight3',label:'Estructura ligera III · 80 % de masa',cost:32,bench:3,minLevel:0,requires:['lightweight2']},
   {id:'movement3',label:'Movimiento III · +20 % de velocidad',cost:32,bench:3,minLevel:0,requires:['movement2']}
  ].map(entry=>Object.freeze({...entry,requires:Object.freeze(entry.requires)})));

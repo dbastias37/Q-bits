@@ -107,6 +107,7 @@ module.exports = function createGame(options = {}) {
     measureEncounterBubbles,placeEncounterBubble,addEncounterBubble,encounterBubbles,
     findSnap,weld,makeFragments,detachPart,validPose,settings,spawnQubit,creationShape,updateAlphaHUD,
     rotors,rotorPart,couplerTip,rotorForGroup,rotorForPart,rotorGroups,rotorConnectedGroups,connectRotorTips,configureRotor,disconnectRotor,refreshRotors,spawnRotor,findRotorSnap,updateRotorMotors,allocateUnitId,rotorPowerState,prepareRotorPower,updateRotorPower,updateMoods,mechanismDefaults,
+    rotorSets,selectedRotors,rotorSetFor,activeRotorSet,rotorSetMembers,createRotorSet,renameRotorSet,dissolveRotorSet,configureRotorSet,selectRotorSet,toggleRotorSelection,clearRotorSelection,controlRotors,serializeRotorSets,restoreRotorSets,
     unitProfile,unitFaces,unitGroundHeight,isTBit,normalizeUnitShape,rayPart,obbOverlap,drawUnitMesh,drawUnitOutline,
     touchingUnitFaces,findConvexSnap,duplicateSelection,saveLab,enterLab,rememberLab,updateCooling,createCooler,
     rollPoseAt,updateRoutes,makeRollSegment,savedShapeValid,saveShape,savedShapes,blueprintTargets,

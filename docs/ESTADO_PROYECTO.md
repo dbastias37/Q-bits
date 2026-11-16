@@ -1,6 +1,6 @@
 # Q-bits — punto de continuación
 
-Actualizado: 15 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
+Actualizado: 16 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
 ## Forma de trabajo acordada
 
@@ -158,3 +158,17 @@ Banco de pruebas, fin de puzle, configuración y confirmación comparten un acab
 Verificación: capturas de la geometría y compositor reales mediante reproducción GLES en 1280×720 y 390×844, sobre fondos de diagnóstico claros y oscuros. Compilan y enlazan los programas de cristal y desenfoque; sin errores GL, sin alteración del hueco central ni exterior. El contraste de prueba baja de 91,5 a 1,87/5,27 detrás de la cara; la desviación cambia los cantos y deja intacto el centro. Se inspeccionaron las capturas y se corrigió el desenfoque discontinuo de la primera versión. Las 353 pruebas Node pasan y cubren selección, conservación, degradación CSS, liberación y captura única del fondo de configuración. El navegador remoto sigue sin WebGL: las vistas aisladas de interfaz se verifican aparte y no se presentan como una partida completa ni una medición de FPS en el equipo del jugador.
 
 Revisión visual en navegador de los componentes reales: selector abierto/cerrado y piezas bloqueadas sobre fondos claros/oscuros; panel del banco y configuración con esquinas y cantos completos; desplazamiento hasta el final con límite de lista coincidente con el pie (797,39 px), sin desbordamiento horizontal en 1363 px; confirmación, seguir editando y guardar. Se reforzó la placa de lectura local de las etiquetas para conservar contraste sobre piezas oscuras. Estas vistas cargan CSS/controladores reales con fondos de referencia y almacenamiento temporal, sin ejecutar físicas ni la partida WebGL.
+
+## Conjuntos de rotores y límites de prueba — 16 de noviembre de 2026
+
+Primer cambio solicitado tras probar vehículos con sensores: selección precisa con Ctrl + clic o acción T/△, conjuntos lógicos con nombre y menú compartido de marcha, parada, inversión, velocidad, fuerza y carga. Los IDs de articulación distinguen varios rotores soldados al mismo chasis. Los conjuntos no crean nuevas piezas, soldaduras ni baterías compartidas. Iniciar preserva dirección, lado móvil y montaje individuales; invertir multiplica cada sentido por −1. El preflight evita arranques parciales por agotamiento, carga, agarre o montajes fijos incompatibles.
+
+El panel muestra números enteros: velocidad 1–120, fuerza 2–400 (escala torque ×100), carga 2–256. «Varios» conserva ajustes distintos hasta editarlos. Montaje, lado y medidas físicas quedan en Avanzado; solo se modifican con un rotor seleccionado. El clic derecho de un conjunto permite tomar el mecanismo conectado. Los sensores conservan sus enlaces individuales. Un panel de automatización posterior no está implementado.
+
+Los nombres y miembros sobreviven a soldaduras y a recuperación del banco usando endpoints de las piezas. Plantillas, duplicación, exportación e importación remapean los conjuntos a articulaciones nuevas; los archivos antiguos siguen admitidos. Un rotor pertenece a un conjunto; moverlo a otro limpia el anterior. Desconectar retira únicamente ese miembro, elimina conjuntos vacíos y limpia selecciones sin escoger otro eje por accidente. Guardar una plantilla exige un único montaje conectado; conjuntos de máquinas separadas permanecen en la escena.
+
+Límites nuevos: creación 256 piezas; selección inicial 64/máxima 256; agarre inicial 32/máximo 128; carga de rotor inicial 32 en banco/máxima 256; catálogos de formas y mecanismos 64 cada uno; planos y enfriadores simultáneos 12; plazas de enfriador hasta 16. La batería del banco es 40/60/80 J y la de campaña 20/30/40 J: doble autonomía a igual demanda, sin alterar trabajo ni consumo absoluto. Recarga y enfriadores respetan la reserva mayor; taller conserva julios al adaptar. Los ensayos certificados conservan física, batería y progresión. RPM, torque y límites de seguridad física se mantienen.
+
+Verificación: 378 pruebas de lógica/simulación aprobadas, incluidas selección sobre cuatro ejes del mismo chasis, comandos y simulación de veinte rotores, validación de arranque, sensores existentes, persistencia, teclado/mando y baterías. Sintaxis de módulos y `git diff --check` aprobados. Chromium local no pudo crear sockets (`Operation not permitted`): no se presenta esta verificación como partida visual ni como medición de rendimiento en el dispositivo.
+
+Siguiente paso: probar el vehículo del usuario con sus propios sentidos por rueda, comodidad del menú y autonomía ampliada. Recoger la siguiente mejora por separado; automatización colectiva de sensores/paneles sigue pendiente.

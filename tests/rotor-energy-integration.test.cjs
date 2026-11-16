@@ -38,8 +38,9 @@ test('motor bank exposes mount, torque, capacity, demand and real speed',()=>{
  for(const [id,value,type]of [['rotor-mount','fixed','change'],['rotor-torque','0.8','input'],['rotor-capacity','24','input']]){node(id).value=value;node(id).dispatchEvent({type});}
  assert.equal(r.mount,'fixed');assert.equal(r.maxTorque,.8);assert.equal(r.capacity,24);
  node('rotor-clockwise').dispatchEvent({type:'click'});step(t,30);t.updateMechanismPanel();
- assert.match(node('rotor-power-readout').textContent,/Energía A.*B.*consumo.*Carga.*Torque usado.*Giro real/);
- assert.match(node('rotor-power-readout').textContent,/24 u/);
+ assert.match(node('rotor-power-readout').textContent,/Carga conectada.*batería mínima/);
+ assert.match(node('rotor-technical-readout').textContent,/Energía A.*B.*consumo.*Carga.*Torque usado.*Giro real/);
+ assert.match(node('rotor-technical-readout').textContent,/24 u/);
 });
 
 test('depleting one rotor does not skip another motor\'s energy bill or recharge its active Enganches',()=>{
@@ -55,5 +56,5 @@ test('depleting one rotor does not skip another motor\'s energy bill or recharge
  assert.equal(energies(t,first)[0],0,'the depleted battery stays empty through the final powered frame');
  assert.equal(second.enabled,true);assert(second.powerActive,'other powered motors retain their per-step accounting');
  assert(second.power.drainPerSide>0);
- for(const value of energies(t,second))assert(Math.abs(value-(.6-second.power.drainPerSide))<1e-12,'both active batteries pay exactly the model draw without passive recovery');
+ for(const [i,value]of energies(t,second).entries())assert(Math.abs(value-(.6-(i?second.power.drainB:second.power.drainA)))<1e-12,'both active batteries pay exactly their own model draw without passive recovery');
 });

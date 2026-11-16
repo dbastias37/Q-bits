@@ -1,7 +1,7 @@
 /* Selected assemblies, rendered from their real polygons without another GL context. */
 (function(root){
  'use strict';
- const MAX_PARTS=128,MAX_VISIBLE=8,ENTER=.34,EXIT=.22;
+ const MAX_PARTS=256,MAX_VISIBLE=8,ENTER=.34,EXIT=.22;
  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),finite=(v,f=0)=>Number.isFinite(v)?v:f;
  const rotate=(v,q)=>{
   const [x,y,z]=v,[qx,qy,qz,qw]=q,tx=2*(qy*z-qz*y),ty=2*(qz*x-qx*z),tz=2*(qx*y-qy*x);

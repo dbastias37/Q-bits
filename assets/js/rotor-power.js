@@ -10,10 +10,11 @@
   const LIMITS = Object.freeze({
     rpm: Object.freeze([1, 120]),
     maxTorque: Object.freeze([.02, 4]),
-    capacity: Object.freeze([2, 128])
+    capacity: Object.freeze([2, 256])
   });
   // Gameplay calibration: each Enganche starts with a 20 J reservoir, upgraded
-  // explicitly up to 40 J, represented by its existing 0..1 energy bar. Both
+  // explicitly up to 40 J (80 J in the laboratory), represented by its existing
+  // 0..1 energy bar. The laboratory supplies twice the reservoir capacity. Both
   // sides supply equal absolute joules even with unequal capacities. Ordinary
   // attached Q-bits add load, not battery capacity. This is an explicit motor
   // model, not a specification of a particular real-world motor or battery.
@@ -55,8 +56,8 @@
     // The simulation limits commanded speed to 120 RPM. This wider guard only
     // bounds corrupt/external measurements and keeps every power value finite.
     const rpm = state.stalled ? 0 : Math.min(10000, Math.abs(finite(state.actualRpm, 0)));
-    const capacityJoulesA = clamp(finite(state.capacityJoulesA, MODEL.joulesPerSide), 20, 40);
-    const capacityJoulesB = clamp(finite(state.capacityJoulesB, MODEL.joulesPerSide), 20, 40);
+    const capacityJoulesA = clamp(finite(state.capacityJoulesA, MODEL.joulesPerSide), 20, 80);
+    const capacityJoulesB = clamp(finite(state.capacityJoulesB, MODEL.joulesPerSide), 20, 80);
     const beforeA = clamp(finite(state.energyA, 0), 0, 1);
     const beforeB = clamp(finite(state.energyB, 0), 0, 1);
     let stopReason = !state.enabled ? null : load > capacity ? 'overload' : Math.min(beforeA, beforeB) <= MODEL.emptyEpsilon ? 'empty' : null;
