@@ -201,6 +201,8 @@ Todas las pistas configuradas se descargan y se comprueba que sean reproducibles
 
 ## Rendimiento y comprobación
 
+Los conjuntos de cubos contiguos comparten colliders rectangulares exactos y los cuerpos se construyen en lote, conservando huecos, sensores, articulaciones y piezas recuperables. La unión con estructuras grandes evita comprobaciones repetidas. Corregido el desplazamiento de bases dormidas y el freno duplicado del brazo; un impacto o arranque vuelve a activar el conjunto. [Mediciones, pruebas y límites](docs/RENDIMIENTO_MECANISMOS.md): unir dos placas de 96 cubos baja de 74,26 a 6,81 ms CPU en el banco automatizado; no es una medición de FPS del navegador.
+
 Las búsquedas de rutas se reparten entre fotogramas y se cancelan si cambia la orden o la escena. Se conservan los límites de búsqueda, la resolución, antialiasing, efectos, materiales y frecuencia de la física. También se reutilizan límites geométricos, datos de previsualización y enlaces de atributos de WebGL.
 
 Pruebas locales (Node.js, sin dependencias):

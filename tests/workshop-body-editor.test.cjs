@@ -11,7 +11,7 @@ test('body preview is read only and reshaping six real cubes preserves mass, ide
  g.parts.forEach((p,i)=>{p.weight=1+i/10;p.mood.energy=.1+i/10;p.mood.name='Pieza '+i;});
  const before=unchanged(t,g),moods=g.parts.map(p=>JSON.stringify(p.mood)),weights=g.parts.map(p=>p.weight),ids=g.parts.map(p=>p.id),joules=g.parts.reduce((n,p)=>n+p.mood.energy*t.gameBatteryCapacity(p),0);
  const preview=t.workshopBodyPreview(id,{x:6,y:1,z:1});assert(preview.ok,preview.error);assert.equal(preview.parts.length,6);near(preview.size.x,.54);assert.equal(unchanged(t,g),before);
- assert(t.workshopBodyApply(id,{x:6,y:1,z:1}));const made=t.rotorPart(id).g;assert.notEqual(made,g);assert.equal(t.groups.length,1);assert.equal(made.body.shapes.length,6);
+ assert(t.workshopBodyApply(id,{x:6,y:1,z:1}));const made=t.rotorPart(id).g;assert.notEqual(made,g);assert.equal(t.groups.length,1);assert.equal(made.body.shapes.length,1);near(made.body.shapes[0].halfExtents.x,.27);near(made.body.shapes[0].halfExtents.y,.045);near(made.body.shapes[0].halfExtents.z,.045);
  assert.deepEqual(made.parts.map(p=>p.id),ids);assert.deepEqual(made.parts.map(p=>p.weight),weights);assert.deepEqual(made.parts.map(p=>JSON.stringify(p.mood)),moods);
  near(made.body.mass,weights.reduce((a,b)=>a+b)*.25);near(made.parts.reduce((n,p)=>n+p.mood.energy*t.gameBatteryCapacity(p),0),joules);near(t.bounds(made).size.x,.54);near(t.bounds(made).size.y,.09);near(t.bounds(made).size.z,.09);
 });
@@ -35,10 +35,10 @@ test('body output collision and tabletop footprint are checked before removing s
  t.removeGroup(g);const large=block(t,4,1,4),state=unchanged(t,large);const preview=t.workshopBodyPreview(large.parts[0].id,{x:16,y:1,z:1});assert.equal(preview.ok,false);assert.match(preview.error,/sobresale/);assert.equal(unchanged(t,large),state);
 });
 
-test('long body has real per-cube colliders and settles above the workshop surface',()=>{
+test('long body has an exact compact collider and settles above the workshop surface',()=>{
  const {t}=lab(),g=block(t,2,1,3),id=g.parts[0].id;assert(t.workshopBodyApply(id,{x:6,y:1,z:1}));const made=t.rotorPart(id).g;
  for(let i=0;i<720;i++)t.world.step(1/240);
- const box=t.bounds(made);assert(box.min.y>=t.getWorkshopBench().p.y-.003,`body sank to ${box.min.y}`);assert(box.min.y<t.getWorkshopBench().p.y+.015);assert(made.body.velocity.norm()<.025);assert(made.body.angularVelocity.norm()<.05);assert.equal(made.body.shapes.length,6);
+ const box=t.bounds(made);assert(box.min.y>=t.getWorkshopBench().p.y-.003,`body sank to ${box.min.y}`);assert(box.min.y<t.getWorkshopBench().p.y+.015);assert(made.body.velocity.norm()<.025);assert(made.body.angularVelocity.norm()<.05);assert.equal(made.body.shapes.length,1);near(made.body.shapes[0].halfExtents.x,.27);near(made.body.shapes[0].halfExtents.y,.045);near(made.body.shapes[0].halfExtents.z,.045);
 });
 
 test('tall bodies can be reshaped again using their supported footprint and keep all pieces',()=>{

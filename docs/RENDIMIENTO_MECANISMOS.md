@@ -83,3 +83,44 @@ Son mediciones Node/Cannon con DOM/GPU simulados, **no FPS del navegador**. Las 
 - Una comparación adicional de transporte activo contra `3264913` conserva exactamente posiciones, orientaciones y energía finales. No se realizó una partida completa de navegador.
 
 Siguiente comprobación: probar en el PC del jugador crear, sostener y sacudir una esquina junto a sus otras secciones. Si persiste la lentitud, medir el contacto sostenido y el tiempo real de GPU; la separación vuelve a activar cuerpos individuales por diseño.
+
+
+## Colocación en estructuras grandes y agarre al suelo — tercera entrega del 16 de noviembre
+
+Referencia: `050660fa24742779ea7407c3609f2b9daee3fd18`. Las secciones anteriores documentan entregas históricas; los porcentajes no se acumulan.
+
+**Construcción física:** las regiones rectangulares completas de cubos contiguos comparten una caja de colisión exacta. Una placa de 192 cubos pasa de 192 colliders a uno; añadir un cubo encima requiere dos. Huecos, separaciones, pirámides, tetraedros, enganches y articulaciones mantienen sus volúmenes propios. Los sensores mantienen un collider independiente, enlazado por identidad, para que un cubo vecino no active la punta. Se conservan piezas, poses, masas, energía, adaptaciones, gráficos y desarme por sacudida. El guardado continúa almacenando piezas, y reconstruye los colliders al cargar.
+
+Cannon 0.6 recalcula masa y volumen envolvente después de cada `addShape`. La construcción ahora incorpora todas las formas antes de recalcular una sola vez, también para T-bits y enganches que no se pueden fusionar. El cuerpo todavía no está incorporado al mundo durante esta preparación. Una prueba compara masa, inercia, AABB y radio con la inserción nativa de Cannon.
+
+**Unión:** las 24 orientaciones de grilla se evalúan permutando las dimensiones existentes; los candidatos se ordenan y se comprueba el primero libre, conservando alternativas si está obstruido. La confirmación vuelve a comprobar toda la colocación. Las parejas de piezas se filtran por AABB antes de SAT, y las caras de unión se construyen solo cerca del contacto. Se conservan las caras compuestas de T-bits y el rechazo de uniones parciales o posiciones que quedaron ocupadas.
+
+**Reposo:** el corrector del eje ya no desplaza un soporte que tuvo masa inversa cero en el solucionador. Ese desplazamiento posterior a los contactos era una causa de deslizamiento sin fricción. Los eventos reales de despertar se propagan por el mecanismo para que un impacto o arranque pueda moverlo completo. El brazo detenido utiliza el freno pasivo de cada bisagra; se elimina el bloqueo redundante de seis ejes que competía con la misma articulación. No se aumenta la fricción global, no se cambia el ajuste del jugador y no se anclan al piso los mecanismos libres.
+
+### Medición reproducible
+
+```sh
+node tests/benchmark-large-assemblies.cjs 050660fa24742779ea7407c3609f2b9daee3fd18 docs/benchmarks/large-assemblies-20261116.json
+```
+
+Siete repeticiones alternadas, con calentamiento de ambas versiones. Medianas de CPU del proceso Node; la consulta previa se repite veinte veces por muestra. Datos completos: [benchmarks/large-assemblies-20261116.json](benchmarks/large-assemblies-20261116.json).
+
+| Operación | Antes, ms CPU | Ahora, ms CPU | Reducción |
+| --- | ---: | ---: | ---: |
+| Confirmar un cubo sobre 192 cubos | 36,04 | 4,61 | 87,2 % |
+| Confirmar un cubo sobre 192 piezas mixtas | 25,15 | 8,31 | 66,9 % |
+| Buscar encaje de dos placas de 96 cubos | 11,58 | 1,35 | 88,3 % |
+| Confirmar la unión de esas placas | 74,26 | 6,81 | 90,8 % |
+| Brazo en reposo, cuatro subpasos por cuadro simulado | 2,95 | 0,81 | 72,6 % |
+
+La consulta previa de una sola pieza permanece aproximadamente en 1,3–1,6 ms; no se atribuye una mejora a ese caso. La creación de 192 cubos baja de 39,22 a 7,74 ms y la de 192 piezas mixtas de 39,64 a 11,67 ms. Los tiempos incluyen trabajo de CPU y pueden variar entre ejecuciones; no son latencia de pantalla ni FPS.
+
+Después de tres segundos de asentamiento, el brazo anterior aún desplazaba una de sus partes 8,61 mm durante los siguientes diez segundos y solo dormía uno de sus cinco cuerpos. El corregido mantiene los cinco cuerpos dormidos y registra cero desplazamiento durante ese intervalo. Un impulso vuelve a despertar el conjunto; las ruedas siguen impulsando el chasis. Una placa con fricción normal se detiene y queda estable; con fricción cero sigue deslizándose, como corresponde.
+
+### Verificación y límites
+
+- 639 pruebas completas aprobadas, sin fallos ni omisiones: campaña, sensores, rotores, transporte por ambas esquinas, brazo, desarme, guardado y repisas.
+- Regresiones nuevas: placa de 192 piezas con pesos y giros distintos; hueco atravesable; piezas desalineadas; sensor dentro de un sólido compacto; extracción de una pieza intermedia; unión 96+96; candidato que queda bloqueado antes de soltar; reposo e impulso del brazo.
+- 21 escenas reproducidas en GLES/Mesa; dos shaders y un programa compilados, cero errores. No se modifica código de dibujo, texturas, luces, resolución ni frecuencia física.
+- Las formas de contacto equivalentes pueden producir una trayectoria de asentamiento ligeramente distinta en Cannon: no se afirma igualdad exacta de trayectorias con la versión anterior. Sí se comprueban geometría, conservación y comportamiento funcional.
+- No se realizó una partida completa en navegador ni se midió el PC del jugador. Muchas piezas sueltas, contactos sostenidos complejos y el costo real de GPU pueden seguir produciendo bajones. El límite de 256 piezas se mantiene; no se promete ausencia de caídas en cualquier escena.

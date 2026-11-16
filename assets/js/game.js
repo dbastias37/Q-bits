@@ -1003,6 +1003,47 @@ function partPose(g,p,pos=g.body.position,quat=g.body.quaternion){return {p:add(
 function poses(g,pos,quat){return g.parts.map(p=>partPose(g,p,pos,quat));}
 function worldParts(g){return poses(g).map(o=>({id:o.part.id,weight:o.part.weight,shape:unitShape(o),p:o.p,q:o.q,mood:copyMood(o.part.mood)}));}
 function allocateUnitId(){return ++serial;}
+// Compact only exact rectangular runs of aligned cubes. Material identities,
+// concave gaps and articulated bodies remain separate. Sensors keep their own
+// contact shape so a neighbouring cell cannot activate their face.
+function rigidColliderLayout(parts){
+ const layout=[],buckets=[],key=(x,y,z)=>x+','+y+','+z,gridTolerance=1e-8;
+ for(const part of parts){
+  if(unitShape(part)!=='cube'||QBitsWorkshop.partState(part).sensor){layout.push({parts:[part],offset:part.offset,q:part.q,half:null});continue;}
+  let bucket=null,cell=null;
+  for(const candidate of buckets){
+   const relative=candidate.inverse.mult(part.q);
+   if(!axes.every(axis=>{const v=relative.vmult(axis),values=[Math.abs(v.x),Math.abs(v.y),Math.abs(v.z)].sort((a,b)=>b-a);return Math.abs(values[0]-1)<1e-9&&values[1]<1e-9&&values[2]<1e-9;}))continue;
+   const p=candidate.inverse.vmult(sub(part.offset,candidate.origin)),coordinates=['x','y','z'].map(k=>Math.round(p[k]/CUBE_SIZE));
+   if(['x','y','z'].some((k,i)=>Math.abs(p[k]-coordinates[i]*CUBE_SIZE)>gridTolerance)||candidate.cells.has(key(...coordinates)))continue;
+   bucket=candidate;cell=coordinates;break;
+  }
+  if(!bucket){bucket={q:part.q,inverse:part.q.inverse(),origin:part.offset,cells:new Map()};buckets.push(bucket);cell=[0,0,0];}
+  bucket.cells.set(key(...cell),{part,cell});
+ }
+ for(const bucket of buckets){
+  const remaining=new Map(bucket.cells),ordered=[...bucket.cells.values()].sort((a,b)=>a.cell[1]-b.cell[1]||a.cell[2]-b.cell[2]||a.cell[0]-b.cell[0]);
+  for(const seed of ordered){const [x,y,z]=seed.cell;if(!remaining.has(key(x,y,z)))continue;let nx=1,ny=1,nz=1;
+   while(remaining.has(key(x+nx,y,z)))nx++;
+   const row=zz=>{for(let xx=0;xx<nx;xx++)if(!remaining.has(key(x+xx,y,zz)))return false;return true;};while(row(z+nz))nz++;
+   const layer=yy=>{for(let zz=0;zz<nz;zz++)for(let xx=0;xx<nx;xx++)if(!remaining.has(key(x+xx,yy,z+zz)))return false;return true;};while(layer(y+ny))ny++;
+   const members=[];for(let yy=0;yy<ny;yy++)for(let zz=0;zz<nz;zz++)for(let xx=0;xx<nx;xx++){const k=key(x+xx,y+yy,z+zz);members.push(remaining.get(k).part);remaining.delete(k);}
+   if(members.length===1)layout.push({parts:members,offset:seed.part.offset,q:seed.part.q,half:null});
+   else layout.push({parts:members,offset:add(bucket.origin,bucket.q.vmult(V((x+(nx-1)/2)*CUBE_SIZE,(y+(ny-1)/2)*CUBE_SIZE,(z+(nz-1)/2)*CUBE_SIZE))),q:bucket.q,half:V(nx*HALF,ny*HALF,nz*HALF)});
+  }
+ }return layout;
+}
+function addRigidCollisionShapes(body,parts){
+ const owners=new Map();
+ for(const collider of rigidColliderLayout(parts)){
+  const part=collider.parts[0],profile=unitProfile(part),shape=collider.half?new CANNON.Box(collider.half):isTBit(part)?new CANNON.ConvexPolyhedron(profile.vertices.map(v=>v.clone()),profile.faces.map(f=>f.slice())):cubeShape();
+  // Cannon 0.6 addShape recalculates the entire body after every insertion.
+  // This body is not in the world yet: append the same cloned shape transforms
+  // and calculate its radius/mass once, including unmergeable convex pieces.
+  body.shapes.push(shape);body.shapeOffsets.push(collider.offset.clone());body.shapeOrientations.push(collider.q.clone());for(const member of collider.parts)owners.set(member.id,shape);
+ }
+ body.updateBoundingRadius();body.aabbNeedsUpdate=true;return owners;
+}
 function makeGroup(parts,reference=Q(),velocity=V(),spin=V()) {
  invalidateMechanicalIndex();
  serial=Math.max(serial,...parts.map(p=>p.id));
@@ -1012,9 +1053,9 @@ function makeGroup(parts,reference=Q(),velocity=V(),spin=V()) {
  body.collisionFilterMask=-1;body.position.copy(center);body.quaternion.copy(reference);body.velocity.copy(velocity);body.angularVelocity.copy(spin);
  body.linearDamping=.03;body.angularDamping=settings.damping;
  const local=parts.map(p=>{const shape=unitShape(p),mood=newMood(p.id,p.mood);if(!p.mood&&shape!=='cube')mood.name=(shape==='coupler'?'Enganche ':'T-bit ')+p.id;return {id:p.id,weight:p.weight,shape,offset:inv.vmult(sub(p.p,center)),q:inv.mult(p.q),mood};});
- for(const p of local){const profile=unitProfile(p),shape=isTBit(p)?new CANNON.ConvexPolyhedron(profile.vertices.map(v=>v.clone()),profile.faces.map(f=>f.slice())):cubeShape();body.addShape(shape,p.offset,p.q);}
+ const partShapes=addRigidCollisionShapes(body,local),materialShapeCount=body.shapes.length;
  body.updateMassProperties();world.addBody(body);
- const g={body,parts:local,route:null,pin:null};body.qubitGroup=g;g.block=analyzeBlock(g);groups.push(g);registerSpeechGroup(g);return g;
+ const g={body,parts:local,partShapes,materialShapeCount,route:null,pin:null};body.qubitGroup=g;body.addEventListener('wakeup',()=>{g.wakeMechanicalComponent=true;});g.block=analyzeBlock(g);groups.push(g);registerSpeechGroup(g);return g;
 }
 function addQubit(p,weight=settings.mass,shape='cube'){return makeGroup([{id:++serial,weight,shape:normalizeUnitShape(shape),p:V(...p),q:Q()}]);}
 function removeGroup(g){disposeRigidCubeBatch(g);robotBeforeRemoveGroup(g);invalidateMechanicalIndex();resetBatteryLiquids(g.body);invalidateRotorBody(g);undockCampaignGroup(g);removeSpeechGroup(g);leaveHaul(g);stopRoute(g);world.removeBody(g.body);const i=groups.indexOf(g);if(i>=0)groups.splice(i,1);if(selected?.g===g)selected=null;multiSelection=multiSelection.filter(item=>item!==g);}
@@ -1640,7 +1681,7 @@ function robotArmForGroup(g){return robotArms.find(arm=>rotorConnectedGroups([ro
 function robotRelativePose(rotor){const a=rotorPart(rotor.aId),b=rotorPart(rotor.bId);return a.q.inverse().mult(b.q);}
 function robotReadPose(arm){return robotArmRotors(arm).map(r=>{const q=robotRelativePose(r);return [q.x,q.y,q.z,q.w];});}
 function robotPoseValid(pose,count){return Array.isArray(pose)&&pose.length===count&&pose.every(q=>Array.isArray(q)&&q.length===4&&q.every(Number.isFinite)&&Math.abs(Math.hypot(...q)-1)<.01);}
-function robotRemoveBrakes(arm){for(const constraint of arm.brakes||[])world.removeConstraint(constraint);for(const constraint of arm.jointBrakes?.values()||[])world.removeConstraint(constraint);arm.brakes=[];arm.jointBrakes=new Map();}
+function robotRemoveBrakes(arm){for(const constraint of arm.brakes||[])if(!rotors.some(rotor=>rotor.constraint===constraint))world.removeConstraint(constraint);for(const constraint of arm.jointBrakes?.values()||[])world.removeConstraint(constraint);arm.brakes=[];arm.jointBrakes=new Map();}
 // A joint brake holds the current twist at the actual coupler pivots. Its
 // target axes are coaxial: copying a deformed body's entire pose would freeze
 // solver drift and make the brake fight its own hinge. Only constraint targets
@@ -1654,7 +1695,9 @@ function robotJointBrake(rotor){
  return brake;
 }
 function robotApplyBrakes(arm){
- robotRemoveBrakes(arm);for(const rotor of robotArmRotors(arm)){const pair=rotorGroups(rotor);if(pair.some(g=>!g))continue;const constraint=robotJointBrake(rotor);if(!constraint)continue;arm.brakes.push(constraint);world.addConstraint(constraint);}
+ // Stopped hinges already lock their twist. A second six-axis lock fights
+ // the same contacts, adds solver work and prevents a resting arm from sleeping.
+ robotRemoveBrakes(arm);for(const rotor of robotArmRotors(arm)){if(!rotor.constraint)continue;setRotorBrake(rotor,true);arm.brakes.push(rotor.constraint);}
 }
 function robotReleaseBase(arm){conveyorReleaseBase(arm);}
 function createRobotArm(options={}){
@@ -2154,6 +2197,12 @@ function rotorProjectedPose(rotor,moving,base,quaternion=moving.body.quaternion)
 // walking, hauling or unpowered contact behavior elsewhere in the room.
 const solveRotorContacts=world.solver.solve;
 world.solver.solve=function(dt,physicsWorld){
+ // Propagate actual wake events (impact, grabbing, motor start) through the
+ // mechanism. Ordinary SLEEPY solver jitter must not repeatedly wake its base.
+ for(const g of groups)if(g.wakeMechanicalComponent){const component=rotorConnectedGroups([g]);
+  for(const member of component)if(member.body.type===CANNON.Body.DYNAMIC&&member.body.sleepState===CANNON.Body.SLEEPING)member.body.wakeUp();
+  for(const member of component)member.wakeMechanicalComponent=false;
+ }
  const driven=new Set();for(const rotor of rotors)if(rotor.enabled&&rotor.mount==='wheel')for(const g of rotorConnectedGroups(rotorGroups(rotor)))driven.add(g.body);
  for(const grip of robotGrips.values())if(driven.has(robotGripperHit(grip.id)?.g.body))driven.add(grip.body);
  const skinPairs=conveyorFrictionPairs(physicsWorld),changed=[];for(const eq of physicsWorld.frictionEquations){if(skinPairs.get(eq.bi)?.has(eq.bj)||skinPairs.get(eq.bj)?.has(eq.bi)){changed.push([eq,eq.minForce,eq.maxForce]);eq.minForce=0;eq.maxForce=0;}else if(driven.has(eq.bi)||driven.has(eq.bj)){changed.push([eq,eq.minForce,eq.maxForce]);eq.minForce*=dt;eq.maxForce*=dt;}}
@@ -2227,7 +2276,9 @@ function stabilizeRotors(){
    // An unpowered rotor holds its twist with a passive brake. Leave contact forces and angular velocity to the solver. Correct only
    // translation drift, distributing it by mass so the assembly stays free.
    const at=couplerTip(rotorPart(rotor.aId)),bt=couplerTip(rotorPart(rotor.bId)),gap=sub(bt.point,at.point),total=pair[0].body.mass+pair[1].body.mass;
-   const fixedA=pair[0].body.type!==CANNON.Body.DYNAMIC,fixedB=pair[1].body.type!==CANNON.Body.DYNAMIC;
+   // Sleeping supports have zero solver mass. Moving them here bypasses
+   // their floor contacts and makes an idle machine creep indefinitely.
+   const fixedA=pair[0].body.type!==CANNON.Body.DYNAMIC||pair[0].body.invMassSolve===0,fixedB=pair[1].body.type!==CANNON.Body.DYNAMIC||pair[1].body.invMassSolve===0;
    if(!fixedA)pair[0].body.position.vadd(mul(gap,fixedB?1:pair[1].body.mass/total),pair[0].body.position);
    if(!fixedB)pair[1].body.position.vsub(mul(gap,fixedA?1:pair[0].body.mass/total),pair[1].body.position);
    const solidsOverlap=rigidGroupsOverlap(pair[0],pair[1]);
@@ -2308,8 +2359,8 @@ function settleSnappedMechanisms(source,target){
 }
 function findSnap(){
  if(!held||held.shakeSeparated||!shiftDown()||!heldMechanismCanSnap())return null;
- const source=held.g,part=partPose(source,held.part);let candidate=null,best=.055;
- for(const target of groups){if(target===source||target.route||target.haulJob||rotorConnectedGroups([source]).includes(target))continue;
+ const source=held.g,part=partPose(source,held.part),connected=new Set(rotorConnectedGroups([source]));let candidate=null,best=.055;
+ for(const target of groups){if(target.route||target.haulJob||connected.has(target))continue;
   const tip=findRotorSnap(source,target,best);if(tip){candidate=tip;best=tip.score;}
   if(sameBlockShape(source,target)){
    const blockCandidate=findBlockSnap(source,target);
@@ -2347,8 +2398,12 @@ function weld(candidate){
   selected={g:source,part:source.parts.find(p=>p.id===candidate.aId)||source.parts[0]};announce('Rotor unido · clic derecho → Rotación');return source;
  }
  const sourceParts=poses(source,position,quaternion),targetParts=poses(target);
- if(sourceParts.some(a=>targetParts.some(b=>obbOverlap(a,b,.000001))))return null;
- if(!assembliesTouch(sourceParts,targetParts))return null;
+ const sourceEntries=sourceParts.map(collisionEntry),targetEntries=targetParts.map(collisionEntry);
+ if(sourceEntries.some(a=>targetEntries.some(b=>boundsOverlap(a,b)&&obbOverlap(a.pose,b.pose,.000001))))return null;
+ // A joining face must reach both material bounds. Keep the existing exact
+ // face test, including composite T-bit faces, but build it only near the seam.
+ const margin=V(.0001,.0001,.0001),sourceBox=bounds(source,position,quaternion),targetBox=bounds(target),nearSource={min:sub(sourceBox.min,margin),max:add(sourceBox.max,margin)},nearTarget={min:sub(targetBox.min,margin),max:add(targetBox.max,margin)};
+ if(!assembliesTouch(sourceEntries.filter(a=>boundsOverlap(a,nearTarget)).map(a=>a.pose),targetEntries.filter(b=>boundsOverlap(b,nearSource)).map(b=>b.pose)))return null;
  const parts=sourceParts.map(o=>({id:o.part.id,weight:o.part.weight,shape:o.part.shape,p:o.p,q:o.q,mood:copyMood(o.part.mood)})).concat(worldParts(target));
  const placement=mechanismSnapPoses(source,position,quaternion);settleSnappedMechanisms(source,target);placeSnappedMechanism(placement);
  const ref=target.body.quaternion.clone();removeGroup(source);removeGroup(target);const joined=makeGroup(parts,ref);refreshRotors();
@@ -3200,19 +3255,24 @@ function blockPose(g){return {p:add(g.body.position,g.body.quaternion.vmult(g.bl
 function sameBlockShape(a,b){if(!a.block||!b.block)return false;const x=Object.values(a.block.size).sort((a,b)=>a-b),y=Object.values(b.block.size).sort((a,b)=>a-b);return x.every((v,i)=>Math.abs(v-y[i])<.001);}
 function findBlockSnap(source,target){
  const targetPose=blockPose(target),sourcePose=blockPose(source),limit=clamp(Math.min(...Object.values(target.block.size))*.6,.055,.14);
- let best=null;
+ const candidates=[];
  for(const o of orientations){
-  const q=target.body.quaternion.mult(o),localBB=bounds(source,V(),o),size=localBB.size;
+  // The 24 grid orientations only permute/sign the local box axes.
+  const q=target.body.quaternion.mult(o),rotated=o.vmult(source.block.size),size=V(Math.abs(rotated.x),Math.abs(rotated.y),Math.abs(rotated.z));
   if(['x','y','z'].some(k=>Math.abs(size[k]-target.block.size[k])>.001))continue;
   for(let axis=0;axis<3;axis++)for(const sign of [-1,1]){
    const k=['x','y','z'][axis],normal=targetPose.q.vmult(mul(axes[axis],sign));
    const center=add(targetPose.p,mul(normal,(target.block.size[k]+size[k])/2));
    const distance=center.distanceTo(sourcePose.p);if(distance>limit)continue;
-   const position=sub(center,q.vmult(source.block.center));if(!validSnapPose(source,position,q))continue;
-   const score=distance+(1-qSimilarity(q,source.body.quaternion))*.025;if(best&&score>=best.score)continue;
-   best={source,target,position,quaternion:q,score,wholeFace:true,face:{p:add(targetPose.p,mul(normal,target.block.size[k]/2+.001)),normal,q:targetPose.q,axis,dimensions:target.block.size}};
+   const position=sub(center,q.vmult(source.block.center));
+   const score=distance+(1-qSimilarity(q,source.body.quaternion))*.025;
+   candidates.push({source,target,position,quaternion:q,score,wholeFace:true,face:{p:add(targetPose.p,mul(normal,target.block.size[k]/2+.001)),normal,q:targetPose.q,axis,dimensions:target.block.size}});
   }
- }return best;
+ }
+ // Equivalent box orientations often propose the same face. Validate in score
+ // order, then stop at the first clear placement of the entire mechanism.
+ candidates.sort((a,b)=>a.score-b.score);
+ return candidates.find(candidate=>validSnapPose(source,candidate.position,candidate.quaternion))||null;
 }
 function cameraBasis(){return {forward:direction(),right:V(Math.cos(yaw),0,-Math.sin(yaw)),up:V(Math.sin(yaw)*Math.sin(pitch),Math.cos(pitch),Math.cos(yaw)*Math.sin(pitch))};}
 function screenRay(x,y){const b=cameraBasis(),w=canvas.clientWidth,h=canvas.clientHeight,xx=(2*x/w-1)*(w/h)/heldFocus.focal,yy=(1-2*y/h)/heldFocus.focal;const d=add(add(b.forward,mul(b.right,xx)),mul(b.up,yy));d.normalize();return d;}
@@ -6314,7 +6374,7 @@ function showSensorMenu(hit){
  items.push({label:'Desconectar punta',disabled:!linked,run:()=>{unlinkContactSensor(part.id);captureMouse();}},{label:'La punta verde marca la cara activa. Shift permite orientarla.',disabled:true,run:()=>{}},{label:'Cerrar',run:()=>captureMouse()});openCommandMenu(partPose(hit.g,part).p,'Sensor · enlace de inversión',items);
 }
 function sensorContactActive(hit){
- const shape=hit.g.body.shapes[hit.g.parts.indexOf(hit.part)],axis=hit.q.vmult(sensorFace(hit.part).normal);
+ const shape=hit.g.partShapes.get(hit.part.id),axis=hit.q.vmult(sensorFace(hit.part).normal);
  for(const contact of world.contacts){const isA=contact.bi===hit.g.body,isB=contact.bj===hit.g.body;if(!isA&&!isB)continue;
   if((isA?contact.si:contact.sj)!==shape)continue;const other=isA?contact.bj:contact.bi;
   if(other===floor||other.type!==CANNON.Body.STATIC||other.qubitGroup||other.collisionFilterGroup===0)continue;

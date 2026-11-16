@@ -289,3 +289,16 @@ Corregida la vibración/penetración de ambas esquinas contra paneles: cada ancl
 Contra la entrega `3264913`, CPU al mover esquina con 101 piezas: 35,64 → 19,42 ms/cuadro simulado (−45,5 %); brazo con 127 piezas: −27,8 %; esquina contra panel: −33,1 %, todavía costosa. Con 192 piezas mixtas, llamadas de dibujo 583 → 211 (−63,8 %); no se atribuye una mejora concluyente de CPU en reposo. Gráficos, física precisa y límite de 256 conservados. Detalles y datos reproducibles en `docs/RENDIMIENTO_MECANISMOS.md`.
 
 Verificación: 628 pruebas distintas aprobadas, 21 escenas GLES sin errores y comparación gráfica de cubos/mixtos/líneas. El transporte activo conserva exactamente física y energía frente a la entrega anterior. Son pruebas automatizadas de lógica/render real con DOM/GPU simulados y reproducción GLES, no una partida completa en navegador. Siguiente paso: comprobar la instalación del jugador en su equipo, especialmente contacto sostenido y piezas sueltas después de sacudir.
+
+
+## Última entrega — estructuras grandes y reposo físico (16 de noviembre)
+
+Los cubos contiguos forman colliders rectangulares exactos sin rellenar huecos; sensores, formas convexas y articulaciones conservan sus contactos propios. Todas las formas se incorporan antes de recalcular masa y radio, evitando el costo cuadrático de construir cuerpos grandes. Se conservan piezas, energía, adaptaciones, guardado y sacudida.
+
+El encaje de bloques reutiliza dimensiones por orientación y valida candidatos en orden. La confirmación filtra parejas geométricas y caras lejanas, y vuelve a validar obstáculos. En la comparación contra `050660f`, unir dos placas de 96 cubos baja de 74,26 a 6,81 ms CPU; añadir una pieza a 192 cubos, de 36,04 a 4,61 ms. Crear un sólido mixto de 192 piezas baja de 39,64 a 11,67 ms. Datos y límites en `docs/RENDIMIENTO_MECANISMOS.md` y `docs/benchmarks/large-assemblies-20261116.json`.
+
+Corregido el desplazamiento de soportes dormidos por el corrector de bisagras. Un despertar real se propaga por todo el mecanismo. El brazo detenido usa sus bisagras frenadas, sin el bloqueo redundante que generaba vibración: cinco cuerpos en reposo y cero desplazamiento en diez segundos medidos, frente a 8,61 mm antes. Sigue moviéndose al recibir un impulso; no se aumenta fricción ni se ancla el conjunto al suelo.
+
+Verificación: 639 pruebas completas aprobadas y 21 escenas GLES sin errores. Gráficos y pasos físicos conservados. Son pruebas de lógica/Cannon y reproducción de render; no una partida en navegador ni una garantía de FPS en el equipo del usuario. Esta entrega sustituye la antigua correspondencia «una pieza = un collider» y la afirmación de trayectoria física idéntica entre versiones; la geometría y conservación se mantienen.
+
+Siguiente paso: verificar la construcción real del jugador, especialmente el contacto sostenido al sujetar mecanismos y el costo de GPU. Si persiste un bajón, medir por separado física, interacción y dibujo en esa escena antes de ampliar el límite de materia. No quedan pendientes de implementación de esta entrega; la expansión de campaña y automatización sigue fuera de este bloque.
