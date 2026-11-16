@@ -4,7 +4,7 @@ Requires system libEGL.so.1 and Node. Outputs PNG snapshots in /tmp by default.
 This validates GLSL, draw commands and rendered pixels, not browser input or UI.
 """
 import ctypes as C
-import json, subprocess, sys, struct, zlib
+import json, subprocess, sys, struct, zlib, math
 from pathlib import Path
 OUT=Path(sys.argv[1]) if len(sys.argv)>1 else Path('/tmp/qbits-battery')
 OUT.mkdir(parents=True,exist_ok=True)
@@ -48,6 +48,7 @@ for name,(result,*args) in signatures.items():functions[name]=gl('gl'+name[0].up
 shaderSource=gl('glShaderSource',None,U,I,C.POINTER(C.c_char_p),C.POINTER(I))
 genBuffers=gl('glGenBuffers',None,I,C.POINTER(U))
 bufferData=gl('glBufferData',None,U,C.c_ssize_t,P,U)
+bufferSubData=gl('glBufferSubData',None,U,C.c_ssize_t,C.c_ssize_t,P)
 matrix=gl('glUniformMatrix4fv',None,I,I,C.c_ubyte,C.POINTER(F))
 vec3=gl('glUniform3fv',None,I,I,C.POINTER(F));vec4=gl('glUniform4fv',None,I,I,C.POINTER(F))
 getShader=gl('glGetShaderiv',None,U,U,C.POINTER(I));getProgram=gl('glGetProgramiv',None,U,U,C.POINTER(I))
@@ -66,6 +67,8 @@ def replay(command):
   source=C.c_char_p(args[1].encode());shaderSource(handles[args[0]],1,C.byref(source),None)
  elif name=='bufferData':
   raw=(F*len(args[1]))(*args[1]);bufferData(args[0],C.sizeof(raw),raw,args[2])
+ elif name=='bufferSubData':
+  raw=(F*len(args[2]))(*args[2]);bufferSubData(args[0],args[1],C.sizeof(raw),raw)
  elif name in ('getAttribLocation','getUniformLocation'):
   key,p,attr=args;value=functions[name](handles[p],attr.encode())
   (attributeLocations if name=='getAttribLocation' else locations)[key]=value
@@ -117,6 +120,19 @@ for cells in [1,2,3]:
 assert byName['battery-3-100-occluded']['greenPixels']<byName['battery-3-100']['greenPixels']*.75,'foreground must occlude charge and glass'
 assert byName['battery-1-0-behind']['darkPixels']>byName['battery-1-0']['darkPixels']+100,'background Q-bit must be visible through the empty vessel'
 assert byName['battery-1-100-behind']['darkPixels']<byName['battery-1-0-behind']['darkPixels']*.8,'full reservoir must occlude the background Q-bit'
+for shot in data['snapshots']:
+ if shot['surface'] and not shot['slosh']:
+  ys=[point[1] for point in shot['surface']]
+  assert max(ys)-min(ys)<2e-6,(shot['name'],'resting liquid is not level in world space')
+  assert abs(shot['normal'][1]-1)<1e-9,(shot['name'],'resting normal is not world up')
+ if shot['name'].startswith(('battery-tilted-45','battery-side-90','battery-bar-90','battery-upside-down','battery-stacked','battery-depth')):
+  assert byName[shot['name']]['greenPixels']>300,(shot['name'],'rotated liquid missing')
+assert byName['battery-tilted-empty-behind']['greenPixels']==0,'rotated empty vessel has residue'
+assert byName['battery-tilted-full-behind']['darkPixels']<byName['battery-tilted-empty-behind']['darkPixels'],'rotated full liquid must occlude the rear body'
+impulse=next(shot for shot in data['snapshots'] if shot['name']=='battery-slosh-impulse')
+tilt=math.acos(max(-1,min(1,impulse['normal'][1])))
+assert .001<tilt<=math.radians(12)+1e-8,('slosh must be visible and bounded',tilt)
+assert (OUT/'battery-slosh-settled.png').read_bytes()==(OUT/'battery-3-50.png').read_bytes(),'settled liquid must return to its original rendered surface'
 assert not data['validation'],'invalid attributes or depth clear'
 print(json.dumps({'compiledShaders':compiled,'linkedPrograms':linked,'gpuErrors':0,'snapshots':results}))
 egl('eglMakeCurrent',U,P,P,P,P)(d,None,None,None)

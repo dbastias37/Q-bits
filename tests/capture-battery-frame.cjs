@@ -20,6 +20,7 @@ const gl=new Proxy({...constants},{get(target,name){
  if(name==='getUniformLocation'||name==='getAttribLocation')return(program,key)=>{const id=++next;record(name,[id,program,key]);if(name==='getUniformLocation')locations.set(key,id);return id;};
  if(name==='bindBuffer')return(...args)=>{bound=args[1];record(name,args);};
  if(name==='bufferData')return(...args)=>{buffers.set(bound,args[1].byteLength);record(name,args);};
+ if(name==='bufferSubData')return(...args)=>{if(args[1]+args[2].byteLength>buffers.get(bound))validation.push('liquid upload exceeds persistent buffer');record(name,args);};
  if(name==='useProgram')return(...args)=>{current=args[0];record(name,args);};
  if(name==='enableVertexAttribArray')return(location)=>{enabled.add(location);record(name,[location]);};
  if(name==='disableVertexAttribArray')return(location)=>{enabled.delete(location);record(name,[location]);};
@@ -30,13 +31,22 @@ const gl=new Proxy({...constants},{get(target,name){
  if(name.startsWith('delete'))return()=>{};
  return(...args)=>record(name,args);
 }});
-const {t}=createGame({gl,graphics:false});t.clearNarrativeScene();Object.assign(t.story,{ready:true,mode:'playing',scene:'lab',phase:'idle'});
+const {t,sandbox}=createGame({gl,graphics:false});t.clearNarrativeScene();Object.assign(t.story,{ready:true,mode:'playing',scene:'lab',phase:'idle'});
 const init=commands;commands=[];const snapshots=[];
 function uniform(name,value){gl.uniform1f(locations.get(name),value);}
-function fixture(count,level,occluded=false,behind=false){
+function fixture(count,level,occluded=false,behind=false,options={}){
  t.clearNarrativeScene();Object.assign(t.story,{ready:true,mode:'playing',scene:'lab',phase:'idle'});
- const g=t.makeGroup(Array.from({length:count},(_,i)=>({id:t.allocateUnitId(),shape:'cube',weight:1,p:t.V((i-(count-1)/2)*.09,.047,0),q:t.Q()}))),packId=g.parts[0].id;
+ const axis=options.axis||'x',g=t.makeGroup(Array.from({length:count},(_,i)=>({id:t.allocateUnitId(),shape:'cube',weight:1,p:t.V(...['x','y','z'].map(a=>(a==='y'?.047:0)+(a===axis?(i-(count-1)/2)*.09:0))),q:t.Q()}))),packId=g.parts[0].id;
  for(const part of g.parts){part.mood.externalBattery={version:1,ownerId:part.id,packId,enabled:true};part.mood.energy=level;}
+ if(options.euler)g.body.quaternion.setFromEuler(...options.euler);
+ t.updateBatteryLiquids(1/60);
+ if(options.motion){
+  // A controlled velocity discontinuity isolates the actual slosh integrator.
+  g.body.velocity.set(4,-4,0);t.updateBatteryLiquids(1/30);
+  g.body.velocity.set(4,0,0);t.updateBatteryLiquids(1/30);
+  for(let i=0;i<4;i++)t.updateBatteryLiquids(1/60);
+  if(options.settled)for(let i=0;i<480;i++)t.updateBatteryLiquids(1/60);
+ }
  commands=[];gl.viewport(0,0,width,height);gl.depthMask(true);gl.enable(gl.DEPTH_TEST);gl.disable(gl.BLEND);gl.disable(gl.CULL_FACE);gl.clearColor(.93,.95,.94,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
  const eye=[.21,.18,.40],target=[0,.047,0],delta=target.map((v,i)=>v-eye[i]),distance=Math.hypot(...delta),yaw=Math.atan2(-delta[0],-delta[2]),pitch=Math.asin(delta[1]/distance);
  gl.uniform3fv(locations.get('uCamera'),eye);gl.uniform2f(locations.get('uLook'),yaw,pitch);uniform('uAspect',width/height);uniform('uFocal',1.9);uniform('uFocusMask',0);uniform('uTextureMix',0);uniform('uTextureScale',1);uniform('uWarp',0);uniform('uCel',0);uniform('uJitter',0);uniform('uLighting',.5);uniform('uGlow',0);uniform('uTime',1);
@@ -45,10 +55,22 @@ function fixture(count,level,occluded=false,behind=false){
  t.drawGroupSolid(g);
  if(occluded)t.drawBox(t.V(0,.07,.11),t.Q(),t.V(.12,.22,.012),[.20,.23,.22,1]);
  t.drawBatteriesTransparent();
- snapshots.push({name:'battery-'+count+'-'+Math.round(level*100)+(occluded?'-occluded':behind?'-behind':''),cells:count,level,occluded,behind,commands});
+ const pack=t.batteryVisualPacks(g)[0],liquid=t.batteryLiquidDebug().find(entry=>entry.bodyId===g.body.id),local=sandbox.QBitsBatteryLiquid.localNormal(liquid.normal,[pack.q.x,pack.q.y,pack.q.z,pack.q.w]),mesh=sandbox.QBitsBatteryLiquid.fillMesh(liquid.size,local,level),surface=[];
+ for(let i=0;i<mesh.topPositions.length;i+=3){const p=pack.p.vadd(pack.q.vmult(t.V(...mesh.topPositions.slice(i,i+3))));surface.push([p.x,p.y,p.z]);}
+ snapshots.push({name:options.name||'battery-'+count+'-'+Math.round(level*100)+(occluded?'-occluded':behind?'-behind':''),cells:count,level,occluded,behind,normal:liquid.normal,surface,slosh:!!options.motion&&!options.settled,commands});
 }
 for(const count of [1,2,3])for(const level of [0,.25,.5,1])fixture(count,level);
 fixture(3,1,true);
 fixture(1,0,false,true);fixture(1,1,false,true);
+fixture(1,.5,false,false,{name:'battery-tilted-45-half',euler:[0,0,Math.PI/4]});
+fixture(2,.25,false,false,{name:'battery-side-90-quarter',euler:[Math.PI/2,0,0]});
+fixture(3,.5,false,false,{name:'battery-bar-90-half',euler:[0,0,Math.PI/2]});
+fixture(3,.25,false,false,{name:'battery-upside-down-quarter',euler:[0,0,Math.PI]});
+fixture(2,.5,false,false,{name:'battery-stacked-oblique-half',axis:'y',euler:[.37,.22,.4]});
+fixture(3,.5,false,false,{name:'battery-depth-oblique-half',axis:'z',euler:[.2,.4,0]});
+fixture(1,0,false,true,{name:'battery-tilted-empty-behind',euler:[0,0,Math.PI/4]});
+fixture(1,1,false,true,{name:'battery-tilted-full-behind',euler:[0,0,Math.PI/4]});
+fixture(3,.5,false,false,{name:'battery-slosh-impulse',motion:true});
+fixture(3,.5,false,false,{name:'battery-slosh-settled',motion:true,settled:true});
 fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,JSON.stringify({width,height,init,snapshots,validation}));
 console.log(JSON.stringify({output,frames:snapshots.length,validationErrors:validation.length}));if(validation.length)process.exitCode=1;

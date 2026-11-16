@@ -176,7 +176,7 @@ Siguiente paso: probar el vehículo del usuario con sus propios sentidos por rue
 
 ## Baterías externas de cristal — 16 de noviembre de 2026
 
-Segundo cambio del jugador: en el banco, convertir 1/2/3 Q-bits normales unidos en línea desde el taller en batería I/II/III, todas disponibles sin investigación. Capacidades 120/240/360 J, carga representada por líquido verde dentro de un recipiente transparente continuo. La conversión conserva IDs, masa, piezas y julios; no rellena la nueva capacidad. El líquido es un indicador de volumen orientado con la carcasa, sin simulación de fluidos.
+Segundo cambio del jugador: en el banco, convertir 1/2/3 Q-bits normales unidos en línea desde el taller en batería I/II/III, todas disponibles sin investigación. Capacidades 120/240/360 J, carga representada por líquido verde dentro de un recipiente transparente continuo. La conversión conserva IDs, masa, piezas y julios; no rellena la nueva capacidad. La carga se representa como volumen; la actualización de líquido descrita al final mantiene su superficie respecto a la gravedad y añade oscilación visual amortiguada.
 
 La batería se suelda con Shift y se activa explícitamente desde clic derecho o P → Mecanismos. Alimenta todos los rotores de su componente físico, independientemente del conjunto lógico. Suministro agregado por paso y distribuido proporcionalmente entre celdas activas, independiente del orden de motores. Mientras exista fuente externa activa, la reserva interna no se gasta ni se recarga pasivamente. Si se vacía, el motor se detiene sin cambio automático de fuente. Activar/apagar detiene los motores conectados; iniciar sigue siendo una orden explícita. Las baterías apagadas aportan peso, sin alimentar el montaje.
 
@@ -204,3 +204,14 @@ Siguiente paso: comprobar comodidad de construcción, selección y orden con los
 
 
 Revisión visual del panel en navegador a 1363 × 936: pestañas, vista previa, aplicación con confirmación visible, investigación, controles de dimensiones, rechazo de cantidad incompatible, cierre con Escape desde un campo y reapertura. Se usa la vista aislada con datos de ejemplo y el marcado/CSS/controlador reales; no ejecuta una partida WebGL. La revisión amplió el visor y el texto de la vista previa. Las físicas, piezas reales y almacenamiento se verificaron por separado con la suite.
+
+
+## Líquido de baterías con gravedad — 16 de noviembre de 2026
+
+Las tres baterías usan una superficie libre orientada respecto al suelo. Al girar el recipiente, incluso 90°/180° o con el paquete largo en cualquiera de sus ejes, el líquido ocupa su parte inferior. Se recorta una caja interior cerrada contra un plano y se ajusta la altura para conservar el volumen correspondiente a la carga real. Movimiento, giro y golpes provocan una oscilación amortiguada de hasta 12°; en reposo vuelve al horizonte. Sin partículas, salpicaduras ni un solucionador completo de fluidos.
+
+El estado es exclusivamente visual: no escribe energía, masa, fuerzas, articulaciones ni guardados. Se actualiza una vez por cuadro de simulación después de los subpasos físicos; pausas, paneles y pestaña oculta lo congelan. Saltos grandes y discontinuidades reinician la oscilación. La geometría se reconstruye solo cuando cambian orientación, carga o superficie; los buffers se reutilizan y se liberan al retirar, guardar, separar o limpiar cuerpos. El shader añade brillo y un borde superficial sin desplazar vértices fuera del recipiente.
+
+Verificación: **469 pruebas Node aprobadas, sin fallos ni omisiones**, incluida caída real con Cannon y amortiguación, volumen triangulado y cierre de malla, giros, energía intacta, pausa y ciclo de vida. **25 escenas GLES** de las tres capacidades, cuatro niveles, orientación, impulso/reposo y oclusión; cero errores gráficos. Regresiones de enfoque/postproceso y sintaxis también aprobadas. Inspección visual de capturas reales del renderizador; no es una partida completa en navegador. En este entorno, 20 baterías entre 256 piezas reutilizan todos sus buffers; benchmark de CPU con GPU simulada: mediana 1,63 ms en reposo y 3,00 ms con las 20 moviéndose. No predice los FPS del equipo del jugador.
+
+Siguiente comprobación con jugador: tomar una batería a media carga, girarla con Shift + WASD, desplazarla y soltarla; evaluar la suavidad y legibilidad con sus vehículos. Ajustar amplitud solo si esa prueba lo requiere. Automatización colectiva, galpones y nuevas etapas continúan fuera de este bloque.

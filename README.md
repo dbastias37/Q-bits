@@ -296,7 +296,7 @@ Selecciona las piezas que quieras ordenar y haz clic derecho en un compartimento
 
 ## Baterías externas de cristal
 
-En el **banco de pruebas**, las tres versiones están disponibles desde el principio: **I** usa un cubo, **II** dos y **III** tres. Las capacidades son proporcionales: 120, 240 y 360 J. El recipiente crece con las piezas y el líquido verde baja según la carga; vacío queda transparente.
+En el **banco de pruebas**, las tres versiones están disponibles desde el principio: **I** usa un cubo, **II** dos y **III** tres. Las capacidades son proporcionales: 120, 240 y 360 J. El recipiente crece con las piezas y el líquido verde baja según la carga; vacío queda transparente. Al girar la batería, el líquido conserva el horizonte del suelo y oscila suavemente con los movimientos y golpes antes de estabilizarse. Es una animación ligera sin partículas: el volumen sigue la carga real y permanece dentro del recipiente, también al ponerlo de lado o boca abajo.
 
 1. Une uno, dos o tres Q-bits normales en una barra recta. Déjalos sobre la mesa del taller y suéltalos.
 2. Abre el taller con **E** → **Baterías**, elige la versión correspondiente y pulsa **Crear batería**. La conversión conserva materia y energía: amplía capacidad, no entrega una carga completa gratis.

@@ -87,3 +87,10 @@ Verificación final del bloque: **454 pruebas Node aprobadas, sin fallos ni omis
 
 
 Revisión visual del panel en navegador a 1363 × 936: pestañas, vista previa, aplicación con confirmación visible, investigación, controles de dimensiones, rechazo de cantidad incompatible, cierre con Escape desde un campo y reapertura. Se usa la vista aislada con datos de ejemplo y el marcado/CSS/controlador reales; no ejecuta una partida WebGL. La revisión amplió el visor y el texto de la vista previa. Las físicas, piezas reales y almacenamiento se verificaron por separado con la suite.
+
+
+## Actualización: líquido con gravedad — 16 de noviembre de 2026
+
+Baterías I–III con líquido que conserva el horizonte mundial y su volumen al inclinar o invertir el recipiente. Movimiento, giro y choque producen una oscilación breve amortiguada, acotada a 12°. Malla interior cerrada, sin partículas y sin cambios a carga o física; buffers persistentes, reconstrucción solo al cambiar la superficie y limpieza al retirar cuerpos. Pausa y menús congelan la animación.
+
+**469 pruebas Node aprobadas** y **25 escenas GLES sin errores**, con volumen triangulado, orientación 90°/180°, caída real, asentamiento, oclusión, conservación de energía y limpieza de recursos. Enfoque/postproceso también aprobado. Capturas inspeccionadas del renderizador; no se afirma una partida completa en navegador. Comprobación del jugador: girar y soltar una batería a media carga para valorar la suavidad en su equipo.

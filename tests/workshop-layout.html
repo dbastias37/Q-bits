@@ -10,7 +10,7 @@
  const response=await fetch('index.html');if(!response.ok)throw Error('No se pudo cargar la interfaz real.');
  const source=new DOMParser().parseFromString(await response.text(),'text/html');for(const node of source.head.querySelectorAll('style,link[rel="stylesheet"]'))document.head.append(node.cloneNode(true));
  document.body.append(source.querySelector('#workshop-screen').cloneNode(true));
- await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='assets/js/workshop-panel.js?v=20261116-workshop-organizers-3';script.onload=resolve;script.onerror=reject;document.head.append(script);});
+ await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='assets/js/workshop-panel.js?v=20261116-battery-liquid-1';script.onload=resolve;script.onerror=reject;document.head.append(script);});
  let made=false;const tabs=new URLSearchParams(location.search),count=tabs.get('tab')==='bodies'?8:2;
  const snapshot=()=>({credits:24,target:{id:1,count,dimensions:{x:count,y:1,z:1},summary:'Estructura de prueba · '+count+' piezas sobre la mesa'}});
  function inspect(draft){

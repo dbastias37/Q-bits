@@ -141,6 +141,8 @@ const fragmentSource = `
   uniform float uScale;
   uniform float uShadow;
   uniform vec4 uTint;
+  uniform vec3 uLiquidNormal;
+  uniform vec4 uLiquidPlane;
   varying vec3 vLocal;
   varying vec3 vLocalNormal;
   float surfaceGrain(){
@@ -167,13 +169,13 @@ const fragmentSource = `
       gl_FragColor=vec4(glass,.045+fres*.22+edge*.23+reflection*.18);return;
     }
     if (uKind > 14.5) {
-      // The physical reservoir keeps its rigid shape; only its visible fill
-      // height changes. The bright meniscus makes charge readable at a glance.
+      // The volume is clipped against the gravity/slosh plane before drawing.
+      // Its cap has a world-space normal, independent of the vessel's rotation.
       vec3 n=normalize(vNormal),view=normalize(uCamera-vPosition);
       float light=.68+.28*max(0.,dot(n,normalize(vec3(-.6,1.,.35))));
-      float surface=step(.5,vLocalNormal.y);
-      float meniscus=smoothstep(.45,.5,vLocal.y);
-      float ripple=.025*sin(vLocal.x*15.+vLocal.z*11.+uTime*.8);
+      float surface=step(.999,dot(n,uLiquidNormal));
+      float meniscus=1.-smoothstep(.0002,.0015,abs(dot(uLiquidPlane.xyz,vLocal)-uLiquidPlane.w));
+      float ripple=.025*sin(vPosition.x*170.+vPosition.z*130.+uTime*.8);
       float sheen=pow(max(0.,dot(reflect(-normalize(vec3(-.6,1.,.8)),n),view)),20.);
       vec3 green=mix(uTint.rgb*light,vec3(.24,.96,.51),surface*.55+meniscus*.22);
       gl_FragColor=vec4(green+vec3(.08,.16,.10)*(sheen+surface*ripple),1.);return;
@@ -322,7 +324,7 @@ for (const [name, offset] of [['aPosition', 0], ['aNormal', 12]]) {
   gl.enableVertexAttribArray(location);
   gl.vertexAttribPointer(location, 3, gl.FLOAT, false, 24, offset);
 }
-const uniforms = Object.fromEntries(['uJitter','uResolution','uSurface','uTextureMix','uTextureScale','uWarp','uCel','uLighting','uShadows','uFocal','uFocusMask','uGlow','uLightPos[0]','uLightColor[0]','uTime','uCamera','uLook','uAspect','uSize','uHeight','uKind','uCenter','uScale','uShadow','uDimensions','uQuaternion','uTint'].map(name => [name, gl.getUniformLocation(program, name)]));
+const uniforms = Object.fromEntries(['uJitter','uResolution','uSurface','uTextureMix','uTextureScale','uWarp','uCel','uLighting','uShadows','uFocal','uFocusMask','uGlow','uLightPos[0]','uLightColor[0]','uTime','uCamera','uLook','uAspect','uSize','uHeight','uKind','uCenter','uScale','uShadow','uDimensions','uQuaternion','uTint','uLiquidNormal','uLiquidPlane'].map(name => [name, gl.getUniformLocation(program, name)]));
 gl.uniform1f(uniforms.uFocal, heldFocus.focal);
 gl.uniform1f(uniforms.uFocusMask, 0);
 gl.uniform1f(uniforms.uSize, ROOM_SIZE);
@@ -1003,7 +1005,7 @@ function makeGroup(parts,reference=Q(),velocity=V(),spin=V()) {
  const g={body,parts:local,route:null,pin:null};body.qubitGroup=g;g.block=analyzeBlock(g);groups.push(g);registerSpeechGroup(g);return g;
 }
 function addQubit(p,weight=settings.mass,shape='cube'){return makeGroup([{id:++serial,weight,shape:normalizeUnitShape(shape),p:V(...p),q:Q()}]);}
-function removeGroup(g){invalidateRotorBody(g);undockCampaignGroup(g);removeSpeechGroup(g);leaveHaul(g);stopRoute(g);world.removeBody(g.body);const i=groups.indexOf(g);if(i>=0)groups.splice(i,1);if(selected?.g===g)selected=null;multiSelection=multiSelection.filter(item=>item!==g);}
+function removeGroup(g){resetBatteryLiquids(g.body);invalidateRotorBody(g);undockCampaignGroup(g);removeSpeechGroup(g);leaveHaul(g);stopRoute(g);world.removeBody(g.body);const i=groups.indexOf(g);if(i>=0)groups.splice(i,1);if(selected?.g===g)selected=null;multiSelection=multiSelection.filter(item=>item!==g);}
 function corners(pose){if(isTBit(pose))return unitProfile(pose).vertices.map(v=>add(pose.p,pose.q.vmult(v)));const out=[],half=pose.half||V(HALF,HALF,HALF);for(const x of [-half.x,half.x])for(const y of [-half.y,half.y])for(const z of [-half.z,half.z])out.push(add(pose.p,pose.q.vmult(V(x,y,z))));return out;}
 function bounds(g,pos=g.body.position,quat=g.body.quaternion){
  // The absolute rotation matrix gives the exact same AABB as eight corners.
@@ -2337,20 +2339,59 @@ function batteryVisualPacks(g){
   // Safe fallback for a modified/malformed pack: render each owned cell.
   const rectangular=Math.abs(size.x*size.y*size.z-members.length*CUBE_SIZE**3)<1e-7;
   const batches=rectangular?[{parts:members,local:add(first.offset,ref.vmult(mul(add(low,high),.5))),q:ref,size}]:members.map(part=>({parts:[part],local:part.offset,q:part.q,size:V(CUBE_SIZE,CUBE_SIZE,CUBE_SIZE)}));
-  for(const pack of batches)packs.push({parts:pack.parts,p:add(g.body.position,g.body.quaternion.vmult(pack.local)),q:g.body.quaternion.mult(pack.q),size:pack.size,fraction:clamp(pack.parts.reduce((sum,part)=>sum+part.mood.energy,0)/pack.parts.length,0,1),enabled:pack.parts.some(part=>part.mood.externalBattery.enabled)});
+  for(const pack of batches)packs.push({body:g.body,parts:pack.parts,p:add(g.body.position,g.body.quaternion.vmult(pack.local)),q:g.body.quaternion.mult(pack.q),size:pack.size,fraction:clamp(pack.parts.reduce((sum,part)=>sum+part.mood.energy,0)/pack.parts.length,0,1),enabled:pack.parts.some(part=>part.mood.externalBattery.enabled)});
  }
  return packs;
 }
+// Liquid motion belongs to visual state only: never to a piece's saved energy.
+// A body plus owned cell IDs identifies a contiguous vessel. Splits, storage and
+// scene changes dispose its GPU buffer rather than recycling an unrelated wave.
+const batteryLiquids=new Map();
+function batteryLiquidSize(pack){return [Math.max(.02,pack.size.x-.012),Math.max(.02,pack.size.y-.014),Math.max(.02,pack.size.z-.012)];}
+function batteryLiquidEntry(pack){
+ const partIds=pack.parts.map(part=>part.id).sort((a,b)=>a-b),key=pack.body.id+':'+partIds.join(',');let entry=batteryLiquids.get(key);
+ if(!entry){entry={key,body:pack.body,partIds,state:QBitsBatteryLiquid.createState(),normal:[0,1,0],localNormal:[0,1,0],size:batteryLiquidSize(pack),fraction:pack.fraction,buffer:null,data:null,count:0,signature:null,offset:0,meshBuilds:0,uploads:0};batteryLiquids.set(key,entry);}
+ entry.size=batteryLiquidSize(pack);entry.fraction=pack.fraction;return entry;
+}
+function resetBatteryLiquids(body=null){
+ for(const [key,entry]of batteryLiquids)if(!body||entry.body===body){if(entry.buffer)gl.deleteBuffer(entry.buffer);batteryLiquids.delete(key);}
+ boundGeometry=null;
+}
+function updateBatteryLiquids(dt,paused=false){
+ const alive=new Set();for(const g of groups)for(const pack of batteryVisualPacks(g)){
+  const entry=batteryLiquidEntry(pack),offset=sub(pack.p,pack.body.position),velocity=add(pack.body.velocity,pack.body.angularVelocity.cross(offset));alive.add(entry.key);
+  entry.normal=QBitsBatteryLiquid.updateState(entry.state,{position:[pack.p.x,pack.p.y,pack.p.z],quaternion:[pack.q.x,pack.q.y,pack.q.z,pack.q.w],velocity:[velocity.x,velocity.y,velocity.z],angularVelocity:[pack.body.angularVelocity.x,pack.body.angularVelocity.y,pack.body.angularVelocity.z],dt,paused},entry.size,pack.fraction).slice();
+ }
+ for(const [key,entry]of batteryLiquids)if(!alive.has(key)){if(entry.buffer)gl.deleteBuffer(entry.buffer);batteryLiquids.delete(key);boundGeometry=null;}
+ return batteryLiquids.size;
+}
+function batteryLiquidMesh(pack){
+ const entry=batteryLiquidEntry(pack),q=[pack.q.x,pack.q.y,pack.q.z,pack.q.w];entry.localNormal=QBitsBatteryLiquid.localNormal(entry.normal,q);
+ // Quantization bounds invisible sub-micrometre variation and avoids rebuilding
+ // a resting vessel because of solver noise. Rotation still reclips its volume.
+ const normal=entry.localNormal.map(n=>Math.round(n*100000)/100000),fraction=Math.round(pack.fraction*100000)/100000,signature=[...entry.size,...normal,fraction].join(':');
+ if(entry.signature!==signature){
+  const mesh=QBitsBatteryLiquid.fillMesh(entry.size,normal,fraction),count=mesh.positions.length/3;entry.signature=signature;entry.offset=mesh.offset;entry.count=count;entry.meshBuilds++;
+  if(count){
+   if(!entry.buffer){entry.buffer=gl.createBuffer();entry.data=new Float32Array(Math.max(128,count)*6);gl.bindBuffer(gl.ARRAY_BUFFER,entry.buffer);gl.bufferData(gl.ARRAY_BUFFER,entry.data,gl.DYNAMIC_DRAW);}
+   else gl.bindBuffer(gl.ARRAY_BUFFER,entry.buffer);
+   if(entry.data.length<count*6){entry.data=new Float32Array(count*6);gl.bufferData(gl.ARRAY_BUFFER,entry.data,gl.DYNAMIC_DRAW);}
+   for(let i=0;i<count;i++)for(let axis=0;axis<3;axis++){entry.data[i*6+axis]=mesh.positions[i*3+axis];entry.data[i*6+3+axis]=mesh.normals[i*3+axis];}
+   gl.bufferSubData(gl.ARRAY_BUFFER,0,entry.data.subarray(0,count*6));entry.uploads++;boundGeometry=null;
+  }
+ }
+ return entry;
+}
+function batteryLiquidDebug(){return [...batteryLiquids.values()].map(entry=>({key:entry.key,bodyId:entry.body.id,partIds:entry.partIds.slice(),normal:entry.normal.slice(),localNormal:entry.localNormal.slice(),size:entry.size.slice(),fraction:entry.fraction,meshBuilds:entry.meshBuilds,uploads:entry.uploads,buffer:entry.buffer,count:entry.count}));}
 function drawBatteryOpaque(pack){
  const size=pack.size,at=offset=>add(pack.p,pack.q.vmult(offset)),shell=V(size.x-.002,size.y-.002,size.z-.002),rim=.004;
  // A continuous base and cap make a two/three-cell conversion read as one
  // larger battery, while keeping exactly the original collision dimensions.
  drawAsset({buffer:cubeGeometry,count:36},at(V(0,-shell.y/2+rim/2,0)),pack.q,V(shell.x,rim,shell.z),[.17,.23,.21,1]);
  drawAsset({buffer:cubeGeometry,count:36},at(V(0,shell.y/2-rim/2,0)),pack.q,V(shell.x,rim,shell.z),[.32,.40,.37,1]);
- const inner=V(Math.max(.02,shell.x-.010),Math.max(.02,shell.y-.012),Math.max(.02,shell.z-.010));
  if(pack.fraction>1e-6){
-  const height=inner.y*pack.fraction,center=at(V(0,-inner.y/2+height/2,0));
-  gl.uniform1f(uniforms.uTime,simTime);drawAsset({buffer:cubeGeometry,count:36},center,pack.q,V(inner.x,height,inner.z),[.045,.73,.30,1],15);
+  const liquid=batteryLiquidMesh(pack);
+  if(liquid.count){gl.uniform1f(uniforms.uTime,simTime);gl.uniform3fv(uniforms.uLiquidNormal,liquid.normal);gl.uniform4f(uniforms.uLiquidPlane,...liquid.localNormal,liquid.offset);drawAsset({buffer:liquid.buffer,count:liquid.count},pack.p,pack.q,V(1,1,1),[.045,.73,.30,1],15);}
  }
  // Flush contacts remain inside the old cube silhouette and cannot snag on
  // nearby wheels. The small port distinguishes switched-on from idle packs.
@@ -3166,6 +3207,7 @@ const puzzleConfig={frameSeconds:12,energySeconds:8};
 function puzzleBlockedEdit(kind='edit'){if(certifiedAutomation()){announce('Ensayo certificado: usa las piezas del banco. Reinicia el nivel para restaurarlas.');return true;}if(kind==='mechanism'&&mechanismsAvailable())return false;if(story.ready&&story.scene==='campaign'&&panel.hidden){announce('La materia genera nuevos Q-bits. P abre el banco de herramientas de prueba.');return true;}if(!puzzle.active||kind==='qubit'&&alphaSettings.allowPuzzleSpawn)return false;announce('Puzle activo · los recursos se obtienen en los portales. P → Puzle para volver al banco.');return true;}
 function saveLab(){return {mechanismDefaults:typeof mechanismDefaults==='undefined'?null:{...mechanismDefaults},rotors:serializeRotorState(),rotorSets:serializeRotorSets(),contacts:serializeContactState(),shelves:serializeShelves(),alphaScene:alphaSceneSnapshot(),settings:{...settings},moodSettings:{...moodSettings},position:[...position],yaw,pitch,groups:groups.map(g=>({parts:worldParts(g),q:g.body.quaternion.clone(),v:g.body.velocity.clone(),w:g.body.angularVelocity.clone()})),cargos:cargos.map(c=>({p:c.body.position.clone(),side:c.side,required:c.required,color:c.color}))};}
 function clearPuzzleScene(){
+ resetBatteryLiquids();
  clearShelves();
  clearAlphaScene();releaseQubit();closeCommandMenu(false);closeDetachMenu(false);pendingCargo=null;moveChoice=null;routeInspection=null;multiSelection=[];selected=null;selectedCargo=null;
  for(const r of (typeof rotors==='undefined'?[]:[...rotors]))disconnectRotor(r);
@@ -5823,7 +5865,9 @@ function frame(time) {
   if(shelfPreview&&!frozen){updateShelfPlacement(wallAim());redraw=true;}
   if (!document.hidden&&!frozen) {
     accumulator += dt;
-    while (accumulator >= FIXED_STEP) { stepPhysics(FIXED_STEP); accumulator -= FIXED_STEP; }
+    let simulatedDt=0;
+    while (accumulator >= FIXED_STEP) { stepPhysics(FIXED_STEP); accumulator -= FIXED_STEP; simulatedDt+=FIXED_STEP; }
+    updateBatteryLiquids(simulatedDt);
     updateTarget();
     updateSpeech();updateStoryMarker();
     redraw = true;
