@@ -5409,16 +5409,17 @@ function storyLookAllowed(){return !workshopPanel?.isOpen&&(!story.ready||story.
 function storyActionAllowed(){return !story.ready||story.mode==='playing'&&!story.transition&&!encounterLocksActions()&&(story.scene!=='intro'||['pickup','carry','deliver','cooling','cooled'].includes(story.phase));}
 function storyObjective(text){ui.objective.textContent=text;ui.objective.hidden=!text;}
 function say(text,{after=null,hold=false,mysterious=false,choices=null,onComplete=null}={}){
- window.QBitsGuideAudio?.begin(text,{voice:!mysterious});
+ const timing=window.QBitsDialogueTiming.create(text);
+ window.QBitsGuideAudio?.begin(text,{voice:!mysterious,timing});
  ui.dialogue.style.opacity='1';
- story.dialogue={text,time:0,count:-1,after,hold,choices,onComplete,done:false};ui.text.textContent='';ui.text.classList.add('typing');ui.dialogue.hidden=false;ui.dialogue.classList.toggle('mysterious',mysterious);ui.speaker.textContent=mysterious?'UNA VOZ…':'Q-BIT';ui.choices.hidden=true;ui.choices.replaceChildren();ui.cooling.hidden=true;document.querySelector('#dialogue-hint').textContent=after?'E · continuar':choices?'Elige una respuesta':'';
+ story.dialogue={text,timing,time:0,count:-1,after,hold,choices,onComplete,done:false};ui.text.textContent='';ui.text.classList.add('typing');ui.dialogue.hidden=false;ui.dialogue.classList.toggle('mysterious',mysterious);ui.speaker.textContent=mysterious?'UNA VOZ…':'Q-BIT';ui.choices.hidden=true;ui.choices.replaceChildren();ui.cooling.hidden=true;document.querySelector('#dialogue-hint').textContent=after?'E · continuar':choices?'Elige una respuesta':'';
 }
 function hideStoryDialogue(){window.QBitsGuideAudio?.stop();story.dialogue=null;ui.dialogue.hidden=true;ui.choices.hidden=true;ui.cooling.hidden=true;}
-function advanceDialogue(){const d=story.dialogue;if(!d||story.mode!=='playing'||!panel.hidden)return;const end=d.text.length/34;if(d.time<end){window.QBitsGuideAudio?.reveal(d.text.length,{skip:true});d.time=end;renderDialogue(0);return;}if(d.after){const after=d.after;d.after=null;after();}}
+function advanceDialogue(){const d=story.dialogue;if(!d||story.mode!=='playing'||!panel.hidden)return;const end=d.timing.duration;if(d.time<end){window.QBitsGuideAudio?.reveal(d.text.length,{skip:true});d.time=end;renderDialogue(0);return;}if(d.after){const after=d.after;d.after=null;after();}}
 function renderDialogue(dt){
- const d=story.dialogue;if(!d)return;d.time+=dt;const count=Math.min(d.text.length,Math.floor(d.time*34));if(count!==d.count){window.QBitsGuideAudio?.reveal(count);ui.text.textContent=d.text.slice(0,count);d.count=count;ui.text.classList.toggle('typing',count<d.text.length);}
+ const d=story.dialogue;if(!d)return;d.time+=dt;const count=d.timing.countAt(d.time);if(count!==d.count){window.QBitsGuideAudio?.reveal(count);ui.text.textContent=d.text.slice(0,count);d.count=count;ui.text.classList.toggle('typing',count<d.text.length);}
  if(count===d.text.length&&!d.done){d.done=true;if(d.choices){ui.choices.hidden=false;for(const choice of d.choices){const button=document.createElement('button');button.textContent=choice.label;button.addEventListener('click',choice.run);ui.choices.appendChild(button);}document.querySelector('#dialogue-hint').textContent='Elige una respuesta';story.intentionalUnlock=true;pause(false);ui.choices.querySelector('button')?.focus({preventScroll:true});}if(d.onComplete){const complete=d.onComplete;d.onComplete=null;complete();}}
- if(!d.hold&&d.after&&d.time>d.text.length/34+2.6){const after=d.after;d.after=null;after();}
+ if(!d.hold&&d.after&&d.time>d.timing.duration+2.6){const after=d.after;d.after=null;after();}
 }
 function sceneFade(action,{out=.65,black=1.8,inTime=.8,loading=true,kind='travel'}={}){
  if(story.transition)return;

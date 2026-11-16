@@ -8,10 +8,10 @@ function setup({missing=[],duration=.08,unsupported=false,config={clips:['blip_0
   createGain(){return {gain:param(),connect(){},disconnect(){}};}
   createBufferSource(){const source={playbackRate:param(),connect(){},disconnect(){},start(at){this.startAt=at;},stop(at){this.stopAt=at;}};sources.push(source);return source;}
   resume(){resumed++;this.state='running';return Promise.resolve();}
-  decodeAudioData(){decoded++;return Promise.resolve({duration,id:decoded});}
+  decodeAudioData(data){decoded++;return Promise.resolve({duration,id:decoded,asset:data.asset});}
  }
  const host={AudioContext:unsupported?undefined:Context,AbortController,setTimeout,clearTimeout,document:{baseURI:'https://qbits.test/',hidden:false},
-  async fetch(url){requests.push(String(url));return {ok:!missing.some(name=>String(url).endsWith(name)),headers:{get:()=>null},json:async()=>config,arrayBuffer:async()=>new ArrayBuffer(10)};}};
+  async fetch(url){requests.push(String(url));return {ok:!missing.some(name=>String(url).endsWith(name)),headers:{get:()=>null},json:async()=>config,arrayBuffer:async()=>{const data=new ArrayBuffer(10);data.asset=String(url).split('/').pop();return data;}};}};
  const voice=create({host,random:()=>.5});
  function tick(time){const ctx=Context.instance;ctx.currentTime=time;for(const source of sources)if(source.onended&&source.stopAt<=time&&!source.ended){source.ended=true;source.onended();}}
  return {voice,host,requests,sources,tick,get context(){return Context.instance;},get decoded(){return decoded;},get resumed(){return resumed;}};
@@ -53,4 +53,30 @@ test('empty bank, bad filenames, oversized duration and network errors never blo
  const long=setup({duration:4});await long.voice.preload();assert.equal(long.voice.getState().loaded,0);
  const invalid=setup({config:{clips:['../secret.wav','https://other.test/a.wav','x.exe']}});await invalid.voice.preload();assert.equal(invalid.requests.length,1);
  const network=setup();network.host.fetch=async()=>{throw Error('offline');};await network.voice.unlock();assert.equal(network.voice.getState().clips,0);
+});
+
+test('six blips and three endings load once; exactly one non-repeating ending plays per completed message',async()=>{
+ const config={clips:Array.from({length:6},(_,i)=>`blip_0${i+1}.wav`),ends:['end_01.wav','end_02.wav','end_03.wav']};
+ const e=setup({config});await e.voice.unlock();assert.equal(e.voice.getState().clips,6);assert.equal(e.voice.getState().ends,3);
+ const ends=[];
+ for(let i=0;i<5;i++){
+  e.tick(i);e.voice.begin('Hola.');e.voice.reveal(3);e.tick(i+.1);e.voice.reveal(5);
+  assert.equal(e.sources.length,(i+1)*2);ends.push(e.sources.at(-1).buffer.id);
+  e.voice.reveal(5);assert.equal(e.sources.length,(i+1)*2);
+ }
+ assert(ends.every((id,i)=>!i||id!==ends[i-1]));assert.equal(e.requests.length,10);
+ const sparse=setup({config,missing:['end_01.wav','end_03.wav']});await sparse.voice.unlock();
+ assert.equal(sparse.voice.getState().ends,1);sparse.voice.begin('Hola.');sparse.voice.reveal(3);sparse.tick(.1);sparse.voice.reveal(5);assert.equal(sparse.sources.length,2);
+});
+
+
+test('word length selects the configured family, keeps its voice inside a word and falls back to bases',async()=>{
+ const config=require('../assets/audio/dialogue/guide/voice.json'),e=setup({config});await e.voice.unlock();
+ for(const [i,word,expected]of [[0,'sol',['blip_01.wav','blip_02.wav']],[1,'mueve',['blip_03.wav','blip_04.wav']],[2,'energía',['blip_05.wav']],[3,'extraordinario',['blip_06.wav']]]){
+  e.tick(i);e.voice.begin(word+' cubo');e.voice.reveal(3);
+  assert(expected.includes(e.sources.at(-1).buffer.asset),word);
+  if(word.length>6){const chosen=e.sources.at(-1).buffer;e.tick(i+.11);e.voice.reveal(6);assert.equal(e.sources.at(-1).buffer,chosen,'same variant throughout the word');}
+ }
+ const sparse=setup({config,missing:['blip_05.wav','blip_06.wav']});await sparse.voice.unlock();
+ sparse.voice.begin('extraordinario cubo');sparse.voice.reveal(3);assert(['blip_01.wav','blip_02.wav'].includes(sparse.sources.at(-1).buffer.asset));
 });

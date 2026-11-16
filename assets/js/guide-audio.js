@@ -2,9 +2,9 @@
 (function(root){
  'use strict';
  function create({host=root,manifest='assets/audio/dialogue/guide/voice.json',random=Math.random}={}){
-  let context=null,master=null,loading=null,buffers=[],ending=null,last=-1;
+  let context=null,master=null,loading=null,buffers=[],endings=[],last=-1,lastEnd=-1;
   let text='',cursor=0,letters=0,finished=false,voiced=false,paused=false,enabled=true,volume=.35;
-  let nextAt=0,played=false;
+  let nextAt=0,played=false,wordIndex=0,words=[],wordGroups=[],baseNames=[];
   const live=new Set(),stats={loaded:0,missing:0};
   function ensureContext(){
    if(context)return context;
@@ -33,13 +33,18 @@
     const config=await request(manifest,true),base=new URL(manifest,host.document.baseURI);
     const names=Array.isArray(config.clips)?config.clips.slice(0,8):[];
     const valid=name=>typeof name==='string'&&/^[a-zA-Z0-9_-]+\.(wav|ogg|mp3)$/i.test(name);
+    baseNames=names.slice(0,2).filter(valid);
+    wordGroups=(Array.isArray(config.wordGroups)?config.wordGroups:[]).slice(0,8)
+     .filter(group=>group&&Array.isArray(group.clips)&&(group.maxLetters===null||Number.isFinite(group.maxLetters)&&group.maxLetters>0))
+     .map(group=>({max:group.maxLetters===null?Infinity:group.maxLetters,names:group.clips.filter(valid)})).sort((a,b)=>a.max-b.max);
     const files=[...new Set(names.filter(valid))].map(name=>({name,end:false}));
-    if(valid(config.end))files.push({name:config.end,end:true});
+    const endNames=Array.isArray(config.ends)?config.ends.slice(0,3):[config.end];
+    for(const name of new Set(endNames.filter(valid)))files.push({name,end:true});
     await Promise.all(files.map(async file=>{
      try{
       const data=await request(new URL(file.name,base).href),buffer=await context.decodeAudioData(data);
       if(!Number.isFinite(buffer.duration)||buffer.duration<.008||buffer.duration>2)throw new Error('Invalid voice duration');
-      if(file.end)ending=buffer;else buffers.push(buffer);
+      if(file.end)endings.push(buffer);else buffers.push({name:file.name,buffer});
       stats.loaded++;
      }catch{stats.missing++;}
     }));
@@ -61,8 +66,10 @@
    }
   }
   function stop(){silence();voiced=false;finished=true;}
-  function begin(value,{voice=true}={}){
-   silence();text=String(value);cursor=0;letters=0;finished=false;voiced=voice;played=false;nextAt=0;
+  function begin(value,{voice=true,timing=null}={}){
+   silence();text=String(value);cursor=0;letters=0;finished=false;voiced=voice;played=false;nextAt=0;wordIndex=0;
+   const Timing=host.QBitsDialogueTiming||(typeof require==='function'?require('./dialogue-timing.js'):null);
+   words=(timing?.words||Timing?.words(text)||[]).map(word=>({...word,clip:null}));
   }
   function play(buffer,end=false){
    if(!buffer||!context||context.state!=='running'||paused||!enabled||volume===0||host.document?.hidden||live.size>=(end?2:1))return false;
@@ -83,11 +90,12 @@
    if(!delta||finished)return;
    // Never catch up a long frame with a burst. Only newly visible characters count.
    const chunk=text.slice(cursor,count);cursor=count;
+   while(wordIndex+1<words.length&&words[wordIndex+1].start<count)wordIndex++;
    if(!voiced||paused||!enabled||volume===0||host.document?.hidden||!context||context.state!=='running'||delta>8){letters=0;if(count===text.length)finished=true;return;}
    const now=context.currentTime;
    if(count===text.length){
     finished=true;
-    if(played&&ending)play(ending,true);
+    if(played&&endings.length)playEnding();
     else if(/[\p{L}\p{N}]/u.test(chunk)&&now>=nextAt)blip(now);
     return;
    }
@@ -95,11 +103,29 @@
    letters+=(chunk.match(/[\p{L}\p{N}]/gu)||[]).length;
    if(letters>=3&&now>=nextAt){letters=0;blip(now);}
   }
+  function playEnding(){
+   let i=0;
+   if(endings.length>1){
+    i=Math.floor(random()*(endings.length-(lastEnd>=0?1:0)));
+    if(lastEnd>=0&&i>=lastEnd)i++;
+   }
+   if(play(endings[i],true))lastEnd=i;
+  }
   function blip(now){
    if(!buffers.length)return;
-   let i=Math.floor(random()*buffers.length);
-   if(buffers.length>1&&i===last)i=(i+1)%buffers.length;
-   if(play(buffers[i])){last=i;played=true;nextAt=now+.09;}
+   const word=words[wordIndex];
+   if(!word)return;
+   let clip=word.clip;
+   if(!clip){
+    const group=wordGroups.find(group=>word.length<=group.max);
+    let pool=group?buffers.filter(item=>group.names.includes(item.name)):buffers;
+    if(!pool.length)pool=buffers.filter(item=>baseNames.includes(item.name));
+    if(!pool.length)pool=buffers;
+    const alternatives=pool.filter(item=>item!==last);
+    if(alternatives.length)pool=alternatives;
+    clip=pool[Math.floor(random()*pool.length)];word.clip=clip;
+   }
+   if(play(clip.buffer)){last=clip;played=true;nextAt=now+.09;}
   }
   function setPaused(value){paused=!!value;if(paused)silence();}
   function configure(settings={}){
@@ -108,7 +134,7 @@
    if(master){master.gain.cancelScheduledValues(context.currentTime);master.gain.setTargetAtTime(volume,context.currentTime,.01);}
    if(!enabled||!volume)silence();
   }
-  return {preload,unlock,begin,reveal,stop,setPaused,configure,getState:()=>({...stats,clips:buffers.length,hasEnd:!!ending,active:live.size,enabled,volume})};
+  return {preload,unlock,begin,reveal,stop,setPaused,configure,getState:()=>({...stats,clips:buffers.length,hasEnd:endings.length>0,ends:endings.length,active:live.size,enabled,volume})};
  }
  if(typeof module==='object'&&module.exports)module.exports={create};
  else root.QBitsGuideAudio=create();

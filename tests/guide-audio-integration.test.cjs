@@ -26,7 +26,7 @@ test('guide events follow actual revealed text; skip and pause stop voice while 
  t.beginIntro();assert.deepEqual(events.find(e=>e[0]==='begin'),['begin','En el inicio no había nada…',false]);
  t.advanceDialogue();assert(events.some(e=>e[0]==='reveal'&&e[2]));
  t.beginIntro(true);assert.equal(events.filter(e=>e[0]==='begin').at(-1)[2],true);
- events.length=0;t.tickStory(.1);assert(events.some(e=>e[0]==='reveal'&&e[1]===3));
+ events.length=0;t.tickStory(.1);assert(events.some(e=>e[0]==='reveal'&&e[1]>0&&e[1]===sandbox.document.querySelector('#story-text').textContent.length));
  t.openPauseMenu();assert.deepEqual(events.at(-1),['pause',true]);
  events.length=0;t.tickStory(10);assert(!events.some(e=>e[0]==='reveal'));
  t.clearNarrativeScene();assert(events.some(e=>e[0]==='stop'));
