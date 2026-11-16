@@ -1056,6 +1056,25 @@ function convexPoseGeometry(pose){
  const edges=isTBit(pose)?profile.edges.map(([a,b])=>sub(vertices[b],vertices[a])):axes.map(n=>pose.q.vmult(n));
  return {vertices,normals,edges};
 }
+// Rigid material is queried as a body first, then as candidate parts. The
+// precise SAT test remains the authority; disjoint boxes cannot collide.
+// Reuse transformed geometry until that body actually changes pose.
+function rigidCollisionParts(g){
+ const b=g.body,p=b.position,q=b.quaternion,cached=g.collisionPartsCache;
+ if(cached&&cached.parts===g.parts&&cached.x===p.x&&cached.y===p.y&&cached.z===p.z&&cached.qx===q.x&&cached.qy===q.y&&cached.qz===q.z&&cached.qw===q.w)return cached.entries;
+ const entries=poses(g).map(pose=>{
+  const points=corners(pose),min=V(Infinity,Infinity,Infinity),max=V(-Infinity,-Infinity,-Infinity);
+  for(const point of points)for(const k of ['x','y','z']){min[k]=Math.min(min[k],point[k]);max[k]=Math.max(max[k],point[k]);}
+  return {pose,min,max};
+ });
+ g.collisionPartsCache={parts:g.parts,x:p.x,y:p.y,z:p.z,qx:q.x,qy:q.y,qz:q.z,qw:q.w,entries};return entries;
+}
+function rigidGroupsOverlap(a,b){
+ if(!boundsOverlap(bounds(a),bounds(b)))return false;
+ const aa=rigidCollisionParts(a),bb=rigidCollisionParts(b);
+ for(const first of aa)for(const second of bb)if(boundsOverlap(first,second)&&obbOverlap(first.pose,second.pose,.0005))return true;
+ return false;
+}
 function convexUnitOverlap(a,b,epsilon=.0005){
  const aa=convexPoseGeometry(a),bb=convexPoseGeometry(b);
  for(const axis of [...aa.normals,...bb.normals,...aa.edges.flatMap(x=>bb.edges.map(y=>x.cross(y)))]){
@@ -2061,6 +2080,14 @@ function refreshRotors(){
    const localTip=V(0,CUBE_SIZE*51/56,0);
    rotor.constraint=new CANNON.HingeConstraint(a.g.body,b.g.body,{pivotA:add(a.part.offset,a.part.q.vmult(localTip)),pivotB:add(b.part.offset,b.part.q.vmult(localTip)),axisA:a.part.q.vmult(V(0,1,0)),axisB:b.part.q.vmult(V(0,-1,0)),maxForce:1000,collideConnected:true});
    for(const equation of rotor.constraint.equations)equation.setSpookParams(1e10,4,FIXED_STEP);
+   // A passive parking brake closes only the remaining twist degree of
+   // freedom. It belongs to this hinge, never to the room or its floor.
+   const brake=new CANNON.RotationalEquation(a.g.body,b.g.body,{maxForce:1000});
+   brake.setSpookParams(1e10,4,FIXED_STEP);brake.enabled=false;
+   rotor.constraint.stopBrake={equation:brake,localA:V(),localB:V()};
+   rotor.constraint.equations.push(brake);
+   const update=rotor.constraint.update;
+   rotor.constraint.update=function(){update.call(this);const hold=this.stopBrake;if(hold.equation.enabled){this.bodyA.quaternion.vmult(hold.localA,hold.equation.axisA);this.bodyB.quaternion.vmult(hold.localB,hold.equation.axisB);}};
    // Cannon 0.6 caps impulse (not torque) and does not expose a multiplier.
    const motor=rotor.constraint.motorEquation,applyImpulse=motor.addToWlambda;
    motor.addToWlambda=function(impulse){rotor.motorImpulse=(rotor.motorImpulse||0)+impulse;return applyImpulse.call(this,impulse);};
@@ -2122,6 +2149,7 @@ function updateRotorMotors(dt=0){
   // rather than clipping only the center velocity and stretching a long arm.
   rotor.effectiveRpm=Math.min(rotor.rpm,5/frame.radius*60/(2*Math.PI));rotor.speedLimited=rotor.effectiveRpm<rotor.rpm-.01;
   if(dt>0)rotor.beforeStep=pair.map(g=>({p:g.body.position.clone(),q:g.body.quaternion.clone()}));
+  setRotorBrake(rotor,!rotor.enabled);
   if(!rotor.enabled){constraint.collideConnected=false;constraint.disableMotor();unpinRotor(rotor);rotor.driveVelocity=0;rotor.stalled=false;rotor.obstructed=false;rotor.stallTime=0;rotor.actualTorque=0;continue;}
   // Coincident apex contact has no stable surface normal. While driven, the
   // exact sweep/stall guard below handles mutual solid contact; ordinary
@@ -2150,22 +2178,41 @@ function updateRotorMotors(dt=0){
   constraint.setMotorSpeed(rotor.driveVelocity);
  }
 }
+function setRotorBrake(rotor,enabled){
+ const constraint=rotor.constraint,hold=constraint?.stopBrake;if(!hold)return;
+ if(enabled&&!hold.equation.enabled){
+  const a=rotorPart(rotor.aId),axis=a.part.q.vmult(V(0,1,0));
+  hold.localA.copy(a.part.q.vmult(V(1,0,0)));
+  const perpendicular=constraint.bodyA.quaternion.vmult(axis.cross(hold.localA));
+  constraint.bodyB.quaternion.inverse().vmult(perpendicular,hold.localB);
+ }
+ hold.equation.enabled=enabled;
+}
+function rotorRestPose(g){const b=g.body,p=b.position,q=b.quaternion;return {g,parts:g.parts,values:[p.x,p.y,p.z,q.x,q.y,q.z,q.w]};}
+function rotorRestUnchanged(g,saved){
+ if(!saved||saved.g!==g||saved.parts!==g.parts||g.body.sleepState!==CANNON.Body.SLEEPING)return false;
+ const b=g.body,p=b.position,q=b.quaternion,values=[p.x,p.y,p.z,q.x,q.y,q.z,q.w];
+ return values.every((value,i)=>Math.abs(value-saved.values[i])<1e-12);
+}
 function stabilizeRotors(){
  for(const rotor of rotors){
   const pair=rotorGroups(rotor);if(pair.some(g=>!g))continue;
+  // Sleeping means Cannon found equilibrium. Recheck immediately after a
+  // contact wakes either body, a rebuild, a move, or a motor start.
+  if(!rotor.enabled&&pair.every((g,i)=>rotorRestUnchanged(g,rotor.restPose?.[i]))){rotor.actualTorque=0;rotor.actualRpm=0;rotor.stalled=false;continue;}
   const moving=pair[rotor.moving==='a'?0:1],base=pair[rotor.moving==='a'?1:0],b=moving.body,pose=rotorProjectedPose(rotor,moving,base);
   rotor.actualTorque=rotor.enabled&&rotor.motorStep>0?Math.abs(rotor.motorImpulse||0)/rotor.motorStep:0;
   rotor.actualRpm=sub(b.angularVelocity,base.body.angularVelocity).dot(pose.axis)*60/(2*Math.PI);
   rotor.stallTime=rotor.enabled&&Math.abs(rotor.actualRpm)<Math.min(2,rotor.effectiveRpm*.15)&&Math.abs(rotor.driveVelocity)>.3?(rotor.stallTime||0)+(rotor.motorStep||0):0;
   rotor.stalled=rotor.obstructed||rotor.stallTime>.25;
   if(rotor.mount==='wheel'||!rotor.enabled){
-   // An unpowered rotor remains a mechanical hinge. Leave contact forces and angular velocity to the solver. Correct only
+   // An unpowered rotor holds its twist with a passive brake. Leave contact forces and angular velocity to the solver. Correct only
    // translation drift, distributing it by mass so the assembly stays free.
    const at=couplerTip(rotorPart(rotor.aId)),bt=couplerTip(rotorPart(rotor.bId)),gap=sub(bt.point,at.point),total=pair[0].body.mass+pair[1].body.mass;
    const fixedA=pair[0].body.type!==CANNON.Body.DYNAMIC,fixedB=pair[1].body.type!==CANNON.Body.DYNAMIC;
    if(!fixedA)pair[0].body.position.vadd(mul(gap,fixedB?1:pair[1].body.mass/total),pair[0].body.position);
    if(!fixedB)pair[1].body.position.vsub(mul(gap,fixedA?1:pair[0].body.mass/total),pair[1].body.position);
-   const solidsOverlap=poses(pair[0]).some(a=>poses(pair[1]).some(b=>obbOverlap(a,b,.0005)));
+   const solidsOverlap=rigidGroupsOverlap(pair[0],pair[1]);
    if(solidsOverlap&&rotor.beforeStep){for(let i=0;i<2;i++){pair[i].body.position.copy(rotor.beforeStep[i].p);pair[i].body.quaternion.copy(rotor.beforeStep[i].q);pair[i].body.angularVelocity.set(0,0,0);pair[i].body.velocity.set(0,0,0);}rotor.actualRpm=0;}
    rotor.stalled=rotor.enabled&&(solidsOverlap||rotor.stalled);
    // A falling assembly can cross the contact plane in one substep. Lift the
@@ -2176,6 +2223,7 @@ function stabilizeRotors(){
     if(low<-.001)for(const g of component){g.body.position.y+=-.001-low;if(g.body.velocity.y<0)g.body.velocity.y=0;g.body.aabbNeedsUpdate=true;}
    }
    for(const g of pair){g.body.aabbNeedsUpdate=true;g.body.updateInertiaWorld(true);}
+   rotor.restPose=!rotor.enabled&&!solidsOverlap?pair.map(rotorRestPose):null;
    continue;
   }
   if(!rotor.pin)continue;
@@ -3110,7 +3158,12 @@ function findBlockSnap(source,target){
 }
 function cameraBasis(){return {forward:direction(),right:V(Math.cos(yaw),0,-Math.sin(yaw)),up:V(Math.sin(yaw)*Math.sin(pitch),Math.cos(pitch),Math.cos(yaw)*Math.sin(pitch))};}
 function screenRay(x,y){const b=cameraBasis(),w=canvas.clientWidth,h=canvas.clientHeight,xx=(2*x/w-1)*(w/h)/heldFocus.focal,yy=(1-2*y/h)/heldFocus.focal;const d=add(add(b.forward,mul(b.right,xx)),mul(b.up,yy));d.normalize();return d;}
-function project(p){const b=cameraBasis(),r=sub(p,V(...camera)),depth=r.dot(b.forward);if(depth<=.04)return null;const h=previewViewport?.height||canvas.clientHeight,w=previewViewport?.width||canvas.clientWidth;return {x:w/2+r.dot(b.right)*heldFocus.focal*h/2/depth,y:h/2-r.dot(b.up)*heldFocus.focal*h/2/depth,depth};}
+function project(p){return projectWithBasis(p,cameraBasis());}
+function projectWithBasis(p,b){
+ const x=p.x-camera[0],y=p.y-camera[1],z=p.z-camera[2],depth=x*b.forward.x+y*b.forward.y+z*b.forward.z;if(depth<=.04)return null;
+ const h=previewViewport?.height||canvas.clientHeight,w=previewViewport?.width||canvas.clientWidth;
+ return {x:w/2+(x*b.right.x+y*b.right.y+z*b.right.z)*heldFocus.focal*h/2/depth,y:h/2-(x*b.up.x+y*b.up.y+z*b.up.z)*heldFocus.focal*h/2/depth,depth};
+}
 function screenBounds(g){
  const points=poses(g).flatMap(p=>corners(p)).map(project).filter(Boolean);if(!points.length)return null;
  return {left:Math.min(...points.map(p=>p.x)),right:Math.max(...points.map(p=>p.x)),top:Math.min(...points.map(p=>p.y)),bottom:Math.max(...points.map(p=>p.y))};
@@ -6611,12 +6664,12 @@ function drawWorldTriangles(data,color){
 }
 function drawWideLines(points,color,width=1){
  const basis=cameraBasis(),h=previewViewport?.height||canvas.clientHeight,data=[];
- for(let i=0;i+1<points.length;i+=2){const a=points[i],b=points[i+1],pa=project(a),pb=project(b);if(!pa||!pb)continue;
+ for(let i=0;i+1<points.length;i+=2){const a=points[i],b=points[i+1],pa=projectWithBasis(a,basis),pb=projectWithBasis(b,basis);if(!pa||!pb)continue;
   const dx=pb.x-pa.x,dy=pb.y-pa.y,len=Math.hypot(dx,dy);if(len<.01)continue;
-  const axis=add(mul(basis.right,-dy/len),mul(basis.up,-dx/len));
-  const oa=mul(axis,width*pa.depth/(heldFocus.focal*h)),ob=mul(axis,width*pb.depth/(heldFocus.focal*h));
-  const aa=add(a,oa),ab=sub(a,oa),ba=add(b,ob),bb=sub(b,ob);
-  for(const v of [aa,ab,ba,ba,ab,bb])data.push(v.x,v.y,v.z,0,1,0);
+  const nx=-dy/len,ny=-dx/len,ax=basis.right.x*nx+basis.up.x*ny,ay=basis.right.y*nx+basis.up.y*ny,az=basis.right.z*nx+basis.up.z*ny;
+  const sa=width*pa.depth/(heldFocus.focal*h),sb=width*pb.depth/(heldFocus.focal*h),oa=[ax*sa,ay*sa,az*sa],ob=[ax*sb,ay*sb,az*sb];
+  data.push(a.x+oa[0],a.y+oa[1],a.z+oa[2],0,1,0,a.x-oa[0],a.y-oa[1],a.z-oa[2],0,1,0,b.x+ob[0],b.y+ob[1],b.z+ob[2],0,1,0,
+   b.x+ob[0],b.y+ob[1],b.z+ob[2],0,1,0,a.x-oa[0],a.y-oa[1],a.z-oa[2],0,1,0,b.x-ob[0],b.y-ob[1],b.z-ob[2],0,1,0);
  }
  drawWorldTriangles(data,color);
 }
