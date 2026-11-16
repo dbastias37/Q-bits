@@ -4,9 +4,9 @@
  const defaults=tab=>({tab:TABS.includes(tab)?tab:'batteries',mode:'adapt',choice:tab==='upgrades'?'upgrade:sensor':tab==='bodies'?'body':'battery:1',tier:2,dimensions:{x:1,y:1,z:1}});
  function drawPreview(canvas,preview={}){
   const ctx=canvas?.getContext?.('2d');if(!ctx)return;
-  const width=620,height=390;canvas.width=width;canvas.height=height;ctx.clearRect(0,0,width,height);
-  const dims=(preview.size||[1,1,1]).map(n=>Math.max(.2,Number(n)||1)),[sx,sy,sz]=dims,scale=Math.min(85,330/(sx+sz),205/(sy+(sx+sz)*.35));
-  const project=(x,y,z)=>[width/2+(x-z)*scale*.86,height*.58+(x+z)*scale*.34-y*scale];
+  const width=620,height=280;canvas.width=width;canvas.height=height;ctx.clearRect(0,0,width,height);
+  const dims=(preview.size||[1,1,1]).map(n=>Math.max(.2,Number(n)||1)),[sx,sy,sz]=dims,scale=Math.min(120,440/((sx+sz)*.86),(height-66)/(sy+(sx+sz)*.34));
+  const project=(x,y,z)=>[width/2+(x-z)*scale*.86,(height-46)/2+(x+z)*scale*.34-y*scale];
   const offset=[-sx/2,-sy/2,-sz/2],P=(x,y,z)=>project(x+offset[0],y+offset[1],z+offset[2]);
   const polygon=(points,fill,stroke='rgba(58,89,79,.32)')=>{ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.closePath();ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=stroke;ctx.lineWidth=1.3;ctx.stroke();};
   const vessel=(x,y,z,color)=>{polygon([P(0,0,0),P(x,0,0),P(x,y,0),P(0,y,0)],color[0]);polygon([P(x,0,0),P(x,0,z),P(x,y,z),P(x,y,0)],color[1]);polygon([P(0,y,0),P(x,y,0),P(x,y,z),P(0,y,z)],color[2]);};
@@ -29,7 +29,7 @@
    for(let z=1;z<sz;z++){line(P(sx,0,z),P(sx,sy,z));line(P(0,sy,z),P(sx,sy,z));}
    if(preview.sensor){const p=P(sx,sy*.52,sz*.46);ctx.fillStyle='#69e6ac';ctx.beginPath();ctx.arc(p[0],p[1],7,0,Math.PI*2);ctx.fill();}
   }
-  ctx.fillStyle='#61766b';ctx.textAlign='center';ctx.font='13px system-ui, sans-serif';ctx.fillText(preview.caption||'Vista previa del resultado',width/2,height-20);
+  ctx.fillStyle='#61766b';ctx.textAlign='center';ctx.font='15px system-ui, sans-serif';ctx.fillText(preview.caption||'Vista previa del resultado',width/2,height-16);
  }
  function create(hooks){
   const screen=document.querySelector('#workshop-screen'),get=id=>document.querySelector('#workshop-'+id);

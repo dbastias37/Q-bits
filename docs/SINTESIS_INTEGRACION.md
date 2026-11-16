@@ -84,3 +84,6 @@ Organización desde clic derecho en pared permite instalar hasta 16 repisas. Cad
 El agarre comprueba el recorrido de traslación y giro ante mesa, repisas y otros cuerpos para evitar atravesarlos; no sustituye la simulación libre de Cannon. Prueba visual aislada del panel: `tests/workshop-layout.html`; render de muebles: `python3 tests/validate-furniture-gles.py`. La interfaz HTML y la partida completa requieren evidencia separada del replay GLES.
 
 Verificación final del bloque: **454 pruebas Node aprobadas, sin fallos ni omisiones; sintaxis y git diff --check correctos. Cinco escenas de muebles y regresiones de enfoque/postproceso en GLES sin errores gráficos**.
+
+
+Revisión visual del panel en navegador a 1363 × 936: pestañas, vista previa, aplicación con confirmación visible, investigación, controles de dimensiones, rechazo de cantidad incompatible, cierre con Escape desde un campo y reapertura. Se usa la vista aislada con datos de ejemplo y el marcado/CSS/controlador reales; no ejecuta una partida WebGL. La revisión amplió el visor y el texto de la vista previa. Las físicas, piezas reales y almacenamiento se verificaron por separado con la suite.
