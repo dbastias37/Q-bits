@@ -10,7 +10,7 @@
   const LIMITS = Object.freeze({
     rpm: Object.freeze([1, 120]),
     maxTorque: Object.freeze([.02, 4]),
-    capacity: Object.freeze([2, 256])
+    capacity: Object.freeze([2, 2000])
   });
   // Gameplay calibration: each Enganche starts with a 20 J reservoir, upgraded
   // explicitly up to 40 J (80 J in the laboratory), represented by its existing

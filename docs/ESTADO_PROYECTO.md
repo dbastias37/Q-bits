@@ -2,7 +2,19 @@
 
 Actualizado: 17 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega: colocación azul y agarre estable — 17 de noviembre de 2026
+## Última entrega: preview fluido y capacidad de 2000 — 17 de noviembre de 2026
+
+La vista previa del banco rápido sigue la cámara en cada fotograma, sin el intervalo anterior de 30 Hz. Su dibujo ignora el temblor PSX, usa el azul plano de la repisa, une cajas contiguas sin caras internas ni rendijas y ordena la transparencia por distancia. Mantiene geometría, colisiones y confirmación exactas; no crea cuerpos durante la previsualización. Shift conserva una conexión adquirida dentro de 0,78 m (adquisición a 0,65 m), evitando cambios por pequeños movimientos del apuntado. Soltar Shift elimina ese encaje.
+
+Máximo de 2000 piezas activas, formas/mecanismos de hasta 2000 piezas y selección/agarre manual de hasta 2000 piezas/u, activados por defecto. Las capacidades configurables de rotor, pinza, cinta, cuerpo arrastrable y enfriador admiten 2000. Las cintas tienen un campo de carga máxima en su panel. Se conservan capacidades elegidas en guardados y valores iniciales de las recetas; torque, consumo y disponibilidad de energía siguen limitando el trabajo de las máquinas. Los cupos de recetas guardadas, mobiliario y elementos por compartimento no son límites de piezas por estructura y se conservan.
+
+La fuerza manual escala con el peso para levantar realmente un conjunto de 2000 u sin reducir su masa ni la respuesta de la mano. Miniaturas e inventario admiten las 2000 identidades. La categoría de repisa evita repetir cálculos para cada pieza con la misma orientación. Colocación filtra primero por límites del cuerpo y valida las cajas fusionadas, evitando comprobaciones innecesarias de piezas lejanas.
+
+Verificación: suite previa completa **757/757**, más **6/6** regresiones nuevas de seguimiento a 120 Hz, vista previa compacta de 2000 piezas sin cuerpos/buffers nuevos, creación exacta, elevación/desplazamiento con Cannon, selección, guardado/restauración, repisas, capacidades del panel y retención del encaje. GLES: **28 escenas**, sin errores; igualdad píxel a píxel del ghost con temblor PSX en cero y máximo. Inspeccionado el encaje azul. Shaders generales y de enfoque compilados/enlazados, sintaxis y diff correctos. No se afirma una partida visual de navegador ni un rendimiento garantizado con 2000 cuerpos independientes; Chromium no inicia en este entorno.
+
+Siguiente paso: probar la comodidad de colocación en el equipo del jugador y sus montajes reales. No quedan límites de 256 piezas en creación/selección/guardado de estructuras.
+
+## Entrega anterior: colocación azul y agarre estable — 17 de noviembre de 2026
 
 Q → Banco rápido y piezas básicas preparan una vista previa sin cuerpos, IDs ni material. Clic confirma la posición y orientación visibles, con validación nueva en ese instante; no hay búsqueda de huecos alternativos. Suelo y superficies horizontales, límites y obstáculos completos, incluidas las superficies de las cintas. Rueda gira 90°, Esc/clic derecho cancelan. Shift cerca de la salida de una cinta nivelada alinea la entrada del nuevo tramo y suelda las bases al confirmar, conservando rodillos, controladores y energía. Repisas usan su previsualización de pared; Mesa de trabajo abre el taller. Cables colocan primero el material y luego abren el tendido. N, B y botones Crear también usan vista previa; se conserva el permiso explícito de creación de primitivas en puzzles.
 

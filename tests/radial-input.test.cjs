@@ -284,10 +284,10 @@ test('N consumes the pending creation and a failed full-capacity click can be re
   choose(game, 'pyramid');key(game, 'KeyN');click(game);
   assert.equal(t.groups.length, 1, 'N must not leave another piece armed');
   t.clearNarrativeScene();
-  for (let i = 0; i < 256; i++) t.addQubit([5 + (i % 16) * .1, .05, 5 + Math.floor(i / 16) * .1]);
+  for (let i = 0; i < 2000; i++) t.addQubit([5 + (i % 40) * .1, .05, 5 + Math.floor(i / 40) * .1]);
   choose(game, 'tetra');click(game);
-  assert.equal(t.groups.length, 256);
+  assert.equal(t.groups.length, 2000);
   t.removeGroup(t.groups[0]);click(game);
-  assert.equal(t.groups.length, 256);
+  assert.equal(t.groups.length, 2000);
   assert.equal(t.groups.at(-1).parts[0].shape, 'tetra');
 });

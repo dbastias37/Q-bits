@@ -26,5 +26,5 @@ test('quick creation never bypasses campaign or puzzle restrictions and cancella
  const game=lab(),{t}=game;choose(game,'quick-arm');t.onCanvasMouseDown({button:2,preventDefault(){}});assert.equal(t.groups.length,0);t.story.scene='campaign';assert.equal(t.spawnQuickElement('quick-arm'),null);t.initUnitRadial();assert(!game.radial.getState().figures.some(f=>f.section==='quick'));t.story.scene='lab';t.puzzle.active=true;assert.equal(t.spawnQuickElement('quick-arm'),null);
 });
 test('material limit is atomic and the pending quick choice can retry after making room',()=>{
- const game=lab(),{t}=game;for(let i=0;i<240;i++)t.addQubit([5+(i%12)*.1,.05+Math.floor(i/12)*.1,5]);choose(game,'quick-arm');click(t);assert.equal(t.robotArms.length,0);assert.equal(t.groups.length,240);for(const g of [...t.groups].slice(0,30))t.removeGroup(g);click(t);assert.equal(t.robotArms.length,1);assert.equal(t.groups.flatMap(g=>g.parts).length,236);
+ const game=lab(),{t}=game;for(let i=0;i<1984;i++)t.addQubit([5+(i%40)*.1,.05,5+Math.floor(i/40)*.1]);choose(game,'quick-arm');click(t);assert.equal(t.robotArms.length,0);assert.equal(t.groups.length,1984);for(const g of [...t.groups].slice(0,30))t.removeGroup(g);click(t);assert.equal(t.robotArms.length,1);assert.equal(t.groups.flatMap(g=>g.parts).length,1980);
 });

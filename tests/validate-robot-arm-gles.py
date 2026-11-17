@@ -100,7 +100,7 @@ def png(path,pixels):
  raw=b''.join(b'\0'+pixels[y*W*4:(y+1)*W*4] for y in range(H-1,-1,-1))
  path.write_bytes(b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('!2I5B',W,H,8,6,0,0,0))+chunk(b'IDAT',zlib.compress(raw,6))+chunk(b'IEND',b''))
 for command in data['init']:replay(command)
-results=[];reference_pixels=None;batch_equivalence=None
+results=[];reference_pixels=None;batch_equivalence=None;placement_pixels=None
 for shot in data['snapshots']:
  # Replay the actual command list; state remains live across captures as in WebGL.
  for command in shot['commands']:replay(command)
@@ -109,6 +109,8 @@ for shot in data['snapshots']:
  foreground=sum(abs(r-237)+abs(g-242)+abs(b-240)>25 for r,g,b in zip(raw[0::4],raw[1::4],raw[2::4]))
  assert foreground>500,(shot['name'],'empty mechanism frame',foreground)
  blue=sum(b>r+15 and g>r+8 for r,g,b in zip(raw[0::4],raw[1::4],raw[2::4]))
+ if shot['name']=='placement-blue':placement_pixels=raw
+ if shot['name']=='placement-jitter-independent':assert placement_pixels==raw,'world jitter affects the placement ghost'
  if shot['name'] in ('placement-blue','placement-snap'):assert blue>500,('missing placement ghost',blue)
  if shot['name'].endswith('-blueprint'):assert blue>500,('missing cyan blueprint',blue)
  if shot.get('directionalArrows'):

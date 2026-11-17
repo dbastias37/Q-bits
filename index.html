@@ -384,8 +384,8 @@ input,select,textarea{font-family:var(--font-menu);}
       <label>Fuerza de agarre <output id="forceValue"></output><input id="force" type="range" min="4" max="300" step="1" value="60"></label>
       <label>Estabilidad del agarre <output id="gripValue"></output><input id="grip" type="range" min="0" max="1" step="0.05" value="0.95"></label>
       <label>Velocidad de giro con Shift <output id="rotationSpeedValue"></output><input id="rotationSpeed" type="range" min="1" max="5" step="0.1" value="2.8"></label>
-      <label>Capacidad de carga <output id="maxCarryValue"></output><input id="maxCarry" type="range" min="1" max="128" step="1" value="32"></label>
-      <label>Límite de selección <output id="maxSelectValue"></output><input id="maxSelect" type="range" min="1" max="256" step="1" value="64"></label>
+      <label>Capacidad de carga <output id="maxCarryValue"></output><input id="maxCarry" type="range" min="1" max="2000" step="1" value="2000"></label>
+      <label>Límite de selección <output id="maxSelectValue"></output><input id="maxSelect" type="range" min="1" max="2000" step="1" value="2000"></label>
       <label>Proyección al mantener Ctrl<select id="guide"><option value="ghost">Pieza semitransparente</option><option value="dot">Punto</option><option value="x">X</option><option value="none">Sin marca</option></select></label>
       <label>Línea de caída<select id="line"><option value="dashed">Segmentada y animada</option><option value="solid">Continua</option><option value="none">Sin línea</option></select></label>
       <details><summary>Estados y energía</summary>
@@ -429,7 +429,7 @@ input,select,textarea{font-family:var(--font-menu);}
             <label id="arm-color-row" hidden>Color objetivo<input id="arm-filter-color" type="color" value="#b36b4d"></label>
             <div id="arm-piece-row" hidden><label>Pieza objetivo<select id="arm-filter-piece"><option value="">Elige una pieza de la sala</option></select></label><button id="arm-capture-piece" type="button">Usar pieza seleccionada</button></div>
             <div id="arm-shape-row" hidden><label id="arm-shape-type-row">Tipo de pieza<select id="arm-filter-shape"><option value="cube">Cubo</option><option value="pyramid">Pirámide de base cuadrada</option><option value="tetra">Triangular</option><option value="coupler">Enganche</option></select></label><div id="arm-form-row" hidden><button id="arm-capture-shape" type="button">Aprender forma seleccionada</button><p id="arm-shape-memory"></p><p>Selecciona una estructura de la sala y vuelve a este panel para aprender su disposición.</p></div></div>
-            <label>Carga máxima <output id="arm-capacity-value">4 u</output><input id="arm-capacity" type="range" min="1" max="16" step="1" value="4"></label>
+            <label>Carga máxima <output id="arm-capacity-value">4 u</output><input id="arm-capacity" type="range" min="1" max="2000" step="1" value="4"></label>
             <button id="arm-apply-filter" type="button">Aplicar filtro y carga</button>
             <button id="arm-check" type="button">Comprobar toma · qué falta</button>
             <p id="arm-check-result" role="status" aria-live="polite"></p>
@@ -465,6 +465,7 @@ input,select,textarea{font-family:var(--font-menu);}
         <p id="conveyor-target">Selecciona un tramo para cambiar su marcha.</p>
         <p id="conveyor-status" role="status" aria-live="polite">Completa todas las piezas del plano para habilitar la cinta.</p>
         <div id="conveyor-controls" hidden>
+          <label>Carga máxima (u)<input id="conveyor-capacity" type="number" min="1" max="2000" step="1" value="8"></label>
           <div class="conveyor-actions" role="group" aria-label="Sentido de la cinta"><button id="conveyor-forward" type="button" aria-pressed="false">Avance</button><button id="conveyor-reverse" type="button" aria-pressed="false">Inversa</button></div>
           <p id="conveyor-direction-note">Sentido indicado en el plano.</p>
           <button id="conveyor-toggle" type="button" aria-pressed="false">Iniciar tramo</button>
@@ -482,7 +483,7 @@ input,select,textarea{font-family:var(--font-menu);}
       <div class="actions"><button id="rotor-start" type="button">Iniciar marcha</button><button id="rotor-stop" type="button">Detener</button><button id="rotor-invert" type="button">Invertir marcha</button></div>
       <label>Velocidad <output id="rotor-rpm-value">30</output><input id="rotor-rpm" type="range" min="1" max="120" step="1" value="30"></label>
       <label>Fuerza <output id="rotor-force-value">40</output><input id="rotor-force" type="range" min="2" max="400" step="1" value="40"></label>
-      <label>Carga máxima <output id="rotor-capacity-value">32</output><input id="rotor-capacity" type="range" min="2" max="256" step="1" value="32"></label>
+      <label>Carga máxima <output id="rotor-capacity-value">32</output><input id="rotor-capacity" type="range" min="2" max="2000" step="1" value="32"></label>
       <p id="rotor-power-readout" role="status" aria-live="polite"></p>
       <p id="rotor-supply-status"></p>
       <div id="connected-batteries" class="actions" aria-label="Baterías conectadas"></div>
@@ -521,7 +522,7 @@ input,select,textarea{font-family:var(--font-menu);}
       <p id="cargo-editing"></p>
       <label>Lado de los nuevos cuerpos <output id="cargoSideValue"></output><input id="cargoSide" type="range" min="1" max="12" step="1" value="4"></label>
       <p>Un paso equivale al lado de un Q-bit. Los tres lados siempre tienen la misma longitud.</p>
-      <label>Peso / Q-bits necesarios <output id="cargoRequiredValue"></output><input id="cargoRequired" type="range" min="1" max="256" step="1" value="8"></label>
+      <label>Peso / Q-bits necesarios <output id="cargoRequiredValue"></output><input id="cargoRequired" type="range" min="1" max="2000" step="1" value="8"></label>
       <label>Color <input id="cargoColor" type="color" value="#f4f4f1"></label>
       <label>Velocidad base de arrastre <output id="haulSpeedValue"></output><input id="haulSpeed" type="range" min="0.08" max="0.4" step="0.01" value="0.2"></label>
       <label>Fuerza por Q-bit <output id="haulForceValue"></output><input id="haulForce" type="range" min="1.5" max="5" step="0.1" value="2"></label>
@@ -550,7 +551,7 @@ input,select,textarea{font-family:var(--font-menu);}
       <button id="export-shapes" type="button">Exportar formas</button><label>Importar copia de formas<input id="import-shapes" type="file" accept=".json,application/json"></label>
       <p>Las formas se conservan en este navegador cuando permite almacenamiento local. Exporta una copia para trasladarlas a otra versión o equipo. Importar reemplaza la lista guardada.</p>
       <label><input id="alpha-coolingOn" type="checkbox" checked> Enfriadores activos</label><button id="place-cooler" type="button">Colocar enfriador donde apunto</button>
-      <label>Capacidad de nuevos enfriadores <output id="alpha-capacityValue"></output><input id="alpha-capacity" type="range" min="1" max="16" step="1" value="4"></label>
+      <label>Capacidad de nuevos enfriadores <output id="alpha-capacityValue"></output><input id="alpha-capacity" type="range" min="1" max="2000" step="1" value="4"></label>
       <label>Tiempo de enfriamiento <output id="alpha-coolSecondsValue"></output><input id="alpha-coolSeconds" type="range" min="5" max="60" step="1" value="35"></label>
       <label>Energía al salir <output id="alpha-exitEnergyValue"></output><input id="alpha-exitEnergy" type="range" min="0.25" max="0.75" step="0.05" value="0.5"></label>
       <label>Calma natural al tercer enfado <output id="alpha-maxRestValue"></output><input id="alpha-maxRest" type="range" min="15" max="180" step="5" value="180"></label>
@@ -643,7 +644,7 @@ input,select,textarea{font-family:var(--font-menu);}
         </ul>
       </details>
     </div>
-    <details><summary>Controles</summary><p>Mantener Q y soltar sobre una figura: elegir. Apunta la vista previa azul y confirma con clic izquierdo; Esc o clic derecho cancelan. Clic sin selección: tomar. Mantener C: agacharse, con las manos libres o sosteniendo una pieza. C + rueda: ajustar altura (abajo baja, arriba sube). Soltar C: levantarse. Tomar o unir piezas no cambia la postura. Con una pieza en la mano, Shift + WASD: girar sin caminar. Shift + soltar junto a una cara compatible: unir. Shift + sacudir rápidamente una estructura de un lado a otro varias veces: desarmar; la pieza tomada permanece en la mano. Rueda: acercar o alejar, con enfoque progresivo y barras de energía visibles de cerca. El ajuste alinea caras compatibles. Dos triangulares completan una pirámide; seis pirámides o doce triangulares completan un cubo. Arrastrar con clic izquierdo desde un espacio vacío: seleccionar varias piezas visibles, hasta 4 m. Ctrl + clic sobre enganches: añadir o quitar rotores de la selección; P → Mecanismos permite crear un conjunto con nombre. Clic izquierdo con una selección activa: deseleccionar. Clic derecho en la selección → Tomar selección: levantar el conjunto; clic para soltar. Alt, apuntando a una estructura: opciones de separación. V: duplicar selección. Supr: borrar pieza. Ctrl: guía de caída. Clic derecho en el suelo → Ir a este punto: recorrido individual o en grupo. R: detener. Esc: liberar mouse.<br>La selección para órdenes respeta el límite de piezas; el peso máximo se aplica al agarre manual. La orden en el suelo mueve todas las estructuras seleccionadas. Alt cerca del pin muestra el camino y las mediciones. B prepara la vista previa de un cuerpo que solo puede arrastrar un equipo. Máximo de 256 piezas en la sala.</p></details>
+    <details><summary>Controles</summary><p>Mantener Q y soltar sobre una figura: elegir. Apunta la vista previa azul y confirma con clic izquierdo; Esc o clic derecho cancelan. Clic sin selección: tomar. Mantener C: agacharse, con las manos libres o sosteniendo una pieza. C + rueda: ajustar altura (abajo baja, arriba sube). Soltar C: levantarse. Tomar o unir piezas no cambia la postura. Con una pieza en la mano, Shift + WASD: girar sin caminar. Shift + soltar junto a una cara compatible: unir. Shift + sacudir rápidamente una estructura de un lado a otro varias veces: desarmar; la pieza tomada permanece en la mano. Rueda: acercar o alejar, con enfoque progresivo y barras de energía visibles de cerca. El ajuste alinea caras compatibles. Dos triangulares completan una pirámide; seis pirámides o doce triangulares completan un cubo. Arrastrar con clic izquierdo desde un espacio vacío: seleccionar varias piezas visibles, hasta 4 m. Ctrl + clic sobre enganches: añadir o quitar rotores de la selección; P → Mecanismos permite crear un conjunto con nombre. Clic izquierdo con una selección activa: deseleccionar. Clic derecho en la selección → Tomar selección: levantar el conjunto; clic para soltar. Alt, apuntando a una estructura: opciones de separación. V: duplicar selección. Supr: borrar pieza. Ctrl: guía de caída. Clic derecho en el suelo → Ir a este punto: recorrido individual o en grupo. R: detener. Esc: liberar mouse.<br>La selección para órdenes respeta el límite de piezas; el peso máximo se aplica al agarre manual. La orden en el suelo mueve todas las estructuras seleccionadas. Alt cerca del pin muestra el camino y las mediciones. B prepara la vista previa de un cuerpo que solo puede arrastrar un equipo. Máximo de 2000 piezas en la sala. Selección y carga manual: hasta 2000 piezas / u, ajustables en P.</p></details>
     <div class="actions"><button id="create" type="button">Crear Q-bit</button><button id="remove" type="button">Borrar pieza</button><button id="split" type="button">Desarmar estructura</button></div>
     <button id="resume" type="button">Volver a la sala</button>
   </section>

@@ -119,10 +119,11 @@ const altitude=t.bounds(drone).min.y;flight.phase=Math.PI/3;
 capture('propeller-flight',[.30,.35+altitude,.45],[0,.16+altitude,0],droneDraw,{...droneInfo,altitude,watts:flight.power.inputWatts});
 flight.phase=Math.PI*2/3;
 capture('propeller-flight-turn',[.30,.35+altitude,.45],[0,.16+altitude,0],droneDraw,droneInfo);
-// Creation ghosts render the real individual pieces, with no temporary bodies.
+// Creation ghosts preserve exact geometry, merge internal faces and ignore world jitter.
 lab();t.initUnitRadial();t.setLook({camera:[0,2,2],yaw:0,pitch:-Math.PI/4});
 t.beginCreationPlacement('quick-conveyor-left');
 capture('placement-blue',[1.2,1.1,1.5],[0,.2,0],()=>t.drawCreationPlacement());
+capture('placement-jitter-independent',[1.2,1.1,1.5],[0,.2,0],()=>{uniform('uJitter',1);t.drawCreationPlacement();});
 const blocked=t.getCreationPreview().poses[0].p;t.addQubit([blocked.x,blocked.y,blocked.z]);t.updateCreationPlacement();
 capture('placement-blocked',[1.2,1.1,1.5],[0,.2,0],()=>{t.drawQubits();t.drawCreationPlacement();});
 lab();t.initUnitRadial();t.setLook({camera:[0,2,2],yaw:0,pitch:-Math.PI/4});t.beginCreationPlacement('quick-conveyor-straight');t.confirmCreationPlacement();

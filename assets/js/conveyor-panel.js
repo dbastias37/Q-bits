@@ -25,6 +25,7 @@
    get('toggle').disabled=!c||s.available===false;get('toggle').textContent=c?.enabled?'Detener tramo':'Iniciar tramo';get('toggle').setAttribute('aria-pressed',String(!!c?.enabled));
    for(const direction of [1,-1]){const button=get(direction===1?'forward':'reverse');button.disabled=!c||s.available===false;button.setAttribute('aria-pressed',String(!!c&&c.direction===direction));}
    get('direction-note').textContent=c?.direction===-1?'Sentido inverso al indicado en el plano.':'Sentido indicado en el plano.';
+   get('capacity').disabled=!c||s.available===false;if(c)get('capacity').value=c.capacity;
    get('load').textContent=c?number(c.load,' u')+' / '+number(c.capacity,' u'):'—';
    get('speed').textContent=c?number(c.speed,' m/s',2):'—';
    get('energy').textContent=c?number(c.energy,' J'):'—';
@@ -36,6 +37,7 @@
    if(![0,1,2,3].includes(quarterTurns)||!Number.isFinite(height)||height<0||height>6){feedback({ok:false,message:'Usa un giro de 0°, 90°, 180° o 270° y una altura entre 0 y 6 m.'});return;}
    act('blueprint',{kind,supports:last?.supportsAvailable===true&&get('supports').checked===true,quarterTurns,height,extend});
   });
+  get('capacity').addEventListener('change',()=>{if(!get('capacity').disabled)act('capacity',{capacity:Number(get('capacity').value)});});
   get('extend').addEventListener('change',refresh);
   get('supports').addEventListener('change',refresh);
   get('toggle').addEventListener('click',()=>{if(!get('toggle').disabled&&last?.conveyor)act('toggle',{enabled:!last.conveyor.enabled});});
