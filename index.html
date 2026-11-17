@@ -311,7 +311,7 @@ input,select,textarea{font-family:var(--font-menu);}
 <link rel="stylesheet" href="assets/css/workshop-panel.css?v=20261116-robot-arm-1">
 <link rel="stylesheet" href="assets/css/robot-arm-panel.css?v=20261116-power-cables-1">
 <link rel="stylesheet" href="assets/css/conveyor-panel.css?v=20261116-quick-catalogue-1">
-<link rel="stylesheet" href="assets/css/servo-panel.css?v=20261117-servos-1">
+<link rel="stylesheet" href="assets/css/servo-panel.css?v=20261117-marcha-1">
 </head>
 <body data-game-mode="boot" data-game-scene="lab" data-booting="true">
   <section id="boot-screen" aria-label="Inicio de Q-bits" data-stage="loading">
@@ -407,6 +407,15 @@ input,select,textarea{font-family:var(--font-menu);}
         <p class="servo-kicker">Articular · ajustar · probar</p><h3 id="servo-title">Servos Q-bits</h3>
         <p id="servo-empty">Selecciona un Servo pivote o un Servo bisagra para configurar su recorrido.</p>
         <div id="servo-controls" hidden>
+          <section class="servo-march" aria-labelledby="servo-march-title">
+            <h4 id="servo-march-title">Marcha del conjunto</h4>
+            <p id="servo-march-status" role="status"></p>
+            <p>Todos los servos unidos físicamente pertenecen al mismo mecanismo. Elige cómo parte cada articulación: mínimo o máximo para moverla en oposición.</p>
+            <div id="servo-march-members"></div>
+            <div class="servo-actions"><button id="servo-march-start" type="button">Iniciar marcha del conjunto</button><button id="servo-march-stop" type="button">Detener conjunto</button></div>
+            <p>Primero se preparan todas las posiciones iniciales; después comparten el mismo ritmo. Si una articulación se bloquea o pierde energía, se detienen todas. Cierra P para ver el movimiento.</p>
+          </section>
+          <h4>Ajuste individual de la articulación</h4>
           <p id="servo-description"></p>
           <figure class="servo-preview">
             <svg id="servo-diagram" viewBox="0 0 200 112" role="img" aria-label="Recorrido lateral del servo">
@@ -608,7 +617,7 @@ input,select,textarea{font-family:var(--font-menu);}
         <p>Recorrido disponible: −90° a 90°. Velocidad: 5–180 °/s. La fuerza, el peso y los obstáculos condicionan el movimiento real.</p>
         <p><strong>Pivote manual:</strong> clic derecho sobre una pirámide de base cuadrada → Preparar Servo pivote. Une su base al cuerpo con Shift; conecta la cara inferior de un cubo a la punta con Shift. Ese cubo inicia el tramo móvil.</p>
         <p><strong>Bisagra manual:</strong> prepara una pirámide como Servo bisagra y conecta por su punta otra pirámide con Shift. Cada base sostiene un tramo rígido; las puntas permanecen unidas al abrirse lateralmente.</p>
-        <p>La energía interna permite probar los servos. Una batería externa activa conectada al conjunto comparte su reserva; estar cerca no basta. Si se bloquea, revisa energía, carga, fuerza y espacio. Esta entrega permite construir una extremidad; todavía no incluye coordinación automática de cuatro patas.</p>
+        <p>La energía interna permite probar los servos. Una batería externa activa conectada al conjunto comparte su reserva; estar cerca no basta. Si se bloquea, revisa energía, carga, fuerza y espacio. Para mover todas las patas, únelas al mismo cuerpo. En Marcha del conjunto elige inicio mínimo/máximo por articulación, pulsa Iniciar marcha del conjunto y cierra P. Todas se preparan y repiten juntas; Detener conjunto las bloquea a la vez. Un fallo de energía o bloqueo persistente detiene el mecanismo completo. Ajusta los recorridos y apoyos para conseguir equilibrio.</p>
       </details>
       <details><summary>Hélice y primer dron</summary>
         <ol><li>Mantén Q, pulsa Tab y elige <strong>Dron de prueba</strong>. Suelta Q y haz clic: aparece una hélice con batería I cargada y apagada.</li>
@@ -705,7 +714,7 @@ input,select,textarea{font-family:var(--font-menu);}
    <div id="settings-confirm" hidden role="alertdialog" aria-modal="true" aria-labelledby="settings-confirm-title"><div class="settings-confirm-card"><h3 id="settings-confirm-title">¿Salir sin guardar?</h3><p>Tienes cambios pendientes en la configuración.</p><div class="settings-confirm-actions"><button id="settings-keep" type="button">Seguir editando</button><button id="settings-discard" type="button">Salir sin guardar</button><button id="settings-confirm-save" type="button">Guardar y salir</button></div></div></div>
   </section>
   <script src="assets/js/opening.js?v=20261116-block-joins-1" defer></script>
-  <script src="assets/js/servo-panel.js?v=20261117-servos-1" defer></script>
-  <script src="assets/js/boot.js?v=20261117-servos-1" defer></script>
+  <script src="assets/js/servo-panel.js?v=20261117-marcha-1" defer></script>
+  <script src="assets/js/boot.js?v=20261117-marcha-1" defer></script>
 </body>
 </html>

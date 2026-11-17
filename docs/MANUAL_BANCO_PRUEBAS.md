@@ -83,7 +83,7 @@ Sensor de contacto: crea uno desde el catálogo rápido o prepara una pieza en e
 
 **Construcción manual:** clic derecho sobre una pirámide de base cuadrada → Preparar Servo pivote; suelda su base al cuerpo con Shift y conecta la cara inferior de un cubo a su ápice con Shift. Para una bisagra, prepara una pirámide como Servo bisagra y enfrenta su punta a la de otra pirámide con Shift; sus bases reciben los tramos rígidos. Las puntas permanecen unidas al doblarse.
 
-La energía interna permite probarlo; una batería externa activa, conectada al conjunto, comparte su reserva. Comprueba energía, peso y espacio si se bloquea. Los servos todavía se configuran individualmente: no hay marcha automática de cuadrúpedo. Consulta [Servos Q-bits](SERVOS_QBITS.md) para el montaje y los controles completos.
+La energía interna permite probarlo; una batería externa activa, conectada al conjunto, comparte su reserva. Comprueba energía, peso y espacio si se bloquea. Para mover todas las patas, conecta sus servos al mismo cuerpo y abre **Marcha del conjunto**. Elige el inicio mínimo/máximo de cada articulación y pulsa **Iniciar marcha del conjunto**; cierra P. Se preparan y repiten con un ritmo común. **Detener conjunto** bloquea todas juntas. Un fallo de energía, separación o bloqueo persistente detiene el conjunto. El equilibrio depende del montaje y de sus recorridos. Consulta [Servos Q-bits](SERVOS_QBITS.md) para el montaje y los controles completos.
 
 ## 6 · Planos, guardado y repisas
 
