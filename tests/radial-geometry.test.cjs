@@ -67,7 +67,7 @@ test('resizing clears stale hover and accepts native pixel movement at the new d
   hover(game,2);key(game,'keyup','KeyQ');
   assert.equal(t.settings.unitShape,'pyramid');
   assert.equal(t.groups.length,0,'a selection does not create a piece');
-  key(game,'keydown','KeyN');assert.equal(t.getSelected().part.shape,'pyramid');
+  t.setLook({camera:[0,2,2],yaw:0,pitch:-Math.PI/4});key(game,'keydown','KeyN');assert.equal(t.getSelected().part.shape,'pyramid');
 });
 
 test('reopening during fade-out keeps the selector visible and final closing hides it', () => {

@@ -380,7 +380,7 @@ function dispatchControlAction(id,down,source='keyboard',event={}){
   const hit=aimQubit();if(!hit)return;const rotor=rotorForPart(hit.part.id);if(rotor){toggleRotorSelection(rotor);announce(selectedRotors().length+' rotores seleccionados · clic derecho o P para controles');return;}clearRotorSelection();let team=selectedTeam();team=team.includes(hit.g)?team.filter(g=>g!==hit.g):[...team,hit.g];if(team.reduce((n,g)=>n+g.parts.length,0)>settings.maxSelect){announce('Máximo '+settings.maxSelect+' piezas seleccionadas');return;}multiSelection=team;selected=team.length?{g:team.includes(hit.g)?hit.g:team[0],part:team.includes(hit.g)?hit.part:team[0].parts[0]}:null;speech.nextHud=0;return;
  }
  if(id==='clear'&&storyActionAllowed()){if(held)releaseQubit(false);clearSelection();return;}
- if((id==='near'||id==='far')&&storyLookAllowed()){handleWheel({...e,deltaY:id==='near'?-1:1});return;}
+ if((id==='near'||id==='far')&&storyLookAllowed()){handleWheel({...e,deltaY:0,distanceAction:id==='near'?-1:1});return;}
  handleKey(e);
 }
 function releaseInputSource(source){for(const [id,holders]of [...controlHolds])if(holders.has(source+':'+id))dispatchControlAction(id,false,source,{cancelled:true});}
@@ -1055,6 +1055,7 @@ function addRigidCollisionShapes(body,parts){
  }
  body.updateBoundingRadius();body.aabbNeedsUpdate=true;return owners;
 }
+function groupAngularDamping(count){return count>1?Math.max(settings.damping,Math.min(.65,.24+Math.log2(count)*.065)):settings.damping;}
 function makeGroup(parts,reference=Q(),velocity=V(),spin=V()) {
  invalidateMechanicalIndex();
  serial=Math.max(serial,...parts.map(p=>p.id));
@@ -1062,7 +1063,7 @@ function makeGroup(parts,reference=Q(),velocity=V(),spin=V()) {
  for(const p of parts)center.vadd(mul(p.p,p.weight/weight),center);
  const inv=reference.inverse(),body=new CANNON.Body({mass:weight*.25,allowSleep:true,sleepSpeedLimit:.025,sleepTimeLimit:.6});
  body.collisionFilterMask=-1;body.position.copy(center);body.quaternion.copy(reference);body.velocity.copy(velocity);body.angularVelocity.copy(spin);
- body.linearDamping=.03;body.angularDamping=settings.damping;
+ body.linearDamping=.03;body.angularDamping=groupAngularDamping(parts.length);
  const local=parts.map(p=>{const shape=unitShape(p),mood=newMood(p.id,p.mood);if(!p.mood&&shape!=='cube')mood.name=(shape==='coupler'?'Enganche ':'T-bit ')+p.id;return {id:p.id,weight:p.weight,shape,offset:inv.vmult(sub(p.p,center)),q:inv.mult(p.q),mood};});
  const partShapes=addRigidCollisionShapes(body,local),materialShapeCount=body.shapes.length;
  body.updateMassProperties();world.addBody(body);
@@ -1197,32 +1198,114 @@ function quickProfile(entry){
  if(entry.action==='power-cable'){const profile=unitProfile('cube');return {id:entry.id,title:entry.title,subtitle:entry.subtitle,section:'quick',vertices:profile.vertices.map(v=>[v.x/CUBE_SIZE*2,v.y/CUBE_SIZE*.25,v.z/CUBE_SIZE]),faces:profile.faces.map(f=>f.slice()),color:[185,119,44],description:'Crea los cubos y desenróllalos: clic en salida, apoyos opcionales en suelo o pared y clic en entrada. Esc conserva el material; clic derecho deshace.'};}
  const source=entry.record?.groups.flatMap(g=>g.parts)||entry.shape?.parts||[{shape:'cube',p:[0,0,0],q:[0,0,0,1]}],vertices=[],faces=[];
  for(const part of source){const profile=unitProfile(part.shape||'cube'),q=Q();q.set(...part.q);const offset=vertices.length;for(const v of profile.vertices){const p=add(V(...part.p),q.vmult(v));vertices.push([p.x/CUBE_SIZE,p.y/CUBE_SIZE,p.z/CUBE_SIZE]);}for(const face of profile.faces)faces.push(face.map(i=>i+offset));}
- return {id:entry.id,title:entry.title,subtitle:entry.subtitle||'Montaje completo',section:'quick',vertices,faces,color:entry.id.includes('battery')?[54,139,105]:[66,82,85],description:entry.action==='shelf'?'Selecciona y apunta a una pared; clic para colocar.':entry.action==='workshop'?'Acceso directo a la mesa existente del banco.':'Copia de prueba: suelta Q y haz clic para crear una unidad completa. Los motores quedan detenidos. Tab cambia de pestaña; flechas recorren las tarjetas.'};
+ return {id:entry.id,title:entry.title,subtitle:entry.subtitle||'Montaje completo',section:'quick',vertices,faces,color:entry.id.includes('battery')?[54,139,105]:[66,82,85],description:entry.action==='shelf'?'Selecciona y apunta a una pared; clic para colocar.':entry.action==='workshop'?'Acceso directo a la mesa existente del banco.':'Copia de prueba: suelta Q, apunta la vista previa azul y haz clic para colocar. Rueda: girar. Shift: encajar cintas. Los motores quedan detenidos. Tab cambia de pestaña.'};
+}
+// A placement preview owns no bodies, material IDs, joints or inventory.
+let creationPreview=null;
+function creationPlacementAllowed(id){return creationChoiceAllowed(id)||puzzle.active&&alphaSettings.allowPuzzleSpawn&&['cube','tetra','pyramid'].includes(id);}
+function startCreationTool(id){if(held||powerDraft)return false;initUnitRadial();if(!creationPlacementAllowed(id))return false;panel.hidden=true;captureMouse();return beginCreationPlacement(id);}
+function creationRecord(id){
+ const entry=quickEntries.get(id);if(entry?.record)return copySavedMechanism(entry.record);
+ if(id!=='rotor')return null;
+ const flip=Q();flip.setFromAxisAngle(V(0,0,1),Math.PI);
+ return {version:1,type:'rotor',name:'Rotor',groups:[{parts:[{key:0,shape:'coupler',weight:settings.mass,p:[0,unitGroundHeight('coupler'),0],q:[0,0,0,1]}]},{parts:[{key:1,shape:'coupler',weight:settings.mass,p:[0,unitGroundHeight('coupler')+2*CUBE_SIZE*51/56,0],q:[flip.x,flip.y,flip.z,flip.w]}]}],joints:[{a:0,b:1,...mechanismDefaults,enabled:false}]};
+}
+function beginCreationPlacement(id){
+ if(!creationPlacementAllowed(id))return false;
+ cancelUnitCreation();const entry=quickEntries.get(id);
+ if(entry?.action==='shelf')return beginShelfPlacement(wallAim());
+ if(entry?.action==='workshop'){if(!workshopBench)setupWorkshop();if(workshopBench)openWorkshopPanel();return !!workshopBench;}
+ const record=creationRecord(id);let local=[];
+ if(record){for(const joint of record.joints)joint.enabled=false;for(const part of record.groups.flatMap(g=>g.parts))if(part.battery)part.battery.enabled=false;local=mechanismRecordParts(record).flat();}
+ else if(entry?.shape)local=entry.shape.parts.map(part=>({shape:part.shape||'cube',weight:1,p:V(...part.p),q:shelfQuaternion(part.q)}));
+ else if(entry?.action==='power-reservoir')local=[{p:V(0,.95,0),q:Q(),half:V(.39,.95,.39)}];
+ else if(entry?.action==='cargo'){const h=settings.cargoSide*CUBE_SIZE/2;local=[{p:V(0,h,0),q:Q(),half:V(h,h,h)}];}
+ else if(entry?.action==='cooler'){
+  local=[{p:V(0,.009,0),q:Q(),half:V(.32,.009,.32)}];
+  for(let i=0;i<20;i++){const a=i*Math.PI/10,q=Q();q.setFromAxisAngle(V(0,1,0),-a);local.push({p:V(Math.cos(a)*.36,.077,Math.sin(a)*.36),q,half:V(.042,.077,.061)});}
+ }else if(entry?.action==='power-cable')local=Array.from({length:entry.count},(_,i)=>({shape:'cube',weight:entry.weight,p:V((i-(entry.count-1)/2)*CUBE_SIZE,HALF,0),q:Q()}));
+ else {const shape=entry?'cube':id;local=[{shape,weight:entry?1:settings.mass,p:V(0,unitGroundHeight(shape),0),q:Q()}];}
+ const surfaces=[];
+ for(const c of record?.conveyors||[]){const base=local.find(p=>p.key===c.base),path=conveyorPath(c);
+  for(let i=1;i<path.length;i++){const delta=sub(path[i],path[i-1]),q=Q();q.setFromVectors(V(1,0,0),mul(delta,1/delta.norm()));q.normalize();surfaces.push({p:add(base.p,base.q.vmult(add(mul(add(path[i],path[i-1]),.5),V(0,-.002,0)))),q:base.q.mult(q),half:V(delta.norm()/2,.002,CUBE_SIZE*1.5)});}
+ }
+ pendingUnitCreation=id;creationPreview={id,entry,record,local,surfaces,turns:0,valid:false,poses:[],reason:'Apunta a una superficie.'};
+ updateCreationPlacement();redraw=true;announce(creationTitle(id)+' · apunta para colocar · rueda: girar · Shift: encajar cinta · clic: confirmar · Esc: cancelar');return true;
+}
+function creationSurfaceAim(){
+ const origin=V(...camera),dir=direction();let best=8,hit=null;
+ // All solid surfaces occlude the ray; only upward-facing surfaces support a copy.
+ const candidates=groups.flatMap(g=>physicalGroupPoses(g)).concat(cargos.map(cargoPose),storyWorld.walls.map(w=>({p:w.p,q:w.q||Q(),half:w.half})),alphaObstacles());
+ for(const pose of candidates){const distance=isTBit(pose)?rayPart(origin,dir,pose,best)?.distance??null:rayPuzzleBox(origin,dir,{...pose,half:pose.half||V(HALF,HALF,HALF)},best);if(distance===null||distance<.001||distance>=best)continue;
+  const point=add(origin,mul(dir,distance)),local=pose.q.inverse().vmult(sub(point,pose.p)),half=pose.half||V(HALF,HALF,HALF);let axis='y',gap=Infinity;
+  for(const k of ['x','y','z']){const d=Math.abs(Math.abs(local[k])-half[k]);if(d<gap){gap=d;axis=k;}}
+  const normal=V();normal[axis]=local[axis]<0?-1:1;best=distance;hit={point,normal:pose.q.vmult(normal)};
+ }
+ if(dir.y<-.015){const distance=-origin.y/dir.y;if(distance>0&&distance<best){const point=add(origin,mul(dir,distance));if(Math.max(Math.abs(point.x),Math.abs(point.z))<ROOM_SIZE/2)hit={point,normal:V(0,1,0)};}}
+ return hit;
+}
+function creationPosesClear(poses){
+ const obstacles=groups.flatMap(g=>physicalGroupPoses(g)).concat(cargos.map(cargoPose),storyWorld.walls.map(w=>({p:w.p,q:w.q||Q(),half:w.half})),alphaObstacles(),puzzleObstacleBounds().map(w=>({p:w.p,q:w.q||Q(),half:w.half})));
+ const entries=obstacles.map(collisionEntry);
+ return poses.every(pose=>{const box=collisionPoseBounds(pose);return box.min.y>=-.001&&box.max.y<=ROOM_HEIGHT&&Math.max(Math.abs(box.min.x),Math.abs(box.max.x),Math.abs(box.min.z),Math.abs(box.max.z))<ROOM_SIZE/2-.001&&!entries.some(other=>boundsOverlap(box,other)&&obbOverlap(pose,other.pose));});
+}
+function updateCreationPlacement(hit=creationSurfaceAim()){
+ const preview=creationPreview;if(!preview)return false;
+ const {entry,record}=preview;let point=hit?.point?.clone(),turns=preview.turns,link=null;
+ if(shiftDown()&&record?.conveyors?.length&&point){let nearest=.65;
+  for(const conveyor of conveyors){const port=conveyorPortWorld(conveyor,conveyor.direction===-1?'entry':'exit');if(!port)continue;const distance=port.p.distanceTo(hit.point);if(distance>=nearest)continue;
+   const placement=conveyorBlueprintPlacement(record,conveyor);if(!placement)continue;nearest=distance;point=placement.point.clone();point.y-=.003;turns=placement.quarterTurns;link=conveyor.baseId;
+  }
+ }
+ preview.link=link;preview.valid=false;
+ if(!point||!link&&hit.normal.y<.98){preview.poses=[];preview.reason='Apunta al suelo o a una superficie horizontal cercana.';return false;}
+ const floorOnly=['cargo','cooler','power-reservoir'].includes(entry?.action),q=Q();q.setFromAxisAngle(V(0,1,0),turns*Math.PI/2);
+ if(floorOnly){q.set(0,0,0,1);if(Math.abs(point.y)>.02){preview.poses=[];preview.reason='Este elemento se coloca en el suelo.';return false;}point.y=0;}
+ const origin=add(point,V(0,floorOnly?0:.003,0));
+ const transform=p=>({...p,p:add(origin,q.vmult(p.p)),q:q.mult(p.q)});
+ const poses=preview.local.map(transform),surfaces=preview.surfaces.map(transform);Object.assign(preview,{point,q,poses,surfacePoses:surfaces});
+ const count=record?mechanismPartCount(record):floorOnly?0:preview.local.length;
+ if(groups.reduce((n,g)=>n+g.parts.length,0)+count>MAX_QUBITS)preview.reason='No caben más piezas. Retira o guarda un montaje.';
+ else if(entry?.action==='cargo'&&(cargos.length>=12||!cargoPlacementClear(point,settings.cargoSide*CUBE_SIZE)))preview.reason='No hay espacio o se alcanzó el límite de cuerpos.';
+ else if(entry?.action==='cooler'&&(coolers.length>=12||!cargoPlacementClear(point,.84)||coolers.some(c=>c.p.distanceTo(point)<.9)))preview.reason='Deja espacio libre para el enfriador.';
+ else if(entry?.action==='power-reservoir'&&(powerReservoirs.length>=12||!powerReservoirPlacement(point)))preview.reason='Deja espacio libre para el depósito.';
+ else if(!creationPosesClear(poses.concat(surfaces)))preview.reason='Posición ocupada · mueve la vista previa.';
+ else {preview.valid=true;preview.reason=(link?'Conexión alineada · ':'')+'Clic: colocar · rueda: girar · Shift: encajar · Esc: cancelar';}
+ redraw=true;return preview.valid;
+}
+function confirmCreationPlacement(){
+ if(!creationPreview||!creationPlacementAllowed(creationPreview.id))return null;
+ // Refresh on the actual click: a moving obstacle or released Shift invalidates old previews.
+ if(!updateCreationPlacement()){announce(creationPreview.reason);return null;}
+ const preview=creationPreview,{entry,record,point,q}=preview,before=new Set(groups);let made=null;
+ if(record)made=spawnSavedMechanism(record,point,q);
+ else if(entry?.action==='power-reservoir')made=createPowerReservoir(point);
+ else if(entry?.action==='cooler')made=createCooler(point);
+ else if(entry?.action==='cargo')made=newCargo(point);
+ else {
+  const parts=preview.poses.map(p=>({id:allocateUnitId(),shape:p.shape,weight:p.weight,p:p.p.clone(),q:p.q.clone()}));
+  if(!assemblyValid(parts)){announce('Esta forma necesita volver a guardarse.');return null;}made=makeGroup(parts);
+  if(entry?.action==='sensor'){const part=made.parts[0];part.mood.workshop={version:1,ownerId:part.id,sensor:true,battery:1,lightweight:1,movement:1,baseWeight:1,ballast:0};}
+ }
+ if(!made){announce('No se pudo colocar. Revisa el espacio libre.');return null;}
+ const added=groups.filter(g=>!before.has(g));for(const g of added){g.body.velocity.set(0,0,0);g.body.angularVelocity.set(0,0,0);for(const part of g.parts)if(isExternalBattery(part))part.mood.energy=1;}
+ if(!record&&made.parts){selected={g:made,part:made.parts[0]};multiSelection=[];}
+ const connected=preview.link?!!joinCompletedConveyorBlueprint({conveyorLink:preview.link},added):false;
+ cancelUnitCreation();if(entry?.action==='power-cable'){beginPowerCable([made]);return made;}
+ announce(creationTitle(preview.id)+(connected?' colocado y conectado':preview.link?' colocado · no se pudo unir; revisa las caras':' colocado')+(record?' · motores detenidos':''));redraw=true;return made;
+}
+function drawCreationPlacement(){
+ if(!creationPreview?.poses.length)return;
+ const color=creationPreview.valid?[.12,.58,1,.38]:[1,.2,.15,.4];
+ gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
+ for(const pose of creationPreview.poses.concat(creationPreview.surfacePoses||[])){if(pose.half)drawBox(pose.p,pose.q,mul(pose.half,2),color);else if(unitShape(pose)==='cube')drawBox(pose.p,pose.q,V(.088,.088,.088),color);else drawUnitMesh(pose,color,4);}
+ if(creationPreview.record)drawConveyorBlueprintArrows({shape:{mechanism:creationPreview.record}},creationPreview.poses);
+ gl.depthMask(true);gl.disable(gl.BLEND);
 }
 function spawnQuickElement(id){
- if(story.scene!=='lab'||puzzle.active||!creationChoiceAllowed(id))return null;const entry=quickEntries.get(id);if(!entry)return null;
- if(entry.action==='power-cable'&&groups.reduce((n,g)=>n+g.parts.length,0)+entry.count>MAX_QUBITS){announce('No caben más cubos para el cable.');return null;}
- if(entry.action==='shelf'){const ok=beginShelfPlacement(wallAim());if(ok)cancelUnitCreation();return ok;}
- if(entry.action==='workshop'){if(!workshopBench)setupWorkshop();if(workshopBench){cancelUnitCreation();openWorkshopPanel();return workshopBench;}return null;}
- if(entry.action==='cargo'){const made=spawnCargo();if(made)cancelUnitCreation();return made;}
- const count=entry.record?mechanismPartCount(entry.record):entry.shape?.parts.length||1;
- if(!entry.action&&groups.reduce((n,g)=>n+g.parts.length,0)+count>MAX_QUBITS){announce('No caben más piezas. Guarda o retira un montaje y vuelve a hacer clic.');return null;}
- const record=entry.record?copySavedMechanism(entry.record):null;if(record){for(const joint of record.joints)joint.enabled=false;for(const p of record.groups.flatMap(g=>g.parts))if(p.battery)p.battery.enabled=false;}
- for(let row=0;row<4;row++)for(const col of [0,1,-1,2,-2]){
-  const p=V(position[0]-Math.sin(yaw)*(1.5+row*.85)+Math.cos(yaw)*col*.85,0,position[2]-Math.cos(yaw)*(1.5+row*.85)-Math.sin(yaw)*col*.85);let made=null;
-  if(record){const before=new Set(groups);made=spawnSavedMechanism(record,p);if(made)for(const g of groups)if(!before.has(g))for(const part of g.parts)if(isExternalBattery(part))part.mood.energy=1;}
-  else if(entry.action==='power-reservoir')made=createPowerReservoir(p);
-  else if(entry.action==='power-cable'){const parts=Array.from({length:entry.count},(_,i)=>({id:allocateUnitId(),shape:'cube',weight:entry.weight,p:add(p,V((i-(entry.count-1)/2)*CUBE_SIZE,HALF+.004,0)),q:Q()}));const g=makeGroup(parts);if(validPose(g,g.body.position,g.body.quaternion))made=g;else removeGroup(g);}
-  else if(entry.action==='cooler')made=createCooler(p);
-  else if(entry.action==='sensor'){
-   if(groups.reduce((n,g)=>n+g.parts.length,0)>=MAX_QUBITS)break;
-   const g=addQubit([p.x,HALF+.003,p.z],1);if(!validPose(g,g.body.position,g.body.quaternion)){removeGroup(g);continue;}const part=g.parts[0];part.mood.workshop={version:1,ownerId:part.id,sensor:true,battery:1,lightweight:1,movement:1,baseWeight:1,ballast:0};made=g;
-  }else if(entry.shape){
-   const parts=entry.shape.parts.map(part=>{const q=Q();q.set(...part.q);return {id:allocateUnitId(),shape:part.shape||'cube',weight:1,p:add(p,V(part.p[0],part.p[1]+.003,part.p[2])),q};});if(!assemblyValid(parts)){announce('Esta forma necesita volver a guardarse con sus piezas actuales.');return null;}const g=makeGroup(parts);if(validPose(g,g.body.position,g.body.quaternion))made=g;else removeGroup(g);
-  }
-  if(made){cancelUnitCreation();if(entry.action==='power-cable'){beginPowerCable([made]);return made;}redraw=true;announce(entry.title+' creado · copia de prueba'+(record?' · motores detenidos; baterías cargadas y apagadas':''));return made;}
- }
- announce('No hay espacio libre delante. Muévete y vuelve a hacer clic.');return null;
+ if(story.scene!=='lab'||puzzle.active||!creationChoiceAllowed(id))return null;
+ if(creationPreview?.id!==id){beginCreationPlacement(id);return null;}
+ return confirmCreationPlacement();
 }
 
 function initUnitRadial(){
@@ -1264,10 +1347,10 @@ function closeUnitRadial(commit=false){
  const choice=unitRadial.hovered;
  const valid=commit&&unitRadialAllowed()&&creationChoiceAllowed(choice);
  unitRadial.close();document.body.dataset.unitRadial='closed';keys.clear();accumulator=0;
- if(valid){if(!choice.startsWith('quick-'))settings.unitShape=choice;pendingUnitCreation=choice;syncUnitControls();announce(creationTitle(choice)+' · clic izquierdo para crear · Esc cancela');}
+ if(valid){if(!choice.startsWith('quick-'))settings.unitShape=choice;syncUnitControls();beginCreationPlacement(choice);}
  redraw=true;return valid;
 }
-function cancelUnitCreation(){pendingUnitCreation=null;}
+function cancelUnitCreation(){pendingUnitCreation=null;creationPreview=null;redraw=true;}
 function handleKeyUp(event){
  keys.delete(event.code);
  if(event.code.startsWith('Alt'))routeInspection=null;
@@ -1276,6 +1359,7 @@ function handleKeyUp(event){
 }
 function spawnQubit(){
  automationIntervention();
+ if(creationPreview)return confirmCreationPlacement();
  if(pendingUnitCreation?.startsWith('quick-'))return spawnQuickElement(pendingUnitCreation);
  const shape=creationShape();if(puzzleBlockedEdit(isMechanismChoice(shape)?'mechanism':'qubit'))return;
  if(isMechanismChoice(shape)&&!mechanismsAvailable()){announce('Completa La primera unión para desbloquear los mecanismos.');return;}
@@ -1336,18 +1420,18 @@ function grabQubit(hitOverride=null){
  if(story.ready&&story.scene==='intro'&&hit.g===storyGuide()){hit.g.storyFloat=false;hit.g.body.type=CANNON.Body.DYNAMIC;hit.g.body.updateMassProperties();}
  for(const rotor of rotors)if(rotorGroups(rotor).some(g=>list.includes(g)))configureRotor(rotor,{enabled:false});
  undockCampaignGroup(hit.g);
- selected=hit;const rootPoint=hit.point.clone();
+ selected=hit;const stable=list.length>1||hit.g.parts.length>1,rootPoint=stable?hit.g.body.position.clone():hit.point.clone();
  automationIntervention('Tomaste una pieza: ensayo reiniciado.');
  const ordered=[hit.g,...list.filter(g=>g!==hit.g)],items=[];
  for(const g of ordered){
   if(g.blueprintJob){const slot=g.blueprintJob;releaseBlueprintSlot(slot);slot.bp.slots=slot.bp.slots.filter(s=>s!==slot);}
-  leaveHaul(g);stopRoute(g);g.body.wakeUp();const point=g===hit.g?hit.point:g.body.position.clone();
+  leaveHaul(g);stopRoute(g);g.body.wakeUp();const point=stable?g.body.position.clone():g===hit.g?hit.point:g.body.position.clone();
   const local=g.body.quaternion.inverse().vmult(sub(point,g.body.position));
   const anchorBody=new CANNON.Body({mass:0});anchorBody.type=CANNON.Body.KINEMATIC;anchorBody.position.copy(point);anchorBody.collisionFilterGroup=0;world.addBody(anchorBody);
   const joint=new CANNON.PointToPointConstraint(g.body,local,anchorBody,V(),settings.force*workshopGrip(g)*g.body.mass/(weight*.25));joint.collideConnected=false;world.addConstraint(joint);
   items.push({g,anchor:local,anchorBody,joint,relative:sub(point,rootPoint),initialQ:g.body.quaternion.clone(),restQ:null});
  }
- held={...hit,...items[0],items,weight,age:0,distance:clamp(hit.distance,.3,2.5),rotation:hit.g.body.quaternion.clone(),initialRotation:hit.g.body.quaternion.clone()};
+ held={...hit,...items[0],items,weight,stable,rootOffset:stable?sub(rootPoint,hit.point):V(),age:0,distance:clamp(hit.distance,.3,2.5),rotation:hit.g.body.quaternion.clone(),initialRotation:hit.g.body.quaternion.clone()};
  storyOnGrab(hit.g);
  speech.shake=null;queueSpeech(hit.g,'close',{part:hit.part,kind:'pickup',priority:62,cooldown:18});
 }
@@ -1355,10 +1439,10 @@ function releaseQubit(join=false){
  resetAssemblyShake();
  if(!held)return;
  const g=held.g,items=held.items||[held],dock=story.dockCandidate;
- for(const item of items){if(item.joint)world.removeConstraint(item.joint);if(item.anchorBody)world.removeBody(item.anchorBody);item.g.body.angularDamping=settings.damping;item.g.body.fixedRotation=false;item.g.body.updateMassProperties();}
+ for(const item of items){if(item.joint)world.removeConstraint(item.joint);if(item.anchorBody)world.removeBody(item.anchorBody);item.g.body.angularDamping=groupAngularDamping(item.g.parts.length);item.g.body.fixedRotation=false;item.g.body.updateMassProperties();}
  let joined=null;
  if(heldMechanismCanSnap()&&join&&snap&&snap.source===g&&groups.includes(snap.target))joined=weld(snap);
- if(!joined)for(const item of items){item.g.body.velocity.set(0,0,0);item.g.body.wakeUp();}
+ if(!joined)for(const item of items){item.g.body.velocity.set(0,0,0);item.g.body.angularVelocity.set(0,0,0);item.g.body.force.set(0,0,0);item.g.body.torque.set(0,0,0);item.g.body.wakeUp();}
  held=null;snap=null;tryDockCampaign(g,dock);
 }
 // Propellers reuse one rigid body and the existing material identities. The two
@@ -2403,6 +2487,10 @@ world.solver.solve=function(dt,physicsWorld){
  }
  const driven=new Set();for(const rotor of rotors)if(rotor.enabled&&rotor.mount==='wheel')for(const g of rotorConnectedGroups(rotorGroups(rotor)))driven.add(g.body);
  for(const grip of robotGrips.values())if(driven.has(robotGripperHit(grip.id)?.g.body))driven.add(grip.body);
+ // Large assemblies retain their summed mass and inertia, with quieter contacts.
+ for(const contact of physicsWorld.contacts)if([contact.bi,contact.bj].some(body=>body.qubitGroup?.parts.length>1))contact.restitution=Math.min(contact.restitution,.025);
+ const articulated=new Set();for(const rotor of rotors){const pair=rotorGroups(rotor);if(pair.some(g=>!articulated.has(g.body)))for(const g of rotorConnectedGroups(pair))articulated.add(g.body);}
+ for(const g of groups)if(!(held?.items||[]).some(item=>item.g===g))g.body.angularDamping=articulated.has(g.body)||g.route||g.haulJob||g.blueprintJob||g.parts.some(p=>p.mood.flight?.enabled)?settings.damping:groupAngularDamping(g.parts.length);
  const skinPairs=conveyorFrictionPairs(physicsWorld),changed=[];for(const eq of physicsWorld.frictionEquations){if(skinPairs.get(eq.bi)?.has(eq.bj)||skinPairs.get(eq.bj)?.has(eq.bi)){changed.push([eq,eq.minForce,eq.maxForce]);eq.minForce=0;eq.maxForce=0;}else if(driven.has(eq.bi)||driven.has(eq.bj)){changed.push([eq,eq.minForce,eq.maxForce]);eq.minForce*=dt;eq.maxForce*=dt;}}
  try{return solveRotorContacts.call(this,dt,physicsWorld);}finally{for(const [eq,min,max]of changed){eq.minForce=min;eq.maxForce=max;}}
 };
@@ -2732,7 +2820,7 @@ function updateGrab(dt){
  const grabSpeed=savedPreferences.grabSpeed||1;
  if(shiftDown()){
   const tilt=Number(keys.has('KeyW'))-Number(keys.has('KeyS')),turn=Number(keys.has('KeyA'))-Number(keys.has('KeyD'));
-  if(tilt||turn){const axis=V(Math.cos(yaw)*tilt,turn,-Math.sin(yaw)*tilt);axis.normalize();const q=Q();q.setFromAxisAngle(axis,dt*settings.rotationSpeed);held.rotation=q.mult(held.rotation);}
+  if(tilt||turn){const axis=V(Math.cos(yaw)*tilt,turn,-Math.sin(yaw)*tilt);axis.normalize();const q=Q();q.setFromAxisAngle(axis,dt*settings.rotationSpeed*(savedPreferences.invertPieceRotation?-1:1));held.rotation=q.mult(held.rotation);}
  }
  const rootTarget=campaignDockTarget(tutorialGripTarget(add(add(V(...camera),mul(direction(),held.distance)),held.rootOffset||V()))),rotationDelta=held.rotation.mult(held.initialRotation.inverse());
  const snapPoses=snap&&snap.source===held.g?mechanismSnapPoses(held.g,snap.position,snap.quaternion):[];
@@ -2743,7 +2831,7 @@ function updateGrab(dt){
   if(snapped){target=add(snapped.p,snapped.q.vmult(item.anchor));desired=snapped.q;item.restQ=null;}
   else if(story.dockCandidate&&item.g===held.g){desired=story.dockCandidate.quaternion;item.restQ=null;}
   else if(shiftDown()){desired=rotationDelta.mult(item.initialQ||held.initialRotation);item.restQ=null;}
-  else if(held.age>.22){if(!item.restQ)item.restQ=b.quaternion.clone();desired=item.restQ;strength=30+settings.grip*35;}
+  else if(held.stable||held.age>.22){if(!item.restQ)item.restQ=held.stable?rotationDelta.mult(item.initialQ):b.quaternion.clone();desired=item.restQ;strength=held.stable?160:30+settings.grip*35;}
   const rotations=[b.quaternion];
   if(desired){for(let i=1;i<=8;i++)rotations.push(slerp(b.quaternion,desired,i/8));}
   target=safeGripTarget(item,target,rotations);
@@ -3470,7 +3558,7 @@ function updatePanel(){
  updateCargoPanel();updatePuzzlePanel();updateMoodPanel();updateAlphaPanel();updateMechanismPanel();
  document.querySelector('#remove').disabled=puzzle.active||!selected;document.querySelector('#split').disabled=!selected||selected.g.parts.length===1;
 }
-function openPanel(){closeWorkshopPanel(false);cancelShelfPlacement();closeCommandMenu(false);selectedCargo=aimCargo(4)?.cargo||selectedCargo;if(!selectedRotors().length)selected=held?{g:held.g,part:held.part}:aimQubit()||selected;pause();panel.hidden=false;updatePanel();if(selectedRotors().length||activeRotorSet())switchPanelTab('mechanisms');}
+function openPanel(){cancelUnitCreation();closeWorkshopPanel(false);cancelShelfPlacement();closeCommandMenu(false);selectedCargo=aimCargo(4)?.cargo||selectedCargo;if(!selectedRotors().length)selected=held?{g:held.g,part:held.part}:aimQubit()||selected;pause();panel.hidden=false;updatePanel();if(selectedRotors().length||activeRotorSet())switchPanelTab('mechanisms');}
 for(const name of ['mass','gravity','bounce','force','friction','damping','speed','maxCarry','maxSelect','rotationSpeed','grip'])document.querySelector('#'+name).addEventListener('input',event=>{
  if(story.scene==='campaign'&&story.campaign?.automation){announce('Ensayo certificado: masa y físicas permanecen fijas. Ajusta el motor.');updatePanel();return;}
  automationIntervention();settings[name]=Number(event.target.value);
@@ -3481,14 +3569,14 @@ for(const name of ['mass','gravity','bounce','force','friction','damping','speed
   removeGroup(old);const g=makeGroup(parts,ref);selected={g,part:g.parts.find(p=>p.id===id)};
  }
  world.gravity.y=-settings.gravity;world.defaultContactMaterial.friction=settings.friction;world.defaultContactMaterial.restitution=settings.bounce;
- for(const g of groups){g.body.angularDamping=settings.damping;g.body.wakeUp();}
+ for(const g of groups){g.body.angularDamping=groupAngularDamping(g.parts.length);g.body.wakeUp();}
  updatePanel();
 });
 for(const name of ['guide','line'])document.querySelector('#'+name).addEventListener('change',e=>settings[name]=e.target.value);
 for(const name of ['cube','route','cargo','puzzle','alpha','mechanisms','manual'])document.querySelector('#tab-'+name).addEventListener('click',()=>switchPanelTab(name));
 document.querySelector('#arm-help').addEventListener('click',()=>switchPanelTab('manual'));
 document.querySelector('#manual-arm-controls').addEventListener('click',()=>switchPanelTab('mechanisms'));
-document.querySelector('#create').addEventListener('click',()=>{spawnQubit();updatePanel();});
+document.querySelector('#create').addEventListener('click',()=>startCreationTool(creationShape()));
 document.querySelector('#unit-shape').addEventListener('change',event=>{if(creationChoiceAllowed(event.target.value))settings.unitShape=normalizeCreationChoice(event.target.value);syncUnitControls();});
 document.querySelector('#remove').addEventListener('click',()=>{deleteQubit(selected);updatePanel();});
 document.querySelector('#split').addEventListener('click',()=>{detachPart(selected,true);updatePanel();});
@@ -3499,11 +3587,12 @@ document.addEventListener('mouseup',onPhysicalMouseUp);
 function handleWheel(event){
  if(radialOpen()){event.preventDefault();return;}
  if(!gameInputActive())return;
+ if(creationPreview){event.preventDefault();creationPreview.turns=(creationPreview.turns+Math.sign(event.deltaY)*(savedPreferences.invertPieceRotation?-1:1)+4)%4;updateCreationPlacement();return;}
  if(keys.has('KeyC')){
   event.preventDefault();posture.crouchHeight=clamp(posture.crouchHeight-Math.sign(event.deltaY)*.08,.42,1.15);redraw=true;return;
  }
  if(!held||!storyLookAllowed()||storySuspended()||story.transition)return;
- event.preventDefault();held.distance=clamp(held.distance+Math.sign(event.deltaY)*.07,.3,2.5);redraw=true;
+ event.preventDefault();held.distance=clamp(held.distance+(event.distanceAction??Math.sign(event.deltaY)*(savedPreferences.invertObjectDistance?1:-1))*.07,.3,2.5);redraw=true;
 }
 canvas.addEventListener('wheel',handleWheel,{passive:false});
 function handleKey(event){
@@ -3534,8 +3623,8 @@ function handleKey(event){
   event.preventDefault();if(event.code.startsWith('Shift')&&held&&!shiftDown()){held.rotation=held.g.body.quaternion.clone();held.initialRotation=held.rotation.clone();for(const item of held.items||[held]){item.initialQ=item.g.body.quaternion.clone();item.relative=sub(item.anchorBody.position,held.anchorBody.position);}}keys.add(event.code);return;
  }
  if(event.repeat)return;
- if(event.code==='KeyB'){event.preventDefault();spawnCargo();}
- if(event.code==='KeyN'){event.preventDefault();spawnQubit();}
+ if(event.code==='KeyB'){event.preventDefault();startCreationTool('quick-cargo');}
+ if(event.code==='KeyN'){event.preventDefault();if(creationPreview)confirmCreationPlacement();else startCreationTool(creationShape());}
  if(event.code==='KeyV'){event.preventDefault();duplicateSelection();}
  if(event.code==='KeyR'){if(selectedCargo)stopHaul(selectedCargo);for(const g of selectedTeam()){leaveHaul(g);stopRoute(g);}pendingCargo=null;moveChoice=null;announce('Orden detenida');}
  if(event.code==='KeyX'&&(event.altKey||altDown())){event.preventDefault();openDetachMenu(aimQubit()||selected);}
@@ -3546,7 +3635,7 @@ function updateTarget(){
  if(!gameInputActive()){targetLabel.textContent='';crosshair.classList.remove('ready');return;}
  const hit=held||aimQubit(),shelfTarget=!held&&aimShelf();crosshair.classList.toggle('ready',!!hit||!!shelfTarget);
  if(shelfPreview)targetLabel.textContent=shelfPreview.valid?(shelfPreview.snapped?'Repisa alineada · ':'')+'Clic / E · colocar · Esc · cancelar':shelfPreview.reason;
- else if(pendingUnitCreation)targetLabel.textContent='Clic izquierdo · crear '+creationTitle(pendingUnitCreation)+' · Esc / clic derecho · cancelar';
+ else if(creationPreview)targetLabel.textContent=creationPreview.reason;
  else if(marquee)targetLabel.textContent='Suelta para seleccionar · hasta '+settings.maxSelect+' piezas';
  else if(held?.latched)targetLabel.textContent='Clic · soltar selección · Shift + WASD · girar'+(heldAssemblyGroups().length?' · Shift + sacudir · desarmar':' · rueda · enfocar');
  else if(held)targetLabel.textContent=snap?(snap.propellerTip?'Pala alineada · suelta para unir a la hélice':snap.rotorTip?'Puntas alineadas · suelta para formar Rotor':snap.wholeFace?'Cara completa · suelta para unir':'Suelta para unir esta cara'):shiftDown()?'WASD · girar'+(heldAssemblyGroups().length?' · sacudir varias veces · desarmar':''):'Shift · girar / unir · rueda · enfocar · Ctrl · caída';
@@ -3813,7 +3902,7 @@ function drawQubits(){
  }
  gl.depthMask(true);gl.disable(gl.BLEND);
  for(const g of groups){if(g.parts.some(p=>p.mood.production)){for(const p of poses(g))drawBox(p.p,p.q,V(CUBE_SIZE-.002,CUBE_SIZE-.002,CUBE_SIZE-.002),p.part.mood.production?.kind==='A'?[.27,.56,.67,1]:p.part.mood.production?[.72,.53,.26,1]:[.12,.14,.13,1]);if(g.parts.length===2)drawOutline(g.body.position,g.body.quaternion,sub(bounds(g,V(),Q()).max,bounds(g,V(),Q()).min),.8,false);}else drawGroupSolid(g);}
- drawConveyors();drawCargos();drawPuzzle();drawAlpha();drawWorkshop();drawShelves();drawPowerReservoirs();drawPowerCables();drawBatteriesTransparent();drawStructureOutlines();drawGuides();drawTaskGuides();
+ drawConveyors();drawCargos();drawPuzzle();drawAlpha();drawWorkshop();drawShelves();drawCreationPlacement();drawPowerReservoirs();drawPowerCables();drawBatteriesTransparent();drawStructureOutlines();drawGuides();drawTaskGuides();
 }
 addQubit([position[0]-Math.sin(yaw)*1.25,HALF+.003,position[2]-Math.cos(yaw)*1.25]);
 
@@ -4272,7 +4361,7 @@ for(const name of ['cargoSide','cargoRequired','haulSpeed','haulForce'])document
  if(name==='cargoRequired'&&selectedCargo){const c=selectedCargo;if(c.robotHeld){const owner=robotGripperHit(c.robotHeld);if(owner)robotStopForGroups([owner.g]);else releaseGripper(c.robotHeld);}stopHaul(c);c.required=Math.round(value);if(c.robotPhysical){c.body.mass=c.required*.25;c.body.type=CANNON.Body.DYNAMIC;c.body.fixedRotation=false;c.body.updateMassProperties();c.body.wakeUp();}}updateCargoPanel();
 });
 document.querySelector('#cargoColor').addEventListener('input',e=>{if(puzzle.active)return;if(/^#[0-9a-f]{6}$/i.test(e.target.value)){settings.cargoColor=e.target.value;if(selectedCargo)selectedCargo.color=e.target.value;}});
-document.querySelector('#create-cargo').addEventListener('click',spawnCargo);
+document.querySelector('#create-cargo').addEventListener('click',()=>startCreationTool('quick-cargo'));
 document.querySelector('#delete-cargo').addEventListener('click',()=>{deleteCargo(selectedCargo);updateCargoPanel();});
 
 function closeCommandMenu(resume=false){commandMenu.hidden=true;commandState=null;menuConnector=null;document.querySelector('#menu-link').style.opacity='0';if(resume)captureMouse();}
@@ -4314,7 +4403,7 @@ function onCanvasMouseDown(event){
  if(story.scene==='intro'&&event.button===2)return;
  event.preventDefault();speech.lastInput=simTime;
  if(pendingUnitCreation){
-  if(!unitRadialAllowed()){cancelUnitCreation();return;}
+  if(!unitRadialAllowed()&&!(puzzle.active&&alphaSettings.allowPuzzleSpawn&&creationPreview&&gameInputActive()&&panel.hidden&&!held)){cancelUnitCreation();return;}
   if(event.button===2){cancelUnitCreation();announce('Creación cancelada');return;}
   if(!pendingUnitCreation.startsWith('quick-'))settings.unitShape=pendingUnitCreation;
   if(spawnQubit())clearSelection();
@@ -4617,7 +4706,7 @@ function conveyorPanelAction(action,payload={}){
 function joinCompletedConveyorBlueprint(bp,made){
  if(!bp.conveyorLink)return;const previous=rotorPart(bp.conveyorLink),next=conveyors.find(c=>made.includes(rotorPart(c.baseId)?.g)),incoming=next&&rotorPart(next.baseId);if(!previous||!incoming||previous.g===incoming.g)return;
  const joined=weld({source:incoming.g,target:previous.g,position:incoming.g.body.position.clone(),quaternion:incoming.g.body.quaternion.clone()},{sound:false});
- if(joined){made.splice(made.indexOf(incoming.g),1,joined);pruneConveyors();}else announce('Tramo completo. Une los laterales con Shift para compartir la batería.');
+ if(joined){made.splice(made.indexOf(incoming.g),1,joined);pruneConveyors();}else announce('Tramo completo. Une los laterales con Shift para compartir la batería.');return joined;
 }
 function updateConveyorPanel(){if(!window.QBitsConveyorPanel||typeof conveyorBlueprintTemplate!=='function')return;if(!conveyorPanel)conveyorPanel=QBitsConveyorPanel.create({snapshot:conveyorPanelSnapshot,action:conveyorPanelAction});conveyorPanel.refresh();}
 function builtInMechanismRecipes(){return [propellerBlueprintTemplate(),robotArmBlueprintTemplate(),...(typeof conveyorBlueprintTemplate==='function'?['straight','left','right'].map(kind=>conveyorBlueprintTemplate(kind,false)):[])].filter(Boolean);}
@@ -4672,7 +4761,7 @@ function updateMechanismPanel(){
   const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Eliminar '+mechanism.name);remove.addEventListener('click',()=>{savedMechanisms.splice(savedMechanisms.indexOf(mechanism),1);persistMechanisms();updateMechanismPanel();});row.append(create,remove);list.appendChild(row);
  }
 }
-function createMechanismChoice(kind){if(!mechanismsAvailable())return;clearRotorSelection();settings.unitShape=kind;spawnQubit();updatePanel();}
+function createMechanismChoice(kind){if(!mechanismsAvailable())return;clearRotorSelection();settings.unitShape=kind;startCreationTool(kind);}
 document.querySelector('#create-coupler').addEventListener('click',()=>createMechanismChoice('coupler'));
 document.querySelector('#create-rotor').addEventListener('click',()=>createMechanismChoice('rotor'));
 document.querySelector('#rotor-tier').addEventListener('change',event=>{if(certifiedAutomation()){updateMechanismPanel();return;}const tier=QBitsProgression.effectiveTier(Number(event.target.value),story.progress);story.progress.torqueTier=tier;try{localStorage.setItem('qbits.campaign.v1',JSON.stringify(story.progress));}catch{}if(story.scene==='campaign'){for(const r of rotors)if(r.maxTorque>campaignTorqueCap())configureRotor(r,{maxTorque:campaignTorqueCap()});mechanismDefaults.maxTorque=Math.min(mechanismDefaults.maxTorque,campaignTorqueCap());}updateMechanismPanel();});
@@ -5419,15 +5508,15 @@ function saveMechanism(subject,name=null){
  const record=mechanismSnapshot(subject,name);if(!record){announce('No se puede guardar: revisa el encaje de las puntas del rotor.');return null;}
  savedMechanisms.push(record);const durable=persistMechanisms();updateAlphaPanel();announce(record.name+' guardado · '+mechanismPartCount(record)+' piezas'+(durable?'':' · solo en esta sesión'));return record;
 }
-function spawnSavedMechanism(record,point){
+function spawnSavedMechanism(record,point,rotation=Q()){
  automationIntervention();
  if(puzzleBlockedEdit('mechanism')||typeof mechanismsAvailable==='function'&&!mechanismsAvailable())return null;
  if(!savedMechanismValid(record)||!point||![point.x,point.y,point.z].every(Number.isFinite)){announce('El mecanismo guardado no es válido.');return null;}
  if(story.scene==='campaign'&&record.groups.some(group=>group.parts.some(part=>part.shape!=='coupler'))){announce('Los mecanismos con Q-bits o T-bits añadidos se crean solo en el banco de pruebas. En campaña, monta esas piezas con los recursos del nivel.');return null;}
  const count=mechanismPartCount(record);if(groups.reduce((sum,g)=>sum+g.parts.length,0)+count>MAX_QUBITS){announce('Máximo de '+MAX_QUBITS+' piezas en la sala.');return null;}
- const data=mechanismRecordParts(record,V(point.x,point.y+.003,point.z)),ids=new Map(),made=[],joints=[];
+ const origin=V(point.x,point.y+.003,point.z),data=mechanismRecordParts(record).map(parts=>parts.map(part=>({...part,p:add(origin,rotation.vmult(part.p)),q:rotation.mult(part.q)}))),ids=new Map(),made=[],joints=[];
  // Probe candidate space before allocating physics bodies, IDs or GPU state.
- // The quick catalogue may try twenty positions in a crowded laboratory.
+ // Placement is exact: failed validation never searches another location.
  for(const parts of data){const probe={body:{position:V(),quaternion:Q()},parts:parts.map(part=>({...part,offset:part.p}))};
   if(!validPose(probe,probe.body.position,probe.body.quaternion)){announce('No hay espacio libre para el mecanismo.');return null;}
  }
@@ -6167,7 +6256,7 @@ function enterLab(capture=true){
  world.gravity.y=-settings.gravity;world.defaultContactMaterial.friction=settings.friction;world.defaultContactMaterial.restitution=settings.bounce;world.broadphase.dirty=true;ui.veil.style.opacity='0';setupWorkshop();updatePanel();if(capture)captureMouse();
 }
 function showMain(){document.querySelector('#wake-screen').hidden=true;gameMode('menu');pause(false);panel.hidden=true;document.querySelector('#main-continue').hidden=!story.started;ui.veil.style.opacity='0';ui.top.style.height='0';ui.bottom.style.height='0';canvas.style.filter='none';document.querySelector('#main-play').focus({preventScroll:true});}
-function openPauseMenu(){if(!story.ready||story.mode!=='playing'||story.transition)return;closeWorkshopPanel(false);cancelShelfPlacement();document.querySelector('#wake-screen').hidden=true;gameMode('pause');pause(false);panel.hidden=true;document.querySelector('#pause-chapter').textContent=story.scene==='intro'?'Prólogo · El primer encuentro':story.scene==='campaign'?'Nivel '+story.level+' · '+chapters[story.level][1]:'Banco de pruebas';document.querySelector('#pause-resume').focus({preventScroll:true});}
+function openPauseMenu(){if(!story.ready||story.mode!=='playing'||story.transition)return;closeWorkshopPanel(false);cancelUnitCreation();cancelShelfPlacement();document.querySelector('#wake-screen').hidden=true;gameMode('pause');pause(false);panel.hidden=true;document.querySelector('#pause-chapter').textContent=story.scene==='intro'?'Prólogo · El primer encuentro':story.scene==='campaign'?'Nivel '+story.level+' · '+chapters[story.level][1]:'Banco de pruebas';document.querySelector('#pause-resume').focus({preventScroll:true});}
 function resumeGame(){if(story.phase==='complete'){gameMode('complete');return;}gameMode('playing');if(story.scene==='intro'&&['asleep','invocation'].includes(story.phase)){ui.veil.style.opacity='1';ui.top.style.height='52%';ui.bottom.style.height='52%';ui.dialogue.hidden=!story.dialogue;if(story.phase==='asleep')showWakeButton();else{document.querySelector('#wake-screen').hidden=true;canvas.focus({preventScroll:true});}return;}if(story.phase==='choice'||story.phase==='repeat')return;captureMouse();}
 function restartCurrent(){sceneFade(()=>{if(story.scene==='intro')beginIntro();else if(story.scene==='campaign')beginCampaignLevel(story.level);else if(puzzle.active)startPuzzle();else{clearNarrativeScene();gameScene('intro');enterLab(false);}});captureForTransition();}
 function showLevelSelector(){story.returnMode=story.mode;gameMode('levels');pause(false);panel.hidden=true;const list=document.querySelector('#level-list');list.replaceChildren();for(let i=0;i<chapters.length;i++){const row=document.createElement('button');row.disabled=false;const number=document.createElement('span'),info=document.createElement('span'),name=document.createElement('strong'),detail=document.createElement('small');number.className='level-number';number.textContent=chapters[i][0];name.textContent=chapters[i][1];detail.textContent=(i===0?story.progress.intro:story.progress['level'+i])?'Completado · volver a jugar':chapters[i][2];info.append(name,detail);row.append(number,info);row.addEventListener('click',()=>{sceneFade(()=>i===0?beginIntro():beginCampaignLevel(i));captureForTransition();});list.appendChild(row);}document.querySelector('#levels-back').focus({preventScroll:true});}
@@ -7695,6 +7784,7 @@ function frame(time) {
   camera[2] = Math.max(-cameraLimit, Math.min(cameraLimit, position[2] - Math.sin(yaw) * bobSide));
   updateHeldFocus(dt,active);
   if(shelfPreview&&!frozen){updateShelfPlacement(wallAim());redraw=true;}
+  if(creationPreview&&!frozen&&(!creationPreview.updatedAt||time-creationPreview.updatedAt>=1000/30)){updateCreationPlacement();creationPreview.updatedAt=time;redraw=true;}
   if (!document.hidden&&!frozen) {
     window.QBitsFootsteps?.update(camera,yaw,walkingAudioGroups(),dt);window.QBitsJoinAudio?.update(camera,yaw,dt);
     accumulator += dt;

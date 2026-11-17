@@ -109,6 +109,7 @@ for shot in data['snapshots']:
  foreground=sum(abs(r-237)+abs(g-242)+abs(b-240)>25 for r,g,b in zip(raw[0::4],raw[1::4],raw[2::4]))
  assert foreground>500,(shot['name'],'empty mechanism frame',foreground)
  blue=sum(b>r+15 and g>r+8 for r,g,b in zip(raw[0::4],raw[1::4],raw[2::4]))
+ if shot['name'] in ('placement-blue','placement-snap'):assert blue>500,('missing placement ghost',blue)
  if shot['name'].endswith('-blueprint'):assert blue>500,('missing cyan blueprint',blue)
  if shot.get('directionalArrows'):
   orange=sum(r>g+25 and g>b+10 for r,g,b in zip(raw[0::4],raw[1::4],raw[2::4]));assert orange>20,('missing conveyor direction arrows',shot['name'],orange)

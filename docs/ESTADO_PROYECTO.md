@@ -1,8 +1,20 @@
 # Q-bits — punto de continuación
 
-Actualizado: 16 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
+Actualizado: 17 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega: acabado de circuito y color de cable — 16 de noviembre de 2026
+## Última entrega: colocación azul y agarre estable — 17 de noviembre de 2026
+
+Q → Banco rápido y piezas básicas preparan una vista previa sin cuerpos, IDs ni material. Clic confirma la posición y orientación visibles, con validación nueva en ese instante; no hay búsqueda de huecos alternativos. Suelo y superficies horizontales, límites y obstáculos completos, incluidas las superficies de las cintas. Rueda gira 90°, Esc/clic derecho cancelan. Shift cerca de la salida de una cinta nivelada alinea la entrada del nuevo tramo y suelda las bases al confirmar, conservando rodillos, controladores y energía. Repisas usan su previsualización de pared; Mesa de trabajo abre el taller. Cables colocan primero el material y luego abren el tendido. N, B y botones Crear también usan vista previa; se conserva el permiso explícito de creación de primitivas en puzzles.
+
+Agarre centrado y orientación estable inmediata para estructuras, con velocidad de mano independiente. Masa, materia e inercia conservadas; amortiguación angular según número de piezas para rígidos libres y menor rebote al colisionar. Los componentes articulados conservan su amortiguación calibrada para no alterar motores ni las pruebas de autonomía. Al soltar se eliminan velocidad angular y fuerzas residuales de la mano. Sacudir sigue separando las mismas piezas.
+
+Rueda abajo acerca y arriba aleja por defecto. Configuración → Juego añade dos inversiones independientes: distancia y giro (Shift + WASD y rueda de previsualización), con guardar/descartar/restaurar. Las acciones de mando/teclas «Acercar» y «Alejar» conservan su significado.
+
+Verificación: **757/757 pruebas Node aprobadas**, sin omisiones ni fallos; sintaxis de game/preferences/settings y `git diff --check` correctos. Casos nuevos de previsualización sin cuerpos, colocación exacta, obstáculos y mesa, tres tipos de encaje con físicas reales, giro, cancelación, atajos, permiso de puzzle, agarre centrado, masa/rebote e inversiones persistidas. GLES: 27 escenas, shaders y buffers sin errores; inspección de vista azul y encaje. Chromium instalado no logra iniciar: no se afirma una partida visual de navegador. Microprueba con 180 cubos y esquina de 41 piezas: ~1,14 ms por actualización de preview en este entorno, limitada a 30 Hz y recalculada al confirmar; no representa los FPS del jugador.
+
+Siguiente paso: el jugador debe probar una recta, una esquina con Shift y un brazo sobre mesa; ajustar únicamente la comodidad si sus montajes reales lo requieren.
+
+## Entrega anterior: acabado de circuito y color de cable — 16 de noviembre de 2026
 
 El cable comparte el acabado fino con halo y el ajuste de grosor de las rutas de los Q-bits. Configuración → Apariencia añade Color del cable eléctrico, independiente del color de trayectoria y guardado por estilo; la vista previa muestra ambos. El color se aplica al tendido, despliegue y vista Alt. Los cables inactivos conservan el color atenuado con terminales rojos.
 

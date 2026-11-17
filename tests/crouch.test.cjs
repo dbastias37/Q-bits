@@ -49,7 +49,7 @@ test('C plus wheel adjusts posture, ordinary and Shift plus wheel adjust held di
   assert(Math.abs(t.posture.crouchHeight - (initialHeight - .08)) < 1e-9);
   assert.equal(t.getHeld().distance, initialDistance);
   t.keys.delete('KeyC');press(t, 'ShiftLeft');t.handleWheel(wheel(true));
-  assert(Math.abs(t.getHeld().distance - (initialDistance + .07)) < 1e-9);
+  assert(Math.abs(t.getHeld().distance - (initialDistance - .07)) < 1e-9);
   assert(Math.abs(t.posture.crouchHeight - (initialHeight - .08)) < 1e-9);
 });
 

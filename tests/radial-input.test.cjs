@@ -69,7 +69,7 @@ test('selection changes the shape N creates and preserves the existing creation 
   const game = lab(), { t } = game;
   for (const shape of ['tetra', 'pyramid', 'cube']) {
     key(game, 'KeyQ');hover(game, shape);release(game, 'KeyQ');
-    key(game, 'KeyN');
+    t.setLook({camera:[['tetra','pyramid','cube'].indexOf(shape),2,2],yaw:0,pitch:-Math.PI/4});key(game, 'KeyN');
     assert.equal(t.getSelected().part.shape, shape);
     assert.equal(t.creationShape(), shape);
   }

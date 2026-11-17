@@ -22,7 +22,7 @@ test('carried energy bars are hidden at distance and appear smoothly only when t
   assert.equal(t.heldFocus.amount,0);
   for(const id of ['mood-held-labels','mood-energy-track','mood-energy-label'])assert.equal(element(game,id).hidden,true,id);
   // Scrolling closer cannot reveal an object that has not reached the hand yet.
-  for(let i=0;i<24;i++)t.handleWheel({deltaY:-100,preventDefault(){}});
+  for(let i=0;i<24;i++)t.handleWheel({deltaY:100,preventDefault(){}});
   assert(t.getHeld().distance<.4);
   settle(t);assert.equal(t.heldFocus.amount,0);
   g.body.position.copy(camera.vadd(forward.scale(.35)));
@@ -44,7 +44,7 @@ test('scroll distance controls a bounded FOV and all screen projection/ray math 
   assert(t.heldFocus.focal>1.73&&t.heldFocus.focal<=1/Math.tan(Math.PI/6));
   const ray=t.screenRay(focused.x,focused.y), roundTrip=t.project(camera.vadd(ray.scale(.8)));
   assert(Math.abs(roundTrip.x-focused.x)<1e-8&&Math.abs(roundTrip.y-focused.y)<1e-8);
-  for(let i=0;i<30;i++)t.handleWheel({deltaY:100,preventDefault(){}});
+  for(let i=0;i<30;i++)t.handleWheel({deltaY:-100,preventDefault(){}});
   settle(t);assert(t.heldFocus.amount<.00001);assert.equal(t.heldFocus.focal,1.48256097);
 });
 

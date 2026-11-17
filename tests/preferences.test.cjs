@@ -134,3 +134,15 @@ test('joining audio has independent persisted settings and audio reset',()=>{
  assert.equal(t.getVisuals().cableColor,'#2468ff');assert.equal(t.getVisuals().pathColor,before);assert.equal(P.load(store).profiles.clean.cableColor,'#2468ff');assert.equal(P.load(store).profiles.neon.cableColor,'#b56e24');
  assert.equal(P.sanitize({profiles:{clean:{cableColor:'invalid'}}}).profiles.clean.cableColor,'#b56e24');assert.equal(P.sanitize({profiles:{clean:{pathColor:'#ff00ff'}}}).profiles.clean.pathColor,'#ff00ff');
  });
+
+test('object distance and piece rotation inversion save independently, discard, reset and migrate',()=>{
+ const legacy=P.defaults();delete legacy.invertObjectDistance;delete legacy.invertPieceRotation;
+ const migrated=P.sanitize(legacy);assert.equal(migrated.invertObjectDistance,false);assert.equal(migrated.invertPieceRotation,false);
+ assert.equal(P.sanitize({invertObjectDistance:'true',invertPieceRotation:1}).invertObjectDistance,false);
+ const store=storage({[P.KEY]:JSON.stringify(legacy)}),{t,doc,settings,tabs,click}=uiSetup(store);settings.open('pause');tabs.find(tab=>tab.dataset.settingsTab==='game').dispatchEvent({type:'click'});
+ const toggle=key=>{const el=doc.querySelector('#pref-'+key);el.checked=true;el.dispatchEvent({type:'change'});};
+ toggle('invertObjectDistance');click('settings-save');assert.equal(P.load(store).invertObjectDistance,true);assert.equal(P.load(store).invertPieceRotation,false);
+ toggle('invertPieceRotation');settings.requestClose();click('settings-discard');assert.equal(P.load(store).invertPieceRotation,false);
+ settings.open('pause');toggle('invertPieceRotation');click('settings-save');assert.equal(t.getVisuals().invertPieceRotation,true);
+ click('settings-reset');click('settings-save');assert.equal(P.load(store).invertPieceRotation,false);assert.equal(P.load(store).invertObjectDistance,false);
+});

@@ -4,7 +4,7 @@ const createGame=require('./game-harness.cjs');
 function lab(){const game=createGame(),{t,sandbox}=game;t.clearNarrativeScene();Object.assign(t.story,{ready:true,mode:'playing',scene:'lab',phase:'idle',progress:{}});sandbox.document.body.dataset.booting='false';sandbox.document.pointerLockElement=t.canvas;return game;}
 function key(game,type,code){game.sandbox.document.dispatchEvent({type,code,repeat:false});}
 function choose(game,id){key(game,'keydown','KeyQ');const before=game.radial.getState(),figure=before.figures.find(f=>f.id===id);game.sandbox.document.dispatchEvent({type:'mousemove',movementX:figure.x-before.x,movementY:figure.y-before.y});key(game,'keyup','KeyQ');}
-function click(game){game.t.canvas.dispatchEvent({type:'mousedown',button:0});game.sandbox.document.dispatchEvent({type:'mouseup',button:0});}
+function click(game){game.t.setLook({camera:[game.t.groups.length*.5,2,2],yaw:0,pitch:-Math.PI/4});game.t.canvas.dispatchEvent({type:'mousedown',button:0});game.sandbox.document.dispatchEvent({type:'mouseup',button:0});}
 function node(game,id){return game.sandbox.document.querySelector('#'+id);}
 
 test('Q lower mechanisms create a single Enganche or a two-body Rotor on the next click',()=>{

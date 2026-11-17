@@ -1,7 +1,8 @@
 const test=require('node:test'),assert=require('node:assert/strict'),createGame=require('./game-harness.cjs');
 function lab(){const game=createGame(),{t,sandbox}=game;t.clearNarrativeScene();Object.assign(t.story,{ready:true,scene:'lab',mode:'playing',phase:'idle'});sandbox.document.body.dataset.booting='false';sandbox.document.pointerLockElement=t.canvas;return game;}
 function choose(game,id){const{t}=game;assert(t.openUnitRadial());const menu=game.radial;menu.switchTab('quick');for(let i=0;i<160&&menu.hovered!==id;i++)menu.chooseNext(1);assert.equal(menu.hovered,id);assert(t.closeUnitRadial(true));}
-function click(t){t.onCanvasMouseDown({button:0,preventDefault(){}});}
+let placeSerial=0;
+function click(t){const x=(placeSerial++%6)*1.6-4;t.setLook({camera:[x,2,1],yaw:0,pitch:-Math.atan2(2,2)});t.onCanvasMouseDown({button:0,preventDefault(){}});}
 test('Q then Tab opens paged glass cards with matching pointer regions at desktop and compact sizes',()=>{
  const game=lab(),{t,sandbox}=game;assert(t.openUnitRadial());t.onPhysicalKeyDown({code:'Tab',preventDefault(){}});assert.equal(game.radial.getState().tab,'quick');
  for(const [w,h]of [[1280,720],[375,667],[600,420]]){sandbox.innerWidth=w;sandbox.innerHeight=h;sandbox.dispatchEvent({type:'resize'});const menu=game.radial;menu.switchTab('quick');for(let page=0;page<3;page++){for(const panel of menu.getGlassPanels()){assert(panel.points.every(([x,y])=>x>=0&&x<=w&&y>=50&&y<h-80));const x=panel.points.reduce((n,p)=>n+p[0],0)/panel.points.length,y=panel.points.reduce((n,p)=>n+p[1],0)/panel.points.length;menu.moveTo(x,y);assert(menu.hovered?.startsWith('quick-'));}menu.changePage(1);}}

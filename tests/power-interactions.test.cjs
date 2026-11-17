@@ -13,9 +13,9 @@ function draftFromReservoir(t,source,r){assert(t.beginPowerCable(source));lookAt
 function deploy(game,count=2){const{t}=game,fixture=setupCable(game,count);draftFromReservoir(t,fixture.source,fixture.r);assert(t.finishPowerCable(fixture.to));return {...fixture,c:t.powerCables[0]};}
 
 test('Q exposes large reservoir and 1/4/8 cube, small and large cable choices; only confirmation creates',()=>{
- const game=lab(),{t}=game;choose(game,'quick-power-reservoir');assert.equal(t.powerReservoirs.length,0);click(t);assert.equal(t.powerReservoirs.length,1);assert.equal(t.powerReservoirs[0].enabled,false);assert.equal(t.powerReservoirs[0].cell.mood.energy,1);click(t);assert.equal(t.powerReservoirs.length,1);
+ const game=lab(),{t}=game;lookAt(t,t.V(0,0,0));choose(game,'quick-power-reservoir');assert.equal(t.powerReservoirs.length,0);click(t);assert.equal(t.powerReservoirs.length,1);assert.equal(t.powerReservoirs[0].enabled,false);assert.equal(t.powerReservoirs[0].cell.mood.energy,1);click(t);assert.equal(t.powerReservoirs.length,1);
  for(const [id,count,length]of [['quick-cable-1',1,2],['quick-cable-4',4,8],['quick-cable-8',8,16],['quick-cable-small',1,1],['quick-cable-large',1,4]]){
-  choose(game,id);assert.equal(t.getPowerDraft(),null);click(t);const draft=t.getPowerDraft();assert(draft,id);assert.equal(draft.materials.length,count);assert.equal(t.powerCableLimit(t.powerDraftMaterials()),length);assert.equal(t.powerCables.length,0);t.handleKey({code:'Escape',preventDefault(){}});assert.equal(t.getPowerDraft(),null);assert(draft.groups.every(g=>t.groups.includes(g)));
+  lookAt(t,t.V(-3+count*.6,0,3+length*.1));choose(game,id);assert.equal(t.getPowerDraft(),null);click(t);const draft=t.getPowerDraft();assert(draft,id);assert.equal(draft.materials.length,count);assert.equal(t.powerCableLimit(t.powerDraftMaterials()),length);assert.equal(t.powerCables.length,0);t.handleKey({code:'Escape',preventDefault(){}});assert.equal(t.getPowerDraft(),null);assert(draft.groups.every(g=>t.groups.includes(g)));
  }
 });
 

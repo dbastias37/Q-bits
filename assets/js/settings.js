@@ -88,6 +88,9 @@
    }
   }
   function renderGameplay(){
+   field(tx.draft,'invertObjectDistance','Invertir rueda al acercar y alejar objetos','check');
+   note('Por defecto: rueda hacia abajo acerca; rueda hacia arriba aleja.');
+   field(tx.draft,'invertPieceRotation','Invertir giro de las piezas','check');
    const input=field(tx.draft,'grabSpeed','Velocidad al mover piezas','select',[[[1,'Lento · Actual (×1)'],[2,'Normal · ×2'],[3.5,'Rápido · ×3,5']]]);
    const help=note('Se aplica a las piezas sujetas y a los conjuntos seleccionados, tanto con teclado y ratón como con mando. No cambia la velocidad al caminar ni la del giro, que tiene su propio control.');help.id='settings-grab-help';
    const warning=note('Con velocidades altas, los choques pueden lanzar las piezas cercanas. Mueve con cuidado.');warning.id='settings-grab-warning';
@@ -143,7 +146,7 @@
   for(const button of screen.querySelectorAll('[data-settings-tab]'))button.addEventListener('click',()=>{clearCapture();tab=button.dataset.settingsTab;render();changed();});
   document.querySelector('#settings-save').addEventListener('click',()=>save(false));
   document.querySelector('#settings-back').addEventListener('click',requestClose);
-  reset.addEventListener('click',()=>{clearCapture();const defaults=P.defaults();if(tab==='look')tx.draft.profiles[tx.draft.style]=clone(P.styles[tx.draft.style]);else if(tab==='performance'){P.setQuality(tx.draft,'balanced');tx.draft.textureScale=1;}else if(tab==='game')tx.draft.grabSpeed=defaults.grabSpeed;else if(tab==='audio'){tx.draft.music=defaults.music;tx.draft.volume=defaults.volume;tx.draft.guideVoice=defaults.guideVoice;tx.draft.guideVolume=defaults.guideVolume;tx.draft.footsteps=defaults.footsteps;tx.draft.footstepVolume=defaults.footstepVolume;tx.draft.joinSounds=defaults.joinSounds;tx.draft.joinVolume=defaults.joinVolume;}else if(tab==='subtitles')tx.draft.subtitles=defaults.subtitles;else tx.draft.controls[tab==='keyboard'?'keyboard':'gamepad']=defaults.controls[tab==='keyboard'?'keyboard':'gamepad'];render();changed();});
+  reset.addEventListener('click',()=>{clearCapture();const defaults=P.defaults();if(tab==='look')tx.draft.profiles[tx.draft.style]=clone(P.styles[tx.draft.style]);else if(tab==='performance'){P.setQuality(tx.draft,'balanced');tx.draft.textureScale=1;}else if(tab==='game'){for(const key of ['grabSpeed','invertObjectDistance','invertPieceRotation'])tx.draft[key]=defaults[key];}else if(tab==='audio'){tx.draft.music=defaults.music;tx.draft.volume=defaults.volume;tx.draft.guideVoice=defaults.guideVoice;tx.draft.guideVolume=defaults.guideVolume;tx.draft.footsteps=defaults.footsteps;tx.draft.footstepVolume=defaults.footstepVolume;tx.draft.joinSounds=defaults.joinSounds;tx.draft.joinVolume=defaults.joinVolume;}else if(tab==='subtitles')tx.draft.subtitles=defaults.subtitles;else tx.draft.controls[tab==='keyboard'?'keyboard':'gamepad']=defaults.controls[tab==='keyboard'?'keyboard':'gamepad'];render();changed();});
   document.querySelector('#settings-keep').addEventListener('click',()=>{confirm.hidden=true;document.querySelector('#settings-back').focus();});
   document.querySelector('#settings-discard').addEventListener('click',()=>{tx.discard();close();});
   document.querySelector('#settings-confirm-save').addEventListener('click',()=>save(true));

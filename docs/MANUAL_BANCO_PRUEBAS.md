@@ -6,6 +6,19 @@ Empieza con una máquina y un cubo. P abre este panel y pausa la simulación. «
 
 Para alimentar máquinas separadas desde un depósito grande, consulta [Cables y depósito de energía](CABLES_ENERGIA_QBITS.md): creación con Q → Banco rápido, tendido, extensión, inspección y recuperación del material.
 
+## Colocar y conectar desde el banco rápido
+
+1. Mantén **Q → Tab → Banco rápido**, elige un elemento y suelta Q. Aparece una vista previa sin físicas; todavía no se crea material.
+2. Apunta al suelo o a una superficie horizontal cercana. **Azul** permite colocar; **rojo** indica espacio ocupado. La rueda gira el objeto en pasos de 90°.
+3. **Clic** confirma exactamente esa posición. **Esc o clic derecho** cancelan. Si no cabe, mueve la vista previa: el juego no buscará otro sitio por su cuenta.
+4. Para prolongar una cinta, apunta cerca de su **flecha de salida y mantén Shift**. La vista previa alinea su entrada; confirma con clic manteniendo Shift. Las bases se unen físicamente y cada rodillo conserva su eje. Funciona con tramos rectos y ambas esquinas, sobre cintas niveladas.
+
+Las repisas siguen colocándose en paredes. Depósitos, enfriadores y cuerpos sólidos van en el suelo. La tarjeta Mesa de trabajo abre el taller existente. Los cables primero colocan sus cubos y después abren el tendido. **N, B y los botones Crear** usan también la colocación previa. Los planos de construcción siguen necesitando material existente.
+
+**Manipulación:** rueda hacia abajo acerca y hacia arriba aleja. En **Configuración → Juego**, «Invertir rueda al acercar y alejar objetos» e «Invertir giro de las piezas» se guardan por separado. El segundo ajuste afecta tanto Shift + WASD como el giro de la vista previa. La velocidad de movimiento mantiene su ajuste independiente.
+
+Las estructuras se sujetan desde su centro para evitar giros provocados por tirar de un extremo. Su masa sigue siendo la suma de sus piezas; soltar elimina el giro residual de la mano. Las estructuras rígidas libres amortiguan más el giro y rebotan menos que los cubos sueltos. Los motores conservan su amortiguación calibrada, límites de carga y consumo.
+
 ## 1 · Mi primera entrega con el brazo
 
 El brazo repite dos posturas que tú guardas: A para tomar y B para soltar. Unirlo a una cinta no le enseña esas posiciones.

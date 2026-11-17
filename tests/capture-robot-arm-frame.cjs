@@ -40,7 +40,7 @@ function capture(name,eye,target,draw,details={}){
  const delta=target.map((v,i)=>v-eye[i]),distance=Math.hypot(...delta),yaw=Math.atan2(-delta[0],-delta[2]),pitch=Math.asin(delta[1]/distance);
  gl.uniform3fv(locations.get('uCamera'),eye);gl.uniform2f(locations.get('uLook'),yaw,pitch);uniform('uAspect',width/height);uniform('uFocal',1.9);uniform('uFocusMask',0);uniform('uTextureMix',0);uniform('uTextureScale',1);uniform('uWarp',0);uniform('uCel',0);uniform('uJitter',0);uniform('uLighting',.5);uniform('uGlow',0);uniform('uTime',1);
  gl.uniform2f(locations.get('uResolution'),width,height);gl.uniform3fv(locations.get('uLightPos[0]'),Array(12).fill(0));gl.uniform3fv(locations.get('uLightColor[0]'),Array(12).fill(0));
- draw();snapshots.push({name,...details,commands});
+ draw();snapshots.push({name,parts:t.groups.reduce((n,g)=>n+g.parts.length,0),bodies:t.groups.length,joints:t.rotors.length,...details,commands});
 }
 const template=t.robotArmBlueprintTemplate();if(!template||!t.savedMechanismValid(template))throw Error('Invalid arm template');
 lab();const mechanism=t.spawnSavedMechanism(template,t.V(0,0,0));if(!mechanism)throw Error('Could not instantiate the arm fixture');
@@ -119,5 +119,15 @@ const altitude=t.bounds(drone).min.y;flight.phase=Math.PI/3;
 capture('propeller-flight',[.30,.35+altitude,.45],[0,.16+altitude,0],droneDraw,{...droneInfo,altitude,watts:flight.power.inputWatts});
 flight.phase=Math.PI*2/3;
 capture('propeller-flight-turn',[.30,.35+altitude,.45],[0,.16+altitude,0],droneDraw,droneInfo);
+// Creation ghosts render the real individual pieces, with no temporary bodies.
+lab();t.initUnitRadial();t.setLook({camera:[0,2,2],yaw:0,pitch:-Math.PI/4});
+t.beginCreationPlacement('quick-conveyor-left');
+capture('placement-blue',[1.2,1.1,1.5],[0,.2,0],()=>t.drawCreationPlacement());
+const blocked=t.getCreationPreview().poses[0].p;t.addQubit([blocked.x,blocked.y,blocked.z]);t.updateCreationPlacement();
+capture('placement-blocked',[1.2,1.1,1.5],[0,.2,0],()=>{t.drawQubits();t.drawCreationPlacement();});
+lab();t.initUnitRadial();t.setLook({camera:[0,2,2],yaw:0,pitch:-Math.PI/4});t.beginCreationPlacement('quick-conveyor-straight');t.confirmCreationPlacement();
+const port=t.conveyorPortWorld(t.conveyors[0],'exit');t.setLook({camera:[port.p.x,2,port.p.z+2],yaw:0,pitch:Math.atan2(port.p.y-2,2)});t.keys.add('ShiftLeft');t.beginCreationPlacement('quick-conveyor-right');
+if(!t.getCreationPreview().link||!t.getCreationPreview().valid)throw Error('Missing snapped ghost');
+capture('placement-snap',[1.5,1.35,1.8],[.4,.2,.15],()=>{t.drawQubits();t.drawConveyors();t.drawCreationPlacement();});
 fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,JSON.stringify({width,height,init,snapshots,validation}));
 console.log(JSON.stringify({output,frames:snapshots.length,validationErrors:validation.length}));if(validation.length)process.exitCode=1;
