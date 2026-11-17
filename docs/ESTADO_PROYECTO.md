@@ -2,17 +2,29 @@
 
 Actualizado: 17 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega: Servo pivote y Servo bisagra — 17 de noviembre de 2026
+## Última entrega: marcha del conjunto — 17 de noviembre de 2026
+
+Los servos físicamente conectados comparten un controlador de marcha. En **P → Mecanismos → Marcha del conjunto** aparecen caderas y rodillas; se elige el extremo inicial mínimo/máximo de cada articulación y se inicia o detiene todo con un botón. Cada fila permite seleccionar su articulación para ajustar el recorrido. Clic derecho sobre un servo también ofrece inicio/parada del conjunto.
+
+Primero se colocan todas las articulaciones en sus extremos iniciales; solo cuando todas llegan comienza la repetición con un reloj común. Inicio máximo produce fase opuesta. El período respeta el recorrido y velocidad más restrictivos. No requiere activar cada servo individualmente. Las preferencias de inicio se conservan en guardados, planos y repisas mediante la configuración existente; recuperar un mecanismo lo deja detenido.
+
+Prevalidación de todas las articulaciones antes de activar motores. Parada colectiva ante pérdida de energía, desconexión, manipulación, edición o bloqueo persistente. Cada articulación conserva torque/carga finitos y freno relativo; no se añaden cuerpos ni se fija el conjunto al mundo. La coordinación no garantiza equilibrio ni avance en cualquier geometría y no añade navegación automática.
+
+Verificación: **809/809 pruebas Node aprobadas**, sin fallos u omisiones. Incluye cuatro patas y ocho articulaciones con cuerpos Cannon reales, fase igual/opuesta, seguimiento del reloj común, frenos, falta/pérdida de energía, separación, agarre, guardado, acciones del panel, bloqueo y limpieza de escena. Sintaxis y diff limpios. `validate-focus-gles.py` aprobado. DOM simulado y GLES; no se afirma una partida visual de navegador.
+
+Siguiente paso: probar el montaje real del jugador, elegir extremos iniciales y ajustar recorridos/apoyos para caminar. Guía actualizada en P, [SERVOS_QBITS.md](SERVOS_QBITS.md) y manual del banco.
+
+## Entrega anterior: Servo pivote y Servo bisagra — 17 de noviembre de 2026
 
 Dos articulaciones de recorrido limitado en el banco, reutilizando cuerpos, grafo, energía y freno de los rotores. **Pivote:** una pirámide de base cuadrada montada por su base; su ápice conecta la cara inferior del cubo móvil y define el eje longitudinal. **Bisagra:** dos pirámides de base cuadrada mantienen sus ápices unidos y abren lateralmente sobre un eje transversal. La geometría visible es la geometría física; no se añaden piezas ni cuerpos decorativos para fingir el movimiento.
 
 Clic derecho en una pirámide → Preparar Servo pivote/bisagra; Shift encaja la extremidad compatible. Q → Tab → Banco rápido ofrece ambos montajes completos y detenidos. Clic derecho en la articulación → Configurar servo, o P → Mecanismos. Recorrido de −90° a +90°, velocidad 5–180°/s, posición objetivo, una vez/mantener/ida y vuelta e invertir. El panel pausa; cerrarlo permite observar el movimiento. Una vez y mantener llegan a la posición y la bloquean mecánicamente; apagar conserva el ángulo sin anclar el conjunto al mundo. Un bloqueo persistente detiene el intento y muestra diagnóstico. Se conservan torque finito, carga y alimentación interna/externa existentes. Manual en P y [SERVOS_QBITS.md](SERVOS_QBITS.md).
 
-Guardar/restaurar, exportar/importar, blueprints con material existente y repisas preservan configuración, postura e identidades. Los servos recuperados quedan apagados. Soldar nuevas piezas reconstruye la articulación; sacudir devuelve las piezas originales y retira el motor. Los controladores antiguos de brazos/cintas no pueden apropiarse de un servo. No se incorpora coordinación automática de cuadrúpedos en este bloque: una cadena física con cadera y rodilla sí puede configurarse por articulación.
+Guardar/restaurar, exportar/importar, blueprints con material existente y repisas preservan configuración, postura e identidades. Los servos recuperados quedan apagados. Soldar nuevas piezas reconstruye la articulación; sacudir devuelve las piezas originales y retira el motor. Los controladores antiguos de brazos/cintas no pueden apropiarse de un servo. La cadena física con cadera y rodilla puede configurarse por articulación; el control colectivo se incorpora en la entrega de marcha descrita arriba.
 
 Integrado sobre `daabb07`, conservando vista previa fluida y límites generales de 2.000 piezas/carga. Verificación final: **801/801 pruebas Node aprobadas**, cero fallos u omisiones; sintaxis y diff limpios. Casos de ambos sentidos, repetición, puntas coincidentes, gravedad/suelo real, bloqueo apagado, energía agotada, batería externa compartida, montaje manual en ambos sentidos, soldadura, sacudida y persistencia. `validate-focus-gles.py` aprobado; `validate-robot-arm-gles.py` reprodujo **32 escenas**, incluyendo ambos servos a 0° y 35°, dos shaders/un programa y cero errores GPU. Inspeccionadas capturas de la bisagra. Estas pruebas ejecutan Cannon y GLES con DOM simulado; no constituyen una partida de navegador ni garantizan equilibrio de un caminante.
 
-Siguiente paso: probar los dos montajes del Banco rápido, después construir una extremidad cadera–rodilla y ajustar la comodidad antes de desarrollar la coordinación de marcha.
+Continuación realizada: coordinación de marcha incorporada en la entrega descrita arriba.
 
 ## Entrega anterior: preview fluido y capacidad de 2000 — 17 de noviembre de 2026
 

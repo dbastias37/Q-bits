@@ -4,7 +4,7 @@
  const finite=n=>n!==null&&n!==undefined&&n!==''&&Number.isFinite(Number(n));
  const format=(n,suffix='')=>finite(n)?String(Math.round(Number(n)*10)/10)+suffix:'—';
  const fields=['min','max','speed','mode','target'];
- function create({host,onApply,onAction}){
+ function create({host,onApply,onAction,onMarch}){
   if(!host)throw new Error('Falta el panel de servos.');
   const get=id=>host.querySelector('#servo-'+id),listeners=[];
   let last=null,identity=null,dirty=false,busy=false;
@@ -45,9 +45,26 @@
    busy=true;let result;try{result=onAction?.(type);}catch{result={ok:false,message:'No se pudo ejecutar. Revisa el servo seleccionado.'};}finally{busy=false;}
    feedback(result,type==='start'?'Preparado. Cierra P para ver el movimiento.':type==='stop'?'Articulación detenida y bloqueada.':'Sentido invertido.');
   }
+  function marchAction(action){
+   if(!last||busy)return;let result;try{result=onMarch?.(action);}catch{result=false;}
+   feedback(result,action.type==='start'?'Conjunto preparado. Cierra P para iniciar.':action.type==='stop'?'Todas las articulaciones detenidas.':'Inicio actualizado.');
+  }
+  function renderMarch(next){
+   const march=next?.march,members=march?.members||[],list=get('march-members');list.replaceChildren();
+   get('march-start').disabled=!members.length||!!march?.running;get('march-stop').disabled=!members.length;
+   get('march-status').textContent=members.length+' articulaciones conectadas · '+(march?.status||'Selecciona un mecanismo con servos');
+   for(const item of members){
+    const row=document.createElement('div');row.className='servo-march-row';
+    const label=document.createElement('label');label.textContent=item.label+' · '+format(item.angle,'°');
+    const select=document.createElement('select');select.setAttribute('aria-label','Posición inicial de '+item.label);
+    for(const [value,text]of [[1,'Desde mínimo ('+format(item.min,'°')+')'],[-1,'Desde máximo ('+format(item.max,'°')+') · opuesto']]){const option=document.createElement('option');option.value=String(value);option.textContent=text;select.appendChild(option);}
+    select.value=String(item.direction);select.addEventListener('change',()=>marchAction({type:'phase',id:item.id,direction:Number(select.value)}));label.appendChild(select);
+    const button=document.createElement('button');button.type='button';button.textContent='Ajustar recorrido';button.addEventListener('click',()=>marchAction({type:'select',id:item.id}));row.append(label,button);list.appendChild(row);
+   }
+  }
   function render(snapshot){
    const next=snapshot||null,nextIdentity=next?(next.id??next):null,changed=identity!==nextIdentity;
-   last=next;identity=nextIdentity;if(changed){dirty=false;feedback(null);}
+   last=next;identity=nextIdentity;renderMarch(next);if(changed){dirty=false;feedback(null);}
    get('controls').hidden=!next;get('empty').hidden=!!next;
    get('title').textContent=next?.label||(next?.kind==='hinge'?'Servo bisagra':next?.kind==='pivot'?'Servo pivote':'Servos Q-bits');
    if(!next){for(const id of ['apply','start','stop','invert'])get(id).disabled=true;return;}
@@ -64,6 +81,7 @@
   }
   for(const key of fields)listen(key,key==='mode'?'change':'input',()=>{dirty=true;feedback(null);diagram();});
   listen('apply','click',apply);for(const type of ['start','stop','invert'])listen(type,'click',()=>action(type));
+  listen('march-start','click',()=>{if(!dirty||apply())marchAction({type:'start'});});listen('march-stop','click',()=>marchAction({type:'stop'}));
   render(null);
   return {render,get snapshot(){return last;},destroy(){for(const [node,type,fn]of listeners)node.removeEventListener(type,fn);listeners.length=0;}};
  }

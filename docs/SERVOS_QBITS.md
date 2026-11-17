@@ -62,4 +62,14 @@ Los servos usan la energía interna existente de sus piezas y pueden compartir u
 
 Si no se mueve, cierra P y revisa el estado del servo: energía, carga y espacio para girar. Si se bloquea bajo esfuerzo, detén el servo, reduce el peso o acorta el tramo y prueba de nuevo. Los límites de torque y carga se muestran en el panel; añadir batería no aumenta automáticamente la fuerza máxima.
 
-Los servos son articulaciones individuales. **Esta entrega no incluye coordinación automática de cuatro patas ni una orden de marcha para un cuadrúpedo.** Permite montar y probar una extremidad como base para esa coordinación posterior.
+## Mover todas las patas como un mecanismo
+
+1. Conecta las patas al mismo cuerpo mediante sus articulaciones. Las piezas simplemente apoyadas o conectadas solo por cable no forman parte del mismo mecanismo físico.
+2. Selecciona cualquier servo y abre **P → Mecanismos → Marcha del conjunto**. La lista muestra todos los servos conectados, incluidas caderas y rodillas.
+3. Elige para cada articulación **Desde mínimo** o **Desde máximo · opuesto**. Las que parten del mismo extremo llevan la misma fase; las opuestas alternan. Usa **Ajustar recorrido** para seleccionar y ajustar una articulación concreta.
+4. Pulsa **Iniciar marcha del conjunto** y cierra P. Primero todas se colocan en su posición inicial; cuando todas llegan, comienza la repetición con un único reloj. El ritmo común respeta el recorrido y la velocidad de la articulación que necesita más tiempo.
+5. Abre P y pulsa **Detener conjunto**: todas se apagan y bloquean su postura juntas. También hay iniciar/detener marcha del conjunto en el menú de clic derecho de cualquier servo.
+
+No necesitas iniciar cada pata por separado. Cambiar ajustes, tomar el mecanismo, separar una articulación, perder energía o sufrir un bloqueo persistente detiene todo el conjunto. Si falta energía o capacidad antes de comenzar, no arranca parcialmente. Las posiciones iniciales se guardan con el mecanismo; al recuperarlo permanece detenido.
+
+Esta marcha coordina las articulaciones; todavía debes ajustar geometría, recorridos y apoyos para que el montaje camine sin perder el equilibrio. No incluye navegación automática ni una garantía de avance para cualquier construcción.

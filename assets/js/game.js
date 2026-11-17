@@ -2079,7 +2079,7 @@ function driveRobotArms(dt){
  }
 }
 function robotArmStatus(arm){return arm?arm.status:'Selecciona un cubo de agarre o un brazo';}
-function robotStopForGroups(list){flightStopForGroups(list);conveyorStopForGroups(list);for(const arm of robotArms)if(rotorConnectedGroups([robotGripperHit(arm.gripperId)?.g].filter(Boolean)).some(g=>list.includes(g)))stopRobotArm(arm,'Detenido para manipular');for(const grip of [...robotGrips.values()])if(list.includes(grip.g)||list.includes(robotGripperHit(grip.id)?.g))releaseGripper(grip.id);}
+function robotStopForGroups(list){stopServoMarchForGroups(list);flightStopForGroups(list);conveyorStopForGroups(list);for(const arm of robotArms)if(rotorConnectedGroups([robotGripperHit(arm.gripperId)?.g].filter(Boolean)).some(g=>list.includes(g)))stopRobotArm(arm,'Detenido para manipular');for(const grip of [...robotGrips.values()])if(list.includes(grip.g)||list.includes(robotGripperHit(grip.id)?.g))releaseGripper(grip.id);}
 function robotBeforeRemoveGroup(g){robotStopForGroups([g]);for(const arm of robotArms)if(arm.brakes.some(c=>c.bodyA===g.body||c.bodyB===g.body))robotRemoveBrakes(arm);}
 function clearRobotArms(){for(const arm of [...robotArms]){stopRobotArm(arm);robotRemoveBrakes(arm);}for(const id of [...robotGrips.keys()])releaseGripper(id);robotArms.length=0;robotWorkingParts.clear();}
 function pruneRobotArms(){for(const arm of [...robotArms])if(!robotGripperHit(arm.gripperId)||!robotGripperHit(arm.baseId)||robotArmRotors(arm).length!==arm.joints.length){stopRobotArm(arm,'Brazo incompleto');robotRemoveBrakes(arm);robotArms.splice(robotArms.indexOf(arm),1);}}
@@ -2300,6 +2300,74 @@ function restoreConveyorTemplate(records,keyToId,joints){return (Array.isArray(r
 // ordinary weld/split operations, and the hinge is rebuilt before the next step.
 // Servos reuse the physical motor graph; only their local anchors and bounded
 // position controller differ. Geometry, collisions and rendered parts stay real.
+// A connected mechanism has one march clock, not one timer per leg. The
+// registration is transient; per-joint starting ends survive via servo.direction.
+const servoMarches=new Set();
+function servoMarchMembers(subject){
+ const seed=rotors.includes(subject)?rotorGroups(subject):subject?.parts?[subject]:[],component=rotorConnectedGroups(seed);
+ return rotors.filter(r=>r.servo&&rotorGroups(r).every(g=>component.includes(g))).sort((a,b)=>a.aId-b.aId);
+}
+function servoMarchFor(rotor){return [...servoMarches].find(m=>m.members.includes(rotor))||null;}
+function stopServoMarch(march,reason='Conjunto detenido · articulaciones bloqueadas'){
+ if(!march)return false;servoMarches.delete(march);
+ for(const r of march.members)if(rotors.includes(r)){configureRotor(r,{enabled:false},true);r.servoStatus=reason;setRotorBrake(r,true);}return true;
+}
+function stopServoMarchForGroups(list){for(const m of [...servoMarches])if(m.members.some(r=>rotorGroups(r).some(g=>list.includes(g))))stopServoMarch(m,'Conjunto detenido para manipular');}
+function startServoMarch(subject){
+ const members=servoMarchMembers(subject);if(!members.length)return false;
+ const component=rotorConnectedGroups(rotorGroups(members[0])),fail=reason=>{for(const r of members)r.servoStatus=reason;announce(reason);return false;};
+ if((held?.items||(held?[held]:[])).some(item=>component.includes(item.g)))return fail('Suelta el mecanismo antes de iniciar la marcha');
+ if(rotors.some(r=>!members.includes(r)&&r.enabled&&r.mount==='fixed'&&rotorGroups(r).some(g=>component.includes(g))))return fail('Detén el rotor fijo antes de iniciar el conjunto');
+ // Preflight every joint before enabling any: no partly started mechanism.
+ for(const r of members){const p=rotorPowerState({...r,enabled:true});if(!r.constraint||!servoConfigValid(r.servo)||p.stopReason)return fail('No se inició el conjunto · '+(p.stopReason?rotorStopLabel(p.stopReason):'revisa las articulaciones'));}
+ for(const m of [...servoMarches])if(m.members.some(r=>members.includes(r)))stopServoMarch(m);
+ const march={members,phase:'align',elapsed:0,settled:0,blocked:0,bestError:Infinity,period:Math.max(...members.map(r=>Math.PI*(r.servo.max-r.servo.min)/r.servo.speed))};
+ for(const r of members){
+  if(!configureRotor(r,{enabled:true},true)){stopServoMarch(march,'No se pudo iniciar el conjunto');return false;}
+  r.servoStatus='Conjunto · preparando posición inicial';
+ }
+ servoMarches.add(march);automationIntervention('Marcha del conjunto iniciada');return true;
+}
+function validateServoMarches(){
+ for(const m of [...servoMarches]){
+  const current=servoMarchMembers(m.members[0]);
+  if(current.length!==m.members.length||m.members.some(r=>!rotors.includes(r)||!r.enabled||!current.includes(r))){const failed=m.members.find(r=>r.stopReason);stopServoMarch(m,'Conjunto detenido · '+(failed?rotorStopLabel(failed.stopReason):'revisa carga o uniones'));}
+ }
+}
+function driveServoMarches(dt){
+ validateServoMarches();
+ for(const m of [...servoMarches]){
+  let maxError=0,maxRpm=0;
+  for(const r of m.members){
+   const s=r.servo,sign=s.direction,phase=2*Math.PI*m.elapsed/m.period;
+   const goal=m.phase==='align'?(sign===1?s.min:s.max):(s.min+s.max)/2-sign*(s.max-s.min)/2*Math.cos(phase);
+   r.servoGoal=goal;const error=goal-servoAngle(r);maxError=Math.max(maxError,Math.abs(error));maxRpm=Math.max(maxRpm,Math.abs(r.actualRpm||0));
+   const feed=m.phase==='align'?0:sign*(s.max-s.min)/2*Math.sin(phase)*2*Math.PI/m.period;
+   const limit=Math.min(s.speed,(r.effectiveRpm||r.rpm)*6),speed=-clamp(error*8+feed,-limit,limit)*Math.PI/180;
+   r.driveVelocity=speed;r.constraint.enableMotor();r.constraint.setMotorSpeed(speed);r.constraint.setMotorMaxForce(r.maxTorque*dt);
+  }
+  if(m.phase==='align'){
+   m.settled=maxError<1&&maxRpm<.5?m.settled+dt:0;
+   if(maxError<m.bestError-.1){m.bestError=maxError;m.blocked=0;}else m.blocked+=dt;
+   if(m.settled>.15){m.phase='march';m.elapsed=0;m.blocked=0;for(const r of m.members)r.servoStatus='Marcha del conjunto · sincronizada';}
+  }else {m.elapsed=(m.elapsed+dt)%m.period;m.blocked=maxError>12?m.blocked+dt:0;}
+  if(m.blocked>3)stopServoMarch(m,'Conjunto bloqueado · revisa espacio, fuerza y carga');
+ }
+}
+function servoMarchSnapshot(r){
+ const members=servoMarchMembers(r),march=servoMarchFor(r);
+ return {running:!!march,status:march?(march.phase==='align'?'Preparando todas las patas antes de comenzar':'Marcha sincronizada'):(r.servoStatus||'Conjunto detenido'),members:members.map(item=>({id:item.id,label:servoLabel(item)+' · '+item.aId,direction:item.servo.direction,angle:servoAngle(item),min:item.servo.min,max:item.servo.max})),period:march?.period};
+}
+function servoMarchAction(action){
+ const r=selectedRotor();if(!r?.servo)return false;
+ if(action.type==='start')return startServoMarch(r);
+ if(action.type==='stop'){const members=servoMarchMembers(r);stopServoMarch(servoMarchFor(r));for(const item of members){configureRotor(item,{enabled:false},true);setRotorBrake(item,true);item.servoStatus='Conjunto detenido · articulaciones bloqueadas';}return true;}
+ const target=servoMarchMembers(r).find(item=>item.id===action.id);if(!target)return false;
+ if(action.type==='phase')return configureServo(target,{direction:action.direction});
+ if(action.type==='select'){const hit=rotorPart(target.aId);clearRotorSelection();selected={g:hit.g,part:hit.part};multiSelection=[];return true;}
+ return false;
+}
+
 function servoConfig(kind='pivot',reference=[0,0,0,1]){return {kind,min:-60,max:60,speed:45,mode:'once',target:30,direction:1,reference:[...reference]};}
 function servoConfigValid(s){return !!s&&['pivot','hinge'].includes(s.kind)&&['hold','once','repeat'].includes(s.mode)&&[1,-1].includes(s.direction)&&['min','max','target','speed'].every(k=>Number.isFinite(s[k]))&&s.min>=-90&&s.max<=90&&s.min<s.max&&s.target>=s.min&&s.target<=s.max&&s.speed>=5&&s.speed<=180&&Array.isArray(s.reference)&&s.reference.length===4&&s.reference.every(Number.isFinite)&&Math.abs(Math.hypot(...s.reference)-1)<.0001;}
 function rotorEndpoint(pose,servo,side='a'){
@@ -2327,16 +2395,19 @@ function configureServo(rotor,patch={}){
  if(!rotors.includes(rotor)||!rotor.servo)return false;
  const next={...rotor.servo};for(const key of ['min','max','speed','mode','target','direction'])if(patch[key]!==undefined)next[key]=patch[key];
  if(!servoConfigValid(next))return false;
+ stopServoMarch(servoMarchFor(rotor),'Conjunto detenido para ajustar');
  configureRotor(rotor,{enabled:false},true);rotor.servo=next;rotor.rpm=Math.max(1,next.speed/6);rotor.servoStatus='Configurado · detenido';return true;
 }
 function startServo(rotor){
  if(!rotors.includes(rotor)||!rotor.servo)return false;
+ stopServoMarch(servoMarchFor(rotor),'Conjunto detenido · prueba individual');
  rotor.servoGoal=rotor.servo.mode==='repeat'?(rotor.servo.direction===1?rotor.servo.max:rotor.servo.min):rotor.servo.target;
  rotor.servoSettled=0;rotor.servoStuck=0;rotor.servoLastError=Infinity;
  const ok=configureRotor(rotor,{enabled:true},true);rotor.servoStatus=ok?'En movimiento':'Revisa energía y carga';return ok;
 }
 function driveServos(dt){
- for(const r of rotors){if(!r.servo||!r.enabled||!r.constraint)continue;
+ driveServoMarches(dt);const grouped=new Set([...servoMarches].flatMap(m=>m.members));
+ for(const r of rotors){if(!r.servo||!r.enabled||!r.constraint||grouped.has(r))continue;
   const s=r.servo,angle=servoAngle(r),goal=r.servoGoal??s.target,error=goal-angle;
   if(Math.abs(error)<.5&&Math.abs(r.actualRpm||0)<.3){
    r.servoSettled=(r.servoSettled||0)+dt;
@@ -2354,8 +2425,8 @@ function servoLabel(r){return r.servo.kind==='hinge'?'Servo bisagra':'Servo pivo
 let servoPanel=null;
 function updateServoPanel(){
  if(!window.QBitsServoPanel)return;
- if(!servoPanel)servoPanel=QBitsServoPanel.create({host:document.querySelector('#servo-panel'),onApply:patch=>{const r=selectedRotor();const ok=configureServo(r,patch);if(ok)updateServoPanel();return ok;},onAction:action=>{const r=selectedRotor();if(!r?.servo)return false;let ok=true;if(action==='start')ok=startServo(r);else if(action==='stop'){configureRotor(r,{enabled:false},true);r.servoStatus='Apagado · bloqueado';}else if(action==='invert'){ok=configureServo(r,{direction:-r.servo.direction,target:clamp(-r.servo.target,r.servo.min,r.servo.max)});}updateServoPanel();return ok;}});
- const r=selectedRotor();servoPanel.render(r?.servo?{...r.servo,id:r.id,label:servoLabel(r),angle:servoAngle(r),enabled:r.enabled,status:r.stopReason?rotorStopLabel(r.stopReason):r.servoStatus||'Apagado · bloqueado',torque:r.maxTorque,capacity:r.capacity}:null);
+ if(!servoPanel)servoPanel=QBitsServoPanel.create({host:document.querySelector('#servo-panel'),onMarch:action=>{const ok=servoMarchAction(action);updateServoPanel();return ok;},onApply:patch=>{const r=selectedRotor();const ok=configureServo(r,patch);if(ok)updateServoPanel();return ok;},onAction:action=>{const r=selectedRotor();if(!r?.servo)return false;let ok=true;if(action==='start')ok=startServo(r);else if(action==='stop'){stopServoMarch(servoMarchFor(r));configureRotor(r,{enabled:false},true);r.servoStatus='Apagado · bloqueado';}else if(action==='invert'){ok=configureServo(r,{direction:-r.servo.direction,target:clamp(-r.servo.target,r.servo.min,r.servo.max)});}updateServoPanel();return ok;}});
+ const r=selectedRotor();servoPanel.render(r?.servo?{...r.servo,id:r.id,label:servoLabel(r),angle:servoAngle(r),enabled:r.enabled,status:r.stopReason?rotorStopLabel(r.stopReason):r.servoStatus||'Apagado · bloqueado',torque:r.maxTorque,capacity:r.capacity,march:servoMarchSnapshot(r)}:null);
 }
 function prepareServoPart(hit,kind){
  if(story.scene!=='lab'||unitShape(hit)!=='pyramid'||rotorForPart(hit.part.id))return false;
@@ -2502,6 +2573,7 @@ function invalidateRotorBody(g){
 }
 function disconnectRotor(rotor){
  if(!rotors.includes(rotor))return false;
+ stopServoMarch(servoMarchFor(rotor),'Conjunto detenido · articulación separada');
  invalidateMechanicalIndex();
  if(rotor.constraint)world.removeConstraint(rotor.constraint);rotor.constraint=null;unpinRotor(rotor);rotors.splice(rotors.indexOf(rotor),1);cleanRotorSets();return true;
 }
@@ -2549,6 +2621,7 @@ function refreshRotors(){
 }
 function configureRotor(rotor,patch={},automatic=false){
  if(!rotor||!rotors.includes(rotor))return false;
+ if(!automatic&&rotor.servo&&patch.enabled===false)stopServoMarch(servoMarchFor(rotor));
  if(rotor.servo&&(patch.mount&&patch.mount!=='wheel'||patch.moving&&patch.moving!=='b'))return false;
  if(rotor.servo&&!automatic&&patch.enabled===true)return startServo(rotor);
  if(!automatic){const conveyor=conveyors.find(c=>c.joints.some(j=>j.aId===rotor.aId&&j.bId===rotor.bId));if(conveyor){if(patch.enabled===true){announce('Usa Iniciar cinta en Mecanismos.');return false;}if(conveyor.running)stopConveyor(conveyor,'Detenida para ajustar');}}
@@ -3648,7 +3721,7 @@ function stepPhysics(dt){
  simTime+=dt;refreshRotors();updatePowerNetwork(dt);updateConveyors(dt);updateRobotGrips(dt);updateRobotArms(dt);tutorialFloat(dt);updateGrab(dt);updateRoutes(dt);updateHauling(dt);
  // Bound substep travel to avoid tunnelling through a 9 cm piece.
  for(const g of groups){const b=g.body,speed=b.velocity.norm();if(speed>6)b.velocity.scale(6/speed,b.velocity);const spin=b.angularVelocity.norm();if(spin>30)b.angularVelocity.scale(30/spin,b.angularVelocity);}
- updateCampaignPressure(dt);updateButtonPhysics();prepareRotorPower();updateRotorMotors(dt);driveRobotArms(dt);driveConveyors(dt);driveServos(dt);productionForces(dt);updateFlights(dt);world.step(dt);stabilizeRotors();updateRotorPower(dt);tickContactSensors(dt);tickFlightSensors(dt);
+ updateCampaignPressure(dt);updateButtonPhysics();prepareRotorPower();updateRotorMotors(dt);driveRobotArms(dt);driveConveyors(dt);driveServos(dt);productionForces(dt);updateFlights(dt);world.step(dt);stabilizeRotors();updateRotorPower(dt);validateServoMarches();tickContactSensors(dt);tickFlightSensors(dt);
  // Correct only tiny solver penetration of a hand-held shape; free bodies keep
  // their normal collision response. A hand cannot push its attachment underground.
  if(held)for(const item of held.items||[held]){const b=item.g.body,low=bounds(item.g).min.y;if(low<.001){b.position.y+=.001-low;if(b.velocity.y<0)b.velocity.y=0;b.aabbNeedsUpdate=true;}if(item.floorLocked)b.angularVelocity.set(0,0,0);}
@@ -4648,6 +4721,7 @@ function handleSecondary(event){
   if(QBitsWorkshop.partState(hit.part).sensor)items.unshift({label:'Sensor · conectar punta…',run:()=>showSensorMenu(hit)});
   const rotor=rotorForPart(hit.part.id)||rotorForGroup(hit.g);
   if(rotor&&rotorSetFor(rotor)&&!QBitsWorkshop.partState(hit.part).sensor){selectRotorSet(rotorSetFor(rotor));showRotorSetMenu();return;}
+  if(rotor?.servo)items.unshift({label:servoMarchFor(rotor)?'Detener marcha del conjunto':'Iniciar marcha del conjunto',run:()=>{if(servoMarchFor(rotor))stopServoMarch(servoMarchFor(rotor));else startServoMarch(rotor);captureMouse();}});
   if(rotor){items.splice(items.findIndex(item=>item.label==='Guardar forma'),1);items.unshift({label:rotor.servo?'Configurar '+servoLabel(rotor)+'…':'Rotación…',run:()=>rotor.servo?openRotorControls():showRotorRotation(rotor,partPose(hit.g,hit.part).p)});items.push({label:'Guardar mecanismo · Rotor',run:()=>{saveMechanism(rotor);captureMouse();}},{label:'Separar enganches del rotor',run:()=>{disconnectRotor(rotor);captureMouse();}});}
   else if(hit.g.parts.some(part=>unitShape(part)==='coupler'))items.unshift({label:'Guardar mecanismo · Enganche',run:()=>{saveMechanism(hit.g);captureMouse();}},{label:hit.g.parts.some(p=>p.shape==='coupler'&&propellerHasBlade(p.id))?'Hélice incompleta · conecta otro triangular a la punta':'Enganche · Shift + otra punta: rotor; Shift + 2 triangulares: hélice',disabled:true,run:()=>{}});
   if(!rotor&&story.scene==='lab'&&unitShape(hit)==='pyramid')items.unshift(...[['pivot','Preparar Servo pivote'],['hinge','Preparar Servo bisagra']].map(([kind,label])=>({label,run:()=>{prepareServoPart(hit,kind);captureMouse();}})));

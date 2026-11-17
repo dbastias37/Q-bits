@@ -1,9 +1,10 @@
 const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const vm=require('node:vm');const path=require('node:path');
+function fakeNode(){return {value:'',children:[],hidden:false,disabled:false,textContent:'',dataset:{},attributes:{},listeners:{},replaceChildren(...items){this.children=items;},append(...items){this.children.push(...items);},appendChild(item){this.children.push(item);},setAttribute(k,v){this.attributes[k]=v;},addEventListener(k,f){(this.listeners[k]??=[]).push(f);},removeEventListener(k,f){this.listeners[k]=this.listeners[k].filter(x=>x!==f);},dispatch(k){for(const f of this.listeners[k]||[])f();}};}
 function panel(){
  const nodes=new Map();const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
- for(const [,id]of html.matchAll(/id="(servo-[^"]+)"/g))nodes.set('#'+id,{value:'',hidden:false,disabled:false,textContent:'',dataset:{},attributes:{},listeners:{},setAttribute(k,v){this.attributes[k]=v;},addEventListener(k,f){(this.listeners[k]??=[]).push(f);},removeEventListener(k,f){this.listeners[k]=this.listeners[k].filter(x=>x!==f);},dispatch(k){for(const f of this.listeners[k]||[])f();}});
- const host={querySelector:id=>nodes.get(id)},sandbox={};vm.createContext(sandbox);vm.runInContext(fs.readFileSync(path.join(__dirname,'../assets/js/servo-panel.js'),'utf8'),sandbox);
- const calls=[];let applyResult=true;const ui=sandbox.QBitsServoPanel.create({host,onApply:patch=>{calls.push({type:'apply',patch:JSON.parse(JSON.stringify(patch))});return applyResult;},onAction:type=>{calls.push({type});return true;}});
+ for(const [,id]of html.matchAll(/id="(servo-[^"]+)"/g))nodes.set('#'+id,fakeNode());
+ const host={querySelector:id=>nodes.get(id)},sandbox={document:{createElement:()=>fakeNode()}};vm.createContext(sandbox);vm.runInContext(fs.readFileSync(path.join(__dirname,'../assets/js/servo-panel.js'),'utf8'),sandbox);
+ const calls=[];let applyResult=true;const ui=sandbox.QBitsServoPanel.create({host,onApply:patch=>{calls.push({type:'apply',patch:JSON.parse(JSON.stringify(patch))});return applyResult;},onAction:type=>{calls.push({type});return true;},onMarch:action=>{calls.push({type:'march',...action});return true;}});
  return {ui,calls,node:id=>nodes.get('#servo-'+id),setApplyResult:result=>applyResult=result};
 }
 const snapshot=()=>({id:1,kind:'hinge',label:'Servo bisagra',angle:12,min:-40,max:40,target:0,speed:45,mode:'repeat',enabled:false,torque:.4,capacity:32});
@@ -24,4 +25,11 @@ test('invalid ranges and out-of-range held target cannot command the motor',()=>
 test('running controls expose stop/invert, retain the measured angle, and dispose their events',()=>{
  const p=panel();p.ui.render({...snapshot(),enabled:true});assert.equal(p.node('start').disabled,true);assert.equal(p.node('stop').disabled,false);p.node('stop').dispatch('click');p.node('invert').dispatch('click');assert.deepEqual(p.calls,[{type:'stop'},{type:'invert'}]);
  assert.match(p.node('pointer').attributes.d,/M 100 92 L/);p.ui.destroy();p.node('stop').dispatch('click');assert.equal(p.calls.length,2);
+});
+
+test('march controls start and stop the whole mechanism and expose opposed starting ends',()=>{
+ const p=panel(),march={running:false,status:'Detenido',members:[{id:1,label:'Cadera',direction:1,angle:0,min:-20,max:20},{id:2,label:'Rodilla',direction:-1,angle:0,min:-30,max:30}]};p.ui.render({...snapshot(),march});
+ assert.equal(p.node('march-members').children.length,2);p.node('march-start').dispatch('click');assert.equal(p.calls.at(-1).type,'start');
+ const select=p.node('march-members').children[1].children[0].children[0];assert.equal(select.value,'-1');select.value='1';select.dispatch('change');assert.equal(p.calls.at(-1).direction,1);
+ p.ui.render({...snapshot(),march:{...march,running:true}});assert(p.node('march-start').disabled);p.node('march-stop').dispatch('click');assert.equal(p.calls.at(-1).type,'stop');
 });
