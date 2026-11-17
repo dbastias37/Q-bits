@@ -311,6 +311,7 @@ input,select,textarea{font-family:var(--font-menu);}
 <link rel="stylesheet" href="assets/css/workshop-panel.css?v=20261116-robot-arm-1">
 <link rel="stylesheet" href="assets/css/robot-arm-panel.css?v=20261116-power-cables-1">
 <link rel="stylesheet" href="assets/css/conveyor-panel.css?v=20261116-quick-catalogue-1">
+<link rel="stylesheet" href="assets/css/servo-panel.css?v=20261117-servos-1">
 </head>
 <body data-game-mode="boot" data-game-scene="lab" data-booting="true">
   <section id="boot-screen" aria-label="Inicio de Q-bits" data-stage="loading">
@@ -402,6 +403,36 @@ input,select,textarea{font-family:var(--font-menu);}
     </div>
     <div id="page-mechanisms" role="tabpanel" hidden>
       <p id="mechanism-unlock"></p>
+      <section id="servo-panel" aria-labelledby="servo-title">
+        <p class="servo-kicker">Articular · ajustar · probar</p><h3 id="servo-title">Servos Q-bits</h3>
+        <p id="servo-empty">Selecciona un Servo pivote o un Servo bisagra para configurar su recorrido.</p>
+        <div id="servo-controls" hidden>
+          <p id="servo-description"></p>
+          <figure class="servo-preview">
+            <svg id="servo-diagram" viewBox="0 0 200 112" role="img" aria-label="Recorrido lateral del servo">
+              <path class="servo-arc-base" d="M 22 92 A 78 78 0 0 1 178 92"/>
+              <path id="servo-arc" d="M 22 92 A 78 78 0 0 1 178 92"/>
+              <path id="servo-pointer" d="M 100 92 L 100 24"/>
+              <circle cx="100" cy="92" r="5"/>
+              <text x="12" y="108">−90°</text><text x="91" y="10">0°</text><text x="164" y="108">90°</text>
+            </svg>
+            <figcaption id="servo-angle">Ángulo actual: 0°</figcaption>
+          </figure>
+          <div class="servo-fields">
+            <label>Desde (°)<input id="servo-min" type="number" min="-90" max="90" step="5" value="-40" inputmode="decimal"></label>
+            <label>Hasta (°)<input id="servo-max" type="number" min="-90" max="90" step="5" value="40" inputmode="decimal"></label>
+            <label>Velocidad (°/s)<input id="servo-speed" type="number" min="5" max="180" step="5" value="45" inputmode="decimal"></label>
+            <label>Movimiento<select id="servo-mode"><option value="hold">Mantener posición</option><option value="once">Mover una vez</option><option value="repeat">Ida y vuelta</option></select></label>
+            <label id="servo-target-row">Posición objetivo (°)<input id="servo-target" type="number" min="-90" max="90" step="5" value="0" inputmode="decimal"></label>
+          </div>
+          <button id="servo-apply" type="button">Aplicar recorrido</button>
+          <div class="servo-actions"><button id="servo-start" type="button">Iniciar</button><button id="servo-stop" type="button">Detener y bloquear</button><button id="servo-invert" type="button">Invertir sentido</button></div>
+          <p id="servo-status" role="status" aria-live="polite"></p>
+          <p class="servo-pause-note">P pausa el juego. Cierra el panel para ver el movimiento. Al detenerse, la articulación conserva su ángulo.</p>
+          <dl class="servo-facts"><div><dt>Torque máximo</dt><dd id="servo-torque">—</dd></div><div><dt>Carga máxima</dt><dd id="servo-capacity">—</dd></div></dl>
+        </div>
+        <p id="servo-feedback" role="status" aria-live="polite"></p>
+      </section>
       <section id="flight-panel" aria-labelledby="flight-title" hidden>
         <h3 id="flight-title">Hélices · vuelo modular</h3>
         <p id="flight-status" role="status"></p>
@@ -567,6 +598,18 @@ input,select,textarea{font-family:var(--font-menu);}
         <p>Para prolongar una cinta, apunta cerca de su flecha de salida y mantén Shift. La vista previa se alinea con la conexión: confirma con clic sin soltar Shift. Se unen las bases y se conservan los rodillos. Las repisas se colocan en paredes; depósito, enfriador y cuerpo sólido van en el suelo. Mesa de trabajo abre el taller existente.</p>
         <p>Con una pieza en la mano: rueda abajo acerca y rueda arriba aleja. Configuración → Juego permite invertir la distancia y el giro por separado. N, B y los botones Crear también preparan una vista previa.</p>
       </details>
+      <details><summary>Servos · pivote, bisagra y primera extremidad</summary>
+        <ol>
+          <li>Mantén Q → Tab → Banco rápido y elige Servo pivote o Servo bisagra. Suelta Q y confirma la vista previa con clic.</li>
+          <li>Clic derecho en la articulación → Configurar servo, o selecciónala y abre P → Mecanismos.</li>
+          <li>Prueba Desde −20°, Hasta 20°, velocidad 30 °/s y Movimiento: Ida y vuelta. Pulsa Iniciar y cierra P para reanudar la simulación.</li>
+          <li>Detener y bloquear conserva el ángulo actual. Mantener posición y Mover una vez llegan al objetivo y quedan bloqueados. Ida y vuelta alterna entre los extremos.</li>
+        </ol>
+        <p>Recorrido disponible: −90° a 90°. Velocidad: 5–180 °/s. La fuerza, el peso y los obstáculos condicionan el movimiento real.</p>
+        <p><strong>Pivote manual:</strong> clic derecho sobre una pirámide de base cuadrada → Preparar Servo pivote. Une su base al cuerpo con Shift; conecta la cara inferior de un cubo a la punta con Shift. Ese cubo inicia el tramo móvil.</p>
+        <p><strong>Bisagra manual:</strong> prepara una pirámide como Servo bisagra y conecta por su punta otra pirámide con Shift. Cada base sostiene un tramo rígido; las puntas permanecen unidas al abrirse lateralmente.</p>
+        <p>La energía interna permite probar los servos. Una batería externa activa conectada al conjunto comparte su reserva; estar cerca no basta. Si se bloquea, revisa energía, carga, fuerza y espacio. Esta entrega permite construir una extremidad; todavía no incluye coordinación automática de cuatro patas.</p>
+      </details>
       <details><summary>Hélice y primer dron</summary>
         <ol><li>Mantén Q, pulsa Tab y elige <strong>Dron de prueba</strong>. Suelta Q y haz clic: aparece una hélice con batería I cargada y apagada.</li>
         <li>Clic derecho en la batería → encender. Clic derecho en el enganche → <strong>Vuelo</strong>.</li>
@@ -662,6 +705,7 @@ input,select,textarea{font-family:var(--font-menu);}
    <div id="settings-confirm" hidden role="alertdialog" aria-modal="true" aria-labelledby="settings-confirm-title"><div class="settings-confirm-card"><h3 id="settings-confirm-title">¿Salir sin guardar?</h3><p>Tienes cambios pendientes en la configuración.</p><div class="settings-confirm-actions"><button id="settings-keep" type="button">Seguir editando</button><button id="settings-discard" type="button">Salir sin guardar</button><button id="settings-confirm-save" type="button">Guardar y salir</button></div></div></div>
   </section>
   <script src="assets/js/opening.js?v=20261116-block-joins-1" defer></script>
-  <script src="assets/js/boot.js?v=20261116-power-cables-1" defer></script>
+  <script src="assets/js/servo-panel.js?v=20261117-servos-1" defer></script>
+  <script src="assets/js/boot.js?v=20261117-servos-1" defer></script>
 </body>
 </html>

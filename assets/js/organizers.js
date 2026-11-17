@@ -19,11 +19,21 @@
    }
    labels.push(best);for(const [id,value]of bestPorts)ports.set(id,{index,value});
   }
-  const edges=labels.map(()=>[]);for(const joint of item.joints||[]){const a=ports.get(joint.aId),b=ports.get(joint.bId);if(a&&b){edges[a.index].push({to:b.index,from:a.value,target:b.value});edges[b.index].push({to:a.index,from:b.value,target:a.value});}}
-  const branch=(index,parent)=>[labels[index],edges[index].filter(e=>e.to!==parent).map(e=>[e.from,e.target,branch(e.to,index)]).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)))];
+  const edges=labels.map(()=>[]);for(const joint of item.joints||[]){const a=ports.get(joint.aId),b=ports.get(joint.bId);if(a&&b){edges[a.index].push({to:b.index,from:a.value,target:b.value,joint:joint.servo?.kind||'rotor'});edges[b.index].push({to:a.index,from:b.value,target:a.value,joint:joint.servo?.kind||'rotor'});}}
+  const branch=(index,parent)=>[labels[index],edges[index].filter(e=>e.to!==parent).map(e=>[e.from,e.target,e.joint,branch(e.to,index)]).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)))];
   const key=labels.map((_,i)=>JSON.stringify(branch(i,-1))).sort()[0]+(item.robotArms?.length?':robot-arm':'')+(item.conveyors?.length?':conveyor:'+item.conveyors.map(c=>c.kind).sort().join(','):'');
-  const label=item.conveyors?.length?'Línea de '+item.conveyors.length+' cinta'+(item.conveyors.length===1?'':'s')+' · '+parts.length+' piezas':item.robotArms?.length?'Brazo de '+parts.length+' piezas':parts.length===1?(parts[0].mood?.gripper?'Cubo de agarre':parts[0].mood?.externalBattery?'Batería':{cube:'Q-bit',tetra:'T-bit triangular',pyramid:'T-bit de base cuadrada',coupler:'Enganche'}[parts[0].shape]):parts.every(p=>p.mood?.externalBattery)?'Batería de '+parts.length+' celdas':parts.length===2&&item.joints?.length===1?'Rotor':'Mecanismo de '+parts.length+' piezas';
+  const label=item.conveyors?.length?'Línea de '+item.conveyors.length+' cinta'+(item.conveyors.length===1?'':'s')+' · '+parts.length+' piezas':item.robotArms?.length?'Brazo de '+parts.length+' piezas':parts.length===1?(parts[0].mood?.gripper?'Cubo de agarre':parts[0].mood?.externalBattery?'Batería':{cube:'Q-bit',tetra:'T-bit triangular',pyramid:'T-bit de base cuadrada',coupler:'Enganche'}[parts[0].shape]):parts.every(p=>p.mood?.externalBattery)?'Batería de '+parts.length+' celdas':item.joints?.length===1&&item.joints[0].servo?(item.joints[0].servo.kind==='pivot'?'Servo pivote':'Servo bisagra'):parts.length===2&&item.joints?.length===1?'Rotor':'Mecanismo de '+parts.length+' piezas';
   return {key,label};
+ }
+ function jointShapesValid(j,a,b){
+  if(!a||!b)return false;
+  if(j.servo===undefined)return a.shape==='coupler'&&b.shape==='coupler';
+  const s=j.servo;
+  return !!s&&typeof s==='object'&&!Array.isArray(s)&&['pivot','hinge'].includes(s.kind)&&
+   a.shape==='pyramid'&&b.shape===(s.kind==='pivot'?'cube':'pyramid')&&
+   j.moving==='b'&&j.mount==='wheel'&&['min','max','speed','target'].every(key=>Number.isFinite(s[key]))&&s.min>=-90&&s.max<=90&&s.speed>=5&&s.speed<=180&&s.min<s.max&&s.target>=s.min&&s.target<=s.max&&
+   ['hold','once','repeat'].includes(s.mode)&&[1,-1].includes(s.direction)&&
+   Array.isArray(s.reference)&&s.reference.length===4&&s.reference.every(Number.isFinite)&&Math.abs(Math.hypot(...s.reference)-1)<.0001;
  }
  function validItem(item){
   const vector=(v,n)=>Array.isArray(v)&&v.length===n&&v.every(x=>Number.isFinite(x)&&Math.abs(x)<=1000);
@@ -38,14 +48,14 @@
    }
   }
   const used=new Set(),links=item.groups.map(()=>[]);
-  for(const j of item.joints){if(!ids.has(j.aId)||!ids.has(j.bId)||j.aId===j.bId||used.has(j.aId)||used.has(j.bId)||ids.get(j.aId).shape!=='coupler'||ids.get(j.bId).shape!=='coupler'||owners.get(j.aId)===owners.get(j.bId))return false;used.add(j.aId);used.add(j.bId);links[owners.get(j.aId)].push(owners.get(j.bId));links[owners.get(j.bId)].push(owners.get(j.aId));}
+  for(const j of item.joints){if(!ids.has(j.aId)||!ids.has(j.bId)||j.aId===j.bId||used.has(j.aId)||used.has(j.bId)||!jointShapesValid(j,ids.get(j.aId),ids.get(j.bId))||owners.get(j.aId)===owners.get(j.bId))return false;used.add(j.aId);used.add(j.bId);links[owners.get(j.aId)].push(owners.get(j.bId));links[owners.get(j.bId)].push(owners.get(j.aId));}
   if(item.robotArms!==undefined){
    if(!Array.isArray(item.robotArms)||item.robotArms.length>item.groups.length)return false;
    const grippers=new Set(),jointKeys=new Set(item.joints.map(j=>j.aId+':'+j.bId)),claimed=new Set();
    for(const arm of item.robotArms){
     if(!arm||!ids.get(arm.gripperId)?.mood.gripper||!ids.has(arm.baseId)||grippers.has(arm.gripperId)||typeof arm.repeat!=='boolean'||!Array.isArray(arm.joints)||!arm.joints.length||arm.joints.length>4||!arm.poses||typeof arm.poses!=='object'||Array.isArray(arm.poses))return false;
     grippers.add(arm.gripperId);
-    for(const joint of arm.joints){const key=joint?.aId+':'+joint?.bId;if(!jointKeys.has(key)||claimed.has(key))return false;claimed.add(key);}
+    for(const joint of arm.joints){const key=joint?.aId+':'+joint?.bId;if(!jointKeys.has(key)||claimed.has(key)||item.joints.find(j=>j.aId===joint.aId&&j.bId===joint.bId)?.servo)return false;claimed.add(key);}
     const poseValid=pose=>Array.isArray(pose)&&pose.length===arm.joints.length&&pose.every(q=>vector(q,4)&&Math.abs(Math.hypot(...q)-1)<.01);
     if(!poseValid(arm.poses.pick)||arm.poses.place!==null&&!poseValid(arm.poses.place))return false;
    }
@@ -56,7 +66,7 @@
    for(const module of item.conveyors){
     if(!module||(module.version!==undefined&&module.version!==1)||!ids.has(module.baseId)||bases.has(module.baseId)||!['straight','left','right'].includes(module.kind)||![1,-1].includes(module.direction)||!Number.isInteger(module.capacity)||module.capacity<1||module.capacity>2000||!Array.isArray(module.joints)||!module.joints.length||module.joints.length>16)return false;
     bases.add(module.baseId);
-    for(const joint of module.joints){const key=joint?.aId+':'+joint?.bId;if(!jointKeys.has(key)||claimed.has(key)||(joint.forward!==undefined&&![1,-1].includes(joint.forward))||![owners.get(joint.aId),owners.get(joint.bId)].includes(owners.get(module.baseId)))return false;claimed.add(key);}
+    for(const joint of module.joints){const key=joint?.aId+':'+joint?.bId;if(!jointKeys.has(key)||claimed.has(key)||item.joints.find(j=>j.aId===joint.aId&&j.bId===joint.bId)?.servo||(joint.forward!==undefined&&![1,-1].includes(joint.forward))||![owners.get(joint.aId),owners.get(joint.bId)].includes(owners.get(module.baseId)))return false;claimed.add(key);}
     if(module.required!==undefined){const allowed=new Set([owners.get(module.baseId),...module.joints.flatMap(j=>[owners.get(j.aId),owners.get(j.bId)])]);if(!Array.isArray(module.required)||!module.required.length||module.required.length>2000||new Set(module.required).size!==module.required.length||module.required.some(id=>!ids.has(id)||!allowed.has(owners.get(id)))||![module.baseId,...module.joints.flatMap(j=>[j.aId,j.bId]),...item.groups.flatMap((group,index)=>allowed.has(index)&&index!==owners.get(module.baseId)?group.parts.map(part=>part.id):[])].every(id=>module.required.includes(id)))return false;}
     if(module.ports!==undefined){const ports=module.ports;if(!ports||typeof ports!=='object'||Array.isArray(ports)||!['entry','exit'].every(key=>{const port=ports[key];return port&&vector(port.p,3)&&port.p.every(n=>Math.abs(n)<=10)&&vector(port.direction,3)&&Math.abs(Math.hypot(...port.direction)-1)<.0001;}))return false;}
    }

@@ -130,5 +130,20 @@ lab();t.initUnitRadial();t.setLook({camera:[0,2,2],yaw:0,pitch:-Math.PI/4});t.be
 const port=t.conveyorPortWorld(t.conveyors[0],'exit');t.setLook({camera:[port.p.x,2,port.p.z+2],yaw:0,pitch:Math.atan2(port.p.y-2,2)});t.keys.add('ShiftLeft');t.beginCreationPlacement('quick-conveyor-right');
 if(!t.getCreationPreview().link||!t.getCreationPreview().valid)throw Error('Missing snapped ghost');
 capture('placement-snap',[1.5,1.35,1.8],[.4,.2,.15],()=>{t.drawQubits();t.drawConveyors();t.drawCreationPlacement();});
+// Servo fixtures use the production shapes and real Cannon joints. Gravity is
+// disabled only here so a change in posture can be inspected from a fixed camera.
+for(const servoKind of ['pivot','hinge']){
+ lab();t.world.gravity.set(0,0,0);
+ const servo=t.spawnSavedMechanism(t.servoBlueprintTemplate(servoKind),t.V(0,.25,0));if(!servo)throw Error('Missing servo fixture '+servoKind);
+ t.setSelected(t.rotorPart(servo.aId));
+ const renderServo=()=>{for(const group of t.groups)t.drawGroupSolid(group);t.drawServoGuides();};
+ const details={kind:servoKind,parts:t.groups.reduce((n,g)=>n+g.parts.length,0),bodies:t.groups.length,joints:1};
+ const center=[.025,.40,0],eye=[.32,.58,.65];
+ capture('servo-'+servoKind+'-rest',eye,center,renderServo,{...details,angle:t.servoAngle(servo)});
+ t.configureServo(servo,{target:35,speed:45,mode:'once'});if(!t.startServo(servo))throw Error('Could not start servo fixture');
+ for(let i=0;i<720;i++)t.stepPhysics(1/240);
+ if(Math.abs(t.servoAngle(servo)-35)>1)throw Error('Servo capture did not reach its physical target');
+ capture('servo-'+servoKind+'-35deg',eye,center,renderServo,{...details,angle:t.servoAngle(servo)});
+}
 fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,JSON.stringify({width,height,init,snapshots,validation}));
 console.log(JSON.stringify({output,frames:snapshots.length,validationErrors:validation.length}));if(validation.length)process.exitCode=1;

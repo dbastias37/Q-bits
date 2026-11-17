@@ -74,6 +74,17 @@ Taller: deja la pieza sobre la mesa, suéltala, apunta a la mesa y pulsa E. Lee 
 
 Sensor de contacto: crea uno desde el catálogo rápido o prepara una pieza en el taller. Clic derecho sobre él → Sensor · conectar punta… → elige un rotor. Al tocar una pared con la punta activa, invierte ese rotor si está encendido y a menos de 3 m. No es un detector de cajas ni un botón para arrancar el brazo. Sepáralo de la pared antes de otro contacto.
 
+## Servos · primera extremidad
+
+1. Mantén **Q → Tab → Banco rápido** y elige **Servo pivote** o **Servo bisagra**. Suelta Q y confirma la vista previa con clic.
+2. Clic derecho en la articulación → **Configurar servo**, o selecciónala y abre **P → Mecanismos**.
+3. Empieza con **−20° a 20°**, **30 °/s** e **Ida y vuelta**. Pulsa Iniciar y cierra P para ver el movimiento. Detener y bloquear conserva el ángulo alcanzado.
+4. Para una sola postura, elige Mantener posición o Mover una vez y una posición objetivo dentro del recorrido. Ambos llegan y quedan bloqueados mecánicamente. El rango total disponible es **−90° a 90°**, con velocidad entre **5 y 180 °/s**.
+
+**Construcción manual:** clic derecho sobre una pirámide de base cuadrada → Preparar Servo pivote; suelda su base al cuerpo con Shift y conecta la cara inferior de un cubo a su ápice con Shift. Para una bisagra, prepara una pirámide como Servo bisagra y enfrenta su punta a la de otra pirámide con Shift; sus bases reciben los tramos rígidos. Las puntas permanecen unidas al doblarse.
+
+La energía interna permite probarlo; una batería externa activa, conectada al conjunto, comparte su reserva. Comprueba energía, peso y espacio si se bloquea. Los servos todavía se configuran individualmente: no hay marcha automática de cuadrúpedo. Consulta [Servos Q-bits](SERVOS_QBITS.md) para el montaje y los controles completos.
+
 ## 6 · Planos, guardado y repisas
 
 Catálogo rápido (Q → Tab): crea copias completas para experimentar en el banco. Respeta el límite de piezas de la sala.

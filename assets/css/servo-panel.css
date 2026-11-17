@@ -1,0 +1,27 @@
+#servo-panel{margin:12px 0 18px;padding:14px;border:1px solid #76a0a34a;border-radius:14px;background:linear-gradient(145deg,#f2ffff80,#dce9e72a);color:#466366}
+#servo-panel [hidden]{display:none!important}
+#panel #servo-panel h3{font:13px/1.5 system-ui,sans-serif;letter-spacing:.03em;margin:0 0 7px;color:#416367}
+#panel #servo-panel p{font-size:10px;line-height:1.6;margin:7px 0 10px;color:#687e80}
+#servo-panel .servo-kicker{font-size:8px!important;letter-spacing:.15em;text-transform:uppercase;margin:0 0 4px!important}
+#servo-panel .servo-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#servo-panel .servo-fields label{display:flex;flex-direction:column;gap:4px;min-width:0;margin:0;font-size:10px}
+#servo-panel .servo-fields input,#servo-panel .servo-fields select{box-sizing:border-box;width:100%;min-width:0;font:11px/1.4 system-ui,sans-serif;min-height:32px;padding:5px}
+#servo-panel .servo-preview{margin:5px auto 12px;text-align:center;max-width:220px}
+#servo-panel svg{display:block;width:100%;overflow:visible}
+#servo-panel svg path{fill:none;stroke-linecap:round}
+#servo-panel .servo-arc-base{stroke:#809b9d30;stroke-width:6}
+#servo-arc{stroke:#7bafb2;stroke-width:6}
+#servo-pointer{stroke:#3a7378;stroke-width:3}
+#servo-panel svg circle{fill:#3a7378}
+#servo-panel svg text{font:8px system-ui,sans-serif;fill:#687e80}
+#servo-panel figcaption{font:10px/1.5 system-ui,sans-serif;color:#526f72;font-variant-numeric:tabular-nums}
+#servo-panel .servo-actions{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+#servo-panel .servo-actions button{flex:1 1 70px}
+#panel #servo-panel button{font-size:10px;padding:7px 6px;line-height:1.4;min-height:32px}
+#servo-apply{margin-top:10px;width:100%}
+#servo-panel .servo-facts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:10px 0 0;border-top:1px solid #76a0a333;padding-top:8px}
+#servo-panel dt{font:8px/1.5 system-ui,sans-serif;color:#738e91}
+#servo-panel dd{font:11px/1.5 system-ui,sans-serif;margin:2px 0;color:#526f72;font-variant-numeric:tabular-nums}
+#panel #servo-feedback:not(:empty){padding:8px;border-radius:7px;background:#e0eeeb;color:#456e66;margin-bottom:0}
+#panel #servo-feedback[data-error=true]{background:#f6e9e2;color:#895d45}
+@media(max-width:380px){#servo-panel{padding:10px}#servo-panel .servo-fields{gap:6px}}
