@@ -10,7 +10,7 @@
   const profileKeys=new Set(Object.keys(P.styles.clean));
   const tabs={look:[
    ['style','Estilo visual','select',[['clean','Original · sala blanca'],['psx','PSX'],['neon','Dithering + neón'],['cel','Cel shading']]],
-   ['outlineColor','Color de delineado y marcador','color'],['outlineWidth','Grosor del delineado','range',1,6,.5,' px'],['pathColor','Color de trayectoria','color'],['pathWidth','Grosor de trayectoria','range',1,6,.5,' ×'],
+   ['outlineColor','Color de delineado y marcador','color'],['outlineWidth','Grosor del delineado','range',1,6,.5,' px'],['pathColor','Color de trayectoria','color'],['cableColor','Color del cable eléctrico','color'],['pathWidth','Grosor de trayectorias y cables','range',1,6,.5,' ×'],
    ['markers','Marcadores de selección','check'],['markerMotion','Flotación suave del marcador','check'],
    ['dither','Dithering','range',0,100,1,' %'],['bits','Profundidad de color','range',3,8,1,' bits/canal'],['jitter','Temblor de vértices PSX','range',0,100,1,' %'],['warp','Deformación de textura PSX','range',0,100,1,' %'],['cel','Bandas de cel shading','range',0,8,1,''],['bloom','Bloom','check'],['bloomStrength','Intensidad de bloom','range',0,100,1,' %']
   ],performance:[

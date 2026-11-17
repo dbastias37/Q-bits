@@ -159,6 +159,14 @@ const fragmentSource = `
   }
   void main() {
     if (uFocusMask > 0.5) { gl_FragColor = vec4(1.0); return; }
+    if (uKind > 16.5) {
+      // Cached circuit ribbons encode transverse/longitudinal coordinates in
+      // the unused normal channel, preserving one buffer and draw per cable.
+      float x=abs(vLocalNormal.x),z=abs(vLocalNormal.z);
+      float halo=.22*uShadow*exp(-x*9.0)*(1.-smoothstep(.28,.5,x))*(1.-smoothstep(.40,.5,z));
+      float core=.8*(1.-smoothstep(.03,.04,x));
+      gl_FragColor=vec4(uTint.rgb,uTint.a*(core+halo*(1.-core)));return;
+    }
     if (uKind > 15.5) {
       // Clear battery vessel: restrained face opacity, bright glass edges and
       // a broad reflection remain legible even when the reservoir is empty.
@@ -3051,7 +3059,7 @@ function connectPowerCable(from,to,points=[],materials=[]){
  if(a.kind==='part'&&b.kind==='part'&&rotorConnectedGroups([rotorPart(a.id).g]).includes(rotorPart(b.id).g))return fail('Estas piezas ya comparten la conexión interna.');
  if(powerCables.length>=128)return fail('Límite de 128 cables. Recupera un tramo antes de crear otro.');
  if(powerCables.some(c=>[c.from,c.to].some(e=>powerEndpointKey(e)===powerEndpointKey(a))&&[c.from,c.to].some(e=>powerEndpointKey(e)===powerEndpointKey(b))))return fail('Estos extremos ya tienen cable.');
- if(!Array.isArray(points)||points.length>32)return fail('Usa hasta 32 puntos de apoyo.');
+ if(!Array.isArray(points)||points.length>64)return fail('El circuito supera los 64 puntos de trazado.');
  const route=points.map(powerVector);if(route.some(p=>!p||p.y<-.01||p.y>ROOM_HEIGHT||Math.abs(p.x)>.5*ROOM_SIZE||Math.abs(p.z)>.5*ROOM_SIZE))return fail('El trayecto queda fuera de la sala.');
  const copies=powerCableMaterials(materials);if(!copies)return fail('Usa de 1 a 8 cubos normales, sin repetir material.');
  const cable={id:powerCableSerial+1,from:a,to:b,points:route,materials:copies,maxLength:powerCableLimit(copies),length:0,active:false,status:'',progress:0};
@@ -3069,7 +3077,7 @@ function reroutePowerCable(subject,to,points=[]){
  if(!powerCables.includes(cable)||!b||!powerPort(b)||!powerPort(cable.from)||powerEndpointKey(cable.from)===powerEndpointKey(b))return {ok:false,error:'Elige un extremo disponible.'};
  if(cable.from.kind==='part'&&b.kind==='part'&&rotorConnectedGroups([rotorPart(cable.from.id).g]).includes(rotorPart(b.id).g))return {ok:false,error:'Estas piezas ya comparten la conexión interna.'};
  if(powerCables.some(c=>c!==cable&&[c.from,c.to].some(e=>powerEndpointKey(e)===powerEndpointKey(cable.from))&&[c.from,c.to].some(e=>powerEndpointKey(e)===powerEndpointKey(b))))return {ok:false,error:'Estos extremos ya tienen cable.'};
- const route=Array.isArray(points)&&points.length<=32?points.map(powerVector):null;
+ const route=Array.isArray(points)&&points.length<=64?points.map(powerVector):null;
  if(!route||route.some(p=>!p||p.y<-.01||p.y>ROOM_HEIGHT||Math.abs(p.x)>.5*ROOM_SIZE||Math.abs(p.z)>.5*ROOM_SIZE))return {ok:false,error:'El trayecto queda fuera de la sala.'};
  const draft={...cable,to:b,points:route,_pathSignature:null};if(!refreshPowerCable(draft))return {ok:false,error:draft.status};
  Object.assign(cable,draft,{progress:0});redraw=true;return {ok:true,cable};
@@ -3128,7 +3136,7 @@ function restorePowerNetwork(saved){
  for(const r of saved.reservoirs)if(!createPowerReservoir(r.p,{id:r.id,energy:r.energy,enabled:r.enabled})){clearPowerNetwork();return false;}
  const used=new Set(groups.flatMap(g=>g.parts.map(p=>p.id)));
  for(const record of saved.cables){
-  const a=powerEndpoint(record.from),b=powerEndpoint(record.to),materials=powerCableMaterials(record.materials),points=Array.isArray(record.points)&&record.points.length<=32?record.points.map(powerVector):null;
+  const a=powerEndpoint(record.from),b=powerEndpoint(record.to),materials=powerCableMaterials(record.materials),points=Array.isArray(record.points)&&record.points.length<=64?record.points.map(powerVector):null;
   if(!a||!b||powerEndpointKey(a)===powerEndpointKey(b)||!materials||!points||points.some(p=>!p||p.y<-.01||p.y>ROOM_HEIGHT||Math.abs(p.x)>.5*ROOM_SIZE||Math.abs(p.z)>.5*ROOM_SIZE)||materials.some(p=>used.has(p.id))||!Number.isSafeInteger(record.id)||record.id<1||powerCables.some(c=>c.id===record.id)){
    clearPowerNetwork();return false;
   }
@@ -3163,13 +3171,20 @@ function powerDraftMaterials(){
 }
 function powerFloor(p){return V(p.x,.008,p.z);}
 function powerSurfaceRoute(from,to,bends=[]){
- const start=powerPort(from),finish=powerPort(to);if(!start||!finish)return [];
+ return powerCircuitRoute(powerPort(from),powerPort(to),bends);
+}
+function powerCircuitRoute(start,finish,bends=[],surfaceEnd=false){
+ if(!start||!finish)return [];
  const route=[powerFloor(start)];
- for(const point of bends){const previous=route[route.length-1],wallA=Math.abs(previous.x)>.5*ROOM_SIZE-.03||Math.abs(previous.z)>.5*ROOM_SIZE-.03,wallB=Math.abs(point.x)>.5*ROOM_SIZE-.03||Math.abs(point.z)>.5*ROOM_SIZE-.03,sameWall=wallA&&wallB&&(Math.abs(previous.x-point.x)<.025||Math.abs(previous.z-point.z)<.025);
+ for(const point of (surfaceEnd?[...bends,finish]:bends)){const previous=route[route.length-1],wallA=Math.abs(previous.x)>.5*ROOM_SIZE-.03||Math.abs(previous.z)>.5*ROOM_SIZE-.03,wallB=Math.abs(point.x)>.5*ROOM_SIZE-.03||Math.abs(point.z)>.5*ROOM_SIZE-.03,sameWall=wallA&&wallB&&(Math.abs(previous.x-point.x)<.025||Math.abs(previous.z-point.z)<.025);
   if(!sameWall){if(previous.y>.02)route.push(powerFloor(previous));if(point.y>.02)route.push(powerFloor(point));}route.push(point.clone());
  }
- if(route[route.length-1].y>.02)route.push(powerFloor(route[route.length-1]));route.push(powerFloor(finish));
- return route.filter((p,i)=>!i||p.distanceTo(route[i-1])>.002);
+ if(!surfaceEnd){if(route[route.length-1].y>.02)route.push(powerFloor(route[route.length-1]));route.push(powerFloor(finish));}
+ // Cardinal elbows match the cube route grid. Explicit surface supports stay
+ // fixed; old saved cable geometry is never silently lengthened on restore.
+ const circuit=[route[0]];
+ for(const point of route.slice(1)){const cursor=circuit[circuit.length-1].clone();for(const axis of ['x','z','y'])if(Math.abs(cursor[axis]-point[axis])>1e-6){cursor[axis]=point[axis];circuit.push(cursor.clone());}}
+ return circuit;
 }
 function powerAimPort(dir=direction(),max=4){
  const origin=V(...camera),hit=aimQubit(max,dir);let best=hit&&powerPartConnectable(hit)?{endpoint:{kind:'part',id:hit.part.id},point:powerPort({kind:'part',id:hit.part.id}),distance:hit.distance,hit}:null;
@@ -3277,36 +3292,36 @@ function drawPowerReservoirs(){
  gl.depthMask(true);gl.disable(gl.BLEND);
 }
 function drawPowerRibbon(points,color,fraction=1){
- let remaining=powerCableLength(points)*fraction;
- for(let i=1;i<points.length&&remaining>0;i++){const a=points[i-1],full=points[i].distanceTo(a);if(full<.0001)continue;const length=Math.min(remaining,full),direction=mul(sub(points[i],a),1/full),b=add(a,mul(direction,length)),q=Q();q.setFromVectors(V(0,0,1),direction);
-  drawBox(mul(add(a,b),.5),q,V(.022,.004,length),color);remaining-=length;
- }
+ if(!points.length)return;const revealed=[points[0]];let remaining=powerCableLength(points)*fraction;
+ for(let i=1;i<points.length&&remaining>0;i++){const a=points[i-1],full=points[i].distanceTo(a);if(full<.0001)continue;const length=Math.min(remaining,full);revealed.push(add(a,mul(sub(points[i],a),length/full)));remaining-=length;}
+ drawCachedPowerRibbon('preview',revealed,color);
 }
 function drawCachedPowerRibbon(cable,points,color){
- const signature=points.map(p=>[p.x,p.y,p.z].map(v=>v.toFixed(4)).join(',')).join(';');let mesh=powerRibbonCaches.get(cable);
+ const signature=visuals.pathWidth+':'+points.map(p=>[p.x,p.y,p.z].map(v=>v.toFixed(4)).join(',')).join(';');let mesh=powerRibbonCaches.get(cable);
  if(!mesh){mesh={buffer:gl.createBuffer(),count:0,signature:null};powerRibbonCaches.set(cable,mesh);}
  if(mesh.signature!==signature){const data=[];
   for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i],length=a.distanceTo(b);if(length<.0001)continue;const dir=mul(sub(b,a),1/length);let normal=V(0,1,0);
    if(Math.abs(a.x)>.5*ROOM_SIZE-.03&&Math.abs(a.x-b.x)<.03)normal=V(a.x>0?-1:1,0,0);
    else if(Math.abs(a.z)>.5*ROOM_SIZE-.03&&Math.abs(a.z-b.z)<.03)normal=V(0,0,a.z>0?-1:1);
    else if(Math.abs(dir.y)>.9)normal=V(0,0,1);
-   const side=normal.cross(dir);side.normalize();side.scale(.011,side);normal=dir.cross(side);normal.normalize();
-   const vertices=[sub(a,side),add(a,side),add(b,side),sub(b,side)];for(const j of [0,1,2,0,2,3])data.push(vertices[j].x,vertices[j].y,vertices[j].z,normal.x,normal.y,normal.z);
+   const side=normal.cross(dir);side.normalize();side.scale(.0125*visuals.pathWidth,side);
+   const vertices=[sub(a,side),add(a,side),add(b,side),sub(b,side)],uv=[[-.5,-.5],[.5,-.5],[.5,.5],[-.5,.5]];
+   for(const j of [0,1,2,0,2,3])data.push(vertices[j].x,vertices[j].y,vertices[j].z,uv[j][0],0,uv[j][1]);
   }
   gl.bindBuffer(gl.ARRAY_BUFFER,mesh.buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);boundGeometry=null;mesh.count=data.length/6;mesh.signature=signature;
  }
- if(mesh.count)drawAsset(mesh,V(),Q(),V(1,1,1),color);
+ if(mesh.count){gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);gl.uniform1f(uniforms.uShadow,alphaSettings.glow);drawAsset(mesh,V(),Q(),V(1,1,1),color,17);gl.depthMask(true);gl.disable(gl.BLEND);}
 }
 function drawPowerCables(){
  const inspect=altDown()&&powerInspectionAvailable();
  for(const c of powerCables){const path=powerCablePath(c)||c.points;if(path.length<2)continue;
-  const color=c.active?[.71,.43,.14,1]:[.65,.18,.13,1];if(c.progress>=1)drawCachedPowerRibbon(c,path,color);else drawPowerRibbon(path,color,c.progress);
+  const color=[...visualRGB('cableColor'),c.active?1:.4];if(c.progress>=1)drawCachedPowerRibbon(c,path,color);else drawPowerRibbon(path,color,c.progress);
   const a=path[0],b=path[path.length-1];for(const p of [a,b])drawBox(p,Q(),V(.031,.012,.031),c.active?[.11,.67,.42,1]:[.69,.22,.13,1]);
   if(c.progress<1){const size=CUBE_SIZE*(1-c.progress);drawBox(add(a,V(0,size/2,0)),Q(),V(CUBE_SIZE,Math.max(.004,size),CUBE_SIZE),[.25,.28,.28,1]);}
-  if(inspect){drawWideLines(path.flatMap((p,i)=>i?[path[i-1],p]:[]),[1,.63,.18,.95],2.5);}
+  if(inspect){drawWideLines(path.flatMap((p,i)=>i?[path[i-1],p]:[]),[...visualRGB('cableColor'),.95],visuals.pathWidth);}
  }
- if(inspect){gl.disable(gl.DEPTH_TEST);const visited=new Set();for(const c of powerCables)for(const e of [c.from,c.to])if(e.kind==='part'){const hit=rotorPart(e.id);if(!hit)continue;const component=rotorConnectedGroups([hit.g]);for(const g of component){if(visited.has(g))continue;visited.add(g);const center=g.body.position;for(const part of g.parts)if(unitShape(part)==='coupler'||isExternalBattery(part)||part.mood.gripper)drawWideLines([center,partPose(g,part).p],[1,.62,.18,.85],1.5);}for(const rotor of rotors)if(component.includes(rotorPart(rotor.aId)?.g)){const a=rotorPart(rotor.aId),b=rotorPart(rotor.bId);if(a&&b)drawWideLines([a.p,b.p],[1,.62,.18,1],2);}}gl.enable(gl.DEPTH_TEST);}
- if(powerDraft?.from){const start=powerPort(powerDraft.from),target=powerAimPort(),point=target?.point||powerSurfaceAim();if(start&&point){let path;if(target)path=[start,...powerSurfaceRoute(powerDraft.from,target.endpoint,powerDraft.bends),point];else path=[start,powerFloor(start),...powerDraft.bends,point];const length=powerCableLength(path),valid=length<=powerCableLimit(powerDraftMaterials()||[]);drawPowerRibbon(path,valid?[.84,.61,.25,.85]:[.85,.18,.16,.85]);}}
+ if(inspect){gl.disable(gl.DEPTH_TEST);const visited=new Set();for(const c of powerCables)for(const e of [c.from,c.to])if(e.kind==='part'){const hit=rotorPart(e.id);if(!hit)continue;const component=rotorConnectedGroups([hit.g]);for(const g of component){if(visited.has(g))continue;visited.add(g);const center=g.body.position;for(const part of g.parts)if(unitShape(part)==='coupler'||isExternalBattery(part)||part.mood.gripper)drawWideLines([center,partPose(g,part).p],[...visualRGB('cableColor'),.85],1.5);}for(const rotor of rotors)if(component.includes(rotorPart(rotor.aId)?.g)){const a=rotorPart(rotor.aId),b=rotorPart(rotor.bId);if(a&&b)drawWideLines([a.p,b.p],[...visualRGB('cableColor'),1],2);}}gl.enable(gl.DEPTH_TEST);}
+ if(powerDraft?.from){const start=powerPort(powerDraft.from),target=powerAimPort(),point=target?.point||powerSurfaceAim();if(start&&point){let path;if(target)path=[start,...powerSurfaceRoute(powerDraft.from,target.endpoint,powerDraft.bends),point];else path=[start,...powerCircuitRoute(start,point,powerDraft.bends,true)];const length=powerCableLength(path),valid=length<=powerCableLimit(powerDraftMaterials()||[]);drawPowerRibbon(path,valid?[...visualRGB('cableColor'),.85]:[.85,.18,.16,.85]);}}
 }
 
 // Motors normally use the two enganches. A converted external battery on the
@@ -7469,6 +7484,7 @@ function renderSettingsPreview(time){
   gl.depthMask(true);gl.disable(gl.BLEND);bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,1);setPose(center,q,size);gl.drawArrays(gl.TRIANGLES,0,36);
   gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);drawOutline(center,q,size,1,true);if(visuals.markers)drawSelectionMarker(V(0,.67,0),time/1000);gl.depthMask(true);gl.disable(gl.BLEND);
   drawNeonPath([V(-.1,.006,.65),V(.8,.006,.65),V(.8,.006,.65),V(.8,.006,-.5)]);
+  drawPowerRibbon([V(-.75,.008,.55),V(-.75,.008,-.45),V(-.2,.008,-.45)],[...visualRGB('cableColor'),1]);
   if(destination){suspendSceneAttributes();postEffects.end(visuals);restoreSceneProgram();}
   if(target.width!==canvas.width)target.width=canvas.width;if(target.height!==canvas.height)target.height=canvas.height;
   ctx.drawImage(canvas,0,0,target.width,target.height);

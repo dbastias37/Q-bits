@@ -125,3 +125,12 @@ test('joining audio has independent persisted settings and audio reset',()=>{
  assert.equal(P.load(store).guideVolume,35);assert.equal(P.load(store).footstepVolume,55);
  click('settings-reset');assert.equal(settings.draft.joinVolume,60);assert.equal(settings.draft.joinSounds,true);assert.equal(P.load(store).joinSounds,false);
 });
+
+ test('cable color is an independent per-style saved preference with preview, discard and legacy fallback',()=>{
+ const {settings,doc,click,t,store}=uiSetup();settings.open('pause');const before=t.getVisuals().pathColor;
+ const picker=doc.querySelector('#pref-cableColor');assert.equal(picker.type,'color');picker.value='#2468ff';picker.dispatchEvent({type:'input'});
+ assert.equal(settings.draft.cableColor,'#2468ff');assert.equal(t.getVisuals().cableColor,'#b56e24');assert.doesNotThrow(()=>t.renderSettingsPreview(2000));
+ settings.requestClose();click('settings-discard');assert.equal(t.getVisuals().cableColor,'#b56e24');settings.open('pause');const again=doc.querySelector('#pref-cableColor');again.value='#2468ff';again.dispatchEvent({type:'input'});click('settings-save');
+ assert.equal(t.getVisuals().cableColor,'#2468ff');assert.equal(t.getVisuals().pathColor,before);assert.equal(P.load(store).profiles.clean.cableColor,'#2468ff');assert.equal(P.load(store).profiles.neon.cableColor,'#b56e24');
+ assert.equal(P.sanitize({profiles:{clean:{cableColor:'invalid'}}}).profiles.clean.cableColor,'#b56e24');assert.equal(P.sanitize({profiles:{clean:{pathColor:'#ff00ff'}}}).profiles.clean.pathColor,'#ff00ff');
+ });
