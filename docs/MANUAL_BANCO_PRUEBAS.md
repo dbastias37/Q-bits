@@ -77,3 +77,25 @@ Repisa: almacena el objeto real. Al recuperarlo, los controles quedan detenidos.
 - Choca durante el giro: Detener, despejar el recorrido, ajustar A/B y probar el movimiento vacío.
 - No vuelve a A: una sola entrega termina en B. Usa Ir a A o activa Repetir para el siguiente ciclo.
 - La unión dejó todo sin funcionar: revisa la carga conectada de los rotores. Unir otra máquina también añade su peso.
+
+## Hélices · primer dron
+
+1. Mantén **Q**, pulsa **Tab** y elige **Dron de prueba**. Suelta Q y haz clic. Aparece una hélice con batería I cargada y apagada.
+2. Haz clic derecho en la batería y enciéndela. Después haz clic derecho en el enganche y abre **Vuelo**.
+3. Deja **altura 0,5 m** y **velocidad 0**. Pulsa **Despegar** y vuelve a la sala: P mantiene la simulación pausada mientras lees los controles.
+4. Para desplazarte, mira hacia el destino, abre Vuelo, pulsa **Avanzar hacia donde miro**, elige velocidad **0,3 m/s** y aplica. Velocidad 0 frena y mantiene posición.
+5. Usa **Aterrizar** antes de agotar la batería. El descenso necesita energía. **Apagar motores** corta la sustentación y el conjunto cae si está en el aire. Una vez apoyado, apaga la batería para recargar.
+
+**Montaje manual.** Necesitas **1 enganche + 2 T-bits triangulares**. Sostén un triangular, mantén Shift y acerca su punta a la punta superior del enganche. El encaje orienta la pala: suelta cuando aparezca «Pala alineada». Repite en el lado libre con el segundo triangular. No se consumen créditos adicionales. El plano de Hélice usa tus piezas existentes; Banco rápido crea copias de prueba.
+
+Une las caras cuadradas del enganche al chasis o a la batería. Las dos palas deben quedar arriba y libres. Deja al menos unos **27 cm entre ejes** para estas palas; un obstáculo dentro del disco de giro detiene el motor. No montes las palas sobre un enganche que ya forme parte de un rotor articulado.
+
+Puedes conectar **1, 2, 3 o 4 hélices** al mismo conjunto. Una quinta impide el despegue hasta retirarla. Las baterías I, II y III comparten energía y potencia a través de las uniones físicas. Todo el peso cuenta: enganches, palas, chasis, baterías, sensores, manos, brazos y carga sostenida. Más hélices aumentan el empuje disponible, pero pesan y consumen; más batería también pesa. La altura y el esfuerzo reducen el margen de carga y autonomía. Los valores de carga máxima, watts y autonomía son estimaciones actuales, no garantías para cualquier construcción.
+
+Los triangulares obtenidos al dividir un Q-bit estándar pesan 1/12 u cada uno. Las piezas creadas directamente desde Q usan el peso seleccionado en P → Piezas. Por eso dos hélices geométricamente iguales pueden levantar cargas distintas. La hélice rápida usa triangulares de 1/12 u.
+
+**Sensor.** Prepara un sensor en el taller o usa Banco rápido. Únelo físicamente al dron y orienta su cara activa hacia la pared. Al tocarla, invierte el avance una sola vez; debe separarse para volver a activarse. No hace falta enlazarlo a un rotor para controlar el vuelo. El sensor detecta contacto, no obstáculos a distancia.
+
+**Mano y brazo.** El cubo de agarre conserva su menú, filtros, límite de carga y consumo. Su objeto sostenido se suma al peso del dron. Los rotores y brazos pueden formar parte del montaje, pero necesitan energía suficiente y un montaje libre: una base fija o una cinta anclada impide despegar. No todos los conjuntos pesados podrán volar con cuatro hélices.
+
+**Guardar y desarmar.** Guardar mecanismo, el banco y las repisas conservan geometría y ajustes. El banco y las repisas conservan las identidades y la energía real; una copia de plantilla aparece con baterías vacías. Los motores no se reanudan al recuperar. Aterriza y detén las hélices antes de guardar en la repisa. Separar una pala o sacudir desarma con las mismas reglas de materia y energía que las otras piezas.

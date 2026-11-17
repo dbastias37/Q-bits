@@ -70,7 +70,7 @@
   function loadScript(path) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = path + '?v=20261116-arm-guide-1';
+      script.src = path + '?v=20261116-propeller-1';
       script.onload = resolve;
       script.onerror = () => reject(new Error('No se pudo cargar ' + path));
       document.head.append(script);
@@ -138,6 +138,7 @@
       await loadScript('assets/js/cannon.min.js');update('physics', 1);
       await loadScript('assets/js/radial-menu.js');
       await loadScript('assets/js/rotor-power.js');
+      await loadScript('assets/js/propeller-power.js');
       await loadScript('assets/js/campaign-reconfiguration.js');
       await loadScript('assets/js/progression.js');
       await loadScript('assets/js/campaign-automation.js');

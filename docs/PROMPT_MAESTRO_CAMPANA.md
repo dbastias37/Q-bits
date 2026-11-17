@@ -176,3 +176,13 @@ Revisión de usabilidad: enseñanza en P → Manual y comprobación de toma sin 
 ### Banco: cintas modulares (16 de noviembre de 2026)
 
 Planos rectos y esquinas izquierda/derecha construidos con cubos y enganches existentes. La banda continua se incorpora únicamente al completar el montaje, después de verificar que los rodillos cuadrados sin banda atrapaban cargas pesadas o en sentido inverso. Tracción sobre cuerpos físicos, batería externa, marcha/sentido por tramo y alimentación compartida al unir chasis. Soportes opcionales, altura y prolongación por puertos. Guía: [CINTAS_QBITS.md](CINTAS_QBITS.md). No sustituye las estaciones guiadas de los niveles 19–20 ni crea misiones adicionales; generador de área, galpones y programación colectiva siguen pendientes.
+
+## Hélice modular y dron — bloque implementado el 16 de noviembre de 2026
+
+Una hélice se compone de un enganche y dos T-bits triangulares existentes, encajados por una punta a lados opuestos del ápice del enganche con Shift. Conserva materia e identidades, se guarda y se desmonta. La misma punta no puede ser simultáneamente rotor articulado y hélice. No añade una especie ni un coste de investigación.
+
+De una a cuatro hélices completas por red física. Baterías externas de una, dos o tres celdas; peso de todo el conjunto y de los objetos sostenidos, potencia compartida y julios finitos. Vuelo con estabilización asistida, altura entre 0,15 y 3 m, avance entre 0 y 1,2 m/s, dirección desde la mirada, vuelo estacionario y aterrizaje. El esfuerzo y la altura limitan la sustentación y autonomía; batería agotada o motor apagado implica caída física. No constituye simulación aerodinámica de un dron real.
+
+Sensores de contacto unidos al chasis invierten el rumbo al tocar pared; la unión de sus contactos produce un único evento hasta separarse. Agarres y articulaciones mantienen sus funciones existentes; un montaje anclado o excesivamente pesado no despega. Q → Banco rápido ofrece Hélice y Dron de prueba. P → Mecanismos contiene Vuelo y P → Manual explica el montaje. El plano inicial consume piezas disponibles. No se añaden misiones ni diálogos de campaña en este bloque.
+
+Las palas se animan sobre el cuerpo rígido existente; se comprueba que el volumen de giro esté libre. Se conserva el agrupado gráfico del chasis y no se crean cuerpos ni bisagras adicionales por pala. Los límites y coeficientes son calibración inicial de jugabilidad, pendientes del equilibrio con el jugador.

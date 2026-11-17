@@ -309,7 +309,7 @@ input,select,textarea{font-family:var(--font-menu);}
 <link rel="stylesheet" href="assets/css/subtitles.css?v=20261116-robot-arm-1">
 <link rel="stylesheet" href="assets/css/glass-panels.css?v=20261116-robot-arm-1">
 <link rel="stylesheet" href="assets/css/workshop-panel.css?v=20261116-robot-arm-1">
-<link rel="stylesheet" href="assets/css/robot-arm-panel.css?v=20261116-arm-guide-1">
+<link rel="stylesheet" href="assets/css/robot-arm-panel.css?v=20261116-propeller-1">
 <link rel="stylesheet" href="assets/css/conveyor-panel.css?v=20261116-quick-catalogue-1">
 </head>
 <body data-game-mode="boot" data-game-scene="lab" data-booting="true">
@@ -402,6 +402,18 @@ input,select,textarea{font-family:var(--font-menu);}
     </div>
     <div id="page-mechanisms" role="tabpanel" hidden>
       <p id="mechanism-unlock"></p>
+      <section id="flight-panel" aria-labelledby="flight-title" hidden>
+        <h3 id="flight-title">Hélices · vuelo modular</h3>
+        <p id="flight-status" role="status"></p>
+        <p>Una hélice: 1 enganche + 2 T-bits triangulares. Conecta una batería de 1, 2 o 3 celdas y enciéndela. El conjunto admite hasta 4 hélices, con estabilización asistida.</p>
+        <label>Altura sobre el piso (m)<input id="flight-height" type="number" min="0.15" max="3" step="0.05" value="0.5"></label>
+        <label>Velocidad de avance (m/s)<input id="flight-speed" type="number" min="0" max="1.2" step="0.1" value="0"></label>
+        <div class="actions"><button id="flight-apply" type="button">Aplicar altura y velocidad</button><button id="flight-heading" type="button">Avanzar hacia donde miro</button></div>
+        <div class="actions"><button id="flight-start" type="button">Despegar</button><button id="flight-land" type="button">Aterrizar</button><button id="flight-stop" type="button">Apagar motores</button></div>
+        <p id="flight-telemetry"></p>
+        <p>Velocidad 0 mantiene posición horizontal. Aterrizar conserva energía para bajar; apagar motores corta la sustentación. P pausa el vuelo: vuelve a la sala para verlo. Más peso o altura exige más esfuerzo. Una batería agotada provoca caída.</p>
+        <p>Un sensor montado en el mismo dron invierte el avance cuando su cara activa toca una pared. El agarre conserva su menú propio y su carga cuenta para el vuelo.</p>
+      </section>
       <section id="arm-panel" aria-labelledby="arm-title">
         <p class="arm-kicker">Construir · enseñar · repetir</p><h3 id="arm-title">Brazo Q-bits</h3>
         <button id="arm-help" type="button">Guía paso a paso</button><p>El panel pausa el juego. Vuelve a la sala para ver el movimiento.</p>
@@ -549,6 +561,15 @@ input,select,textarea{font-family:var(--font-menu);}
     <div id="page-manual" role="tabpanel" aria-labelledby="tab-manual" hidden>
       <h3>Manual del banco de pruebas</h3>
       <p class="manual-note"><strong>Empieza con una máquina y un cubo.</strong> P abre este panel y pausa la simulación. «Volver a la sala» la reanuda. Los controles indicados son los predeterminados; si los cambiaste, revisa Configuración → Teclado.</p>
+      <details><summary>Hélice y primer dron</summary>
+        <ol><li>Mantén Q, pulsa Tab y elige <strong>Dron de prueba</strong>. Suelta Q y haz clic: aparece una hélice con batería I cargada y apagada.</li>
+        <li>Clic derecho en la batería → encender. Clic derecho en el enganche → <strong>Vuelo</strong>.</li>
+        <li>Deja altura 0,5 m y velocidad 0. Pulsa <strong>Despegar</strong> y vuelve a la sala. Después prueba velocidad 0,3 y <strong>Avanzar hacia donde miro</strong>.</li>
+        <li>Usa <strong>Aterrizar</strong> antes de quedarte sin batería. Una vez apoyado, apaga la batería para recargarla.</li>
+        <li>Montaje manual: toma un triangular, mantén Shift y acerca una punta a la del enganche; suelta cuando aparezca «Pala alineada». Repite con otro triangular en el lado libre. La base y los costados cuadrados del enganche reciben chasis y batería.</li>
+        <li>Une de 1 a 4 hélices completas al mismo chasis, orientadas hacia arriba y con espacio libre entre palas. Una quinta impide arrancar hasta separarla. El peso de baterías, chasis, sensores, brazos y carga se suma.</li></ol>
+        <p>Material por hélice: 1 enganche + 2 triangulares existentes. No hay un cobro adicional en créditos. El plano usa tus piezas; Banco rápido crea copias de prueba. Q-bits usa estabilización asistida y límites de vuelo calibrados para el juego.</p>
+      </details>
       <details id="manual-arm" open><summary>1 · Mi primera entrega con el brazo</summary>
         <p>El brazo repite dos posturas que tú guardas: <strong>A para tomar</strong> y <strong>B para soltar</strong>. Unirlo a una cinta no le enseña esas posiciones.</p>
         <ol>
@@ -635,6 +656,6 @@ input,select,textarea{font-family:var(--font-menu);}
    <div id="settings-confirm" hidden role="alertdialog" aria-modal="true" aria-labelledby="settings-confirm-title"><div class="settings-confirm-card"><h3 id="settings-confirm-title">¿Salir sin guardar?</h3><p>Tienes cambios pendientes en la configuración.</p><div class="settings-confirm-actions"><button id="settings-keep" type="button">Seguir editando</button><button id="settings-discard" type="button">Salir sin guardar</button><button id="settings-confirm-save" type="button">Guardar y salir</button></div></div></div>
   </section>
   <script src="assets/js/opening.js?v=20261116-block-joins-1" defer></script>
-  <script src="assets/js/boot.js?v=20261116-arm-guide-1" defer></script>
+  <script src="assets/js/boot.js?v=20261116-propeller-1" defer></script>
 </body>
 </html>
