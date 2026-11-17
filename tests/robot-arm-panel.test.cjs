@@ -31,13 +31,18 @@ test('empty selection and failed adapter action stay readable without stale nume
  const p=panel();p.ui.refresh();assert.equal(p.node('controls').hidden,true);assert.equal(p.node('gripper-controls').hidden,true);assert.equal(p.node('start').disabled,true);assert.equal(p.node('energy').textContent,'—');p.setResult({ok:false,message:'No hay espacio libre.'});p.node('blueprint').dispatch('click');assert.equal(p.node('feedback').textContent,'No hay espacio libre.');assert.equal(p.node('feedback').dataset.error,'true');
 });
 
+test('read-only pickup check preserves an unapplied filter and shows its result beside the check button',()=>{
+ const p=panel();p.setState(model());p.node('filter-color').value='#112233';p.node('filter-color').dispatch('input');p.setResult({ok:true,message:'Objeto al alcance'});p.node('check').dispatch('click');
+ assert.equal(p.node('filter-color').value,'#112233');assert.deepEqual(p.calls,[{type:'check',payload:{}}]);assert.equal(p.node('check-result').textContent,'Objeto al alcance');assert.equal(p.node('feedback').textContent,'');
+});
+
 test('saved library categories preserve keyboard selection and expose only their list',()=>{
  const p=panel(),d=p.document,forms=d.querySelector('#saved-library-forms-tab'),mechanisms=d.querySelector('#saved-library-mechanisms-tab');assert.equal(d.querySelector('#saved-shape-list').hidden,false);assert.equal(d.querySelector('#saved-library-mechanisms').hidden,true);forms.dispatch('keydown',{key:'ArrowRight'});assert.equal(d.querySelector('#saved-shape-list').hidden,true);assert.equal(d.querySelector('#saved-library-mechanisms').hidden,false);assert.equal(mechanisms.attributes['aria-selected'],'true');assert.equal(mechanisms.focused,true);
 });
 
 
-test('joint step offers 15, 45 and 90 degrees without issuing a command until a direction is chosen',()=>{
+test('joint step offers 5, 15, 45 and 90 degrees without issuing a command until a direction is chosen',()=>{
  const p=panel();p.setState(model());assert.equal(p.node('jog-step').value,'15');
- for(const step of [45,90]){p.node('jog-step').value=String(step);p.node('jog-step').dispatch('change');const row=p.node('joints').children[0];assert.equal(row.children[1].textContent,'−'+step+'°');assert.equal(row.children[3].textContent,'+'+step+'°');assert.match(row.children[3].attributes['aria-label'],new RegExp('más '+step+' grados'));row.children[3].dispatch('click');assert.deepEqual(p.calls.at(-1),{type:'jog',payload:{joint:0,degrees:step}});p.ui.refresh();assert.equal(p.node('jog-step').value,String(step));}
- assert.equal(p.calls.length,2);p.node('jog-step').value='360';p.node('jog-step').dispatch('change');assert.equal(p.node('jog-step').value,'15');assert.equal(p.calls.length,2);
+ for(const step of [5,45,90]){p.node('jog-step').value=String(step);p.node('jog-step').dispatch('change');const row=p.node('joints').children[0];assert.equal(row.children[1].textContent,'−'+step+'°');assert.equal(row.children[3].textContent,'+'+step+'°');assert.match(row.children[3].attributes['aria-label'],new RegExp('más '+step+' grados'));row.children[3].dispatch('click');assert.deepEqual(p.calls.at(-1),{type:'jog',payload:{joint:0,degrees:step}});p.ui.refresh();assert.equal(p.node('jog-step').value,String(step));}
+ assert.equal(p.calls.length,3);p.node('jog-step').value='360';p.node('jog-step').dispatch('change');assert.equal(p.node('jog-step').value,'15');assert.equal(p.calls.length,3);
 });

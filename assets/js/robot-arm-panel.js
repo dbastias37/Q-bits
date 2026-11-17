@@ -6,11 +6,11 @@
  function create(hooks){
   const get=id=>document.querySelector('#arm-'+id),el=(tag,text)=>{const node=document.createElement(tag);if(text!==undefined)node.textContent=text;return node;};
   let last=null,gripperKey=null,dirty=false,busy=false,targetStamp='',jogStep=15;
-  function showFeedback(result){get('feedback').textContent=result?.message||'';get('feedback').dataset.error=String(result?.ok===false);}
+  function showFeedback(result,nearGrip=false){for(const id of ['feedback','check-result'])get(id).textContent='';const node=get(nearGrip?'check-result':'feedback');node.textContent=result?.message||'';node.dataset.error=String(result?.ok===false);}
   function act(type,payload={}){
    if(busy)return;busy=true;let result;
    try{result=hooks.action(type,payload);}catch{result={ok:false,message:'No se pudo aplicar. Revisa la selección y vuelve a intentarlo.'};}
-   busy=false;if(result?.ok!==false)dirty=false;refresh();showFeedback(result);return result;
+   busy=false;if(result?.ok!==false&&type!=='check')dirty=false;refresh();showFeedback(result,type==='check'||type==='grab');return result;
   }
   function fields(){const mode=get('filter-mode').value;get('color-row').hidden=mode!=='color';get('piece-row').hidden=mode!=='piece';get('shape-row').hidden=!['shape','form'].includes(mode);get('shape-type-row').hidden=mode!=='shape';get('form-row').hidden=mode!=='form';}
   function refresh(){
@@ -27,6 +27,8 @@
    get('shape-memory').textContent=gripper?.formSignature?'Forma aprendida · se comparan las piezas y su disposición.':'Sin forma aprendida · usa un tipo de pieza o aprende una estructura.';
    for(const id of ['filter-mode','filter-color','filter-piece','filter-shape','capacity','apply-filter','capture-shape','capture-piece','grab'])get(id).disabled=!gripper||!!arm?.running;
    get('release').disabled=!gripper;get('capture-shape').disabled=!gripper||!!arm?.running||s.canCaptureShape===false;get('capture-piece').disabled=!gripper||!!arm?.running||s.canCapturePiece===false;
+   get('check').disabled=!gripper;
+   get('goto-pick').disabled=!arm||!!arm.running||!arm.pickReady;get('goto-place').disabled=!arm||!!arm.running||!arm.placeReady;
    get('pick-state').textContent=arm?.pickReady?'Guardada':'Por enseñar';get('place-state').textContent=arm?.placeReady?'Guardada':'Por enseñar';
    get('repeat').checked=arm?.repeat!==false;get('repeat').disabled=!arm||!!arm.running;
    for(const id of ['teach-pick','teach-place'])get(id).disabled=!arm||!!arm.running;
@@ -41,10 +43,11 @@
    const phases={waiting:'detect',detect:'detect',grabbing:'grab',grab:'grab',moving:'move',move:'move',place:'move',releasing:'release',release:'release',returning:'return',return:'return',pick:'return'};
    for(const phase of PHASES){const node=get('phase-'+phase);node.dataset.active=String(!!arm?.running&&phases[arm.phase]===phase);node.setAttribute('aria-current',!!arm?.running&&phases[arm.phase]===phase?'step':'false');}
   }
-  for(const type of ['blueprint','convert','register','start','stop','grab','release'])get(type).addEventListener('click',()=>act(type));
+  for(const type of ['blueprint','convert','register','start','stop','grab','release','check'])get(type).addEventListener('click',()=>act(type));
+  get('goto-pick').addEventListener('click',()=>act('goto',{pose:'pick'}));get('goto-place').addEventListener('click',()=>act('goto',{pose:'place'}));
   get('teach-pick').addEventListener('click',()=>act('teach',{pose:'pick'}));get('teach-place').addEventListener('click',()=>act('teach',{pose:'place'}));
   get('repeat').addEventListener('change',()=>act('repeat',{value:get('repeat').checked}));
-  get('jog-step').addEventListener('change',()=>{const requested=Number(get('jog-step').value);jogStep=[15,45,90].includes(requested)?requested:15;refresh();});
+  get('jog-step').addEventListener('change',()=>{const requested=Number(get('jog-step').value);jogStep=[5,15,45,90].includes(requested)?requested:15;refresh();});
   get('capture-shape').addEventListener('click',()=>act('captureShape'));get('capture-piece').addEventListener('click',()=>act('capturePiece'));
   get('apply-filter').addEventListener('click',()=>{
    const target=get('filter-piece').value;act('filter',{mode:get('filter-mode').value,color:get('filter-color').value,shape:get('filter-shape').value,targetId:target===''?null:Number(target),capacity:Number(get('capacity').value)});

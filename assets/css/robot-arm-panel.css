@@ -21,8 +21,15 @@
 #arm-panel .arm-facts dd{font:11px/1.6 system-ui,sans-serif;margin:2px 0 0;color:#4e6b57;font-variant-numeric:tabular-nums}
 #panel #arm-panel input[type=color]{height:33px;padding:2px;border:1px solid #91ab9750;background:#f6fff8;border-radius:5px}
 #panel #arm-panel select{max-width:100%;font-size:10px;min-height:31px}
-#panel #arm-feedback:not(:empty){padding:8px;border-radius:7px;background:#eaf8ee;color:#3d7753;margin-bottom:0}
-#panel #arm-feedback[data-error=true]{background:#f7eee8;color:#936d50}
+#panel #arm-feedback:not(:empty),#panel #arm-check-result:not(:empty){padding:8px;border-radius:7px;background:#eaf8ee;color:#3d7753;margin-bottom:0}
+#panel #arm-feedback[data-error=true],#panel #arm-check-result[data-error=true]{background:#f7eee8;color:#936d50}
+#panel #page-manual{font:12px/1.65 system-ui,sans-serif}
+#panel #page-manual p,#panel #page-manual li{font-size:12px;line-height:1.65}
+#page-manual ol,#page-manual ul{padding-left:20px}
+#page-manual li{margin:8px 0}
+#page-manual strong{color:#345343}
+#page-manual .manual-note{padding:10px;border-left:3px solid #8aa996;background:#eff7f0}
+#page-manual details{margin:12px 0}
 #panel .saved-library-tabs{display:flex;gap:8px;margin:12px 0 6px}
 #panel .saved-library-tabs button{flex:1;font-size:10px;padding:7px}
 #saved-library-mechanisms{margin:8px 0;max-height:220px;overflow:auto}

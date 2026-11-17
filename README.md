@@ -332,3 +332,7 @@ El renderizador agrupa los cubos de cuerpos rígidos irregulares en una malla ca
 Mantén **Q**, pulsa **Tab** para abrir **Banco rápido**, señala una tarjeta, suelta **Q** y haz clic para crear una copia completa. Las flechas recorren las tarjetas y **RePág / AvPág** cambian de página. También puedes pulsar las pestañas y botones de página con el puntero del selector.
 
 Incluye brazo, cintas recta y de esquina, agarre, baterías, sensor, sólido, enfriador y tus formas/mecanismos guardados. Las copias del banco aparecen con motores detenidos y baterías cargadas pero apagadas. La repisa requiere confirmar su ubicación en una pared; Taller abre el taller existente. Las tarjetas de vidrio se paginan y solo se animan las visibles. Esta creación libre es exclusiva del banco: respeta el límite de piezas y conserva la construcción mediante blueprints en la campaña.
+
+## Manual del banco de pruebas
+
+Abre **P → Manual**, o **Guía paso a paso** desde el panel del brazo. Incluye primera entrega, toma desde una cinta, baterías, controles, rotores, sensores y guardado. También se puede leer [el manual aquí](docs/MANUAL_BANCO_PRUEBAS.md).

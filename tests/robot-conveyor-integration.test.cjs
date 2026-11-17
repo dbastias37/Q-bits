@@ -26,3 +26,7 @@ for(const first of ['arm','conveyor'])test(`a real welded arm and conveyor share
  const beforeFinalStop=poses();stop[second]();assert.deepEqual(poses(),beforeFinalStop,'the final brake and anchor release do not teleport any part');assert.equal(body.type,1,'last owner restores original dynamic body');assert.equal(body.fixedRotation,false);assert.equal(body.mass,originalMass);assert.equal(t.rotors.length,7);assert.equal(t.robotArms.length,1);assert.equal(t.conveyors.length,1);
  assert(t.mechanismSnapshot(t.rotorPart(conveyor.baseId).g),'combined machine remains saveable after both controllers stop');
 });
+test('joined machine overload reports the connected weight and the responsible arm joint',()=>{
+ const {t,arm}=setup(),rotor=t.robotArmRotors(arm)[1];t.configureRotor(rotor,{capacity:40},true);
+ assert.equal(t.startRobotArm(arm),false);assert.match(arm.status,/Hombro: carga conectada 57\.0 \/ 40 u/);assert.match(arm.status,/cintas unidas/);assert(t.robotArmRotors(arm).every(r=>!r.enabled));
+});

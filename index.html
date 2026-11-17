@@ -309,7 +309,7 @@ input,select,textarea{font-family:var(--font-menu);}
 <link rel="stylesheet" href="assets/css/subtitles.css?v=20261116-robot-arm-1">
 <link rel="stylesheet" href="assets/css/glass-panels.css?v=20261116-robot-arm-1">
 <link rel="stylesheet" href="assets/css/workshop-panel.css?v=20261116-robot-arm-1">
-<link rel="stylesheet" href="assets/css/robot-arm-panel.css?v=20261116-arm-1">
+<link rel="stylesheet" href="assets/css/robot-arm-panel.css?v=20261116-arm-guide-1">
 <link rel="stylesheet" href="assets/css/conveyor-panel.css?v=20261116-quick-catalogue-1">
 </head>
 <body data-game-mode="boot" data-game-scene="lab" data-booting="true">
@@ -373,7 +373,7 @@ input,select,textarea{font-family:var(--font-menu);}
   </section>
   <section id="panel" hidden aria-label="Panel de pruebas">
     <h2>Q-bits · Panel de pruebas</h2><p id="editing"></p>
-    <div class="tabs" role="tablist"><button id="tab-cube" role="tab" aria-controls="page-cube" aria-selected="true">Piezas</button><button id="tab-route" role="tab" aria-controls="page-route" aria-selected="false">Recorrido</button><button id="tab-cargo" role="tab" aria-controls="page-cargo" aria-selected="false">Cuerpos</button><button id="tab-puzzle" role="tab" aria-controls="page-puzzle" aria-selected="false">Puzle</button><button id="tab-mechanisms" role="tab" aria-controls="page-mechanisms" aria-selected="false">Mecanismos</button><button id="tab-alpha" role="tab" aria-controls="page-alpha" aria-selected="false">Alfa</button></div>
+    <div class="tabs" role="tablist"><button id="tab-cube" role="tab" aria-controls="page-cube" aria-selected="true">Piezas</button><button id="tab-route" role="tab" aria-controls="page-route" aria-selected="false">Recorrido</button><button id="tab-cargo" role="tab" aria-controls="page-cargo" aria-selected="false">Cuerpos</button><button id="tab-puzzle" role="tab" aria-controls="page-puzzle" aria-selected="false">Puzle</button><button id="tab-mechanisms" role="tab" aria-controls="page-mechanisms" aria-selected="false">Mecanismos</button><button id="tab-alpha" role="tab" aria-controls="page-alpha" aria-selected="false">Alfa</button><button id="tab-manual" role="tab" aria-controls="page-manual" aria-selected="false">Manual</button></div>
     <div id="page-cube" role="tabpanel">
       <label>Tipo de pieza<select id="unit-shape"><option value="cube">Q-bit · cubo</option><option value="tetra">T-bit · pirámide triangular</option><option value="pyramid">T-bit · pirámide de base cuadrada</option><option value="coupler">Enganche · mitad del eje</option><option value="rotor">Rotor · dos enganches unidos</option></select></label>
       <label>Peso por pieza <output id="massValue"></output><input id="mass" type="range" min="0.25" max="3" step="0.25" value="1"></label>
@@ -404,8 +404,9 @@ input,select,textarea{font-family:var(--font-menu);}
       <p id="mechanism-unlock"></p>
       <section id="arm-panel" aria-labelledby="arm-title">
         <p class="arm-kicker">Construir · enseñar · repetir</p><h3 id="arm-title">Brazo Q-bits</h3>
+        <button id="arm-help" type="button">Guía paso a paso</button><p>El panel pausa el juego. Vuelve a la sala para ver el movimiento.</p>
         <p id="arm-target">Selecciona el brazo o un Q-bit para adaptarlo.</p>
-        <p>Plano: 18 cubos + 8 enganches sueltos. Al completar el montaje se forman cuatro rotores. La batería se acopla después con Shift.</p>
+        <p>Para una primera prueba: mantén Q → Tab → Brazo Q-bits, suelta Q y haz clic. El plano de abajo requiere 18 cubos + 8 enganches existentes. El brazo puede probarse con su energía interna; una batería activa amplía su autonomía.</p>
         <div class="arm-actions"><button id="arm-blueprint" type="button">Colocar blueprint del brazo</button><button id="arm-convert" type="button">Convertir cubo en agarre</button></div>
         <p id="arm-status" role="status" aria-live="polite">El plano necesita piezas existentes antes de funcionar.</p>
         <button id="arm-register" type="button">Usar este montaje como brazo</button>
@@ -418,14 +419,17 @@ input,select,textarea{font-family:var(--font-menu);}
             <div id="arm-shape-row" hidden><label id="arm-shape-type-row">Tipo de pieza<select id="arm-filter-shape"><option value="cube">Cubo</option><option value="pyramid">Pirámide de base cuadrada</option><option value="tetra">Triangular</option><option value="coupler">Enganche</option></select></label><div id="arm-form-row" hidden><button id="arm-capture-shape" type="button">Aprender forma seleccionada</button><p id="arm-shape-memory"></p><p>Selecciona una estructura de la sala y vuelve a este panel para aprender su disposición.</p></div></div>
             <label>Carga máxima <output id="arm-capacity-value">4 u</output><input id="arm-capacity" type="range" min="1" max="16" step="1" value="4"></label>
             <button id="arm-apply-filter" type="button">Aplicar filtro y carga</button>
+            <button id="arm-check" type="button">Comprobar toma · qué falta</button>
+            <p id="arm-check-result" role="status" aria-live="polite"></p>
             <div class="arm-actions"><button id="arm-grab" type="button">Tomar ahora</button><button id="arm-release" type="button">Soltar</button></div>
           </details>
         </div>
         <div id="arm-controls" hidden>
           <ol class="arm-sequence" aria-label="Secuencia del brazo"><li id="arm-phase-detect">1 · Detectar</li><li id="arm-phase-grab">2 · Tomar</li><li id="arm-phase-move">3 · Ir a B</li><li id="arm-phase-release">4 · Soltar</li><li id="arm-phase-return">5 · Volver a A</li></ol>
-          <details open><summary>Enseñar dos posiciones</summary><p>Los giros y el ciclo cierran el panel para mover el brazo; P vuelve a abrirlo. Guarda A cerca del objeto y B sobre el lugar de entrega.</p><label>Paso de giro<select id="arm-jog-step"><option value="15">15° · ajuste fino</option><option value="45">45° · ajuste medio</option><option value="90">90° · cuarto de vuelta</option></select></label><div id="arm-joints" aria-label="Articulaciones del brazo"></div><div class="arm-poses"><div><button id="arm-teach-pick" type="button">Guardar A · tomar</button><span id="arm-pick-state">Por enseñar</span></div><div><button id="arm-teach-place" type="button">Guardar B · soltar</button><span id="arm-place-state">Por enseñar</span></div></div></details>
+          <details open><summary>Enseñar dos posiciones</summary><p>Los giros y el ciclo cierran el panel para mover el brazo; P vuelve a abrirlo. Guarda A cerca del objeto y B sobre el lugar de entrega. Hombro, codo y muñeca usan reducción 3:1: más fuerza y menor velocidad; la base gira directamente.</p><label>Paso de giro<select id="arm-jog-step"><option value="5">5° · ajuste fino</option><option value="15" selected>15° · ajuste normal</option><option value="45">45° · ajuste medio</option><option value="90">90° · cuarto de vuelta</option></select></label><div id="arm-joints" aria-label="Articulaciones del brazo"></div><div class="arm-poses"><div><button id="arm-teach-pick" type="button">Guardar A · tomar</button><span id="arm-pick-state">Por enseñar</span></div><div><button id="arm-teach-place" type="button">Guardar B · soltar</button><span id="arm-place-state">Por enseñar</span></div></div></details>
+          <div class="arm-actions"><button id="arm-goto-pick" type="button">Ir a A · sin tomar</button><button id="arm-goto-place" type="button">Ir a B · sin tomar</button></div><p>Estos botones prueban el recorrido sin cambiar las posturas guardadas. Suelta la carga antes de usarlos.</p>
           <label><input id="arm-repeat" type="checkbox" checked> Repetir la secuencia</label><div class="arm-actions"><button id="arm-start" type="button">Iniciar secuencia</button><button id="arm-stop" type="button">Detener</button></div>
-          <p>Acopla y activa una batería como en tus otros mecanismos. Si falta energía, sobra carga o se bloquea el recorrido, revisa el estado antes de reiniciar.</p>
+          <p>Sin Repetir, termina en B. Con Repetir, vuelve a A y espera otro objeto. Detener suelta la carga. Un brazo unido a una cinta sigue necesitando sus propias posturas A y B.</p>
         </div>
         <dl class="arm-facts"><div><dt>Carga sostenida / límite</dt><dd id="arm-load">0 u / —</dd></div><div><dt>Energía disponible</dt><dd id="arm-energy">—</dd></div><div><dt>Entregas completas</dt><dd id="arm-cycles">0</dd></div><div><dt>Capacidad de agarre libre</dt><dd id="arm-efficiency">—</dd></div></dl>
         <p id="arm-feedback" role="status" aria-live="polite"></p>
@@ -542,7 +546,78 @@ input,select,textarea{font-family:var(--font-menu);}
       <label><input id="alpha-allowPuzzleSpawn" type="checkbox"> Permitir crear Q-bits durante el puzle</label><p>Actívalo para usar N o Crear Q-bit sin salir del desafío.</p>
       <label>Brillo sutil <output id="alpha-glowValue"></output><input id="alpha-glow" type="range" min="0" max="1" step="0.05" value="0.6"></label>
     </div>
-    <details><summary>Controles</summary><p>Mantener Q y soltar sobre una figura: elegir. El siguiente clic izquierdo crea una pieza; Esc o clic derecho cancelan. Clic sin selección: tomar. Mantener C: agacharse, con las manos libres o sosteniendo una pieza. C + rueda: ajustar altura (abajo baja, arriba sube). Soltar C: levantarse. Tomar o unir piezas no cambia la postura. Con una pieza en la mano, Shift + WASD: girar sin caminar. Shift + soltar junto a una cara compatible: unir. Shift + sacudir rápidamente una estructura de un lado a otro varias veces: desarmar; la pieza tomada permanece en la mano. Rueda: acercar o alejar, con enfoque progresivo y barras de energía visibles de cerca. El ajuste alinea caras compatibles. Dos triangulares completan una pirámide; seis pirámides o doce triangulares completan un cubo. Arrastrar con clic izquierdo desde un espacio vacío: seleccionar varias piezas visibles, hasta 4 m. Ctrl + clic sobre enganches: añadir o quitar rotores de la selección; P → Mecanismos permite crear un conjunto con nombre. Clic izquierdo con una selección activa: deseleccionar. Clic derecho en la selección → Tomar selección: levantar el conjunto; clic para soltar. Alt, apuntando a una estructura: opciones de separación. V: duplicar selección. Supr: borrar pieza. Ctrl: guía de caída. Clic derecho en el suelo → Ir a este punto: recorrido individual o en grupo. R: detener. Esc: liberar mouse.<br>La selección para órdenes respeta el límite de piezas; el peso máximo se aplica al agarre manual. La orden en el suelo mueve todas las estructuras seleccionadas. Alt cerca del pin muestra el camino y las mediciones. B crea un cuerpo que solo puede arrastrar un equipo. Máximo de 128 Q-bits en la sala.</p></details>
+    <div id="page-manual" role="tabpanel" aria-labelledby="tab-manual" hidden>
+      <h3>Manual del banco de pruebas</h3>
+      <p class="manual-note"><strong>Empieza con una máquina y un cubo.</strong> P abre este panel y pausa la simulación. «Volver a la sala» la reanuda. Los controles indicados son los predeterminados; si los cambiaste, revisa Configuración → Teclado.</p>
+      <details id="manual-arm" open><summary>1 · Mi primera entrega con el brazo</summary>
+        <p>El brazo repite dos posturas que tú guardas: <strong>A para tomar</strong> y <strong>B para soltar</strong>. Unirlo a una cinta no le enseña esas posiciones.</p>
+        <ol>
+          <li><strong>Crea el brazo.</strong> En la sala, mantén Q, pulsa Tab para entrar al catálogo rápido, elige Brazo Q-bits, suelta Q y haz clic. Aparece completo y detenido, con A preparada para un cubo en el suelo y B a un cuarto de vuelta.</li>
+          <li><strong>Déjalo en el suelo, con espacio alrededor.</strong> Para aprender, usa el brazo recién creado y separado de otras máquinas. Su base se fija durante el movimiento; no necesitas unirla a una cinta. Su energía interna permite la primera prueba.</li>
+          <li><strong>Prepara un cubo normal.</strong> Elígelo desde Q → Piezas, suelta Q y haz clic. Acércalo debajo de la cara naranja del extremo del brazo. Apóyalo en el suelo y suéltalo sin Shift, para que quede separado. C permite agacharte.</li>
+          <li><strong>Abre el brazo.</strong> Clic derecho sobre una pieza del brazo → Configurar agarre y secuencia. En «Qué puede tomar», elige Cualquier sólido y pulsa Aplicar filtro y carga.</li>
+          <li><strong>Comprueba el contacto.</strong> Pulsa Comprobar toma. La cara naranja debe quedar centrada y casi tocar la parte superior del cubo: máximo 1,8 cm. Si indica distancia, alineación o filtro, corrige eso y vuelve a comprobar.</li>
+          <li><strong>Haz una entrega.</strong> Desmarca Repetir la secuencia y pulsa Iniciar secuencia. El panel se cierra: el brazo toma el cubo, gira a B y lo suelta. Con un brazo nuevo no hace falta enseñar A y B otra vez.</li>
+          <li><strong>Comprueba el resultado.</strong> Abre P → Mecanismos. Debe mostrar «Ciclo completado» y una entrega. Sin Repetir queda en B. Usa Ir a A · sin tomar para volver; para varias entregas, activa Repetir antes de iniciar.</li>
+        </ol>
+        <p>Si algo se atasca, abre el panel y pulsa Detener. Se libera el objeto y se frenan los ejes. Retira el obstáculo o corrige la causa antes de reiniciar.</p>
+        <button id="manual-arm-controls" type="button">Abrir controles del brazo</button>
+      </details>
+      <details><summary>2 · Llevar objetos desde una cinta</summary>
+        <ol>
+          <li><strong>Detén ambas máquinas.</strong> Puedes apoyar el brazo en el suelo o en una estructura estable junto a la cinta. También puedes unir su base a una cara fija del chasis con Shift; deja libres la banda, los rodillos y las articulaciones.</li>
+          <li><strong>Coloca un cubo sobre la banda detenida.</strong> El cubo debe quedar suelto, nunca unido al brazo o a la cinta.</li>
+          <li><strong>Enseña A a esa altura.</strong> Abre el brazo, elige un paso de 5° y ajusta Base, Hombro, Codo y Muñeca. Cada giro cierra el panel: espera y vuelve con P. Mantén la cara naranja apuntando hacia el objeto. Comprueba la toma y pulsa Guardar A · tomar cuando esté al alcance.</li>
+          <li><strong>Enseña B.</strong> Ajusta los ejes hasta dejar la pinza sobre el destino, con espacio libre para la carga durante todo el recorrido. Pulsa Guardar B · soltar.</li>
+          <li><strong>Prueba el recorrido vacío.</strong> Usa Ir a A e Ir a B. Estos botones mueven los motores, no guardan posiciones ni toman objetos. Si el brazo choca, cambia A/B o la ubicación de las máquinas.</li>
+          <li><strong>Prueba un cubo con la cinta detenida.</strong> Desmarca Repetir e inicia el brazo. Una vez lograda la entrega, activa Repetir e inicia también la cinta desde sus propios controles.</li>
+        </ol>
+        <p class="manual-note"><strong>Unión y programación son cosas distintas.</strong> Un brazo puede estar bien unido y tener el agarre fuera de la trayectoria. La cara naranja debe pasar por encima de la carga. Si la cinta va demasiado rápido para tomarla, baja sus rpm o detén la cinta durante la prueba.</p>
+        <p>Las máquinas unidas comparten energía y carga conectada. El brazo inicial admite 64 u por rotor: brazo (26) + cinta recta (30) + esquina (41) suman 97 u antes de añadir batería y carga. Si aparece sobrecarga, separa las máquinas o ajusta explícitamente la capacidad de sus rotores en Mecanismos; aumentar la carga del agarre no cambia ese límite.</p>
+      </details>
+      <details><summary>3 · Cintas y baterías</summary>
+        <ol>
+          <li>Crea una cinta desde Q → Tab. Déjala nivelada y apoyada. También puedes construirla con un plano en P → Mecanismos, acercando las piezas solicitadas e integrándolas con clic derecho.</li>
+          <li>Crea una Batería I, II o III desde el catálogo rápido. Estas copias de prueba aparecen cargadas y apagadas.</li>
+          <li>Toma la batería, acércala a una cara libre del chasis y suelta con Shift para unirla. Clic derecho sobre la batería → Activar batería. Estar cerca no basta para transmitir energía.</li>
+          <li>Clic derecho sobre la cinta → «Configurar cinta y extender…». Pulsa Iniciar tramo. Cada tramo tiene su propio control: encender la batería no inicia la banda.</li>
+          <li>Deja un cubo suelto sobre la banda y mantén libre la salida. Si la batería se agota, apágala y apóyala en el suelo para recargar.</li>
+        </ol>
+        <p>En el taller también puedes fabricar baterías con uno, dos o tres cubos normales unidos en línea sobre la mesa. Las baterías fabricadas conservan los julios de esas piezas; no aparecen llenas por fabricarlas.</p>
+      </details>
+      <details><summary>4 · Tomar, unir, separar y mover</summary>
+        <ul>
+          <li><strong>Crear:</strong> mantén Q, elige, suelta Q y haz clic. Tab cambia entre piezas y catálogo rápido mientras Q está abierto. Esc cancela la creación pendiente.</li>
+          <li><strong>Tomar:</strong> clic sobre una pieza, con la mano libre y sin una selección previa. Otro clic la suelta. La rueda acerca o aleja; C te agacha.</li>
+          <li><strong>Unir:</strong> sostén la pieza, acerca caras compatibles y suelta con Shift cuando veas el encaje. Shift + WASD gira la pieza sostenida.</li>
+          <li><strong>Separar:</strong> Alt apuntando a una pieza abre las opciones. Shift + varias sacudidas desarma una estructura sostenida. Se conservan sus piezas.</li>
+          <li><strong>Dar un destino:</strong> selecciona el equipo; clic derecho en el suelo → Ir a este punto. R detiene esa orden. Un objeto con una ruta activa no queda disponible para la pinza hasta detenerlo.</li>
+        </ul>
+      </details>
+      <details><summary>5 · Rotores, taller y sensor</summary>
+        <p><strong>Rotor:</strong> dos enganches unidos forman un eje. Fija una mitad al soporte y la otra a la pieza que girará. En P → Mecanismos revisa rpm, sentido, torque y capacidad. En un brazo, usa los controles del brazo para mover sus ejes.</p>
+        <p><strong>Qué significa cada ajuste:</strong> rpm controla velocidad; torque limita fuerza de giro; capacidad limita el peso de toda la red conectada. El límite de carga del agarre solo se aplica al objeto que toma.</p>
+        <p><strong>Taller:</strong> deja la pieza sobre la mesa, suéltala, apunta a la mesa y pulsa E. Lee el efecto y el coste de la mejora antes de aplicarla. La investigación disponible se conserva en el navegador.</p>
+        <p><strong>Sensor de contacto:</strong> crea uno desde el catálogo rápido o prepara una pieza en el taller. Clic derecho sobre él → Sensor · conectar punta… → elige un rotor. Al tocar una pared con la punta activa, invierte ese rotor si está encendido y a menos de 3 m. No es un detector de cajas ni un botón para arrancar el brazo. Sepáralo de la pared antes de otro contacto.</p>
+      </details>
+      <details><summary>6 · Planos, guardado y repisas</summary>
+        <p><strong>Catálogo rápido (Q → Tab):</strong> crea copias completas para experimentar en el banco. Respeta el límite de piezas de la sala.</p>
+        <p><strong>Blueprint o plano:</strong> es una guía de construcción. Acerca los tipos de piezas que pide; clic derecho → Integrar cercanos. Solo funciona al completarlo.</p>
+        <p><strong>Guardar:</strong> detén el mecanismo y suelta su carga. En Formas guardadas se distinguen Formas y Mecanismos. Un brazo guardado conserva sus conexiones, filtros y posturas. Exporta tus plantillas para tener una copia.</p>
+        <p><strong>Repisa:</strong> almacena el objeto real. Al recuperarlo, los controles quedan detenidos. Revisa el espacio y la posición del objeto antes de reiniciar una secuencia.</p>
+      </details>
+      <details><summary>7 · Si algo no funciona</summary>
+        <ul>
+          <li><strong>No se mueve:</strong> cierra el panel. Si sigue detenido, lee el estado del mecanismo y comprueba energía y carga conectada.</li>
+          <li><strong>Espera sin tomar:</strong> usa Comprobar toma; revisa que el cubo esté suelto, centrado bajo la cara naranja y casi tocándola. Detén sus rutas y suéltalo de tu mano.</li>
+          <li><strong>Toma otro objeto:</strong> selecciona una pieza específica o un filtro de tipo/color y pulsa Aplicar filtro y carga.</li>
+          <li><strong>Choca durante el giro:</strong> Detener, despejar el recorrido, ajustar A/B y probar el movimiento vacío.</li>
+          <li><strong>No vuelve a A:</strong> una sola entrega termina en B. Usa Ir a A o activa Repetir para el siguiente ciclo.</li>
+          <li><strong>La unión dejó todo sin funcionar:</strong> revisa la carga conectada de los rotores. Unir otra máquina también añade su peso.</li>
+        </ul>
+      </details>
+    </div>
+    <details><summary>Controles</summary><p>Mantener Q y soltar sobre una figura: elegir. El siguiente clic izquierdo crea una pieza; Esc o clic derecho cancelan. Clic sin selección: tomar. Mantener C: agacharse, con las manos libres o sosteniendo una pieza. C + rueda: ajustar altura (abajo baja, arriba sube). Soltar C: levantarse. Tomar o unir piezas no cambia la postura. Con una pieza en la mano, Shift + WASD: girar sin caminar. Shift + soltar junto a una cara compatible: unir. Shift + sacudir rápidamente una estructura de un lado a otro varias veces: desarmar; la pieza tomada permanece en la mano. Rueda: acercar o alejar, con enfoque progresivo y barras de energía visibles de cerca. El ajuste alinea caras compatibles. Dos triangulares completan una pirámide; seis pirámides o doce triangulares completan un cubo. Arrastrar con clic izquierdo desde un espacio vacío: seleccionar varias piezas visibles, hasta 4 m. Ctrl + clic sobre enganches: añadir o quitar rotores de la selección; P → Mecanismos permite crear un conjunto con nombre. Clic izquierdo con una selección activa: deseleccionar. Clic derecho en la selección → Tomar selección: levantar el conjunto; clic para soltar. Alt, apuntando a una estructura: opciones de separación. V: duplicar selección. Supr: borrar pieza. Ctrl: guía de caída. Clic derecho en el suelo → Ir a este punto: recorrido individual o en grupo. R: detener. Esc: liberar mouse.<br>La selección para órdenes respeta el límite de piezas; el peso máximo se aplica al agarre manual. La orden en el suelo mueve todas las estructuras seleccionadas. Alt cerca del pin muestra el camino y las mediciones. B crea un cuerpo que solo puede arrastrar un equipo. Máximo de 256 piezas en la sala.</p></details>
     <div class="actions"><button id="create" type="button">Crear Q-bit</button><button id="remove" type="button">Borrar pieza</button><button id="split" type="button">Desarmar estructura</button></div>
     <button id="resume" type="button">Volver a la sala</button>
   </section>
@@ -560,6 +635,6 @@ input,select,textarea{font-family:var(--font-menu);}
    <div id="settings-confirm" hidden role="alertdialog" aria-modal="true" aria-labelledby="settings-confirm-title"><div class="settings-confirm-card"><h3 id="settings-confirm-title">¿Salir sin guardar?</h3><p>Tienes cambios pendientes en la configuración.</p><div class="settings-confirm-actions"><button id="settings-keep" type="button">Seguir editando</button><button id="settings-discard" type="button">Salir sin guardar</button><button id="settings-confirm-save" type="button">Guardar y salir</button></div></div></div>
   </section>
   <script src="assets/js/opening.js?v=20261116-block-joins-1" defer></script>
-  <script src="assets/js/boot.js?v=20261116-block-joins-1" defer></script>
+  <script src="assets/js/boot.js?v=20261116-arm-guide-1" defer></script>
 </body>
 </html>

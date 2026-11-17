@@ -1,0 +1,79 @@
+# Q-bits · Manual del banco de pruebas
+
+Disponible dentro del juego en **P → Manual** y desde **Guía paso a paso** en los controles del brazo.
+
+Empieza con una máquina y un cubo. P abre este panel y pausa la simulación. «Volver a la sala» la reanuda. Los controles indicados son los predeterminados; si los cambiaste, revisa Configuración → Teclado.
+
+## 1 · Mi primera entrega con el brazo
+
+El brazo repite dos posturas que tú guardas: A para tomar y B para soltar. Unirlo a una cinta no le enseña esas posiciones.
+
+1. Crea el brazo. En la sala, mantén Q, pulsa Tab para entrar al catálogo rápido, elige Brazo Q-bits, suelta Q y haz clic. Aparece completo y detenido, con A preparada para un cubo en el suelo y B a un cuarto de vuelta.
+2. Déjalo en el suelo, con espacio alrededor. Para aprender, usa el brazo recién creado y separado de otras máquinas. Su base se fija durante el movimiento; no necesitas unirla a una cinta. Su energía interna permite la primera prueba.
+3. Prepara un cubo normal. Elígelo desde Q → Piezas, suelta Q y haz clic. Acércalo debajo de la cara naranja del extremo del brazo. Apóyalo en el suelo y suéltalo sin Shift, para que quede separado. C permite agacharte.
+4. Abre el brazo. Clic derecho sobre una pieza del brazo → Configurar agarre y secuencia. En «Qué puede tomar», elige Cualquier sólido y pulsa Aplicar filtro y carga.
+5. Comprueba el contacto. Pulsa Comprobar toma. La cara naranja debe quedar centrada y casi tocar la parte superior del cubo: máximo 1,8 cm. Si indica distancia, alineación o filtro, corrige eso y vuelve a comprobar.
+6. Haz una entrega. Desmarca Repetir la secuencia y pulsa Iniciar secuencia. El panel se cierra: el brazo toma el cubo, gira a B y lo suelta. Con un brazo nuevo no hace falta enseñar A y B otra vez.
+7. Comprueba el resultado. Abre P → Mecanismos. Debe mostrar «Ciclo completado» y una entrega. Sin Repetir queda en B. Usa Ir a A · sin tomar para volver; para varias entregas, activa Repetir antes de iniciar.
+
+Si algo se atasca, abre el panel y pulsa Detener. Se libera el objeto y se frenan los ejes. Retira el obstáculo o corrige la causa antes de reiniciar.
+
+## 2 · Llevar objetos desde una cinta
+
+1. Detén ambas máquinas. Puedes apoyar el brazo en el suelo o en una estructura estable junto a la cinta. También puedes unir su base a una cara fija del chasis con Shift; deja libres la banda, los rodillos y las articulaciones.
+2. Coloca un cubo sobre la banda detenida. El cubo debe quedar suelto, nunca unido al brazo o a la cinta.
+3. Enseña A a esa altura. Abre el brazo, elige un paso de 5° y ajusta Base, Hombro, Codo y Muñeca. Cada giro cierra el panel: espera y vuelve con P. Mantén la cara naranja apuntando hacia el objeto. Comprueba la toma y pulsa Guardar A · tomar cuando esté al alcance.
+4. Enseña B. Ajusta los ejes hasta dejar la pinza sobre el destino, con espacio libre para la carga durante todo el recorrido. Pulsa Guardar B · soltar.
+5. Prueba el recorrido vacío. Usa Ir a A e Ir a B. Estos botones mueven los motores, no guardan posiciones ni toman objetos. Si el brazo choca, cambia A/B o la ubicación de las máquinas.
+6. Prueba un cubo con la cinta detenida. Desmarca Repetir e inicia el brazo. Una vez lograda la entrega, activa Repetir e inicia también la cinta desde sus propios controles.
+
+Unión y programación son cosas distintas. Un brazo puede estar bien unido y tener el agarre fuera de la trayectoria. La cara naranja debe pasar por encima de la carga. Si la cinta va demasiado rápido para tomarla, baja sus rpm o detén la cinta durante la prueba.
+
+Las máquinas unidas comparten energía y carga conectada. El brazo inicial admite 64 u por rotor: brazo (26) + cinta recta (30) + esquina (41) suman 97 u antes de añadir batería y carga. Si aparece sobrecarga, separa las máquinas o ajusta explícitamente la capacidad de sus rotores en Mecanismos; aumentar la carga del agarre no cambia ese límite.
+
+## 3 · Cintas y baterías
+
+1. Crea una cinta desde Q → Tab. Déjala nivelada y apoyada. También puedes construirla con un plano en P → Mecanismos, acercando las piezas solicitadas e integrándolas con clic derecho.
+2. Crea una Batería I, II o III desde el catálogo rápido. Estas copias de prueba aparecen cargadas y apagadas.
+3. Toma la batería, acércala a una cara libre del chasis y suelta con Shift para unirla. Clic derecho sobre la batería → Activar batería. Estar cerca no basta para transmitir energía.
+4. Clic derecho sobre la cinta → «Configurar cinta y extender…». Pulsa Iniciar tramo. Cada tramo tiene su propio control: encender la batería no inicia la banda.
+5. Deja un cubo suelto sobre la banda y mantén libre la salida. Si la batería se agota, apágala y apóyala en el suelo para recargar.
+
+En el taller también puedes fabricar baterías con uno, dos o tres cubos normales unidos en línea sobre la mesa. Las baterías fabricadas conservan los julios de esas piezas; no aparecen llenas por fabricarlas.
+
+## 4 · Tomar, unir, separar y mover
+
+- Crear: mantén Q, elige, suelta Q y haz clic. Tab cambia entre piezas y catálogo rápido mientras Q está abierto. Esc cancela la creación pendiente.
+- Tomar: clic sobre una pieza, con la mano libre y sin una selección previa. Otro clic la suelta. La rueda acerca o aleja; C te agacha.
+- Unir: sostén la pieza, acerca caras compatibles y suelta con Shift cuando veas el encaje. Shift + WASD gira la pieza sostenida.
+- Separar: Alt apuntando a una pieza abre las opciones. Shift + varias sacudidas desarma una estructura sostenida. Se conservan sus piezas.
+- Dar un destino: selecciona el equipo; clic derecho en el suelo → Ir a este punto. R detiene esa orden. Un objeto con una ruta activa no queda disponible para la pinza hasta detenerlo.
+
+## 5 · Rotores, taller y sensor
+
+Rotor: dos enganches unidos forman un eje. Fija una mitad al soporte y la otra a la pieza que girará. En P → Mecanismos revisa rpm, sentido, torque y capacidad. En un brazo, usa los controles del brazo para mover sus ejes.
+
+Qué significa cada ajuste: rpm controla velocidad; torque limita fuerza de giro; capacidad limita el peso de toda la red conectada. El límite de carga del agarre solo se aplica al objeto que toma.
+
+Taller: deja la pieza sobre la mesa, suéltala, apunta a la mesa y pulsa E. Lee el efecto y el coste de la mejora antes de aplicarla. La investigación disponible se conserva en el navegador.
+
+Sensor de contacto: crea uno desde el catálogo rápido o prepara una pieza en el taller. Clic derecho sobre él → Sensor · conectar punta… → elige un rotor. Al tocar una pared con la punta activa, invierte ese rotor si está encendido y a menos de 3 m. No es un detector de cajas ni un botón para arrancar el brazo. Sepáralo de la pared antes de otro contacto.
+
+## 6 · Planos, guardado y repisas
+
+Catálogo rápido (Q → Tab): crea copias completas para experimentar en el banco. Respeta el límite de piezas de la sala.
+
+Blueprint o plano: es una guía de construcción. Acerca los tipos de piezas que pide; clic derecho → Integrar cercanos. Solo funciona al completarlo.
+
+Guardar: detén el mecanismo y suelta su carga. En Formas guardadas se distinguen Formas y Mecanismos. Un brazo guardado conserva sus conexiones, filtros y posturas. Exporta tus plantillas para tener una copia.
+
+Repisa: almacena el objeto real. Al recuperarlo, los controles quedan detenidos. Revisa el espacio y la posición del objeto antes de reiniciar una secuencia.
+
+## 7 · Si algo no funciona
+
+- No se mueve: cierra el panel. Si sigue detenido, lee el estado del mecanismo y comprueba energía y carga conectada.
+- Espera sin tomar: usa Comprobar toma; revisa que el cubo esté suelto, centrado bajo la cara naranja y casi tocándola. Detén sus rutas y suéltalo de tu mano.
+- Toma otro objeto: selecciona una pieza específica o un filtro de tipo/color y pulsa Aplicar filtro y carga.
+- Choca durante el giro: Detener, despejar el recorrido, ajustar A/B y probar el movimiento vacío.
+- No vuelve a A: una sola entrega termina en B. Usa Ir a A o activa Repetir para el siguiente ciclo.
+- La unión dejó todo sin funcionar: revisa la carga conectada de los rotores. Unir otra máquina también añade su peso.
