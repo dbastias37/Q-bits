@@ -107,5 +107,17 @@ for(const variant of [{kind:'straight',supports:false},{kind:'left',supports:fal
   }
  }
 }
+// New propeller render uses the same batched chassis and only two animated
+// meshes per motor. Capture distinct shaft phases with the production draw path.
+lab();const drone=t.spawnSavedMechanism(t.propellerBlueprintTemplate(true),t.V());if(!drone)throw Error('Missing drone fixture');
+const flight=t.flightForGroup(drone),cell=drone.parts.find(t.isExternalBattery);cell.mood.energy=1;cell.mood.externalBattery.enabled=true;
+const droneDraw=()=>{t.drawGroupSolid(drone);t.drawBatteriesTransparent();},droneInfo={parts:4,bodies:1,joints:0};
+capture('propeller-rest',[.30,.35,.45],[0,.16,0],droneDraw,droneInfo);
+if(!t.startFlight(flight))throw Error(flight.status);
+for(let i=0;i<360;i++)t.stepPhysics(1/120);
+const altitude=t.bounds(drone).min.y;flight.phase=Math.PI/3;
+capture('propeller-flight',[.30,.35+altitude,.45],[0,.16+altitude,0],droneDraw,{...droneInfo,altitude,watts:flight.power.inputWatts});
+flight.phase=Math.PI*2/3;
+capture('propeller-flight-turn',[.30,.35+altitude,.45],[0,.16+altitude,0],droneDraw,droneInfo);
 fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,JSON.stringify({width,height,init,snapshots,validation}));
 console.log(JSON.stringify({output,frames:snapshots.length,validationErrors:validation.length}));if(validation.length)process.exitCode=1;

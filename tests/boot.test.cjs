@@ -97,6 +97,7 @@ function environment({ autoFonts = true, openingFailure = null, randomValue = .5
     await scriptResult('cannon.min.js');
     await scriptResult('radial-menu.js');
     await scriptResult('rotor-power.js');
+    await scriptResult('propeller-power.js');
     await scriptResult('campaign-reconfiguration.js');
     await scriptResult('progression.js');
     await scriptResult('campaign-automation.js');
@@ -190,7 +191,7 @@ function assertBlocked(e) {
   assert.notEqual(e.nodes.get('#boot-percent').textContent, '100%');
 }
 
-const dependencies=['radial-menu.js','rotor-power.js','campaign-reconfiguration.js','progression.js','campaign-automation.js','campaign-production.js','workshop.js','furniture-models.js','organizers.js','workshop-panel.js','robot-arm-panel.js','conveyor-panel.js','battery-liquid.js','contact-sensors.js','controls.js','subtitles.js','dialogue-timing.js','guide-audio.js','footsteps.js','join-audio.js','selection-hud.js'];
+const dependencies=['radial-menu.js','rotor-power.js','propeller-power.js','campaign-reconfiguration.js','progression.js','campaign-automation.js','campaign-production.js','workshop.js','furniture-models.js','organizers.js','workshop-panel.js','robot-arm-panel.js','conveyor-panel.js','battery-liquid.js','contact-sensors.js','controls.js','subtitles.js','dialogue-timing.js','guide-audio.js','footsteps.js','join-audio.js','selection-hud.js'];
 for(const module of dependencies)test(`a missing ${module} blocks game preparation, 100 percent and Comenzar even when music is ready`, async () => {
   const e=environment();
   await e.scriptResult('cannon.min.js');
