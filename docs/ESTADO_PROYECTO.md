@@ -2,7 +2,23 @@
 
 Actualizado: 17 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega: miniaturas agrupadas y desarme configurable — 17 de noviembre de 2026
+## Última entrega: selección de conjuntos grandes y rodillos virtuales — 17 de noviembre de 2026
+
+Los módulos estándar de cinta conservan sus piezas, motores, peso y energía como datos, pero sus tres rodillos salen del mundo físico: no crean cuerpos ni bisagras independientes. El chasis recibe la masa exactamente una vez y tres envolventes de colisión fijas; la banda sigue transportando cargas mediante contacto y fuerza limitada. El giro, el contorno y la sombra de los rodillos son visuales, con velocidad y aceleración derivadas del motor. Se conserva el consumo por cada motor, el trabajo de tracción, la batería externa y las paradas por sobrecarga, agotamiento o pérdida de apoyo. Las adaptaciones incompatibles recuperan la articulación real. No se aplica esta conversión a brazos, servos o rotores sueltos.
+
+Seleccionar una cinta encendida mantiene la producción. Intentar agarrar, unir o separar su red avisa que primero debe apagarse o desconectarse. Clic derecho o Alt → **Separar módulo completo** extrae un tramo con sus motores, rodillos y patas originales; los otros tramos siguen armados. El desarme completo conserva los modos inmediato y gradual. Se preservan identidades y energía en banco, planos, exportaciones y repisas; al recuperar una máquina sigue detenida. Las patas también identifican su propio controlador en un chasis compartido.
+
+La detección preliminar usa cajas en lugar de grandes esferas alrededor de cintas alargadas. Las consultas de agarre comparten colisionadores compactos y jerarquías espaciales, con límites rotados exactos y comprobación detallada cerca de obstáculos. La cinta completa necesita una sola ancla de mano. Los contornos reutilizan buffers y se omiten del dibujo caras interiores coincidentes, sin retirar material. Al unir, la geometría de cada módulo se valida primero con sus propias piezas; las propiedades físicas del chasis se recalculan juntas. En una costura válida se compara el material original de las piezas que van a soldarse, conservando las envolventes completas frente a obstáculos externos. Esto permite prolongaciones invertidas y montaje de un brazo sobre la cinta.
+
+Verificación: **915/915 pruebas Node aprobadas**, sin fallos ni omisiones, con concurrencia 2. Incluye montaje y prolongación invertida, brazo unido a cinta, obstáculos externos en la envolvente de un rodillo, huecos de esquinas, agarre y rotación de conjuntos grandes, masa/inercia, energía, controladores, guardados, extracción por módulo y ambos modos de desarme. Sintaxis y diff correctos. **71 capturas GLES** aprobadas, dos shaders/un programa y cero errores GPU; incluyen contornos cacheados, animación de rodillos, sombras, culling, geometría compacta y recuperación de piezas. `validate-focus-gles.py` también aprobado. No se certifica una partida visual completa de navegador.
+
+Guía de uso: [CINTAS_QBITS.md](CINTAS_QBITS.md). Arquitectura y reproducción: [RENDIMIENTO_CINTAS.md](RENDIMIENTO_CINTAS.md). Las mediciones son CPU con Cannon real y DOM/GPU simulados; no son FPS ni una partida de navegador.
+
+[Medición final reproducible](benchmarks/selection-conveyors-20261117.json), contra `21825fb`: escena de 500 piezas (472 en la cinta agarrada), simulación del agarre **135,29 → 5,84 ms/paso** y del giro **280,79 → 6,75 ms/paso**; con 2.000 piezas, **1.373,48 → 13,85 ms/paso** y **2.006,14 → 27,51 ms/paso**. En este último montaje hay 189 rodillos virtuales, un chasis físico, una ancla de mano y masa total 500, conservando las 2.000 identidades. La mayor unión medida aún costó **152,17 ms**; la medición excluye crear el módulo entrante y dibujar el fotograma siguiente. El reposo de la escena de 500 piezas pasó de 1,72 a 3,14 ms: no todas las fases mejoran. No presentar estos resultados como FPS ni como ausencia total de pausas.
+
+Siguiente paso: comprobar en el PC del jugador su montaje original, selección encendida, traslado apagado, unión y separación por módulo. Comparar el panel Num8 con el mismo ajuste de pasos; la medición de referencia de esta entrega usa 60 pasos/s. Una unión de miles de piezas todavía puede producir una pausa puntual; no se garantiza ausencia de tirones en cualquier montaje ni equipo.
+
+## Entrega anterior: miniaturas agrupadas y desarme configurable — 17 de noviembre de 2026
 
 Continúa sobre la rama del PR #22 (`16d3370`), conservando índices, contactos y selector 240/120/60. Las miniaturas de repisas usan buffers por apariencia, reutilizados mientras el primer elemento de la celda no cambie. Una miniatura de 2.000 cubos requiere una llamada de dibujo en vez de 2.000; se mantienen sus 24.000 triángulos y su apariencia. Retirar, sustituir o eliminar contenido libera los buffers. El HUD de selección se traslada abajo a la derecha, con miniaturas del tamaño aproximado del contador de población, paginación y textos que se abren hacia arriba.
 
@@ -14,7 +30,7 @@ Verificación: suite completa **860/860 pruebas Node**, sin omisiones; **38 esce
 
 [Microprueba reproducible](benchmarks/previews-disassembly-20261117.json): 80/500/2.000 piezas, con Cannon real y DOM/GL simulados. Excluye el coste de avanzar la física. La liberación se reparte en un máximo de cuatro cuerpos por llamada; para 2.000 piezas la ejecución de referencia tardó unos 29 s simulados a 60 fotogramas/s. No reduce el coste final de simular 2.000 cuerpos. La preparación de geometría y consultas individuales aún pueden superar el presupuesto; este es cooperativo, no un límite de latencia garantizado. El total de trabajo del desarme gradual puede ser mayor que el inmediato por las comprobaciones de colocación. Reproducir: `node tests/benchmark-preview-disassembly.cjs`.
 
-Siguiente paso: integrar el PR y comparar ambos modos en el PC del jugador a 240 pasos, empezando con una máquina pequeña y después con sus montajes grandes. Confirmar HUD en escritorio/móvil y medir fotogramas completos antes de atribuir una mejora de FPS.
+El PR #22 quedó integrado en `21825fb`. Continúa pendiente comparar ambos modos en el PC del jugador y confirmar la comodidad del HUD en escritorio/móvil; las mejoras posteriores de cintas se describen arriba.
 
 ## Entrega anterior: consultas mecánicas y pasos configurables — 17 de noviembre de 2026
 

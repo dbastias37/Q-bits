@@ -15,8 +15,12 @@ test('rigid collision cache follows movement, rotation and body replacement with
  a.body.quaternion.setFromEuler(.2,.3,.4);assert.equal(t.rigidGroupsOverlap(a,b),precise(t,a,b));
  const parts=t.worldParts(a);t.removeGroup(a);const replacement=t.makeGroup(parts);assert.notEqual(t.rigidCollisionParts(replacement),before);assert.equal(t.rigidGroupsOverlap(replacement,b),precise(t,replacement,b));
 });
-test('sleeping conveyor units reuse verified equilibrium and wake for contact or manual movement',()=>{
+test('adapted physical conveyor rollers reuse sleeping equilibrium and wake for contact or manual movement',()=>{
  const {t}=lab();assert(t.spawnSavedMechanism(t.conveyorBlueprintTemplate('straight'),t.V()));
+ // Standard cartridges are now virtual. An adapted roller deliberately falls
+ // back to real articulated physics, whose equilibrium cache remains required.
+ const conveyor=t.conveyors[0],roller=t.rotorPart(t.conveyorRotors(conveyor)[0].bId).g,cube=roller.parts.find(part=>part.shape==='cube');
+ assert(t.configureGripper(cube.id,{mode:'any',capacity:4}));assert(!conveyor.virtual);assert(t.rotors.every(rotor=>rotor.constraint));
  for(let i=0;i<480;i++)t.stepPhysics(1/240);
  assert(t.groups.every(g=>g.body.sleepState===2));const rotor=t.rotors[0],pair=t.rotorGroups(rotor),saved=rotor.restPose;
  t.stepPhysics(1/240);assert.equal(rotor.restPose,saved,'no repeated geometric stabilization while sleeping');

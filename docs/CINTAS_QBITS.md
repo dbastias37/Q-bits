@@ -10,19 +10,25 @@ La cinta inicia la línea de producción del banco de pruebas. Sus laterales, so
 4. Solo después del último encaje aparecen el control y la banda. Acopla una batería externa a los laterales con el sistema de unión existente y enciéndela.
 5. Selecciona el tramo y pulsa **Iniciar tramo**. Puedes detenerlo o invertir su sentido desde el mismo panel o el menú contextual. La velocidad normal usa 30 rpm; el panel muestra la velocidad real de la banda.
 
-| Plano | Cubos | Enganches | Rotores activos |
+| Plano | Cubos | Enganches | Motores del módulo |
 | --- | ---: | ---: | ---: |
 | Recta | 18 | 12 | 3 |
 | Esquina izquierda | 29 | 12 | 3 |
 | Esquina derecha | 29 | 12 | 3 |
 
-Las patas añaden **4 cubos** al plano elegido. Puedes retirarlas si la estructura queda apoyada de otra forma; quitar una pieza esencial del rodillo o del chasis desactiva el mecanismo. La batería se acopla aparte; no aparece cargada como premio por construir. Cada rodillo utiliza una articulación accionada; los enganches del lado opuesto actúan como apoyo pasivo.
+Las patas añaden **4 cubos** al plano elegido. Puedes retirarlas si la estructura queda apoyada de otra forma; quitar una pieza esencial del rodillo o del chasis desactiva el mecanismo. La batería se acopla aparte; no aparece cargada como premio por construir. En un tramo estándar completo, los tres motores conservan su identidad y consumo, mientras los rodillos se animan visualmente sin cuerpos ni articulaciones independientes en la simulación.
 
 ## Prolongar y alimentar una línea
 
 Selecciona un tramo y marca **Al final de la cinta seleccionada** antes de elegir el siguiente plano. Se alinean la altura, la orientación y el extremo de salida. Al completar la construcción se unen los laterales que encajan. También puedes colocar líneas separadas o paralelas y orientar cada una por tu cuenta.
 
 Las secciones físicamente unidas comparten la batería mediante la red mecánica existente. Cada tramo conserva su propio control de marcha y sentido. Si unes también un brazo, su límite de carga de rotor sigue considerando el conjunto conectado: revisa ese límite al ampliar la línea. La proximidad por sí sola no transmite energía. El tramo debe estar nivelado y apoyado: no se puede encender suspendido sin soporte. Puede funcionar sobre un banco o sobre otra estructura estable; si pierde ese apoyo, se detiene. Un generador de área y su alcance son trabajo posterior; este bloque utiliza baterías externas.
+
+## Seleccionar, mover y separar tramos
+
+Seleccionar la cinta, abrir su menú contextual o consultar su contorno mantiene la producción y el consumo de batería. Si intentas tomar, unir o separar un conjunto que contiene un tramo encendido, se conserva su estado y aparece **Primero apaga o desconecta la cinta**. Detén todos los tramos del conjunto antes de modificar el chasis compartido. El agotamiento de la batería, la sobrecarga y la pérdida de apoyo conservan sus paradas físicas.
+
+Clic derecho sobre la banda o una pieza propia → **Separar módulo completo** extrae ese tramo con sus rodillos, motores y patas originales. **Alt → Separar módulo completo** realiza la misma operación. Los demás tramos siguen armados; si retiras una esquina intermedia, los extremos quedan como conjuntos independientes. La operación conserva piezas, orientación, masa y energía, sin generar material. Las baterías y piezas añadidas que no pertenecían al módulo quedan en el resto del montaje. Los guardados antiguos recuperan las patas en las cuatro posiciones estándar de cada tramo. **Desarmar piezas… → Desarmar todo** sigue disponible como una operación distinta y explícita.
 
 ## Transporte y piezas
 
@@ -36,8 +42,12 @@ El guardado de mecanismos, la exportación, las repisas y la recuperación del b
 
 ## Rendimiento y verificación
 
+Los tramos estándar completos usan un chasis físico con la masa de sus rodillos y volúmenes de colisión simplificados. Sus rodillos conservan piezas, identidades y energía como datos, pero no añaden cuerpos ni articulaciones al solver. Modificar o desarmar un rodillo recupera sus piezas físicas originales; los cartuchos modificados conservan la simulación completa. Los módulos compatibles vuelven automáticamente al modo virtual.
+
 Los cubos de una estructura rígida irregular comparten una malla de dibujo cacheada. Las piezas, las colisiones y la selección individual siguen existiendo. Las baterías y los cuerpos móviles conservan sus rutas específicas. La malla se libera al retirar o reconstruir el cuerpo.
 
-En el escenario de medición de 256 cubos agrupados en 16 estructuras, las llamadas de dibujo bajan de 256 a 16. El tiempo de CPU del dibujo medido con GPU simulada baja aproximadamente un 79 %; esta cifra no predice los FPS del navegador. En otra medición con ocho cintas reales (240 piezas), incluidas sus bandas y marcas, las llamadas bajan de 360 a 248, un 31 %. La comparación de imágenes GLES verifica que la agrupación conserva el resultado visual. El estado del proyecto registra las pruebas finales del bloque.
+En una medición anterior al modo virtual, con 256 cubos agrupados en 16 estructuras, las llamadas de dibujo bajan de 256 a 16. El tiempo de CPU del dibujo medido con GPU simulada baja aproximadamente un 79 %; esta cifra no predice los FPS del navegador. En otra medición con ocho cintas reales (240 piezas), incluidas sus bandas y marcas, las llamadas bajan de 360 a 248, un 31 %. La comparación de imágenes GLES verifica que la agrupación conserva el resultado visual. El estado del proyecto registra las pruebas finales del bloque.
 
 Para repetir la medición de dibujo: `node tests/benchmark-rigid-render.cjs`. La suite lógica usa Cannon real con DOM y GPU simulados; las capturas GLES reproducen el renderizador real. Ninguna de estas comprobaciones equivale a una partida completa en navegador.
+
+La medición de selección, agarre y giro con hasta 2.000 piezas y sus límites está en [RENDIMIENTO_CINTAS.md](RENDIMIENTO_CINTAS.md).

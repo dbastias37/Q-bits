@@ -1,0 +1,830 @@
+{
+  "baseline": "21825fb",
+  "node": "v24.22.1",
+  "sourceSha256": {
+    "baseline": "d561dee6b1e7d82dadf4da54df4f5df27e71d47440b34a81f3691a5ee67d2983",
+    "optimized": "b9557e1890f62da3a46ff53dfaefcbd5f2413b53a437d782d0de40ee23f16f4b"
+  },
+  "physicsHz": 60,
+  "sampleSteps": 3,
+  "repetitions": 3,
+  "warmupSteps": 60,
+  "scope": "Process CPU milliseconds per actual physics step, updateGrab call, or renderScene call. Real game and Cannon; DOM/GPU stubs. Warmup 60 steps, three samples per batch, three batches; sequential operation stages. Pure controller force/anchor integration is restored before measuring full simulation. Not browser FPS, GPU timing, or a capacity guarantee.",
+  "fixture": "Port-aligned welded serpentine: ten straight modules followed by two alternating corners per row. Exact total 80/500/2000 pieces; remaining material is separate cubes/pyramids on the floor. Selection, stopped grab, and held rotation use production entry points.",
+  "limitations": [
+    "CPU samples run with real Cannon and production game functions, but DOM/GPU stubs; no browser FPS or GPU-performance claim.",
+    "Raw sample ranges are included. JIT, garbage collection, and host scheduling cause variability; percentages describe these fixtures, not every player machine.",
+    "Join samples measure only welding an already spawned, port-aligned section. They exclude incoming placement/spawn and the following simulation/render. Baseline join timings were not captured; no before/after join claim is made.",
+    "Maximum-size assemblies can still produce a one-time construction hitch; finite-state and material/mass checks do not imply a guaranteed frame budget."
+  ],
+  "comparisons": [
+    {
+      "scenePieces": 80,
+      "heldPieces": 60,
+      "measurements": {
+        "idlePhysics": {
+          "baselineMedianCpuMs": 0.36766666666666664,
+          "optimizedMedianCpuMs": 0.24133333333333332,
+          "cpuReductionPercent": 34.36083408884859,
+          "baselineRangeCpuMs": [
+            0.33466666666666667,
+            0.49433333333333335
+          ],
+          "optimizedRangeCpuMs": [
+            0.18733333333333335,
+            0.5003333333333333
+          ]
+        },
+        "selectedPhysics": {
+          "baselineMedianCpuMs": 0.6789999999999999,
+          "optimizedMedianCpuMs": 0.7366666666666667,
+          "cpuReductionPercent": -8.492881688757992,
+          "baselineRangeCpuMs": [
+            0.663,
+            1.7443333333333333
+          ],
+          "optimizedRangeCpuMs": [
+            0.4226666666666667,
+            0.762
+          ]
+        },
+        "selectedRender": {
+          "baselineMedianCpuMs": 3.5976666666666666,
+          "optimizedMedianCpuMs": 1.836,
+          "cpuReductionPercent": 48.96692300565181,
+          "baselineRangeCpuMs": [
+            2.7816666666666667,
+            5.351333333333333
+          ],
+          "optimizedRangeCpuMs": [
+            1.4873333333333332,
+            3.4463333333333335
+          ]
+        },
+        "heldUpdate": {
+          "baselineMedianCpuMs": 1.875,
+          "optimizedMedianCpuMs": 0.31033333333333335,
+          "cpuReductionPercent": 83.44888888888889,
+          "baselineRangeCpuMs": [
+            1.0386666666666666,
+            2.0909999999999997
+          ],
+          "optimizedRangeCpuMs": [
+            0.22266666666666668,
+            0.4726666666666666
+          ]
+        },
+        "heldPhysics": {
+          "baselineMedianCpuMs": 8.044333333333332,
+          "optimizedMedianCpuMs": 3.3216666666666668,
+          "cpuReductionPercent": 58.70799320432602,
+          "baselineRangeCpuMs": [
+            7.7763333333333335,
+            14.259
+          ],
+          "optimizedRangeCpuMs": [
+            0.8596666666666667,
+            3.9316666666666666
+          ]
+        },
+        "turningPhysics": {
+          "baselineMedianCpuMs": 16.93,
+          "optimizedMedianCpuMs": 1.881,
+          "cpuReductionPercent": 88.88954518606025,
+          "baselineRangeCpuMs": [
+            11.498666666666667,
+            19.077333333333332
+          ],
+          "optimizedRangeCpuMs": [
+            1.332,
+            2.0653333333333332
+          ]
+        }
+      },
+      "heldWorldBodies": {
+        "before": 40,
+        "after": 28
+      },
+      "heldWorldConstraints": {
+        "before": 13,
+        "after": 1
+      }
+    },
+    {
+      "scenePieces": 500,
+      "heldPieces": 472,
+      "measurements": {
+        "idlePhysics": {
+          "baselineMedianCpuMs": 1.7236666666666667,
+          "optimizedMedianCpuMs": 3.139,
+          "cpuReductionPercent": -82.11177721910654,
+          "baselineRangeCpuMs": [
+            1.6580000000000001,
+            2.6346666666666665
+          ],
+          "optimizedRangeCpuMs": [
+            2.846,
+            3.368
+          ]
+        },
+        "selectedPhysics": {
+          "baselineMedianCpuMs": 2.02,
+          "optimizedMedianCpuMs": 3.3206666666666664,
+          "cpuReductionPercent": -64.38943894389438,
+          "baselineRangeCpuMs": [
+            1.6159999999999999,
+            2.454
+          ],
+          "optimizedRangeCpuMs": [
+            2.556,
+            3.8000000000000003
+          ]
+        },
+        "selectedRender": {
+          "baselineMedianCpuMs": 30.501,
+          "optimizedMedianCpuMs": 3.693,
+          "cpuReductionPercent": 87.89220025572932,
+          "baselineRangeCpuMs": [
+            14.536999999999999,
+            31.94966666666667
+          ],
+          "optimizedRangeCpuMs": [
+            3.4793333333333334,
+            3.6999999999999997
+          ]
+        },
+        "heldUpdate": {
+          "baselineMedianCpuMs": 15.165,
+          "optimizedMedianCpuMs": 0.3243333333333333,
+          "cpuReductionPercent": 97.86130343993845,
+          "baselineRangeCpuMs": [
+            10.918333333333335,
+            31.177333333333333
+          ],
+          "optimizedRangeCpuMs": [
+            0.32166666666666666,
+            0.835
+          ]
+        },
+        "heldPhysics": {
+          "baselineMedianCpuMs": 135.287,
+          "optimizedMedianCpuMs": 5.841333333333334,
+          "cpuReductionPercent": 95.68226560324841,
+          "baselineRangeCpuMs": [
+            116.32933333333334,
+            144.84066666666666
+          ],
+          "optimizedRangeCpuMs": [
+            4.0296666666666665,
+            8.921666666666667
+          ]
+        },
+        "turningPhysics": {
+          "baselineMedianCpuMs": 280.789,
+          "optimizedMedianCpuMs": 6.75,
+          "cpuReductionPercent": 97.59605967470235,
+          "baselineRangeCpuMs": [
+            266.3483333333333,
+            303.939
+          ],
+          "optimizedRangeCpuMs": [
+            5.934666666666666,
+            6.885333333333333
+          ]
+        }
+      },
+      "heldWorldBodies": {
+        "before": 126,
+        "after": 36
+      },
+      "heldWorldConstraints": {
+        "before": 91,
+        "after": 1
+      }
+    },
+    {
+      "scenePieces": 2000,
+      "heldPieces": 2000,
+      "measurements": {
+        "idlePhysics": {
+          "baselineMedianCpuMs": 10.059333333333333,
+          "optimizedMedianCpuMs": 5.4093333333333335,
+          "cpuReductionPercent": 46.22572735105043,
+          "baselineRangeCpuMs": [
+            9.992333333333333,
+            11.103666666666667
+          ],
+          "optimizedRangeCpuMs": [
+            4.459666666666666,
+            6.345
+          ]
+        },
+        "selectedPhysics": {
+          "baselineMedianCpuMs": 16.229333333333333,
+          "optimizedMedianCpuMs": 5.648,
+          "cpuReductionPercent": 65.19881695695038,
+          "baselineRangeCpuMs": [
+            13.381666666666668,
+            18.621666666666666
+          ],
+          "optimizedRangeCpuMs": [
+            3.9583333333333335,
+            8.512333333333332
+          ]
+        },
+        "selectedRender": {
+          "baselineMedianCpuMs": 63.96366666666666,
+          "optimizedMedianCpuMs": 8.196666666666667,
+          "cpuReductionPercent": 87.1854333970848,
+          "baselineRangeCpuMs": [
+            52.435,
+            65.02066666666667
+          ],
+          "optimizedRangeCpuMs": [
+            5.756666666666667,
+            16.025333333333332
+          ]
+        },
+        "heldUpdate": {
+          "baselineMedianCpuMs": 129.14166666666668,
+          "optimizedMedianCpuMs": 1.9663333333333333,
+          "cpuReductionPercent": 98.47738271923599,
+          "baselineRangeCpuMs": [
+            113.81,
+            134.452
+          ],
+          "optimizedRangeCpuMs": [
+            1.6623333333333334,
+            2.518333333333333
+          ]
+        },
+        "heldPhysics": {
+          "baselineMedianCpuMs": 1373.4786666666666,
+          "optimizedMedianCpuMs": 13.852666666666666,
+          "cpuReductionPercent": 98.9914174131087,
+          "baselineRangeCpuMs": [
+            1372.6773333333333,
+            1417.7926666666665
+          ],
+          "optimizedRangeCpuMs": [
+            12.664333333333333,
+            25.411666666666665
+          ]
+        },
+        "turningPhysics": {
+          "baselineMedianCpuMs": 2006.1436666666666,
+          "optimizedMedianCpuMs": 27.511333333333337,
+          "cpuReductionPercent": 98.62864590455553,
+          "baselineRangeCpuMs": [
+            1994.2326666666668,
+            2015.405
+          ],
+          "optimizedRangeCpuMs": [
+            26.283666666666665,
+            40.33866666666667
+          ]
+        }
+      },
+      "heldWorldBodies": {
+        "before": 386,
+        "after": 8
+      },
+      "heldWorldConstraints": {
+        "before": 379,
+        "after": 1
+      }
+    }
+  ],
+  "results": [
+    {
+      "variant": "baseline",
+      "scenePieces": 80,
+      "conveyors": 2,
+      "rigidGroups": 27,
+      "heldGroups": 7,
+      "heldPieces": 60,
+      "worldBodies": 40,
+      "worldConstraints": 13,
+      "compoundShapes": 70,
+      "medianCpuMs": {
+        "idlePhysics": 0.36766666666666664,
+        "selectedPhysics": 0.6789999999999999,
+        "selectedRender": 3.5976666666666666,
+        "heldUpdate": 1.875,
+        "heldPhysics": 8.044333333333332,
+        "turningPhysics": 16.93
+      },
+      "samplesCpuMs": {
+        "idlePhysics": [
+          0.36766666666666664,
+          0.49433333333333335,
+          0.33466666666666667
+        ],
+        "selectedPhysics": [
+          0.6789999999999999,
+          0.663,
+          1.7443333333333333
+        ],
+        "selectedRender": [
+          3.5976666666666666,
+          2.7816666666666667,
+          5.351333333333333
+        ],
+        "heldUpdate": [
+          1.0386666666666666,
+          1.875,
+          2.0909999999999997
+        ],
+        "heldPhysics": [
+          14.259,
+          7.7763333333333335,
+          8.044333333333332
+        ],
+        "turningPhysics": [
+          11.498666666666667,
+          16.93,
+          19.077333333333332
+        ]
+      },
+      "physicalStates": {
+        "selected": {
+          "maximumHingeGapMeters": 0.00005985250819728698,
+          "minimumMaterialHeightMeters": -0.00031360891525644696,
+          "maximumLinearSpeedMetersPerSecond": 0
+        },
+        "held": {
+          "maximumHingeGapMeters": 0.000002351325739712469,
+          "minimumMaterialHeightMeters": -0.00002324535093591734,
+          "maximumLinearSpeedMetersPerSecond": 0.3513019257332305
+        },
+        "turning": {
+          "maximumHingeGapMeters": 0.0003169124487842803,
+          "minimumMaterialHeightMeters": -0.00002324535093591734,
+          "maximumLinearSpeedMetersPerSecond": 1.107536949062015
+        }
+      },
+      "finiteStates": true,
+      "materialConserved": true
+    },
+    {
+      "variant": "optimized",
+      "scenePieces": 80,
+      "conveyors": 2,
+      "rigidGroups": 27,
+      "physicalGroups": 21,
+      "virtualRollers": 6,
+      "liveHinges": 0,
+      "heldGroups": 7,
+      "handAnchors": 1,
+      "heldPieces": 60,
+      "worldBodies": 28,
+      "worldConstraints": 1,
+      "compoundShapes": 76,
+      "physicalCompoundShapes": 58,
+      "physicalMass": 20,
+      "materialMass": 20,
+      "lastJoinCpuMs": 9.272,
+      "maximumJoinCpuMs": 9.272,
+      "joinsCpuMs": [
+        9.272
+      ],
+      "medianCpuMs": {
+        "idlePhysics": 0.24133333333333332,
+        "selectedPhysics": 0.7366666666666667,
+        "selectedRender": 1.836,
+        "heldUpdate": 0.31033333333333335,
+        "heldPhysics": 3.3216666666666668,
+        "turningPhysics": 1.881
+      },
+      "samplesCpuMs": {
+        "idlePhysics": [
+          0.24133333333333332,
+          0.18733333333333335,
+          0.5003333333333333
+        ],
+        "selectedPhysics": [
+          0.4226666666666667,
+          0.7366666666666667,
+          0.762
+        ],
+        "selectedRender": [
+          3.4463333333333335,
+          1.4873333333333332,
+          1.836
+        ],
+        "heldUpdate": [
+          0.4726666666666666,
+          0.22266666666666668,
+          0.31033333333333335
+        ],
+        "heldPhysics": [
+          3.3216666666666668,
+          0.8596666666666667,
+          3.9316666666666666
+        ],
+        "turningPhysics": [
+          1.881,
+          1.332,
+          2.0653333333333332
+        ]
+      },
+      "physicalStates": {
+        "selected": {
+          "maximumHingeGapMeters": 5.714291262394815e-10,
+          "minimumMaterialHeightMeters": -0.00002324535093591734,
+          "maximumLinearSpeedMetersPerSecond": 0
+        },
+        "held": {
+          "maximumHingeGapMeters": 5.714291262394842e-10,
+          "minimumMaterialHeightMeters": -0.00002324535093591734,
+          "maximumLinearSpeedMetersPerSecond": 0.3507733887325132
+        },
+        "turning": {
+          "maximumHingeGapMeters": 5.714287918366676e-10,
+          "minimumMaterialHeightMeters": -0.00002324535093591734,
+          "maximumLinearSpeedMetersPerSecond": 0.7946747890977732
+        }
+      },
+      "finiteStates": true,
+      "materialConserved": true
+    },
+    {
+      "variant": "baseline",
+      "scenePieces": 500,
+      "conveyors": 15,
+      "rigidGroups": 74,
+      "heldGroups": 46,
+      "heldPieces": 472,
+      "worldBodies": 126,
+      "worldConstraints": 91,
+      "compoundShapes": 405,
+      "medianCpuMs": {
+        "idlePhysics": 1.7236666666666667,
+        "selectedPhysics": 2.02,
+        "selectedRender": 30.501,
+        "heldUpdate": 15.165,
+        "heldPhysics": 135.287,
+        "turningPhysics": 280.789
+      },
+      "samplesCpuMs": {
+        "idlePhysics": [
+          1.7236666666666667,
+          1.6580000000000001,
+          2.6346666666666665
+        ],
+        "selectedPhysics": [
+          1.6159999999999999,
+          2.02,
+          2.454
+        ],
+        "selectedRender": [
+          31.94966666666667,
+          30.501,
+          14.536999999999999
+        ],
+        "heldUpdate": [
+          10.918333333333335,
+          15.165,
+          31.177333333333333
+        ],
+        "heldPhysics": [
+          144.84066666666666,
+          135.287,
+          116.32933333333334
+        ],
+        "turningPhysics": [
+          266.3483333333333,
+          303.939,
+          280.789
+        ]
+      },
+      "physicalStates": {
+        "selected": {
+          "maximumHingeGapMeters": 0.00005207466654707144,
+          "minimumMaterialHeightMeters": -0.00026067782173003207,
+          "maximumLinearSpeedMetersPerSecond": 0
+        },
+        "held": {
+          "maximumHingeGapMeters": 0.000005012257223889999,
+          "minimumMaterialHeightMeters": -0.000023245350935952036,
+          "maximumLinearSpeedMetersPerSecond": 0.35175582507779846
+        },
+        "turning": {
+          "maximumHingeGapMeters": 0.0011947999124830198,
+          "minimumMaterialHeightMeters": -0.000023245350935952036,
+          "maximumLinearSpeedMetersPerSecond": 2.6659601150819587
+        }
+      },
+      "finiteStates": true,
+      "materialConserved": true
+    },
+    {
+      "variant": "optimized",
+      "scenePieces": 500,
+      "conveyors": 15,
+      "rigidGroups": 74,
+      "physicalGroups": 29,
+      "virtualRollers": 45,
+      "liveHinges": 0,
+      "heldGroups": 46,
+      "handAnchors": 1,
+      "heldPieces": 472,
+      "worldBodies": 36,
+      "worldConstraints": 1,
+      "compoundShapes": 450,
+      "physicalCompoundShapes": 315,
+      "physicalMass": 125,
+      "materialMass": 125,
+      "lastJoinCpuMs": 36.719,
+      "maximumJoinCpuMs": 37.945,
+      "joinsCpuMs": [
+        13.411,
+        8.375,
+        9.601,
+        10.239,
+        15.796,
+        24.937,
+        27.823,
+        22.832,
+        20.662,
+        26,
+        21.844,
+        31.574,
+        37.945,
+        36.719
+      ],
+      "medianCpuMs": {
+        "idlePhysics": 3.139,
+        "selectedPhysics": 3.3206666666666664,
+        "selectedRender": 3.693,
+        "heldUpdate": 0.3243333333333333,
+        "heldPhysics": 5.841333333333334,
+        "turningPhysics": 6.75
+      },
+      "samplesCpuMs": {
+        "idlePhysics": [
+          3.139,
+          2.846,
+          3.368
+        ],
+        "selectedPhysics": [
+          2.556,
+          3.3206666666666664,
+          3.8000000000000003
+        ],
+        "selectedRender": [
+          3.4793333333333334,
+          3.6999999999999997,
+          3.693
+        ],
+        "heldUpdate": [
+          0.835,
+          0.3243333333333333,
+          0.32166666666666666
+        ],
+        "heldPhysics": [
+          8.921666666666667,
+          4.0296666666666665,
+          5.841333333333334
+        ],
+        "turningPhysics": [
+          6.75,
+          5.934666666666666,
+          6.885333333333333
+        ]
+      },
+      "physicalStates": {
+        "selected": {
+          "maximumHingeGapMeters": 5.714300144179039e-10,
+          "minimumMaterialHeightMeters": -0.000023245350935952036,
+          "maximumLinearSpeedMetersPerSecond": 0
+        },
+        "held": {
+          "maximumHingeGapMeters": 5.71430014417912e-10,
+          "minimumMaterialHeightMeters": -0.000023245350935952036,
+          "maximumLinearSpeedMetersPerSecond": 0.3510169003290886
+        },
+        "turning": {
+          "maximumHingeGapMeters": 5.714287918366757e-10,
+          "minimumMaterialHeightMeters": -0.000023245350935952036,
+          "maximumLinearSpeedMetersPerSecond": 5.927627099038404
+        }
+      },
+      "finiteStates": true,
+      "materialConserved": true
+    },
+    {
+      "variant": "baseline",
+      "scenePieces": 2000,
+      "conveyors": 63,
+      "rigidGroups": 190,
+      "heldGroups": 190,
+      "heldPieces": 2000,
+      "worldBodies": 386,
+      "worldConstraints": 379,
+      "compoundShapes": 1585,
+      "medianCpuMs": {
+        "idlePhysics": 10.059333333333333,
+        "selectedPhysics": 16.229333333333333,
+        "selectedRender": 63.96366666666666,
+        "heldUpdate": 129.14166666666668,
+        "heldPhysics": 1373.4786666666666,
+        "turningPhysics": 2006.1436666666666
+      },
+      "samplesCpuMs": {
+        "idlePhysics": [
+          10.059333333333333,
+          11.103666666666667,
+          9.992333333333333
+        ],
+        "selectedPhysics": [
+          18.621666666666666,
+          16.229333333333333,
+          13.381666666666668
+        ],
+        "selectedRender": [
+          63.96366666666666,
+          65.02066666666667,
+          52.435
+        ],
+        "heldUpdate": [
+          134.452,
+          129.14166666666668,
+          113.81
+        ],
+        "heldPhysics": [
+          1417.7926666666665,
+          1372.6773333333333,
+          1373.4786666666666
+        ],
+        "turningPhysics": [
+          2006.1436666666666,
+          2015.405,
+          1994.2326666666668
+        ]
+      },
+      "physicalStates": {
+        "selected": {
+          "maximumHingeGapMeters": 0.00005104259506105003,
+          "minimumMaterialHeightMeters": -0.00025123564566365,
+          "maximumLinearSpeedMetersPerSecond": 0
+        },
+        "held": {
+          "maximumHingeGapMeters": 0.00001613157898622739,
+          "minimumMaterialHeightMeters": 0.09398477000448666,
+          "maximumLinearSpeedMetersPerSecond": 0.3540747515798974
+        },
+        "turning": {
+          "maximumHingeGapMeters": 0.0006070013134750072,
+          "minimumMaterialHeightMeters": 0.11514790917748369,
+          "maximumLinearSpeedMetersPerSecond": 1.9603223286434448
+        }
+      },
+      "finiteStates": true,
+      "materialConserved": true
+    },
+    {
+      "variant": "optimized",
+      "scenePieces": 2000,
+      "conveyors": 63,
+      "rigidGroups": 190,
+      "physicalGroups": 1,
+      "virtualRollers": 189,
+      "liveHinges": 0,
+      "heldGroups": 190,
+      "handAnchors": 1,
+      "heldPieces": 2000,
+      "worldBodies": 8,
+      "worldConstraints": 1,
+      "compoundShapes": 1774,
+      "physicalCompoundShapes": 1207,
+      "physicalMass": 500,
+      "materialMass": 500,
+      "lastJoinCpuMs": 141.393,
+      "maximumJoinCpuMs": 152.168,
+      "joinsCpuMs": [
+        10.569,
+        17.666,
+        10.267,
+        9.631,
+        13.064,
+        23.163,
+        23.32,
+        23.076,
+        26.83,
+        18.291,
+        19.909,
+        30.285,
+        31.05,
+        26.29,
+        31.369,
+        39.763,
+        44.156,
+        91.692,
+        40.878,
+        39.835,
+        46.936,
+        38.918,
+        47.293,
+        49.492,
+        53.895,
+        50.3,
+        62.135,
+        72.862,
+        60.256,
+        74.013,
+        76.196,
+        69.175,
+        92.043,
+        69.325,
+        69.225,
+        81.665,
+        104.474,
+        102.954,
+        94.318,
+        93.678,
+        132.894,
+        118.178,
+        108.177,
+        115.778,
+        99.851,
+        106.68,
+        105.807,
+        143.039,
+        121.351,
+        135.318,
+        134.297,
+        136.286,
+        138.275,
+        131.687,
+        142.863,
+        144.492,
+        152.168,
+        135.43,
+        135.625,
+        139.214,
+        139.358,
+        141.393
+      ],
+      "medianCpuMs": {
+        "idlePhysics": 5.4093333333333335,
+        "selectedPhysics": 5.648,
+        "selectedRender": 8.196666666666667,
+        "heldUpdate": 1.9663333333333333,
+        "heldPhysics": 13.852666666666666,
+        "turningPhysics": 27.511333333333337
+      },
+      "samplesCpuMs": {
+        "idlePhysics": [
+          4.459666666666666,
+          6.345,
+          5.4093333333333335
+        ],
+        "selectedPhysics": [
+          5.648,
+          8.512333333333332,
+          3.9583333333333335
+        ],
+        "selectedRender": [
+          16.025333333333332,
+          8.196666666666667,
+          5.756666666666667
+        ],
+        "heldUpdate": [
+          1.6623333333333334,
+          2.518333333333333,
+          1.9663333333333333
+        ],
+        "heldPhysics": [
+          25.411666666666665,
+          13.852666666666666,
+          12.664333333333333
+        ],
+        "turningPhysics": [
+          40.33866666666667,
+          26.283666666666665,
+          27.511333333333337
+        ]
+      },
+      "physicalStates": {
+        "selected": {
+          "maximumHingeGapMeters": 5.714300144177503e-10,
+          "minimumMaterialHeightMeters": -0.000012103923247741566,
+          "maximumLinearSpeedMetersPerSecond": 0
+        },
+        "held": {
+          "maximumHingeGapMeters": 5.714300144177394e-10,
+          "minimumMaterialHeightMeters": 0.0940244395824402,
+          "maximumLinearSpeedMetersPerSecond": 0.351957769172883
+        },
+        "turning": {
+          "maximumHingeGapMeters": 5.714305766009724e-10,
+          "minimumMaterialHeightMeters": 0.11687177137527949,
+          "maximumLinearSpeedMetersPerSecond": 6.526661071826296
+        }
+      },
+      "finiteStates": true,
+      "materialConserved": true
+    }
+  ]
+}
