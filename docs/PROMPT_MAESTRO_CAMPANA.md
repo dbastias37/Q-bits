@@ -186,3 +186,11 @@ De una a cuatro hélices completas por red física. Baterías externas de una, d
 Sensores de contacto unidos al chasis invierten el rumbo al tocar pared; la unión de sus contactos produce un único evento hasta separarse. Agarres y articulaciones mantienen sus funciones existentes; un montaje anclado o excesivamente pesado no despega. Q → Banco rápido ofrece Hélice y Dron de prueba. P → Mecanismos contiene Vuelo y P → Manual explica el montaje. El plano inicial consume piezas disponibles. No se añaden misiones ni diálogos de campaña en este bloque.
 
 Las palas se animan sobre el cuerpo rígido existente; se comprueba que el volumen de giro esté libre. Se conserva el agrupado gráfico del chasis y no se crean cuerpos ni bisagras adicionales por pala. Los límites y coeficientes son calibración inicial de jugabilidad, pendientes del equilibrio con el jugador.
+
+
+
+## Red eléctrica del banco — 16 de noviembre de 2026
+
+Bloque jugable de cable único y depósitos estáticos. De uno a ocho Q-bits normales se desenrollan en una cinta conductora naranja, distinta de las rutas de movimiento: 2 m por unidad de materia, calculados sobre el recorrido real con apoyos en piso/pared. Conserva IDs y carga al recoger; cancelar no consume. Extender incorpora cubos cercanos, sin pérdidas eléctricas ni polaridad doble. La conexión eléctrica comparte energía entre componentes, sin convertirlos en un cuerpo físico ni añadirles masa. Alt revela la distribución interna; Alt + X conserva la separación. Los extremos se describen como Salida/Entrada al apuntar.
+
+El modelo suministrado de contenedor se adapta a un depósito de 1,90 m, vidrio y nivel de líquido ligado a una reserva real de 12.000 J. Puede abastecer varias máquinas o combinarse con otros depósitos; las fuentes activas se deduplican. La reserva se calibra como cien celdas para el cálculo de potencia disponible de hélices; sigue siendo una sola reserva de julios y no altera límites de sustentación. Q → Tab → Banco rápido ofrece depósito y material de cable. La recarga manual instantánea apagado pertenece al banco de pruebas. La compra, fabricación y distribución en futuras misiones necesitan diseño de economía; no se añadieron precios ni progresión artificiales en este bloque.
