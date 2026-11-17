@@ -1,0 +1,44 @@
+{
+  "scope": "CPU setup and release calls with real Cannon creation, stubbed DOM/GL. Physics stepping excluded; not FPS, capacity limit or end-to-end frame cost. 2ms is a cooperative scheduling target, not a worst-case guarantee.",
+  "results": [
+    {
+      "pieces": 80,
+      "instantMs": 17.57907499999999,
+      "preparationMs": 3.4894820000000095,
+      "firstPreviewMs": 2.8758609999999862,
+      "releaseTotalMs": 14.145637999999849,
+      "releaseMedianMs": 0.00507700000002842,
+      "releaseP95Ms": 0.7716760000000136,
+      "releaseMaxMs": 1.2796500000000037,
+      "maxBodiesPerFrame": 4,
+      "frames": 74,
+      "simulatedSeconds": 1.2333333333333334
+    },
+    {
+      "pieces": 500,
+      "instantMs": 47.769199000000015,
+      "preparationMs": 0.6203410000000531,
+      "firstPreviewMs": 11.13547600000004,
+      "releaseTotalMs": 163.10080699999992,
+      "releaseMedianMs": 0.004937000000040825,
+      "releaseP95Ms": 1.8634869999999637,
+      "releaseMaxMs": 14.212525999999912,
+      "maxBodiesPerFrame": 4,
+      "frames": 452,
+      "simulatedSeconds": 7.533333333333333
+    },
+    {
+      "pieces": 2000,
+      "instantMs": 362.72836800000005,
+      "preparationMs": 1.2754240000001573,
+      "firstPreviewMs": 32.546366000000035,
+      "releaseTotalMs": 1130.7963770000017,
+      "releaseMedianMs": 0.4811850000000959,
+      "releaseP95Ms": 2.0414619999999104,
+      "releaseMaxMs": 57.16031299999986,
+      "maxBodiesPerFrame": 4,
+      "frames": 1765,
+      "simulatedSeconds": 29.416666666666668
+    }
+  ]
+}

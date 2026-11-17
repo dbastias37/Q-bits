@@ -87,7 +87,7 @@
   function remove(entry){entry.button.remove();for(let i=listeners.length-1;i>=0;i--)if(listeners[i][0]===entry.button){const [node,event,fn]=listeners[i];node.removeEventListener(event,fn);listeners.splice(i,1);}entries.delete(entry.id);}
   function layout(){
    if(disposed)return;
-   const width=measuredWidth||Math.min(760,(root.innerWidth||1024)-72),cell=(root.innerWidth||1024)<520?58:74;
+   const width=measuredWidth||Math.min(370,(root.innerWidth||1024)/2-32),cell=(root.innerWidth||1024)<=620?48:58;
    capacity=Math.max(1,Math.min(MAX_VISIBLE,Math.floor((width-36)/cell)));
    const ids=order.filter(id=>entries.has(id));const focused=ids.indexOf(focusId);
    if(interactive&&focused>=0){if(focused<page)page=focused;else if(focused>=page+capacity)page=focused-capacity+1;}
@@ -114,7 +114,7 @@
   }
   function update(items,dt=0,flags={}){
    if(disposed)return;clock+=clamp(finite(dt),0,.1);active=flags.active!==false;reduced=flags.reducedMotion===true;
-   const viewport=root.innerWidth||1024;if(viewport!==viewportWidth||clock-measuredAt>.25){viewportWidth=viewport;measuredWidth=container.clientWidth||Math.min(760,viewport-(viewport<520?36:72));measuredAt=clock;}
+   const viewport=root.innerWidth||1024;if(viewport!==viewportWidth||clock-measuredAt>.25){viewportWidth=viewport;measuredWidth=container.clientWidth||Math.min(370,viewport/2-32);measuredAt=clock;}
    const wanted=new Map();let remaining=MAX_PARTS;
    for(const item of Array.isArray(items)?items:[]){if(item?.id===undefined||wanted.has(item.id)||!Array.isArray(item.parts)||!item.parts.length||remaining<=0)continue;const parts=item.parts.slice(0,remaining);remaining-=parts.length;wanted.set(item.id,{...item,parts});}
    for(const [id,item]of wanted){let entry=entries.get(id);if(!entry){entry=add(item);entries.set(id,entry);needsPaint=true;}else if(entry.leaving){entry.leaving=false;entry.age=ENTER;needsPaint=true;}entry.item=item;const count=Math.max(1,Math.round(finite(item.count,item.parts.length)));const countText=count>1?'×'+count:'',label=(item.name||'Selección')+(count>1?' · '+count+' piezas':'');if(entry.count.textContent!==countText)entry.count.textContent=countText;if(entry.label!==label){entry.button.setAttribute('aria-label',label);entry.label=label;}}

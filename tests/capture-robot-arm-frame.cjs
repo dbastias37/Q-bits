@@ -145,5 +145,19 @@ for(const servoKind of ['pivot','hinge']){
  if(Math.abs(t.servoAngle(servo)-35)>1)throw Error('Servo capture did not reach its physical target');
  capture('servo-'+servoKind+'-35deg',eye,center,renderServo,{...details,angle:t.servoAngle(servo)});
 }
+// Compare the actual merged preview against the previous piece-by-piece draw,
+// including rotated mixed shapes, battery tint and PSX local coordinates.
+for(const jitter of [0,.45]){
+ lab();const rotation=t.Q();rotation.setFromAxisAngle(t.V(0,1,0),.4);
+ const parts=Array.from({length:32},(_,i)=>({shape:['cube','pyramid','tetra','coupler'][i%4],p:[(i%4-1.5)*.12,(Math.floor(i/4)%4-1.5)*.12,Math.floor(i/16)*.12],q:[rotation.x,rotation.y,rotation.z,rotation.w],mood:i%7===0?{externalBattery:{}}:{}}));
+ const mesh=t.buildPreviewMesh(parts,t.V()),eye=[.65,.4,1.25],target=[0,0,.05];
+ capture('preview-'+jitter+'-reference',eye,target,()=>{uniform('uJitter',jitter);t.drawPreviewReference(parts,t.V(),t.Q(),1);});
+ capture('preview-'+jitter+'-merged',eye,target,()=>{uniform('uJitter',jitter);t.drawPreviewMesh(mesh,t.V(),t.Q());});
+}
+lab();const pieces=t.makeGroup(Array.from({length:32},(_,i)=>({id:2000+i,weight:1,shape:'cube',p:t.V(1+(i%4)*.09,.3+Math.floor(i/16)*.09,(Math.floor(i/4)%4)*.09),q:t.Q()})));
+t.beginStagedDisassembly([pieces]);
+capture('disassembly-pending',[2,1.4,1.8],[1,.2,.1],()=>t.drawDisassembly());
+for(let i=0;i<4;i++)t.updateDisassembly(.04);
+capture('disassembly-moving',[2,1.4,1.8],[1,.2,.1],()=>{t.drawDisassembly();t.drawQubits();});
 fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,JSON.stringify({width,height,init,snapshots,validation}));
 console.log(JSON.stringify({output,frames:snapshots.length,validationErrors:validation.length}));if(validation.length)process.exitCode=1;
