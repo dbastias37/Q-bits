@@ -55,7 +55,7 @@ test('an elevated conveyor blueprint assembles from loose floor materials throug
 });
 
 test('extending a reversed section uses its actual output and conserves all pieces and joints',()=>{
- const {t}=setup(),first=build(t);assert(t.configureConveyor(first,{direction:-1}));const output=t.conveyorPortWorld(first,'entry'),second=extend(t,first),input=t.conveyorPortWorld(second,'entry');vector(output.p,input.p);const reverse=output.direction.clone();reverse.scale(-1,reverse);vector(reverse,input.direction);assert.equal(t.conveyors.length,2);assert.equal(t.rotors.length,6);assert.equal(t.rotorPart(first.baseId).g,t.rotorPart(second.baseId).g);assert.equal(inventory(t).length,60);assert.equal(first.direction,-1);assert.equal(second.direction,1);
+ const {t}=setup(),first=build(t);assert(t.configureConveyor(first,{direction:-1}));const output=t.conveyorPortWorld(first,'entry'),second=extend(t,first),input=t.conveyorPortWorld(second,'entry');vector(output.p,input.p);const reverse=output.direction.clone();reverse.scale(-1,reverse);vector(reverse,input.direction);assert.equal(t.conveyors.length,2);assert.equal(t.rotors.length,6);assert.equal(t.rotorPart(first.baseId).g.body.id,t.rotorPart(second.baseId).g.body.id);assert.equal(inventory(t).length,60);assert.equal(first.direction,-1);assert.equal(second.direction,1);
 });
 
 test('right click on a roller exposes conveyor controls instead of incompatible generic rotor commands',()=>{

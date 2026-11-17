@@ -1,0 +1,63 @@
+{
+  "scope": "Geometry counts from real conveyor recipes; real GLES software replay of production shaders and buffers; not browser FPS or GPU hardware performance. Original material, energy and logical group/joint records are retained. Completed standard conveyors additionally transfer roller mass and fixed swept collision envelopes to the chassis while removing their independent bodies/hinges from the physics world. Interior faces are removed only within one rigid render body; separation rebuilds exposed faces.",
+  "triangles": [
+    {
+      "kind": "straight",
+      "before": 384,
+      "after": 304,
+      "removedFaces": 40
+    },
+    {
+      "kind": "left",
+      "before": 516,
+      "after": 392,
+      "removedFaces": 62
+    },
+    {
+      "kind": "right",
+      "before": 516,
+      "after": 392,
+      "removedFaces": 62
+    }
+  ],
+  "glesComparisons": [
+    {
+      "fixture": "preview-compact-left-0",
+      "comparedPixels": 691200,
+      "pixelsChangedOverTwoLevels": 43,
+      "meanChannelError": 0.0008253761574074074
+    },
+    {
+      "fixture": "preview-compact-left-0.45",
+      "comparedPixels": 691200,
+      "pixelsChangedOverTwoLevels": 41,
+      "meanChannelError": 0.0008091001157407408
+    },
+    {
+      "fixture": "preview-compact-right-0",
+      "comparedPixels": 691200,
+      "pixelsChangedOverTwoLevels": 52,
+      "meanChannelError": 0.0010640914351851853
+    },
+    {
+      "fixture": "preview-compact-right-0.45",
+      "comparedPixels": 691200,
+      "pixelsChangedOverTwoLevels": 66,
+      "meanChannelError": 0.0013349971064814815
+    },
+    {
+      "fixture": "preview-compact-straight-0",
+      "comparedPixels": 691200,
+      "pixelsChangedOverTwoLevels": 57,
+      "meanChannelError": 0.0012854456018518519
+    },
+    {
+      "fixture": "preview-compact-straight-0.45",
+      "comparedPixels": 691200,
+      "pixelsChangedOverTwoLevels": 29,
+      "meanChannelError": 0.0006239149305555555
+    }
+  ],
+  "regressions": "Covered by final full suite: node --test --test-concurrency=2 tests/*.test.cjs, 915/915 passed, zero skipped.",
+  "graphicsCommand": "python3 tests/validate-robot-arm-gles.py: 71 scenes, 2 compiled shaders, 1 linked program, 0 GLES errors; six compact before/after comparisons satisfy existing 0.05%/0.01 thresholds. Selected virtual rollers match the reference pixels in clean/PSX."
+}

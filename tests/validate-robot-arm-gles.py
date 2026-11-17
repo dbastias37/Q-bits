@@ -100,7 +100,7 @@ def png(path,pixels):
  raw=b''.join(b'\0'+pixels[y*W*4:(y+1)*W*4] for y in range(H-1,-1,-1))
  path.write_bytes(b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('!2I5B',W,H,8,6,0,0,0))+chunk(b'IDAT',zlib.compress(raw,6))+chunk(b'IEND',b''))
 for command in data['init']:replay(command)
-results=[];reference_pixels=None;batch_equivalence=None;placement_pixels=None
+results=[];reference_pixels=None;batch_equivalence=None;placement_pixels=None;virtual_running_pixels=None
 for shot in data['snapshots']:
  # Replay the actual command list; state remains live across captures as in WebGL.
  for command in shot['commands']:replay(command)
@@ -111,6 +111,9 @@ for shot in data['snapshots']:
  blue=sum(b>r+15 and g>r+8 for r,g,b in zip(raw[0::4],raw[1::4],raw[2::4]))
  if shot['name']=='placement-blue':placement_pixels=raw
  if shot['name']=='placement-jitter-independent':assert placement_pixels==raw,'world jitter affects the placement ghost'
+ if shot['name']=='virtual-conveyor-running-a':virtual_running_pixels=raw
+ if shot['name']=='virtual-conveyor-running-b':assert virtual_running_pixels is not None and raw!=virtual_running_pixels,'powered virtual roller frames do not change'
+ if shot['name'].startswith('virtual-conveyor-') and shot['name']!='virtual-conveyor-dismantled':assert shot['physicalBodies']==1 and shot['virtualRollers']==3 and shot['liveJoints']==0,'virtual conveyor reintroduced roller physics'
  if shot['name'] in ('placement-blue','placement-snap'):assert blue>500,('missing placement ghost',blue)
  if shot['name'].endswith('-blueprint'):assert blue>500,('missing cyan blueprint',blue)
  if shot.get('directionalArrows'):
@@ -119,12 +122,13 @@ for shot in data['snapshots']:
  if shot['name']=='arm-cargo':
   assert blue>500,('missing elevated blue cargo',blue)
   assert .3<shot['cargoY']<.5 and abs(shot['cargoRenderedCenter'][1]-shot['cargoY'])<1e-9,('cargo center differs from physics',shot['cargoRenderedCenter'],shot['cargoY'])
- if shot['name'] in ('rigid-batch-reference','mixed-batch-reference') or shot['name'].startswith('preview-') and shot['name'].endswith('-reference'):reference_pixels=raw
- if shot['name'] in ('rigid-batch-merged','mixed-batch-merged') or shot['name'].startswith('preview-') and shot['name'].endswith('-merged'):
+ if shot['name'] in ('rigid-batch-reference','mixed-batch-reference') or shot['name'].startswith(('preview-','outline-')) and shot['name'].endswith('-reference'):reference_pixels=raw
+ if shot['name'] in ('rigid-batch-merged','mixed-batch-merged') or shot['name'].startswith(('preview-','outline-')) and shot['name'].endswith(('-merged','-cached')):
   assert reference_pixels is not None
   changed=sum(any(abs(raw[i+c]-reference_pixels[i+c])>2 for c in range(3)) for i in range(0,len(raw),4))
   mean=sum(abs(a-b) for a,b in zip(raw,reference_pixels))/len(raw)
   assert changed<W*H*.0005 and mean<.01,('rigid batch changes rendered appearance',changed,mean)
+  if shot['name'].startswith('outline-'):assert raw==reference_pixels,('cached outline changes rendered pixels',shot['name'])
   batch_equivalence={'pixelsChangedOverTwoLevels':changed,'meanChannelError':mean,'comparedPixels':W*H}
  results.append({'name':shot['name'],'parts':shot['parts'],'bodies':shot['bodies'],'joints':shot['joints'],'foregroundPixels':foreground,'bluePixels':blue,'path':str(OUT/(shot['name']+'.png'))})
 assert not data['validation'],'invalid attributes or depth clear'

@@ -92,6 +92,10 @@ for(const variant of [{kind:'straight',supports:false},{kind:'left',supports:fal
  const name='conveyor-'+variant.kind+(variant.supports?'-supports':''),details={parts:list.reduce((n,g)=>n+g.parts.length,0),bodies:list.length,joints:t.rotors.length};
  const render=()=>{for(const group of t.groups)t.drawGroupSolid(group);t.drawConveyors();t.drawCargos();t.drawBatteriesTransparent();};
  capture(name,eye,center,render,details);
+ if(!variant.supports)for(const jitter of [0,.45]){
+  capture('preview-compact-'+variant.kind+'-'+jitter+'-reference',eye,center,()=>{uniform('uJitter',jitter);for(const g of t.groups)for(const p of t.poses(g))t.drawUnitMesh(p);t.drawConveyors();},details);
+  capture('preview-compact-'+variant.kind+'-'+jitter+'-merged',eye,center,()=>{uniform('uJitter',jitter);render();},details);
+ }
  if(!variant.supports){
   const roller=t.rotorPart(t.rotors[0].bId).g,pose=t.poses(roller).find(p=>p.part.shape==='cube');
   const surface=t.conveyorSurfacePoses(t.conveyors[0])[0];if(!surface)throw Error('Missing physical conveyor skin');const point=surface.p.vadd(surface.q.vmult(t.V(-surface.size.x*.2,surface.size.y/2+.045,0)));
@@ -159,5 +163,42 @@ t.beginStagedDisassembly([pieces]);
 capture('disassembly-pending',[2,1.4,1.8],[1,.2,.1],()=>t.drawDisassembly());
 for(let i=0;i<4;i++)t.updateDisassembly(.04);
 capture('disassembly-moving',[2,1.4,1.8],[1,.2,.1],()=>{t.drawDisassembly();t.drawQubits();});
+// Compare cached selection strokes with the original per-piece strokes,
+// including a moved camera/body and a second draw reusing the same GPU data.
+lab();const outlineGroup=t.makeGroup(Array.from({length:80},(_,i)=>({id:t.allocateUnitId(),weight:1,shape:['cube','tetra','pyramid','coupler'][i%4],p:t.V((i%10)*.095,.15+Math.floor(i/40)*.11,Math.floor(i/10)%4*.095),q:t.Q()})));
+t.canvas.clientWidth=width;t.canvas.clientHeight=height;t.heldFocus.focal=1.9;
+for(const jitter of [0,.45])for(const moved of [false,true]){
+ const eye=moved?[1.2,1.0,1.7]:[.9,.7,1.5],target=[.4,.2,.15],name='outline-'+jitter+'-'+Number(moved),delta=target.map((v,i)=>v-eye[i]);
+ t.setLook({camera:eye,yaw:Math.atan2(-delta[0],-delta[2]),pitch:Math.asin(delta[1]/Math.hypot(...delta))});outlineGroup.body.quaternion.setFromEuler(moved?.1:0,moved?.25:0,moved?-.1:0);
+ const renderOutline=reference=>{uniform('uJitter',jitter);t.drawGroupSolid(outlineGroup);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);if(reference)for(const pose of t.poses(outlineGroup))t.drawUnitOutline(pose,.85,true);else t.drawRigidOutline(outlineGroup,.85,true);gl.depthMask(true);gl.disable(gl.BLEND);};
+ capture(name+'-reference',eye,target,()=>renderOutline(true),{joints:0});capture(name+'-merged',eye,target,()=>renderOutline(false),{joints:0});capture(name+'-cached',eye,target,()=>renderOutline(false),{joints:0});
+}
+// Virtual cartridges retain their original meshes while only the chassis
+// participates in physics. Exercise real power, visual phase, stop and removal.
+lab();t.world.gravity.set(0,-t.settings.gravity,0);if(!t.spawnSavedMechanism(t.conveyorBlueprintTemplate('straight',false),t.V()))throw Error('Missing virtual conveyor');
+const virtualBelt=t.conveyors[0],baseHit=t.rotorPart(virtualBelt.baseId),batteryPoint=baseHit.p.vadd(baseHit.q.vmult(t.V(0,0,-.09))),batteryGroup=t.addQubit([batteryPoint.x,batteryPoint.y,batteryPoint.z]),batteryPart=batteryGroup.parts[0];
+batteryPart.mood.externalBattery={version:1,ownerId:batteryPart.id,packId:batteryPart.id,enabled:true};batteryPart.mood.energy=1;
+if(!t.weld({source:batteryGroup,target:baseHit.g,position:batteryGroup.body.position.clone(),quaternion:batteryGroup.body.quaternion.clone()}))throw Error('Virtual conveyor battery fixture failed');
+for(let i=0;i<60;i++)t.stepPhysics(1/240);
+const virtualEye=[.8,.48,.85],virtualTarget=[0,.15,0],virtualDraw=()=>{for(const group of t.groups)t.drawGroupSolid(group);t.drawConveyors();t.drawBatteriesTransparent();},virtualInfo=()=>({physicalBodies:t.groups.filter(g=>t.world.bodies.includes(g.body)).length,virtualRollers:t.groups.filter(g=>g.virtualConveyor).length,liveJoints:t.world.constraints.length});
+if(!virtualBelt.virtual||virtualInfo().physicalBodies!==1||virtualInfo().virtualRollers!==3)throw Error('Virtual conveyor still simulates individual rollers');
+capture('virtual-conveyor-off',virtualEye,virtualTarget,virtualDraw,virtualInfo());
+if(!t.startConveyor(virtualBelt))throw Error(virtualBelt.status);
+for(let i=0;i<30;i++)t.stepPhysics(1/240);
+const movingRoller=t.conveyorRotors(virtualBelt)[0],phaseA=movingRoller.visualPhase;
+capture('virtual-conveyor-running-a',virtualEye,virtualTarget,virtualDraw,{...virtualInfo(),phase:phaseA});
+for(let i=0;i<30;i++)t.stepPhysics(1/240);
+if(!virtualBelt.running||Math.abs(movingRoller.visualPhase-phaseA)<.05)throw Error('Powered virtual roller failed to animate');
+capture('virtual-conveyor-running-b',virtualEye,virtualTarget,virtualDraw,{...virtualInfo(),phase:movingRoller.visualPhase});
+const selectedVirtualGroup=t.rotorPart(movingRoller.bId).g,virtualDelta=virtualTarget.map((v,i)=>v-virtualEye[i]);t.setLook({camera:virtualEye,yaw:Math.atan2(-virtualDelta[0],-virtualDelta[2]),pitch:Math.asin(virtualDelta[1]/Math.hypot(...virtualDelta))});
+for(const jitter of [0,.45]){
+ const renderSelected=reference=>{uniform('uJitter',jitter);virtualDraw();gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);if(reference)for(const part of selectedVirtualGroup.parts)t.drawUnitOutline(t.virtualConveyorVisualPose(selectedVirtualGroup,part),.85,true);else t.drawRigidOutline(selectedVirtualGroup,.85,true);gl.depthMask(true);gl.disable(gl.BLEND);};
+ capture('outline-virtual-'+jitter+'-reference',virtualEye,virtualTarget,()=>renderSelected(true),virtualInfo());capture('outline-virtual-'+jitter+'-merged',virtualEye,virtualTarget,()=>renderSelected(false),virtualInfo());
+}
+t.stopConveyor(virtualBelt);const stoppedPhase=movingRoller.visualPhase;for(let i=0;i<30;i++)t.stepPhysics(1/240);if(movingRoller.visualPhase!==stoppedPhase)throw Error('Stopped virtual roller continued animating');
+capture('virtual-conveyor-stopped',virtualEye,virtualTarget,virtualDraw,virtualInfo());
+const dismantledRoller=t.rotorPart(movingRoller.bId).g;t.detachPart({g:dismantledRoller,part:dismantledRoller.parts.find(p=>p.shape==='cube')});
+if(t.groups.some(g=>g.virtualConveyor)||t.groups.some(g=>!t.world.bodies.includes(g.body)))throw Error('Disassembly failed to restore physical material');
+capture('virtual-conveyor-dismantled',virtualEye,virtualTarget,virtualDraw,virtualInfo());
 fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,JSON.stringify({width,height,init,snapshots,validation}));
 console.log(JSON.stringify({output,frames:snapshots.length,validationErrors:validation.length}));if(validation.length)process.exitCode=1;

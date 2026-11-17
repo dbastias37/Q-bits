@@ -1,0 +1,367 @@
+{
+  "baseline": "21825fb",
+  "repetitions": 5,
+  "method": "Median process CPU for 30 selected-outline draws, five repetitions with alternating order. Includes triangle construction and simulated GL calls only; excludes simulation, actual GPU work and DOM. Moving case changes yaw each draw. No browser FPS claim.",
+  "reports": [
+    {
+      "pieces": 80,
+      "moving": false,
+      "median": {
+        "baseline": {
+          "cpuMsPerDraw": 3.9887,
+          "uploads": 30
+        },
+        "optimized": {
+          "cpuMsPerDraw": 0.011966666666666665,
+          "uploads": 0
+        }
+      },
+      "runs": {
+        "baseline": [
+          {
+            "cpuMsPerDraw": 3.9145666666666665,
+            "uploads": 30
+          },
+          {
+            "cpuMsPerDraw": 3.9887,
+            "uploads": 30
+          },
+          {
+            "cpuMsPerDraw": 7.6822333333333335,
+            "uploads": 30
+          },
+          {
+            "cpuMsPerDraw": 4.692966666666666,
+            "uploads": 30
+          },
+          {
+            "cpuMsPerDraw": 3.5497,
+            "uploads": 30
+          }
+        ],
+        "optimized": [
+          {
+            "cpuMsPerDraw": 0.011966666666666665,
+            "uploads": 0
+          },
+          {
+            "cpuMsPerDraw": 0.020633333333333333,
+            "uploads": 0
+          },
+          {
+            "cpuMsPerDraw": 0.015366666666666667,
+            "uploads": 0
+          },
+          {
+            "cpuMsPerDraw": 0.008666666666666666,
+            "uploads": 0
+          },
+          {
+            "cpuMsPerDraw": 0.010966666666666668,
+            "uploads": 0
+          }
+        ]
+      }
+    },
+    {
+      "pieces": 80,
+      "moving": true,
+      "median": {
+        "baseline": {
+          "cpuMsPerDraw": 2.6784000000000003,
+          "uploads": 30
+        },
+        "optimized": {
+          "cpuMsPerDraw": 1.6409666666666667,
+          "uploads": 29
+        }
+      },
+      "runs": {
+        "baseline": [
+          {
+            "cpuMsPerDraw": 5.1184666666666665,
+            "uploads": 30
+          },
+          {
+            "cpuMsPerDraw": 2.6197,
+            "uploads": 30
+          },
+          {
+            "cpuMsPerDraw": 2.5677333333333334,
+            "uploads": 30
+          },
+          {
+            "cpuMsPerDraw": 2.6784000000000003,
+            "uploads": 30
+          },
+          {
+            "cpuMsPerDraw": 3.0508333333333337,
+            "uploads": 30
+          }
+        ],
+        "optimized": [
+          {
+            "cpuMsPerDraw": 1.6409666666666667,
+            "uploads": 29
+          },
+          {
+            "cpuMsPerDraw": 1.5237,
+            "uploads": 29
+          },
+          {
+            "cpuMsPerDraw": 1.6921,
+            "uploads": 29
+          },
+          {
+            "cpuMsPerDraw": 1.6992,
+            "uploads": 29
+          },
+          {
+            "cpuMsPerDraw": 1.5032333333333334,
+            "uploads": 29
+          }
+        ]
+      }
+    },
+    {
+      "pieces": 487,
+      "moving": false,
+      "median": {
+        "baseline": {
+          "cpuMsPerDraw": 19.248233333333335,
+          "uploads": 30
+        },
+        "optimized": {
+          "cpuMsPerDraw": 0.01,
+          "uploads": 0
+        }
+      },
+      "runs": {
+        "baseline": [
+          {
+            "cpuMsPerDraw": 20.047966666666664,
+            "uploads": 30
+          },
+          {
+            "cpuMsPerDraw": 19.984233333333336,
+            "uploads": 30
+          },
+          {
+            "cpuMsPerDraw": 15.424800000000001,
+            "uploads": 30
+          },
+          {
+            "cpuMsPerDraw": 19.248233333333335,
+            "uploads": 30
+          },
+          {
+            "cpuMsPerDraw": 16.266000000000002,
+            "uploads": 30
+          }
+        ],
+        "optimized": [
+          {
+            "cpuMsPerDraw": 0.01,
+            "uploads": 0
+          },
+          {
+            "cpuMsPerDraw": 0.0049,
+            "uploads": 0
+          },
+          {
+            "cpuMsPerDraw": 0.005,
+            "uploads": 0
+          },
+          {
+            "cpuMsPerDraw": 0.015933333333333334,
+            "uploads": 0
+          },
+          {
+            "cpuMsPerDraw": 0.010733333333333334,
+            "uploads": 0
+          }
+        ]
+      }
+    },
+    {
+      "pieces": 487,
+      "moving": true,
+      "median": {
+        "baseline": {
+          "cpuMsPerDraw": 15.859833333333334,
+          "uploads": 30
+        },
+        "optimized": {
+          "cpuMsPerDraw": 8.1357,
+          "uploads": 29
+        }
+      },
+      "runs": {
+        "baseline": [
+          {
+            "cpuMsPerDraw": 15.859833333333334,
+            "uploads": 30
+          },
+          {
+            "cpuMsPerDraw": 16.033566666666665,
+            "uploads": 30
+          },
+          {
+            "cpuMsPerDraw": 16.5095,
+            "uploads": 30
+          },
+          {
+            "cpuMsPerDraw": 15.7996,
+            "uploads": 30
+          },
+          {
+            "cpuMsPerDraw": 14.363333333333333,
+            "uploads": 30
+          }
+        ],
+        "optimized": [
+          {
+            "cpuMsPerDraw": 8.1357,
+            "uploads": 29
+          },
+          {
+            "cpuMsPerDraw": 7.789666666666666,
+            "uploads": 29
+          },
+          {
+            "cpuMsPerDraw": 9.236333333333333,
+            "uploads": 29
+          },
+          {
+            "cpuMsPerDraw": 8.245233333333333,
+            "uploads": 29
+          },
+          {
+            "cpuMsPerDraw": 7.767733333333334,
+            "uploads": 29
+          }
+        ]
+      }
+    },
+    {
+      "pieces": 2000,
+      "moving": false,
+      "median": {
+        "baseline": {
+          "cpuMsPerDraw": 89.28479999999999,
+          "uploads": 30
+        },
+        "optimized": {
+          "cpuMsPerDraw": 0.008233333333333334,
+          "uploads": 0
+        }
+      },
+      "runs": {
+        "baseline": [
+          {
+            "cpuMsPerDraw": 89.5614,
+            "uploads": 30
+          },
+          {
+            "cpuMsPerDraw": 89.28479999999999,
+            "uploads": 30
+          },
+          {
+            "cpuMsPerDraw": 80.45826666666667,
+            "uploads": 30
+          },
+          {
+            "cpuMsPerDraw": 85.2138,
+            "uploads": 30
+          },
+          {
+            "cpuMsPerDraw": 92.66026666666667,
+            "uploads": 30
+          }
+        ],
+        "optimized": [
+          {
+            "cpuMsPerDraw": 0.006766666666666667,
+            "uploads": 0
+          },
+          {
+            "cpuMsPerDraw": 0.004933333333333333,
+            "uploads": 0
+          },
+          {
+            "cpuMsPerDraw": 0.01856666666666667,
+            "uploads": 0
+          },
+          {
+            "cpuMsPerDraw": 0.015266666666666668,
+            "uploads": 0
+          },
+          {
+            "cpuMsPerDraw": 0.008233333333333334,
+            "uploads": 0
+          }
+        ]
+      }
+    },
+    {
+      "pieces": 2000,
+      "moving": true,
+      "median": {
+        "baseline": {
+          "cpuMsPerDraw": 86.4093,
+          "uploads": 30
+        },
+        "optimized": {
+          "cpuMsPerDraw": 39.385133333333336,
+          "uploads": 29
+        }
+      },
+      "runs": {
+        "baseline": [
+          {
+            "cpuMsPerDraw": 97.81113333333333,
+            "uploads": 30
+          },
+          {
+            "cpuMsPerDraw": 84.21149999999999,
+            "uploads": 30
+          },
+          {
+            "cpuMsPerDraw": 86.4093,
+            "uploads": 30
+          },
+          {
+            "cpuMsPerDraw": 88.8357,
+            "uploads": 30
+          },
+          {
+            "cpuMsPerDraw": 85.08713333333334,
+            "uploads": 30
+          }
+        ],
+        "optimized": [
+          {
+            "cpuMsPerDraw": 38.09956666666667,
+            "uploads": 29
+          },
+          {
+            "cpuMsPerDraw": 39.385133333333336,
+            "uploads": 29
+          },
+          {
+            "cpuMsPerDraw": 41.36666666666667,
+            "uploads": 29
+          },
+          {
+            "cpuMsPerDraw": 39.51506666666667,
+            "uploads": 29
+          },
+          {
+            "cpuMsPerDraw": 33.34386666666667,
+            "uploads": 29
+          }
+        ]
+      }
+    }
+  ]
+}

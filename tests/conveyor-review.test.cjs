@@ -21,3 +21,9 @@ test('a real tabletop supports a running conveyor after kinematic contacts disap
 test('a resting solid can support a conveyor but moving its supporting body removes the powered anchor',()=>{
  const {t}=lab(),{c}=machine(t,.275),support=t.makeGroup(Array.from({length:27},(_,i)=>({id:t.allocateUnitId(),shape:'cube',weight:1,p:t.V((i%3-1)*.09,.045+Math.floor(i/9)*.09,(Math.floor(i/3)%3-1)*.09),q:t.Q()})));step(t,200);assert(t.conveyorSupportReady(c),c.supportStatus);assert(t.startConveyor(c),c.status);step(t,25);assert(c.running,c.status);support.body.position.x+=.3;support.body.aabbNeedsUpdate=true;step(t,5);assert.equal(c.running,false);assert.match(c.status,/Apoya/);
 });
+
+test('moving a support rechecks current geometry and preserves genuinely remaining support',()=>{
+ const {t}=lab(),{c}=machine(t,.505),table=t.storyWall(t.V(0,.25,0),t.V(.8,.25,.8));step(t,160);assert(t.startConveyor(c),c.status);step(t,20);
+ table.body.position.x+=.1;table.body.aabbNeedsUpdate=true;step(t,1);assert(c.running,'fresh downward probes still find the wide tabletop');assert(c.support.chain.some(saved=>saved.body===table.body&&saved.p.distanceTo(table.body.position)<1e-8));
+ table.body.position.x+=3;table.body.aabbNeedsUpdate=true;step(t,1);assert.equal(c.running,false,'a previous contact cannot certify a tabletop moved away');assert.match(c.status,/Apoya/);
+});

@@ -11,6 +11,7 @@ function fixture(options={}){
   deleteBuffer:id=>{live.delete(id);calls.push(['delete',id]);},
   bindBuffer:(_,id)=>{bound=id;},bufferData:(_,data)=>{uploads.set(bound,Array.from(data));calls.push(['upload',bound]);},
   getAttribLocation:(_,name)=>{if(!attributes.has(name))attributes.set(name,attributes.size);return attributes.get(name);},getUniformLocation:(_,name)=>name,
+  uniform3f:(name,...values)=>calls.push(['uniform',name,...values]),uniform4f:(name,...values)=>calls.push(['uniform',name,...values]),
   drawArrays:(mode,first,count)=>calls.push(['draw',bound,first,count,[...enabledAttributes]]),
  },{get:(o,key)=>key in o?o[key]:/^[A-Z_]+$/.test(key)?0:(...args)=>{}});
  const game=createGame({gl,graphics:options.graphics===true}),{t}=game;t.clearNarrativeScene();Object.assign(t.story,{ready:true,mode:'playing',scene:'lab',phase:'idle'});
@@ -86,4 +87,20 @@ test('mixed T-bits and couplers batch by original material while preserving ever
  // Each local vertex stream must transform through the same original piece.
  for(const batch of batches){const data=uploads.get(batch.buffer);for(let i=0;i<data.length;i+=12){const local=t.V(...data.slice(i,i+3)),piece=t.V(...data.slice(i+6,i+9));assert(g.parts.some(p=>{if(batch.key==='cube'&&p.shape!=='cube'||batch.key==='tbit'&&!['tetra','pyramid'].includes(p.shape)||['coupler','tip'].includes(batch.key)&&p.shape!=='coupler')return false;return p.q.vmult(piece.scale(.09)).vadd(p.offset).distanceTo(local)<2e-7;}));}}
  assert.equal(JSON.stringify(t.worldParts(g)),before);const ids=batches.map(b=>b.buffer);g.body.position.y+=.2;calls.length=0;t.drawGroupSolid(g);assert.equal(calls.filter(c=>c[0]==='upload').length,0);t.removeGroup(g);assert(ids.every(id=>!live.has(id)));
+});
+
+test('virtual roller drawing animates original material without rotating or reinstating its physical data',()=>{
+ const {t,calls}=fixture();assert(t.spawnSavedMechanism(t.conveyorBlueprintTemplate('straight'),t.V()));const c=t.conveyors[0],r=t.conveyorRotors(c)[0],g=t.rotorPart(r.bId).g;
+ assert(c.virtual);assert(g.virtualConveyor);assert.equal(g.body.mass,0);assert(!t.world.bodies.includes(g.body));
+ const before=JSON.stringify(t.worldParts(g)),bodyCount=t.world.bodies.length,jointCount=t.world.constraints.length,phaseDraw=phase=>{r.visualPhase=phase;calls.length=0;t.drawGroupSolid(g);return calls.filter(call=>call[0]==='uniform'&&call[1]==='uQuaternion').map(call=>call.slice(2));};
+ const resting=phaseDraw(0),rotating=phaseDraw(Math.PI/4);assert.equal(resting.length,3);assert.equal(rotating.length,3);assert.notDeepEqual(rotating,resting,'the real solid draw receives rotated visual quaternions');assert.equal(JSON.stringify(t.worldParts(g)),before);assert.equal(t.world.bodies.length,bodyCount);assert.equal(t.world.constraints.length,jointCount);
+ r.visualPhase=0;assert.deepEqual(phaseDraw(0),resting);t.detachPart({g,part:g.parts.find(p=>p.shape==='cube')});assert.equal(t.conveyors.length,0);assert(t.groups.every(group=>!group.virtualConveyor));assert(t.groups.every(group=>t.world.bodies.includes(group.body)));calls.length=0;for(const group of t.groups)t.drawGroupSolid(group);assert(calls.some(call=>call[0]==='draw'));
+});
+
+test('virtual roller selection outlines follow the same visual phase and stay inside conservative culling bounds',()=>{
+ const {t,uploads}=fixture();assert(t.spawnSavedMechanism(t.conveyorBlueprintTemplate('right'),t.V()));const c=t.conveyors[0],r=t.conveyorRotors(c)[0],g=t.rotorPart(r.bId).g;t.setLook({camera:[1,1,2],yaw:.2,pitch:-.3});
+ for(const phase of [0,.35,Math.PI/2,Math.PI,Math.PI*1.7]){
+  r.visualPhase=phase;uploads.clear();t.drawRigidOutline(g,.85,true);const generated=[...uploads.values()].flat();uploads.clear();for(const part of g.parts)t.drawUnitOutline(t.virtualConveyorVisualPose(g,part),.85,true);assert.deepEqual([...uploads.values()].flat(),generated);
+  for(const part of g.parts)for(const corner of t.corners(t.virtualConveyorVisualPose(g,part)))assert(corner.distanceTo(g.body.position)<=t.renderGroupRadius(g)+1e-8,'spinning visuals must stay in the visibility bound');
+ }
 });
