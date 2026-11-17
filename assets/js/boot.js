@@ -70,7 +70,7 @@
   function loadScript(path) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = path + '?v=20261117-marcha-1';
+      script.src = path + '?v=20261117-culling-1';
       script.onload = resolve;
       script.onerror = () => reject(new Error('No se pudo cargar ' + path));
       document.head.append(script);
@@ -163,6 +163,7 @@
       await loadScript('assets/js/selection-hud.js');
       await loadScript('assets/js/preferences.js');
       await loadScript('assets/js/graphics.js');
+      await loadScript('assets/js/culling.js');
       await loadScript('assets/js/glass.js');
       await loadScript('assets/js/settings.js');
       await loadScript('assets/js/game.js');update('code', 1);

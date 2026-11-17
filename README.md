@@ -1,5 +1,9 @@
 # Q-bits
 
+### Prueba de culling · 17 de noviembre de 2026
+
+Configuración → Rendimiento permite activar/desactivar el descarte fuera de cámara. En el banco, **Num7** abre una vista externa con avatar y campo de visión, **Num8** muestra mediciones y **Num9** compara la misma escena OFF/ON. **P → Prueba de rendimiento** ofrece botones equivalentes. La física y las máquinas continúan fuera de pantalla. [Uso, mediciones y límites](docs/CULLING_QBITS.md).
+
 Juego de puzles en primera persona, ambientado en salas blancas minimalistas. Mueve y une Q-bits, organiza al equipo, activa circuitos y transforma materia para abrir nuevas rutas.
 
 Versión actualizada el 16 de noviembre de 2026: prólogo, 20 niveles y laboratorio de pruebas.
