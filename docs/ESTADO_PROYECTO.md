@@ -2,6 +2,18 @@
 
 Actualizado: 16 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
+## Última entrega: cables y depósito energético — 16 de noviembre de 2026
+
+Banco de pruebas con cable único sin pérdidas y depósito estático de 12.000 J. Q → Tab → Banco rápido: depósito; cables de 1, 4 y 8 cubos, y reservas de 1/4 m. Clic en salida de batería/máquina, apoyos opcionales en suelo/pared y clic en entrada. Se consume el material real solo al confirmar: hasta ocho cubos, 2 m por unidad de materia contando el trayecto completo. Clic derecho permite incorporar cubos cercanos, cambiar entrada o recuperar las mismas piezas con su carga. Alt muestra la red interna; Alt + X separa. Manual: [CABLES_ENERGIA_QBITS.md](CABLES_ENERGIA_QBITS.md).
+
+La red comparte y deduplica fuentes entre mecanismos físicamente independientes. No suma masa ni crea juntas; una fuente activa agotada detiene el consumo externo sin sustituirlo por las reservas internas. Un cable corto, obstruido o con extremo ausente queda inactivo y conserva material. Acercar la máquina o añadir cubos recupera el alcance; sin fuente externa el rotor conserva su comportamiento previo de batería interna. Los depósitos se encienden con clic derecho; recarga manual instantánea solo apagados, en el banco. Se admiten doce depósitos y 128 cables. Guardar/restaurar el laboratorio conserva energía, material e IDs; la red se restaura antes de reactivar motores con reservas internas vacías.
+
+El contenedor adjunto se redujo de 215.382 caras a 6.257 triángulos del modelo más 128 para líquido, en un módulo de ~135 KB. Vidrio separado, altura nominal 1,90 m y líquido que baja con la reserva. Geometría compartida entre depósitos; una malla de cinta por cable terminado, actualizada solo al cambiar el recorrido y liberada al retirarlo. Ningún cuerpo físico por segmento. Grafo eléctrico cacheado por paso físico; una revisión detectó y eliminó recorridos redundantes de conectividad en el dibujo de extremos. La microprueba CPU de 128 cables pasó de ~83,4 a ~0,67 ms para esa consulta concreta; no es una medición de FPS del juego completo.
+
+Verificado: **742/742 pruebas automatizadas aprobadas**, incluidas 26 de red/interacción: ramas y ciclos, varias fuentes, consumo exacto de rotor/cinta/agarre, hélice con depósito grande, límites/obstáculos, cancelación, ampliación, recuperación atómica, guardado entre escenas, Q y Alt remapeado, buffers y ausencia de masa añadida. Sintaxis y diff limpios. `python3 tests/validate-power-gles.py` compiló dos shaders y enlazó un programa con cero errores GLES/buffers; inspeccionadas capturas 100/50/0 % y Alt con líquido y cable visibles. El navegador de prueba abrió la vista local pero no pudo iniciar WebGL: los controles se verificaron con DOM/Cannon simulados, no en una partida visual de navegador.
+
+Siguiente paso: prueba del jugador de comodidad al tender sobre paredes, legibilidad de extremos y duración práctica bajo su instalación. Compra/fabricación y disponibilidad en campaña quedan para el diseño económico; este bloque es funcional en el banco y no añade misiones ni precios.
+
 ## Forma de trabajo acordada
 
 Implementar por bloques pequeños, jugables y publicados en GitHub. Este archivo concentra el contexto operativo; el prompt maestro conserva el diseño completo. Cada entrega debe actualizar ambos cuando cambie una decisión, indicar pruebas reales y dejar un siguiente paso concreto. No convertir todo el diseño futuro en una única modificación difícil de revisar.

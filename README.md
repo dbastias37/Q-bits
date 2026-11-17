@@ -336,3 +336,5 @@ Incluye brazo, cintas recta y de esquina, agarre, baterías, sensor, sólido, en
 ## Manual del banco de pruebas
 
 Abre **P → Manual**, o **Guía paso a paso** desde el panel del brazo. Incluye primera entrega, toma desde una cinta, baterías, controles, rotores, sensores y guardado. También se puede leer [el manual aquí](docs/MANUAL_BANCO_PRUEBAS.md).
+
+[Cables y depósito de energía](docs/CABLES_ENERGIA_QBITS.md): primera conexión desde Q → Banco rápido, alcance por material, extensión, inspección con Alt y recuperación de cubos.

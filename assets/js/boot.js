@@ -70,7 +70,7 @@
   function loadScript(path) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = path + '?v=20261116-propeller-1';
+      script.src = path + '?v=20261116-power-cables-1';
       script.onload = resolve;
       script.onerror = () => reject(new Error('No se pudo cargar ' + path));
       document.head.append(script);
@@ -150,6 +150,7 @@
       await loadScript('assets/js/robot-arm-panel.js');
       await loadScript('assets/js/conveyor-panel.js');
       await loadScript('assets/js/battery-liquid.js');
+      await loadScript('assets/js/reservoir-model.js');
       await loadScript('assets/js/contact-sensors.js');
       await loadScript('assets/js/controls.js');
       await loadScript('assets/js/subtitles.js');

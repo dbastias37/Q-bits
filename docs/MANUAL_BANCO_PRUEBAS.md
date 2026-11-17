@@ -4,6 +4,8 @@ Disponible dentro del juego en **P → Manual** y desde **Guía paso a paso** en
 
 Empieza con una máquina y un cubo. P abre este panel y pausa la simulación. «Volver a la sala» la reanuda. Los controles indicados son los predeterminados; si los cambiaste, revisa Configuración → Teclado.
 
+Para alimentar máquinas separadas desde un depósito grande, consulta [Cables y depósito de energía](CABLES_ENERGIA_QBITS.md): creación con Q → Banco rápido, tendido, extensión, inspección y recuperación del material.
+
 ## 1 · Mi primera entrega con el brazo
 
 El brazo repite dos posturas que tú guardas: A para tomar y B para soltar. Unirlo a una cinta no le enseña esas posiciones.
