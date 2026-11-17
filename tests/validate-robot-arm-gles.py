@@ -119,8 +119,8 @@ for shot in data['snapshots']:
  if shot['name']=='arm-cargo':
   assert blue>500,('missing elevated blue cargo',blue)
   assert .3<shot['cargoY']<.5 and abs(shot['cargoRenderedCenter'][1]-shot['cargoY'])<1e-9,('cargo center differs from physics',shot['cargoRenderedCenter'],shot['cargoY'])
- if shot['name'] in ('rigid-batch-reference','mixed-batch-reference'):reference_pixels=raw
- if shot['name'] in ('rigid-batch-merged','mixed-batch-merged'):
+ if shot['name'] in ('rigid-batch-reference','mixed-batch-reference') or shot['name'].startswith('preview-') and shot['name'].endswith('-reference'):reference_pixels=raw
+ if shot['name'] in ('rigid-batch-merged','mixed-batch-merged') or shot['name'].startswith('preview-') and shot['name'].endswith('-merged'):
   assert reference_pixels is not None
   changed=sum(any(abs(raw[i+c]-reference_pixels[i+c])>2 for c in range(3)) for i in range(0,len(raw),4))
   mean=sum(abs(a-b) for a,b in zip(raw,reference_pixels))/len(raw)

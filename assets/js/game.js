@@ -623,7 +623,8 @@ canvas.addEventListener('webglcontextlost', event => {
 canvas.addEventListener('webglcontextrestored', () => window.location.reload());
 
 // Q-bits lab · rigid bodies, compound structures, face rolling and drop guides.
-const CUBE_SIZE=.09, HALF=.045, MAX_QUBITS=2000, FIXED_STEP=1/240;
+const CUBE_SIZE=.09, HALF=.045, MAX_QUBITS=2000;
+let FIXED_STEP=1/savedPreferences.physicsHz;
 const V=(x=0,y=0,z=0)=>new CANNON.Vec3(x,y,z), Q=()=>new CANNON.Quaternion();
 const add=(a,b)=>a.vadd(b), sub=(a,b)=>a.vsub(b), mul=(a,s)=>a.scale(s);
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
@@ -658,17 +659,30 @@ function unitProfile(shape){return UNIT_PROFILES[unitShape(shape)];}
 function unitGroundHeight(shape){return -Math.min(...unitProfile(shape).vertices.map(v=>v.y));}
 function unitFaces(pose){const profile=unitProfile(pose);return profile.faces.map((face,index)=>({index,kind:profile.faceKinds[index],vertices:face.map(i=>add(pose.p,pose.q.vmult(profile.vertices[i]))),center:add(pose.p,pose.q.vmult(profile.faceCenters[index])),normal:pose.q.vmult(profile.faceNormals[index])}));}
 const settings={mass:1,unitShape:'cube',gravity:9.8,bounce:.12,force:60,friction:.38,damping:.12,speed:.32,guide:'ghost',line:'dashed',maxCarry:2000,maxSelect:2000,rotationSpeed:2.8,grip:.95,cargoSide:4,cargoRequired:8,cargoColor:'#f4f4f1',haulSpeed:.2,haulForce:2};
+const disassemblyJobs=[];
 const groups=[],cargos=[],rotors=[];let rotorSerial=0;
 const flightStates=new Map();
-// Reuse topology only inside one physics substep. Poses and energy stay live;
-// construction invalidates the index immediately, UI edits never see old data.
-let mechanicalStepCache=null;
-function invalidateMechanicalIndex(){if(mechanicalStepCache){mechanicalStepCache.parts=null;mechanicalStepCache.components.clear();mechanicalStepCache.electricalGraph=null;}}
-function mechanicalPartIndex(){
- if(!mechanicalStepCache)return null;
- if(!mechanicalStepCache.parts){const index=new Map();for(const g of groups)for(const part of g.parts)index.set(part.id,{g,part});mechanicalStepCache.parts=index;}
- return mechanicalStepCache.parts;
+// Only ownership and connections survive a substep. Positions, contacts and
+// electrical supply remain live. Topology edits invalidate before AND after
+// callbacks, which may query the still-existing assembly during removal.
+let mechanicalStepCache=null,mechanicalTopology=null;
+function invalidateMechanicalIndex(){
+ mechanicalTopology=null;
+ if(mechanicalStepCache){mechanicalStepCache.parts=null;mechanicalStepCache.components.clear();mechanicalStepCache.electricalGraph=null;}
 }
+function mechanicalTopologyIndex(){
+ if(mechanicalTopology)return mechanicalTopology;
+ const parts=new Map(),byPart=new Map(),byGroup=new Map(),byPair=new Map(),edges=new Map(groups.map(g=>[g,[]]));
+ for(const g of groups)for(const part of g.parts)parts.set(part.id,{g,part});
+ for(const rotor of rotors){
+  for(const id of [rotor.aId,rotor.bId]){if(!byPart.has(id))byPart.set(id,rotor);const g=parts.get(id)?.g;if(g&&!byGroup.has(g))byGroup.set(g,rotor);}
+  const key=rotor.aId+':'+rotor.bId;if(!byPair.has(key))byPair.set(key,rotor);
+  const a=parts.get(rotor.aId)?.g,b=parts.get(rotor.bId)?.g;if(a&&b){edges.get(a).push(b);edges.get(b).push(a);}
+ }
+ return mechanicalTopology={parts,byPart,byGroup,byPair,edges,components:new Map()};
+}
+function mechanicalPartIndex(){return mechanicalTopologyIndex().parts;}
+function rotorForPair(pair){return mechanicalTopologyIndex().byPair.get(pair.aId+':'+pair.bId)||null;}
 const rotorSets=[];let rotorSetSerial=0,selectedRotorIds=[];
 const alphaSettings={maxRest:180,coolSeconds:35,capacity:4,blueprintRange:1.5,exitEnergy:.5,glow:.6,coolingOn:true,allowPuzzleSpawn:false};
 const coolers=[],blueprints=[],savedShapes=[],savedMechanisms=[],buttonBodies=[];let alphaSerial=0;
@@ -1114,10 +1128,10 @@ function makeGroup(parts,reference=Q(),velocity=V(),spin=V()) {
  const local=parts.map(p=>{const shape=unitShape(p),mood=newMood(p.id,p.mood);if(!p.mood&&shape!=='cube')mood.name=(shape==='coupler'?'Enganche ':'T-bit ')+p.id;return {id:p.id,weight:p.weight,shape,offset:inv.vmult(sub(p.p,center)),q:inv.mult(p.q),mood};});
  const partShapes=addRigidCollisionShapes(body,local),materialShapeCount=body.shapes.length;
  body.updateMassProperties();world.addBody(body);
- const g={body,parts:local,partShapes,materialShapeCount,route:null,pin:null};body.qubitGroup=g;body.addEventListener('wakeup',()=>{g.wakeMechanicalComponent=true;});g.block=analyzeBlock(g);groups.push(g);registerSpeechGroup(g);return g;
+ const g={body,parts:local,partShapes,materialShapeCount,route:null,pin:null};body.qubitGroup=g;body.addEventListener('wakeup',()=>{g.wakeMechanicalComponent=true;});g.block=analyzeBlock(g);groups.push(g);invalidateMechanicalIndex();registerSpeechGroup(g);return g;
 }
 function addQubit(p,weight=settings.mass,shape='cube'){return makeGroup([{id:++serial,weight,shape:normalizeUnitShape(shape),p:V(...p),q:Q()}]);}
-function removeGroup(g){disposeRigidCubeBatch(g);robotBeforeRemoveGroup(g);invalidateMechanicalIndex();resetBatteryLiquids(g.body);invalidateRotorBody(g);undockCampaignGroup(g);removeSpeechGroup(g);leaveHaul(g);stopRoute(g);world.removeBody(g.body);const i=groups.indexOf(g);if(i>=0)groups.splice(i,1);if(selected?.g===g)selected=null;multiSelection=multiSelection.filter(item=>item!==g);}
+function removeGroup(g){disposeRigidCubeBatch(g);robotBeforeRemoveGroup(g);invalidateMechanicalIndex();resetBatteryLiquids(g.body);invalidateRotorBody(g);undockCampaignGroup(g);removeSpeechGroup(g);leaveHaul(g);stopRoute(g);world.removeBody(g.body);const i=groups.indexOf(g);if(i>=0)groups.splice(i,1);invalidateMechanicalIndex();if(selected?.g===g)selected=null;multiSelection=multiSelection.filter(item=>item!==g);}
 function corners(pose){if(isTBit(pose))return unitProfile(pose).vertices.map(v=>add(pose.p,pose.q.vmult(v)));const out=[],half=pose.half||V(HALF,HALF,HALF);for(const x of [-half.x,half.x])for(const y of [-half.y,half.y])for(const z of [-half.z,half.z])out.push(add(pose.p,pose.q.vmult(V(x,y,z))));return out;}
 // Rigid geometry is immutable between makeGroup/removeGroup. A translation
 // never changes its rotated extents. Keep a bounded set of exact orientations
@@ -1317,7 +1331,7 @@ function updateCreationPlacement(hit=creationSurfaceAim()){
  const transform=p=>({...p,p:add(origin,q.vmult(p.p)),q:q.mult(p.q)});
  const poses=preview.local.map(transform),surfaces=preview.surfaces.map(transform),drawPoses=preview.compact.map(transform).concat(surfaces);Object.assign(preview,{point,q,poses,surfacePoses:surfaces,drawPoses});
  const count=record?mechanismPartCount(record):floorOnly?0:preview.local.length;
- if(groups.reduce((n,g)=>n+g.parts.length,0)+count>MAX_QUBITS)preview.reason='No caben más piezas. Retira o guarda un montaje.';
+ if(scenePartCount()+count>MAX_QUBITS)preview.reason='No caben más piezas. Retira o guarda un montaje.';
  else if(entry?.action==='cargo'&&(cargos.length>=12||!cargoPlacementClear(point,settings.cargoSide*CUBE_SIZE)))preview.reason='No hay espacio o se alcanzó el límite de cuerpos.';
  else if(entry?.action==='cooler'&&(coolers.length>=12||!cargoPlacementClear(point,.84)||coolers.some(c=>c.p.distanceTo(point)<.9)))preview.reason='Deja espacio libre para el enfriador.';
  else if(entry?.action==='power-reservoir'&&(powerReservoirs.length>=12||!powerReservoirPlacement(point)))preview.reason='Deja espacio libre para el depósito.';
@@ -1423,7 +1437,7 @@ function spawnQubit(){
   const rotor=spawnRotor(undefined,{...mechanismDefaults,enabled:false});if(!rotor){announce('No hay espacio libre para el rotor.');return;}
   const g=rotorGroups(rotor)[0];cancelUnitCreation();selected={g,part:g.parts[0]};multiSelection=[];announce('Rotor creado · clic derecho → Rotación');return g;
  }
- if(groups.reduce((s,g)=>s+g.parts.length,0)>=MAX_QUBITS){announce('Máximo de '+MAX_QUBITS+' piezas en la sala.');return;}
+ if(scenePartCount()>=MAX_QUBITS){announce('Máximo de '+MAX_QUBITS+' piezas en la sala.');return;}
  for(let row=0;row<6;row++)for(const col of [0,1,-1,2,-2,3,-3]){
   const p=V(position[0]-Math.sin(yaw)*(.95+row*.16)+Math.cos(yaw)*col*.16,unitGroundHeight(shape)+.002,position[2]-Math.cos(yaw)*(.95+row*.16)-Math.sin(yaw)*col*.16);
   if(Math.max(Math.abs(p.x),Math.abs(p.z))>13.9)continue;
@@ -1741,7 +1755,7 @@ function makeFragments(parts,reference,velocity=V(),spin=V()){
 function detachPart(hit,all=false){
  automationIntervention();
  if(!hit||!groups.includes(hit.g))return;
- const g=hit.g;if(g.parts.length===1){announce('Este '+unitLabel(hit.part)+' ya está separado.');return;}
+ const g=hit.g;if(all&&stagedDisassemblyEnabled()&&g.parts.length>1){beginStagedDisassembly([g]);return;}if(g.parts.length===1){announce('Este '+unitLabel(hit.part)+' ya está separado.');return;}
  if(held&&(held.items||[held]).some(item=>item.g===g))releaseQubit();const parts=worldParts(g),velocity=g.body.velocity.clone(),spin=g.body.angularVelocity.clone(),ref=g.body.quaternion.clone();
  removeGroup(g);
  if(all){for(const part of parts)makeGroup([part],part.q,velocity,spin);announce('Estructura desarmada');}
@@ -1761,6 +1775,7 @@ function heldAssemblyGroups(){
 }
 function dismantleHeldAssembly(){
  const grip=held,members=heldAssemblyGroups();if(!members.length)return false;
+ if(stagedDisassemblyEnabled())return beginStagedDisassembly(members);
  const picked=grip.part.id,point=add(grip.g.body.position,grip.g.body.quaternion.vmult(grip.anchor)),distance=grip.distance;
  const bounded=(value,max)=>{const length=value.norm();return length>max?mul(value,max/length):value.clone();};
  const originals=members.map(g=>({g,parts:worldParts(g),center:g.body.position.clone(),velocity:bounded(g.body.velocity,.35),spin:bounded(g.body.angularVelocity,2)}));
@@ -1778,6 +1793,76 @@ function dismantleHeldAssembly(){
  grabQubit({g:pickedGroup,part:pickedGroup.parts[0],point,distance});
  if(held){held.distance=distance;held.latched=grip.latched;held.reward=grip.reward;held.shakeSeparated=true;}
  snap=null;announce('Estructura desarmada · conservas la pieza que tomaste');redraw=true;return true;
+}
+// Pending matter is data, not active Cannon bodies. Only a small release budget
+// runs once per animation frame, never once per physics substep.
+function stagedDisassemblyEnabled(){return savedPreferences.disassemblyMode==='staged'&&story.scene==='lab'&&!puzzle.active;}
+function pendingDisassemblyCount(){return disassemblyJobs.reduce((n,j)=>n+j.parts.length-j.cursor,0);}
+function scenePartCount(){return groups.reduce((n,g)=>n+g.parts.length,0)+pendingDisassemblyCount();}
+function disposePreviewMesh(mesh){for(const batch of mesh?.batches||[]){deleteRenderBuffer(batch.buffer);if(boundGeometry===batch.buffer)boundGeometry=null;}}
+function clearDisassembly(){for(const job of disassemblyJobs)disposePreviewMesh(job.mesh);disassemblyJobs.length=0;}
+function serializeDisassembly(){return disassemblyJobs.map(j=>({parts:j.parts.slice(j.cursor).map(p=>({id:p.id,shape:p.shape,weight:p.weight,p:[p.p.x,p.p.y,p.p.z],q:[p.q.x,p.q.y,p.q.z,p.q.w],mood:JSON.parse(JSON.stringify(p.mood))})),origin:[j.origin.x,j.origin.y,j.origin.z]}));}
+function restoreDisassembly(records){
+ clearDisassembly();const ids=new Set(groups.flatMap(g=>g.parts.map(p=>p.id)));let remaining=MAX_QUBITS-scenePartCount();
+ for(const record of Array.isArray(records)?records:[]){
+  const validVector=(v,n)=>Array.isArray(v)&&v.length===n&&v.every(Number.isFinite);
+  if(!Array.isArray(record.parts)||!record.parts.length||record.parts.length>remaining||!validVector(record.origin,3))continue;
+  const own=new Set();if(!record.parts.every(p=>Number.isSafeInteger(p.id)&&p.id>0&&!ids.has(p.id)&&!own.has(p.id)&&own.add(p.id)&&['cube','pyramid','tetra','coupler'].includes(p.shape)&&Number.isFinite(p.weight)&&p.weight>0&&validVector(p.p,3)&&validVector(p.q,4)&&Math.hypot(...p.q)>.0001))continue;
+  const parts=record.parts.map(p=>({...p,p:V(...p.p),q:new CANNON.Quaternion(...p.q),mood:JSON.parse(JSON.stringify(p.mood||{}))}));for(const p of parts){p.q.normalize();ids.add(p.id);serial=Math.max(serial,p.id);}
+  disassemblyJobs.push({parts,cursor:0,origin:V(...record.origin),active:[],search:0});remaining-=parts.length;
+ }
+}
+function beginStagedDisassembly(members){
+ if(disassemblyJobs.length){announce('Espera a que termine el desarme en curso.');return false;}
+ if(story.scene!=='lab'||puzzle.active||!members.length||members.some(g=>!groups.includes(g)))return false;
+ const parts=members.flatMap(worldParts).sort((a,b)=>b.p.y-a.p.y||a.id-b.id);if(parts.length<2)return false;
+ const origin=members[0].body.position.clone();automationIntervention();story.dockCandidate=null;
+ if(held?.items?.some(i=>members.includes(i.g)))releaseQubit(false);
+ for(const rotor of [...rotors])if(rotorGroups(rotor).some(g=>members.includes(g)))disconnectRotor(rotor);
+ pruneConveyors();pruneRobotArms();for(const g of members)removeGroup(g);multiSelection=[];snap=null;
+ disassemblyJobs.push({parts,cursor:0,origin,active:[],search:0});
+ announce('Desarme por etapas · las piezas bajan al suelo por tandas');redraw=true;return true;
+}
+function disassemblyDestination(job,part){
+ // A deterministic expanding grid, bounded to 24 candidates in this frame.
+ const radius=Math.ceil(ROOM_SIZE/.24),width=radius*2+1;
+ for(let attempt=0;attempt<24;attempt++){
+  const index=job.search++%(width*width),ring=Math.ceil((Math.sqrt(index+1)-1)/2),side=Math.max(1,ring*2),d=index-(2*ring-1)**2;
+  let x=0,z=0;if(ring){const edge=Math.floor(d/side),step=d%side;if(edge===0){x=ring;z=-ring+step;}else if(edge===1){x=ring-step;z=ring;}else if(edge===2){x=-ring;z=ring-step;}else{x=-ring+step;z=-ring;}}
+  const pose={shape:part.shape,p:V(job.origin.x+x*.24,0,job.origin.z+z*.24),q:part.q};
+  pose.p.y=.006-Math.min(...corners(pose).map(v=>v.y));
+  if(job.active.some(a=>Math.hypot(a.target.x-pose.p.x,a.target.z-pose.p.z)<.20)||Math.hypot(position[0]-pose.p.x,position[2]-pose.p.z)<PLAYER_RADIUS+.12)continue;
+  if(creationPosesClear([pose]))return pose.p;
+ }
+ return null;
+}
+function updateDisassembly(dt){
+ if(!Number.isFinite(dt)||dt<=0||document.hidden||storySuspended()||story.transition)return;
+ const job=disassemblyJobs[0];if(!job)return;const started=performance.now();let released=0;
+ for(const active of job.active)active.age+=Math.min(dt,.05);
+ // Four bodies / two ms at most; no catch-up burst after pause or lag.
+ while(job.active.length&&released<4&&performance.now()-started<2){
+  const active=job.active[0],part=job.parts[job.cursor];if(active.age<.22)break;
+  if(!creationPosesClear([{...part,p:active.target}])){job.active.length=0;break;}
+  makeGroup([{...part,p:active.target}],part.q,V(),V());job.cursor++;job.active.shift();released++;redraw=true;
+ }
+ // Up to sixteen visual pieces travel together. No physical bodies exist for
+ // them until their free landing position is rechecked at release.
+ let planned=0;
+ while(job.active.length<16&&job.cursor+job.active.length<job.parts.length&&planned<4&&performance.now()-started<2){
+  const part=job.parts[job.cursor+job.active.length],target=disassemblyDestination(job,part);planned++;
+  if(!target){if(!job.active.length&&(!job.warnAt||performance.now()-job.warnAt>2000)){announce('Desarme en espera · libera espacio en el suelo');job.warnAt=performance.now();}break;}
+  job.active.push({target,age:0});
+ }
+ if(job.cursor===job.parts.length){disposePreviewMesh(job.mesh);disassemblyJobs.shift();announce('Desarme terminado · todas las piezas conservadas');}
+ else if(job.active.length)redraw=true;
+}
+function drawDisassembly(){
+ for(const job of disassemblyJobs){
+  if(!job.mesh)job.mesh=buildPreviewMesh(job.parts.map(p=>({...p,p:[p.p.x,p.p.y,p.p.z],q:[p.q.x,p.q.y,p.q.z,p.q.w]})),V());
+  drawPreviewMesh(job.mesh,V(),Q(),1,job.cursor+job.active.length);
+  for(let i=0;i<job.active.length;i++){const active=job.active[i],part=job.parts[job.cursor+i],t=clamp(active.age/.22,0,1),u=t*t*(3-2*t),p=add(mul(part.p,1-u),mul(active.target,u));p.y+=Math.sin(Math.PI*t)*.18;drawUnitMesh({...part,p},[.38,.62,.66,1],5);}
+ }
 }
 function noteAssemblyShake(dx,dy,time){
  if(!held||held.age<.25||!shiftDown()||!running||document.hidden||document.pointerLockElement!==canvas||!storyLookAllowed()||story.transition||radialOpen()||!panel.hidden||!menu.hidden||!commandMenu.hidden){resetAssemblyShake();return;}
@@ -1981,7 +2066,7 @@ function gripperGrab(partOrId,feedback=null){
  const hit=robotGripperHit(partOrId),config=hit.part.mood.gripper,chosen=check.candidate;
  if(!spendGripperEnergy(hit,.05))return false;
  const constraint=robotLockConstraint(hit.g.body,chosen.body,Math.max(12,config.capacity*5));constraint.collideConnected=false;
- for(const eq of constraint.equations)eq.setSpookParams(1e8,4,FIXED_STEP);
+ for(const eq of constraint.equations)setPhysicsEquation(eq,1e8,4);
  if(chosen.cargo){chosen.body.mass=chosen.weight*.25;chosen.body.type=CANNON.Body.DYNAMIC;chosen.body.fixedRotation=false;chosen.body.updateMassProperties();chosen.cargo.robotHeld=hit.part.id;chosen.cargo.robotPhysical=true;}
  if(chosen.g){stopRoute(chosen.g);leaveHaul(chosen.g);chosen.g.robotHeld=hit.part.id;}
  chosen.body.wakeUp();hit.g.robotGrip=hit.part.id;world.addConstraint(constraint);robotGrips.set(hit.part.id,{id:hit.part.id,...chosen,constraint});return true;
@@ -1996,7 +2081,7 @@ function updateRobotGrips(dt){
   if(gripperFaceDistance(hit,grip)>.10){releaseGripper(id);const arm=robotArms.find(a=>a.gripperId===id);if(arm)stopRobotArm(arm,'Agarre perdido');}
  }
 }
-function robotArmRotors(arm){return arm.joints.map(j=>rotors.find(r=>r.aId===j.aId&&r.bId===j.bId)).filter(Boolean);}
+function robotArmRotors(arm){return arm.joints.map(rotorForPair).filter(Boolean);}
 // Pitch joints need a reduction: the stock shoulder requires ~6.55 N·m
 // under its own weight, exceeding a direct 4 N·m drive. Base yaw stays direct.
 // Derive this from the controller so old saves receive the fix and detached
@@ -2019,7 +2104,7 @@ function robotJointBrake(rotor){
  // motor from converging even below its torque limit.
  const brake=new CANNON.Constraint(a.g.body,b.g.body,{collideConnected:false}),equation=new CANNON.RotationalEquation(a.g.body,b.g.body,{maxForce:1000});
  const localA=a.part.q.vmult(V(1,0,0)),axis=a.part.q.vmult(V(0,1,0)),perpendicular=a.g.body.quaternion.vmult(axis.cross(localA)),localB=b.g.body.quaternion.inverse().vmult(perpendicular);
- equation.setSpookParams(1e10,4,FIXED_STEP);brake.equations.push(equation);
+ setPhysicsEquation(equation,1e10,4);brake.equations.push(equation);
  brake.update=function(){this.bodyA.quaternion.vmult(localA,equation.axisA);this.bodyB.quaternion.vmult(localB,equation.axisB);};
  return brake;
 }
@@ -2146,7 +2231,7 @@ function restoreRobotArmTemplate(data,keyToId,joints){
 // Its final belt adds a visible contact surface; bounded powered traction
 // moves touching loads while Cannon resolves gravity, support and collisions.
 const conveyors=[],conveyorPins=new Map();let conveyorSerial=0;
-function conveyorRotors(conveyor){return (conveyor?.joints||[]).map(j=>rotors.find(r=>r.aId===j.aId&&r.bId===j.bId)).filter(Boolean);}
+function conveyorRotors(conveyor){return (conveyor?.joints||[]).map(rotorForPair).filter(Boolean);}
 function conveyorForGroup(g){return conveyors.find(c=>conveyorRotors(c).some(r=>rotorGroups(r).includes(g)&&rotorPart(c.baseId)?.g!==g))||conveyors.find(c=>rotorPart(c.baseId)?.g===g)||null;}
 function conveyorStatus(conveyor){return conveyor?.status||'Selecciona una cinta';}
 function conveyorPortsValid(ports){return !ports||['entry','exit'].every(name=>{const port=ports[name];return port&&Array.isArray(port.p)&&port.p.length===3&&port.p.every(n=>Number.isFinite(n)&&Math.abs(n)<=10)&&Array.isArray(port.direction)&&port.direction.length===3&&port.direction.every(Number.isFinite)&&Math.abs(Math.hypot(...port.direction)-1)<.001;});}
@@ -2188,9 +2273,18 @@ function conveyorSurfaceContact(conveyor,contact){
  for(const pose of conveyorSurfacePoses(conveyor)){const local=pose.inverse.vmult(sub(point,pose.p));if(normal.dot(pose.up)>.6&&Math.abs(local.x)<=pose.half.x+.006&&Math.abs(local.z)<=pose.half.z+.006&&Math.abs(local.y-pose.half.y)<.012)return {body:other,point,normal,surface:pose.surface};}
  return null;
 }
+function conveyorContactIndex(physicsWorld=world){
+ if(mechanicalStepCache?.contactIndex?.world===physicsWorld)return mechanicalStepCache.contactIndex.byBody;
+ const byBody=new Map();for(const contact of physicsWorld.contacts){
+  for(const body of contact.bi===contact.bj?[contact.bi]:[contact.bi,contact.bj]){if(!byBody.has(body))byBody.set(body,[]);byBody.get(body).push(contact);}
+ }
+ if(mechanicalStepCache)mechanicalStepCache.contactIndex={world:physicsWorld,byBody};
+ return byBody;
+}
+function invalidateConveyorContacts(){if(mechanicalStepCache){mechanicalStepCache.contactIndex=null;mechanicalStepCache.conveyorContacts=null;}}
 function conveyorContactLoads(conveyor){
  const byBody=new Map(),component=new Set(rotorConnectedGroups([rotorPart(conveyor.baseId)?.g].filter(Boolean)).map(g=>g.body));
- for(const contact of world.contacts){const hit=conveyorSurfaceContact(conveyor,contact);if(!hit||component.has(hit.body)||hit.body.mass<=0)continue;const g=hit.body.qubitGroup,c=hit.body.cargoRef;if(!g&&!c||g?.robotHeld||c?.robotHeld||(held?.items||[]).some(item=>item.g===g))continue;byBody.set(hit.body,{...hit,weight:g?totalWeight(g):c.required});}
+ for(const contact of conveyorContactIndex().get(conveyor.surfaceBody)||[]){const hit=conveyorSurfaceContact(conveyor,contact);if(!hit||component.has(hit.body)||hit.body.mass<=0)continue;const g=hit.body.qubitGroup,c=hit.body.cargoRef;if(!g&&!c||g?.robotHeld||c?.robotHeld||(held?.items||[]).some(item=>item.g===g))continue;byBody.set(hit.body,{...hit,weight:g?totalWeight(g):c.required});}
  return [...byBody.values()];
 }
 function conveyorSpendTraction(conveyor,joules){
@@ -2215,7 +2309,7 @@ function conveyorDriveSurface(conveyor,dt){
  }
 }
 function conveyorFrictionPairs(physicsWorld){
- const pairs=new Map();for(const conveyor of conveyors){if(!conveyor.running||conveyor.speed<.002)continue;for(const contact of physicsWorld.contacts){const hit=conveyorSurfaceContact(conveyor,contact);if(!hit)continue;if(!pairs.has(conveyor.surfaceBody))pairs.set(conveyor.surfaceBody,new Set());pairs.get(conveyor.surfaceBody).add(hit.body);}}
+ const pairs=new Map();for(const conveyor of conveyors){if(!conveyor.running||conveyor.speed<.002)continue;for(const contact of conveyorContactIndex(physicsWorld).get(conveyor.surfaceBody)||[]){const hit=conveyorSurfaceContact(conveyor,contact);if(!hit)continue;if(!pairs.has(conveyor.surfaceBody))pairs.set(conveyor.surfaceBody,new Set());pairs.get(conveyor.surfaceBody).add(hit.body);}}
  return pairs;
 }
 
@@ -2297,7 +2391,7 @@ function startConveyor(conveyor){
 }
 function conveyorContactMap(){
  if(mechanicalStepCache?.conveyorContacts)return mechanicalStepCache.conveyorContacts;
- const map=new Map();for(const contact of world.contacts)for(const [body,other]of [[contact.bi,contact.bj],[contact.bj,contact.bi]]){if(!map.has(body))map.set(body,new Set());map.get(body).add(other);}
+ const map=new Map();for(const [body,contacts]of conveyorContactIndex()){const others=new Set();for(const contact of contacts)others.add(contact.bi===body?contact.bj:contact.bi);map.set(body,others);}
  if(mechanicalStepCache)mechanicalStepCache.conveyorContacts=map;return map;
 }
 function conveyorReadLoad(conveyor){
@@ -2432,7 +2526,7 @@ function connectServoTips(aId,bId,options={}){
  const rotor={id:++rotorSerial,aId,bId,rpm:Math.max(1,s.speed/6),direction:1,moving:'b',mount:'wheel',maxTorque:clamp(options.maxTorque??.4,.02,4),capacity:clamp(options.capacity??32,2,MAX_QUBITS),enabled:false,constraint:null,pin:null,servo:s};
  if(!Number.isFinite(rotor.maxTorque)||!Number.isFinite(rotor.capacity))return null;
  if(story.scene==='campaign')rotor.maxTorque=Math.min(rotor.maxTorque,campaignTorqueCap());
- for(const g of [a.g,b.g]){stopRoute(g);leaveHaul(g);}invalidateMechanicalIndex();rotors.push(rotor);refreshRotors();return rotor;
+ for(const g of [a.g,b.g]){stopRoute(g);leaveHaul(g);}invalidateMechanicalIndex();rotors.push(rotor);invalidateMechanicalIndex();refreshRotors();return rotor;
 }
 function servoAngle(rotor){
  const current=robotRelativePose(rotor),reference=new CANNON.Quaternion(...rotor.servo.reference),delta=current.mult(reference.inverse()),axis=rotor.servo.kind==='hinge'?V(0,0,1):V(0,1,0);
@@ -2517,24 +2611,23 @@ function rotorPart(id){
  for(const g of groups){const part=g.parts.find(p=>p.id===id);if(part)return {g,part,...partPose(g,part)};}return null;
 }
 function couplerTip(pose){return {point:add(pose.p,pose.q.vmult(V(0,CUBE_SIZE*51/56,0))),axis:pose.q.vmult(V(0,1,0))};}
-function rotorForPart(id){return rotors.find(r=>r.aId===id||r.bId===id)||null;}
+function rotorForPart(id){return mechanicalTopologyIndex().byPart.get(id)||null;}
 function rotorGroups(rotor){return [rotorPart(rotor.aId)?.g||null,rotorPart(rotor.bId)?.g||null];}
-function rotorForGroup(g){return rotors.find(r=>rotorGroups(r).includes(g))||null;}
+function rotorForGroup(g){return mechanicalTopologyIndex().byGroup.get(g)||null;}
 function rotorConnectedGroups(initial){
- const seeds=[...new Set(initial.filter(g=>groups.includes(g)))];
+ const topology=mechanicalTopologyIndex(),seeds=[...new Set(initial.filter(g=>topology.edges.has(g)))];
+ // Preserve the existing physics traversal order, including energy allocation.
  if(mechanicalStepCache){
-  if(!mechanicalStepCache.components.size){
-   const index=mechanicalPartIndex(),edges=new Map(groups.map(g=>[g,[]]));
-   for(const rotor of rotors){const a=index.get(rotor.aId)?.g,b=index.get(rotor.bId)?.g;if(a&&b){edges.get(a).push(b);edges.get(b).push(a);}}
-   for(const seed of groups)if(!mechanicalStepCache.components.has(seed)){
-    const component=[seed],seen=new Set(component);for(let i=0;i<component.length;i++)for(const next of edges.get(component[i]))if(!seen.has(next)){seen.add(next);component.push(next);}
-    for(const g of component)mechanicalStepCache.components.set(g,component);
-   }
+  const components=topology.components;
+  if(!components.size)for(const seed of groups)if(!components.has(seed)){
+   const component=[seed],seen=new Set(component);for(let i=0;i<component.length;i++)for(const next of topology.edges.get(component[i]))if(!seen.has(next)){seen.add(next);component.push(next);}
+   for(const g of component)components.set(g,component);
   }
-  const result=seeds.slice(),seen=new Set(result);for(const seed of seeds)for(const g of mechanicalStepCache.components.get(seed)||[])if(!seen.has(g)){seen.add(g);result.push(g);}return result;
+  const result=seeds.slice(),seen=new Set(result);for(const seed of seeds)for(const g of components.get(seed)||[])if(!seen.has(g)){seen.add(g);result.push(g);}return result;
  }
- const result=seeds.slice();
- for(let i=0;i<result.length;i++)for(const rotor of rotors){const pair=rotorGroups(rotor);if(pair.includes(result[i]))for(const g of pair)if(g&&!result.includes(g))result.push(g);}
+ // UI/construction queries retain seed-first breadth-first ordering.
+ const result=seeds.slice(),seen=new Set(result);
+ for(let i=0;i<result.length;i++)for(const next of topology.edges.get(result[i]))if(!seen.has(next)){seen.add(next);result.push(next);}
  return result;
 }
 // Control sets reference hinges, not rigid bodies: several selected axles may
@@ -2622,7 +2715,7 @@ function disconnectRotor(rotor){
  if(!rotors.includes(rotor))return false;
  stopServoMarch(servoMarchFor(rotor),'Conjunto detenido · articulación separada');
  invalidateMechanicalIndex();
- if(rotor.constraint)world.removeConstraint(rotor.constraint);rotor.constraint=null;unpinRotor(rotor);rotors.splice(rotors.indexOf(rotor),1);cleanRotorSets();return true;
+ if(rotor.constraint)world.removeConstraint(rotor.constraint);rotor.constraint=null;unpinRotor(rotor);rotors.splice(rotors.indexOf(rotor),1);invalidateMechanicalIndex();cleanRotorSets();return true;
 }
 function rotorTipsCompatible(a,b,tolerance=.002){
  if(!a||!b||unitShape(a)!=='coupler'||unitShape(b)!=='coupler'||a.g===b.g)return false;
@@ -2636,7 +2729,7 @@ function connectRotorTips(aId,bId,options={}){
  if(options.rpm!==undefined&&!Number.isFinite(options.rpm)||options.direction!==undefined&&![1,-1].includes(options.direction)||options.moving!==undefined&&!['a','b'].includes(options.moving)||options.mount!==undefined&&!['wheel','fixed'].includes(options.mount)||options.maxTorque!==undefined&&!Number.isFinite(options.maxTorque)||options.capacity!==undefined&&!Number.isFinite(options.capacity))return null;
  if(story.scene==='campaign')options={...options,maxTorque:Math.min(options.maxTorque??.4,campaignTorqueCap())};
  const rotor={id:++rotorSerial,aId,bId,rpm:clamp(options.rpm??30,1,120),direction:options.direction??1,moving:options.moving??'b',mount:options.mount??'wheel',maxTorque:clamp(options.maxTorque??.4,.02,4),capacity:clamp(options.capacity??(story.scene==='lab'?32:16),2,MAX_QUBITS),enabled:false,constraint:null,pin:null};
- stopRoute(a.g);stopRoute(b.g);leaveHaul(a.g);leaveHaul(b.g);invalidateMechanicalIndex();rotors.push(rotor);for(const [part,label]of [[a.part,'A'],[b.part,'B']])if(/^Enganche (?:\d+|[AB] · \d+)$/.test(part.mood.name))part.mood.name='Enganche '+label+' · '+part.id;refreshRotors();
+ stopRoute(a.g);stopRoute(b.g);leaveHaul(a.g);leaveHaul(b.g);invalidateMechanicalIndex();rotors.push(rotor);invalidateMechanicalIndex();for(const [part,label]of [[a.part,'A'],[b.part,'B']])if(/^Enganche (?:\d+|[AB] · \d+)$/.test(part.mood.name))part.mood.name='Enganche '+label+' · '+part.id;refreshRotors();
  if(options.enabled)configureRotor(rotor,{enabled:true});return rotor;
 }
 function refreshRotors(){
@@ -2648,11 +2741,11 @@ function refreshRotors(){
    if(!(rotor.servo?servoTipsCompatible(a,b,rotor.servo):rotorTipsCompatible(a,b,.004))){disconnectRotor(rotor);continue;}
    const af=rotorEndpoint(a,rotor.servo,'a'),bf=rotorEndpoint(b,rotor.servo,'b');
    rotor.constraint=new CANNON.HingeConstraint(a.g.body,b.g.body,{pivotA:add(a.part.offset,a.part.q.vmult(af.localPoint)),pivotB:add(b.part.offset,b.part.q.vmult(bf.localPoint)),axisA:a.part.q.vmult(af.localAxis),axisB:b.part.q.vmult(mul(bf.localAxis,-1)),maxForce:1000,collideConnected:true});
-   for(const equation of rotor.constraint.equations)equation.setSpookParams(1e10,4,FIXED_STEP);
+   for(const equation of rotor.constraint.equations)setPhysicsEquation(equation,1e10,4);
    // A passive parking brake closes only the remaining twist degree of
    // freedom. It belongs to this hinge, never to the room or its floor.
    const brake=new CANNON.RotationalEquation(a.g.body,b.g.body,{maxForce:1000});
-   brake.setSpookParams(1e10,4,FIXED_STEP);brake.enabled=false;
+   setPhysicsEquation(brake,1e10,4);brake.enabled=false;
    rotor.constraint.stopBrake={equation:brake,localA:V(),localB:V()};
    rotor.constraint.equations.push(brake);
    const update=rotor.constraint.update;
@@ -2708,6 +2801,8 @@ function rotorProjectedPose(rotor,moving,base,quaternion=moving.body.quaternion)
 // walking, hauling or unpowered contact behavior elsewhere in the room.
 const solveRotorContacts=world.solver.solve;
 world.solver.solve=function(dt,physicsWorld){
+ // Narrowphase has replaced/reused the contacts since the pre-step load checks.
+ invalidateConveyorContacts();
  // Propagate actual wake events (impact, grabbing, motor start) through the
  // mechanism. Ordinary SLEEPY solver jitter must not repeatedly wake its base.
  for(const g of groups)if(g.wakeMechanicalComponent){const component=rotorConnectedGroups([g]);
@@ -2825,7 +2920,7 @@ function stabilizeRotors(){
 }
 function spawnRotor(p=null,options={}){
  if(certifiedAutomation()){announce('Ensayo certificado: usa el mecanismo del banco.');return null;}
- if(groups.reduce((n,g)=>n+g.parts.length,0)+2>MAX_QUBITS){announce('No hay capacidad para dos enganches.');return null;}
+ if(scenePartCount()+2>MAX_QUBITS){announce('No hay capacidad para dos enganches.');return null;}
  const positions=p?[p]:Array.from({length:6},(_,row)=>[0,1,-1,2,-2,3,-3].map(col=>V(position[0]-Math.sin(yaw)*(.95+row*.3)+Math.cos(yaw)*col*.3,0,position[2]-Math.cos(yaw)*(.95+row*.3)-Math.sin(yaw)*col*.3))).flat();
  const flip=Q();flip.setFromAxisAngle(V(0,0,1),Math.PI);
  for(const base of positions){
@@ -3553,7 +3648,7 @@ function addPowerCableMaterial(cable){
 }
 function recoverPowerCable(cable){
  if(!powerCables.includes(cable))return false;
- if(groups.reduce((n,g)=>n+g.parts.length,0)+cable.materials.length>MAX_QUBITS){announce('No hay espacio para recuperar los cubos. Retira algunas piezas primero.');return false;}
+ if(scenePartCount()+cable.materials.length>MAX_QUBITS){announce('No hay espacio para recuperar los cubos. Retira algunas piezas primero.');return false;}
  const candidates=[];
  for(let row=0;row<6&&candidates.length<cable.materials.length;row++)for(const col of [0,1,-1,2,-2]){
   const p=V(position[0]-Math.sin(yaw)*(1+row*.15)+Math.cos(yaw)*col*.14,HALF+.004,position[2]-Math.cos(yaw)*(1+row*.15)-Math.sin(yaw)*col*.14);
@@ -3769,7 +3864,7 @@ function stepPhysics(dt){
  simTime+=dt;refreshRotors();updatePowerNetwork(dt);updateConveyors(dt);updateRobotGrips(dt);updateRobotArms(dt);tutorialFloat(dt);updateGrab(dt);updateRoutes(dt);updateHauling(dt);
  // Bound substep travel to avoid tunnelling through a 9 cm piece.
  for(const g of groups){const b=g.body,speed=b.velocity.norm();if(speed>6)b.velocity.scale(6/speed,b.velocity);const spin=b.angularVelocity.norm();if(spin>30)b.angularVelocity.scale(30/spin,b.angularVelocity);}
- updateCampaignPressure(dt);updateButtonPhysics();prepareRotorPower();updateRotorMotors(dt);driveRobotArms(dt);driveConveyors(dt);driveServos(dt);productionForces(dt);updateFlights(dt);world.step(dt);stabilizeRotors();updateRotorPower(dt);validateServoMarches();tickContactSensors(dt);tickFlightSensors(dt);
+ updateCampaignPressure(dt);updateButtonPhysics();prepareRotorPower();updateRotorMotors(dt);driveRobotArms(dt);driveConveyors(dt);driveServos(dt);productionForces(dt);updateFlights(dt);world.step(dt);invalidateConveyorContacts();stabilizeRotors();updateRotorPower(dt);validateServoMarches();tickContactSensors(dt);tickFlightSensors(dt);
  // Correct only tiny solver penetration of a hand-held shape; free bodies keep
  // their normal collision response. A hand cannot push its attachment underground.
  if(held)for(const item of held.items||[held]){const b=item.g.body,low=bounds(item.g).min.y;if(low<.001){b.position.y+=.001-low;if(b.velocity.y<0)b.velocity.y=0;b.aabbNeedsUpdate=true;}if(item.floorLocked)b.angularVelocity.set(0,0,0);}
@@ -4134,7 +4229,7 @@ function drawQubits(){
  }}
  gl.depthMask(true);gl.disable(gl.BLEND);
  for(const g of groups){if(!renderGroupVisible(g))continue;if(g.parts.some(p=>p.mood.production)){for(const p of poses(g))drawBox(p.p,p.q,V(CUBE_SIZE-.002,CUBE_SIZE-.002,CUBE_SIZE-.002),p.part.mood.production?.kind==='A'?[.27,.56,.67,1]:p.part.mood.production?[.72,.53,.26,1]:[.12,.14,.13,1]);if(g.parts.length===2)drawOutline(g.body.position,g.body.quaternion,sub(bounds(g,V(),Q()).max,bounds(g,V(),Q()).min),.8,false);}else drawGroupSolid(g);}
- drawConveyors();drawCargos();drawPuzzle();drawAlpha();drawWorkshop();drawShelves();drawCreationPlacement();drawPowerReservoirs();drawPowerCables();drawBatteriesTransparent();drawStructureOutlines();drawServoGuides();drawGuides();drawTaskGuides();
+ drawConveyors();drawCargos();drawPuzzle();drawAlpha();drawWorkshop();drawShelves();drawDisassembly();drawCreationPlacement();drawPowerReservoirs();drawPowerCables();drawBatteriesTransparent();drawStructureOutlines();drawServoGuides();drawGuides();drawTaskGuides();
 }
 addQubit([position[0]-Math.sin(yaw)*1.25,HALF+.003,position[2]-Math.cos(yaw)*1.25]);
 
@@ -4242,7 +4337,7 @@ function duplicateSelection(){
  if(typeof rotorForGroup==='function'&&rotorForGroup(hit.g))return duplicateMechanism(hit.g);
  const originals=multiSelection.includes(hit.g)&&multiSelection.length>1?multiSelection.filter(g=>groups.includes(g)):[hit.g];
  if(originals.some(g=>g.parts.some(p=>p.mood?.externalBattery))){if(originals.length===1)return duplicateMechanism(originals[0]);announce('Selecciona un solo montaje para copiarlo con sus baterías. Las copias comienzan vacías.');return;}
- const count=originals.reduce((n,g)=>n+g.parts.length,0),population=groups.reduce((n,g)=>n+g.parts.length,0);
+ const count=originals.reduce((n,g)=>n+g.parts.length,0),population=scenePartCount();
  if(count+population>MAX_QUBITS){announce('No caben más copias: límite de '+MAX_QUBITS+' piezas.');return;}
  const originalParts=originals.map(g=>worldParts(g));const pts=originalParts.flat(),min=V(Infinity,Infinity,Infinity),max=V(-Infinity,-Infinity,-Infinity);
  for(const group of originals){const b=bounds(group);for(const k of ['x','y','z']){min[k]=Math.min(min[k],b.min[k]);max[k]=Math.max(max[k],b.max[k]);}}
@@ -5105,8 +5200,9 @@ function updateCargoCallout(){
 // when leaving the challenge; rewards and deliveries use a single transaction.
 const puzzleConfig={frameSeconds:12,energySeconds:8};
 function puzzleBlockedEdit(kind='edit'){if(certifiedAutomation()){announce('Ensayo certificado: usa las piezas del banco. Reinicia el nivel para restaurarlas.');return true;}if(kind==='mechanism'&&mechanismsAvailable())return false;if(story.ready&&story.scene==='campaign'&&panel.hidden){announce('La materia genera nuevos Q-bits. P abre el banco de herramientas de prueba.');return true;}if(!puzzle.active||kind==='qubit'&&alphaSettings.allowPuzzleSpawn)return false;announce('Puzle activo · los recursos se obtienen en los portales. P → Puzle para volver al banco.');return true;}
-function saveLab(){cancelPowerCable();return {powerNetwork:serializePowerNetwork(),mechanismDefaults:typeof mechanismDefaults==='undefined'?null:{...mechanismDefaults},rotors:serializeRotorState(),rotorSets:serializeRotorSets(),robotArms:serializeRobotArms(),conveyors:typeof serializeConveyors==='function'?serializeConveyors():[],contacts:serializeContactState(),shelves:serializeShelves(),alphaScene:alphaSceneSnapshot(),settings:{...settings},moodSettings:{...moodSettings},position:[...position],yaw,pitch,groups:groups.map(g=>({parts:worldParts(g),q:g.body.quaternion.clone(),v:g.body.velocity.clone(),w:g.body.angularVelocity.clone()})),cargos:cargos.map(c=>({id:c.id,p:c.body.position.clone(),side:c.side,required:c.required,color:c.color,...(c.robotPhysical?{robotPhysical:true,q:c.body.quaternion.clone(),v:c.body.velocity.clone(),w:c.body.angularVelocity.clone()}:{} )}))};}
+function saveLab(){cancelPowerCable();return {disassembly:serializeDisassembly(),powerNetwork:serializePowerNetwork(),mechanismDefaults:typeof mechanismDefaults==='undefined'?null:{...mechanismDefaults},rotors:serializeRotorState(),rotorSets:serializeRotorSets(),robotArms:serializeRobotArms(),conveyors:typeof serializeConveyors==='function'?serializeConveyors():[],contacts:serializeContactState(),shelves:serializeShelves(),alphaScene:alphaSceneSnapshot(),settings:{...settings},moodSettings:{...moodSettings},position:[...position],yaw,pitch,groups:groups.map(g=>({parts:worldParts(g),q:g.body.quaternion.clone(),v:g.body.velocity.clone(),w:g.body.angularVelocity.clone()})),cargos:cargos.map(c=>({id:c.id,p:c.body.position.clone(),side:c.side,required:c.required,color:c.color,...(c.robotPhysical?{robotPhysical:true,q:c.body.quaternion.clone(),v:c.body.velocity.clone(),w:c.body.angularVelocity.clone()}:{} )}))};}
 function clearPuzzleScene(){
+ clearDisassembly();
  cancelPowerCable();clearPowerNetwork();
  flightStates.clear();resetBatteryLiquids();
  clearShelves();
@@ -5526,6 +5622,7 @@ function restoreRotorState(data){
  return made.map(([r])=>r);
 }
 function restoreLabMechanisms(saved){
+ restoreDisassembly(saved?.disassembly);
  if(typeof mechanismDefaults!=='undefined'){
   const input=saved?.mechanismDefaults||{},defaults={rpm:30,direction:1,moving:'b',mount:'wheel',maxTorque:.4,capacity:16};
   // Only documented controls are restored. A damaged snapshot cannot inject
@@ -5760,7 +5857,7 @@ function spawnSavedMechanism(record,point,rotation=Q()){
  if(puzzleBlockedEdit('mechanism')||typeof mechanismsAvailable==='function'&&!mechanismsAvailable())return null;
  if(!savedMechanismValid(record)||!point||![point.x,point.y,point.z].every(Number.isFinite)){announce('El mecanismo guardado no es válido.');return null;}
  if(story.scene==='campaign'&&record.groups.some(group=>group.parts.some(part=>part.shape!=='coupler'))){announce('Los mecanismos con Q-bits o T-bits añadidos se crean solo en el banco de pruebas. En campaña, monta esas piezas con los recursos del nivel.');return null;}
- const count=mechanismPartCount(record);if(groups.reduce((sum,g)=>sum+g.parts.length,0)+count>MAX_QUBITS){announce('Máximo de '+MAX_QUBITS+' piezas en la sala.');return null;}
+ const count=mechanismPartCount(record);if(scenePartCount()+count>MAX_QUBITS){announce('Máximo de '+MAX_QUBITS+' piezas en la sala.');return null;}
  const origin=V(point.x,point.y+.003,point.z),data=mechanismRecordParts(record).map(parts=>parts.map(part=>({...part,p:add(origin,rotation.vmult(part.p)),q:rotation.mult(part.q)}))),ids=new Map(),made=[],joints=[];
  // Probe candidate space before allocating physics bodies, IDs or GPU state.
  // Placement is exact: failed validation never searches another location.
@@ -5785,7 +5882,7 @@ function duplicateMechanism(subject){
  if(mechanismGroups(subject).some(g=>g.parts.some(QBitsWorkshop.hasAdaptation))){announce('Retira las adaptaciones antes de duplicar el mecanismo.');return null;}
 
  const record=mechanismSnapshot(subject);if(!record){announce('No se puede duplicar este mecanismo hasta ajustar sus puntas.');return null;}
- if(groups.reduce((sum,g)=>sum+g.parts.length,0)+mechanismPartCount(record)>MAX_QUBITS){announce('No caben más copias: límite de '+MAX_QUBITS+' piezas.');return null;}
+ if(scenePartCount()+mechanismPartCount(record)>MAX_QUBITS){announce('No caben más copias: límite de '+MAX_QUBITS+' piezas.');return null;}
  const vertices=mechanismRecordParts(record).flat().flatMap(corners),spacing=Math.max(...['x','z'].map(axis=>Math.max(...vertices.map(v=>v[axis]))-Math.min(...vertices.map(v=>v[axis]))))+.18;
  for(let row=0;row<5;row++)for(const col of [0,1,-1,2,-2]){
   const point=V(position[0]-Math.sin(yaw)*(1.2+row*spacing)+Math.cos(yaw)*col*spacing,0,position[2]-Math.cos(yaw)*(1.2+row*spacing)-Math.sin(yaw)*col*spacing);
@@ -6032,7 +6129,7 @@ function updateAlphaHUD(){
  for(const machine of arms)for(const rotor of robotArmRotors(machine))for(const g of rotorGroups(rotor))if(g)machineGroups.add(g);
  for(const machine of belts)for(const rotor of conveyorRotors(machine))for(const g of rotorGroups(rotor))if(g)machineGroups.add(g);
  let qCount=0,tCount=0,mCount=0,rCount=0,materialCount=0;for(const g of groups)for(const part of g.parts){if(machineGroups.has(g)){materialCount++;continue;}if(part.mood.production){rCount++;continue;}if(unitShape(part)==='coupler')mCount++;else if(isTBit(part))tCount++;else qCount++;}
- const census=document.querySelector('#alpha-census-text');census.textContent='× '+qCount+' Q'+(tCount?' · '+tCount+' T':'')+(mCount?' · '+mCount+' M':'')+(arms.length?' · '+arms.length+' brazos':'')+(belts.length?' · '+belts.length+' cintas':'')+(rCount?' · '+rCount+' bloques de materia':'');census.title=materialCount+' piezas integradas en mecanismos; se conservan al desarmarlos y dentro del límite de la sala.';
+ const census=document.querySelector('#alpha-census-text');census.textContent='× '+qCount+' Q'+(tCount?' · '+tCount+' T':'')+(mCount?' · '+mCount+' M':'')+(arms.length?' · '+arms.length+' brazos':'')+(belts.length?' · '+belts.length+' cintas':'')+(rCount?' · '+rCount+' bloques de materia':'');if(pendingDisassemblyCount())census.textContent+=' · '+pendingDisassemblyCount()+' en desarme';census.title=materialCount+' piezas integradas en mecanismos; se conservan al desarmarlos y dentro del límite de la sala.';
  if(!panel.hidden||!commandMenu.hidden||held)return;const h=alphaHit(5);if(!h)return;
  if(h.bp)targetLabel.textContent=h.bp.shape.name+' · '+h.bp.status+' · clic derecho';
  if(h.cooler){const c=h.cooler,values=[...c.entries.values()],remaining=values.length?Math.ceil(Math.max(0,...values.map(v=>(v.duration||c.coolSeconds||alphaSettings.coolSeconds)-v.elapsed))):c.coolSeconds||alphaSettings.coolSeconds;targetLabel.textContent='Enfriador · '+c.occupants+'/'+c.capacity+' · '+(!c.enabled||!alphaSettings.coolingOn?'apagado':values.length&&remaining===0?'listos · energía '+Math.round(alphaSettings.exitEnergy*100)+' %':remaining+' s');}
@@ -6809,7 +6906,7 @@ function sourceAccepts(s,cargo){
 }
 function beginConversion(s,cargo){
  if(!sourceAccepts(s,cargo)||Math.hypot(cargo.body.position.x-s.intake.x,cargo.body.position.z-s.intake.z)>.14)return false;
- if(groups.reduce((n,g)=>n+g.parts.length,0)+cargo.units>MAX_QUBITS){s.blocked=true;return false;}
+ if(scenePartCount()+cargo.units>MAX_QUBITS){s.blocked=true;return false;}
  stopHaul(cargo,'Materia recibida');cargo.intake=0;cargo.body.type=CANNON.Body.KINEMATIC;cargo.body.collisionResponse=false;cargo.body.velocity.set(0,0,0);cargo.body.updateMassProperties();s.state='intake';s.timer=0;s.from=cargo.body.position.clone();s.blocked=false;return true;
 }
 function outputPosition(s,index){return add(s.exit,V((index%4-1.5)*.15,HALF+.008,.57+Math.floor(index/4)*.16));}
@@ -7060,7 +7157,7 @@ function withdrawShelf(shelf,cellIndex=0,count=1){
  if(story.scene!=='lab'||puzzle.active||!shelves.includes(shelf))return false;const cell=shelf.cells[cellIndex];if(!cell||!Number.isInteger(count)||count<1||count>cell.items.length)return false;
  pruneRobotArms();if(typeof pruneConveyors==='function')pruneConveyors();
  const items=cell.items.slice(0,count),liveIds=new Set(groups.flatMap(g=>g.parts.map(p=>p.id)));if(items.some(item=>!QBitsOrganizers.validItem(item)||!storedShelfConveyorsValid(item)||item.joints.some(j=>!storedRotorOptionsValid(j))||item.groups.some(g=>g.parts.some(p=>{if(liveIds.has(p.id))return true;liveIds.add(p.id);return false;})))){announce('No se puede recuperar este contenido: hay identidades o datos incompatibles.');return false;}
- if(groups.reduce((n,g)=>n+g.parts.length,0)+items.reduce((n,item)=>n+QBitsOrganizers.count(item),0)>MAX_QUBITS){announce('No hay capacidad libre en el banco. Guarda otras piezas antes de retirar.');return false;}
+ if(scenePartCount()+items.reduce((n,item)=>n+QBitsOrganizers.count(item),0)>MAX_QUBITS){announce('No hay capacidad libre en el banco. Guarda otras piezas antes de retirar.');return false;}
  const made=[],madeRotors=[],oldContacts=serializeContactState(),origin=shelfCellPoint(shelf,cellIndex),normal=shelf.q.vmult(V(0,0,1)),tangent=shelf.q.vmult(V(1,0,0)),sizes=items.map(shelfItemBounds),spacing=Math.max(...sizes.map(b=>Math.hypot(b.max.x-b.min.x,b.max.z-b.min.z)))+.15,columns=Math.min(5,count);
  const rollback=()=>{madeRotors.forEach(disconnectRotor);made.forEach(removeGroup);restoreContactState(oldContacts);announce('No hay espacio libre delante de la repisa. Aparta los objetos o retira una tanda menor.');return false;};
  for(const [index,item]of items.entries()){
@@ -7073,10 +7170,10 @@ function withdrawShelf(shelf,cellIndex=0,count=1){
  restoreContactState({sensors:[...oldContacts.sensors,...items.flatMap(item=>item.contacts?.sensors||[])],rotors:[...oldContacts.rotors,...items.flatMap(item=>item.contacts?.rotors||[])]});
  restoreRobotArms(items.flatMap(item=>item.robotArms||[]));
  if(typeof restoreConveyors==='function')restoreConveyors(items.flatMap(item=>item.conveyors||[]));
- cell.items.splice(0,count);if(!cell.items.length)cell.category=null;clearSelection();multiSelection=made;selected={g:made[0],part:made[0].parts[0]};redraw=true;announce(count+' elemento'+(count===1?' retirado':'s retirados')+' · delante de la repisa');return true;
+ shelfPreviewMesh(shelf,cellIndex,null);cell.items.splice(0,count);if(!cell.items.length)cell.category=null;clearSelection();multiSelection=made;selected={g:made[0],part:made[0].parts[0]};redraw=true;announce(count+' elemento'+(count===1?' retirado':'s retirados')+' · delante de la repisa');return true;
 }
 function deleteShelf(shelf,confirmed=false){
- if(!confirmed||!shelves.includes(shelf))return false;for(const wall of shelf.walls){if(world.bodies.includes(wall.body))world.removeBody(wall.body);const at=storyWorld.walls.indexOf(wall);if(at>=0)storyWorld.walls.splice(at,1);}for(const label of shelf.labels)label?.remove();shelves.splice(shelves.indexOf(shelf),1);redraw=true;return true;
+ if(!confirmed||!shelves.includes(shelf))return false;clearShelfPreviewMeshes(shelf);for(const wall of shelf.walls){if(world.bodies.includes(wall.body))world.removeBody(wall.body);const at=storyWorld.walls.indexOf(wall);if(at>=0)storyWorld.walls.splice(at,1);}for(const label of shelf.labels)label?.remove();shelves.splice(shelves.indexOf(shelf),1);redraw=true;return true;
 }
 function requestDeleteShelf(shelf){
  if(!shelves.includes(shelf))return false;const count=shelf.cells.reduce((n,cell)=>n+cell.items.length,0);
@@ -7107,13 +7204,47 @@ function restoreShelves(records){
  }return valid.length;
 }
 function clearShelves(){cancelShelfPlacement();for(const shelf of [...shelves])deleteShelf(shelf,true);}
+function buildPreviewMesh(parts,middle){
+ const materials=new Map(),entries=[];
+ // Pre-size typed buffers. Avoid vectors, temporary slices and growing JS
+ // arrays for every vertex when a 2000-piece model is first displayed.
+ for(let index=0;index<parts.length;index++){
+  const part=parts[index],key=part.mood?.externalBattery?'battery':part.shape==='cube'?'cube':'other',mesh=unitMeshes[part.shape];
+  let batch=materials.get(key);if(!batch){batch={color:key==='battery'?[.38,.62,.66,1]:key==='cube'?[.3,.34,.35,1]:[.58,.61,.61,1],size:0,offset:0,ends:[]};materials.set(key,batch);}
+  batch.size+=mesh.count*12;entries.push({part,index,batch,mesh});
+ }
+ for(const batch of materials.values())batch.data=new Float32Array(batch.size);
+ for(const {part,index,batch,mesh}of entries){
+  const q=shelfQuaternion(part.q),x=q.x,y=q.y,z=q.z,w=q.w,xx=x*x,yy=y*y,zz=z*z;
+  const m00=1-2*(yy+zz),m01=2*(x*y-z*w),m02=2*(x*z+y*w),m10=2*(x*y+z*w),m11=1-2*(xx+zz),m12=2*(y*z-x*w),m20=2*(x*z-y*w),m21=2*(y*z+x*w),m22=1-2*(xx+yy);
+  const data=mesh.data,out=batch.data,px=part.p[0]-middle.x,py=part.p[1]-middle.y,pz=part.p[2]-middle.z;
+  for(let i=0;i<data.length;i+=6){const vx=data[i],vy=data[i+1],vz=data[i+2],nx=data[i+3],ny=data[i+4],nz=data[i+5];let j=batch.offset;
+   out[j++]=px+CUBE_SIZE*(m00*vx+m01*vy+m02*vz);out[j++]=py+CUBE_SIZE*(m10*vx+m11*vy+m12*vz);out[j++]=pz+CUBE_SIZE*(m20*vx+m21*vy+m22*vz);
+   out[j++]=m00*nx+m01*ny+m02*nz;out[j++]=m10*nx+m11*ny+m12*nz;out[j++]=m20*nx+m21*ny+m22*nz;
+   out[j++]=vx;out[j++]=vy;out[j++]=vz;out[j++]=nx;out[j++]=ny;out[j++]=nz;batch.offset=j;
+  }
+  batch.ends.push({index,end:batch.offset/12});
+ }
+ const batches=[...materials.values()].map(b=>({color:b.color,count:b.offset/12,ends:b.ends,buffer:buffer(b.data)}));boundGeometry=null;return {batches};
+}
+function drawPreviewMesh(mesh,p,q,scale=1,firstPart=0){
+ for(const batch of mesh.batches){let first=0;if(firstPart){let lo=0,hi=batch.ends.length;while(lo<hi){const mid=(lo+hi)>>1;if(batch.ends[mid].index<firstPart)lo=mid+1;else hi=mid;}first=lo?batch.ends[lo-1].end:0;}
+  if(first===batch.count)continue;bindGeometry(batch.buffer,true);gl.uniform1f(uniforms.uKind,5);setPose(p,q,V(scale,scale,scale));tint(...batch.color);submitDraw(gl.TRIANGLES,first,batch.count-first);
+ }
+}
+function clearShelfPreviewMeshes(shelf){for(const entry of shelf.previewMeshes?.values()||[])disposePreviewMesh(entry.mesh);shelf.previewMeshes?.clear();}
+function shelfPreviewMesh(shelf,index,item){
+ shelf.previewMeshes||=new Map();let entry=shelf.previewMeshes.get(index);if(entry?.item===item)return entry;
+ if(entry)disposePreviewMesh(entry.mesh);shelf.previewMeshes.delete(index);if(!item)return null;
+ const bb=shelfItemBounds(item),middle=mul(add(bb.min,bb.max),.5),scale=.19/Math.max(bb.max.x-bb.min.x,bb.max.y-bb.min.y,bb.max.z-bb.min.z,.09);
+ entry={item,scale,mesh:buildPreviewMesh(item.groups.flatMap(g=>g.parts),middle)};shelf.previewMeshes.set(index,entry);return entry;
+}
 function drawShelfContents(){
  if(story.scene!=='lab'||puzzle.active)return;
  for(const shelf of shelves)for(const [index,cell]of shelf.cells.entries()){
   const center=shelfCellPoint(shelf,index),front=shelfCellPoint(shelf,index,true),visible=cell.items.length&&sub(V(...camera),front).dot(shelf.q.vmult(V(0,0,1)))>0&&front.distanceTo(V(...camera))<6;
-  if(!cell.items.length||!renderSphereVisible(center,.20)){if(shelf.labels[index])shelf.labels[index].hidden=true;continue;}
-  const item=cell.items[0],bb=shelfItemBounds(item),middle=mul(add(bb.min,bb.max),.5),scale=.19/Math.max(bb.max.x-bb.min.x,bb.max.y-bb.min.y,bb.max.z-bb.min.z,.09);
-  for(const group of item.groups)for(const part of group.parts){const mesh=unitMeshes[part.shape],p=add(center,shelf.q.vmult(mul(sub(V(...part.p),middle),scale))),q=shelf.q.mult(shelfQuaternion(part.q));bindGeometry(mesh.buffer);gl.uniform1f(uniforms.uKind,5);setPose(p,q,V(CUBE_SIZE*scale,CUBE_SIZE*scale,CUBE_SIZE*scale));tint(...(part.mood.externalBattery?[.38,.62,.66,1]:part.shape==='cube'?[.3,.34,.35,1]:[.58,.61,.61,1]));submitDraw(gl.TRIANGLES,0,mesh.count);}
+  if(!cell.items.length||!renderSphereVisible(center,.20)){if(!cell.items.length)shelfPreviewMesh(shelf,index,null);if(shelf.labels[index])shelf.labels[index].hidden=true;continue;}
+  const preview=shelfPreviewMesh(shelf,index,cell.items[0]);drawPreviewMesh(preview.mesh,center,shelf.q,preview.scale);
   if(!shelf.labels[index]){const label=document.createElement('span');label.className='shelf-count';label.style.cssText='position:fixed;z-index:8;pointer-events:none;padding:2px 5px;border-radius:4px;background:rgba(20,27,29,.78);color:white;font:11px system-ui;transform:translate(-50%,0);';document.body.appendChild(label);shelf.labels[index]=label;}
   const label=shelf.labels[index],screen=visible&&!cullingLab.renderView&&project(add(front,V(0,-.085,0)));label.hidden=!screen;if(screen){label.textContent='×'+cell.items.length;label.style.left=screen.x+'px';label.style.top=screen.y+'px';}
  }
@@ -7622,14 +7753,14 @@ function beginReconfiguration(action){
  const input=reconfigurationInput(action);if(input.some(p=>p.mood?.externalBattery)){announce('La batería no se divide ni se recompone. Usa sus controles de batería.');return false;}if(input.some(QBitsWorkshop.hasAdaptation)){announce('Retira las adaptaciones en la mesa antes de dividir o recomponer.');return false;}const plan=QBitsReconfiguration.plan(action,input);
  if(plan.error){announce(input.length?plan.error:'Deja las piezas necesarias dentro de ENTRADA y suéltalas.');return false;}
  const ids=new Set(plan.inputs),owners=groups.filter(g=>g.parts.some(p=>ids.has(p.id)));
- if(owners.some(g=>g.parts.some(p=>!ids.has(p.id)))||groups.reduce((n,g)=>n+g.parts.length,0)-input.length+plan.outputs.length>MAX_QUBITS){announce('Separa la pieza o libera espacio antes de transformar.');return false;}
+ if(owners.some(g=>g.parts.some(p=>!ids.has(p.id)))||scenePartCount()-input.length+plan.outputs.length>MAX_QUBITS){announce('Separa la pieza o libera espacio antes de transformar.');return false;}
  s.job={...plan,time:0,duration:4,original:input,blocked:false};
  for(const g of owners)removeGroup(g);clearSelection();
  announce('Reconfigurando · la materia y la energía se conservan');updateCampaignObjective();return true;
 }
 function reconfigurationOutputPoses(s){return s.job.outputs.map((part,i)=>({...part,p:add(s.exit,V((i%3-1)*.17,unitGroundHeight(part.shape)+.005,Math.floor(i/3)*.17)),q:Q()}));}
 function reconfigurationOutputClear(parts){
- if(groups.reduce((n,g)=>n+g.parts.length,0)+parts.length>MAX_QUBITS)return false;
+ if(scenePartCount()+parts.length>MAX_QUBITS)return false;
  return parts.every(p=>!groups.some(g=>poses(g).some(other=>obbOverlap(p,other,.000001)))&&!cargos.some(c=>obbOverlap(p,cargoPose(c),.000001))&&!storyWorld.walls.some(w=>obbOverlap(p,{p:w.p,q:w.q||Q(),half:w.half},.000001)));
 }
 function tickReconfiguration(dt){
@@ -7735,10 +7866,17 @@ function applyVisualUniforms(){
  surfaceTexture?.bind(visuals);gl.uniform1i(uniforms.uSurface,2);gl.uniform1f(uniforms.uTextureMix,surfaceTexture?1:0);
  gl.uniform1f(uniforms.uTextureScale,visuals.textureScale);gl.uniform1f(uniforms.uWarp,visuals.warp/100);gl.uniform1f(uniforms.uJitter,visuals.jitter/100);gl.uniform2f(uniforms.uResolution,canvas.width,canvas.height);gl.uniform1f(uniforms.uCel,visuals.cel);gl.uniform1f(uniforms.uLighting,visuals.lighting/100);gl.uniform1f(uniforms.uShadows,visuals.shadows==='off'?0:1);
 }
+function setPhysicsEquation(equation,stiffness,relaxation){
+ equation.qbitsSpook={stiffness,relaxation};equation.setSpookParams(stiffness,relaxation,FIXED_STEP);
+}
+function applyPhysicsRate(hz){
+ const step=1/hz;if(step===FIXED_STEP)return;FIXED_STEP=step;accumulator=0;
+ for(const constraint of world.constraints)for(const equation of constraint.equations)if(equation.qbitsSpook){const {stiffness,relaxation}=equation.qbitsSpook;equation.setSpookParams(stiffness,relaxation,step);}
+}
 function applyPreferences(next){
  cullingLab.lastFrame=null;cullingLab.frameSamples.length=0;
  resetGameInputs();
- savedPreferences=preferences.sanitize(next);visuals=preferences.effective(savedPreferences);
+ savedPreferences=preferences.sanitize(next);visuals=preferences.effective(savedPreferences);applyPhysicsRate(savedPreferences.physicsHz);
  window.qbitsSelectionHud?.setHint?.('Mantén '+inputLabel('hud')+' para elegir · Ctrl + clic para quitar');
  window.QBitsSubtitles?.apply(savedPreferences);
  window.QBitsGuideAudio?.configure(savedPreferences);window.QBitsFootsteps?.configure(savedPreferences);window.QBitsJoinAudio?.configure(savedPreferences);
@@ -7992,11 +8130,12 @@ function toggleCullingObserver(){
 }
 function toggleCullingStats(){cullingLab.stats=!cullingLab.stats;cullingLab.lastFrame=null;cullingLab.frameSamples.length=0;updateCullingHud(true);redraw=true;return cullingLab.stats;}
 function startCullingBenchmark(){
+ if(disassemblyJobs.length){announce('A/B: espera a que termine el desarme.');return false;}
  if(cullingLab.benchmark)return false;
  if(story.scene!=='lab'||story.mode!=='playing'||story.transition||held||creationPreview||shelfPreview||radialOpen()||settingsScreen?.isOpen){announce('A/B: entra al banco y suelta o cancela la pieza primero.');return false;}
  resetGameInputs();cullingLab.observer=false;document.body.dataset.cullingObserver='false';cullingLab.stats=true;cullingLab.result=null;cullingLab.lastFrame=null;
  cullingLab.gpu?.dispose();cullingLab.gpu=null;
- cullingLab.benchmark={phase:0,frame:0,enabled:false,order:[false,true,true,false],off:[],on:[],config:{width:canvas.width,height:canvas.height,shadows:visuals.shadows,style:visuals.style,pieces:groups.reduce((n,g)=>n+g.parts.length,0)}};
+ cullingLab.benchmark={phase:0,frame:0,enabled:false,order:[false,true,true,false],off:[],on:[],config:{width:canvas.width,height:canvas.height,shadows:visuals.shadows,style:visuals.style,pieces:scenePartCount()}};
  panel.hidden=true;menu.hidden=true;commandMenu.hidden=true;accumulator=0;redraw=true;updateCullingHud(true);return true;
 }
 function finishCullingBenchmark(cancelled=false){
@@ -8019,6 +8158,7 @@ function updateCullingHud(force=false){
  if(el.hidden||(!force&&performance.now()<cullingLab.nextHud))return;cullingLab.nextHud=performance.now()+300;
  const r=cullingLab.last,b=cullingLab.benchmark,fmt=n=>Number.isFinite(n)?n.toFixed(2):'—';
  const lines=[cullingLab.observer?'OBSERVADOR · frustum del jugador':'RENDIMIENTO · vista del jugador'];
+ lines.push('Simulación: '+savedPreferences.physicsHz+' pasos/s');
  if(b)lines.push('A/B · escena congelada · '+(b.phase+1)+'/4 · culling '+(b.enabled?'ON':'OFF')+' · Esc cancela');
  else lines.push('Culling '+(visuals.culling===false?'OFF':'ON')+' · / alternar · Num7 observador · Num8 panel · Num9 A/B');
  if(r){lines.push('Q-bits omitidos: '+r.hiddenPieces+'/'+r.pieces+' · conjuntos '+r.culled+'/'+r.groups);lines.push('Dibujo escena: '+r.calls+' llamadas · '+Math.round(r.triangles)+' triángulos');lines.push('CPU render: '+fmt(r.cpuMs)+' ms · simulación: '+(b?'pausada':fmt(cullingLab.simulationMs)+' ms'));}
@@ -8136,6 +8276,7 @@ function frame(time) {
     accumulator += dt;
     let simulatedDt=0;
     while (accumulator >= FIXED_STEP) { stepPhysics(FIXED_STEP); accumulator -= FIXED_STEP; simulatedDt+=FIXED_STEP; }
+    updateDisassembly(dt);
     updateBatteryLiquids(simulatedDt);
     updateTarget();
     updateSpeech();updateStoryMarker();
@@ -8174,3 +8315,4 @@ window.QBitsGame={
 };
 
 })();
+

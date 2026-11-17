@@ -94,6 +94,10 @@ module.exports = function createGame(options = {}) {
     scripts = [...fs.readFileSync(path.join(root, 'index.html'), 'utf8').matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
   }
   const hook = `window.__testGame={
+    getPhysicsStep:()=>FIXED_STEP,
+    drawPreviewReference:(parts,center,q,scale)=>{for(const part of parts){const mesh=unitMeshes[part.shape],p=add(center,q.vmult(mul(V(...part.p),scale))),rotation=q.mult(shelfQuaternion(part.q));bindGeometry(mesh.buffer);gl.uniform1f(uniforms.uKind,5);setPose(p,rotation,V(CUBE_SIZE*scale,CUBE_SIZE*scale,CUBE_SIZE*scale));tint(...(part.mood.externalBattery?[.38,.62,.66,1]:part.shape==='cube'?[.3,.34,.35,1]:[.58,.61,.61,1]));submitDraw(gl.TRIANGLES,0,mesh.count);}},
+    ...(typeof beginStagedDisassembly==='function'?{beginStagedDisassembly,updateDisassembly,drawDisassembly,disassemblyJobs,pendingDisassemblyCount,scenePartCount,serializeDisassembly,restoreDisassembly,drawShelfContents,shelfPreviewMesh,buildPreviewMesh,drawPreviewMesh,clearDisassembly}:{}),
+    ...(typeof mechanicalTopologyIndex==='function'?{mechanicalTopologyIndex,conveyorContactIndex,invalidateConveyorContacts,conveyorContactLoads,conveyorFrictionPairs,conveyorContactMap,setStepCache:value=>{mechanicalStepCache=value;}}:{}),
     ...(typeof connectServoTips==='function'?{servoMarches,startServoMarch,stopServoMarch,servoMarchFor,servoMarchMembers,servoMarchAction,servoMarchSnapshot,connectServoTips,configureServo,startServo,servoAngle,rotorEndpoint,servoBlueprintTemplate,prepareServoPart,findServoSnap,drawServoGuides}:{}),
     beginPowerCable,cancelPowerCable,powerDraftMaterials,finishPowerCable,addPowerCableMaterial,recoverPowerCable,powerSurfaceRoute,powerCircuitRoute,powerRibbonCaches,powerCableClick,powerTargetText,powerInspectionAvailable,powerAimPort,powerAimCable,powerSurfaceAim,powerMaterialGroups,openPowerCableMenu,openPowerReservoirMenu,powerSecondary,drawPowerReservoirs,drawPowerCables,getPowerDraft:()=>powerDraft,
     spendGripperEnergy,conveyorSpendTraction,powerReservoirs,powerCables,POWER_RESERVOIR_CAPACITY,powerReservoirPlacement,createPowerReservoir,removePowerReservoir,powerPort,powerCableLimit,powerCablePath,powerCableLength,powerCableBlocked,refreshPowerCable,connectPowerCable,extendPowerCable,reroutePowerCable,removePowerCable,updatePowerNetwork,getCableSupply,serializePowerNetwork,restorePowerNetwork,clearPowerNetwork,
@@ -182,3 +186,4 @@ module.exports = function createGame(options = {}) {
     }
   };
 };
+

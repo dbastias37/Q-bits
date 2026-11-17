@@ -2,7 +2,35 @@
 
 Actualizado: 17 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega: culling y banco de medición — 17 de noviembre de 2026
+## Última entrega: miniaturas agrupadas y desarme configurable — 17 de noviembre de 2026
+
+Continúa sobre la rama del PR #22 (`16d3370`), conservando índices, contactos y selector 240/120/60. Las miniaturas de repisas usan buffers por apariencia, reutilizados mientras el primer elemento de la celda no cambie. Una miniatura de 2.000 cubos requiere una llamada de dibujo en vez de 2.000; se mantienen sus 24.000 triángulos y su apariencia. Retirar, sustituir o eliminar contenido libera los buffers. El HUD de selección se traslada abajo a la derecha, con miniaturas del tamaño aproximado del contador de población, paginación y textos que se abren hacia arriba.
+
+Configuración → Juego → **Desarme de conjuntos**: **Inmediato** (predeterminado) y **Por etapas · banco de pruebas**. Guardar aplica; descartar conserva el ajuste y restaurar vuelve a inmediato. Shift + agitar usa el modo elegido; Alt → Desarmar todo también lo respeta. La campaña y los puzles conservan su comportamiento inmediato.
+
+Por etapas: detiene y retira las articulaciones del conjunto afectado, conserva las piezas como datos y las ordena de arriba hacia abajo. Hasta 16 piezas se desplazan visualmente a huecos libres del suelo; crea como máximo cuatro cuerpos por fotograma con un presupuesto cooperativo de 2 ms, independiente de los pasos de física. Revalida cada destino antes de activar colisiones, sin velocidad de expulsión. Si no encuentra espacio, espera sin perder material. La animación no tiene colisiones durante el traslado. El resto de la fábrica sigue su simulación normal. Al guardar el banco conserva piezas pendientes, identidades, masa y energía; al volver reinicia únicamente el trayecto visual pendiente. Pausa/ocultación suspenden el proceso. Las piezas pendientes cuentan en el límite de 2.000 y se indican en el contador. A/B de culling espera a que termine el desarme.
+
+Verificación: suite completa **860/860 pruebas Node**, sin omisiones; **38 escenas GLES** sin errores, incluida equivalencia de píxeles de miniaturas mixtas en limpio/PSX y fases del desarme. Pruebas de límites, colisiones en destino, pausa, guardar/volver, preferencias y retiro de buffers. Chromium no inicia en este entorno: pendiente comprobar visualmente la posición/comodidad del HUD en el navegador del jugador. No se certifican FPS ni el máximo de cuerpos físicos que soporta su equipo.
+
+[Microprueba reproducible](benchmarks/previews-disassembly-20261117.json): 80/500/2.000 piezas, con Cannon real y DOM/GL simulados. Excluye el coste de avanzar la física. La liberación se reparte en un máximo de cuatro cuerpos por llamada; para 2.000 piezas la ejecución de referencia tardó unos 29 s simulados a 60 fotogramas/s. No reduce el coste final de simular 2.000 cuerpos. La preparación de geometría y consultas individuales aún pueden superar el presupuesto; este es cooperativo, no un límite de latencia garantizado. El total de trabajo del desarme gradual puede ser mayor que el inmediato por las comprobaciones de colocación. Reproducir: `node tests/benchmark-preview-disassembly.cjs`.
+
+Siguiente paso: integrar el PR y comparar ambos modos en el PC del jugador a 240 pasos, empezando con una máquina pequeña y después con sus montajes grandes. Confirmar HUD en escritorio/móvil y medir fotogramas completos antes de atribuir una mejora de FPS.
+
+## Entrega anterior: consultas mecánicas y pasos configurables — 17 de noviembre de 2026
+
+Índice persistente de pertenencia de piezas, rotores y conexiones; se invalida al crear, retirar, unir o separar grupos y articulaciones. Las posiciones y la energía siguen leyéndose en vivo. Se conserva el orden de recorrido previo para no cambiar la distribución de energía. Brazos y cintas resuelven sus articulaciones por índice.
+
+Las cintas consultan los contactos de su propio cuerpo. El índice se comparte dentro de la fase de simulación y se renueva al entrar al solver, después de la nueva detección de colisiones: Cannon reutiliza su array de contactos, así que su identidad o longitud no son una señal suficiente de validez.
+
+Configuración → Rendimiento → **Pasos de simulación por segundo**: 240 predeterminado, 120 y 60 para probar. Aplicación únicamente al guardar, descarte sin efecto y restauración a 240. El ajuste es independiente de la calidad gráfica y se muestra en el panel de rendimiento. Mantiene la escala de tiempo; recalibra las ecuaciones explícitas de articulaciones, frenos y pinzas existentes y futuras. Cambiar de frecuencia no revierte colisiones anteriores ni garantiza estabilidad para todos los montajes; si aparecen temblores o atravesamientos, volver a 240.
+
+Verificación: **848/848 pruebas Node aprobadas**, cero fallos u omisiones; shaders y fixtures GLES aprobados. Incluye invalidación tras soldar/separar/borrar, posiciones vivas, reutilización del array de contactos, guardar/descartar/restaurar frecuencias y un motor simple en las tres frecuencias. No se certifica aquí una partida visual en navegador ni todos los mecanismos a 60/120.
+
+[Comparación CPU reproducible](benchmarks/runtime-lookups-20261117.json) contra `458b786`: 256 piezas/20 rotores activos y cuatro cintas alimentadas/150 piezas, a 240 pasos. Estados finales exactamente iguales en posiciones, velocidades, energía y controladores. Medianas de CPU por paso: 4,478 → 4,365 ms y 3,454 → 3,310 ms (aprox. 2,5 % y 4,2 %); tres repeticiones, mejora pequeña con variación entre muestras. Son tiempos de simulación con DOM/GPU simulados, no FPS, límite de capacidad ni garantía de mejora en PC. Reproducir con `node tests/benchmark-runtime-lookups.cjs /ruta/al/game.js-anterior`.
+
+Siguiente paso: probar esta tanda en la instalación real del jugador, primero a 240; después comparar 120/60 con el mismo montaje. Las miniaturas y el desarme se incorporan en la entrega posterior descrita arriba.
+
+## Entrega anterior: culling y banco de medición — 17 de noviembre de 2026
 
 Frustum culling en el renderizador WebGL propio, activado por defecto y guardable en Configuración → Rendimiento. Descarta conjuntos antes de preparar mallas; conserva límites completos, hélices giratorias, gestos, bordes PSX y sombras que aún se ven. Los indicadores seleccionados mantienen su dibujo aunque su cuerpo quede fuera de cámara. Cajas, geometrías de radio conocido, contornos, cables y miniaturas de repisas también tienen descarte conservador. No se cambia la física, energía, navegación, sensores, producción ni el contenido de guardados.
 
@@ -453,3 +481,4 @@ Calibración inicial: 0,25 kg/u, techo de empuje de 14,7 N por hélice a nivel d
 Verificación de cierre: **715 pruebas Node aprobadas, cero fallos u omisiones**; sintaxis y `git diff --check` correctos. `validate-focus-gles.py` aprobó shaders y fixtures; `validate-robot-arm-gles.py` reprodujo **24 escenas sin errores GPU**. Se verificaron despegue, altura y aterrizaje con una, dos, tres y cuatro hélices; avance, inversión, agotamiento, agarre con carga real, encaje manual en ambos sentidos, obstrucción, desmontaje, planos, guardado y repisas. Las capturas GLES incluyen la hélice detenida y dos fases de giro, junto a la regresión visual de brazos y cintas. Pruebas de Cannon real y render GLES con DOM simulado: no equivalen a una partida en navegador ni certifican FPS en el equipo del jugador.
 
 Siguiente paso: probar primero el Dron de prueba a 0,5 m y velocidad cero; luego 0,3 m/s y aterrizaje. Después contrastar peso, autonomía y comportamiento de las construcciones del jugador antes de aumentar límites o incorporar misiones de vuelo.
+

@@ -1,0 +1,60 @@
+{
+  "node": "v24.22.1",
+  "baselineCommit": "458b7860e6ac761e4df4a66f292b2d984584fac8",
+  "physicsHz": 240,
+  "scope": "CPU per real Cannon substep, DOM/GPU stubs; not browser FPS or a capacity limit",
+  "results": [
+    {
+      "scene": "rotors",
+      "pieces": 256,
+      "bodies": 256,
+      "rotors": 20,
+      "contacts": 80,
+      "warmup": 120,
+      "steps": 120,
+      "repetitions": 3,
+      "runs": {
+        "baseline": [
+          4.710383333333334,
+          4.383608333333333,
+          4.477666666666667
+        ],
+        "optimized": [
+          4.213158333333333,
+          4.364916666666667,
+          4.425541666666667
+        ]
+      },
+      "baselineCpuMsPerSubstep": 4.477666666666667,
+      "optimizedCpuMsPerSubstep": 4.364916666666667,
+      "cpuReductionPercent": 2.5180525571354195,
+      "identicalPhysicsAndEnergy": true
+    },
+    {
+      "scene": "conveyors",
+      "pieces": 150,
+      "bodies": 20,
+      "rotors": 12,
+      "contacts": 24,
+      "warmup": 120,
+      "steps": 120,
+      "repetitions": 3,
+      "runs": {
+        "baseline": [
+          3.4537583333333335,
+          3.4291,
+          3.5206666666666666
+        ],
+        "optimized": [
+          3.309791666666667,
+          3.6348083333333334,
+          3.214375
+        ]
+      },
+      "baselineCpuMsPerSubstep": 3.4537583333333335,
+      "optimizedCpuMsPerSubstep": 3.309791666666667,
+      "cpuReductionPercent": 4.16840591529517,
+      "identicalPhysicsAndEnergy": true
+    }
+  ]
+}

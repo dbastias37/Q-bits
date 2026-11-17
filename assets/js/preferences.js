@@ -11,14 +11,14 @@
  };
  const quality={low:{resolution:65,shadows:'off',lighting:0,anisotropy:1,filter:'linear',fps:30,sampling:1},balanced:{resolution:100,shadows:'soft',lighting:35,anisotropy:4,filter:'trilinear',fps:60,sampling:1},high:{resolution:100,shadows:'sharp',lighting:75,anisotropy:8,filter:'trilinear',fps:0,sampling:1.5}};
  const copy=x=>JSON.parse(JSON.stringify(x));
- function defaults(){return {version:1,style:'clean',quality:'balanced',...quality.balanced,textureScale:1,culling:true,markers:true,markerMotion:true,music:true,volume:30,guideVoice:true,guideVolume:35,footsteps:true,footstepVolume:55,joinSounds:true,joinVolume:60,grabSpeed:1,invertObjectDistance:false,invertPieceRotation:false,controls:C.defaults(),subtitles:S.defaults(),profiles:copy(styles)};}
+ function defaults(){return {version:1,style:'clean',quality:'balanced',...quality.balanced,textureScale:1,physicsHz:240,culling:true,markers:true,markerMotion:true,music:true,volume:30,guideVoice:true,guideVolume:35,footsteps:true,footstepVolume:55,joinSounds:true,joinVolume:60,disassemblyMode:'instant',grabSpeed:1,invertObjectDistance:false,invertPieceRotation:false,controls:C.defaults(),subtitles:S.defaults(),profiles:copy(styles)};}
  const limit=(v,a,b,f)=>typeof v==='number'&&Number.isFinite(v)?Math.max(a,Math.min(b,v)):f;
  const pick=(v,opts,f)=>opts.includes(v)?v:f;
  function sanitize(raw){
   const d=defaults(),s=raw&&typeof raw==='object'?raw:{};
   d.style=pick(s.style,Object.keys(styles),d.style);d.quality=pick(s.quality,[...Object.keys(quality),'custom'],d.quality);
   for(const [k,a,b]of [['resolution',50,150],['lighting',0,100],['volume',0,100],['guideVolume',0,100],['footstepVolume',0,100],['joinVolume',0,100]])d[k]=limit(s[k],a,b,d[k]);
-  for(const [k,opts]of Object.entries({shadows:['off','soft','sharp'],anisotropy:[1,2,4,8,16],filter:['nearest','linear','trilinear'],fps:[0,30,60,120],sampling:[1,1.5,2],textureScale:[.25,.5,1,2,4],grabSpeed:[1,2,3.5]}))d[k]=pick(s[k],opts,d[k]);
+  for(const [k,opts]of Object.entries({shadows:['off','soft','sharp'],anisotropy:[1,2,4,8,16],filter:['nearest','linear','trilinear'],fps:[0,30,60,120],sampling:[1,1.5,2],textureScale:[.25,.5,1,2,4],grabSpeed:[1,2,3.5],physicsHz:[240,120,60],disassemblyMode:['instant','staged']}))d[k]=pick(s[k],opts,d[k]);
   for(const k of ['culling','markers','markerMotion','music','guideVoice','footsteps','joinSounds','invertObjectDistance','invertPieceRotation'])if(typeof s[k]==='boolean')d[k]=s[k];
   for(const name of Object.keys(styles)){
    const p=s.profiles?.[name]||{},out=d.profiles[name];
@@ -43,3 +43,4 @@
  const api={KEY,styles,quality,defaults,sanitize,load,transaction,effective,setQuality,rgb};
  if(typeof module==='object'&&module.exports)module.exports=api;else root.QBitsPreferences=api;
 })(typeof window==='object'?window:globalThis);
+

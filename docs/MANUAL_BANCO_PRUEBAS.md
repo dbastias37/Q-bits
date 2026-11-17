@@ -19,6 +19,17 @@ Las repisas siguen colocándose en paredes. Depósitos, enfriadores y cuerpos s�
 
 Las estructuras se sujetan desde su centro para evitar giros provocados por tirar de un extremo. Su masa sigue siendo la suma de sus piezas; soltar elimina el giro residual de la mano. Las estructuras rígidas libres amortiguan más el giro y rebotan menos que los cubos sueltos. Los motores conservan su amortiguación calibrada, límites de carga y consumo.
 
+## Elegir cómo desarmar
+
+En **Configuración → Juego → Desarme de conjuntos**, elige una opción y pulsa **Guardar**:
+
+- **Inmediato:** mantiene el desarme actual. Al agitar, conservas en la mano la pieza tomada.
+- **Por etapas · banco de pruebas:** suelta y detiene el montaje; sus piezas salen de arriba hacia abajo hacia huecos libres del suelo. No necesitas volver a agitar. Si aparece «libera espacio», mueve los obstáculos: el proceso seguirá solo.
+
+Activa el desarme tomando una estructura y haciendo **Shift + varias sacudidas**, o con **Alt → Desarmar todo** sobre el cuerpo seleccionado. Pausar detiene el proceso; salir a otro nivel y volver al banco conserva las piezas pendientes. El contador las muestra como «en desarme». Para repetir la comparación, vuelve a armar o crear el mismo montaje. La campaña y los puzles mantienen el desarme inmediato. Con muchos cubos separados el coste físico final sigue existiendo.
+
+La selección se muestra **abajo a la derecha**, frente al contador de población de la izquierda. Conserva los controles de selección y las páginas cuando hay muchas estructuras.
+
 ## 1 · Mi primera entrega con el brazo
 
 El brazo repite dos posturas que tú guardas: A para tomar y B para soltar. Unirlo a una cinta no le enseña esas posiciones.
