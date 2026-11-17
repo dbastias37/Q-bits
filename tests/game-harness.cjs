@@ -102,7 +102,7 @@ module.exports = function createGame(options = {}) {
     ...(typeof conveyorPanelAction==='function'?{conveyorPanelAction,conveyorPanelSnapshot,joinCompletedConveyorBlueprint,conveyorBlueprintPlacement,conveyorPortWorld,builtInMechanismRecipes,alphaSceneSnapshot,restoreAlphaScene,clearAlphaScene}:{}),
     conveyorSupportReady,conveyorBlueprintTemplate,robotArmBlueprintTemplate,placeMechanismBlueprint,mechanismBlueprintShape,completeMechanismBlueprint,mechanismRecordParts,showSavedShapes,updateAlphaPanel,cancelBlueprint,copySavedMechanism,
     pruneRobotArms,robotArms,robotGrips,copyGripperConfig,validGripperConfig,configureGripper,gripperGrab,releaseGripper,gripperMatches,gripperFormSignature,gripperFaceDistance,robotArmForGroup,createRobotArm,registerRobotArm,configureRobotArm,teachRobotArmPose,jogRobotArm,startRobotArm,stopRobotArm,robotArmStatus,robotArmRotors,robotReadPose,robotTargetError,serializeRobotArms,restoreRobotArms,robotArmTemplate,restoreRobotArmTemplate,newCargo,
-    robotPanelSnapshot,robotPanelAction,updateRobotArmPanel,drawGripperMark,
+    gripperCheck,robotPowerProblem,robotJointReduction,rotorPowerDescription,switchPanelTab,robotPanelSnapshot,robotPanelAction,updateRobotArmPanel,drawGripperMark,
     shelves,shelfModel,shelfSnapshot,shelfSelectionPlan,shelfPlacementValid,shelfCellPoint,createShelf,beginShelfPlacement,updateShelfPlacement,confirmShelfPlacement,cancelShelfPlacement,aimShelf,openShelfMenu,storeShelfSelection,withdrawShelf,deleteShelf,requestDeleteShelf,serializeShelves,restoreShelves,clearShelves,drawShelves,getShelfPreview:()=>shelfPreview,
     openWorkshopPanel,closeWorkshopPanel,workshopPanelSnapshot,workshopPanelInspect,getWorkshopPanel:()=>workshopPanel,
     onWorkshop,aimWorkshop,removeWorkshop,
