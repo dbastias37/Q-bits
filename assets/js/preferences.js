@@ -4,10 +4,10 @@
  const KEY='qbits.preferences.v1';
  const C=root.QBitsControls||(typeof require==='function'?require('./controls.js'):null),S=root.QBitsSubtitles||(typeof require==='function'?require('./subtitles.js'):null);
  const styles={
-  clean:{dither:0,bits:8,jitter:0,warp:0,cel:0,bloom:false,bloomStrength:20,outlineColor:'#58abc0',pathColor:'#58abc0',outlineWidth:2.5,pathWidth:2.5},
-  psx:{dither:55,bits:5,jitter:45,warp:60,cel:0,bloom:false,bloomStrength:15,outlineColor:'#63b7c4',pathColor:'#63b7c4',outlineWidth:2,pathWidth:2.5},
-  neon:{dither:35,bits:6,jitter:0,warp:0,cel:0,bloom:true,bloomStrength:45,outlineColor:'#00e6c2',pathColor:'#25d9ff',outlineWidth:3,pathWidth:3},
-  cel:{dither:0,bits:8,jitter:0,warp:0,cel:4,bloom:false,bloomStrength:15,outlineColor:'#263a43',pathColor:'#53adbc',outlineWidth:3.5,pathWidth:3}
+  clean:{dither:0,bits:8,jitter:0,warp:0,cel:0,bloom:false,bloomStrength:20,outlineColor:'#58abc0',cableColor:'#b56e24',pathColor:'#58abc0',outlineWidth:2.5,pathWidth:2.5},
+  psx:{dither:55,bits:5,jitter:45,warp:60,cel:0,bloom:false,bloomStrength:15,outlineColor:'#63b7c4',cableColor:'#b56e24',pathColor:'#63b7c4',outlineWidth:2,pathWidth:2.5},
+  neon:{dither:35,bits:6,jitter:0,warp:0,cel:0,bloom:true,bloomStrength:45,outlineColor:'#00e6c2',cableColor:'#b56e24',pathColor:'#25d9ff',outlineWidth:3,pathWidth:3},
+  cel:{dither:0,bits:8,jitter:0,warp:0,cel:4,bloom:false,bloomStrength:15,outlineColor:'#263a43',cableColor:'#b56e24',pathColor:'#53adbc',outlineWidth:3.5,pathWidth:3}
  };
  const quality={low:{resolution:65,shadows:'off',lighting:0,anisotropy:1,filter:'linear',fps:30,sampling:1},balanced:{resolution:100,shadows:'soft',lighting:35,anisotropy:4,filter:'trilinear',fps:60,sampling:1},high:{resolution:100,shadows:'sharp',lighting:75,anisotropy:8,filter:'trilinear',fps:0,sampling:1.5}};
  const copy=x=>JSON.parse(JSON.stringify(x));
@@ -25,7 +25,7 @@
    for(const k of ['dither','jitter','warp','bloomStrength'])out[k]=limit(p[k],0,100,out[k]);
    out.bits=Math.round(limit(p.bits,3,8,out.bits));out.cel=Math.round(limit(p.cel,0,8,out.cel));
    for(const k of ['outlineWidth','pathWidth'])out[k]=limit(p[k],1,6,out[k]);
-   for(const k of ['outlineColor','pathColor'])if(/^#[a-f0-9]{6}$/i.test(p[k]))out[k]=p[k].toLowerCase();
+   for(const k of ['outlineColor','pathColor','cableColor'])if(/^#[a-f0-9]{6}$/i.test(p[k]))out[k]=p[k].toLowerCase();
    if(typeof p.bloom==='boolean')out.bloom=p.bloom;
   }
   d.controls=C.sanitize(s.controls);d.subtitles=S.sanitize(s.subtitles);

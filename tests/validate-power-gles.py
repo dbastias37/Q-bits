@@ -108,16 +108,20 @@ for shot in data['snapshots']:
  triples=list(zip(raw[0::4],raw[1::4],raw[2::4]))
  green=sum(g>r+40 and g>b+25 and g>80 for r,g,b in triples)
  orange=sum(r>g*1.2 and g>b*1.3 and r>80 for r,g,b in triples)
+ blue=sum(b>r+35 and b>g+25 for r,g,b in triples)
  dark=sum(max(r,g,b)<110 for r,g,b in triples)
  assert dark>300,(shot['name'],'reservoir structure is missing')
- assert orange>30,(shot['name'],'external electrical cable is missing')
+ assert (blue if shot['color']=='#2468ff' else orange)>30,(shot['name'],'external electrical cable is missing')
  assert shot['cableActive'] and shot['cableProgress']==1,(shot['name'],'fixture is not connected')
- results.append({'name':shot['name'],'level':shot['level'],'greenPixels':green,'orangePixels':orange,'structurePixels':dark,'path':str(OUT/(shot['name']+'.png'))})
+ results.append({'name':shot['name'],'level':shot['level'],'greenPixels':green,'orangePixels':orange,'bluePixels':blue,'structurePixels':dark,'path':str(OUT/(shot['name']+'.png'))})
 byName={s['name']:s for s in results}
 charge=[byName['power-reservoir-'+str(level)]['greenPixels'] for level in [0,50,100]]
 assert charge[0]<100,("empty vessel retains green charge",charge)
 assert 500<charge[1]<charge[2],('liquid level must visibly increase',charge)
 assert byName['power-reservoir-50-alt']['orangePixels']>byName['power-reservoir-50']['orangePixels'], 'Alt must visibly expose the electrical inspection overlay'
+assert byName['power-reservoir-50-blue']['bluePixels']>30
+assert byName['power-reservoir-50-blue-wide']['bluePixels']>byName['power-reservoir-50-blue']['bluePixels']
+assert byName['power-reservoir-50-blue']['orangePixels']<10
 assert not data['validation'],'invalid attributes or depth clear'
 print(json.dumps({'compiledShaders':compiled,'linkedPrograms':linked,'gpuErrors':0,'snapshots':results}))
 egl('eglMakeCurrent',U,P,P,P,P)(d,None,None,None)

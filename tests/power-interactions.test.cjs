@@ -89,3 +89,27 @@ test('a large wired reservoir supplies propeller power above one portable cell w
  const supply=t.externalBatterySummary(drone);assert.equal(supply.cells.length,1,'one shared energy store');assert.equal(supply.powerCells,100,'large reservoir output is not limited to one portable cell');const flight=t.flightForGroup(drone);assert(t.startFlight(flight),flight.status);flight.spool=1;const snapshot=t.flightSnapshot(flight,.05);assert(snapshot.inputWatts>10,'full-size source supports more than a single portable cell output');assert(Math.abs(snapshot.load-(5+1/6))<1e-9,'reservoir is electrically connected, not payload');
  const before=r.cell.mood.energy*r.capacity;t.updateFlights(.05);assert(Math.abs(before-r.cell.mood.energy*r.capacity-flight.power.spentJoules)<1e-8);assert(flight.power.maxForce<=14.7,'battery output never increases the propeller thrust ceiling');
 });
+
+function assertCardinal(path){for(let i=1;i<path.length;i++){const a=path[i-1],b=path[i];assert.equal(['x','y','z'].filter(axis=>Math.abs(a[axis]-b[axis])>1e-6).length,1,'every segment must follow a single axis');}}
+test('circuit preview and confirmed path share cardinal elbows on floor and walls, counting every metre',()=>{
+ const {t}=lab(),start=t.V(-2,.4,0),end=t.V(1,.3,2),bends=[t.V(-1,.008,.5)];
+ const route=t.powerCircuitRoute(start,end,bends);assertCardinal([start,...route,end]);assert(Math.abs(t.powerCableLength([start,...route,end])-5.684)<1e-8);
+ const wall=[t.V(-1,1,-13.992),t.V(1,2,-13.992)],path=t.powerCircuitRoute(start,end,wall);assertCardinal([start,...path,end]);assert(path.some(p=>p.distanceTo(wall[0])<1e-8));assert(path.some(p=>p.distanceTo(wall[1])<1e-8));
+ const preview=t.powerCircuitRoute(start,wall[1],wall.slice(0,1),true);assertCardinal([start,...preview]);assert(preview.at(-1).distanceTo(wall[1])<1e-8);
+});
+test('orthogonal distance can reject a diagonal shortcut without consuming the cubes',()=>{
+ const game=lab(),{t}=game,{r,source,to}=setupCable(game,1);const g=t.rotorPart(to.id).g;g.body.position.set(1.2,.05,1.2);assert(t.beginPowerCable(source));t.getPowerDraft().from={kind:'reservoir',id:r.id};
+ const a=t.powerPort(t.getPowerDraft().from),b=t.powerPort(to);assert(t.powerCableLength([a,t.V(a.x,.008,a.z),t.V(b.x,.008,b.z),b])<2);
+ assert.equal(t.finishPowerCable(to),false);assert.equal(t.powerCables.length,0);assert(source.every(g=>t.groups.includes(g)));
+});
+test('changing shared width rebuilds the existing buffer; changing color does not rebuild geometry or alter energy',()=>{
+ const game=lab(),{t}=game,{c,r}=deploy(game);t.updatePowerNetwork(1);const gl=t.canvas.getContext('webgl'),uploads=[];gl.bufferData=(target,data)=>uploads.push(data);t.drawPowerCables();const mesh=t.powerRibbonCaches.get(c),first=uploads.at(-1),buffer=mesh.buffer,before=JSON.stringify(t.serializePowerNetwork());
+ const settings=Preferences.defaults();settings.profiles.clean.cableColor='#2266ff';t.applyPreferences(settings);t.drawPowerCables();assert.equal(uploads.length,1,'color is a uniform, not a new mesh');
+ settings.profiles.clean.pathWidth=5;t.applyPreferences(settings);t.drawPowerCables();assert.equal(uploads.length,2);assert.equal(mesh.buffer,buffer);const width=data=>Math.hypot(...[0,1,2].map(i=>data[i]-data[6+i]));assert(Math.abs(width(uploads[1])/width(first)-2)<1e-5);assert.equal(JSON.stringify(t.serializePowerNetwork()),before);assert.equal(r.cell.mood.energy,.61);
+});
+
+test('twelve alternating wall/floor supports can save all generated elbows and restore them exactly',()=>{
+ const {t}=lab(),r=t.createPowerReservoir(t.V(-1,0,-12),{enabled:true}),m=t.spawnRotor(t.V(1,0,-12),{capacity:256}),source=materials(t,8);assert(t.beginPowerCable(source));const draft=t.getPowerDraft();draft.from={kind:'reservoir',id:r.id};
+ for(let i=0;i<12;i++)draft.bends.push(t.V(i*.03,i%2?.008:.15,i%2?-13.8:-13.992));assert(t.finishPowerCable({kind:'part',id:m.aId}));const cable=t.powerCables[0];assert(cable.points.length>32);assert(cable.points.length<=64);assertCardinal(t.powerCablePath(cable));
+ const snapshot=JSON.parse(JSON.stringify(t.serializePowerNetwork())),before=JSON.stringify(snapshot.cables[0].points);t.clearPowerNetwork();assert(t.restorePowerNetwork(snapshot));assert.equal(JSON.stringify(t.serializePowerNetwork().cables[0].points),before);
+});

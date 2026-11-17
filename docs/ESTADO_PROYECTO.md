@@ -2,7 +2,17 @@
 
 Actualizado: 16 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega: cables y depósito energético — 16 de noviembre de 2026
+## Última entrega: acabado de circuito y color de cable — 16 de noviembre de 2026
+
+El cable comparte el acabado fino con halo y el ajuste de grosor de las rutas de los Q-bits. Configuración → Apariencia añade Color del cable eléctrico, independiente del color de trayectoria y guardado por estilo; la vista previa muestra ambos. El color se aplica al tendido, despliegue y vista Alt. Los cables inactivos conservan el color atenuado con terminales rojos.
+
+Nuevos tendidos y cambios de entrada generan giros cardinales sobre suelo/pared; la previsualización, selección y alcance utilizan los mismos puntos, incluyendo todos los giros. Hasta 12 apoyos manuales y 64 puntos generados para admitir sus esquinas. Las partidas existentes conservan exactamente su geometría y longitud hasta que el jugador vuelva a tender el cable. No cambia el consumo ni la conservación de materia.
+
+Se mantiene un buffer y una llamada de dibujo por cable terminado, más un buffer compartido para vista previa/despliegue. El color solo cambia un uniforme; el grosor regenera la geometría en el mismo buffer. Verificación: suite completa **746/746** y, después, **18/18** de interacción incluyendo un caso nuevo de doce apoyos alternados/restauración (**747 casos en total**). Se verifican color con guardar/descartar, longitud cardinal, límites y reutilización de buffers. GLES compiló/enlazó los shaders sin errores y validó seis capturas: niveles 100/50/0 %, Alt, azul y azul ancho; inspección visual de ámbar y azul ancho. Sigue pendiente una partida de navegador: el entorno no inicializa WebGL.
+
+Siguiente paso: probar comodidad y legibilidad del circuito en el banco, especialmente sobre paredes y con máquinas en movimiento.
+
+## Entrega anterior: cables y depósito energético — 16 de noviembre de 2026
 
 Banco de pruebas con cable único sin pérdidas y depósito estático de 12.000 J. Q → Tab → Banco rápido: depósito; cables de 1, 4 y 8 cubos, y reservas de 1/4 m. Clic en salida de batería/máquina, apoyos opcionales en suelo/pared y clic en entrada. Se consume el material real solo al confirmar: hasta ocho cubos, 2 m por unidad de materia contando el trayecto completo. Clic derecho permite incorporar cubos cercanos, cambiar entrada o recuperar las mismas piezas con su carga. Alt muestra la red interna; Alt + X separa. Manual: [CABLES_ENERGIA_QBITS.md](CABLES_ENERGIA_QBITS.md).
 

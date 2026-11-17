@@ -12,7 +12,7 @@ Estas herramientas están disponibles en el banco de pruebas. Un cable conduce e
 6. Apunta a una pieza de la máquina y haz clic para fijar la **Entrada**. El cable baja al suelo, recorre los apoyos y sube hasta la entrada. Al aceptar la conexión, los cubos se convierten en la cinta conductora.
 7. Clic derecho en el depósito → **Encender salida**. Después inicia la máquina desde sus propios controles. Conectar el cable no ordena arrancar.
 
-El líquido verde muestra la carga disponible. Al apuntar cerca de los extremos aparecen **Entrada** o **Salida**; sobre el cable se muestran estado y longitud. El conductor visible es ámbar, separado de las rutas de movimiento de los Q-bits.
+El líquido verde muestra la carga disponible. Al apuntar cerca de los extremos aparecen **Entrada** o **Salida**; sobre el cable se muestran estado y longitud. El conductor usa el acabado de las rutas de los Q-bits: línea fina con halo y giros de circuito a 90°. Su color inicial es ámbar. En **Configuración → Apariencia → Color del cable eléctrico** puedes elegir cualquier color; **Grosor de trayectorias y cables** regula ambos. La vista previa muestra el resultado; pulsa Guardar para aplicarlo. El color se conserva por estilo visual, independientemente del color de la ruta de movimiento. Los cables inactivos se atenúan y sus terminales se marcan en rojo.
 
 ## Cuánto alcanza
 
@@ -24,7 +24,7 @@ El líquido verde muestra la carga disponible. Al apuntar cerca de los extremos 
 | Cuatro cubos normales | 8 m |
 | Ocho cubos normales | 16 m |
 
-Cada unidad de material aporta **2 m**. El cálculo usa la suma de los pesos de los cubos y admite hasta **8 cubos por cable**. La longitud incluye bajadas, subidas y desvíos; no es solo la distancia entre máquinas. En Banco rápido encontrarás paquetes de 1, 4 y 8 cubos normales, además de cables de 1 y 4 m con distinta reserva de materia.
+Cada unidad de material aporta **2 m**. El cálculo usa la suma de los pesos de los cubos y admite hasta **8 cubos por cable**. La longitud incluye bajadas, subidas, giros a 90° y desvíos; no es solo la distancia entre máquinas. En Banco rápido encontrarás paquetes de 1, 4 y 8 cubos normales, además de cables de 1 y 4 m con distinta reserva de materia.
 
 También puedes usar tus cubos existentes: selecciona de 1 a 8 cubos normales, sueltos o unidos, y abre su menú con clic derecho → **Desenrollar como cable**. Deben estar libres, sin baterías, sensores, agarres ni otras adaptaciones. Sus identidades, nombres, pesos y carga se conservan dentro del cable.
 
@@ -33,7 +33,7 @@ También puedes usar tus cubos existentes: selecciona de 1 a 8 cubos normales, s
 - **Clic derecho** retira el último apoyo. Si no hay apoyos, cancela el tendido.
 - **Esc** cancela. Los cubos siguen disponibles; un cable que estabas cambiando conserva su conexión anterior.
 - Si falta longitud o el recorrido atraviesa un obstáculo, no se consume material. Corrige el camino o cancela para preparar más cubos.
-- Puedes marcar hasta **12 apoyos** manuales. Los cambios entre suelo y pared añaden las esquinas necesarias.
+- Puedes marcar hasta **12 apoyos** manuales. Los cambios entre suelo y pared añaden las esquinas necesarias. La previsualización usa el mismo recorrido que se confirma. Los cables de partidas anteriores conservan su trazado y longitud; usa Prolongar / cambiar entrada si quieres volver a tenderlos con giros de circuito.
 
 ## Alargar un cable
 
