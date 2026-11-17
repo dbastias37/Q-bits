@@ -2,7 +2,19 @@
 
 Actualizado: 17 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega: preview fluido y capacidad de 2000 — 17 de noviembre de 2026
+## Última entrega: Servo pivote y Servo bisagra — 17 de noviembre de 2026
+
+Dos articulaciones de recorrido limitado en el banco, reutilizando cuerpos, grafo, energía y freno de los rotores. **Pivote:** una pirámide de base cuadrada montada por su base; su ápice conecta la cara inferior del cubo móvil y define el eje longitudinal. **Bisagra:** dos pirámides de base cuadrada mantienen sus ápices unidos y abren lateralmente sobre un eje transversal. La geometría visible es la geometría física; no se añaden piezas ni cuerpos decorativos para fingir el movimiento.
+
+Clic derecho en una pirámide → Preparar Servo pivote/bisagra; Shift encaja la extremidad compatible. Q → Tab → Banco rápido ofrece ambos montajes completos y detenidos. Clic derecho en la articulación → Configurar servo, o P → Mecanismos. Recorrido de −90° a +90°, velocidad 5–180°/s, posición objetivo, una vez/mantener/ida y vuelta e invertir. El panel pausa; cerrarlo permite observar el movimiento. Una vez y mantener llegan a la posición y la bloquean mecánicamente; apagar conserva el ángulo sin anclar el conjunto al mundo. Un bloqueo persistente detiene el intento y muestra diagnóstico. Se conservan torque finito, carga y alimentación interna/externa existentes. Manual en P y [SERVOS_QBITS.md](SERVOS_QBITS.md).
+
+Guardar/restaurar, exportar/importar, blueprints con material existente y repisas preservan configuración, postura e identidades. Los servos recuperados quedan apagados. Soldar nuevas piezas reconstruye la articulación; sacudir devuelve las piezas originales y retira el motor. Los controladores antiguos de brazos/cintas no pueden apropiarse de un servo. No se incorpora coordinación automática de cuadrúpedos en este bloque: una cadena física con cadera y rodilla sí puede configurarse por articulación.
+
+Integrado sobre `daabb07`, conservando vista previa fluida y límites generales de 2.000 piezas/carga. Verificación final: **801/801 pruebas Node aprobadas**, cero fallos u omisiones; sintaxis y diff limpios. Casos de ambos sentidos, repetición, puntas coincidentes, gravedad/suelo real, bloqueo apagado, energía agotada, batería externa compartida, montaje manual en ambos sentidos, soldadura, sacudida y persistencia. `validate-focus-gles.py` aprobado; `validate-robot-arm-gles.py` reprodujo **32 escenas**, incluyendo ambos servos a 0° y 35°, dos shaders/un programa y cero errores GPU. Inspeccionadas capturas de la bisagra. Estas pruebas ejecutan Cannon y GLES con DOM simulado; no constituyen una partida de navegador ni garantizan equilibrio de un caminante.
+
+Siguiente paso: probar los dos montajes del Banco rápido, después construir una extremidad cadera–rodilla y ajustar la comodidad antes de desarrollar la coordinación de marcha.
+
+## Entrega anterior: preview fluido y capacidad de 2000 — 17 de noviembre de 2026
 
 La vista previa del banco rápido sigue la cámara en cada fotograma, sin el intervalo anterior de 30 Hz. Su dibujo ignora el temblor PSX, usa el azul plano de la repisa, une cajas contiguas sin caras internas ni rendijas y ordena la transparencia por distancia. Mantiene geometría, colisiones y confirmación exactas; no crea cuerpos durante la previsualización. Shift conserva una conexión adquirida dentro de 0,78 m (adquisición a 0,65 m), evitando cambios por pequeños movimientos del apuntado. Soltar Shift elimina ese encaje.
 
