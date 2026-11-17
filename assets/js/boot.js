@@ -70,7 +70,7 @@
   function loadScript(path) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = path + '?v=20261117-culling-1';
+      script.src = path + '?v=20261117-dismantle-hud';
       script.onload = resolve;
       script.onerror = () => reject(new Error('No se pudo cargar ' + path));
       document.head.append(script);
@@ -184,3 +184,4 @@
     if(presentationDone)play.focus({preventScroll:true});
   }).catch(fail);
 })();
+
