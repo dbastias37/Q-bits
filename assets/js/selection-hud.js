@@ -87,7 +87,7 @@
   function remove(entry){entry.button.remove();for(let i=listeners.length-1;i>=0;i--)if(listeners[i][0]===entry.button){const [node,event,fn]=listeners[i];node.removeEventListener(event,fn);listeners.splice(i,1);}entries.delete(entry.id);}
   function layout(){
    if(disposed)return;
-   const width=measuredWidth||Math.min(760,(root.innerWidth||1024)-72),cell=(root.innerWidth||1024)<520?58:74;
+   const width=measuredWidth||Math.min(760,(root.innerWidth||1024)-72),cell=(root.innerWidth||1024)<620?48:62;
    capacity=Math.max(1,Math.min(MAX_VISIBLE,Math.floor((width-36)/cell)));
    const ids=order.filter(id=>entries.has(id));const focused=ids.indexOf(focusId);
    if(interactive&&focused>=0){if(focused<page)page=focused;else if(focused>=page+capacity)page=focused-capacity+1;}
@@ -98,7 +98,7 @@
    const additional=liveIds().filter(id=>!visible.has(id)).length,overflowText='+'+additional;if(overflow.hidden!==(additional===0))overflow.hidden=additional===0;if(overflow.textContent!==overflowText)overflow.textContent=overflowText;
   }
   function render(entry){
-   if(entry.contextFailed)return;const canvas=entry.canvas,ctx=entry.ctx||(entry.ctx=canvas.getContext('2d'));if(!ctx){entry.contextFailed=true;return;}const w=canvas.clientWidth||70,h=canvas.clientHeight||76,dpr=Math.min(root.devicePixelRatio||1,2);
+   if(entry.contextFailed)return;const canvas=entry.canvas,ctx=entry.ctx||(entry.ctx=canvas.getContext('2d'));if(!ctx){entry.contextFailed=true;return;}const w=canvas.clientWidth||58,h=canvas.clientHeight||62,dpr=Math.min(root.devicePixelRatio||1,2);
    if(canvas.width!==Math.round(w*dpr))canvas.width=Math.round(w*dpr);if(canvas.height!==Math.round(h*dpr))canvas.height=Math.round(h*dpr);
    ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
    const stamp=fingerprint(entry.item);if(stamp!==entry.stamp){entry.mesh=geometry(entry.item);entry.stamp=stamp;}
@@ -139,3 +139,4 @@
  }
  const api={create,geometry,stateMotion,scaleAt};if(typeof module==='object'&&module.exports)module.exports=api;else root.QBitsSelectionHUD=api;
 })(typeof window==='object'?window:globalThis);
+

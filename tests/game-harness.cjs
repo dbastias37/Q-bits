@@ -95,6 +95,7 @@ module.exports = function createGame(options = {}) {
   }
   const hook = `window.__testGame={
     getPhysicsStep:()=>FIXED_STEP,
+    ...(typeof dismantleJobs!=='undefined'?{restoreLabMechanisms,dismantleJobs,beginStagedDismantle,updateDismantling,pendingDismantleParts,scenePieceCount,serializeDismantling,restoreDismantling,drawDismantling,drawShelfContents,shelfPreviewMesh,disposeShelfPreview,dismantleHeldAssembly}:{}),
     ...(typeof mechanicalTopologyIndex==='function'?{mechanicalTopologyIndex,conveyorContactIndex,invalidateConveyorContacts,conveyorContactLoads,conveyorFrictionPairs,conveyorContactMap,setStepCache:value=>{mechanicalStepCache=value;}}:{}),
     ...(typeof connectServoTips==='function'?{servoMarches,startServoMarch,stopServoMarch,servoMarchFor,servoMarchMembers,servoMarchAction,servoMarchSnapshot,connectServoTips,configureServo,startServo,servoAngle,rotorEndpoint,servoBlueprintTemplate,prepareServoPart,findServoSnap,drawServoGuides}:{}),
     beginPowerCable,cancelPowerCable,powerDraftMaterials,finishPowerCable,addPowerCableMaterial,recoverPowerCable,powerSurfaceRoute,powerCircuitRoute,powerRibbonCaches,powerCableClick,powerTargetText,powerInspectionAvailable,powerAimPort,powerAimCable,powerSurfaceAim,powerMaterialGroups,openPowerCableMenu,openPowerReservoirMenu,powerSecondary,drawPowerReservoirs,drawPowerCables,getPowerDraft:()=>powerDraft,

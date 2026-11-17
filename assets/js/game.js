@@ -661,6 +661,8 @@ function unitFaces(pose){const profile=unitProfile(pose);return profile.faces.ma
 const settings={mass:1,unitShape:'cube',gravity:9.8,bounce:.12,force:60,friction:.38,damping:.12,speed:.32,guide:'ghost',line:'dashed',maxCarry:2000,maxSelect:2000,rotationSpeed:2.8,grip:.95,cargoSide:4,cargoRequired:8,cargoColor:'#f4f4f1',haulSpeed:.2,haulForce:2};
 const groups=[],cargos=[],rotors=[];let rotorSerial=0;
 const flightStates=new Map();
+const dismantleJobs=[];
+const DISMANTLE_BATCH=8,DISMANTLE_SECONDS=.22;
 // Only ownership and connections survive a substep. Positions, contacts and
 // electrical supply remain live. Topology edits invalidate before AND after
 // callbacks, which may query the still-existing assembly during removal.
@@ -1330,7 +1332,7 @@ function updateCreationPlacement(hit=creationSurfaceAim()){
  const transform=p=>({...p,p:add(origin,q.vmult(p.p)),q:q.mult(p.q)});
  const poses=preview.local.map(transform),surfaces=preview.surfaces.map(transform),drawPoses=preview.compact.map(transform).concat(surfaces);Object.assign(preview,{point,q,poses,surfacePoses:surfaces,drawPoses});
  const count=record?mechanismPartCount(record):floorOnly?0:preview.local.length;
- if(groups.reduce((n,g)=>n+g.parts.length,0)+count>MAX_QUBITS)preview.reason='No caben más piezas. Retira o guarda un montaje.';
+ if(scenePieceCount()+count>MAX_QUBITS)preview.reason='No caben más piezas. Retira o guarda un montaje.';
  else if(entry?.action==='cargo'&&(cargos.length>=12||!cargoPlacementClear(point,settings.cargoSide*CUBE_SIZE)))preview.reason='No hay espacio o se alcanzó el límite de cuerpos.';
  else if(entry?.action==='cooler'&&(coolers.length>=12||!cargoPlacementClear(point,.84)||coolers.some(c=>c.p.distanceTo(point)<.9)))preview.reason='Deja espacio libre para el enfriador.';
  else if(entry?.action==='power-reservoir'&&(powerReservoirs.length>=12||!powerReservoirPlacement(point)))preview.reason='Deja espacio libre para el depósito.';
@@ -1436,7 +1438,7 @@ function spawnQubit(){
   const rotor=spawnRotor(undefined,{...mechanismDefaults,enabled:false});if(!rotor){announce('No hay espacio libre para el rotor.');return;}
   const g=rotorGroups(rotor)[0];cancelUnitCreation();selected={g,part:g.parts[0]};multiSelection=[];announce('Rotor creado · clic derecho → Rotación');return g;
  }
- if(groups.reduce((s,g)=>s+g.parts.length,0)>=MAX_QUBITS){announce('Máximo de '+MAX_QUBITS+' piezas en la sala.');return;}
+ if(scenePieceCount()>=MAX_QUBITS){announce('Máximo de '+MAX_QUBITS+' piezas en la sala.');return;}
  for(let row=0;row<6;row++)for(const col of [0,1,-1,2,-2,3,-3]){
   const p=V(position[0]-Math.sin(yaw)*(.95+row*.16)+Math.cos(yaw)*col*.16,unitGroundHeight(shape)+.002,position[2]-Math.cos(yaw)*(.95+row*.16)-Math.sin(yaw)*col*.16);
   if(Math.max(Math.abs(p.x),Math.abs(p.z))>13.9)continue;
@@ -1755,6 +1757,7 @@ function detachPart(hit,all=false){
  automationIntervention();
  if(!hit||!groups.includes(hit.g))return;
  const g=hit.g;if(g.parts.length===1){announce('Este '+unitLabel(hit.part)+' ya está separado.');return;}
+ if(all&&savedPreferences.dismantleMode==='staged'){beginStagedDismantle(rotorConnectedGroups([g]),hit.part.id);return;}
  if(held&&(held.items||[held]).some(item=>item.g===g))releaseQubit();const parts=worldParts(g),velocity=g.body.velocity.clone(),spin=g.body.angularVelocity.clone(),ref=g.body.quaternion.clone();
  removeGroup(g);
  if(all){for(const part of parts)makeGroup([part],part.q,velocity,spin);announce('Estructura desarmada');}
@@ -1774,6 +1777,7 @@ function heldAssemblyGroups(){
 }
 function dismantleHeldAssembly(){
  const grip=held,members=heldAssemblyGroups();if(!members.length)return false;
+ if(savedPreferences.dismantleMode==='staged')return beginStagedDismantle(members,grip.part.id);
  const picked=grip.part.id,point=add(grip.g.body.position,grip.g.body.quaternion.vmult(grip.anchor)),distance=grip.distance;
  const bounded=(value,max)=>{const length=value.norm();return length>max?mul(value,max/length):value.clone();};
  const originals=members.map(g=>({g,parts:worldParts(g),center:g.body.position.clone(),velocity:bounded(g.body.velocity,.35),spin:bounded(g.body.angularVelocity,2)}));
@@ -1791,6 +1795,103 @@ function dismantleHeldAssembly(){
  grabQubit({g:pickedGroup,part:pickedGroup.parts[0],point,distance});
  if(held){held.distance=distance;held.latched=grip.latched;held.reward=grip.reward;held.shakeSeparated=true;}
  snap=null;announce('Estructura desarmada · conservas la pieza que tomaste');redraw=true;return true;
+}
+// Pending parts are data and a render preview, not hundreds of new bodies.
+// The frame loop (not each physics substep) releases at most one small batch.
+function pendingDismantleParts(){return dismantleJobs.flatMap(job=>job.parts.slice(job.cursor));}
+function scenePieceCount(){return groups.reduce((n,g)=>n+g.parts.length,0)+dismantleJobs.reduce((n,job)=>n+job.parts.length-job.cursor,0);}
+function disposeDismantlePreview(job){for(const batch of job.preview||[])deleteRenderBuffer(batch.buffer);job.preview=null;boundGeometry=null;}
+function clearDismantling(){for(const job of dismantleJobs)disposeDismantlePreview(job);dismantleJobs.length=0;}
+function enqueueDismantle(parts,picked=null){
+ parts.sort((a,b)=>b.p.y-a.p.y||a.id-b.id);
+ const center=parts.reduce((v,p)=>add(v,p.p),V());center.scale(1/parts.length,center);
+ const job={parts,cursor:0,active:[],center,slot:0,picked,preview:null,waiting:false};dismantleJobs.push(job);
+ for(const p of parts)serial=Math.max(serial,p.id);return job;
+}
+function beginStagedDismantle(members,picked=null){
+ if(dismantleJobs.length){announce('Hay un desarme en curso · espera a que termine');return false;}
+ members=[...new Set(members)].filter(g=>groups.includes(g));if(!members.length)return false;
+ const parts=members.flatMap(worldParts);if(parts.length<2)return false;
+ story.dockCandidate=null;if((held?.items||[]).some(item=>members.includes(item.g)))releaseQubit(false);
+ for(const rotor of [...rotors])if(rotorGroups(rotor).some(g=>members.includes(g)))disconnectRotor(rotor);
+ pruneConveyors();pruneRobotArms();for(const g of members)removeGroup(g);clearSelection();
+ enqueueDismantle(parts,picked);snap=null;announce('Desarmando por etapas · las piezas se colocan en espacios libres');redraw=true;return true;
+}
+function dismantleProbe(part){return {parts:[{...part,offset:V(),q:Q()}],body:{position:part.p,quaternion:part.q}};}
+function dismantleDestinationClear(job,part,p){
+ if(Math.hypot(p.x-position[0],p.z-position[2])<.22)return false;
+ if(job.active.some(a=>a.part.id!==part.id&&a.target.distanceTo(p)<.20))return false;
+ return validPose(dismantleProbe(part),p,part.q);
+}
+function planDismantlePart(job,part){
+ const low=Math.min(...corners({shape:part.shape,p:V(),q:part.q}).map(p=>p.y));
+ // Bounded search work per frame; occupied rooms wait without losing matter.
+ for(let attempt=0;attempt<4;attempt++){
+  const n=job.slot++,ring=Math.floor(Math.sqrt(n)),side=ring+1,k=n-ring*ring;
+  const x=k<=ring?k:ring,z=k<=ring?ring:2*ring-k;
+  const target=V(job.center.x+(x-ring/2)*.24,-low+.004,job.center.z+(z-ring/2)*.24);
+  if(job.slot>40000)job.slot=0;
+  if(dismantleDestinationClear(job,part,target))return target;
+ }return null;
+}
+function updateDismantling(dt){
+ const job=dismantleJobs[0];if(!job||!(dt>0))return;
+ if(!job.active.length){
+  const layer=job.parts[job.cursor].p.y;
+  while(job.active.length<DISMANTLE_BATCH&&job.cursor+job.active.length<job.parts.length){
+   const part=job.parts[job.cursor+job.active.length];if(job.active.length&&layer-part.p.y>CUBE_SIZE*.55)break;
+   const target=planDismantlePart(job,part);if(!target)break;
+   job.active.push({part,target,time:0});
+  }
+  if(!job.active.length){if(!job.waiting)announce('Desarme en espera · libera espacio alrededor');job.waiting=true;return;}job.waiting=false;
+ }
+ for(const active of job.active)active.time=Math.min(DISMANTLE_SECONDS,active.time+Math.min(dt,.05));
+ if(job.active.some(active=>active.time<DISMANTLE_SECONDS))return;
+ // Revalidate at activation: a moving load may have entered the planned spot.
+ for(const active of job.active){
+  if(!dismantleDestinationClear(job,active.part,active.target)){
+   const target=planDismantlePart(job,active.part);if(target){active.target=target;active.time=0;}return;
+  }
+ }
+ for(const {part,target}of job.active){const g=makeGroup([{...part,p:target}],part.q);if(part.id===job.picked)selected={g,part:g.parts[0]};}
+ job.cursor+=job.active.length;job.active=[];redraw=true;
+ if(job.cursor===job.parts.length){disposeDismantlePreview(job);dismantleJobs.shift();announce('Desarme terminado · piezas y energía conservadas');}
+}
+function dismantleAnimatedPose(active){
+ const t=clamp(active.time/DISMANTLE_SECONDS,0,1),ease=x=>x*x*(3-2*x),start=active.part.p,end=active.target,high=Math.min(ROOM_HEIGHT-.15,Math.max(start.y,end.y)+.18);
+ if(t<.25)return V(start.x,start.y+(high-start.y)*ease(t*4),start.z);
+ if(t<.75){const u=ease((t-.25)*2);return V(start.x+(end.x-start.x)*u,high,start.z+(end.z-start.z)*u);}
+ return V(end.x,high+(end.y-high)*ease((t-.75)*4),end.z);
+}
+function serializeDismantling(){return dismantleJobs.map(job=>({version:1,picked:job.picked,parts:job.parts.slice(job.cursor).map(p=>({...p,p:[p.p.x,p.p.y,p.p.z],q:[p.q.x,p.q.y,p.q.z,p.q.w],mood:copyMood(p.mood)}))}));}
+function restoreDismantling(records){
+ const ids=new Set(groups.flatMap(g=>g.parts.map(p=>p.id)));for(const part of pendingDismantleParts())ids.add(part.id);
+ for(const shelf of shelves)for(const cell of shelf.cells)for(const item of cell.items)for(const group of item.groups)for(const part of group.parts)ids.add(part.id);
+ for(const cable of powerCables)for(const part of cable.materials)ids.add(part.id);
+ for(const record of Array.isArray(records)?records:[]){
+  if(record?.version!==1||!Array.isArray(record.parts)||!record.parts.length||scenePieceCount()+record.parts.length>MAX_QUBITS)continue;
+  const local=new Set();if(record.parts.some(p=>!p||!Number.isSafeInteger(p.id)||p.id<1||ids.has(p.id)||local.has(p.id)||!local.add(p.id)||!['cube','tetra','pyramid','coupler'].includes(p.shape)||!Number.isFinite(p.weight)||p.weight<=0||!Array.isArray(p.p)||p.p.length!==3||!p.p.every(Number.isFinite)||!Array.isArray(p.q)||p.q.length!==4||!p.q.every(Number.isFinite)||Math.abs(Math.hypot(...p.q)-1)>.01))continue;
+  const parts=record.parts.map(p=>{const q=new CANNON.Quaternion(...p.q);q.normalize();return {...p,p:V(...p.p),q,mood:newMood(p.id,p.mood)};});
+  enqueueDismantle(parts,record.picked);for(const p of parts)ids.add(p.id);
+ }
+}
+function dismantlePreview(job){
+ if(job.preview)return job.preview;
+ const materials=new Map();
+ for(let index=0;index<job.parts.length;index++){
+  const part=job.parts[index],key=part.mood.externalBattery?'battery':part.shape==='cube'?'cube':'other';
+  if(!materials.has(key))materials.set(key,{color:key==='battery'?[.38,.62,.66,1]:key==='cube'?[.3,.34,.35,1]:[.58,.61,.61,1],data:[],starts:Array(job.parts.length+1).fill(0)});
+  const material=materials.get(key),source=unitMeshes[part.shape].data;
+  for(let i=0;i<source.length;i+=6){const v=add(part.p,part.q.vmult(V(source[i]*CUBE_SIZE,source[i+1]*CUBE_SIZE,source[i+2]*CUBE_SIZE))),n=part.q.vmult(V(source[i+3],source[i+4],source[i+5]));material.data.push(v.x,v.y,v.z,n.x,n.y,n.z,...source.slice(i,i+6));}
+  material.starts[index+1]=source.length/6;
+ }
+ job.preview=[...materials.values()].map(m=>{for(let i=1;i<m.starts.length;i++)m.starts[i]+=m.starts[i-1];return {color:m.color,starts:m.starts,count:m.data.length/12,buffer:buffer(m.data)};});boundGeometry=null;return job.preview;
+}
+function drawDismantling(){
+ for(const job of dismantleJobs){
+  for(const batch of dismantlePreview(job)){const first=batch.starts[job.cursor+job.active.length];if(first===batch.count)continue;bindGeometry(batch.buffer,true);gl.uniform1f(uniforms.uKind,5);setPose(V(),Q(),V(1,1,1));tint(...batch.color);submitDraw(gl.TRIANGLES,first,batch.count-first);}
+  for(const active of job.active)drawUnitMesh({shape:active.part.shape,p:dismantleAnimatedPose(active),q:active.part.q},[.3,.55,.58,1],5);
+ }
 }
 function noteAssemblyShake(dx,dy,time){
  if(!held||held.age<.25||!shiftDown()||!running||document.hidden||document.pointerLockElement!==canvas||!storyLookAllowed()||story.transition||radialOpen()||!panel.hidden||!menu.hidden||!commandMenu.hidden){resetAssemblyShake();return;}
@@ -2848,7 +2949,7 @@ function stabilizeRotors(){
 }
 function spawnRotor(p=null,options={}){
  if(certifiedAutomation()){announce('Ensayo certificado: usa el mecanismo del banco.');return null;}
- if(groups.reduce((n,g)=>n+g.parts.length,0)+2>MAX_QUBITS){announce('No hay capacidad para dos enganches.');return null;}
+ if(scenePieceCount()+2>MAX_QUBITS){announce('No hay capacidad para dos enganches.');return null;}
  const positions=p?[p]:Array.from({length:6},(_,row)=>[0,1,-1,2,-2,3,-3].map(col=>V(position[0]-Math.sin(yaw)*(.95+row*.3)+Math.cos(yaw)*col*.3,0,position[2]-Math.cos(yaw)*(.95+row*.3)-Math.sin(yaw)*col*.3))).flat();
  const flip=Q();flip.setFromAxisAngle(V(0,0,1),Math.PI);
  for(const base of positions){
@@ -3576,7 +3677,7 @@ function addPowerCableMaterial(cable){
 }
 function recoverPowerCable(cable){
  if(!powerCables.includes(cable))return false;
- if(groups.reduce((n,g)=>n+g.parts.length,0)+cable.materials.length>MAX_QUBITS){announce('No hay espacio para recuperar los cubos. Retira algunas piezas primero.');return false;}
+ if(scenePieceCount()+cable.materials.length>MAX_QUBITS){announce('No hay espacio para recuperar los cubos. Retira algunas piezas primero.');return false;}
  const candidates=[];
  for(let row=0;row<6&&candidates.length<cable.materials.length;row++)for(const col of [0,1,-1,2,-2]){
   const p=V(position[0]-Math.sin(yaw)*(1+row*.15)+Math.cos(yaw)*col*.14,HALF+.004,position[2]-Math.cos(yaw)*(1+row*.15)-Math.sin(yaw)*col*.14);
@@ -4157,7 +4258,7 @@ function drawQubits(){
  }}
  gl.depthMask(true);gl.disable(gl.BLEND);
  for(const g of groups){if(!renderGroupVisible(g))continue;if(g.parts.some(p=>p.mood.production)){for(const p of poses(g))drawBox(p.p,p.q,V(CUBE_SIZE-.002,CUBE_SIZE-.002,CUBE_SIZE-.002),p.part.mood.production?.kind==='A'?[.27,.56,.67,1]:p.part.mood.production?[.72,.53,.26,1]:[.12,.14,.13,1]);if(g.parts.length===2)drawOutline(g.body.position,g.body.quaternion,sub(bounds(g,V(),Q()).max,bounds(g,V(),Q()).min),.8,false);}else drawGroupSolid(g);}
- drawConveyors();drawCargos();drawPuzzle();drawAlpha();drawWorkshop();drawShelves();drawCreationPlacement();drawPowerReservoirs();drawPowerCables();drawBatteriesTransparent();drawStructureOutlines();drawServoGuides();drawGuides();drawTaskGuides();
+ drawDismantling();drawConveyors();drawCargos();drawPuzzle();drawAlpha();drawWorkshop();drawShelves();drawCreationPlacement();drawPowerReservoirs();drawPowerCables();drawBatteriesTransparent();drawStructureOutlines();drawServoGuides();drawGuides();drawTaskGuides();
 }
 addQubit([position[0]-Math.sin(yaw)*1.25,HALF+.003,position[2]-Math.cos(yaw)*1.25]);
 
@@ -4265,7 +4366,7 @@ function duplicateSelection(){
  if(typeof rotorForGroup==='function'&&rotorForGroup(hit.g))return duplicateMechanism(hit.g);
  const originals=multiSelection.includes(hit.g)&&multiSelection.length>1?multiSelection.filter(g=>groups.includes(g)):[hit.g];
  if(originals.some(g=>g.parts.some(p=>p.mood?.externalBattery))){if(originals.length===1)return duplicateMechanism(originals[0]);announce('Selecciona un solo montaje para copiarlo con sus baterías. Las copias comienzan vacías.');return;}
- const count=originals.reduce((n,g)=>n+g.parts.length,0),population=groups.reduce((n,g)=>n+g.parts.length,0);
+ const count=originals.reduce((n,g)=>n+g.parts.length,0),population=scenePieceCount();
  if(count+population>MAX_QUBITS){announce('No caben más copias: límite de '+MAX_QUBITS+' piezas.');return;}
  const originalParts=originals.map(g=>worldParts(g));const pts=originalParts.flat(),min=V(Infinity,Infinity,Infinity),max=V(-Infinity,-Infinity,-Infinity);
  for(const group of originals){const b=bounds(group);for(const k of ['x','y','z']){min[k]=Math.min(min[k],b.min[k]);max[k]=Math.max(max[k],b.max[k]);}}
@@ -5128,9 +5229,9 @@ function updateCargoCallout(){
 // when leaving the challenge; rewards and deliveries use a single transaction.
 const puzzleConfig={frameSeconds:12,energySeconds:8};
 function puzzleBlockedEdit(kind='edit'){if(certifiedAutomation()){announce('Ensayo certificado: usa las piezas del banco. Reinicia el nivel para restaurarlas.');return true;}if(kind==='mechanism'&&mechanismsAvailable())return false;if(story.ready&&story.scene==='campaign'&&panel.hidden){announce('La materia genera nuevos Q-bits. P abre el banco de herramientas de prueba.');return true;}if(!puzzle.active||kind==='qubit'&&alphaSettings.allowPuzzleSpawn)return false;announce('Puzle activo · los recursos se obtienen en los portales. P → Puzle para volver al banco.');return true;}
-function saveLab(){cancelPowerCable();return {powerNetwork:serializePowerNetwork(),mechanismDefaults:typeof mechanismDefaults==='undefined'?null:{...mechanismDefaults},rotors:serializeRotorState(),rotorSets:serializeRotorSets(),robotArms:serializeRobotArms(),conveyors:typeof serializeConveyors==='function'?serializeConveyors():[],contacts:serializeContactState(),shelves:serializeShelves(),alphaScene:alphaSceneSnapshot(),settings:{...settings},moodSettings:{...moodSettings},position:[...position],yaw,pitch,groups:groups.map(g=>({parts:worldParts(g),q:g.body.quaternion.clone(),v:g.body.velocity.clone(),w:g.body.angularVelocity.clone()})),cargos:cargos.map(c=>({id:c.id,p:c.body.position.clone(),side:c.side,required:c.required,color:c.color,...(c.robotPhysical?{robotPhysical:true,q:c.body.quaternion.clone(),v:c.body.velocity.clone(),w:c.body.angularVelocity.clone()}:{} )}))};}
+function saveLab(){cancelPowerCable();return {dismantling:serializeDismantling(),powerNetwork:serializePowerNetwork(),mechanismDefaults:typeof mechanismDefaults==='undefined'?null:{...mechanismDefaults},rotors:serializeRotorState(),rotorSets:serializeRotorSets(),robotArms:serializeRobotArms(),conveyors:typeof serializeConveyors==='function'?serializeConveyors():[],contacts:serializeContactState(),shelves:serializeShelves(),alphaScene:alphaSceneSnapshot(),settings:{...settings},moodSettings:{...moodSettings},position:[...position],yaw,pitch,groups:groups.map(g=>({parts:worldParts(g),q:g.body.quaternion.clone(),v:g.body.velocity.clone(),w:g.body.angularVelocity.clone()})),cargos:cargos.map(c=>({id:c.id,p:c.body.position.clone(),side:c.side,required:c.required,color:c.color,...(c.robotPhysical?{robotPhysical:true,q:c.body.quaternion.clone(),v:c.body.velocity.clone(),w:c.body.angularVelocity.clone()}:{} )}))};}
 function clearPuzzleScene(){
- cancelPowerCable();clearPowerNetwork();
+ clearDismantling();cancelPowerCable();clearPowerNetwork();
  flightStates.clear();resetBatteryLiquids();
  clearShelves();
  clearAlphaScene();releaseQubit();closeCommandMenu(false);closeDetachMenu(false);pendingCargo=null;moveChoice=null;routeInspection=null;multiSelection=[];selected=null;selectedCargo=null;
@@ -5558,7 +5659,7 @@ function restoreLabMechanisms(saved){
    mechanismDefaults[key]=storedRotorOptionsValid(candidate)?candidate[key]:defaults[key];
   }
  }
- restorePowerNetwork(saved?.powerNetwork);const restored=restoreRotorState(saved?.rotors);restoreRotorSets(saved?.rotorSets);restoreContactState(saved?.contacts);restoreShelves(saved?.shelves);if(typeof restoreRobotArms==='function')restoreRobotArms(saved?.robotArms);if(typeof restoreConveyors==='function')restoreConveyors(saved?.conveyors);return restored;
+ restorePowerNetwork(saved?.powerNetwork);const restored=restoreRotorState(saved?.rotors);restoreRotorSets(saved?.rotorSets);restoreContactState(saved?.contacts);restoreShelves(saved?.shelves);if(typeof restoreRobotArms==='function')restoreRobotArms(saved?.robotArms);if(typeof restoreConveyors==='function')restoreConveyors(saved?.conveyors);restoreDismantling(saved?.dismantling);return restored;
 }
 function mechanismGroups(subject){
  if(typeof rotors==='undefined')return [];
@@ -5783,7 +5884,7 @@ function spawnSavedMechanism(record,point,rotation=Q()){
  if(puzzleBlockedEdit('mechanism')||typeof mechanismsAvailable==='function'&&!mechanismsAvailable())return null;
  if(!savedMechanismValid(record)||!point||![point.x,point.y,point.z].every(Number.isFinite)){announce('El mecanismo guardado no es válido.');return null;}
  if(story.scene==='campaign'&&record.groups.some(group=>group.parts.some(part=>part.shape!=='coupler'))){announce('Los mecanismos con Q-bits o T-bits añadidos se crean solo en el banco de pruebas. En campaña, monta esas piezas con los recursos del nivel.');return null;}
- const count=mechanismPartCount(record);if(groups.reduce((sum,g)=>sum+g.parts.length,0)+count>MAX_QUBITS){announce('Máximo de '+MAX_QUBITS+' piezas en la sala.');return null;}
+ const count=mechanismPartCount(record);if(scenePieceCount()+count>MAX_QUBITS){announce('Máximo de '+MAX_QUBITS+' piezas en la sala.');return null;}
  const origin=V(point.x,point.y+.003,point.z),data=mechanismRecordParts(record).map(parts=>parts.map(part=>({...part,p:add(origin,rotation.vmult(part.p)),q:rotation.mult(part.q)}))),ids=new Map(),made=[],joints=[];
  // Probe candidate space before allocating physics bodies, IDs or GPU state.
  // Placement is exact: failed validation never searches another location.
@@ -5808,7 +5909,7 @@ function duplicateMechanism(subject){
  if(mechanismGroups(subject).some(g=>g.parts.some(QBitsWorkshop.hasAdaptation))){announce('Retira las adaptaciones antes de duplicar el mecanismo.');return null;}
 
  const record=mechanismSnapshot(subject);if(!record){announce('No se puede duplicar este mecanismo hasta ajustar sus puntas.');return null;}
- if(groups.reduce((sum,g)=>sum+g.parts.length,0)+mechanismPartCount(record)>MAX_QUBITS){announce('No caben más copias: límite de '+MAX_QUBITS+' piezas.');return null;}
+ if(scenePieceCount()+mechanismPartCount(record)>MAX_QUBITS){announce('No caben más copias: límite de '+MAX_QUBITS+' piezas.');return null;}
  const vertices=mechanismRecordParts(record).flat().flatMap(corners),spacing=Math.max(...['x','z'].map(axis=>Math.max(...vertices.map(v=>v[axis]))-Math.min(...vertices.map(v=>v[axis]))))+.18;
  for(let row=0;row<5;row++)for(const col of [0,1,-1,2,-2]){
   const point=V(position[0]-Math.sin(yaw)*(1.2+row*spacing)+Math.cos(yaw)*col*spacing,0,position[2]-Math.cos(yaw)*(1.2+row*spacing)-Math.sin(yaw)*col*spacing);
@@ -6055,6 +6156,7 @@ function updateAlphaHUD(){
  for(const machine of arms)for(const rotor of robotArmRotors(machine))for(const g of rotorGroups(rotor))if(g)machineGroups.add(g);
  for(const machine of belts)for(const rotor of conveyorRotors(machine))for(const g of rotorGroups(rotor))if(g)machineGroups.add(g);
  let qCount=0,tCount=0,mCount=0,rCount=0,materialCount=0;for(const g of groups)for(const part of g.parts){if(machineGroups.has(g)){materialCount++;continue;}if(part.mood.production){rCount++;continue;}if(unitShape(part)==='coupler')mCount++;else if(isTBit(part))tCount++;else qCount++;}
+ for(const part of pendingDismantleParts()){if(part.mood.production)rCount++;else if(unitShape(part)==='coupler')mCount++;else if(isTBit(part))tCount++;else qCount++;}
  const census=document.querySelector('#alpha-census-text');census.textContent='× '+qCount+' Q'+(tCount?' · '+tCount+' T':'')+(mCount?' · '+mCount+' M':'')+(arms.length?' · '+arms.length+' brazos':'')+(belts.length?' · '+belts.length+' cintas':'')+(rCount?' · '+rCount+' bloques de materia':'');census.title=materialCount+' piezas integradas en mecanismos; se conservan al desarmarlos y dentro del límite de la sala.';
  if(!panel.hidden||!commandMenu.hidden||held)return;const h=alphaHit(5);if(!h)return;
  if(h.bp)targetLabel.textContent=h.bp.shape.name+' · '+h.bp.status+' · clic derecho';
@@ -6691,7 +6793,7 @@ function updateCampaignPressure(dt){if(story.scene!=='campaign'||!story.campaign
 function moveCampaignDoor(gate,dt){if(!gate.solved)return;gate.open=Math.min(1,gate.open+dt/.95);const t=gate.open,u=t*t*(3-2*t),d=gate.door;d.p.y=d.initialY+2.65*u;d.body.position.copy(d.p);d.min=sub(d.p,d.half);d.max=add(d.p,d.half);d.body.aabbNeedsUpdate=true;}
 function campaignOrder(g){if(story.scene==='campaign'&&story.campaign)for(const part of g.parts)story.campaign.ordered.add(part.id);}
 function beginCampaignLevel(number){
- number=clamp(Math.floor(number),1,LEVELS.length-1);const carry=number===9&&story.level===8&&story.phase==='complete'?groups.flatMap(g=>worldParts(g)):null;rememberLab();clearNarrativeScene();applyStageDefaults();story.level=number;story.phase='challenge';story.started=true;story.elapsed=0;gameScene('campaign');gameMode('playing');position.splice(0,3,0,EYE_HEIGHT,2.3);yaw=0;pitch=number<=4?-.6:-.25;camera.splice(0,3,...position);
+ number=clamp(Math.floor(number),1,LEVELS.length-1);const carry=number===9&&story.level===8&&story.phase==='complete'?groups.flatMap(g=>worldParts(g)).concat(pendingDismantleParts()):null;rememberLab();clearNarrativeScene();applyStageDefaults();story.level=number;story.phase='challenge';story.started=true;story.elapsed=0;gameScene('campaign');gameMode('playing');position.splice(0,3,0,EYE_HEIGHT,2.3);yaw=0;pitch=number<=4?-.6:-.25;camera.splice(0,3,...position);
  const definition=LEVELS[number],zs=definition.gates.map((_,i)=>definition.gates.length===1?-3.4:-1.6-i*4),c={number,definition,stage:0,gates:[],crew:[],ordered:new Set(),labelsAt:0,hintAt:0};story.campaign=c;storyWorld.buttons=[];campaignBoundary(zs);
  definition.gates.forEach((def,index)=>{const gate=campaignGate(zs[index],index,def);c.gates.push(gate);
   if(def.weights)for(let i=0;i<def.weights.length;i++){const x=def.weights.length===1?(def.kind==='combo'?1.65:0):i===0?-1.4:1.4;makeCampaignPad(gate,x,gate.z+1.4,def.weights[i],i);}
@@ -6832,7 +6934,7 @@ function sourceAccepts(s,cargo){
 }
 function beginConversion(s,cargo){
  if(!sourceAccepts(s,cargo)||Math.hypot(cargo.body.position.x-s.intake.x,cargo.body.position.z-s.intake.z)>.14)return false;
- if(groups.reduce((n,g)=>n+g.parts.length,0)+cargo.units>MAX_QUBITS){s.blocked=true;return false;}
+ if(scenePieceCount()+cargo.units>MAX_QUBITS){s.blocked=true;return false;}
  stopHaul(cargo,'Materia recibida');cargo.intake=0;cargo.body.type=CANNON.Body.KINEMATIC;cargo.body.collisionResponse=false;cargo.body.velocity.set(0,0,0);cargo.body.updateMassProperties();s.state='intake';s.timer=0;s.from=cargo.body.position.clone();s.blocked=false;return true;
 }
 function outputPosition(s,index){return add(s.exit,V((index%4-1.5)*.15,HALF+.008,.57+Math.floor(index/4)*.16));}
@@ -7083,7 +7185,7 @@ function withdrawShelf(shelf,cellIndex=0,count=1){
  if(story.scene!=='lab'||puzzle.active||!shelves.includes(shelf))return false;const cell=shelf.cells[cellIndex];if(!cell||!Number.isInteger(count)||count<1||count>cell.items.length)return false;
  pruneRobotArms();if(typeof pruneConveyors==='function')pruneConveyors();
  const items=cell.items.slice(0,count),liveIds=new Set(groups.flatMap(g=>g.parts.map(p=>p.id)));if(items.some(item=>!QBitsOrganizers.validItem(item)||!storedShelfConveyorsValid(item)||item.joints.some(j=>!storedRotorOptionsValid(j))||item.groups.some(g=>g.parts.some(p=>{if(liveIds.has(p.id))return true;liveIds.add(p.id);return false;})))){announce('No se puede recuperar este contenido: hay identidades o datos incompatibles.');return false;}
- if(groups.reduce((n,g)=>n+g.parts.length,0)+items.reduce((n,item)=>n+QBitsOrganizers.count(item),0)>MAX_QUBITS){announce('No hay capacidad libre en el banco. Guarda otras piezas antes de retirar.');return false;}
+ if(scenePieceCount()+items.reduce((n,item)=>n+QBitsOrganizers.count(item),0)>MAX_QUBITS){announce('No hay capacidad libre en el banco. Guarda otras piezas antes de retirar.');return false;}
  const made=[],madeRotors=[],oldContacts=serializeContactState(),origin=shelfCellPoint(shelf,cellIndex),normal=shelf.q.vmult(V(0,0,1)),tangent=shelf.q.vmult(V(1,0,0)),sizes=items.map(shelfItemBounds),spacing=Math.max(...sizes.map(b=>Math.hypot(b.max.x-b.min.x,b.max.z-b.min.z)))+.15,columns=Math.min(5,count);
  const rollback=()=>{madeRotors.forEach(disconnectRotor);made.forEach(removeGroup);restoreContactState(oldContacts);announce('No hay espacio libre delante de la repisa. Aparta los objetos o retira una tanda menor.');return false;};
  for(const [index,item]of items.entries()){
@@ -7096,10 +7198,10 @@ function withdrawShelf(shelf,cellIndex=0,count=1){
  restoreContactState({sensors:[...oldContacts.sensors,...items.flatMap(item=>item.contacts?.sensors||[])],rotors:[...oldContacts.rotors,...items.flatMap(item=>item.contacts?.rotors||[])]});
  restoreRobotArms(items.flatMap(item=>item.robotArms||[]));
  if(typeof restoreConveyors==='function')restoreConveyors(items.flatMap(item=>item.conveyors||[]));
- cell.items.splice(0,count);if(!cell.items.length)cell.category=null;clearSelection();multiSelection=made;selected={g:made[0],part:made[0].parts[0]};redraw=true;announce(count+' elemento'+(count===1?' retirado':'s retirados')+' · delante de la repisa');return true;
+ disposeShelfPreview(cell);cell.items.splice(0,count);if(!cell.items.length)cell.category=null;clearSelection();multiSelection=made;selected={g:made[0],part:made[0].parts[0]};redraw=true;announce(count+' elemento'+(count===1?' retirado':'s retirados')+' · delante de la repisa');return true;
 }
 function deleteShelf(shelf,confirmed=false){
- if(!confirmed||!shelves.includes(shelf))return false;for(const wall of shelf.walls){if(world.bodies.includes(wall.body))world.removeBody(wall.body);const at=storyWorld.walls.indexOf(wall);if(at>=0)storyWorld.walls.splice(at,1);}for(const label of shelf.labels)label?.remove();shelves.splice(shelves.indexOf(shelf),1);redraw=true;return true;
+ if(!confirmed||!shelves.includes(shelf))return false;for(const cell of shelf.cells)disposeShelfPreview(cell);for(const wall of shelf.walls){if(world.bodies.includes(wall.body))world.removeBody(wall.body);const at=storyWorld.walls.indexOf(wall);if(at>=0)storyWorld.walls.splice(at,1);}for(const label of shelf.labels)label?.remove();shelves.splice(shelves.indexOf(shelf),1);redraw=true;return true;
 }
 function requestDeleteShelf(shelf){
  if(!shelves.includes(shelf))return false;const count=shelf.cells.reduce((n,cell)=>n+cell.items.length,0);
@@ -7120,7 +7222,7 @@ function openShelfMenu(shelf,cellIndex=0){
   {label:'Cerrar',run:()=>captureMouse()}
  ]);return true;
 }
-function serializeShelves(){return shelves.map(shelf=>({version:1,p:[shelf.p.x,shelf.p.y,shelf.p.z],q:[shelf.q.x,shelf.q.y,shelf.q.z,shelf.q.w],wall:shelf.wall,cells:shelfClone(shelf.cells)}));}
+function serializeShelves(){return shelves.map(shelf=>({version:1,p:[shelf.p.x,shelf.p.y,shelf.p.z],q:[shelf.q.x,shelf.q.y,shelf.q.z,shelf.q.w],wall:shelf.wall,cells:shelf.cells.map(cell=>({category:shelfClone(cell.category),items:shelfClone(cell.items)}))}));}
 function restoreShelves(records){
  clearShelves();if(!Array.isArray(records)||records.length>QBitsOrganizers.MAX_SHELVES)return 0;const ids=new Set(groups.flatMap(g=>g.parts.map(p=>p.id))),valid=[];
  for(const record of records){
@@ -7130,13 +7232,31 @@ function restoreShelves(records){
  }return valid.length;
 }
 function clearShelves(){cancelShelfPlacement();for(const shelf of [...shelves])deleteShelf(shelf,true);}
+// Stored inventory is immutable. Only the visible front item owns GPU buffers.
+function disposeShelfPreview(cell){
+ for(const batch of cell.preview?.batches||[])deleteRenderBuffer(batch.buffer);
+ delete cell.preview;boundGeometry=null;
+}
+function shelfPreviewMesh(cell){
+ const item=cell.items[0];if(cell.preview?.item===item)return cell.preview;
+ disposeShelfPreview(cell);if(!item)return null;
+ const bb=shelfItemBounds(item),middle=mul(add(bb.min,bb.max),.5),scale=.19/Math.max(bb.max.x-bb.min.x,bb.max.y-bb.min.y,bb.max.z-bb.min.z,.09),materials=new Map();
+ for(const group of item.groups)for(const part of group.parts){
+  const key=part.mood.externalBattery?'battery':part.shape==='cube'?'cube':'other';
+  if(!materials.has(key))materials.set(key,{color:key==='battery'?[.38,.62,.66,1]:key==='cube'?[.3,.34,.35,1]:[.58,.61,.61,1],data:[]});
+  const data=materials.get(key).data,source=unitMeshes[part.shape].data,q=shelfQuaternion(part.q),p=mul(sub(V(...part.p),middle),scale);
+  for(let i=0;i<source.length;i+=6){const v=add(p,q.vmult(V(source[i]*CUBE_SIZE*scale,source[i+1]*CUBE_SIZE*scale,source[i+2]*CUBE_SIZE*scale))),n=q.vmult(V(source[i+3],source[i+4],source[i+5]));data.push(v.x,v.y,v.z,n.x,n.y,n.z,...source.slice(i,i+6));}
+ }
+ const batches=[...materials.values()].map(m=>({color:m.color,count:m.data.length/12,buffer:buffer(m.data)}));boundGeometry=null;
+ return cell.preview={item,batches};
+}
 function drawShelfContents(){
  if(story.scene!=='lab'||puzzle.active)return;
  for(const shelf of shelves)for(const [index,cell]of shelf.cells.entries()){
   const center=shelfCellPoint(shelf,index),front=shelfCellPoint(shelf,index,true),visible=cell.items.length&&sub(V(...camera),front).dot(shelf.q.vmult(V(0,0,1)))>0&&front.distanceTo(V(...camera))<6;
   if(!cell.items.length||!renderSphereVisible(center,.20)){if(shelf.labels[index])shelf.labels[index].hidden=true;continue;}
-  const item=cell.items[0],bb=shelfItemBounds(item),middle=mul(add(bb.min,bb.max),.5),scale=.19/Math.max(bb.max.x-bb.min.x,bb.max.y-bb.min.y,bb.max.z-bb.min.z,.09);
-  for(const group of item.groups)for(const part of group.parts){const mesh=unitMeshes[part.shape],p=add(center,shelf.q.vmult(mul(sub(V(...part.p),middle),scale))),q=shelf.q.mult(shelfQuaternion(part.q));bindGeometry(mesh.buffer);gl.uniform1f(uniforms.uKind,5);setPose(p,q,V(CUBE_SIZE*scale,CUBE_SIZE*scale,CUBE_SIZE*scale));tint(...(part.mood.externalBattery?[.38,.62,.66,1]:part.shape==='cube'?[.3,.34,.35,1]:[.58,.61,.61,1]));submitDraw(gl.TRIANGLES,0,mesh.count);}
+  const preview=shelfPreviewMesh(cell);
+  for(const batch of preview.batches){bindGeometry(batch.buffer,true);gl.uniform1f(uniforms.uKind,5);setPose(center,shelf.q,V(1,1,1));tint(...batch.color);submitDraw(gl.TRIANGLES,0,batch.count);}
   if(!shelf.labels[index]){const label=document.createElement('span');label.className='shelf-count';label.style.cssText='position:fixed;z-index:8;pointer-events:none;padding:2px 5px;border-radius:4px;background:rgba(20,27,29,.78);color:white;font:11px system-ui;transform:translate(-50%,0);';document.body.appendChild(label);shelf.labels[index]=label;}
   const label=shelf.labels[index],screen=visible&&!cullingLab.renderView&&project(add(front,V(0,-.085,0)));label.hidden=!screen;if(screen){label.textContent='×'+cell.items.length;label.style.left=screen.x+'px';label.style.top=screen.y+'px';}
  }
@@ -7596,7 +7716,7 @@ function drawProduction(){
 function productionLabels(){const s=story.campaign?.production;if(!s)return [];return [{p:add(s.control,V(0,.25,0)),text:'E · CONTROL DEL LOTE'},{p:V(-1.65,.96,s.z),text:'MATERIA · '+s.ledger.stock.length+' EN RESERVA'},...(s.goal.packages?[{p:V(-.08,.86,s.z),text:'EMPAQUE · A + B'}]:[]),{p:V(1.5,.79,s.z),text:'RECEPTOR · '+s.ledger.accepted.length+'/'+s.goal.target}];}
 
 function groupWorkUnits(g){return g.parts.reduce((n,p)=>n+(p.mood?.externalBattery?0:(p.mood?.matter?p.weight/p.mood.matter.rootWeight:1)*QBitsWorkshop.movementFactors(p).load),0);}
-function chapterMatterParts(c=story.campaign){return groups.flatMap(g=>worldParts(g)).filter(p=>p.mood?.matter?.root===c?.reconfiguration?.root);}
+function chapterMatterParts(c=story.campaign){return groups.flatMap(g=>worldParts(g)).concat(pendingDismantleParts()).filter(p=>p.mood?.matter?.root===c?.reconfiguration?.root);}
 function chapterDialogue(lines){
  const c=story.campaign;let index=0;
  const next=()=>{if(story.campaign!==c)return;if(index>=lines.length){hideStoryDialogue();return;}say(lines[index++],{hold:true,after:next});};next();
@@ -7645,14 +7765,14 @@ function beginReconfiguration(action){
  const input=reconfigurationInput(action);if(input.some(p=>p.mood?.externalBattery)){announce('La batería no se divide ni se recompone. Usa sus controles de batería.');return false;}if(input.some(QBitsWorkshop.hasAdaptation)){announce('Retira las adaptaciones en la mesa antes de dividir o recomponer.');return false;}const plan=QBitsReconfiguration.plan(action,input);
  if(plan.error){announce(input.length?plan.error:'Deja las piezas necesarias dentro de ENTRADA y suéltalas.');return false;}
  const ids=new Set(plan.inputs),owners=groups.filter(g=>g.parts.some(p=>ids.has(p.id)));
- if(owners.some(g=>g.parts.some(p=>!ids.has(p.id)))||groups.reduce((n,g)=>n+g.parts.length,0)-input.length+plan.outputs.length>MAX_QUBITS){announce('Separa la pieza o libera espacio antes de transformar.');return false;}
+ if(owners.some(g=>g.parts.some(p=>!ids.has(p.id)))||scenePieceCount()-input.length+plan.outputs.length>MAX_QUBITS){announce('Separa la pieza o libera espacio antes de transformar.');return false;}
  s.job={...plan,time:0,duration:4,original:input,blocked:false};
  for(const g of owners)removeGroup(g);clearSelection();
  announce('Reconfigurando · la materia y la energía se conservan');updateCampaignObjective();return true;
 }
 function reconfigurationOutputPoses(s){return s.job.outputs.map((part,i)=>({...part,p:add(s.exit,V((i%3-1)*.17,unitGroundHeight(part.shape)+.005,Math.floor(i/3)*.17)),q:Q()}));}
 function reconfigurationOutputClear(parts){
- if(groups.reduce((n,g)=>n+g.parts.length,0)+parts.length>MAX_QUBITS)return false;
+ if(scenePieceCount()+parts.length>MAX_QUBITS)return false;
  return parts.every(p=>!groups.some(g=>poses(g).some(other=>obbOverlap(p,other,.000001)))&&!cargos.some(c=>obbOverlap(p,cargoPose(c),.000001))&&!storyWorld.walls.some(w=>obbOverlap(p,{p:w.p,q:w.q||Q(),half:w.half},.000001)));
 }
 function tickReconfiguration(dt){
@@ -8026,7 +8146,7 @@ function startCullingBenchmark(){
  if(story.scene!=='lab'||story.mode!=='playing'||story.transition||held||creationPreview||shelfPreview||radialOpen()||settingsScreen?.isOpen){announce('A/B: entra al banco y suelta o cancela la pieza primero.');return false;}
  resetGameInputs();cullingLab.observer=false;document.body.dataset.cullingObserver='false';cullingLab.stats=true;cullingLab.result=null;cullingLab.lastFrame=null;
  cullingLab.gpu?.dispose();cullingLab.gpu=null;
- cullingLab.benchmark={phase:0,frame:0,enabled:false,order:[false,true,true,false],off:[],on:[],config:{width:canvas.width,height:canvas.height,shadows:visuals.shadows,style:visuals.style,pieces:groups.reduce((n,g)=>n+g.parts.length,0)}};
+ cullingLab.benchmark={phase:0,frame:0,enabled:false,order:[false,true,true,false],off:[],on:[],config:{width:canvas.width,height:canvas.height,shadows:visuals.shadows,style:visuals.style,pieces:scenePieceCount()}};
  panel.hidden=true;menu.hidden=true;commandMenu.hidden=true;accumulator=0;redraw=true;updateCullingHud(true);return true;
 }
 function finishCullingBenchmark(cancelled=false){
@@ -8164,6 +8284,7 @@ function frame(time) {
   if (!document.hidden&&!frozen) {
     const simulationStart=cullingLab.stats?performance.now():0;
     window.QBitsFootsteps?.update(camera,yaw,walkingAudioGroups(),dt);window.QBitsJoinAudio?.update(camera,yaw,dt);
+    updateDismantling(dt);
     accumulator += dt;
     let simulatedDt=0;
     while (accumulator >= FIXED_STEP) { stepPhysics(FIXED_STEP); accumulator -= FIXED_STEP; simulatedDt+=FIXED_STEP; }
