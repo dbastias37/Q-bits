@@ -94,6 +94,8 @@ module.exports = function createGame(options = {}) {
     scripts = [...fs.readFileSync(path.join(root, 'index.html'), 'utf8').matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
   }
   const hook = `window.__testGame={
+    getPhysicsStep:()=>FIXED_STEP,
+    ...(typeof mechanicalTopologyIndex==='function'?{mechanicalTopologyIndex,conveyorContactIndex,invalidateConveyorContacts,conveyorContactLoads,conveyorFrictionPairs,conveyorContactMap,setStepCache:value=>{mechanicalStepCache=value;}}:{}),
     ...(typeof connectServoTips==='function'?{servoMarches,startServoMarch,stopServoMarch,servoMarchFor,servoMarchMembers,servoMarchAction,servoMarchSnapshot,connectServoTips,configureServo,startServo,servoAngle,rotorEndpoint,servoBlueprintTemplate,prepareServoPart,findServoSnap,drawServoGuides}:{}),
     beginPowerCable,cancelPowerCable,powerDraftMaterials,finishPowerCable,addPowerCableMaterial,recoverPowerCable,powerSurfaceRoute,powerCircuitRoute,powerRibbonCaches,powerCableClick,powerTargetText,powerInspectionAvailable,powerAimPort,powerAimCable,powerSurfaceAim,powerMaterialGroups,openPowerCableMenu,openPowerReservoirMenu,powerSecondary,drawPowerReservoirs,drawPowerCables,getPowerDraft:()=>powerDraft,
     spendGripperEnergy,conveyorSpendTraction,powerReservoirs,powerCables,POWER_RESERVOIR_CAPACITY,powerReservoirPlacement,createPowerReservoir,removePowerReservoir,powerPort,powerCableLimit,powerCablePath,powerCableLength,powerCableBlocked,refreshPowerCable,connectPowerCable,extendPowerCable,reroutePowerCable,removePowerCable,updatePowerNetwork,getCableSupply,serializePowerNetwork,restorePowerNetwork,clearPowerNetwork,
@@ -182,3 +184,4 @@ module.exports = function createGame(options = {}) {
     }
   };
 };
+

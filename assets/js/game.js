@@ -623,7 +623,8 @@ canvas.addEventListener('webglcontextlost', event => {
 canvas.addEventListener('webglcontextrestored', () => window.location.reload());
 
 // Q-bits lab · rigid bodies, compound structures, face rolling and drop guides.
-const CUBE_SIZE=.09, HALF=.045, MAX_QUBITS=2000, FIXED_STEP=1/240;
+const CUBE_SIZE=.09, HALF=.045, MAX_QUBITS=2000;
+let FIXED_STEP=1/savedPreferences.physicsHz;
 const V=(x=0,y=0,z=0)=>new CANNON.Vec3(x,y,z), Q=()=>new CANNON.Quaternion();
 const add=(a,b)=>a.vadd(b), sub=(a,b)=>a.vsub(b), mul=(a,s)=>a.scale(s);
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
@@ -660,15 +661,27 @@ function unitFaces(pose){const profile=unitProfile(pose);return profile.faces.ma
 const settings={mass:1,unitShape:'cube',gravity:9.8,bounce:.12,force:60,friction:.38,damping:.12,speed:.32,guide:'ghost',line:'dashed',maxCarry:2000,maxSelect:2000,rotationSpeed:2.8,grip:.95,cargoSide:4,cargoRequired:8,cargoColor:'#f4f4f1',haulSpeed:.2,haulForce:2};
 const groups=[],cargos=[],rotors=[];let rotorSerial=0;
 const flightStates=new Map();
-// Reuse topology only inside one physics substep. Poses and energy stay live;
-// construction invalidates the index immediately, UI edits never see old data.
-let mechanicalStepCache=null;
-function invalidateMechanicalIndex(){if(mechanicalStepCache){mechanicalStepCache.parts=null;mechanicalStepCache.components.clear();mechanicalStepCache.electricalGraph=null;}}
-function mechanicalPartIndex(){
- if(!mechanicalStepCache)return null;
- if(!mechanicalStepCache.parts){const index=new Map();for(const g of groups)for(const part of g.parts)index.set(part.id,{g,part});mechanicalStepCache.parts=index;}
- return mechanicalStepCache.parts;
+// Only ownership and connections survive a substep. Positions, contacts and
+// electrical supply remain live. Topology edits invalidate before AND after
+// callbacks, which may query the still-existing assembly during removal.
+let mechanicalStepCache=null,mechanicalTopology=null;
+function invalidateMechanicalIndex(){
+ mechanicalTopology=null;
+ if(mechanicalStepCache){mechanicalStepCache.parts=null;mechanicalStepCache.components.clear();mechanicalStepCache.electricalGraph=null;}
 }
+function mechanicalTopologyIndex(){
+ if(mechanicalTopology)return mechanicalTopology;
+ const parts=new Map(),byPart=new Map(),byGroup=new Map(),byPair=new Map(),edges=new Map(groups.map(g=>[g,[]]));
+ for(const g of groups)for(const part of g.parts)parts.set(part.id,{g,part});
+ for(const rotor of rotors){
+  for(const id of [rotor.aId,rotor.bId]){if(!byPart.has(id))byPart.set(id,rotor);const g=parts.get(id)?.g;if(g&&!byGroup.has(g))byGroup.set(g,rotor);}
+  const key=rotor.aId+':'+rotor.bId;if(!byPair.has(key))byPair.set(key,rotor);
+  const a=parts.get(rotor.aId)?.g,b=parts.get(rotor.bId)?.g;if(a&&b){edges.get(a).push(b);edges.get(b).push(a);}
+ }
+ return mechanicalTopology={parts,byPart,byGroup,byPair,edges,components:new Map()};
+}
+function mechanicalPartIndex(){return mechanicalTopologyIndex().parts;}
+function rotorForPair(pair){return mechanicalTopologyIndex().byPair.get(pair.aId+':'+pair.bId)||null;}
 const rotorSets=[];let rotorSetSerial=0,selectedRotorIds=[];
 const alphaSettings={maxRest:180,coolSeconds:35,capacity:4,blueprintRange:1.5,exitEnergy:.5,glow:.6,coolingOn:true,allowPuzzleSpawn:false};
 const coolers=[],blueprints=[],savedShapes=[],savedMechanisms=[],buttonBodies=[];let alphaSerial=0;
@@ -1114,10 +1127,10 @@ function makeGroup(parts,reference=Q(),velocity=V(),spin=V()) {
  const local=parts.map(p=>{const shape=unitShape(p),mood=newMood(p.id,p.mood);if(!p.mood&&shape!=='cube')mood.name=(shape==='coupler'?'Enganche ':'T-bit ')+p.id;return {id:p.id,weight:p.weight,shape,offset:inv.vmult(sub(p.p,center)),q:inv.mult(p.q),mood};});
  const partShapes=addRigidCollisionShapes(body,local),materialShapeCount=body.shapes.length;
  body.updateMassProperties();world.addBody(body);
- const g={body,parts:local,partShapes,materialShapeCount,route:null,pin:null};body.qubitGroup=g;body.addEventListener('wakeup',()=>{g.wakeMechanicalComponent=true;});g.block=analyzeBlock(g);groups.push(g);registerSpeechGroup(g);return g;
+ const g={body,parts:local,partShapes,materialShapeCount,route:null,pin:null};body.qubitGroup=g;body.addEventListener('wakeup',()=>{g.wakeMechanicalComponent=true;});g.block=analyzeBlock(g);groups.push(g);invalidateMechanicalIndex();registerSpeechGroup(g);return g;
 }
 function addQubit(p,weight=settings.mass,shape='cube'){return makeGroup([{id:++serial,weight,shape:normalizeUnitShape(shape),p:V(...p),q:Q()}]);}
-function removeGroup(g){disposeRigidCubeBatch(g);robotBeforeRemoveGroup(g);invalidateMechanicalIndex();resetBatteryLiquids(g.body);invalidateRotorBody(g);undockCampaignGroup(g);removeSpeechGroup(g);leaveHaul(g);stopRoute(g);world.removeBody(g.body);const i=groups.indexOf(g);if(i>=0)groups.splice(i,1);if(selected?.g===g)selected=null;multiSelection=multiSelection.filter(item=>item!==g);}
+function removeGroup(g){disposeRigidCubeBatch(g);robotBeforeRemoveGroup(g);invalidateMechanicalIndex();resetBatteryLiquids(g.body);invalidateRotorBody(g);undockCampaignGroup(g);removeSpeechGroup(g);leaveHaul(g);stopRoute(g);world.removeBody(g.body);const i=groups.indexOf(g);if(i>=0)groups.splice(i,1);invalidateMechanicalIndex();if(selected?.g===g)selected=null;multiSelection=multiSelection.filter(item=>item!==g);}
 function corners(pose){if(isTBit(pose))return unitProfile(pose).vertices.map(v=>add(pose.p,pose.q.vmult(v)));const out=[],half=pose.half||V(HALF,HALF,HALF);for(const x of [-half.x,half.x])for(const y of [-half.y,half.y])for(const z of [-half.z,half.z])out.push(add(pose.p,pose.q.vmult(V(x,y,z))));return out;}
 // Rigid geometry is immutable between makeGroup/removeGroup. A translation
 // never changes its rotated extents. Keep a bounded set of exact orientations
@@ -1981,7 +1994,7 @@ function gripperGrab(partOrId,feedback=null){
  const hit=robotGripperHit(partOrId),config=hit.part.mood.gripper,chosen=check.candidate;
  if(!spendGripperEnergy(hit,.05))return false;
  const constraint=robotLockConstraint(hit.g.body,chosen.body,Math.max(12,config.capacity*5));constraint.collideConnected=false;
- for(const eq of constraint.equations)eq.setSpookParams(1e8,4,FIXED_STEP);
+ for(const eq of constraint.equations)setPhysicsEquation(eq,1e8,4);
  if(chosen.cargo){chosen.body.mass=chosen.weight*.25;chosen.body.type=CANNON.Body.DYNAMIC;chosen.body.fixedRotation=false;chosen.body.updateMassProperties();chosen.cargo.robotHeld=hit.part.id;chosen.cargo.robotPhysical=true;}
  if(chosen.g){stopRoute(chosen.g);leaveHaul(chosen.g);chosen.g.robotHeld=hit.part.id;}
  chosen.body.wakeUp();hit.g.robotGrip=hit.part.id;world.addConstraint(constraint);robotGrips.set(hit.part.id,{id:hit.part.id,...chosen,constraint});return true;
@@ -1996,7 +2009,7 @@ function updateRobotGrips(dt){
   if(gripperFaceDistance(hit,grip)>.10){releaseGripper(id);const arm=robotArms.find(a=>a.gripperId===id);if(arm)stopRobotArm(arm,'Agarre perdido');}
  }
 }
-function robotArmRotors(arm){return arm.joints.map(j=>rotors.find(r=>r.aId===j.aId&&r.bId===j.bId)).filter(Boolean);}
+function robotArmRotors(arm){return arm.joints.map(rotorForPair).filter(Boolean);}
 // Pitch joints need a reduction: the stock shoulder requires ~6.55 N·m
 // under its own weight, exceeding a direct 4 N·m drive. Base yaw stays direct.
 // Derive this from the controller so old saves receive the fix and detached
@@ -2019,7 +2032,7 @@ function robotJointBrake(rotor){
  // motor from converging even below its torque limit.
  const brake=new CANNON.Constraint(a.g.body,b.g.body,{collideConnected:false}),equation=new CANNON.RotationalEquation(a.g.body,b.g.body,{maxForce:1000});
  const localA=a.part.q.vmult(V(1,0,0)),axis=a.part.q.vmult(V(0,1,0)),perpendicular=a.g.body.quaternion.vmult(axis.cross(localA)),localB=b.g.body.quaternion.inverse().vmult(perpendicular);
- equation.setSpookParams(1e10,4,FIXED_STEP);brake.equations.push(equation);
+ setPhysicsEquation(equation,1e10,4);brake.equations.push(equation);
  brake.update=function(){this.bodyA.quaternion.vmult(localA,equation.axisA);this.bodyB.quaternion.vmult(localB,equation.axisB);};
  return brake;
 }
@@ -2146,7 +2159,7 @@ function restoreRobotArmTemplate(data,keyToId,joints){
 // Its final belt adds a visible contact surface; bounded powered traction
 // moves touching loads while Cannon resolves gravity, support and collisions.
 const conveyors=[],conveyorPins=new Map();let conveyorSerial=0;
-function conveyorRotors(conveyor){return (conveyor?.joints||[]).map(j=>rotors.find(r=>r.aId===j.aId&&r.bId===j.bId)).filter(Boolean);}
+function conveyorRotors(conveyor){return (conveyor?.joints||[]).map(rotorForPair).filter(Boolean);}
 function conveyorForGroup(g){return conveyors.find(c=>conveyorRotors(c).some(r=>rotorGroups(r).includes(g)&&rotorPart(c.baseId)?.g!==g))||conveyors.find(c=>rotorPart(c.baseId)?.g===g)||null;}
 function conveyorStatus(conveyor){return conveyor?.status||'Selecciona una cinta';}
 function conveyorPortsValid(ports){return !ports||['entry','exit'].every(name=>{const port=ports[name];return port&&Array.isArray(port.p)&&port.p.length===3&&port.p.every(n=>Number.isFinite(n)&&Math.abs(n)<=10)&&Array.isArray(port.direction)&&port.direction.length===3&&port.direction.every(Number.isFinite)&&Math.abs(Math.hypot(...port.direction)-1)<.001;});}
@@ -2188,9 +2201,18 @@ function conveyorSurfaceContact(conveyor,contact){
  for(const pose of conveyorSurfacePoses(conveyor)){const local=pose.inverse.vmult(sub(point,pose.p));if(normal.dot(pose.up)>.6&&Math.abs(local.x)<=pose.half.x+.006&&Math.abs(local.z)<=pose.half.z+.006&&Math.abs(local.y-pose.half.y)<.012)return {body:other,point,normal,surface:pose.surface};}
  return null;
 }
+function conveyorContactIndex(physicsWorld=world){
+ if(mechanicalStepCache?.contactIndex?.world===physicsWorld)return mechanicalStepCache.contactIndex.byBody;
+ const byBody=new Map();for(const contact of physicsWorld.contacts){
+  for(const body of contact.bi===contact.bj?[contact.bi]:[contact.bi,contact.bj]){if(!byBody.has(body))byBody.set(body,[]);byBody.get(body).push(contact);}
+ }
+ if(mechanicalStepCache)mechanicalStepCache.contactIndex={world:physicsWorld,byBody};
+ return byBody;
+}
+function invalidateConveyorContacts(){if(mechanicalStepCache){mechanicalStepCache.contactIndex=null;mechanicalStepCache.conveyorContacts=null;}}
 function conveyorContactLoads(conveyor){
  const byBody=new Map(),component=new Set(rotorConnectedGroups([rotorPart(conveyor.baseId)?.g].filter(Boolean)).map(g=>g.body));
- for(const contact of world.contacts){const hit=conveyorSurfaceContact(conveyor,contact);if(!hit||component.has(hit.body)||hit.body.mass<=0)continue;const g=hit.body.qubitGroup,c=hit.body.cargoRef;if(!g&&!c||g?.robotHeld||c?.robotHeld||(held?.items||[]).some(item=>item.g===g))continue;byBody.set(hit.body,{...hit,weight:g?totalWeight(g):c.required});}
+ for(const contact of conveyorContactIndex().get(conveyor.surfaceBody)||[]){const hit=conveyorSurfaceContact(conveyor,contact);if(!hit||component.has(hit.body)||hit.body.mass<=0)continue;const g=hit.body.qubitGroup,c=hit.body.cargoRef;if(!g&&!c||g?.robotHeld||c?.robotHeld||(held?.items||[]).some(item=>item.g===g))continue;byBody.set(hit.body,{...hit,weight:g?totalWeight(g):c.required});}
  return [...byBody.values()];
 }
 function conveyorSpendTraction(conveyor,joules){
@@ -2215,7 +2237,7 @@ function conveyorDriveSurface(conveyor,dt){
  }
 }
 function conveyorFrictionPairs(physicsWorld){
- const pairs=new Map();for(const conveyor of conveyors){if(!conveyor.running||conveyor.speed<.002)continue;for(const contact of physicsWorld.contacts){const hit=conveyorSurfaceContact(conveyor,contact);if(!hit)continue;if(!pairs.has(conveyor.surfaceBody))pairs.set(conveyor.surfaceBody,new Set());pairs.get(conveyor.surfaceBody).add(hit.body);}}
+ const pairs=new Map();for(const conveyor of conveyors){if(!conveyor.running||conveyor.speed<.002)continue;for(const contact of conveyorContactIndex(physicsWorld).get(conveyor.surfaceBody)||[]){const hit=conveyorSurfaceContact(conveyor,contact);if(!hit)continue;if(!pairs.has(conveyor.surfaceBody))pairs.set(conveyor.surfaceBody,new Set());pairs.get(conveyor.surfaceBody).add(hit.body);}}
  return pairs;
 }
 
@@ -2297,7 +2319,7 @@ function startConveyor(conveyor){
 }
 function conveyorContactMap(){
  if(mechanicalStepCache?.conveyorContacts)return mechanicalStepCache.conveyorContacts;
- const map=new Map();for(const contact of world.contacts)for(const [body,other]of [[contact.bi,contact.bj],[contact.bj,contact.bi]]){if(!map.has(body))map.set(body,new Set());map.get(body).add(other);}
+ const map=new Map();for(const [body,contacts]of conveyorContactIndex()){const others=new Set();for(const contact of contacts)others.add(contact.bi===body?contact.bj:contact.bi);map.set(body,others);}
  if(mechanicalStepCache)mechanicalStepCache.conveyorContacts=map;return map;
 }
 function conveyorReadLoad(conveyor){
@@ -2432,7 +2454,7 @@ function connectServoTips(aId,bId,options={}){
  const rotor={id:++rotorSerial,aId,bId,rpm:Math.max(1,s.speed/6),direction:1,moving:'b',mount:'wheel',maxTorque:clamp(options.maxTorque??.4,.02,4),capacity:clamp(options.capacity??32,2,MAX_QUBITS),enabled:false,constraint:null,pin:null,servo:s};
  if(!Number.isFinite(rotor.maxTorque)||!Number.isFinite(rotor.capacity))return null;
  if(story.scene==='campaign')rotor.maxTorque=Math.min(rotor.maxTorque,campaignTorqueCap());
- for(const g of [a.g,b.g]){stopRoute(g);leaveHaul(g);}invalidateMechanicalIndex();rotors.push(rotor);refreshRotors();return rotor;
+ for(const g of [a.g,b.g]){stopRoute(g);leaveHaul(g);}invalidateMechanicalIndex();rotors.push(rotor);invalidateMechanicalIndex();refreshRotors();return rotor;
 }
 function servoAngle(rotor){
  const current=robotRelativePose(rotor),reference=new CANNON.Quaternion(...rotor.servo.reference),delta=current.mult(reference.inverse()),axis=rotor.servo.kind==='hinge'?V(0,0,1):V(0,1,0);
@@ -2517,24 +2539,23 @@ function rotorPart(id){
  for(const g of groups){const part=g.parts.find(p=>p.id===id);if(part)return {g,part,...partPose(g,part)};}return null;
 }
 function couplerTip(pose){return {point:add(pose.p,pose.q.vmult(V(0,CUBE_SIZE*51/56,0))),axis:pose.q.vmult(V(0,1,0))};}
-function rotorForPart(id){return rotors.find(r=>r.aId===id||r.bId===id)||null;}
+function rotorForPart(id){return mechanicalTopologyIndex().byPart.get(id)||null;}
 function rotorGroups(rotor){return [rotorPart(rotor.aId)?.g||null,rotorPart(rotor.bId)?.g||null];}
-function rotorForGroup(g){return rotors.find(r=>rotorGroups(r).includes(g))||null;}
+function rotorForGroup(g){return mechanicalTopologyIndex().byGroup.get(g)||null;}
 function rotorConnectedGroups(initial){
- const seeds=[...new Set(initial.filter(g=>groups.includes(g)))];
+ const topology=mechanicalTopologyIndex(),seeds=[...new Set(initial.filter(g=>topology.edges.has(g)))];
+ // Preserve the existing physics traversal order, including energy allocation.
  if(mechanicalStepCache){
-  if(!mechanicalStepCache.components.size){
-   const index=mechanicalPartIndex(),edges=new Map(groups.map(g=>[g,[]]));
-   for(const rotor of rotors){const a=index.get(rotor.aId)?.g,b=index.get(rotor.bId)?.g;if(a&&b){edges.get(a).push(b);edges.get(b).push(a);}}
-   for(const seed of groups)if(!mechanicalStepCache.components.has(seed)){
-    const component=[seed],seen=new Set(component);for(let i=0;i<component.length;i++)for(const next of edges.get(component[i]))if(!seen.has(next)){seen.add(next);component.push(next);}
-    for(const g of component)mechanicalStepCache.components.set(g,component);
-   }
+  const components=topology.components;
+  if(!components.size)for(const seed of groups)if(!components.has(seed)){
+   const component=[seed],seen=new Set(component);for(let i=0;i<component.length;i++)for(const next of topology.edges.get(component[i]))if(!seen.has(next)){seen.add(next);component.push(next);}
+   for(const g of component)components.set(g,component);
   }
-  const result=seeds.slice(),seen=new Set(result);for(const seed of seeds)for(const g of mechanicalStepCache.components.get(seed)||[])if(!seen.has(g)){seen.add(g);result.push(g);}return result;
+  const result=seeds.slice(),seen=new Set(result);for(const seed of seeds)for(const g of components.get(seed)||[])if(!seen.has(g)){seen.add(g);result.push(g);}return result;
  }
- const result=seeds.slice();
- for(let i=0;i<result.length;i++)for(const rotor of rotors){const pair=rotorGroups(rotor);if(pair.includes(result[i]))for(const g of pair)if(g&&!result.includes(g))result.push(g);}
+ // UI/construction queries retain seed-first breadth-first ordering.
+ const result=seeds.slice(),seen=new Set(result);
+ for(let i=0;i<result.length;i++)for(const next of topology.edges.get(result[i]))if(!seen.has(next)){seen.add(next);result.push(next);}
  return result;
 }
 // Control sets reference hinges, not rigid bodies: several selected axles may
@@ -2622,7 +2643,7 @@ function disconnectRotor(rotor){
  if(!rotors.includes(rotor))return false;
  stopServoMarch(servoMarchFor(rotor),'Conjunto detenido · articulación separada');
  invalidateMechanicalIndex();
- if(rotor.constraint)world.removeConstraint(rotor.constraint);rotor.constraint=null;unpinRotor(rotor);rotors.splice(rotors.indexOf(rotor),1);cleanRotorSets();return true;
+ if(rotor.constraint)world.removeConstraint(rotor.constraint);rotor.constraint=null;unpinRotor(rotor);rotors.splice(rotors.indexOf(rotor),1);invalidateMechanicalIndex();cleanRotorSets();return true;
 }
 function rotorTipsCompatible(a,b,tolerance=.002){
  if(!a||!b||unitShape(a)!=='coupler'||unitShape(b)!=='coupler'||a.g===b.g)return false;
@@ -2636,7 +2657,7 @@ function connectRotorTips(aId,bId,options={}){
  if(options.rpm!==undefined&&!Number.isFinite(options.rpm)||options.direction!==undefined&&![1,-1].includes(options.direction)||options.moving!==undefined&&!['a','b'].includes(options.moving)||options.mount!==undefined&&!['wheel','fixed'].includes(options.mount)||options.maxTorque!==undefined&&!Number.isFinite(options.maxTorque)||options.capacity!==undefined&&!Number.isFinite(options.capacity))return null;
  if(story.scene==='campaign')options={...options,maxTorque:Math.min(options.maxTorque??.4,campaignTorqueCap())};
  const rotor={id:++rotorSerial,aId,bId,rpm:clamp(options.rpm??30,1,120),direction:options.direction??1,moving:options.moving??'b',mount:options.mount??'wheel',maxTorque:clamp(options.maxTorque??.4,.02,4),capacity:clamp(options.capacity??(story.scene==='lab'?32:16),2,MAX_QUBITS),enabled:false,constraint:null,pin:null};
- stopRoute(a.g);stopRoute(b.g);leaveHaul(a.g);leaveHaul(b.g);invalidateMechanicalIndex();rotors.push(rotor);for(const [part,label]of [[a.part,'A'],[b.part,'B']])if(/^Enganche (?:\d+|[AB] · \d+)$/.test(part.mood.name))part.mood.name='Enganche '+label+' · '+part.id;refreshRotors();
+ stopRoute(a.g);stopRoute(b.g);leaveHaul(a.g);leaveHaul(b.g);invalidateMechanicalIndex();rotors.push(rotor);invalidateMechanicalIndex();for(const [part,label]of [[a.part,'A'],[b.part,'B']])if(/^Enganche (?:\d+|[AB] · \d+)$/.test(part.mood.name))part.mood.name='Enganche '+label+' · '+part.id;refreshRotors();
  if(options.enabled)configureRotor(rotor,{enabled:true});return rotor;
 }
 function refreshRotors(){
@@ -2648,11 +2669,11 @@ function refreshRotors(){
    if(!(rotor.servo?servoTipsCompatible(a,b,rotor.servo):rotorTipsCompatible(a,b,.004))){disconnectRotor(rotor);continue;}
    const af=rotorEndpoint(a,rotor.servo,'a'),bf=rotorEndpoint(b,rotor.servo,'b');
    rotor.constraint=new CANNON.HingeConstraint(a.g.body,b.g.body,{pivotA:add(a.part.offset,a.part.q.vmult(af.localPoint)),pivotB:add(b.part.offset,b.part.q.vmult(bf.localPoint)),axisA:a.part.q.vmult(af.localAxis),axisB:b.part.q.vmult(mul(bf.localAxis,-1)),maxForce:1000,collideConnected:true});
-   for(const equation of rotor.constraint.equations)equation.setSpookParams(1e10,4,FIXED_STEP);
+   for(const equation of rotor.constraint.equations)setPhysicsEquation(equation,1e10,4);
    // A passive parking brake closes only the remaining twist degree of
    // freedom. It belongs to this hinge, never to the room or its floor.
    const brake=new CANNON.RotationalEquation(a.g.body,b.g.body,{maxForce:1000});
-   brake.setSpookParams(1e10,4,FIXED_STEP);brake.enabled=false;
+   setPhysicsEquation(brake,1e10,4);brake.enabled=false;
    rotor.constraint.stopBrake={equation:brake,localA:V(),localB:V()};
    rotor.constraint.equations.push(brake);
    const update=rotor.constraint.update;
@@ -2708,6 +2729,8 @@ function rotorProjectedPose(rotor,moving,base,quaternion=moving.body.quaternion)
 // walking, hauling or unpowered contact behavior elsewhere in the room.
 const solveRotorContacts=world.solver.solve;
 world.solver.solve=function(dt,physicsWorld){
+ // Narrowphase has replaced/reused the contacts since the pre-step load checks.
+ invalidateConveyorContacts();
  // Propagate actual wake events (impact, grabbing, motor start) through the
  // mechanism. Ordinary SLEEPY solver jitter must not repeatedly wake its base.
  for(const g of groups)if(g.wakeMechanicalComponent){const component=rotorConnectedGroups([g]);
@@ -3769,7 +3792,7 @@ function stepPhysics(dt){
  simTime+=dt;refreshRotors();updatePowerNetwork(dt);updateConveyors(dt);updateRobotGrips(dt);updateRobotArms(dt);tutorialFloat(dt);updateGrab(dt);updateRoutes(dt);updateHauling(dt);
  // Bound substep travel to avoid tunnelling through a 9 cm piece.
  for(const g of groups){const b=g.body,speed=b.velocity.norm();if(speed>6)b.velocity.scale(6/speed,b.velocity);const spin=b.angularVelocity.norm();if(spin>30)b.angularVelocity.scale(30/spin,b.angularVelocity);}
- updateCampaignPressure(dt);updateButtonPhysics();prepareRotorPower();updateRotorMotors(dt);driveRobotArms(dt);driveConveyors(dt);driveServos(dt);productionForces(dt);updateFlights(dt);world.step(dt);stabilizeRotors();updateRotorPower(dt);validateServoMarches();tickContactSensors(dt);tickFlightSensors(dt);
+ updateCampaignPressure(dt);updateButtonPhysics();prepareRotorPower();updateRotorMotors(dt);driveRobotArms(dt);driveConveyors(dt);driveServos(dt);productionForces(dt);updateFlights(dt);world.step(dt);invalidateConveyorContacts();stabilizeRotors();updateRotorPower(dt);validateServoMarches();tickContactSensors(dt);tickFlightSensors(dt);
  // Correct only tiny solver penetration of a hand-held shape; free bodies keep
  // their normal collision response. A hand cannot push its attachment underground.
  if(held)for(const item of held.items||[held]){const b=item.g.body,low=bounds(item.g).min.y;if(low<.001){b.position.y+=.001-low;if(b.velocity.y<0)b.velocity.y=0;b.aabbNeedsUpdate=true;}if(item.floorLocked)b.angularVelocity.set(0,0,0);}
@@ -7735,10 +7758,17 @@ function applyVisualUniforms(){
  surfaceTexture?.bind(visuals);gl.uniform1i(uniforms.uSurface,2);gl.uniform1f(uniforms.uTextureMix,surfaceTexture?1:0);
  gl.uniform1f(uniforms.uTextureScale,visuals.textureScale);gl.uniform1f(uniforms.uWarp,visuals.warp/100);gl.uniform1f(uniforms.uJitter,visuals.jitter/100);gl.uniform2f(uniforms.uResolution,canvas.width,canvas.height);gl.uniform1f(uniforms.uCel,visuals.cel);gl.uniform1f(uniforms.uLighting,visuals.lighting/100);gl.uniform1f(uniforms.uShadows,visuals.shadows==='off'?0:1);
 }
+function setPhysicsEquation(equation,stiffness,relaxation){
+ equation.qbitsSpook={stiffness,relaxation};equation.setSpookParams(stiffness,relaxation,FIXED_STEP);
+}
+function applyPhysicsRate(hz){
+ const step=1/hz;if(step===FIXED_STEP)return;FIXED_STEP=step;accumulator=0;
+ for(const constraint of world.constraints)for(const equation of constraint.equations)if(equation.qbitsSpook){const {stiffness,relaxation}=equation.qbitsSpook;equation.setSpookParams(stiffness,relaxation,step);}
+}
 function applyPreferences(next){
  cullingLab.lastFrame=null;cullingLab.frameSamples.length=0;
  resetGameInputs();
- savedPreferences=preferences.sanitize(next);visuals=preferences.effective(savedPreferences);
+ savedPreferences=preferences.sanitize(next);visuals=preferences.effective(savedPreferences);applyPhysicsRate(savedPreferences.physicsHz);
  window.qbitsSelectionHud?.setHint?.('Mantén '+inputLabel('hud')+' para elegir · Ctrl + clic para quitar');
  window.QBitsSubtitles?.apply(savedPreferences);
  window.QBitsGuideAudio?.configure(savedPreferences);window.QBitsFootsteps?.configure(savedPreferences);window.QBitsJoinAudio?.configure(savedPreferences);
@@ -8019,6 +8049,7 @@ function updateCullingHud(force=false){
  if(el.hidden||(!force&&performance.now()<cullingLab.nextHud))return;cullingLab.nextHud=performance.now()+300;
  const r=cullingLab.last,b=cullingLab.benchmark,fmt=n=>Number.isFinite(n)?n.toFixed(2):'—';
  const lines=[cullingLab.observer?'OBSERVADOR · frustum del jugador':'RENDIMIENTO · vista del jugador'];
+ lines.push('Simulación: '+savedPreferences.physicsHz+' pasos/s');
  if(b)lines.push('A/B · escena congelada · '+(b.phase+1)+'/4 · culling '+(b.enabled?'ON':'OFF')+' · Esc cancela');
  else lines.push('Culling '+(visuals.culling===false?'OFF':'ON')+' · / alternar · Num7 observador · Num8 panel · Num9 A/B');
  if(r){lines.push('Q-bits omitidos: '+r.hiddenPieces+'/'+r.pieces+' · conjuntos '+r.culled+'/'+r.groups);lines.push('Dibujo escena: '+r.calls+' llamadas · '+Math.round(r.triangles)+' triángulos');lines.push('CPU render: '+fmt(r.cpuMs)+' ms · simulación: '+(b?'pausada':fmt(cullingLab.simulationMs)+' ms'));}
@@ -8174,3 +8205,4 @@ window.QBitsGame={
 };
 
 })();
+

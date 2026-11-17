@@ -2,7 +2,21 @@
 
 Actualizado: 17 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega: culling y banco de medición — 17 de noviembre de 2026
+## Última entrega: consultas mecánicas y pasos configurables — 17 de noviembre de 2026
+
+Índice persistente de pertenencia de piezas, rotores y conexiones; se invalida al crear, retirar, unir o separar grupos y articulaciones. Las posiciones y la energía siguen leyéndose en vivo. Se conserva el orden de recorrido previo para no cambiar la distribución de energía. Brazos y cintas resuelven sus articulaciones por índice.
+
+Las cintas consultan los contactos de su propio cuerpo. El índice se comparte dentro de la fase de simulación y se renueva al entrar al solver, después de la nueva detección de colisiones: Cannon reutiliza su array de contactos, así que su identidad o longitud no son una señal suficiente de validez.
+
+Configuración → Rendimiento → **Pasos de simulación por segundo**: 240 predeterminado, 120 y 60 para probar. Aplicación únicamente al guardar, descarte sin efecto y restauración a 240. El ajuste es independiente de la calidad gráfica y se muestra en el panel de rendimiento. Mantiene la escala de tiempo; recalibra las ecuaciones explícitas de articulaciones, frenos y pinzas existentes y futuras. Cambiar de frecuencia no revierte colisiones anteriores ni garantiza estabilidad para todos los montajes; si aparecen temblores o atravesamientos, volver a 240.
+
+Verificación: **848/848 pruebas Node aprobadas**, cero fallos u omisiones; shaders y fixtures GLES aprobados. Incluye invalidación tras soldar/separar/borrar, posiciones vivas, reutilización del array de contactos, guardar/descartar/restaurar frecuencias y un motor simple en las tres frecuencias. No se certifica aquí una partida visual en navegador ni todos los mecanismos a 60/120.
+
+[Comparación CPU reproducible](benchmarks/runtime-lookups-20261117.json) contra `458b786`: 256 piezas/20 rotores activos y cuatro cintas alimentadas/150 piezas, a 240 pasos. Estados finales exactamente iguales en posiciones, velocidades, energía y controladores. Medianas de CPU por paso: 4,478 → 4,365 ms y 3,454 → 3,310 ms (aprox. 2,5 % y 4,2 %); tres repeticiones, mejora pequeña con variación entre muestras. Son tiempos de simulación con DOM/GPU simulados, no FPS, límite de capacidad ni garantía de mejora en PC. Reproducir con `node tests/benchmark-runtime-lookups.cjs /ruta/al/game.js-anterior`.
+
+Siguiente paso: probar esta tanda en la instalación real del jugador, primero a 240; después comparar 120/60 con el mismo montaje. Esta entrega no modifica geometría, miniaturas ni desarme; esas tandas permanecen pendientes de definir.
+
+## Entrega anterior: culling y banco de medición — 17 de noviembre de 2026
 
 Frustum culling en el renderizador WebGL propio, activado por defecto y guardable en Configuración → Rendimiento. Descarta conjuntos antes de preparar mallas; conserva límites completos, hélices giratorias, gestos, bordes PSX y sombras que aún se ven. Los indicadores seleccionados mantienen su dibujo aunque su cuerpo quede fuera de cámara. Cajas, geometrías de radio conocido, contornos, cables y miniaturas de repisas también tienen descarte conservador. No se cambia la física, energía, navegación, sensores, producción ni el contenido de guardados.
 
@@ -453,3 +467,4 @@ Calibración inicial: 0,25 kg/u, techo de empuje de 14,7 N por hélice a nivel d
 Verificación de cierre: **715 pruebas Node aprobadas, cero fallos u omisiones**; sintaxis y `git diff --check` correctos. `validate-focus-gles.py` aprobó shaders y fixtures; `validate-robot-arm-gles.py` reprodujo **24 escenas sin errores GPU**. Se verificaron despegue, altura y aterrizaje con una, dos, tres y cuatro hélices; avance, inversión, agotamiento, agarre con carga real, encaje manual en ambos sentidos, obstrucción, desmontaje, planos, guardado y repisas. Las capturas GLES incluyen la hélice detenida y dos fases de giro, junto a la regresión visual de brazos y cintas. Pruebas de Cannon real y render GLES con DOM simulado: no equivalen a una partida en navegador ni certifican FPS en el equipo del jugador.
 
 Siguiente paso: probar primero el Dron de prueba a 0,5 m y velocidad cero; luego 0,3 m/s y aterrizaje. Después contrastar peso, autonomía y comportamiento de las construcciones del jugador antes de aumentar límites o incorporar misiones de vuelo.
+
