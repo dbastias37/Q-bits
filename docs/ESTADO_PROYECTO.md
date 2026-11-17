@@ -2,7 +2,17 @@
 
 Actualizado: 17 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega: marcha del conjunto — 17 de noviembre de 2026
+## Última entrega: culling y banco de medición — 17 de noviembre de 2026
+
+Frustum culling en el renderizador WebGL propio, activado por defecto y guardable en Configuración → Rendimiento. Descarta conjuntos antes de preparar mallas; conserva límites completos, hélices giratorias, gestos, bordes PSX y sombras que aún se ven. Los indicadores seleccionados mantienen su dibujo aunque su cuerpo quede fuera de cámara. Cajas, geometrías de radio conocido, contornos, cables y miniaturas de repisas también tienen descarte conservador. No se cambia la física, energía, navegación, sensores, producción ni el contenido de guardados.
+
+Banco: Num7 alterna observador con avatar/frustum del jugador; mouse y WASD siguen controlando al jugador. Manipulación bloqueada hasta regresar. Num8 muestra mediciones; Num9 congela la misma escena para OFF/ON/ON/OFF, calentamiento y 72 muestras por modo, con cancelación segura. `/` alterna culling salvo si tiene otra acción asignada. P ofrece botones para teclados sin numpad. [Guía y alcance](CULLING_QBITS.md).
+
+Verificación: **839/839 pruebas Node aprobadas**, cero fallos u omisiones; sintaxis/diff correctos y shaders/enfoque GLES aprobados. Verificación gráfica: 22 capturas GLES, diez pares OFF/ON sin diferencias de píxeles en 800×600, estilos limpio/PSX, sombras, borde, conjuntos y hélice; cero errores GPU/buffers. Observador inspeccionado. [Microprueba de envío gráfico](benchmarks/culling-20261117.json) con 80/500/2000 piezas; tiempos JavaScript con GL simulado, no FPS. El navegador remoto no logró crear WebGL: pendiente partida en PC del jugador. La reducción de llamadas no garantiza mejora si domina la física o si todo está delante de cámara.
+
+Siguiente paso: comparar las instalaciones reales del jugador con Num9 y revisar el panel de tiempos en primera persona. No atribuir a GPU el tiempo CPU de envío ni medir la ganancia con el observador activo.
+
+## Entrega anterior: marcha del conjunto — 17 de noviembre de 2026
 
 Los servos físicamente conectados comparten un controlador de marcha. En **P → Mecanismos → Marcha del conjunto** aparecen caderas y rodillas; se elige el extremo inicial mínimo/máximo de cada articulación y se inicia o detiene todo con un botón. Cada fila permite seleccionar su articulación para ajustar el recorrido. Clic derecho sobre un servo también ofrece inicio/parada del conjunto.
 

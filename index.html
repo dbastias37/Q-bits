@@ -311,7 +311,8 @@ input,select,textarea{font-family:var(--font-menu);}
 <link rel="stylesheet" href="assets/css/workshop-panel.css?v=20261116-robot-arm-1">
 <link rel="stylesheet" href="assets/css/robot-arm-panel.css?v=20261116-power-cables-1">
 <link rel="stylesheet" href="assets/css/conveyor-panel.css?v=20261116-quick-catalogue-1">
-<link rel="stylesheet" href="assets/css/servo-panel.css?v=20261117-marcha-1">
+<link rel="stylesheet" href="assets/css/servo-panel.css?v=20261117-culling-1">
+  <link rel="stylesheet" href="assets/css/culling-lab.css?v=20261117-culling-1">
 </head>
 <body data-game-mode="boot" data-game-scene="lab" data-booting="true">
   <section id="boot-screen" aria-label="Inicio de Q-bits" data-stage="loading">
@@ -372,7 +373,13 @@ input,select,textarea{font-family:var(--font-menu);}
       <footer class="workshop-footer"><div><p id="workshop-reason"></p><p id="workshop-feedback" role="status" aria-live="polite"></p></div><div class="workshop-footer-actions"><button id="workshop-return" type="button">Volver a la sala</button><button id="workshop-apply" type="button">Aplicar</button></div></footer>
     </div>
   </section>
+  <aside id="culling-hud" hidden aria-label="Mediciones de renderizado"></aside>
   <section id="panel" hidden aria-label="Panel de pruebas">
+    <details class="culling-tools"><summary>Prueba de rendimiento · culling</summary>
+      <p>Oculta del dibujo lo que está fuera de la vista. La física y las máquinas continúan. Num7 muestra al jugador desde fuera; mouse y WASD siguen controlando su mirada y posición. Vuelve con Num7 para manipular piezas.</p>
+      <div class="actions"><button id="culling-toggle" type="button">Culling: activado</button><button id="culling-observer" type="button">Observador · Num7</button><button id="culling-stats" type="button">Mediciones · Num8</button><button id="culling-benchmark" type="button">Comparar A/B · Num9</button></div>
+      <p>A/B congela la escena unos segundos y compara OFF / ON / ON / OFF, sin cámara externa. Esc cancela. No cambia tu configuración. / alterna culling si esa tecla no tiene otra acción asignada.</p>
+    </details>
     <h2>Q-bits · Panel de pruebas</h2><p id="editing"></p>
     <div class="tabs" role="tablist"><button id="tab-cube" role="tab" aria-controls="page-cube" aria-selected="true">Piezas</button><button id="tab-route" role="tab" aria-controls="page-route" aria-selected="false">Recorrido</button><button id="tab-cargo" role="tab" aria-controls="page-cargo" aria-selected="false">Cuerpos</button><button id="tab-puzzle" role="tab" aria-controls="page-puzzle" aria-selected="false">Puzle</button><button id="tab-mechanisms" role="tab" aria-controls="page-mechanisms" aria-selected="false">Mecanismos</button><button id="tab-alpha" role="tab" aria-controls="page-alpha" aria-selected="false">Alfa</button><button id="tab-manual" role="tab" aria-controls="page-manual" aria-selected="false">Manual</button></div>
     <div id="page-cube" role="tabpanel">
@@ -714,7 +721,7 @@ input,select,textarea{font-family:var(--font-menu);}
    <div id="settings-confirm" hidden role="alertdialog" aria-modal="true" aria-labelledby="settings-confirm-title"><div class="settings-confirm-card"><h3 id="settings-confirm-title">¿Salir sin guardar?</h3><p>Tienes cambios pendientes en la configuración.</p><div class="settings-confirm-actions"><button id="settings-keep" type="button">Seguir editando</button><button id="settings-discard" type="button">Salir sin guardar</button><button id="settings-confirm-save" type="button">Guardar y salir</button></div></div></div>
   </section>
   <script src="assets/js/opening.js?v=20261116-block-joins-1" defer></script>
-  <script src="assets/js/servo-panel.js?v=20261117-marcha-1" defer></script>
-  <script src="assets/js/boot.js?v=20261117-marcha-1" defer></script>
+  <script src="assets/js/servo-panel.js?v=20261117-culling-1" defer></script>
+  <script src="assets/js/boot.js?v=20261117-culling-1" defer></script>
 </body>
 </html>

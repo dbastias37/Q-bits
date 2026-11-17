@@ -120,6 +120,7 @@ function environment({ autoFonts = true, openingFailure = null, randomValue = .5
     await scriptResult('selection-hud.js');
     await scriptResult('preferences.js');
     await scriptResult('graphics.js');
+    await scriptResult('culling.js');
     await scriptResult('glass.js');
     await scriptResult('settings.js');
     await scriptResult('game.js');

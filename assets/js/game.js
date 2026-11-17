@@ -69,6 +69,47 @@ if (!gl) {
 }
 
 const postEffects=window.QBitsGraphics?.create(gl),surfaceTexture=window.QBitsGraphics?.surface(gl),radialGlass=window.QBitsGlass?.create(gl);
+// Visibility is a render decision only. Bodies, energy, routes and sensors keep
+// their normal simulation even when none of their geometry reaches the GPU.
+const visibilityFrustum=window.QBitsCulling?.createFrustum();
+const renderVisibility={active:false,enabled:false,serial:0,groups:0,culled:0,pieces:0,hiddenPieces:0,shadowGroups:0};
+const cullingLab={observer:false,stats:false,renderView:null,benchmark:null,result:null,last:null,frameSamples:[],simulationMs:0,lastFrame:null,nextHud:0,gpu:null};
+const renderCounts={active:false,calls:0,triangles:0,lines:0};
+const geometryRadii=new Map();
+function submitDraw(mode,first,count){
+ if(renderCounts.active){renderCounts.calls++;if(mode===gl.TRIANGLES)renderCounts.triangles+=count/3;else if(mode===gl.TRIANGLE_STRIP)renderCounts.triangles+=Math.max(0,count-2);else if(mode===gl.LINES)renderCounts.lines+=count/2;}
+ gl.drawArrays(mode,first,count);
+}
+function deleteRenderBuffer(b){geometryRadii.delete(b);gl.deleteBuffer(b);}
+function renderSphereVisible(p,r){return !renderVisibility.active||!renderVisibility.enabled||visibilityFrustum.intersectsSphere(p.x,p.y,p.z,r+.025);}
+function renderPointsVisible(points,padding=.04){
+ if(!renderVisibility.active||!renderVisibility.enabled||!points.length)return true;
+ let minX=Infinity,minY=Infinity,minZ=Infinity,maxX=-Infinity,maxY=-Infinity,maxZ=-Infinity;
+ for(const p of points){minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);minZ=Math.min(minZ,p.z);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);maxZ=Math.max(maxZ,p.z);}
+ return visibilityFrustum.intersectsSphere((minX+maxX)/2,(minY+maxY)/2,(minZ+maxZ)/2,Math.hypot(maxX-minX,maxY-minY,maxZ-minZ)/2+padding);
+}
+function renderGroupRadius(g){
+ let cached=g.renderRadius;
+ if(!cached||cached.parts!==g.parts){
+  let extra=0;
+  for(const module of propellerLayout(g)){
+   const hub=module.hub,tip=add(hub.offset,hub.q.vmult(V(0,CUBE_SIZE*51/56,0)));
+   for(const blade of module.blades)for(const v of unitProfile(blade).vertices){const p=add(blade.offset,blade.q.vmult(v));extra=Math.max(extra,tip.norm()+p.distanceTo(tip));}
+  }
+  cached=g.renderRadius={parts:g.parts,extra};
+ }
+ return Math.max(g.body.boundingRadius,cached.extra)+.03;
+}
+function renderGroupVisible(g){
+ if(!renderVisibility.active||!renderVisibility.enabled)return true;
+ if(g.renderVisibilitySerial!==renderVisibility.serial){g.renderVisibilitySerial=renderVisibility.serial;g.renderVisible=renderSphereVisible(g.body.position,renderGroupRadius(g));}
+ return g.renderVisible;
+}
+function renderShadowVisible(g){
+ if(!renderVisibility.enabled)return true;
+ const p=g.body.position,r=renderGroupRadius(g);
+ return visuals.shadows==='sharp'?visibilityFrustum.intersectsSphere(p.x+.6*Math.max(0,p.y),.0015,p.z-.35*Math.max(0,p.y),r*1.219+.025):visibilityFrustum.intersectsSphere(p.x,.001,p.z,r+.43);
+}
 const vertexSource = `
   attribute vec3 aPosition;
   attribute vec3 aNormal;
@@ -362,6 +403,8 @@ function setHudInput(enabled,source='keyboard'){
  else {if(!hudInputActive)return;hudInputActive=false;window.qbitsSelectionHud?.setInteractive(false,source);const capture=hudReturnCapture;hudReturnCapture=false;if(capture&&!document.hidden&&story.mode==='playing'&&!story.transition)captureMouse();}
 }
 function dispatchControlAction(id,down,source='keyboard',event={}){
+ if(cullingLab.benchmark)return;
+ if(cullingLab.observer&&down&&!['forward','backward','left','right','crouch','pause','tools','fullscreen'].includes(id)){announce('Modo observador · 7 numérico para volver y manipular');return;}
  const token=source+':'+id,holders=controlHolds.get(id)||new Set();
  if(down){if(holders.has(token))return;holders.add(token);controlHolds.set(id,holders);if(holders.size>1)return;}
  else {holders.delete(token);if(holders.size)return;controlHolds.delete(id);}
@@ -386,8 +429,10 @@ function dispatchControlAction(id,down,source='keyboard',event={}){
 function releaseInputSource(source){for(const [id,holders]of [...controlHolds])if(holders.has(source+':'+id))dispatchControlAction(id,false,source,{cancelled:true});}
 function resetGameInputs(){keyboardInput?.clear();releaseInputSource('gamepad');gamepadActive=false;gamepadMove=[0,0];controller?.reset();if(hudInputActive){hudReturnCapture=false;setHudInput(false);}keys.clear();}
 function onPhysicalKeyDown(event){
+ if(cullingLab.benchmark){if(event.code==='Escape'){event.preventDefault();cancelCullingBenchmark();}return;}
  if(workshopPanel?.isOpen){if(['Escape','KeyE','KeyP'].includes(event.code)&&(!editableTarget(event.target)||event.code==='Escape')){event.preventDefault();closeWorkshopPanel(true);}return;}
  if(event.defaultPrevented||settingsScreen?.isOpen||editableTarget(event.target)||editableTarget(document.activeElement))return;
+ if(story.mode==='playing'&&!event.ctrlKey&&!event.altKey&&!event.metaKey&&!window.QBitsControls?.keyboardAction(savedPreferences.controls.keyboard,event.code)&&['Numpad7','Numpad8','Numpad9','Slash'].includes(event.code)){event.preventDefault();if(!event.repeat)({'Numpad7':toggleCullingObserver,'Numpad8':toggleCullingStats,'Numpad9':startCullingBenchmark,'Slash':toggleCulling})[event.code]();return;}
  if(!event.repeat&&!event.ctrlKey&&!event.altKey&&!event.metaKey&&(event.code==='Backquote'||event.key==='º')&&quickWake()){event.preventDefault();return;}
  if(event.code==='Escape'){event.preventDefault();if(hudInputActive){hudReturnCapture=false;setHudInput(false);}handleKey(controlEvent('Escape',event));return;}
  if(hudInputActive&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter','Space'].includes(event.code)){event.preventDefault();if(event.code==='Enter'||event.code==='Space')window.qbitsSelectionHud?.activateFocused({toggle:ctrlDown()||event.ctrlKey,source:'keyboard'});else window.qbitsSelectionHud?.stepFocus(event.code==='ArrowLeft'||event.code==='ArrowUp'?-1:1);return;}
@@ -484,6 +529,7 @@ function pause(release=true) {
 }
 
 function resize() {
+  if(cullingLab.benchmark)cancelCullingBenchmark();
   const scale = visualResolution(canvas.clientWidth,canvas.clientHeight,visuals);
   const width = Math.max(1, Math.round(canvas.clientWidth * scale));
   const height = Math.max(1, Math.round(canvas.clientHeight * scale));
@@ -542,6 +588,7 @@ document.addEventListener('pointerlockchange', () => {
 });
 document.addEventListener('pointerlockerror', lockFailed);
 document.addEventListener('mousemove', event => {
+  if(cullingLab.benchmark)return;
   if(radialOpen()){
     if(document.pointerLockElement===canvas)unitRadial.moveBy(event.movementX,event.movementY);
     else unitRadial.moveTo(event.clientX,event.clientY);
@@ -3422,7 +3469,7 @@ function restorePowerNetwork(saved){
 // A wire is made from real cubes; drafting is reversible until the last click.
 let powerDraft=null,powerModelCache=null;
 const powerRibbonCaches=new Map();
-function clearPowerRibbonCache(cable=null){for(const [key,mesh]of powerRibbonCaches)if(!cable||key===cable){gl.deleteBuffer(mesh.buffer);powerRibbonCaches.delete(key);}boundGeometry=null;}
+function clearPowerRibbonCache(cable=null){for(const [key,mesh]of powerRibbonCaches)if(!cable||key===cable){deleteRenderBuffer(mesh.buffer);powerRibbonCaches.delete(key);}boundGeometry=null;}
 function powerMaterialGroups(list){
  const picked=[...new Set(list)].filter(g=>groups.includes(g)),parts=picked.flatMap(g=>worldParts(g));
  if(!picked.length||!parts.length||parts.length>8||picked.some(g=>rotorForGroup(g)||g.robotHeld||g.blueprintJob||g.cooler||g.parts.some(p=>p.mood.flight))||parts.some(p=>!powerCopyMaterial(p)))return null;
@@ -3568,6 +3615,7 @@ function drawPowerRibbon(points,color,fraction=1){
  drawCachedPowerRibbon('preview',revealed,color);
 }
 function drawCachedPowerRibbon(cable,points,color){
+ if(!renderPointsVisible(points,.0125*visuals.pathWidth+.025))return;
  const signature=visuals.pathWidth+':'+points.map(p=>[p.x,p.y,p.z].map(v=>v.toFixed(4)).join(',')).join(';');let mesh=powerRibbonCaches.get(cable);
  if(!mesh){mesh={buffer:gl.createBuffer(),count:0,signature:null};powerRibbonCaches.set(cable,mesh);}
  if(mesh.signature!==signature){const data=[];
@@ -3768,6 +3816,7 @@ document.querySelector('#resume').addEventListener('click',()=>{panel.hidden=tru
 canvas.addEventListener('mousedown',onPhysicalMouseDown);
 document.addEventListener('mouseup',onPhysicalMouseUp);
 function handleWheel(event){
+ if(cullingLab.benchmark)return;
  if(radialOpen()){event.preventDefault();return;}
  if(!gameInputActive())return;
  if(creationPreview){event.preventDefault();creationPreview.turns=(creationPreview.turns+Math.sign(event.deltaY)*(savedPreferences.invertPieceRotation?-1:1)+4)%4;updateCreationPlacement();return;}
@@ -3842,7 +3891,7 @@ face([[-.5,-.5,-.5],[-.5,-.5,.5],[-.5,.5,.5],[-.5,.5,-.5]],[-1,0,0]);
 face([[.5,-.5,.5],[.5,-.5,-.5],[.5,.5,-.5],[.5,.5,.5]],[1,0,0]);
 face([[.5,-.5,-.5],[-.5,-.5,-.5],[-.5,.5,-.5],[.5,.5,-.5]],[0,0,-1]);
 face([[-.5,-.5,.5],[.5,-.5,.5],[.5,.5,.5],[-.5,.5,.5]],[0,0,1]);
-function buffer(data){const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);return b;}
+function buffer(data){const b=gl.createBuffer();let radius=0;for(let i=0;i+2<data.length;i+=6)radius=Math.max(radius,Math.hypot(data[i],data[i+1],data[i+2]));geometryRadii.set(b,radius);gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);return b;}
 const cubeVertexData=vertices.slice(roomVertexCount),cubeGeometry=buffer(cubeVertexData);vertices.length=roomVertexCount;
 const unitMeshes={cube:{buffer:cubeGeometry,count:36,data:cubeVertexData}};
 for(const shape of ['tetra','pyramid','coupler']){
@@ -3863,19 +3912,19 @@ function setPose(pos,q=Q(),dimensions=V(CUBE_SIZE,CUBE_SIZE,CUBE_SIZE)){
  gl.uniform3f(uniforms.uCenter,pos.x,pos.y,pos.z);gl.uniform4f(uniforms.uQuaternion,q.x,q.y,q.z,q.w);gl.uniform3f(uniforms.uDimensions,dimensions.x,dimensions.y,dimensions.z);
 }
 function tint(r,g,b,a){gl.uniform4f(uniforms.uTint,r,g,b,a);}
-function drawBox(pos,q,dimensions,color){bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,3);setPose(pos,q,dimensions);tint(...color);gl.drawArrays(gl.TRIANGLES,0,36);}
-function drawUnitMesh(pose,color=null,kind=null){const shape=unitShape(pose),mesh=unitMeshes[shape];bindGeometry(mesh.buffer);gl.uniform1f(uniforms.uKind,kind??(shape==='cube'?1:5));setPose(pose.p,pose.q);if(shape==='coupler'&&!color&&kind===null){tint(.20,.23,.24,1);gl.drawArrays(gl.TRIANGLES,0,30);tint(.53,.59,.58,1);gl.drawArrays(gl.TRIANGLES,30,12);return;}if(color)tint(...color);else if(shape!=='cube')tint(.48,.48,.48,1);gl.drawArrays(gl.TRIANGLES,0,mesh.count);}
+function drawBox(pos,q,dimensions,color){if(!renderSphereVisible(pos,Math.hypot(dimensions.x,dimensions.y,dimensions.z)/2))return;bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,3);setPose(pos,q,dimensions);tint(...color);submitDraw(gl.TRIANGLES,0,36);}
+function drawUnitMesh(pose,color=null,kind=null){const shape=unitShape(pose),mesh=unitMeshes[shape];if(!renderSphereVisible(pose.p,(geometryRadii.get(mesh.buffer)||1)*CUBE_SIZE))return;bindGeometry(mesh.buffer);gl.uniform1f(uniforms.uKind,kind??(shape==='cube'?1:5));setPose(pose.p,pose.q);if(shape==='coupler'&&!color&&kind===null){tint(.20,.23,.24,1);submitDraw(gl.TRIANGLES,0,30);tint(.53,.59,.58,1);submitDraw(gl.TRIANGLES,30,12);return;}if(color)tint(...color);else if(shape!=='cube')tint(.48,.48,.48,1);submitDraw(gl.TRIANGLES,0,mesh.count);}
 function drawUnitFaceGuide(face){
  const points=face.vertices.map(p=>add(p,mul(face.normal,.0007))),data=[];
  for(let i=1;i<points.length-1;i++)for(const p of [points[0],points[i],points[i+1]])data.push(p.x,p.y,p.z,face.normal.x,face.normal.y,face.normal.z);
- gl.bindBuffer(gl.ARRAY_BUFFER,faceGuideGeometry);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.DYNAMIC_DRAW);bindGeometry(faceGuideGeometry);gl.uniform1f(uniforms.uKind,3);setPose(V(),Q(),V(1,1,1));tint(.12,.64,.67,.4);gl.drawArrays(gl.TRIANGLES,0,data.length/6);
+ gl.bindBuffer(gl.ARRAY_BUFFER,faceGuideGeometry);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.DYNAMIC_DRAW);bindGeometry(faceGuideGeometry);gl.uniform1f(uniforms.uKind,3);setPose(V(),Q(),V(1,1,1));tint(.12,.64,.67,.4);submitDraw(gl.TRIANGLES,0,data.length/6);
  drawLines(points.flatMap((p,i)=>[p,points[(i+1)%points.length]]),[.18,.67,.69,.95]);
 }
-function drawRing(pos,radius,alpha,color=[.12,.36,.36]){bindGeometry(ringGeometry);gl.uniform1f(uniforms.uKind,3);setPose(pos,Q(),V(radius,1,radius));tint(...color,alpha);gl.drawArrays(gl.LINES,0,96);}
+function drawRing(pos,radius,alpha,color=[.12,.36,.36]){if(!renderSphereVisible(pos,radius))return;bindGeometry(ringGeometry);gl.uniform1f(uniforms.uKind,3);setPose(pos,Q(),V(radius,1,radius));tint(...color,alpha);submitDraw(gl.LINES,0,96);}
 function drawLines(points,color){
  if(!points.length)return;const data=[];for(const p of points)data.push(p.x,p.y,p.z,0,1,0);
  gl.bindBuffer(gl.ARRAY_BUFFER,lineGeometry);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.DYNAMIC_DRAW);bindGeometry(lineGeometry);
- gl.uniform1f(uniforms.uKind,3);setPose(V(),Q(),V(1,1,1));tint(...color);gl.drawArrays(gl.LINES,0,points.length);
+ gl.uniform1f(uniforms.uKind,3);setPose(V(),Q(),V(1,1,1));tint(...color);submitDraw(gl.LINES,0,points.length);
 }
 function drawGuides(){
  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
@@ -3932,7 +3981,7 @@ function batteryLiquidEntry(pack){
  entry.size=batteryLiquidSize(pack);entry.fraction=pack.fraction;return entry;
 }
 function resetBatteryLiquids(body=null){
- for(const [key,entry]of batteryLiquids)if(!body||entry.body===body){if(entry.buffer)gl.deleteBuffer(entry.buffer);batteryLiquids.delete(key);}
+ for(const [key,entry]of batteryLiquids)if(!body||entry.body===body){if(entry.buffer)deleteRenderBuffer(entry.buffer);batteryLiquids.delete(key);}
  boundGeometry=null;
 }
 function updateBatteryLiquids(dt,paused=false){
@@ -3940,7 +3989,7 @@ function updateBatteryLiquids(dt,paused=false){
   const entry=batteryLiquidEntry(pack),offset=sub(pack.p,pack.body.position),velocity=add(pack.body.velocity,pack.body.angularVelocity.cross(offset));alive.add(entry.key);
   entry.normal=QBitsBatteryLiquid.updateState(entry.state,{position:[pack.p.x,pack.p.y,pack.p.z],quaternion:[pack.q.x,pack.q.y,pack.q.z,pack.q.w],velocity:[velocity.x,velocity.y,velocity.z],angularVelocity:[pack.body.angularVelocity.x,pack.body.angularVelocity.y,pack.body.angularVelocity.z],dt,paused},entry.size,pack.fraction).slice();
  }
- for(const [key,entry]of batteryLiquids)if(!alive.has(key)){if(entry.buffer)gl.deleteBuffer(entry.buffer);batteryLiquids.delete(key);boundGeometry=null;}
+ for(const [key,entry]of batteryLiquids)if(!alive.has(key)){if(entry.buffer)deleteRenderBuffer(entry.buffer);batteryLiquids.delete(key);boundGeometry=null;}
  return batteryLiquids.size;
 }
 function batteryLiquidMesh(pack){
@@ -3984,7 +4033,7 @@ function drawBatteryGlass(pack){
  drawAsset({buffer:cubeGeometry,count:36},pack.p,pack.q,size,[.7,.9,.8,1],16);
 }
 function drawBatteriesTransparent(){
- const packs=groups.flatMap(batteryVisualPacks).sort((a,b)=>b.p.distanceTo(V(...camera))-a.p.distanceTo(V(...camera)));
+ const packs=groups.filter(renderGroupVisible).flatMap(batteryVisualPacks).sort((a,b)=>b.p.distanceTo(V(...camera))-a.p.distanceTo(V(...camera)));
  if(!packs.length)return;
  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
  for(const pack of packs)drawBatteryGlass(pack);
@@ -4032,7 +4081,7 @@ function drawConveyorBlueprintArrows(bp,targets){
 // glass/liquid and gripper markings retain their own dynamic render passes.
 function disposeRigidCubeBatch(g){
  const entry=g.rigidCubeBatch;if(!entry)return;
- for(const batch of entry.batches||[entry])if(batch.buffer){gl.deleteBuffer(batch.buffer);if(boundGeometry===batch.buffer)boundGeometry=null;}
+ for(const batch of entry.batches||[entry])if(batch.buffer){deleteRenderBuffer(batch.buffer);if(boundGeometry===batch.buffer)boundGeometry=null;}
  delete g.rigidCubeBatch;
 }
 function rigidCubeBatch(g){
@@ -4064,11 +4113,12 @@ function rigidCubeBatch(g){
  g.rigidCubeBatch={parts:g.parts,local,batches,count:cubes?.count||0,buffer:cubes?.buffer||null};return batches.length?g.rigidCubeBatch:null;
 }
 function drawGroupSolid(g){
+ if(!renderGroupVisible(g))return;
  const batteries=batteryVisualPacks(g);
- if(g.block&&!batteries.length){disposeRigidCubeBatch(g);const p=moodVisualPose(g,blockPose(g));bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,1);setPose(p.p,p.q,p.size);gl.drawArrays(gl.TRIANGLES,0,36);}
+ if(g.block&&!batteries.length){disposeRigidCubeBatch(g);const p=moodVisualPose(g,blockPose(g));bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,1);setPose(p.p,p.q,p.size);submitDraw(gl.TRIANGLES,0,36);}
  else {
   const batch=rigidCubeBatch(g);
-  if(batch)for(const material of batch.batches){bindGeometry(material.buffer,true);gl.uniform1f(uniforms.uKind,material.kind);setPose(g.body.position,g.body.quaternion,V(1,1,1));if(material.color)tint(...material.color);gl.drawArrays(gl.TRIANGLES,0,material.count);}
+  if(batch)for(const material of batch.batches){bindGeometry(material.buffer,true);gl.uniform1f(uniforms.uKind,material.kind);setPose(g.body.position,g.body.quaternion,V(1,1,1));if(material.color)tint(...material.color);submitDraw(gl.TRIANGLES,0,material.count);}
   const blades=new Set(propellerLayout(g).flatMap(m=>m.blades));
   for(const part of g.parts)if(!isExternalBattery(part)&&(!batch||blades.has(part))){const p=propellerVisualPose(g,part);drawUnitMesh(g.parts.length===1?{...moodVisualPose(g,p),part}:p);}
  }
@@ -4077,14 +4127,13 @@ function drawGroupSolid(g){
 }
 function drawQubits(){
  bindGeometry(shadowGeometry);gl.uniform1f(uniforms.uKind,2);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
- for(const g of groups)for(const p of poses(g)){
-  if(visuals.shadows==='off')continue;
+ if(visuals.shadows!=='off')for(const g of groups){if(renderVisibility.active&&!renderShadowVisible(g))continue;if(renderVisibility.active)renderVisibility.shadowGroups++;for(const p of poses(g)){
   if(visuals.shadows==='sharp'){drawSharpShadow(p);bindGeometry(shadowGeometry);gl.uniform1f(uniforms.uKind,2);continue;}
   const height=Math.max(0,p.p.y-HALF),scale=.23+Math.min(height,2)*.18;
-  setPose(V(p.p.x,.001,p.p.z),Q(),V(scale,scale,scale));gl.uniform1f(uniforms.uScale,scale);gl.uniform1f(uniforms.uShadow,.22/(1+height*3));gl.drawArrays(gl.TRIANGLES,0,6);
- }
+  setPose(V(p.p.x,.001,p.p.z),Q(),V(scale,scale,scale));gl.uniform1f(uniforms.uScale,scale);gl.uniform1f(uniforms.uShadow,.22/(1+height*3));submitDraw(gl.TRIANGLES,0,6);
+ }}
  gl.depthMask(true);gl.disable(gl.BLEND);
- for(const g of groups){if(g.parts.some(p=>p.mood.production)){for(const p of poses(g))drawBox(p.p,p.q,V(CUBE_SIZE-.002,CUBE_SIZE-.002,CUBE_SIZE-.002),p.part.mood.production?.kind==='A'?[.27,.56,.67,1]:p.part.mood.production?[.72,.53,.26,1]:[.12,.14,.13,1]);if(g.parts.length===2)drawOutline(g.body.position,g.body.quaternion,sub(bounds(g,V(),Q()).max,bounds(g,V(),Q()).min),.8,false);}else drawGroupSolid(g);}
+ for(const g of groups){if(!renderGroupVisible(g))continue;if(g.parts.some(p=>p.mood.production)){for(const p of poses(g))drawBox(p.p,p.q,V(CUBE_SIZE-.002,CUBE_SIZE-.002,CUBE_SIZE-.002),p.part.mood.production?.kind==='A'?[.27,.56,.67,1]:p.part.mood.production?[.72,.53,.26,1]:[.12,.14,.13,1]);if(g.parts.length===2)drawOutline(g.body.position,g.body.quaternion,sub(bounds(g,V(),Q()).max,bounds(g,V(),Q()).min),.8,false);}else drawGroupSolid(g);}
  drawConveyors();drawCargos();drawPuzzle();drawAlpha();drawWorkshop();drawShelves();drawCreationPlacement();drawPowerReservoirs();drawPowerCables();drawBatteriesTransparent();drawStructureOutlines();drawServoGuides();drawGuides();drawTaskGuides();
 }
 addQubit([position[0]-Math.sin(yaw)*1.25,HALF+.003,position[2]-Math.cos(yaw)*1.25]);
@@ -4135,8 +4184,8 @@ function findBlockSnap(source,target){
 function cameraBasis(){return {forward:direction(),right:V(Math.cos(yaw),0,-Math.sin(yaw)),up:V(Math.sin(yaw)*Math.sin(pitch),Math.cos(pitch),Math.cos(yaw)*Math.sin(pitch))};}
 function screenRay(x,y){const b=cameraBasis(),w=canvas.clientWidth,h=canvas.clientHeight,xx=(2*x/w-1)*(w/h)/heldFocus.focal,yy=(1-2*y/h)/heldFocus.focal;const d=add(add(b.forward,mul(b.right,xx)),mul(b.up,yy));d.normalize();return d;}
 function project(p){return projectWithBasis(p,cameraBasis());}
-function projectWithBasis(p,b){
- const x=p.x-camera[0],y=p.y-camera[1],z=p.z-camera[2],depth=x*b.forward.x+y*b.forward.y+z*b.forward.z;if(depth<=.04)return null;
+function projectWithBasis(p,b,eye=camera){
+ const x=p.x-eye[0],y=p.y-eye[1],z=p.z-eye[2],depth=x*b.forward.x+y*b.forward.y+z*b.forward.z;if(depth<=.04)return null;
  const h=previewViewport?.height||canvas.clientHeight,w=previewViewport?.width||canvas.clientWidth;
  return {x:w/2+(x*b.right.x+y*b.right.y+z*b.right.z)*heldFocus.focal*h/2/depth,y:h/2-(x*b.up.x+y*b.up.y+z*b.up.z)*heldFocus.focal*h/2/depth,depth};
 }
@@ -4245,6 +4294,7 @@ for(let axis=0;axis<3;axis++)for(const a of [-.5,.5])for(const b of [-.5,.5]){
 }
 const edgeGeometry=buffer(edgeData);
 function drawOutline(p,q,size,alpha=.85,selectedOutline=false){
+ if(!renderSphereVisible(p,Math.hypot(size.x,size.y,size.z)/2+.02))return;
  const expanded=add(size,V(.0009,.0009,.0009)),points=[];
  for(let i=0;i<edgeData.length;i+=6)points.push(add(p,q.vmult(V(edgeData[i]*expanded.x,edgeData[i+1]*expanded.y,edgeData[i+2]*expanded.z))));
  drawWideLines(points,[...(selectedOutline?visualRGB('outlineColor'):visuals.style==='cel'?[.06,.09,.1]:[.48,.51,.54]),alpha],selectedOutline?visuals.outlineWidth:visuals.style==='cel'?visuals.outlineWidth:1);
@@ -4305,11 +4355,15 @@ function drawStructureOutlines(){
  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
  const selectedGroups=selectionGroups();
  const rotorParts=new Set(selectedRotors().flatMap(r=>[r.aId,r.bId]));
- for(const g of groups){const chosen=selectedGroups.includes(g);
-  if(g.block){const p=moodVisualPose(g,blockPose(g));drawOutline(p.p,p.q,p.size,.88,chosen);}
-  else if(chosen||visuals.style==='cel')drawRigidOutline(g,.85,chosen);
+ for(const g of groups){const visible=renderGroupVisible(g);if(!visible&&(!visuals.markers||!selectedGroups.includes(g)))continue;const chosen=selectedGroups.includes(g);
+  if(visible){
+   if(g.block){const p=moodVisualPose(g,blockPose(g));drawOutline(p.p,p.q,p.size,.88,chosen);}
+   else if(chosen||visuals.style==='cel')drawRigidOutline(g,.85,chosen);
+  }
+  // A screen-space marker extends beyond its body's bound. Keep it separate
+  // so a selected body just below the view does not hide its visible marker.
   if(chosen&&visuals.markers){const bb=bounds(g);drawSelectionMarker(V(bb.center.x,bb.max.y+.025,bb.center.z),simTime);}
-  if(rotorParts.size)for(const pose of poses(g))if(rotorParts.has(pose.part.id))drawUnitOutline(pose,1,true);
+  if(visible&&rotorParts.size)for(const pose of poses(g))if(rotorParts.has(pose.part.id))drawUnitOutline(pose,1,true);
  }
  if(visuals.markers)for(const rotor of selectedRotors()){const p=rotorMenuPoint(rotor);drawSelectionMarker(V(p.x,p.y+CUBE_SIZE*1.5,p.z),simTime);}
  gl.depthMask(true);gl.disable(gl.BLEND);
@@ -5020,9 +5074,9 @@ function drawCargos(){
  for(const c of cargos){
   if(c.dimensions){drawMatter(c);continue;}
   gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);bindGeometry(shadowGeometry);gl.uniform1f(uniforms.uKind,2);const s=c.size*2;
-  if(visuals.shadows==='sharp'){drawProjectedShadow(unitProfile('cube').vertices.map(p=>add(c.body.position,c.body.quaternion.vmult(mul(p,c.size/CUBE_SIZE)))));}else if(visuals.shadows!=='off'){setPose(V(c.body.position.x,.001,c.body.position.z),Q(),V(s,1,s));gl.uniform1f(uniforms.uScale,s);gl.uniform1f(uniforms.uShadow,.2);gl.drawArrays(gl.TRIANGLES,0,6);}
+  if(visuals.shadows==='sharp'){drawProjectedShadow(unitProfile('cube').vertices.map(p=>add(c.body.position,c.body.quaternion.vmult(mul(p,c.size/CUBE_SIZE)))));}else if(visuals.shadows!=='off'){setPose(V(c.body.position.x,.001,c.body.position.z),Q(),V(s,1,s));gl.uniform1f(uniforms.uScale,s);gl.uniform1f(uniforms.uShadow,.2);submitDraw(gl.TRIANGLES,0,6);}
   const intake=c.intake||0,drawSize=c.size*(1-intake*.85);gl.depthMask(intake===0);if(intake===0)gl.disable(gl.BLEND);bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,5);setPose(V(c.body.position.x,c.robotPhysical?c.body.position.y:drawSize/2,c.body.position.z),c.body.quaternion,V(drawSize,drawSize,drawSize));
-  const rgb=[1,3,5].map(i=>parseInt(c.color.slice(i,i+2),16)/255);tint(...rgb,1-intake*.8);gl.drawArrays(gl.TRIANGLES,0,36);
+  const rgb=[1,3,5].map(i=>parseInt(c.color.slice(i,i+2),16)/255);tint(...rgb,1-intake*.8);submitDraw(gl.TRIANGLES,0,36);
   gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);if(!intake)drawOutline(c.body.position,c.body.quaternion,V(c.size,c.size,c.size),.65,selectedCargo===c);gl.depthMask(true);gl.disable(gl.BLEND);
  }
 }
@@ -5190,7 +5244,7 @@ function resolvePuzzlePlayer(oldX,oldZ){
 }
 function drawPuzzle(){
  if(!puzzle.active)return;
- const solid=(p,size,color)=>{bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,5);setPose(p,Q(),size);tint(...color,1);gl.drawArrays(gl.TRIANGLES,0,36);};
+ const solid=(p,size,color)=>{bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,5);setPose(p,Q(),size);tint(...color,1);submitDraw(gl.TRIANGLES,0,36);};
  for(const w of puzzle.walls)if(!w.portal)solid(w.p,mul(w.half,2),[.92,.925,.92]);
  for(const p of puzzle.portals){
   const progress=p.frame*12;
@@ -5205,8 +5259,8 @@ function drawPuzzle(){
   if(p.frame>0&&p.frame<1){const progress=p.frame*12,i=Math.min(11,Math.floor(progress));for(const side of [-1,1]){const point=i<9?V(p.x+side*.63,.09+i*.18,p.z+.025):V(p.x+side*(.63-(i-8)*.18),1.71,p.z+.025);
    for(let k=0;k<9;k++){const phase=(simTime*.7+k*.113)%1,angle=k*2.399,spread=(1-phase)*.13,pos=add(point,V(Math.cos(angle)*spread,Math.sin(angle)*spread,(1-phase)*.10));drawBox(pos,Q(),V(.009,.009,.009),[.48,.53,.55,Math.sin(phase*Math.PI)*.55]);}
   }}
-  if(p.energy>0&&p.frame>0){const amount=Math.min(p.frame,p.energy);bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,6);setPose(V(p.x,.81,p.z+.002),Q(),V(1.08,1.62,.008));tint(...p.rgb,.40*amount);gl.drawArrays(gl.TRIANGLES,0,36);
-   gl.uniform1f(uniforms.uKind,7);setPose(V(p.x,.003,p.z+.35),Q(),V(1.9,.001,1.1));tint(...p.rgb,.11*amount);gl.drawArrays(gl.TRIANGLES,0,36);
+  if(p.energy>0&&p.frame>0){const amount=Math.min(p.frame,p.energy);bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,6);setPose(V(p.x,.81,p.z+.002),Q(),V(1.08,1.62,.008));tint(...p.rgb,.40*amount);submitDraw(gl.TRIANGLES,0,36);
+   gl.uniform1f(uniforms.uKind,7);setPose(V(p.x,.003,p.z+.35),Q(),V(1.9,.001,1.1));tint(...p.rgb,.11*amount);submitDraw(gl.TRIANGLES,0,36);
   }
  }
  drawAlphaButtons();
@@ -5999,7 +6053,7 @@ function buildBoxAssembly(boxes){
   for(const [indices,n] of faces)for(const k of [0,1,2,0,2,3]){const a=v[indices[k]];data.push(p.x+a[0]*h.x,p.y+a[1]*h.y,p.z+a[2]*h.z,...n);}
  }return {buffer:buffer(data),count:data.length/6};
 }
-function drawAsset(mesh,p,q,size,color,kind=5){bindGeometry(mesh.buffer);gl.uniform1f(uniforms.uKind,kind);setPose(p,q,size);tint(...color);gl.drawArrays(gl.TRIANGLES,0,mesh.count);}
+function drawAsset(mesh,p,q,size,color,kind=5){const radius=geometryRadii.get(mesh.buffer);if(radius!==undefined&&!renderSphereVisible(p,radius*Math.max(Math.abs(size.x),Math.abs(size.y),Math.abs(size.z))))return;bindGeometry(mesh.buffer);gl.uniform1f(uniforms.uKind,kind);setPose(p,q,size);tint(...color);submitDraw(gl.TRIANGLES,0,mesh.count);}
 function makeButtonPhysics(buttons=puzzle.buttons){
  for(const b of buttons){b.diameter=b.half*3.05;b.surface=b.diameter*.167*.6;const body=new CANNON.Body({mass:0});body.addShape(new CANNON.Cylinder(b.half,b.half,.004,16),V(),Q().setFromEuler(-Math.PI/2,0,0));body.position.set(b.p.x,b.surface-.002,b.p.z);body.collisionFilterMask=-1;world.addBody(body);buttonBodies.push(body);b.pressBody=body;}
 }
@@ -6022,14 +6076,14 @@ function drawNeonPath(points,color=[.28,.68,.73]){
  color=visualRGB('pathColor');
  if(!points.length)return;gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
  for(let i=0;i+1<points.length;i+=2){const a=points[i],b=points[i+1],d=sub(b,a),length=Math.hypot(d.x,d.z);if(length<.001)continue;const q=Q();q.setFromAxisAngle(V(0,1,0),Math.atan2(d.x,d.z));const center=mul(add(a,b),.5);center.y=Math.max(.006,center.y);
-  bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,8);setPose(center,q,V(.025*visuals.pathWidth,.001,length));tint(...color,.22*alphaSettings.glow);gl.drawArrays(gl.TRIANGLES,0,36);drawBox(add(center,V(0,.001,0)),q,V(.0015*visuals.pathWidth,.001,length),[...color,.8]);
+  bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,8);setPose(center,q,V(.025*visuals.pathWidth,.001,length));tint(...color,.22*alphaSettings.glow);submitDraw(gl.TRIANGLES,0,36);drawBox(add(center,V(0,.001,0)),q,V(.0015*visuals.pathWidth,.001,length),[...color,.8]);
  }gl.depthMask(true);gl.disable(gl.BLEND);
 }
 function drawAlpha(){
  for(const c of coolers){drawAsset(coolerBodyMesh,c.p,Q(),V(1,1,1),[.93,.94,.94,1]);drawAsset(coolerTrayMesh,c.p,Q(),V(1,1,1),[.24,.27,.28,1]);drawAsset(coolerBaseMesh,c.p,Q(),V(1,1,1),[.23,.25,.26,1]);drawAsset(coolerRimMesh,c.p,Q(),V(1,1,1),[.35,.38,.39,1]);drawAsset(coolerAccentMesh,c.p,Q(),V(1,1,1),c.enabled&&alphaSettings.coolingOn?[.53,.75,.79,1]:[.4,.43,.44,1]);}
  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
  for(const bp of blueprints){const occupied=new Set(bp.slots.filter(s=>s.state==='placed').map(s=>s.index));const targets=blueprintTargets(bp);for(let i=0;i<targets.length;i++){if(occupied.has(i))continue;const t=targets[i];if(isTBit(t)){drawUnitMesh(t,[.27,.67,.73,.07],4);drawUnitOutline(t,.4,true);}else{drawBox(t.p,t.q,V(.088,.088,.088),[.27,.67,.73,.07]);drawOutline(t.p,t.q,V(.09,.09,.09),.4,true);}}drawConveyorBlueprintArrows(bp,targets);const bb=blueprintBox(bp);drawRing(V(bp.p.x,.007,bp.p.z),Math.max(.1,Math.min(.65,Math.max(bb.size.x,bb.size.z)/2+.08)),.35);}
- for(const c of coolers)if(c.enabled&&alphaSettings.coolingOn){bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,7);setPose(add(c.p,V(0,.002,0)),Q(),V(1.15,.001,1.15));tint(.2,.63,.73,.13*alphaSettings.glow);gl.drawArrays(gl.TRIANGLES,0,36);}
+ for(const c of coolers)if(c.enabled&&alphaSettings.coolingOn){bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,7);setPose(add(c.p,V(0,.002,0)),Q(),V(1.15,.001,1.15));tint(.2,.63,.73,.13*alphaSettings.glow);submitDraw(gl.TRIANGLES,0,36);}
  gl.depthMask(true);gl.disable(gl.BLEND);
 }
 function updateAccentLights(){const lights=[];if(puzzle.active)for(const p of puzzle.portals)lights.push({p:V(p.x,.8,p.z+.25),c:p.rgb.map(v=>v*p.frame*p.energy)});for(const c of coolers)if(c.enabled&&alphaSettings.coolingOn)lights.push({p:add(c.p,V(0,.3,0)),c:[.2,.65,.8]});lights.sort((a,b)=>a.p.distanceTo(V(...camera))-b.p.distanceTo(V(...camera)));const pos=[],colors=[];for(let i=0;i<4;i++){pos.push(...(lights[i]?[lights[i].p.x,lights[i].p.y,lights[i].p.z]:[0,-100,0]));colors.push(...(lights[i]?.c||[0,0,0]));}gl.uniform3fv(uniforms['uLightPos[0]'],pos);gl.uniform3fv(uniforms['uLightColor[0]'],colors);gl.uniform1f(uniforms.uGlow,alphaSettings.glow);}
@@ -6294,7 +6348,7 @@ document.addEventListener('webkitfullscreenchange',syncFullscreenButton);
 // Campaign prologue. Scene state, narrative timers and test tools share one clock.
 const chapters=[['00','El primer encuentro','Prólogo · tomar, mover y enfriar'],['01','Primer contacto','Llevar un Q-bit a un destino'],['02','Cada uno por su camino','Dos destinos independientes'],['03','Dos lados','Dos botones simultáneos'],['04','Juntos pesamos más','Dos Q-bits en un botón'],['05','La primera unión','Dos piezas · circuito de líquido'],['06','Cambiar de forma','Tres puertas · L, cuadrado y T'],['07','Seis piezas','Rectángulo y escalera'],['08','Salimos juntos','Seis compañeros · fin del primer bloque'],['09','La fuente','Conocer al equipo · transformar materia'],['10','El camino de vuelta','Dos estaciones · transporte y descanso'],['11','Dos rutas','Elegir materia y organizar al equipo'],['12','La instalación','Tres estaciones · el equipo completo']];
 const ui={main:document.querySelector('#main-screen'),pause:document.querySelector('#pause-screen'),levels:document.querySelector('#levels-screen'),complete:document.querySelector('#chapter-complete'),dialogue:document.querySelector('#story-dialogue'),text:document.querySelector('#story-text'),speaker:document.querySelector('#story-speaker'),choices:document.querySelector('#story-choices'),objective:document.querySelector('#story-objective'),veil:document.querySelector('#scene-veil'),top:document.querySelector('#eye-top'),bottom:document.querySelector('#eye-bottom'),cooling:document.querySelector('#cooling-track'),marker:document.querySelector('#world-label')};
-function gameMode(mode){if(mode!=='playing'){window.QBitsGuideAudio?.setPaused(true);window.QBitsFootsteps?.setPaused(true);window.QBitsJoinAudio?.setPaused(true);}if(mode!=='playing')closeUnitRadial(false);story.mode=mode;window.QBitsMusic?.setPaused(!['playing','menu','levels','codex','settings'].includes(mode));document.body.dataset.gameMode=mode;for(const [key,el] of [['menu',ui.main],['pause',ui.pause],['levels',ui.levels],['complete',ui.complete],['codex',document.querySelector('#codex-screen')]])el.hidden=mode!==key;document.querySelector('#pause-button').hidden=mode!=='playing';hint.hidden=true;redraw=true;}
+function gameMode(mode){if(mode!=='playing'){window.QBitsGuideAudio?.setPaused(true);window.QBitsFootsteps?.setPaused(true);window.QBitsJoinAudio?.setPaused(true);}if(mode!=='playing')closeUnitRadial(false);story.mode=mode;if(mode!=='playing'){cullingLab.observer=false;document.body.dataset.cullingObserver='false';cullingLab.lastFrame=null;}updateCullingHud(true);window.QBitsMusic?.setPaused(!['playing','menu','levels','codex','settings'].includes(mode));document.body.dataset.gameMode=mode;for(const [key,el] of [['menu',ui.main],['pause',ui.pause],['levels',ui.levels],['complete',ui.complete],['codex',document.querySelector('#codex-screen')]])el.hidden=mode!==key;document.querySelector('#pause-button').hidden=mode!=='playing';hint.hidden=true;redraw=true;}
 function gameScene(scene){story.scene=scene;document.body.dataset.gameScene=scene;const label=document.querySelector('#chapter-label');label.hidden=scene==='lab';document.querySelector('#chapter-number').textContent=scene==='intro'?'PRÓLOGO / 00':'NIVEL / '+String(story.level||1).padStart(2,'0');document.querySelector('#chapter-name').textContent=scene==='intro'?'El primer encuentro':chapters[story.level||1][1];}
 function storySuspended(){return !!workshopPanel?.isOpen||radialOpen()||story.ready&&(story.mode!=='playing'||!panel.hidden||document.hidden);}
 function storyWalkAllowed(){return !story.ready||story.scene!=='intro'||['deliver','cooling','cooled','choice','repeat'].includes(story.phase);}
@@ -6400,6 +6454,7 @@ function drawStoryGlass(){
 }
 const storyTargetMesh=buildLathe([[.88,.006],[1,.006]],72);
 function clearNarrativeScene(){
+ cancelCullingBenchmark();cullingLab.observer=false;cullingLab.lastFrame=null;document.body.dataset.cullingObserver='false';
  window.QBitsFootsteps?.reset();window.QBitsJoinAudio?.stop();
  clearRobotArms();if(typeof clearConveyors==='function')clearConveyors();
  closeWorkshopPanel(false);cancelShelfPlacement();
@@ -6536,7 +6591,7 @@ const LEVELS=[null,
 function activePressureButtons(){return puzzle.active?puzzle.buttons:storyWorld.buttons||[];}
 function clearCampaign(){
  clearBlockTwo();
- if(story.campaign)for(const gate of story.campaign.gates)if(gate.pipe)for(const mesh of [gate.pipe.shell,gate.pipe.liquid,gate.pipe.halo])gl.deleteBuffer(mesh.buffer);
+ if(story.campaign)for(const gate of story.campaign.gates)if(gate.pipe)for(const mesh of [gate.pipe.shell,gate.pipe.liquid,gate.pipe.halo])deleteRenderBuffer(mesh.buffer);
  story.campaign=null;storyWorld.buttons=[];story.dockCandidate=null;story.socketHint=null;const layer=document.querySelector('#campaign-labels');if(layer)layer.replaceChildren();campaignLabels.length=0;
 }
 function campaignBoundary(gateZs){
@@ -6707,7 +6762,7 @@ LEVELS.push(
 );
 const encounterBubbles=[];
 function clearBlockTwo(){
- const c=story.campaign;if(c?.sources)for(const s of c.sources)for(const mesh of [s.pipe.shell,s.pipe.liquid,s.pipe.halo,s.hardware])gl.deleteBuffer(mesh.buffer);
+ const c=story.campaign;if(c?.sources)for(const s of c.sources)for(const mesh of [s.pipe.shell,s.pipe.liquid,s.pipe.halo,s.hardware])deleteRenderBuffer(mesh.buffer);
  story.encounter=null;for(const b of encounterBubbles)b.node.remove();encounterBubbles.length=0;
  document.querySelector('#encounter-bubbles').hidden=true;document.querySelector('#skip-encounter').hidden=true;
 }
@@ -7056,11 +7111,11 @@ function drawShelfContents(){
  if(story.scene!=='lab'||puzzle.active)return;
  for(const shelf of shelves)for(const [index,cell]of shelf.cells.entries()){
   const center=shelfCellPoint(shelf,index),front=shelfCellPoint(shelf,index,true),visible=cell.items.length&&sub(V(...camera),front).dot(shelf.q.vmult(V(0,0,1)))>0&&front.distanceTo(V(...camera))<6;
-  if(!cell.items.length){if(shelf.labels[index])shelf.labels[index].hidden=true;continue;}
+  if(!cell.items.length||!renderSphereVisible(center,.20)){if(shelf.labels[index])shelf.labels[index].hidden=true;continue;}
   const item=cell.items[0],bb=shelfItemBounds(item),middle=mul(add(bb.min,bb.max),.5),scale=.19/Math.max(bb.max.x-bb.min.x,bb.max.y-bb.min.y,bb.max.z-bb.min.z,.09);
-  for(const group of item.groups)for(const part of group.parts){const mesh=unitMeshes[part.shape],p=add(center,shelf.q.vmult(mul(sub(V(...part.p),middle),scale))),q=shelf.q.mult(shelfQuaternion(part.q));bindGeometry(mesh.buffer);gl.uniform1f(uniforms.uKind,5);setPose(p,q,V(CUBE_SIZE*scale,CUBE_SIZE*scale,CUBE_SIZE*scale));tint(...(part.mood.externalBattery?[.38,.62,.66,1]:part.shape==='cube'?[.3,.34,.35,1]:[.58,.61,.61,1]));gl.drawArrays(gl.TRIANGLES,0,mesh.count);}
+  for(const group of item.groups)for(const part of group.parts){const mesh=unitMeshes[part.shape],p=add(center,shelf.q.vmult(mul(sub(V(...part.p),middle),scale))),q=shelf.q.mult(shelfQuaternion(part.q));bindGeometry(mesh.buffer);gl.uniform1f(uniforms.uKind,5);setPose(p,q,V(CUBE_SIZE*scale,CUBE_SIZE*scale,CUBE_SIZE*scale));tint(...(part.mood.externalBattery?[.38,.62,.66,1]:part.shape==='cube'?[.3,.34,.35,1]:[.58,.61,.61,1]));submitDraw(gl.TRIANGLES,0,mesh.count);}
   if(!shelf.labels[index]){const label=document.createElement('span');label.className='shelf-count';label.style.cssText='position:fixed;z-index:8;pointer-events:none;padding:2px 5px;border-radius:4px;background:rgba(20,27,29,.78);color:white;font:11px system-ui;transform:translate(-50%,0);';document.body.appendChild(label);shelf.labels[index]=label;}
-  const label=shelf.labels[index],screen=visible&&project(add(front,V(0,-.085,0)));label.hidden=!screen;if(screen){label.textContent='×'+cell.items.length;label.style.left=screen.x+'px';label.style.top=screen.y+'px';}
+  const label=shelf.labels[index],screen=visible&&!cullingLab.renderView&&project(add(front,V(0,-.085,0)));label.hidden=!screen;if(screen){label.textContent='×'+cell.items.length;label.style.left=screen.x+'px';label.style.top=screen.y+'px';}
  }
 }
 let workshopBench=null,workshopPanel=null;
@@ -7681,6 +7736,7 @@ function applyVisualUniforms(){
  gl.uniform1f(uniforms.uTextureScale,visuals.textureScale);gl.uniform1f(uniforms.uWarp,visuals.warp/100);gl.uniform1f(uniforms.uJitter,visuals.jitter/100);gl.uniform2f(uniforms.uResolution,canvas.width,canvas.height);gl.uniform1f(uniforms.uCel,visuals.cel);gl.uniform1f(uniforms.uLighting,visuals.lighting/100);gl.uniform1f(uniforms.uShadows,visuals.shadows==='off'?0:1);
 }
 function applyPreferences(next){
+ cullingLab.lastFrame=null;cullingLab.frameSamples.length=0;
  resetGameInputs();
  savedPreferences=preferences.sanitize(next);visuals=preferences.effective(savedPreferences);
  window.qbitsSelectionHud?.setHint?.('Mantén '+inputLabel('hud')+' para elegir · Ctrl + clic para quitar');
@@ -7714,11 +7770,11 @@ function initSettingsScreen(){
  for(const id of ['main-settings','pause-settings'])document.querySelector('#'+id).addEventListener('click',()=>{if(story.ready&&!story.transition)settingsScreen.open(story.mode);});
 }
 function drawWorldTriangles(data,color){
- if(!data.length)return;gl.bindBuffer(gl.ARRAY_BUFFER,lineGeometry);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.DYNAMIC_DRAW);boundGeometry=null;bindGeometry(lineGeometry);gl.uniform1f(uniforms.uKind,3);setPose(V(),Q(),V(1,1,1));tint(...color);gl.drawArrays(gl.TRIANGLES,0,data.length/6);
+ if(!data.length)return;gl.bindBuffer(gl.ARRAY_BUFFER,lineGeometry);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.DYNAMIC_DRAW);boundGeometry=null;bindGeometry(lineGeometry);gl.uniform1f(uniforms.uKind,3);setPose(V(),Q(),V(1,1,1));tint(...color);submitDraw(gl.TRIANGLES,0,data.length/6);
 }
 function drawWideLines(points,color,width=1){
- const basis=cameraBasis(),h=previewViewport?.height||canvas.clientHeight,data=[];
- for(let i=0;i+1<points.length;i+=2){const a=points[i],b=points[i+1],pa=projectWithBasis(a,basis),pb=projectWithBasis(b,basis);if(!pa||!pb)continue;
+ const basis=cullingLab.renderView?.basis||cameraBasis(),eye=cullingLab.renderView?.eye||camera,h=previewViewport?.height||canvas.clientHeight,data=[];
+ for(let i=0;i+1<points.length;i+=2){const a=points[i],b=points[i+1],pa=projectWithBasis(a,basis,eye),pb=projectWithBasis(b,basis,eye);if(!pa||!pb)continue;
   const dx=pb.x-pa.x,dy=pb.y-pa.y,len=Math.hypot(dx,dy);if(len<.01)continue;
   const nx=-dy/len,ny=-dx/len,ax=basis.right.x*nx+basis.up.x*ny,ay=basis.right.y*nx+basis.up.y*ny,az=basis.right.z*nx+basis.up.z*ny;
   const sa=width*pa.depth/(heldFocus.focal*h),sb=width*pb.depth/(heldFocus.focal*h),oa=[ax*sa,ay*sa,az*sa],ob=[ax*sb,ay*sb,az*sb];
@@ -7728,8 +7784,8 @@ function drawWideLines(points,color,width=1){
  drawWorldTriangles(data,color);
 }
 function drawSelectionMarker(anchor,time){
- const projected=project(anchor);if(!projected)return;const h=previewViewport?.height||canvas.clientHeight;
- const basis=cameraBasis(),unit=2*projected.depth/(heldFocus.focal*h),float=visuals.markerMotion?Math.sin(time*2)*3:0;
+ const basis=cullingLab.renderView?.basis||cameraBasis(),projected=projectWithBasis(anchor,basis,cullingLab.renderView?.eye||camera);if(!projected)return;const h=previewViewport?.height||canvas.clientHeight;
+ const unit=2*projected.depth/(heldFocus.focal*h),float=visuals.markerMotion?Math.sin(time*2)*3:0;
  const center=add(anchor,mul(basis.up,(23+float)*unit));
  const pts=[[-12,9],[0,2],[12,9],[0,-12]].map(([x,y])=>add(center,add(mul(basis.right,x*unit),mul(basis.up,y*unit))));
  drawWideLines(pts.flatMap((p,i)=>[p,pts[(i+1)%pts.length]]),[...visualRGB('outlineColor'),.95],visuals.outlineWidth);
@@ -7756,14 +7812,14 @@ function renderSettingsPreview(time){
   restoreSceneProgram();applyVisualUniforms();gl.bindFramebuffer(gl.FRAMEBUFFER,destination);gl.viewport(0,0,canvas.width,canvas.height);gl.clearColor(1,1,1,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.disable(gl.BLEND);
   gl.uniform1f(uniforms.uAspect,w/h);gl.uniform1f(uniforms.uFocal,heldFocus.focal);gl.uniform3fv(uniforms.uCamera,camera);gl.uniform2f(uniforms.uLook,yaw,pitch);gl.uniform1f(uniforms.uTime,time/1000);gl.uniform1f(uniforms.uGlow,1);gl.uniform1f(uniforms.uFocusMask,0);
   gl.uniform3fv(uniforms['uLightPos[0]'],new Float32Array([0,.4,.6,0,0,0,0,0,0,0,0,0]));gl.uniform3fv(uniforms['uLightColor[0]'],new Float32Array([...visualRGB('pathColor'),0,0,0,0,0,0,0,0,0]));
-  bindGeometry(geometry);gl.uniform1f(uniforms.uKind,0);gl.drawArrays(gl.TRIANGLES,0,vertices.length/6);
+  bindGeometry(geometry);gl.uniform1f(uniforms.uKind,0);submitDraw(gl.TRIANGLES,0,vertices.length/6);
   // White panels close the sample room around the rotating specimen.
   drawBox(V(0,1.4,-1.5),Q(),V(5,2.8,.03),[.94,.95,.94,1]);drawBox(V(-1.6,1.4,0),Q(),V(.03,2.8,4),[.91,.93,.92,1]);
   const q=Q();q.setFromAxisAngle(V(0,1,0),time*.00028);const center=V(0,.3,0),size=V(.6,.6,.6);
   gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
   if(visuals.shadows==='sharp')drawProjectedShadow(unitProfile('cube').vertices.map(p=>add(center,q.vmult(mul(p,.6/CUBE_SIZE)))));
-  else if(visuals.shadows==='soft'){bindGeometry(shadowGeometry);gl.uniform1f(uniforms.uKind,2);setPose(V(0,.001,0),Q(),V(1.45,1,1.45));gl.uniform1f(uniforms.uScale,1.45);gl.uniform1f(uniforms.uShadow,.32);gl.drawArrays(gl.TRIANGLES,0,6);}
-  gl.depthMask(true);gl.disable(gl.BLEND);bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,1);setPose(center,q,size);gl.drawArrays(gl.TRIANGLES,0,36);
+  else if(visuals.shadows==='soft'){bindGeometry(shadowGeometry);gl.uniform1f(uniforms.uKind,2);setPose(V(0,.001,0),Q(),V(1.45,1,1.45));gl.uniform1f(uniforms.uScale,1.45);gl.uniform1f(uniforms.uShadow,.32);submitDraw(gl.TRIANGLES,0,6);}
+  gl.depthMask(true);gl.disable(gl.BLEND);bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,1);setPose(center,q,size);submitDraw(gl.TRIANGLES,0,36);
   gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);drawOutline(center,q,size,1,true);if(visuals.markers)drawSelectionMarker(V(0,.67,0),time/1000);gl.depthMask(true);gl.disable(gl.BLEND);
   drawNeonPath([V(-.1,.006,.65),V(.8,.006,.65),V(.8,.006,.65),V(.8,.006,-.5)]);
   drawPowerRibbon([V(-.75,.008,.55),V(-.75,.008,-.45),V(-.2,.008,-.45)],[...visualRGB('cableColor'),1]);
@@ -7812,7 +7868,7 @@ const focusPass={failed:false,nativeOnly:false,maxSize:Infinity,width:0,height:0
 function disableFocusPass(){
  for(const key of ['scene','mask'])if(focusPass[key]){gl.deleteTexture(focusPass[key].texture);gl.deleteFramebuffer(focusPass[key].framebuffer);focusPass[key]=null;}
  if(focusPass.depth)gl.deleteRenderbuffer(focusPass.depth);
- if(focusPass.quad)gl.deleteBuffer(focusPass.quad);
+ if(focusPass.quad)deleteRenderBuffer(focusPass.quad);
  if(focusPass.program)gl.deleteProgram(focusPass.program);
  focusPass.depth=null;focusPass.quad=null;focusPass.program=null;focusPass.failed=true;boundGeometry=null;
  gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.bindRenderbuffer(gl.RENDERBUFFER,null);gl.bindTexture(gl.TEXTURE_2D,null);
@@ -7878,7 +7934,7 @@ function compositeHeldFocus(destination=null){
  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,focusPass.scene.texture);gl.uniform1i(focusPass.uniforms.uScene,0);
  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,focusPass.mask.texture);gl.uniform1i(focusPass.uniforms.uMask,1);
  const radius=2.8*heldFocus.amount;gl.uniform2f(focusPass.uniforms.uStep,radius/canvas.clientWidth,radius/canvas.clientHeight);gl.uniform1f(focusPass.uniforms.uAmount,heldFocus.amount);
- gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+ submitDraw(gl.TRIANGLE_STRIP,0,4);
  gl.bindTexture(gl.TEXTURE_2D,null);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,null);
  gl.disableVertexAttribArray(focusPass.location);gl.useProgram(program);for(const [location]of attributes)gl.enableVertexAttribArray(location);
  boundGeometry=null;gl.enable(gl.DEPTH_TEST);
@@ -7895,23 +7951,109 @@ function radialGlassFrame(time){
   const stamp=panels.length?canvas.width+':'+canvas.height+':'+canvas.clientWidth+':'+canvas.clientHeight+':'+opacity.toFixed(4)+':'+panels.map(p=>[p.hovered,p.selected,p.locked].join(',')).join(';'):'';
   return {panels,opacity,stamp};
 }
+// Diagnostic controls belong to the test bench; the render optimization also
+// applies in campaign. The observer never replaces the player's camera/rays.
+function beginVisibilityFrame(){
+ renderVisibility.active=true;renderVisibility.enabled=!!visibilityFrustum&&(cullingLab.benchmark?cullingLab.benchmark.enabled:visuals.culling!==false);renderVisibility.serial++;
+ renderVisibility.groups=groups.length;renderVisibility.culled=renderVisibility.pieces=renderVisibility.hiddenPieces=renderVisibility.shadowGroups=0;
+ if(renderVisibility.enabled)visibilityFrustum.set(camera,yaw,pitch,canvas.width/canvas.height,heldFocus.focal,Math.max(.02,window.QBitsCulling.psxGuardBand(canvas.width,canvas.height,visuals.jitter/100)));
+ if(cullingLab.stats||cullingLab.observer||cullingLab.benchmark)for(const g of groups){renderVisibility.pieces+=g.parts.length;if(!renderGroupVisible(g)){renderVisibility.culled++;renderVisibility.hiddenPieces+=g.parts.length;}}
+}
+function cullingObserverView(){
+ const right=V(Math.cos(yaw),0,-Math.sin(yaw)),forward=V(-Math.sin(yaw),0,-Math.cos(yaw));
+ const eye=[clamp(camera[0]-forward.x*4+right.x*3,-13.5,13.5),clamp(camera[1]+3,.4,13.5),clamp(camera[2]-forward.z*4+right.z*3,-13.5,13.5)];
+ const target=add(V(...camera),mul(forward,1.7)),d=sub(target,V(...eye));d.normalize();const y=Math.atan2(-d.x,-d.z),p=Math.asin(d.y);
+ return {eye,yaw:y,pitch:p,basis:{forward:d,right:V(Math.cos(y),0,-Math.sin(y)),up:V(Math.sin(y)*Math.sin(p),Math.cos(p),Math.cos(y)*Math.sin(p))}};
+}
+function drawCullingObserver(){
+ const wasActive=renderVisibility.active,wasCounting=renderCounts.active;renderVisibility.active=false;renderCounts.active=false;
+ try{
+  gl.uniform1f(uniforms.uJitter,0);
+  const q=Q();q.setFromAxisAngle(V(0,1,0),yaw);const p=V(position[0],0,position[2]);
+  drawBox(add(p,V(0,.96,0)),q,V(.34,.64,.18),[.16,.30,.34,1]);
+  drawBox(add(p,V(0,posture.height-.08,0)),q,V(.22,.22,.22),[.3,.62,.66,1]);
+  for(const side of [-1,1])drawBox(add(p,q.vmult(V(side*.105,.35,0))),q,V(.12,.7,.14),[.16,.30,.34,1]);
+  const b=cameraBasis(),origin=V(...camera),depth=8,h=depth/heldFocus.focal,w=h*canvas.width/canvas.height,center=add(origin,mul(b.forward,depth));
+  const corners=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,y])=>add(center,add(mul(b.right,x*w),mul(b.up,y*h))));
+  const lines=[];for(let i=0;i<4;i++)lines.push(origin,corners[i],corners[i],corners[(i+1)%4]);
+  gl.disable(gl.DEPTH_TEST);drawLines(lines,[.1,.61,.66,1]);drawLines([origin,add(origin,mul(b.forward,2))],[.85,.4,.1,1]);gl.enable(gl.DEPTH_TEST);
+ }finally{renderVisibility.active=wasActive;renderCounts.active=wasCounting;gl.uniform1f(uniforms.uJitter,visuals.jitter/100);}
+}
+function toggleCulling(){
+ if(cullingLab.benchmark)return false;
+ savedPreferences.culling=visuals.culling===false;visuals=preferences.effective(savedPreferences);
+ try{window.localStorage.setItem(preferences.KEY,JSON.stringify(savedPreferences));}catch{}
+ cullingLab.lastFrame=null;cullingLab.frameSamples.length=0;redraw=true;announce('Culling '+(visuals.culling?'activado':'desactivado')+' · física y máquinas siguen activas');updateCullingHud(true);return visuals.culling;
+}
+function toggleCullingObserver(){
+ if(cullingLab.benchmark||story.scene!=='lab'||story.mode!=='playing'||story.transition||held||creationPreview||shelfPreview||radialOpen()){announce('Observador: entra al banco y suelta o cancela la pieza primero.');return false;}
+ cullingLab.observer=!cullingLab.observer;cullingLab.stats=true;cullingLab.lastFrame=null;cullingLab.frameSamples.length=0;resetGameInputs();finishMarquee(true);redraw=true;
+ document.body.dataset.cullingObserver=String(cullingLab.observer);announce(cullingLab.observer?'Observador · WASD y mouse mueven al jugador · 7 numérico para volver':'Vista del jugador');updateCullingHud(true);return cullingLab.observer;
+}
+function toggleCullingStats(){cullingLab.stats=!cullingLab.stats;cullingLab.lastFrame=null;cullingLab.frameSamples.length=0;updateCullingHud(true);redraw=true;return cullingLab.stats;}
+function startCullingBenchmark(){
+ if(cullingLab.benchmark)return false;
+ if(story.scene!=='lab'||story.mode!=='playing'||story.transition||held||creationPreview||shelfPreview||radialOpen()||settingsScreen?.isOpen){announce('A/B: entra al banco y suelta o cancela la pieza primero.');return false;}
+ resetGameInputs();cullingLab.observer=false;document.body.dataset.cullingObserver='false';cullingLab.stats=true;cullingLab.result=null;cullingLab.lastFrame=null;
+ cullingLab.gpu?.dispose();cullingLab.gpu=null;
+ cullingLab.benchmark={phase:0,frame:0,enabled:false,order:[false,true,true,false],off:[],on:[],config:{width:canvas.width,height:canvas.height,shadows:visuals.shadows,style:visuals.style,pieces:groups.reduce((n,g)=>n+g.parts.length,0)}};
+ panel.hidden=true;menu.hidden=true;commandMenu.hidden=true;accumulator=0;redraw=true;updateCullingHud(true);return true;
+}
+function finishCullingBenchmark(cancelled=false){
+ const bench=cullingLab.benchmark;if(!bench)return;
+ if(!cancelled){const summary=rows=>({samples:rows.length,cpu:window.QBitsCulling.summarize(rows.map(r=>r.cpuMs)),calls:window.QBitsCulling.summarize(rows.map(r=>r.calls)),triangles:window.QBitsCulling.summarize(rows.map(r=>r.triangles)),hidden:window.QBitsCulling.summarize(rows.map(r=>r.hiddenPieces))});cullingLab.result={off:summary(bench.off),on:summary(bench.on),config:bench.config};}
+ cullingLab.benchmark=null;cullingLab.lastFrame=null;cullingLab.frameSamples.length=0;cullingLab.gpu?.dispose();cullingLab.gpu=null;accumulator=0;previousTime=performance.now();redraw=true;updateCullingHud(true);
+ if(cancelled)announce('Comparación cancelada · configuración conservada');
+}
+function cancelCullingBenchmark(){finishCullingBenchmark(true);}
+function advanceCullingBenchmark(time){
+ const b=cullingLab.benchmark;if(!b)return;
+ if(document.hidden||story.mode!=='playing'||story.scene!=='lab'||story.transition){cancelCullingBenchmark();return;}
+ b.enabled=b.order[b.phase];renderScene(time);if(b.frame>=12)(b.enabled?b.on:b.off).push({...cullingLab.last});b.frame++;
+ if(b.frame>=48){b.frame=0;b.phase++;if(b.phase===b.order.length)finishCullingBenchmark();}
+}
+function updateCullingHud(force=false){
+ const el=document.querySelector('#culling-hud');if(!el)return;
+ el.hidden=!(cullingLab.stats||cullingLab.observer||cullingLab.benchmark)||story.mode!=='playing';
+ document.querySelector('#culling-toggle').textContent='Culling: '+(visuals.culling===false?'desactivado':'activado');
+ if(el.hidden||(!force&&performance.now()<cullingLab.nextHud))return;cullingLab.nextHud=performance.now()+300;
+ const r=cullingLab.last,b=cullingLab.benchmark,fmt=n=>Number.isFinite(n)?n.toFixed(2):'—';
+ const lines=[cullingLab.observer?'OBSERVADOR · frustum del jugador':'RENDIMIENTO · vista del jugador'];
+ if(b)lines.push('A/B · escena congelada · '+(b.phase+1)+'/4 · culling '+(b.enabled?'ON':'OFF')+' · Esc cancela');
+ else lines.push('Culling '+(visuals.culling===false?'OFF':'ON')+' · / alternar · Num7 observador · Num8 panel · Num9 A/B');
+ if(r){lines.push('Q-bits omitidos: '+r.hiddenPieces+'/'+r.pieces+' · conjuntos '+r.culled+'/'+r.groups);lines.push('Dibujo escena: '+r.calls+' llamadas · '+Math.round(r.triangles)+' triángulos');lines.push('CPU render: '+fmt(r.cpuMs)+' ms · simulación: '+(b?'pausada':fmt(cullingLab.simulationMs)+' ms'));}
+ const samples=window.QBitsCulling.summarize(cullingLab.frameSamples);if(samples.count&&!b)lines.push('Fotograma p50 / p95: '+fmt(samples.median)+' / '+fmt(samples.p95)+' ms · '+fmt(1000/samples.mean)+' FPS');
+ if(!b)lines.push('GPU: '+(cullingLab.gpu?.supported?fmt(cullingLab.gpu.latestMs)+' ms':'no disponible'));
+ if(cullingLab.observer)lines.push('Avatar y cámara externa añaden coste · líneas: tramo de 8 m · alcance real 60 m');
+ lines.push('Física, energía y máquinas continúan fuera de cámara.');
+ const result=cullingLab.result;if(result){const off=result.off,on=result.on;lines.push('A/B final · misma escena · '+result.config.pieces+' piezas · '+result.config.width+'×'+result.config.height);lines.push('OFF → ON · llamadas '+Math.round(off.calls.median)+' → '+Math.round(on.calls.median)+' · triángulos '+Math.round(off.triangles.median)+' → '+Math.round(on.triangles.median));lines.push('CPU render p50: '+fmt(off.cpu.median)+' → '+fmt(on.cpu.median)+' ms · p95: '+fmt(off.cpu.p95)+' → '+fmt(on.cpu.p95));lines.push('72 muestras por modo · sin física ni observador. No mide FPS ni tiempo GPU.');}
+ el.textContent=lines.join('\n');
+}
+for(const [id,action]of [['culling-toggle',toggleCulling],['culling-observer',()=>{const enabled=toggleCullingObserver();if(enabled){panel.hidden=true;captureMouse();}}],['culling-stats',toggleCullingStats],['culling-benchmark',startCullingBenchmark]])document.querySelector('#'+id).addEventListener('click',action);
+
 function renderScene(time=performance.now()){
+  const measured=cullingLab.stats||cullingLab.observer||!!cullingLab.benchmark,start=measured?performance.now():0;
+  beginVisibilityFrame();renderCounts.active=measured;renderCounts.calls=renderCounts.triangles=renderCounts.lines=0;
+  if(measured&&!cullingLab.benchmark){cullingLab.gpu??=window.QBitsCulling.createGpuTimer(gl);cullingLab.gpu.poll();cullingLab.gpu.begin();}
+  cullingLab.renderView=cullingLab.observer&&story.mode==='playing'&&story.scene==='lab'?cullingObserverView():null;
+  try{
   const destination=postEffects?.begin(canvas.width,canvas.height,visuals)||null;
-  const focused=heldFocus.amount>.001&&ensureFocusPass();
+  const focused=!cullingLab.renderView&&heldFocus.amount>.001&&ensureFocusPass();
   restoreSceneProgram();applyVisualUniforms();
   gl.bindFramebuffer(gl.FRAMEBUFFER,focused?focusPass.scene.framebuffer:destination);
   gl.viewport(0,0,focused?focusPass.width:canvas.width,focused?focusPass.height:canvas.height);
   gl.uniform1f(uniforms.uFocal,heldFocus.focal);
   updateAccentLights();
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  gl.uniform3fv(uniforms.uCamera,camera);
-  gl.uniform2f(uniforms.uLook,yaw,pitch);
+  gl.uniform3fv(uniforms.uCamera,cullingLab.renderView?.eye||camera);
+  gl.uniform2f(uniforms.uLook,cullingLab.renderView?.yaw??yaw,cullingLab.renderView?.pitch??pitch);
   bindGeometry(geometry);
   gl.uniform1f(uniforms.uKind,0);
-  gl.drawArrays(gl.TRIANGLES,0,vertices.length/6);
+  submitDraw(gl.TRIANGLES,0,vertices.length/6);
   drawStoryWorld();drawQubits();drawStoryGlass();
+  if(cullingLab.renderView)drawCullingObserver();
   if(focused)compositeHeldFocus(destination);
-  if(destination){suspendSceneAttributes();postEffects.end(visuals);restoreSceneProgram();}
+  if(destination){suspendSceneAttributes();postEffects.end(visuals);restoreSceneProgram();if(measured){const passes=visuals.bloom&&visuals.bloomStrength>0?3:1;renderCounts.calls+=passes;renderCounts.triangles+=passes*2;}}
   const glass=radialGlassFrame(time);
   if(glass.panels.length&&radialGlass){
     suspendSceneAttributes();
@@ -7925,9 +8067,19 @@ function renderScene(time=performance.now()){
   }
   radialGlassStamp=glass.stamp;
   redraw=false;
+  }finally{
+   renderVisibility.active=false;renderCounts.active=false;cullingLab.renderView=null;
+   if(measured&&!cullingLab.benchmark)cullingLab.gpu?.end();
+  }
+  if(measured){
+   cullingLab.last={cpuMs:performance.now()-start,calls:renderCounts.calls,triangles:renderCounts.triangles,groups:renderVisibility.groups,culled:renderVisibility.culled,pieces:renderVisibility.pieces,hiddenPieces:renderVisibility.hiddenPieces};
+   if(!cullingLab.benchmark&&!storySuspended()&&!story.transition){if(cullingLab.lastFrame!==null){const dt=time-cullingLab.lastFrame;if(dt>0){cullingLab.frameSamples.push(dt);if(cullingLab.frameSamples.length>180)cullingLab.frameSamples.shift();}}cullingLab.lastFrame=time;}else cullingLab.lastFrame=null;
+   updateCullingHud();
+  }
 }
 function frame(time) {
   if (!running) return;
+  if(cullingLab.benchmark){advanceCullingBenchmark(time);requestAnimationFrame(frame);return;}
   const dt = Math.min(Math.max((time - previousTime) / 1000, 0), 0.05);
   let distance = 0;
   previousTime = time;
@@ -7979,6 +8131,7 @@ function frame(time) {
   if(shelfPreview&&!frozen){updateShelfPlacement(wallAim());redraw=true;}
   if(creationPreview&&!frozen){updateCreationPlacement();redraw=true;}
   if (!document.hidden&&!frozen) {
+    const simulationStart=cullingLab.stats?performance.now():0;
     window.QBitsFootsteps?.update(camera,yaw,walkingAudioGroups(),dt);window.QBitsJoinAudio?.update(camera,yaw,dt);
     accumulator += dt;
     let simulatedDt=0;
@@ -7986,6 +8139,7 @@ function frame(time) {
     updateBatteryLiquids(simulatedDt);
     updateTarget();
     updateSpeech();updateStoryMarker();
+    if(cullingLab.stats)cullingLab.simulationMs=performance.now()-simulationStart;
     redraw = true;
   }
   if (redraw && !document.hidden && (!visuals.fps || time-lastVisualFrame>=1000/visuals.fps-.5)) {
@@ -7996,6 +8150,7 @@ function frame(time) {
 let gamePrepared=false;
 const nextPaint=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
 window.QBitsGame={
+  culling:{toggle:toggleCulling,toggleObserver:toggleCullingObserver,toggleStats:toggleCullingStats,benchmark:startCullingBenchmark,cancel:cancelCullingBenchmark,snapshot:()=>({enabled:visuals.culling!==false,observer:cullingLab.observer,stats:cullingLab.stats,benchmark:!!cullingLab.benchmark,last:cullingLab.last,result:cullingLab.result})},
   quickWake,
   applyPreferences:()=>applyPreferences(savedPreferences),
   async prepare(onProgress=()=>{}){

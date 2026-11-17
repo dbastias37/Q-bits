@@ -15,6 +15,7 @@
    ['dither','Dithering','range',0,100,1,' %'],['bits','Profundidad de color','range',3,8,1,' bits/canal'],['jitter','Temblor de vértices PSX','range',0,100,1,' %'],['warp','Deformación de textura PSX','range',0,100,1,' %'],['cel','Bandas de cel shading','range',0,8,1,''],['bloom','Bloom','check'],['bloomStrength','Intensidad de bloom','range',0,100,1,' %']
   ],performance:[
    ['quality','Calidad predefinida','select',[['low','Rendimiento'],['balanced','Equilibrado'],['high','Alta'],['custom','Personalizado']]],
+   ['culling','Descartar fuera de cámara (culling)','check'],
    ['resolution','Escala de resolución','range',50,150,5,' %'],['sampling','Muestreo de imagen','select',[[1,'1×'],[1.5,'1,5×'],[2,'2×']]],['textureScale','Escalado de textura','select',[[.25,'25 %'],[.5,'50 %'],[1,'100 %'],[2,'200 %'],[4,'400 %']]],
    ['filter','Filtrado de textura','select',[['nearest','Píxel / vecino más cercano'],['linear','Bilineal'],['trilinear','Trilineal']]],['anisotropy','Filtrado anisotrópico','select',[[1,'Desactivado'],[2,'2×'],[4,'4×'],[8,'8×'],[16,'16×']]],['shadows','Sombras','select',[['off','Desactivadas'],['soft','Suaves'],['sharp','Alta · contorno definido']]],['lighting','Iluminación mejorada','range',0,100,1,' %'],['fps','Límite de fotogramas','select',[[0,'Frecuencia de pantalla'],[30,'30 FPS'],[60,'60 FPS'],[120,'120 FPS']]]
   ],audio:[['music','Música ambiental','check'],['volume','Volumen de música','range',0,100,1,' %'],['guideVoice','Voz del guía','check'],['guideVolume','Volumen del guía','range',0,100,1,' %'],['footsteps','Pisadas de los Q-bits','check'],['footstepVolume','Volumen de pisadas','range',0,100,1,' %'],['joinSounds','Unión de bloques','check'],['joinVolume','Volumen de uniones','range',0,100,1,' %']]};
@@ -103,13 +104,14 @@
    else if(tab==='subtitles')renderSubtitles();
    else for(const [key,title,type,...args]of tabs[tab]){
     const holder=profileKeys.has(key)?tx.draft.profiles[tx.draft.style]:tx.draft;
-    field(holder,key,title,type,args,{onChange:value=>{
+    field(holder,key,title,type,args,{note:key==='culling'?'Omite el dibujo fuera del campo de visión. La física, la energía y las máquinas siguen funcionando.':undefined,onChange:value=>{
      if(key==='quality'){P.setQuality(tx.draft,value);render();}
      else if(key==='style')render();
-     else if(tab==='performance'){tx.draft.quality='custom';const select=document.querySelector('#pref-quality');if(select)select.value='custom';}
+     else if(tab==='performance'&&key!=='culling'){tx.draft.quality='custom';const select=document.querySelector('#pref-quality');if(select)select.value='custom';}
     }});
    }
    if(tab==='performance'){
+    note('En la sala: 7 del teclado numérico muestra la vista externa y el campo de visión del jugador; / alterna el culling. En P están las mediciones y la comparación A/B de una escena fija.');
     const row=document.createElement('div');row.className='settings-row';const label=document.createElement('label');label.textContent='Sincronización vertical · VSync';label.htmlFor='pref-vsync';const input=document.createElement('select');input.id='pref-vsync';input.disabled=true;const option=document.createElement('option');option.textContent='Automática · navegador';input.append(option);row.append(label,input);fields.append(row);
    }
    if(['look','performance','audio'].includes(tab))note(tab==='performance'?'VSync: automático, gestionado por el navegador. La iluminación añade rebote y reflejos aproximados; no es ray tracing RTX. Las texturas son procedurales. El muestreo y la resolución se limitan a 4,5 MP para proteger la memoria.':tab==='audio'?'La música, la voz del guía, las pisadas y las uniones tienen volúmenes independientes. Los cambios se aplican al guardar.':'Cada estilo conserva sus propios colores, grosores y efectos. La vista previa muestra los cambios antes de guardarlos.');
@@ -146,7 +148,7 @@
   for(const button of screen.querySelectorAll('[data-settings-tab]'))button.addEventListener('click',()=>{clearCapture();tab=button.dataset.settingsTab;render();changed();});
   document.querySelector('#settings-save').addEventListener('click',()=>save(false));
   document.querySelector('#settings-back').addEventListener('click',requestClose);
-  reset.addEventListener('click',()=>{clearCapture();const defaults=P.defaults();if(tab==='look')tx.draft.profiles[tx.draft.style]=clone(P.styles[tx.draft.style]);else if(tab==='performance'){P.setQuality(tx.draft,'balanced');tx.draft.textureScale=1;}else if(tab==='game'){for(const key of ['grabSpeed','invertObjectDistance','invertPieceRotation'])tx.draft[key]=defaults[key];}else if(tab==='audio'){tx.draft.music=defaults.music;tx.draft.volume=defaults.volume;tx.draft.guideVoice=defaults.guideVoice;tx.draft.guideVolume=defaults.guideVolume;tx.draft.footsteps=defaults.footsteps;tx.draft.footstepVolume=defaults.footstepVolume;tx.draft.joinSounds=defaults.joinSounds;tx.draft.joinVolume=defaults.joinVolume;}else if(tab==='subtitles')tx.draft.subtitles=defaults.subtitles;else tx.draft.controls[tab==='keyboard'?'keyboard':'gamepad']=defaults.controls[tab==='keyboard'?'keyboard':'gamepad'];render();changed();});
+  reset.addEventListener('click',()=>{clearCapture();const defaults=P.defaults();if(tab==='look')tx.draft.profiles[tx.draft.style]=clone(P.styles[tx.draft.style]);else if(tab==='performance'){P.setQuality(tx.draft,'balanced');tx.draft.textureScale=1;tx.draft.culling=defaults.culling;}else if(tab==='game'){for(const key of ['grabSpeed','invertObjectDistance','invertPieceRotation'])tx.draft[key]=defaults[key];}else if(tab==='audio'){tx.draft.music=defaults.music;tx.draft.volume=defaults.volume;tx.draft.guideVoice=defaults.guideVoice;tx.draft.guideVolume=defaults.guideVolume;tx.draft.footsteps=defaults.footsteps;tx.draft.footstepVolume=defaults.footstepVolume;tx.draft.joinSounds=defaults.joinSounds;tx.draft.joinVolume=defaults.joinVolume;}else if(tab==='subtitles')tx.draft.subtitles=defaults.subtitles;else tx.draft.controls[tab==='keyboard'?'keyboard':'gamepad']=defaults.controls[tab==='keyboard'?'keyboard':'gamepad'];render();changed();});
   document.querySelector('#settings-keep').addEventListener('click',()=>{confirm.hidden=true;document.querySelector('#settings-back').focus();});
   document.querySelector('#settings-discard').addEventListener('click',()=>{tx.discard();close();});
   document.querySelector('#settings-confirm-save').addEventListener('click',()=>save(true));

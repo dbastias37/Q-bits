@@ -1,0 +1,2318 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-17T15:29:10.103Z",
+  "scope": "Headless JavaScript render submission and exact primitive counts; not GPU time, browser FPS, CPU utilization or physics throughput.",
+  "method": {
+    "renderer": "Actual Q-bits custom WebGL1 renderScene in tests/game-harness.cjs",
+    "dom": "simulated",
+    "webgl": "simulated; unique buffer IDs and distinct primitive enums",
+    "physics": "Cannon loaded but never advanced",
+    "gpuTime": null,
+    "fps": null,
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "shadows": "soft",
+    "postprocessing": false,
+    "jitter": 0,
+    "observer": false,
+    "stats": true,
+    "phases": [
+      "OFF",
+      "ON",
+      "ON",
+      "OFF"
+    ],
+    "warmupPerPhase": 5,
+    "measuredPerPhase": 10,
+    "samplesPerMode": 20,
+    "percentile": "nearest rank p95; even-sized median is mean of two central samples",
+    "hudRefreshDuringMeasurement": false
+  },
+  "environment": {
+    "node": "v24.22.1",
+    "platform": "linux",
+    "arch": "x64",
+    "cpuModel": "AMD EPYC 9V74 80-Core Processor",
+    "logicalCpus": 9
+  },
+  "sourceHashes": {
+    "assets/js/game.js": "436b006492bfd59e758a9408bbf04d61a62413dbaa4db8f5e2787a210990c4dc",
+    "assets/js/culling.js": "e60c111fa084fed8b563526fc96bc001660485eba688173c1bf9213081cce849",
+    "assets/js/preferences.js": "df965448a71c774aaa5c49db0a1b4316b3623004ddad486a5dc4e526a1538818",
+    "assets/js/graphics.js": "d86c87a379c9098cd38f162553c7bddeb6190b9d41f1a4a4a41132543da3a36f",
+    "tests/game-harness.cjs": "8b56730c312de1fb6f3f7b2a35dad1f9f2362f9fd990c8e6912b70b9815abf6b",
+    "tests/benchmark-culling.cjs": "d1dacd302cd71909f6095c3b2ebfd20ae6b0ea131af88ffa1f46da0f6c096004"
+  },
+  "sourceFilesChangedDuringRun": [],
+  "limitations": [
+    "GL stubs do not compile shaders or execute GPU commands.",
+    "Timing includes JavaScript and assertion/mock-call overhead; it is environment-dependent and includes GC/JIT noise.",
+    "All-front cases expose culling overhead; no improvement is guaranteed when everything is visible.",
+    "Physics and production performance are outside this benchmark.",
+    "Bounds discard complete assemblies conservatively; a visible fragment can retain the entire assembly.",
+    "Actual browser A/B and player hardware measurements remain necessary."
+  ],
+  "sphereMath": {
+    "scope": "Only 2000 all-front intersectsSphere calls per sample; excludes game loops, bounds calculation, draw submission and GPU.",
+    "spheresPerSample": 2000,
+    "samples": 100,
+    "warmup": 20,
+    "visible": 2000,
+    "jsMs": {
+      "count": 100,
+      "mean": 0.0751426900001934,
+      "median": 0.04924300000038784,
+      "p95": 0.12233200000082434,
+      "min": 0.04475600000114355,
+      "max": 0.16686699999991106
+    }
+  },
+  "results": [
+    {
+      "name": "loose-80-all-front",
+      "description": "80 separate cube bodies, 0% behind the player; static render-only snapshot.",
+      "pieces": 80,
+      "groups": 80,
+      "camera": {
+        "yaw": 0,
+        "pitch": -0.12,
+        "camera": [
+          0,
+          1.7,
+          0
+        ]
+      },
+      "focal": 1.48256097,
+      "off": {
+        "samples": 20,
+        "cpuJsRenderMs": {
+          "count": 20,
+          "mean": 2.877063599999995,
+          "median": 2.782203999999993,
+          "p95": 3.2321310000000096,
+          "min": 2.542380000000037,
+          "max": 3.5919449999999813
+        },
+        "drawCalls": {
+          "count": 20,
+          "mean": 241,
+          "median": 241,
+          "p95": 241,
+          "min": 241,
+          "max": 241
+        },
+        "trianglesSubmitted": {
+          "count": 20,
+          "mean": 3052,
+          "median": 3052,
+          "p95": 3052,
+          "min": 3052,
+          "max": 3052
+        },
+        "groupsOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "piecesOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "bufferUploads": {
+          "count": 20,
+          "mean": 80,
+          "median": 80,
+          "p95": 80,
+          "min": 80,
+          "max": 80
+        },
+        "uploadedBytes": {
+          "count": 20,
+          "mean": 138240,
+          "median": 138240,
+          "p95": 138240,
+          "min": 138240,
+          "max": 138240
+        },
+        "rawCpuJsRenderMs": [
+          3.5919449999999813,
+          3.2259019999999907,
+          3.1395939999999882,
+          3.2321310000000096,
+          2.9556409999999858,
+          3.0397159999999985,
+          3.008269999999982,
+          2.90808100000001,
+          2.791306999999989,
+          2.9876289999999983,
+          2.5679269999999974,
+          2.714724999999987,
+          2.72571099999999,
+          2.557501000000002,
+          2.7333919999999807,
+          2.6850009999999997,
+          2.606673999999998,
+          2.773100999999997,
+          2.542380000000037,
+          2.7546439999999848
+        ]
+      },
+      "on": {
+        "samples": 20,
+        "cpuJsRenderMs": {
+          "count": 20,
+          "mean": 3.028432850000004,
+          "median": 3.035975500000035,
+          "p95": 3.205411999999967,
+          "min": 2.8021040000000426,
+          "max": 3.306952000000024
+        },
+        "drawCalls": {
+          "count": 20,
+          "mean": 241,
+          "median": 241,
+          "p95": 241,
+          "min": 241,
+          "max": 241
+        },
+        "trianglesSubmitted": {
+          "count": 20,
+          "mean": 3052,
+          "median": 3052,
+          "p95": 3052,
+          "min": 3052,
+          "max": 3052
+        },
+        "groupsOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "piecesOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "bufferUploads": {
+          "count": 20,
+          "mean": 80,
+          "median": 80,
+          "p95": 80,
+          "min": 80,
+          "max": 80
+        },
+        "uploadedBytes": {
+          "count": 20,
+          "mean": 138240,
+          "median": 138240,
+          "p95": 138240,
+          "min": 138240,
+          "max": 138240
+        },
+        "rawCpuJsRenderMs": [
+          3.306952000000024,
+          3.205411999999967,
+          2.946187000000009,
+          3.1314120000000116,
+          3.0858240000000023,
+          2.891115999999954,
+          3.0417790000000196,
+          3.0399060000000304,
+          3.032045000000039,
+          3.0288189999999986,
+          3.0834110000000123,
+          3.0994349999999713,
+          2.8559740000000033,
+          2.978385000000003,
+          2.8220230000000015,
+          2.9784250000000156,
+          2.9403389999999945,
+          2.8021040000000426,
+          3.1368209999999976,
+          3.1622879999999896
+        ]
+      },
+      "change": {
+        "drawCallsSaved": 0,
+        "drawCallsSavedPercent": 0,
+        "trianglesSaved": 0,
+        "trianglesSavedPercent": 0,
+        "cpuJsRenderMedianDeltaMs": 0.2537715000000418
+      },
+      "frozenStateVerified": true,
+      "drawCountersIndependentlyVerified": true
+    },
+    {
+      "name": "loose-80-half-behind",
+      "description": "80 separate cube bodies, 50% behind the player; static render-only snapshot.",
+      "pieces": 80,
+      "groups": 80,
+      "camera": {
+        "yaw": 0,
+        "pitch": -0.12,
+        "camera": [
+          0,
+          1.7,
+          0
+        ]
+      },
+      "focal": 1.48256097,
+      "off": {
+        "samples": 20,
+        "cpuJsRenderMs": {
+          "count": 20,
+          "mean": 3.5025292999999946,
+          "median": 1.8405434999999954,
+          "p95": 10.631391000000008,
+          "min": 1.6212340000000722,
+          "max": 10.926446999999996
+        },
+        "drawCalls": {
+          "count": 20,
+          "mean": 201,
+          "median": 201,
+          "p95": 201,
+          "min": 201,
+          "max": 201
+        },
+        "trianglesSubmitted": {
+          "count": 20,
+          "mean": 2092,
+          "median": 2092,
+          "p95": 2092,
+          "min": 2092,
+          "max": 2092
+        },
+        "groupsOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "piecesOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "bufferUploads": {
+          "count": 20,
+          "mean": 40,
+          "median": 40,
+          "p95": 40,
+          "min": 40,
+          "max": 40
+        },
+        "uploadedBytes": {
+          "count": 20,
+          "mean": 69120,
+          "median": 69120,
+          "p95": 69120,
+          "min": 69120,
+          "max": 69120
+        },
+        "rawCpuJsRenderMs": [
+          10.629476999999952,
+          5.115212999999983,
+          1.8476889999999457,
+          3.675028999999995,
+          10.631391000000008,
+          10.926446999999996,
+          4.554752000000008,
+          1.8333980000000452,
+          1.8658260000000269,
+          1.8257259999999746,
+          1.7497339999999895,
+          1.9467349999999897,
+          1.6589890000000196,
+          1.6609629999999243,
+          1.6240880000000288,
+          1.6310680000000275,
+          1.9156199999999899,
+          1.6797299999999495,
+          1.6574769999999717,
+          1.6212340000000722
+        ]
+      },
+      "on": {
+        "samples": 20,
+        "cpuJsRenderMs": {
+          "count": 20,
+          "mean": 2.102391149999994,
+          "median": 1.7002754999999752,
+          "p95": 2.721724999999992,
+          "min": 1.58858500000008,
+          "max": 7.866400999999996
+        },
+        "drawCalls": {
+          "count": 20,
+          "mean": 121,
+          "median": 121,
+          "p95": 121,
+          "min": 121,
+          "max": 121
+        },
+        "trianglesSubmitted": {
+          "count": 20,
+          "mean": 1532,
+          "median": 1532,
+          "p95": 1532,
+          "min": 1532,
+          "max": 1532
+        },
+        "groupsOmitted": {
+          "count": 20,
+          "mean": 40,
+          "median": 40,
+          "p95": 40,
+          "min": 40,
+          "max": 40
+        },
+        "piecesOmitted": {
+          "count": 20,
+          "mean": 40,
+          "median": 40,
+          "p95": 40,
+          "min": 40,
+          "max": 40
+        },
+        "bufferUploads": {
+          "count": 20,
+          "mean": 40,
+          "median": 40,
+          "p95": 40,
+          "min": 40,
+          "max": 40
+        },
+        "uploadedBytes": {
+          "count": 20,
+          "mean": 69120,
+          "median": 69120,
+          "p95": 69120,
+          "min": 69120,
+          "max": 69120
+        },
+        "rawCpuJsRenderMs": [
+          2.721724999999992,
+          2.405676000000028,
+          7.866400999999996,
+          1.8725860000000125,
+          1.6579979999999637,
+          1.7416410000000155,
+          1.7113770000000272,
+          1.7217319999999745,
+          2.012333000000069,
+          1.649864999999977,
+          1.6928889999999228,
+          1.5969179999999596,
+          1.632710999999972,
+          1.641493999999966,
+          1.7076620000000275,
+          1.8440229999999929,
+          1.691408000000024,
+          1.6819039999999177,
+          1.58858500000008,
+          1.6088949999999613
+        ]
+      },
+      "change": {
+        "drawCallsSaved": 80,
+        "drawCallsSavedPercent": 39.80099502487562,
+        "trianglesSaved": 560,
+        "trianglesSavedPercent": 26.768642447418735,
+        "cpuJsRenderMedianDeltaMs": -0.14026800000002027
+      },
+      "frozenStateVerified": true,
+      "drawCountersIndependentlyVerified": true
+    },
+    {
+      "name": "loose-80-90pct-behind",
+      "description": "80 separate cube bodies, 90% behind the player; static render-only snapshot.",
+      "pieces": 80,
+      "groups": 80,
+      "camera": {
+        "yaw": 0,
+        "pitch": -0.12,
+        "camera": [
+          0,
+          1.7,
+          0
+        ]
+      },
+      "focal": 1.48256097,
+      "off": {
+        "samples": 20,
+        "cpuJsRenderMs": {
+          "count": 20,
+          "mean": 0.9727926000000082,
+          "median": 0.9300134999999727,
+          "p95": 1.1407009999999218,
+          "min": 0.8316430000000992,
+          "max": 1.7523479999999836
+        },
+        "drawCalls": {
+          "count": 20,
+          "mean": 169,
+          "median": 169,
+          "p95": 169,
+          "min": 169,
+          "max": 169
+        },
+        "trianglesSubmitted": {
+          "count": 20,
+          "mean": 1324,
+          "median": 1324,
+          "p95": 1324,
+          "min": 1324,
+          "max": 1324
+        },
+        "groupsOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "piecesOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "bufferUploads": {
+          "count": 20,
+          "mean": 8,
+          "median": 8,
+          "p95": 8,
+          "min": 8,
+          "max": 8
+        },
+        "uploadedBytes": {
+          "count": 20,
+          "mean": 13824,
+          "median": 13824,
+          "p95": 13824,
+          "min": 13824,
+          "max": 13824
+        },
+        "rawCpuJsRenderMs": [
+          1.0862809999999854,
+          0.9597629999999526,
+          0.9747950000000856,
+          0.9689759999999978,
+          0.9338040000000092,
+          0.9132329999999911,
+          1.7523479999999836,
+          0.9262229999999363,
+          0.9684349999999995,
+          0.9438490000000002,
+          1.1407009999999218,
+          0.9713100000000168,
+          0.8776420000000371,
+          0.8316430000000992,
+          0.8373819999999341,
+          0.8509610000000976,
+          0.9018970000000763,
+          0.9062730000000556,
+          0.8695499999998901,
+          0.8407860000000937
+        ]
+      },
+      "on": {
+        "samples": 20,
+        "cpuJsRenderMs": {
+          "count": 20,
+          "mean": 0.510860799999989,
+          "median": 0.5059150000000159,
+          "p95": 0.572467999999958,
+          "min": 0.4699470000000474,
+          "max": 0.5765539999999874
+        },
+        "drawCalls": {
+          "count": 20,
+          "mean": 25,
+          "median": 25,
+          "p95": 25,
+          "min": 25,
+          "max": 25
+        },
+        "trianglesSubmitted": {
+          "count": 20,
+          "mean": 316,
+          "median": 316,
+          "p95": 316,
+          "min": 316,
+          "max": 316
+        },
+        "groupsOmitted": {
+          "count": 20,
+          "mean": 72,
+          "median": 72,
+          "p95": 72,
+          "min": 72,
+          "max": 72
+        },
+        "piecesOmitted": {
+          "count": 20,
+          "mean": 72,
+          "median": 72,
+          "p95": 72,
+          "min": 72,
+          "max": 72
+        },
+        "bufferUploads": {
+          "count": 20,
+          "mean": 8,
+          "median": 8,
+          "p95": 8,
+          "min": 8,
+          "max": 8
+        },
+        "uploadedBytes": {
+          "count": 20,
+          "mean": 13824,
+          "median": 13824,
+          "p95": 13824,
+          "min": 13824,
+          "max": 13824
+        },
+        "rawCpuJsRenderMs": [
+          0.5551530000000184,
+          0.5765539999999874,
+          0.4807230000000118,
+          0.5038270000000011,
+          0.48498899999992773,
+          0.5479019999999082,
+          0.49121900000000096,
+          0.572467999999958,
+          0.5127700000000459,
+          0.5316789999999401,
+          0.47011699999995926,
+          0.5257389999999305,
+          0.4728810000000294,
+          0.4850890000000163,
+          0.4699470000000474,
+          0.4823549999999841,
+          0.4702069999999594,
+          0.5491940000000568,
+          0.5080030000000306,
+          0.5263999999999669
+        ]
+      },
+      "change": {
+        "drawCallsSaved": 144,
+        "drawCallsSavedPercent": 85.20710059171599,
+        "trianglesSaved": 1008,
+        "trianglesSavedPercent": 76.13293051359517,
+        "cpuJsRenderMedianDeltaMs": -0.42409849999995686
+      },
+      "frozenStateVerified": true,
+      "drawCountersIndependentlyVerified": true
+    },
+    {
+      "name": "loose-500-all-front",
+      "description": "500 separate cube bodies, 0% behind the player; static render-only snapshot.",
+      "pieces": 500,
+      "groups": 500,
+      "camera": {
+        "yaw": 0,
+        "pitch": -0.12,
+        "camera": [
+          0,
+          1.7,
+          0
+        ]
+      },
+      "focal": 1.48256097,
+      "off": {
+        "samples": 20,
+        "cpuJsRenderMs": {
+          "count": 20,
+          "mean": 21.97918524999998,
+          "median": 17.852405499999918,
+          "p95": 31.285418999999933,
+          "min": 17.24771899999996,
+          "max": 53.10668700000019
+        },
+        "drawCalls": {
+          "count": 20,
+          "mean": 1501,
+          "median": 1501,
+          "p95": 1501,
+          "min": 1501,
+          "max": 1501
+        },
+        "trianglesSubmitted": {
+          "count": 20,
+          "mean": 19012,
+          "median": 19012,
+          "p95": 19012,
+          "min": 19012,
+          "max": 19012
+        },
+        "groupsOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "piecesOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "bufferUploads": {
+          "count": 20,
+          "mean": 500,
+          "median": 500,
+          "p95": 500,
+          "min": 500,
+          "max": 500
+        },
+        "uploadedBytes": {
+          "count": 20,
+          "mean": 864000,
+          "median": 864000,
+          "p95": 864000,
+          "min": 864000,
+          "max": 864000
+        },
+        "rawCpuJsRenderMs": [
+          31.285418999999933,
+          30.01096999999993,
+          30.180910999999924,
+          24.453129999999987,
+          17.62940500000002,
+          17.591498,
+          17.753647999999885,
+          17.858934999999974,
+          17.845875999999862,
+          17.862368999999944,
+          17.380254999999806,
+          17.24771899999996,
+          17.30937999999992,
+          17.433483999999908,
+          17.668933000000152,
+          17.672659000000067,
+          53.10668700000019,
+          23.01850300000001,
+          18.332938000000013,
+          17.940986000000066
+        ]
+      },
+      "on": {
+        "samples": 20,
+        "cpuJsRenderMs": {
+          "count": 20,
+          "mean": 18.90685525,
+          "median": 18.812548499999934,
+          "p95": 19.39459099999999,
+          "min": 18.594626000000062,
+          "max": 19.401781999999912
+        },
+        "drawCalls": {
+          "count": 20,
+          "mean": 1501,
+          "median": 1501,
+          "p95": 1501,
+          "min": 1501,
+          "max": 1501
+        },
+        "trianglesSubmitted": {
+          "count": 20,
+          "mean": 19012,
+          "median": 19012,
+          "p95": 19012,
+          "min": 19012,
+          "max": 19012
+        },
+        "groupsOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "piecesOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "bufferUploads": {
+          "count": 20,
+          "mean": 500,
+          "median": 500,
+          "p95": 500,
+          "min": 500,
+          "max": 500
+        },
+        "uploadedBytes": {
+          "count": 20,
+          "mean": 864000,
+          "median": 864000,
+          "p95": 864000,
+          "min": 864000,
+          "max": 864000
+        },
+        "rawCpuJsRenderMs": [
+          19.39459099999999,
+          19.04742699999997,
+          19.361552000000074,
+          18.657027999999855,
+          18.815252999999984,
+          19.401781999999912,
+          19.24370799999997,
+          18.816874999999982,
+          18.809843999999885,
+          19.055168000000094,
+          18.93968700000005,
+          18.794522000000143,
+          18.78146300000003,
+          18.73073700000009,
+          18.691017999999985,
+          18.656707000000097,
+          18.594626000000062,
+          18.920617999999877,
+          18.65613600000006,
+          18.76836299999991
+        ]
+      },
+      "change": {
+        "drawCallsSaved": 0,
+        "drawCallsSavedPercent": 0,
+        "trianglesSaved": 0,
+        "trianglesSavedPercent": 0,
+        "cpuJsRenderMedianDeltaMs": 0.9601430000000164
+      },
+      "frozenStateVerified": true,
+      "drawCountersIndependentlyVerified": true
+    },
+    {
+      "name": "loose-500-half-behind",
+      "description": "500 separate cube bodies, 50% behind the player; static render-only snapshot.",
+      "pieces": 500,
+      "groups": 500,
+      "camera": {
+        "yaw": 0,
+        "pitch": -0.12,
+        "camera": [
+          0,
+          1.7,
+          0
+        ]
+      },
+      "focal": 1.48256097,
+      "off": {
+        "samples": 20,
+        "cpuJsRenderMs": {
+          "count": 20,
+          "mean": 10.853596849999985,
+          "median": 10.900028499999962,
+          "p95": 11.37664500000028,
+          "min": 10.233119999999872,
+          "max": 11.848285000000033
+        },
+        "drawCalls": {
+          "count": 20,
+          "mean": 1251,
+          "median": 1251,
+          "p95": 1251,
+          "min": 1251,
+          "max": 1251
+        },
+        "trianglesSubmitted": {
+          "count": 20,
+          "mean": 13012,
+          "median": 13012,
+          "p95": 13012,
+          "min": 13012,
+          "max": 13012
+        },
+        "groupsOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "piecesOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "bufferUploads": {
+          "count": 20,
+          "mean": 250,
+          "median": 250,
+          "p95": 250,
+          "min": 250,
+          "max": 250
+        },
+        "uploadedBytes": {
+          "count": 20,
+          "mean": 432000,
+          "median": 432000,
+          "p95": 432000,
+          "min": 432000,
+          "max": 432000
+        },
+        "rawCpuJsRenderMs": [
+          10.791837999999643,
+          10.97895600000038,
+          10.664589999999862,
+          10.780461000000287,
+          10.233119999999872,
+          10.485013999999865,
+          10.911875999999666,
+          10.317175000000134,
+          11.03318599999966,
+          10.496169999999893,
+          10.939315999999963,
+          10.633213000000069,
+          11.37664500000028,
+          11.197700000000168,
+          11.146363999999721,
+          10.914780000000064,
+          11.121987999999874,
+          11.848285000000033,
+          10.313079000000016,
+          10.888181000000259
+        ]
+      },
+      "on": {
+        "samples": 20,
+        "cpuJsRenderMs": {
+          "count": 20,
+          "mean": 10.193918350000013,
+          "median": 10.217361499999924,
+          "p95": 10.492705000000115,
+          "min": 9.743873999999778,
+          "max": 10.916483999999855
+        },
+        "drawCalls": {
+          "count": 20,
+          "mean": 751,
+          "median": 751,
+          "p95": 751,
+          "min": 751,
+          "max": 751
+        },
+        "trianglesSubmitted": {
+          "count": 20,
+          "mean": 9512,
+          "median": 9512,
+          "p95": 9512,
+          "min": 9512,
+          "max": 9512
+        },
+        "groupsOmitted": {
+          "count": 20,
+          "mean": 250,
+          "median": 250,
+          "p95": 250,
+          "min": 250,
+          "max": 250
+        },
+        "piecesOmitted": {
+          "count": 20,
+          "mean": 250,
+          "median": 250,
+          "p95": 250,
+          "min": 250,
+          "max": 250
+        },
+        "bufferUploads": {
+          "count": 20,
+          "mean": 250,
+          "median": 250,
+          "p95": 250,
+          "min": 250,
+          "max": 250
+        },
+        "uploadedBytes": {
+          "count": 20,
+          "mean": 432000,
+          "median": 432000,
+          "p95": 432000,
+          "min": 432000,
+          "max": 432000
+        },
+        "rawCpuJsRenderMs": [
+          10.411625000000186,
+          10.916483999999855,
+          10.140713000000233,
+          10.237545999999838,
+          10.185920000000351,
+          10.368531000000075,
+          9.980645000000095,
+          10.492705000000115,
+          9.858835,
+          10.295211999999992,
+          10.317765000000236,
+          10.007315999999719,
+          10.069006000000172,
+          9.743873999999778,
+          10.034286000000066,
+          9.78445499999998,
+          10.314920999999686,
+          10.261681999999837,
+          10.25966900000003,
+          10.19717700000001
+        ]
+      },
+      "change": {
+        "drawCallsSaved": 500,
+        "drawCallsSavedPercent": 39.96802557953637,
+        "trianglesSaved": 3500,
+        "trianglesSavedPercent": 26.89824777128804,
+        "cpuJsRenderMedianDeltaMs": -0.6826670000000377
+      },
+      "frozenStateVerified": true,
+      "drawCountersIndependentlyVerified": true
+    },
+    {
+      "name": "loose-500-90pct-behind",
+      "description": "500 separate cube bodies, 90% behind the player; static render-only snapshot.",
+      "pieces": 500,
+      "groups": 500,
+      "camera": {
+        "yaw": 0,
+        "pitch": -0.12,
+        "camera": [
+          0,
+          1.7,
+          0
+        ]
+      },
+      "focal": 1.48256097,
+      "off": {
+        "samples": 20,
+        "cpuJsRenderMs": {
+          "count": 20,
+          "mean": 10.231665900000007,
+          "median": 5.217840000000024,
+          "p95": 25.727640000000065,
+          "min": 4.765875999999935,
+          "max": 25.915107000000262
+        },
+        "drawCalls": {
+          "count": 20,
+          "mean": 1051,
+          "median": 1051,
+          "p95": 1051,
+          "min": 1051,
+          "max": 1051
+        },
+        "trianglesSubmitted": {
+          "count": 20,
+          "mean": 8212,
+          "median": 8212,
+          "p95": 8212,
+          "min": 8212,
+          "max": 8212
+        },
+        "groupsOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "piecesOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "bufferUploads": {
+          "count": 20,
+          "mean": 50,
+          "median": 50,
+          "p95": 50,
+          "min": 50,
+          "max": 50
+        },
+        "uploadedBytes": {
+          "count": 20,
+          "mean": 86400,
+          "median": 86400,
+          "p95": 86400,
+          "min": 86400,
+          "max": 86400
+        },
+        "rawCpuJsRenderMs": [
+          5.310303000000204,
+          16.879973999999947,
+          5.191285999999764,
+          4.925231000000167,
+          5.537008000000242,
+          12.931760999999824,
+          25.727640000000065,
+          25.52909499999987,
+          25.915107000000262,
+          25.706408999999894,
+          4.765875999999935,
+          5.036356000000069,
+          4.985241000000315,
+          4.997527999999875,
+          5.05319099999997,
+          4.9980390000000625,
+          5.776872999999796,
+          5.147941999999603,
+          5.244394000000284,
+          4.9740639999999985
+        ]
+      },
+      "on": {
+        "samples": 20,
+        "cpuJsRenderMs": {
+          "count": 20,
+          "mean": 6.2114094500000645,
+          "median": 3.0695860000002995,
+          "p95": 13.455547000000024,
+          "min": 2.7534010000003946,
+          "max": 13.472011000000293
+        },
+        "drawCalls": {
+          "count": 20,
+          "mean": 151,
+          "median": 151,
+          "p95": 151,
+          "min": 151,
+          "max": 151
+        },
+        "trianglesSubmitted": {
+          "count": 20,
+          "mean": 1912,
+          "median": 1912,
+          "p95": 1912,
+          "min": 1912,
+          "max": 1912
+        },
+        "groupsOmitted": {
+          "count": 20,
+          "mean": 450,
+          "median": 450,
+          "p95": 450,
+          "min": 450,
+          "max": 450
+        },
+        "piecesOmitted": {
+          "count": 20,
+          "mean": 450,
+          "median": 450,
+          "p95": 450,
+          "min": 450,
+          "max": 450
+        },
+        "bufferUploads": {
+          "count": 20,
+          "mean": 50,
+          "median": 50,
+          "p95": 50,
+          "min": 50,
+          "max": 50
+        },
+        "uploadedBytes": {
+          "count": 20,
+          "mean": 86400,
+          "median": 86400,
+          "p95": 86400,
+          "min": 86400,
+          "max": 86400
+        },
+        "rawCpuJsRenderMs": [
+          3.125253000000157,
+          2.8990269999999327,
+          2.857075999999779,
+          6.7523800000003575,
+          12.561482000000069,
+          13.290841999999884,
+          13.215951999999561,
+          13.117396000000099,
+          13.455547000000024,
+          13.472011000000293,
+          2.996882000000369,
+          3.059595000000172,
+          2.816866000000118,
+          2.775884999999562,
+          2.7534010000003946,
+          3.086735999999746,
+          2.8809510000000955,
+          3.0676580000003923,
+          2.9717350000000806,
+          3.0715140000002066
+        ]
+      },
+      "change": {
+        "drawCallsSaved": 900,
+        "drawCallsSavedPercent": 85.6327307326356,
+        "trianglesSaved": 6300,
+        "trianglesSavedPercent": 76.71699951290793,
+        "cpuJsRenderMedianDeltaMs": -2.1482539999997243
+      },
+      "frozenStateVerified": true,
+      "drawCountersIndependentlyVerified": true
+    },
+    {
+      "name": "loose-2000-all-front",
+      "description": "2000 separate cube bodies, 0% behind the player; static render-only snapshot.",
+      "pieces": 2000,
+      "groups": 2000,
+      "camera": {
+        "yaw": 0,
+        "pitch": -0.12,
+        "camera": [
+          0,
+          1.7,
+          0
+        ]
+      },
+      "focal": 1.48256097,
+      "off": {
+        "samples": 20,
+        "cpuJsRenderMs": {
+          "count": 20,
+          "mean": 74.77282864999987,
+          "median": 73.45326999999997,
+          "p95": 76.18848400000024,
+          "min": 70.34158699999989,
+          "max": 101.37681000000066
+        },
+        "drawCalls": {
+          "count": 20,
+          "mean": 6001,
+          "median": 6001,
+          "p95": 6001,
+          "min": 6001,
+          "max": 6001
+        },
+        "trianglesSubmitted": {
+          "count": 20,
+          "mean": 76012,
+          "median": 76012,
+          "p95": 76012,
+          "min": 76012,
+          "max": 76012
+        },
+        "groupsOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "piecesOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "bufferUploads": {
+          "count": 20,
+          "mean": 2000,
+          "median": 2000,
+          "p95": 2000,
+          "min": 2000,
+          "max": 2000
+        },
+        "uploadedBytes": {
+          "count": 20,
+          "mean": 3456000,
+          "median": 3456000,
+          "p95": 3456000,
+          "min": 3456000,
+          "max": 3456000
+        },
+        "rawCpuJsRenderMs": [
+          74.80196899999964,
+          74.5522289999999,
+          72.59300499999972,
+          73.49858700000004,
+          72.84468799999922,
+          73.99636499999997,
+          72.90559800000028,
+          72.07708900000034,
+          76.18848400000024,
+          73.51141599999937,
+          101.37681000000066,
+          72.50871999999981,
+          70.34158699999989,
+          73.63988599999993,
+          76.13017799999943,
+          72.66119600000002,
+          72.21472299999914,
+          73.4079529999999,
+          73.51888700000018,
+          72.6872029999995
+        ]
+      },
+      "on": {
+        "samples": 20,
+        "cpuJsRenderMs": {
+          "count": 20,
+          "mean": 79.15086139999985,
+          "median": 78.53001549999954,
+          "p95": 83.16437599999972,
+          "min": 75.8726859999997,
+          "max": 84.015668
+        },
+        "drawCalls": {
+          "count": 20,
+          "mean": 6001,
+          "median": 6001,
+          "p95": 6001,
+          "min": 6001,
+          "max": 6001
+        },
+        "trianglesSubmitted": {
+          "count": 20,
+          "mean": 76012,
+          "median": 76012,
+          "p95": 76012,
+          "min": 76012,
+          "max": 76012
+        },
+        "groupsOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "piecesOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "bufferUploads": {
+          "count": 20,
+          "mean": 2000,
+          "median": 2000,
+          "p95": 2000,
+          "min": 2000,
+          "max": 2000
+        },
+        "uploadedBytes": {
+          "count": 20,
+          "mean": 3456000,
+          "median": 3456000,
+          "p95": 3456000,
+          "min": 3456000,
+          "max": 3456000
+        },
+        "rawCpuJsRenderMs": [
+          79.21268799999962,
+          78.2512829999996,
+          77.52314399999977,
+          77.25287200000002,
+          75.8726859999997,
+          76.89501199999995,
+          77.22854600000028,
+          76.58159699999942,
+          76.56193799999983,
+          81.24644799999987,
+          79.70186300000023,
+          78.26566399999956,
+          82.16849000000002,
+          84.015668,
+          81.24651300000005,
+          77.8330730000007,
+          78.79436699999951,
+          83.16437599999972,
+          81.70483199999944,
+          79.49616799999967
+        ]
+      },
+      "change": {
+        "drawCallsSaved": 0,
+        "drawCallsSavedPercent": 0,
+        "trianglesSaved": 0,
+        "trianglesSavedPercent": 0,
+        "cpuJsRenderMedianDeltaMs": 5.076745499999561
+      },
+      "frozenStateVerified": true,
+      "drawCountersIndependentlyVerified": true
+    },
+    {
+      "name": "loose-2000-half-behind",
+      "description": "2000 separate cube bodies, 50% behind the player; static render-only snapshot.",
+      "pieces": 2000,
+      "groups": 2000,
+      "camera": {
+        "yaw": 0,
+        "pitch": -0.12,
+        "camera": [
+          0,
+          1.7,
+          0
+        ]
+      },
+      "focal": 1.48256097,
+      "off": {
+        "samples": 20,
+        "cpuJsRenderMs": {
+          "count": 20,
+          "mean": 45.08001900000018,
+          "median": 45.11782349999976,
+          "p95": 46.71318900000006,
+          "min": 43.23863800000072,
+          "max": 46.73472000000038
+        },
+        "drawCalls": {
+          "count": 20,
+          "mean": 5001,
+          "median": 5001,
+          "p95": 5001,
+          "min": 5001,
+          "max": 5001
+        },
+        "trianglesSubmitted": {
+          "count": 20,
+          "mean": 52012,
+          "median": 52012,
+          "p95": 52012,
+          "min": 52012,
+          "max": 52012
+        },
+        "groupsOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "piecesOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "bufferUploads": {
+          "count": 20,
+          "mean": 1000,
+          "median": 1000,
+          "p95": 1000,
+          "min": 1000,
+          "max": 1000
+        },
+        "uploadedBytes": {
+          "count": 20,
+          "mean": 1728000,
+          "median": 1728000,
+          "p95": 1728000,
+          "min": 1728000,
+          "max": 1728000
+        },
+        "rawCpuJsRenderMs": [
+          44.946288999999524,
+          44.69824200000039,
+          46.73472000000038,
+          44.18956700000126,
+          46.20099900000059,
+          46.71318900000006,
+          45.624713999999585,
+          44.32496800000081,
+          44.450072999999975,
+          43.97199399999954,
+          45.684313000001566,
+          45.34497999999985,
+          45.28935799999999,
+          45.686977999999726,
+          44.38247299999966,
+          44.544912999999724,
+          43.423351999999795,
+          43.23863800000072,
+          45.50207799999953,
+          46.648542000000816
+        ]
+      },
+      "on": {
+        "samples": 20,
+        "cpuJsRenderMs": {
+          "count": 20,
+          "mean": 48.907680549999895,
+          "median": 41.696686999999656,
+          "p95": 64.5285989999993,
+          "min": 39.51298500000121,
+          "max": 121.72200299999895
+        },
+        "drawCalls": {
+          "count": 20,
+          "mean": 3001,
+          "median": 3001,
+          "p95": 3001,
+          "min": 3001,
+          "max": 3001
+        },
+        "trianglesSubmitted": {
+          "count": 20,
+          "mean": 38012,
+          "median": 38012,
+          "p95": 38012,
+          "min": 38012,
+          "max": 38012
+        },
+        "groupsOmitted": {
+          "count": 20,
+          "mean": 1000,
+          "median": 1000,
+          "p95": 1000,
+          "min": 1000,
+          "max": 1000
+        },
+        "piecesOmitted": {
+          "count": 20,
+          "mean": 1000,
+          "median": 1000,
+          "p95": 1000,
+          "min": 1000,
+          "max": 1000
+        },
+        "bufferUploads": {
+          "count": 20,
+          "mean": 1000,
+          "median": 1000,
+          "p95": 1000,
+          "min": 1000,
+          "max": 1000
+        },
+        "uploadedBytes": {
+          "count": 20,
+          "mean": 1728000,
+          "median": 1728000,
+          "p95": 1728000,
+          "min": 1728000,
+          "max": 1728000
+        },
+        "rawCpuJsRenderMs": [
+          42.74302400000124,
+          44.6873259999993,
+          121.72200299999895,
+          60.03636400000141,
+          43.872747999999774,
+          46.73828599999979,
+          43.30843199999981,
+          62.945771999999124,
+          64.5285989999993,
+          41.23470699999962,
+          40.926940000001196,
+          41.75670100000025,
+          40.37743600000067,
+          41.20192800000041,
+          40.138482000000295,
+          39.95923699999912,
+          41.636672999999064,
+          40.53496999999879,
+          39.51298500000121,
+          40.29099799999858
+        ]
+      },
+      "change": {
+        "drawCallsSaved": 2000,
+        "drawCallsSavedPercent": 39.99200159968006,
+        "trianglesSaved": 14000,
+        "trianglesSavedPercent": 26.91686533876798,
+        "cpuJsRenderMedianDeltaMs": -3.4211365000001024
+      },
+      "frozenStateVerified": true,
+      "drawCountersIndependentlyVerified": true
+    },
+    {
+      "name": "loose-2000-90pct-behind",
+      "description": "2000 separate cube bodies, 90% behind the player; static render-only snapshot.",
+      "pieces": 2000,
+      "groups": 2000,
+      "camera": {
+        "yaw": 0,
+        "pitch": -0.12,
+        "camera": [
+          0,
+          1.7,
+          0
+        ]
+      },
+      "focal": 1.48256097,
+      "off": {
+        "samples": 20,
+        "cpuJsRenderMs": {
+          "count": 20,
+          "mean": 20.616728949999924,
+          "median": 20.138928499999565,
+          "p95": 21.36657500000001,
+          "min": 19.34560799999963,
+          "max": 28.345268999999462
+        },
+        "drawCalls": {
+          "count": 20,
+          "mean": 4201,
+          "median": 4201,
+          "p95": 4201,
+          "min": 4201,
+          "max": 4201
+        },
+        "trianglesSubmitted": {
+          "count": 20,
+          "mean": 32812,
+          "median": 32812,
+          "p95": 32812,
+          "min": 32812,
+          "max": 32812
+        },
+        "groupsOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "piecesOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "bufferUploads": {
+          "count": 20,
+          "mean": 200,
+          "median": 200,
+          "p95": 200,
+          "min": 200,
+          "max": 200
+        },
+        "uploadedBytes": {
+          "count": 20,
+          "mean": 345600,
+          "median": 345600,
+          "p95": 345600,
+          "min": 345600,
+          "max": 345600
+        },
+        "rawCpuJsRenderMs": [
+          19.823105999999825,
+          19.811407999999574,
+          28.345268999999462,
+          20.614618999999948,
+          20.49895800000013,
+          20.95194999999876,
+          20.94025099999999,
+          20.24399000000085,
+          21.36657500000001,
+          21.225845000000845,
+          20.152132999999594,
+          20.363257000000885,
+          19.597170999999435,
+          20.076332000000548,
+          19.841302999999243,
+          19.34560799999963,
+          20.125723999999536,
+          19.510553000000073,
+          20.05731399999968,
+          19.44321300000047
+        ]
+      },
+      "on": {
+        "samples": 20,
+        "cpuJsRenderMs": {
+          "count": 20,
+          "mean": 13.504002150000451,
+          "median": 11.217595000000983,
+          "p95": 19.306180000001405,
+          "min": 10.708614999999554,
+          "max": 20.86551099999997
+        },
+        "drawCalls": {
+          "count": 20,
+          "mean": 601,
+          "median": 601,
+          "p95": 601,
+          "min": 601,
+          "max": 601
+        },
+        "trianglesSubmitted": {
+          "count": 20,
+          "mean": 7612,
+          "median": 7612,
+          "p95": 7612,
+          "min": 7612,
+          "max": 7612
+        },
+        "groupsOmitted": {
+          "count": 20,
+          "mean": 1800,
+          "median": 1800,
+          "p95": 1800,
+          "min": 1800,
+          "max": 1800
+        },
+        "piecesOmitted": {
+          "count": 20,
+          "mean": 1800,
+          "median": 1800,
+          "p95": 1800,
+          "min": 1800,
+          "max": 1800
+        },
+        "bufferUploads": {
+          "count": 20,
+          "mean": 200,
+          "median": 200,
+          "p95": 200,
+          "min": 200,
+          "max": 200
+        },
+        "uploadedBytes": {
+          "count": 20,
+          "mean": 345600,
+          "median": 345600,
+          "p95": 345600,
+          "min": 345600,
+          "max": 345600
+        },
+        "rawCpuJsRenderMs": [
+          20.86551099999997,
+          19.149467999999615,
+          18.898204999999507,
+          18.635565999999017,
+          18.491361000000325,
+          19.306180000001405,
+          11.26415900000029,
+          11.15402499999982,
+          11.171031000001676,
+          10.861081000000922,
+          11.664341000001514,
+          10.915039999999863,
+          10.735375000000204,
+          10.734733000001142,
+          10.811367000000246,
+          11.351878000001307,
+          10.708614999999554,
+          10.802825000000666,
+          10.78329500000109,
+          11.775987000000896
+        ]
+      },
+      "change": {
+        "drawCallsSaved": 3600,
+        "drawCallsSavedPercent": 85.69388240895024,
+        "trianglesSaved": 25200,
+        "trianglesSavedPercent": 76.80117030354748,
+        "cpuJsRenderMedianDeltaMs": -8.921333499998582
+      },
+      "frozenStateVerified": true,
+      "drawCountersIndependentlyVerified": true
+    },
+    {
+      "name": "assembly-2000-front",
+      "description": "One irregular rigid assembly of 2000 cubes in front of the player; cached rigid mesh and per-piece soft shadows.",
+      "pieces": 2000,
+      "groups": 1,
+      "camera": {
+        "yaw": 0,
+        "pitch": -0.12,
+        "camera": [
+          0,
+          1.7,
+          0
+        ]
+      },
+      "focal": 1.48256097,
+      "off": {
+        "samples": 20,
+        "cpuJsRenderMs": {
+          "count": 20,
+          "mean": 2.3670928499998807,
+          "median": 2.2030604999999923,
+          "p95": 2.786420000000362,
+          "min": 2.1178990000007616,
+          "max": 3.4366049999989627
+        },
+        "drawCalls": {
+          "count": 20,
+          "mean": 2002,
+          "median": 2002,
+          "p95": 2002,
+          "min": 2002,
+          "max": 2002
+        },
+        "trianglesSubmitted": {
+          "count": 20,
+          "mean": 28012,
+          "median": 28012,
+          "p95": 28012,
+          "min": 28012,
+          "max": 28012
+        },
+        "groupsOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "piecesOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "bufferUploads": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "uploadedBytes": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "rawCpuJsRenderMs": [
+          2.713942999998835,
+          2.786420000000362,
+          2.673252999999022,
+          2.601666999998997,
+          2.3224730000001728,
+          2.2036059999991267,
+          2.180242000000362,
+          2.2591689999990194,
+          2.202515000000858,
+          2.1851090000000113,
+          2.1184400000001915,
+          2.1609929999995074,
+          2.1178990000007616,
+          2.164568000000145,
+          2.131310000000667,
+          2.16069299999981,
+          2.220362000000023,
+          2.5831190000008064,
+          2.119470999999976,
+          3.4366049999989627
+        ]
+      },
+      "on": {
+        "samples": 20,
+        "cpuJsRenderMs": {
+          "count": 20,
+          "mean": 2.422120999999879,
+          "median": 2.2691435000006095,
+          "p95": 3.1530540000003384,
+          "min": 2.2025249999987864,
+          "max": 3.506257999999434
+        },
+        "drawCalls": {
+          "count": 20,
+          "mean": 2002,
+          "median": 2002,
+          "p95": 2002,
+          "min": 2002,
+          "max": 2002
+        },
+        "trianglesSubmitted": {
+          "count": 20,
+          "mean": 28012,
+          "median": 28012,
+          "p95": 28012,
+          "min": 28012,
+          "max": 28012
+        },
+        "groupsOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "piecesOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "bufferUploads": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "uploadedBytes": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "rawCpuJsRenderMs": [
+          2.6198640000002342,
+          2.9668480000000272,
+          2.3238249999994878,
+          2.392746999999872,
+          2.242503999999826,
+          2.2922379999999976,
+          2.2034359999997832,
+          2.25448200000028,
+          2.2219939999995404,
+          2.21731600000021,
+          3.1530540000003384,
+          2.213981999999305,
+          2.356353000001036,
+          2.229365000001053,
+          2.2221539999991364,
+          2.215093999999226,
+          2.2025249999987864,
+          3.506257999999434,
+          2.3245759999990696,
+          2.283805000000939
+        ]
+      },
+      "change": {
+        "drawCallsSaved": 0,
+        "drawCallsSavedPercent": 0,
+        "trianglesSaved": 0,
+        "trianglesSavedPercent": 0,
+        "cpuJsRenderMedianDeltaMs": 0.06608300000061718
+      },
+      "frozenStateVerified": true,
+      "drawCountersIndependentlyVerified": true
+    },
+    {
+      "name": "assembly-2000-behind",
+      "description": "One irregular rigid assembly of 2000 cubes behind the player; cached rigid mesh and per-piece soft shadows.",
+      "pieces": 2000,
+      "groups": 1,
+      "camera": {
+        "yaw": 0,
+        "pitch": -0.12,
+        "camera": [
+          0,
+          1.7,
+          0
+        ]
+      },
+      "focal": 1.48256097,
+      "off": {
+        "samples": 20,
+        "cpuJsRenderMs": {
+          "count": 20,
+          "mean": 2.583364149999943,
+          "median": 2.3466440000001967,
+          "p95": 3.0440030000008846,
+          "min": 2.1506979999994655,
+          "max": 5.844452999999703
+        },
+        "drawCalls": {
+          "count": 20,
+          "mean": 2002,
+          "median": 2002,
+          "p95": 2002,
+          "min": 2002,
+          "max": 2002
+        },
+        "trianglesSubmitted": {
+          "count": 20,
+          "mean": 28012,
+          "median": 28012,
+          "p95": 28012,
+          "min": 28012,
+          "max": 28012
+        },
+        "groupsOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "piecesOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "bufferUploads": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "uploadedBytes": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "rawCpuJsRenderMs": [
+          3.0440030000008846,
+          2.822033000000374,
+          2.7345939999995608,
+          2.666511999999784,
+          2.4920839999995223,
+          2.317696000000069,
+          2.309203000000707,
+          2.3755920000003243,
+          2.273600999998962,
+          2.2464300000010553,
+          5.844452999999703,
+          2.478154000000359,
+          2.4858249999997497,
+          2.5184140000001207,
+          2.256755999998859,
+          2.159390999999232,
+          2.1597209999999905,
+          2.162605999999869,
+          2.1506979999994655,
+          2.169517000000269
+        ]
+      },
+      "on": {
+        "samples": 20,
+        "cpuJsRenderMs": {
+          "count": 20,
+          "mean": 0.21695724999999583,
+          "median": 0.20640650000041205,
+          "p95": 0.25902400000086345,
+          "min": 0.19860400000106893,
+          "max": 0.30414100000052713
+        },
+        "drawCalls": {
+          "count": 20,
+          "mean": 1,
+          "median": 1,
+          "p95": 1,
+          "min": 1,
+          "max": 1
+        },
+        "trianglesSubmitted": {
+          "count": 20,
+          "mean": 12,
+          "median": 12,
+          "p95": 12,
+          "min": 12,
+          "max": 12
+        },
+        "groupsOmitted": {
+          "count": 20,
+          "mean": 1,
+          "median": 1,
+          "p95": 1,
+          "min": 1,
+          "max": 1
+        },
+        "piecesOmitted": {
+          "count": 20,
+          "mean": 2000,
+          "median": 2000,
+          "p95": 2000,
+          "min": 2000,
+          "max": 2000
+        },
+        "bufferUploads": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "uploadedBytes": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "rawCpuJsRenderMs": [
+          0.2327449999993405,
+          0.22221999999965192,
+          0.20501399999920977,
+          0.20524500000101398,
+          0.25902400000086345,
+          0.22577500000079453,
+          0.20443300000079034,
+          0.21510899999884714,
+          0.1997559999999794,
+          0.2173819999989064,
+          0.20167899999978545,
+          0.21853399999963585,
+          0.2015690000007453,
+          0.21794299999965006,
+          0.1993959999999788,
+          0.20265099999960512,
+          0.19860400000106893,
+          0.20035699999971257,
+          0.30414100000052713,
+          0.20756799999981013
+        ]
+      },
+      "change": {
+        "drawCallsSaved": 2001,
+        "drawCallsSavedPercent": 99.95004995004994,
+        "trianglesSaved": 28000,
+        "trianglesSavedPercent": 99.95716121662144,
+        "cpuJsRenderMedianDeltaMs": -2.1402374999997846
+      },
+      "frozenStateVerified": true,
+      "drawCountersIndependentlyVerified": true
+    },
+    {
+      "name": "assembly-2000-edge",
+      "description": "One irregular rigid assembly of 2000 cubes crossing the right frustum boundary; cached rigid mesh and per-piece soft shadows.",
+      "pieces": 2000,
+      "groups": 1,
+      "camera": {
+        "yaw": 0,
+        "pitch": -0.12,
+        "camera": [
+          0,
+          1.7,
+          0
+        ]
+      },
+      "focal": 1.48256097,
+      "off": {
+        "samples": 20,
+        "cpuJsRenderMs": {
+          "count": 20,
+          "mean": 2.367221250000057,
+          "median": 2.234537499999533,
+          "p95": 3.0720239999991463,
+          "min": 2.0706200000004173,
+          "max": 3.075028999999631
+        },
+        "drawCalls": {
+          "count": 20,
+          "mean": 2002,
+          "median": 2002,
+          "p95": 2002,
+          "min": 2002,
+          "max": 2002
+        },
+        "trianglesSubmitted": {
+          "count": 20,
+          "mean": 28012,
+          "median": 28012,
+          "p95": 28012,
+          "min": 28012,
+          "max": 28012
+        },
+        "groupsOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "piecesOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "bufferUploads": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "uploadedBytes": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "rawCpuJsRenderMs": [
+          3.0720239999991463,
+          3.075028999999631,
+          2.547567000001436,
+          2.6157469999998284,
+          2.8043780000007246,
+          2.326067999998486,
+          2.443241000000853,
+          2.288481999999931,
+          2.1840680000004795,
+          2.7103079999997135,
+          2.090007999999216,
+          2.1419260000002396,
+          2.10277700000006,
+          2.0706200000004173,
+          2.08069500000056,
+          2.169766000000891,
+          2.078600999999253,
+          2.074045000001206,
+          2.207843000000139,
+          2.2612319999989268
+        ]
+      },
+      "on": {
+        "samples": 20,
+        "cpuJsRenderMs": {
+          "count": 20,
+          "mean": 2.3770923000000947,
+          "median": 2.253560500000276,
+          "p95": 3.0624900000002526,
+          "min": 2.1544539999995322,
+          "max": 3.302045000000362
+        },
+        "drawCalls": {
+          "count": 20,
+          "mean": 2002,
+          "median": 2002,
+          "p95": 2002,
+          "min": 2002,
+          "max": 2002
+        },
+        "trianglesSubmitted": {
+          "count": 20,
+          "mean": 28012,
+          "median": 28012,
+          "p95": 28012,
+          "min": 28012,
+          "max": 28012
+        },
+        "groupsOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "piecesOmitted": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "bufferUploads": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "uploadedBytes": {
+          "count": 20,
+          "mean": 0,
+          "median": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0
+        },
+        "rawCpuJsRenderMs": [
+          2.8164949999991222,
+          2.4020909999999276,
+          2.289893999999549,
+          2.282133000000613,
+          3.0624900000002526,
+          2.3617709999998624,
+          2.303345000000263,
+          2.2073419999996986,
+          2.2127810000001773,
+          2.4575130000011995,
+          2.3326880000004167,
+          2.1789800000005926,
+          2.2249879999999393,
+          2.2034459999995306,
+          2.190187000000151,
+          2.1544539999995322,
+          2.187862999999197,
+          2.1671430000005785,
+          2.2041970000009314,
+          3.302045000000362
+        ]
+      },
+      "change": {
+        "drawCallsSaved": 0,
+        "drawCallsSavedPercent": 0,
+        "trianglesSaved": 0,
+        "trianglesSavedPercent": 0,
+        "cpuJsRenderMedianDeltaMs": 0.019023000000743195
+      },
+      "frozenStateVerified": true,
+      "drawCountersIndependentlyVerified": true
+    }
+  ]
+}

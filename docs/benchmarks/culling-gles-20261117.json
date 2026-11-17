@@ -1,0 +1,211 @@
+{
+  "compiledShaders": 2,
+  "linkedPrograms": 1,
+  "gpuErrors": 0,
+  "renderer": "llvmpipe (LLVM 19.1.7, 256 bits)",
+  "pairs": [
+    {
+      "name": "clean-off",
+      "comparedPixels": 480000,
+      "changedPixels": 0,
+      "callsOff": 76,
+      "callsOn": 54,
+      "trianglesOff": 1268,
+      "trianglesOn": 992
+    },
+    {
+      "name": "psx-off",
+      "comparedPixels": 480000,
+      "changedPixels": 0,
+      "callsOff": 76,
+      "callsOn": 54,
+      "trianglesOff": 1268,
+      "trianglesOn": 992
+    },
+    {
+      "name": "clean-soft",
+      "comparedPixels": 480000,
+      "changedPixels": 0,
+      "callsOff": 135,
+      "callsOn": 93,
+      "trianglesOff": 1386,
+      "trianglesOn": 1070
+    },
+    {
+      "name": "psx-soft",
+      "comparedPixels": 480000,
+      "changedPixels": 0,
+      "callsOff": 135,
+      "callsOn": 93,
+      "trianglesOff": 1386,
+      "trianglesOn": 1070
+    },
+    {
+      "name": "clean-sharp",
+      "comparedPixels": 480000,
+      "changedPixels": 0,
+      "callsOff": 135,
+      "callsOn": 90,
+      "trianglesOff": 1488,
+      "trianglesOn": 1123
+    },
+    {
+      "name": "psx-sharp",
+      "comparedPixels": 480000,
+      "changedPixels": 0,
+      "callsOff": 135,
+      "callsOn": 90,
+      "trianglesOff": 1488,
+      "trianglesOn": 1123
+    },
+    {
+      "name": "propeller-0.79",
+      "comparedPixels": 480000,
+      "changedPixels": 0,
+      "callsOff": 135,
+      "callsOn": 93,
+      "trianglesOff": 1386,
+      "trianglesOn": 1070
+    },
+    {
+      "name": "propeller-1.57",
+      "comparedPixels": 480000,
+      "changedPixels": 0,
+      "callsOff": 135,
+      "callsOn": 93,
+      "trianglesOff": 1386,
+      "trianglesOn": 1070
+    },
+    {
+      "name": "propeller-2.61",
+      "comparedPixels": 480000,
+      "changedPixels": 0,
+      "callsOff": 135,
+      "callsOn": 93,
+      "trianglesOff": 1386,
+      "trianglesOn": 1070
+    },
+    {
+      "name": "selected-marker-edge",
+      "comparedPixels": 480000,
+      "changedPixels": 0,
+      "callsOff": 10,
+      "callsOn": 5,
+      "trianglesOff": 110,
+      "trianglesOn": 58
+    }
+  ],
+  "snapshots": [
+    {
+      "name": "clean-off-off",
+      "darkPixels": 5332,
+      "path": "/tmp/qbits-culling-final-fixed/clean-off-off.png"
+    },
+    {
+      "name": "clean-off-on",
+      "darkPixels": 5332,
+      "path": "/tmp/qbits-culling-final-fixed/clean-off-on.png"
+    },
+    {
+      "name": "psx-off-off",
+      "darkPixels": 5398,
+      "path": "/tmp/qbits-culling-final-fixed/psx-off-off.png"
+    },
+    {
+      "name": "psx-off-on",
+      "darkPixels": 5398,
+      "path": "/tmp/qbits-culling-final-fixed/psx-off-on.png"
+    },
+    {
+      "name": "clean-soft-off",
+      "darkPixels": 5332,
+      "path": "/tmp/qbits-culling-final-fixed/clean-soft-off.png"
+    },
+    {
+      "name": "clean-soft-on",
+      "darkPixels": 5332,
+      "path": "/tmp/qbits-culling-final-fixed/clean-soft-on.png"
+    },
+    {
+      "name": "psx-soft-off",
+      "darkPixels": 5398,
+      "path": "/tmp/qbits-culling-final-fixed/psx-soft-off.png"
+    },
+    {
+      "name": "psx-soft-on",
+      "darkPixels": 5398,
+      "path": "/tmp/qbits-culling-final-fixed/psx-soft-on.png"
+    },
+    {
+      "name": "clean-sharp-off",
+      "darkPixels": 5332,
+      "path": "/tmp/qbits-culling-final-fixed/clean-sharp-off.png"
+    },
+    {
+      "name": "clean-sharp-on",
+      "darkPixels": 5332,
+      "path": "/tmp/qbits-culling-final-fixed/clean-sharp-on.png"
+    },
+    {
+      "name": "psx-sharp-off",
+      "darkPixels": 5398,
+      "path": "/tmp/qbits-culling-final-fixed/psx-sharp-off.png"
+    },
+    {
+      "name": "psx-sharp-on",
+      "darkPixels": 5398,
+      "path": "/tmp/qbits-culling-final-fixed/psx-sharp-on.png"
+    },
+    {
+      "name": "propeller-0.79-off",
+      "darkPixels": 5305,
+      "path": "/tmp/qbits-culling-final-fixed/propeller-0.79-off.png"
+    },
+    {
+      "name": "propeller-0.79-on",
+      "darkPixels": 5305,
+      "path": "/tmp/qbits-culling-final-fixed/propeller-0.79-on.png"
+    },
+    {
+      "name": "propeller-1.57-off",
+      "darkPixels": 5282,
+      "path": "/tmp/qbits-culling-final-fixed/propeller-1.57-off.png"
+    },
+    {
+      "name": "propeller-1.57-on",
+      "darkPixels": 5282,
+      "path": "/tmp/qbits-culling-final-fixed/propeller-1.57-on.png"
+    },
+    {
+      "name": "propeller-2.61-off",
+      "darkPixels": 5298,
+      "path": "/tmp/qbits-culling-final-fixed/propeller-2.61-off.png"
+    },
+    {
+      "name": "propeller-2.61-on",
+      "darkPixels": 5298,
+      "path": "/tmp/qbits-culling-final-fixed/propeller-2.61-on.png"
+    },
+    {
+      "name": "observer-off",
+      "darkPixels": 6220,
+      "path": "/tmp/qbits-culling-final-fixed/observer-off.png"
+    },
+    {
+      "name": "observer-on",
+      "darkPixels": 3313,
+      "path": "/tmp/qbits-culling-final-fixed/observer-on.png"
+    },
+    {
+      "name": "selected-marker-edge-off",
+      "darkPixels": 75,
+      "path": "/tmp/qbits-culling-final-fixed/selected-marker-edge-off.png"
+    },
+    {
+      "name": "selected-marker-edge-on",
+      "darkPixels": 75,
+      "path": "/tmp/qbits-culling-final-fixed/selected-marker-edge-on.png"
+    }
+  ],
+  "scope": "Real GLES shader/buffer/pixel validation with simulated DOM; not a browser play session or GPU timing benchmark."
+}
