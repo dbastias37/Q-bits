@@ -9057,6 +9057,16 @@ function renderScene(time=performance.now()){
    updateCullingHud();
   }
 }
+// Keep the fractional time between display refreshes. Resetting the clock
+// to "now" on every draw makes a 60 FPS cap run at 48 on a 144 Hz screen.
+function visualFrameDue(time,fps){
+ if(!fps){lastVisualFrame=time;return true;}
+ const period=1000/fps,elapsed=time-lastVisualFrame;
+ const periods=Math.floor((elapsed+.5)/period);
+ if(periods<1)return false;
+ lastVisualFrame+=periods*period;
+ return true;
+}
 function frame(time) {
   if (!running) return;
   if(cullingLab.benchmark){advanceCullingBenchmark(time);requestAnimationFrame(frame);return;}
@@ -9069,7 +9079,7 @@ function frame(time) {
   if(radialGlassFrame(time).stamp!==radialGlassStamp)redraw=true;
   if(settingsScreen?.isOpen){
     accumulator=0;
-    if(!document.hidden && time-lastVisualFrame>=1000/30){renderSettingsPreview(time);lastVisualFrame=time;}
+    if(!document.hidden && visualFrameDue(time,30))renderSettingsPreview(time);
     requestAnimationFrame(frame);return;
   }
   if(radialOpen()){
@@ -9124,8 +9134,8 @@ function frame(time) {
     if(cullingLab.stats)cullingLab.simulationMs=performance.now()-simulationStart;
     redraw = true;
   }
-  if (redraw && !document.hidden && (!visuals.fps || time-lastVisualFrame>=1000/visuals.fps-.5)) {
-    lastVisualFrame=time;renderScene(time);
+  if (redraw && !document.hidden && visualFrameDue(time,visuals.fps)) {
+    renderScene(time);
   }
   requestAnimationFrame(frame);
 }

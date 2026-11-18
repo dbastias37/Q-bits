@@ -2,7 +2,11 @@
 
 Actualizado: 18 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega · recorrido del brazo y apoyos del banco — 18 de noviembre de 2026
+## Última entrega · fluidez al girar la cámara
+
+El limitador de FPS conserva el tiempo sobrante entre refrescos. Con un monitor simulado de 144 Hz y un límite de 60 FPS, la cadencia pasa de 48 a 60 imágenes por segundo. El giro mantiene la sensibilidad configurada. Prueba automática con varias frecuencias y pausa larga. Pendiente medir la cadencia real en el equipo del jugador.
+
+## Entrega anterior · recorrido del brazo y apoyos del banco — 18 de noviembre de 2026
 
 P → Mecanismos → Brazo Q-bits incorpora una posición inicial opcional. La mira elige el punto, la rueda ajusta la altura vertical y el clic guarda. Se puede probar y quitar. La secuencia la visita una vez antes de A. El banco, las plantillas y las repisas conservan la postura con el resto del programa.
 
