@@ -15,7 +15,7 @@ Las puntas de la bisagra permanecen juntas durante el movimiento. Su eje no est�
 2. Suelta Q, apunta la vista previa a una superficie libre y confirma con **clic**. La copia aparece detenida. La rueda gira la vista previa; Esc cancela.
 3. Haz **clic derecho sobre la articulación → Configurar servo**. También puedes seleccionarla y abrir **P → Mecanismos**.
 4. Para una prueba corta, usa **Desde −20°**, **Hasta 20°**, **Velocidad 30 °/s** y **Movimiento: Ida y vuelta**.
-5. Pulsa **Iniciar** y cierra P para reanudar la simulación. El panel pausa el juego; un servo iniciado no se verá moverse mientras siga abierto.
+5. Pulsa **Iniciar**. Observa el giro en directo. Detén el servo para editar sus ajustes.
 6. Vuelve al panel y pulsa **Detener y bloquear**. Conserva su postura actual. Despeja el recorrido antes de probar una apertura mayor.
 
 El semicírculo muestra el recorrido configurado y la aguja muestra el ángulo actual. La vista previa del panel es una guía: no garantiza que los bloques añadidos tengan espacio para completar todo el recorrido.
@@ -60,14 +60,14 @@ En esta entrega, Mantener posición y Mover una vez terminan ambos con bloqueo m
 
 Los servos usan la energía interna existente de sus piezas y pueden compartir una **batería externa activa conectada físicamente** al conjunto. Acopla la batería con Shift y actívala desde su menú. Estar apoyada cerca de la articulación no basta para alimentarla. El peso de los tramos y de la batería cuenta para la carga conectada.
 
-Si no se mueve, cierra P y revisa el estado del servo: energía, carga y espacio para girar. Si se bloquea bajo esfuerzo, detén el servo, reduce el peso o acorta el tramo y prueba de nuevo. Los límites de torque y carga se muestran en el panel; añadir batería no aumenta automáticamente la fuerza máxima.
+Si no se mueve, revisa el estado del servo: energía, carga y espacio para girar. Si se bloquea bajo esfuerzo, detén el servo, reduce el peso o acorta el tramo y prueba de nuevo. Los límites de torque y carga se muestran en el panel; añadir batería no aumenta automáticamente la fuerza máxima.
 
 ## Mover todas las patas como un mecanismo
 
 1. Conecta las patas al mismo cuerpo mediante sus articulaciones. Las piezas simplemente apoyadas o conectadas solo por cable no forman parte del mismo mecanismo físico.
 2. Selecciona cualquier servo y abre **P → Mecanismos → Marcha del conjunto**. La lista muestra todos los servos conectados, incluidas caderas y rodillas.
 3. Elige para cada articulación **Desde mínimo** o **Desde máximo · opuesto**. Las que parten del mismo extremo llevan la misma fase; las opuestas alternan. Usa **Ajustar recorrido** para seleccionar y ajustar una articulación concreta.
-4. Pulsa **Iniciar marcha del conjunto** y cierra P. Primero todas se colocan en su posición inicial; cuando todas llegan, comienza la repetición con un único reloj. El ritmo común respeta el recorrido y la velocidad de la articulación que necesita más tiempo.
+4. Pulsa **Iniciar marcha del conjunto**. Primero todas se colocan en su posición inicial; cuando todas llegan, comienza la repetición con un único reloj. El ritmo común respeta el recorrido y la velocidad de la articulación que necesita más tiempo.
 5. Abre P y pulsa **Detener conjunto**: todas se apagan y bloquean su postura juntas. También hay iniciar/detener marcha del conjunto en el menú de clic derecho de cualquier servo.
 
 No necesitas iniciar cada pata por separado. Cambiar ajustes, tomar el mecanismo, separar una articulación, perder energía o sufrir un bloqueo persistente detiene todo el conjunto. Si falta energía o capacidad antes de comenzar, no arranca parcialmente. Las posiciones iniciales se guardan con el mecanismo; al recuperarlo permanece detenido.

@@ -2,7 +2,7 @@
 
 Disponible dentro del juego en **P → Manual** y desde **Guía paso a paso** en los controles del brazo.
 
-Empieza con una máquina y un cubo. P abre este panel y pausa la simulación. «Volver a la sala» la reanuda. Los controles indicados son los predeterminados; si los cambiaste, revisa Configuración → Teclado.
+Empieza con una máquina y un cubo. P muestra los ajustes mientras la simulación sigue en marcha. Los controles indicados son los predeterminados; si los cambiaste, revisa Configuración → Teclado.
 
 Para alimentar máquinas separadas desde un depósito grande, consulta [Cables y depósito de energía](CABLES_ENERGIA_QBITS.md): creación con Q → Banco rápido, tendido, extensión, inspección y recuperación del material.
 
@@ -39,7 +39,7 @@ El brazo repite dos posturas que tú guardas: A para tomar y B para soltar. Unir
 3. Prepara un cubo normal. Elígelo desde Q → Piezas, suelta Q y haz clic. Acércalo debajo de la cara naranja del extremo del brazo. Apóyalo en el suelo y suéltalo sin Shift, para que quede separado. C permite agacharte.
 4. Abre el brazo. Clic derecho sobre una pieza del brazo → Configurar agarre y secuencia. En «Qué puede tomar», elige Cualquier sólido y pulsa Aplicar filtro, carga y alcance.
 5. Comprueba el contacto. Pulsa Comprobar toma. Centra la cara naranja sobre el cubo. Puedes ajustar el alcance de toma entre 1,8 y 5 cm. Si indica distancia, alineación o filtro, corrige eso y vuelve a comprobar.
-6. Haz una entrega. Desmarca Repetir la secuencia y pulsa Iniciar secuencia. El panel se cierra: el brazo toma el cubo, gira a B y lo suelta. Con un brazo nuevo no hace falta enseñar A y B otra vez.
+6. Haz una entrega. Desmarca Repetir la secuencia y pulsa Iniciar secuencia. El brazo toma el cubo, gira a B y lo suelta. Con un brazo nuevo no hace falta enseñar A y B otra vez.
 7. Comprueba el resultado. Abre P → Mecanismos. Debe mostrar «Ciclo completado» y una entrega. Sin Repetir queda en B. Usa Ir a A · sin tomar para volver; para varias entregas, activa Repetir antes de iniciar.
 
 Si algo se atasca, abre el panel y pulsa Detener. Se libera el objeto y se frenan los ejes. Retira el obstáculo o corrige la causa antes de reiniciar.
@@ -62,7 +62,7 @@ El brazo mide como carga el objeto que sostiene. El menor límite entre pinza y 
 1. Crea una cinta desde Q → Tab. Déjala nivelada y apoyada. También puedes construirla con un plano en P → Mecanismos, acercando las piezas solicitadas e integrándolas con clic derecho.
 2. Crea una Batería I, II o III desde el catálogo rápido. Estas copias de prueba aparecen cargadas y apagadas.
 3. Toma la batería, acércala a una cara libre del chasis y suelta con Shift para unirla. Clic derecho sobre la batería → Activar batería. Estar cerca no basta para transmitir energía.
-4. Clic derecho sobre la cinta → «Configurar cinta y extender…». Pulsa Iniciar tramo. Cada tramo tiene su propio control: encender la batería no inicia la banda.
+4. Clic derecho sobre la cinta → «Configurar cinta y extender…». Pulsa Iniciar marcha de la línea para arrancar los tramos unidos al mismo chasis. Clic derecho en un tramo permite detenerlo o invertir solo ese tramo.
 5. Deja un cubo suelto sobre la banda y mantén libre la salida. Si la batería se agota, apágala y apóyala en el suelo para recargar.
 
 En el taller también puedes fabricar baterías con uno, dos o tres cubos normales unidos en línea sobre la mesa. Las baterías fabricadas conservan los julios de esas piezas; no aparecen llenas por fabricarlas.
@@ -83,13 +83,13 @@ Qué significa cada ajuste: rpm controla velocidad; torque limita fuerza de giro
 
 Taller: deja la pieza sobre la mesa, suéltala, apunta a la mesa y pulsa E. Lee el efecto y el coste de la mejora antes de aplicarla. La investigación disponible se conserva en el navegador.
 
-Sensor de contacto: crea uno desde el catálogo rápido o prepara una pieza en el taller. Clic derecho sobre él → Sensor · conectar punta… → elige un rotor. Al tocar una pared con la punta activa, invierte ese rotor si está encendido y a menos de 3 m. No es un detector de cajas ni un botón para arrancar el brazo. Sepáralo de la pared antes de otro contacto.
+**Sensor configurable.** Elige un sensor en Banco rápido o adáptalo en el taller. Clic derecho → Configurar sensor. Selecciona contacto, movimiento, láser o peso, elige el mecanismo y la acción. El alcance del láser y del movimiento se ajusta entre 25 cm y 2 m. Mantén Alt para ver el haz. El enlace admite hasta 3 m.
 
 ## Servos · primera extremidad
 
 1. Mantén **Q → Tab → Banco rápido** y elige **Servo pivote** o **Servo bisagra**. Suelta Q y confirma la vista previa con clic.
 2. Clic derecho en la articulación → **Configurar servo**, o selecciónala y abre **P → Mecanismos**.
-3. Empieza con **−20° a 20°**, **30 °/s** e **Ida y vuelta**. Pulsa Iniciar y cierra P para ver el movimiento. Detener y bloquear conserva el ángulo alcanzado.
+3. Empieza con **−20° a 20°**, **30 °/s** e **Ida y vuelta**. Pulsa Iniciar para ver el movimiento. Detener y bloquear conserva el ángulo alcanzado.
 4. Para una sola postura, elige Mantener posición o Mover una vez y una posición objetivo dentro del recorrido. Ambos llegan y quedan bloqueados mecánicamente. El rango total disponible es **−90° a 90°**, con velocidad entre **5 y 180 °/s**.
 
 **Construcción manual:** clic derecho sobre una pirámide de base cuadrada → Preparar Servo pivote; suelda su base al cuerpo con Shift y conecta la cara inferior de un cubo a su ápice con Shift. Para una bisagra, prepara una pirámide como Servo bisagra y enfrenta su punta a la de otra pirámide con Shift; sus bases reciben los tramos rígidos. Las puntas permanecen unidas al doblarse.
@@ -108,7 +108,7 @@ Repisa: almacena el objeto real. Al recuperarlo, los controles quedan detenidos.
 
 ## 7 · Si algo no funciona
 
-- No se mueve: cierra el panel. Si sigue detenido, lee el estado del mecanismo y comprueba la energía, el límite de carga y el espacio para moverse.
+- No se mueve: lee el estado del mecanismo y comprueba la energía, el límite de carga y el espacio para moverse.
 - Espera sin tomar: usa Comprobar toma; revisa que el cubo esté suelto, centrado bajo la cara naranja y dentro del alcance configurado. Detén sus rutas y suéltalo de tu mano.
 - Toma otro objeto: selecciona una pieza específica o un filtro de tipo/color y pulsa Aplicar filtro, carga y alcance.
 - Choca durante el giro: Detener, despejar el recorrido, ajustar A/B y probar el movimiento vacío.
@@ -131,7 +131,7 @@ Puedes conectar **1, 2, 3 o 4 hélices** al mismo conjunto. Una quinta impide el
 
 Los triangulares obtenidos al dividir un Q-bit estándar pesan 1/12 u cada uno. Las piezas creadas directamente desde Q usan el peso seleccionado en P → Piezas. Por eso dos hélices geométricamente iguales pueden levantar cargas distintas. La hélice rápida usa triangulares de 1/12 u.
 
-**Sensor.** Prepara un sensor en el taller o usa Banco rápido. Únelo físicamente al dron y orienta su cara activa hacia la pared. Al tocarla, invierte el avance una sola vez; debe separarse para volver a activarse. No hace falta enlazarlo a un rotor para controlar el vuelo. El sensor detecta contacto, no obstáculos a distancia.
+**Sensor.** Une un sensor al chasis y elige «Dron acoplado» en el panel. Puede despegar, apagar los motores o invertir el avance cuando se cumple la condición elegida.
 
 **Mano y brazo.** El cubo de agarre conserva su menú, filtros, límite de carga y consumo. Su objeto sostenido se suma al peso del dron. Los rotores y brazos pueden formar parte del montaje, pero necesitan energía suficiente y un montaje libre: una base fija o una cinta anclada impide despegar. No todos los conjuntos pesados podrán volar con cuatro hélices.
 

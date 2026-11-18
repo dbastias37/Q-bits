@@ -6,7 +6,7 @@
  const level=value=>Number.isInteger(value)&&value>=1&&value<=3?value:1;
  const close=(a,b)=>Number.isFinite(a)&&Number.isFinite(b)&&Math.abs(a-b)<=EPS*Math.max(1,Math.abs(a),Math.abs(b));
  const RESEARCH=Object.freeze([
-  {id:'sensor',label:'Sensor de contacto',cost:8,bench:1,minLevel:0,requires:[]},
+  {id:'sensor',label:'Sensor configurable',cost:8,bench:1,minLevel:0,requires:[]},
   {id:'bench2',label:'Mesa de trabajo II',cost:24,bench:1,minLevel:8,requires:[]},
   {id:'battery2',label:'Batería II · +50 % de capacidad',cost:20,bench:2,minLevel:0,requires:[]},
   {id:'lightweight2',label:'Estructura ligera II · 90 % de masa',cost:20,bench:2,minLevel:0,requires:[]},
@@ -92,7 +92,7 @@
    else if(!Number.isInteger(value)||value<1||value>3)return fail('El nivel de adaptación debe estar entre I y III.');
    next[key]=value;
   }
-  if(next.sensor&&!profile.research.includes('sensor'))return fail('Investiga primero el sensor de contacto.');
+  if(next.sensor&&!profile.research.includes('sensor'))return fail('Investiga primero el sensor configurable.');
   for(const key of ['battery','lightweight','movement'])if(next[key]>1&&!profile.research.includes(key+next[key]))return fail('Investiga primero la mejora '+key+' '+next[key]+'.');
   if(next.lightweight>1&&part.mood.matter)return fail('Recompón y retira las adaptaciones antes de aligerar materia dividida.');
   const storedJ=part.mood.energy*SPEC.battery[before.battery],capacity=SPEC.battery[next.battery];

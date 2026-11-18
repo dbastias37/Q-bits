@@ -123,7 +123,7 @@ module.exports = function createGame(options = {}) {
     updateBatteryLiquids,resetBatteryLiquids,batteryLiquidDebug,
     selectionHudSnapshot,selectFromHud,initSelectionHud,updateSelectionHud,onPhysicalKeyDown,onPhysicalKeyUp,keyboardInput,dispatchControlAction,pollGamepadInput,resetGameInputs,gameInputActive,getInputState:()=>({gamepadActive,hudInputActive,gamepadMove:[...gamepadMove]}),setMultiSelection:value=>{multiSelection=value},selectionGroups,drawSelectionMarker,drawWideLines,visualResolution,visualFrameDue,applyPreferences,renderSettingsPreview,initSettingsScreen,getVisuals:()=>visuals,getSettingsScreen:()=>settingsScreen,
     getWorkshopProfile:()=>workshopProfile,setWorkshopProfile:value=>{workshopProfile=value},getWorkshopBench:()=>workshopBench,contactStates,
-    awardWorkshopCredits,setupWorkshop,openWorkshopMenu,applyWorkshopUpgrade,purchaseWorkshopResearch,linkContactSensor,unlinkContactSensor,tickContactSensors,sensorContactActive,workshopTarget,drawWorkshop,
+    awardWorkshopCredits,setupWorkshop,openWorkshopMenu,applyWorkshopUpgrade,purchaseWorkshopResearch,linkContactSensor,unlinkContactSensor,tickContactSensors,sensorContactActive,sensorConfig,sensorReading,sensorBeam,showSensorMenu,workshopTarget,drawWorkshop,
     setupProduction,tickProduction,productionForces,productionIntervention,productionObjective,startProduction,resetProduction,openProductionMenu,
     setupAutomation,tickAutomation,automationObjective,automationIntervention,tickCampaign,campaignTorqueCap,
     chapters,LEVELS,beginReconfiguration,reconfigurationInput,tickReconfiguration,setupReconfiguration,reconfigurationObjective,showCodex,closeCodex,catalogueRecipe,rememberCatalogueRecipe,groupWorkUnits,showCampaignResults,

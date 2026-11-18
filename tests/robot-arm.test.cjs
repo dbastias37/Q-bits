@@ -95,7 +95,7 @@ test('an independent gripper spends real energy while stationary and recovers on
 test('an independent externally powered gripper conserves its internal reserve',()=>{
  const {t}=lab(),g=t.makeGroup([{id:t.allocateUnitId(),shape:'cube',weight:1,p:t.V(0,.145,0),q:t.Q()},{id:t.allocateUnitId(),shape:'cube',weight:1,p:t.V(.09,.145,0),q:t.Q()}]),grip=g.parts[0],cell=g.parts[1];
  assert(t.configureGripper(grip,{}));grip.mood.energy=.3;cell.mood.externalBattery={version:1,ownerId:cell.id,packId:cell.id,enabled:true};cell.mood.energy=.5;t.addQubit([0,.05,0]);assert(t.gripperGrab(grip.id));const internal=grip.mood.energy,external=cell.mood.energy;step(t,240);
- assert.equal(t.robotGrips.size,1);assert.equal(grip.mood.energy,internal,'external supply prevents hidden regeneration of the grip reserve');assert(Math.abs(cell.mood.energy-(external-.16/120))<1e-9);
+ assert.equal(t.robotGrips.size,1);assert.equal(grip.mood.energy,internal,'external supply prevents hidden regeneration of the grip reserve');assert(Math.abs(cell.mood.energy-(external-.16/360))<1e-9);
  t.releaseGripper(grip.id);cell.mood.externalBattery.enabled=false;step(t,240);assert(grip.mood.energy>internal,'rest is restored after release and switching off the external supply');
 });
 test('changing a held solid cargo load updates its physical mass and releases an overloaded grip',()=>{

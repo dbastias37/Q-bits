@@ -8,7 +8,7 @@ La cinta inicia la línea de producción del banco de pruebas. Sus laterales, so
 2. Elige recta, esquina izquierda o esquina derecha. Puedes orientar el plano en pasos de 90° y elegir su altura. Las patas son opcionales: en altura puedes usar una estructura de apoyo existente.
 3. Acerca las piezas sueltas solicitadas. Haz clic derecho en el plano y selecciona **Integrar cercanos**. Si falta material o el recorrido está obstruido, el plano informa el problema.
 4. Solo después del último encaje aparecen el control y la banda. Acopla una batería externa a los laterales con el sistema de unión existente y enciéndela.
-5. Selecciona el tramo y pulsa **Iniciar tramo**. Puedes detenerlo o invertir su sentido desde el mismo panel o el menú contextual. La velocidad normal usa 30 rpm; el panel muestra la velocidad real de la banda.
+5. Selecciona el tramo y pulsa **Iniciar marcha de la línea**. Los tramos unidos al chasis arrancan juntos. Desde el menú contextual puedes detener o invertir un tramo por separado. La velocidad normal usa 30 rpm; el panel muestra la velocidad real de la banda.
 
 | Plano | Cubos | Enganches | Motores del módulo |
 | --- | ---: | ---: | ---: |
@@ -22,7 +22,7 @@ Las patas añaden **4 cubos** al plano elegido. Puedes retirarlas si la estructu
 
 Selecciona un tramo y marca **Al final de la cinta seleccionada** antes de elegir el siguiente plano. Se alinean la altura, la orientación y el extremo de salida. Al completar la construcción se unen los laterales que encajan. También puedes colocar líneas separadas o paralelas y orientar cada una por tu cuenta.
 
-Las secciones físicamente unidas comparten la batería mediante la red mecánica existente. Cada tramo conserva su propio control de marcha y sentido. Si unes también un brazo, su límite de carga de rotor sigue considerando el conjunto conectado: revisa ese límite al ampliar la línea. La proximidad por sí sola no transmite energía. El tramo debe estar nivelado y apoyado: no se puede encender suspendido sin soporte. Puede funcionar sobre un banco o sobre otra estructura estable; si pierde ese apoyo, se detiene. Un generador de área y su alcance son trabajo posterior; este bloque utiliza baterías externas.
+Las secciones físicamente unidas comparten la batería mediante la red mecánica existente. Al iniciar la marcha arrancan todos los tramos del mismo chasis. Si pegas uno girado, su rodadura se ajusta para continuar el flujo en la unión. El clic derecho permite detener o invertir ese tramo. Un brazo acoplado conserva el límite de carga de su pinza y de sus ejes. La proximidad por sí sola no transmite energía. El tramo debe estar nivelado y apoyado: no se puede encender suspendido sin soporte. Puede funcionar sobre un banco o sobre otra estructura estable; si pierde ese apoyo, se detiene. Un generador de área y su alcance son trabajo posterior; este bloque utiliza baterías externas.
 
 ## Seleccionar, mover y separar tramos
 

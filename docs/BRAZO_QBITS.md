@@ -13,7 +13,7 @@ Implementado el 16 de noviembre de 2026. Controles de programación actualizados
 5. Pon un Q-bit suelto bajo la **cara inferior marcada en naranja**. Clic derecho sobre el brazo → **Configurar agarre y secuencia**. El plano inicial viene con A en la postura construida y B a 90° de giro de base.
 6. Pulsa **Iniciar secuencia**. Espera un objeto compatible, lo toma, gira a B, lo libera y regresa a A. Desactiva **Repetir** para ejecutar una entrega y terminar en B. **Ir a A · sin tomar** y **Ir a B · sin tomar** permiten probar las posturas vacías sin sobrescribirlas. **Comprobar toma** explica distancia, alineación, filtro, peso, ocupación, energía y obstáculos, sin tomar ni consumir energía. **Detener** libera el objeto y frena las articulaciones.
 
-El panel pausa la simulación. Iniciar o ajustar un eje cierra el panel para que ocurra el movimiento; **P** vuelve a abrirlo. La dirección de la cara activa viaja con el cubo de agarre.
+**P** muestra el movimiento en directo. Detén el brazo, elige un eje, ajusta sus rpm y pulsa **Aplicar**. Puedes probar la postura sin cerrar el panel. La dirección de la cara activa viaja con el cubo de agarre.
 
 ## Elegir lo que toma
 

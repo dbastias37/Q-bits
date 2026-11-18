@@ -22,9 +22,9 @@ test('invalid ranges and out-of-range held target cannot command the motor',()=>
  p.ui.render({...snapshot(),id:2,mode:'hold'});p.node('target').value='80';p.node('start').dispatch('click');assert.equal(p.calls.length,0);assert.match(p.node('feedback').textContent,/dentro del recorrido/);
  p.node('target').value='20';p.node('speed').value='';p.node('apply').dispatch('click');assert.equal(p.calls.length,0);
 });
-test('running controls expose stop/invert, retain the measured angle, and dispose their events',()=>{
- const p=panel();p.ui.render({...snapshot(),enabled:true});assert.equal(p.node('start').disabled,true);assert.equal(p.node('stop').disabled,false);p.node('stop').dispatch('click');p.node('invert').dispatch('click');assert.deepEqual(p.calls,[{type:'stop'},{type:'invert'}]);
- assert.match(p.node('pointer').attributes.d,/M 100 92 L/);p.ui.destroy();p.node('stop').dispatch('click');assert.equal(p.calls.length,2);
+test('running controls lock settings and expose stop, retain the measured angle, and dispose their events',()=>{
+ const p=panel();p.ui.render({...snapshot(),enabled:true});assert.equal(p.node('start').disabled,true);assert.equal(p.node('stop').disabled,false);p.node('stop').dispatch('click');assert.equal(p.node('invert').disabled,true);p.node('invert').dispatch('click');assert.deepEqual(p.calls,[{type:'stop'}]);
+ assert.match(p.node('pointer').attributes.d,/M 100 92 L/);p.ui.destroy();p.node('stop').dispatch('click');assert.equal(p.calls.length,1);
 });
 
 test('march controls start and stop the whole mechanism and expose opposed starting ends',()=>{

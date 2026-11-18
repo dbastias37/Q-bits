@@ -14,7 +14,7 @@ test('powered rotor uses both actual energy bars without simultaneous passive re
 test('one empty enganche stops the motor, keeps the joint and requires manual restart',()=>{
  const {t}=lab(),r=t.spawnRotor(t.V(0,.4,0),{mount:'fixed'});
  t.rotorPart(r.aId).part.mood.energy=.000002;t.rotorPart(r.bId).part.mood.energy=.6;
- assert(t.configureRotor(r,{enabled:true}));step(t,1);
+ assert(t.configureRotor(r,{enabled:true}));t.stepPhysics(1/80);
  assert.equal(r.enabled,false);assert.equal(r.stopReason,'empty');assert.equal(r.constraint.motorEquation.enabled,false);
  assert.equal(energies(t,r)[0],0,'no recharge in the same powered step');assert(energies(t,r)[1]>.59);
  assert.equal(t.rotors.length,1);step(t,240);assert(energies(t,r)[0]>0);assert.equal(r.enabled,false);
@@ -49,7 +49,7 @@ test('depleting one rotor does not skip another motor\'s energy bill or recharge
  t.rotorPart(first.aId).part.mood.energy=.000002;t.rotorPart(first.bId).part.mood.energy=.6;
  for(const id of [second.aId,second.bId])t.rotorPart(id).part.mood.energy=.6;
  assert(t.configureRotor(first,{enabled:true}));assert(t.configureRotor(second,{enabled:true}));
- step(t,1);
+ t.stepPhysics(1/80);
  assert.equal(first.enabled,false);assert.equal(first.stopReason,'empty');
  assert.equal(first.pin,null,'cutoff releases a fixed base');
  assert(t.rotorGroups(first).every(g=>g.body.type===1&&!g.body.fixedRotation),'cutoff restores dynamic rigid bodies');

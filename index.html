@@ -410,6 +410,17 @@ input,select,textarea{font-family:var(--font-menu);}
     </div>
     <div id="page-mechanisms" role="tabpanel" hidden>
       <p id="mechanism-unlock"></p>
+      <section id="sensor-panel" hidden>
+        <h3>Sensor</h3>
+        <label>Detectar<select id="sensor-mode"><option value="contact">Contacto frontal con una pared</option><option value="motion">Movimiento cercano</option><option value="laser">Obstrucción del láser</option><option value="weight">Peso apoyado encima</option></select></label>
+        <label id="sensor-range-row">Alcance<select id="sensor-range"><option value="25">I · 25 cm</option><option value="50">II · 50 cm</option><option value="100">III · 1 m</option><option value="200">IV · 2 m</option></select></label>
+        <label id="sensor-speed-row">Velocidad mínima (cm/s)<input id="sensor-speed" type="number" min="1" max="500" step="1"></label>
+        <label id="sensor-weight-row">Peso mínimo (u)<input id="sensor-weight" type="number" min="0.25" max="2000" step="0.25"></label>
+        <label>Mecanismo a controlar<select id="sensor-target"></select></label>
+        <label>Al detectar<select id="sensor-action"><option value="reverse" id="sensor-reverse">Invertir marcha</option><option value="start">Iniciar</option><option value="stop">Detener</option></select></label>
+        <p>Orienta la punta con Shift. Mantén Alt para ver el láser. Elige un mecanismo a menos de 3 m. La acción se repite cuando la zona queda libre y vuelve a detectar.</p>
+        <strong id="sensor-reading"></strong>
+      </section>
       <section id="servo-panel" aria-labelledby="servo-title">
         <p class="servo-kicker">Articular · ajustar · probar</p><h3 id="servo-title">Servos Q-bits</h3>
         <p id="servo-empty">Selecciona un Servo pivote o un Servo bisagra para configurar su recorrido.</p>
@@ -420,7 +431,7 @@ input,select,textarea{font-family:var(--font-menu);}
             <p>Todos los servos unidos físicamente pertenecen al mismo mecanismo. Elige cómo parte cada articulación: mínimo o máximo para moverla en oposición.</p>
             <div id="servo-march-members"></div>
             <div class="servo-actions"><button id="servo-march-start" type="button">Iniciar marcha del conjunto</button><button id="servo-march-stop" type="button">Detener conjunto</button></div>
-            <p>Primero se preparan todas las posiciones iniciales; después comparten el mismo ritmo. Si una articulación se bloquea o pierde energía, se detienen todas. Cierra P para ver el movimiento.</p>
+            <p>Primero se preparan todas las posiciones iniciales; después comparten el mismo ritmo. Si una articulación se bloquea o pierde energía, se detienen todas.</p>
           </section>
           <h4>Ajuste individual de la articulación</h4>
           <p id="servo-description"></p>
@@ -444,7 +455,7 @@ input,select,textarea{font-family:var(--font-menu);}
           <button id="servo-apply" type="button">Aplicar recorrido</button>
           <div class="servo-actions"><button id="servo-start" type="button">Iniciar</button><button id="servo-stop" type="button">Detener y bloquear</button><button id="servo-invert" type="button">Invertir sentido</button></div>
           <p id="servo-status" role="status" aria-live="polite"></p>
-          <p class="servo-pause-note">P pausa el juego. Cierra el panel para ver el movimiento. Al detenerse, la articulación conserva su ángulo.</p>
+          <p class="servo-pause-note">Puedes observar el giro desde P. Detén el servo para editarlo. Al detenerse, la articulación conserva su ángulo.</p>
           <dl class="servo-facts"><div><dt>Torque máximo</dt><dd id="servo-torque">—</dd></div><div><dt>Carga máxima</dt><dd id="servo-capacity">—</dd></div></dl>
         </div>
         <p id="servo-feedback" role="status" aria-live="polite"></p>
@@ -458,12 +469,12 @@ input,select,textarea{font-family:var(--font-menu);}
         <div class="actions"><button id="flight-apply" type="button">Aplicar altura y velocidad</button><button id="flight-heading" type="button">Avanzar hacia donde miro</button></div>
         <div class="actions"><button id="flight-start" type="button">Despegar</button><button id="flight-land" type="button">Aterrizar</button><button id="flight-stop" type="button">Apagar motores</button></div>
         <p id="flight-telemetry"></p>
-        <p>Velocidad 0 mantiene posición horizontal. Aterrizar conserva energía para bajar; apagar motores corta la sustentación. P pausa el vuelo: vuelve a la sala para verlo. Más peso o altura exige más esfuerzo. Una batería agotada provoca caída.</p>
+        <p>Velocidad 0 mantiene posición horizontal. Aterrizar conserva energía para bajar; apagar motores corta la sustentación. P muestra el vuelo en directo. Más peso o altura exige más esfuerzo. Una batería agotada provoca caída.</p>
         <p>Un sensor montado en el mismo dron invierte el avance cuando su cara activa toca una pared. El agarre conserva su menú propio y su carga cuenta para el vuelo.</p>
       </section>
       <section id="arm-panel" aria-labelledby="arm-title">
         <p class="arm-kicker">Construir · enseñar · repetir</p><h3 id="arm-title">Brazo Q-bits</h3>
-        <button id="arm-help" type="button">Guía paso a paso</button><p>El panel pausa el juego. Vuelve a la sala para ver el movimiento.</p>
+        <button id="arm-help" type="button">Guía paso a paso</button><p>Observa el recorrido desde P. Detén el brazo para editar sus ajustes.</p>
         <p id="arm-target">Selecciona el brazo o un Q-bit para adaptarlo.</p>
         <p>Para una primera prueba: mantén Q → Tab → Brazo Q-bits, suelta Q y haz clic. El plano de abajo requiere 18 cubos + 8 enganches existentes. El brazo puede probarse con su energía interna; una batería activa amplía su autonomía.</p>
         <div class="arm-actions"><button id="arm-blueprint" type="button">Colocar blueprint del brazo</button><button id="arm-convert" type="button">Convertir cubo en agarre</button></div>
@@ -507,7 +518,8 @@ input,select,textarea{font-family:var(--font-menu);}
               <label>Carga máxima (u)<input id="arm-motor-capacity" type="number" min="2" max="2000" step="1"></label>
             </div>
             <button id="arm-apply-motor" type="button">Aplicar ajuste al eje</button>
-            <p>Hombro, codo y muñeca tienen reducción 3:1. La secuencia limita el motor a 20 rpm sin carga y 12 rpm con carga.</p>
+            <p id="arm-live-speed"></p>
+            <p>Hombro, codo y muñeca tienen reducción 3:1. Ajusta las rpm del motor por eje. Con reducción 3:1, 60 rpm del motor equivalen a 20 rpm del eje. La carga y el torque afectan el giro real.</p>
             <label>Paso de giro<select id="arm-jog-step"><option value="5">5° · ajuste fino</option><option value="15" selected>15° · ajuste normal</option><option value="45">45° · ajuste medio</option><option value="90">90° · cuarto de vuelta</option></select></label>
             <div id="arm-joints" aria-label="Articulaciones del brazo"></div>
             <div class="arm-actions"><button id="arm-teach-pick" type="button">Guardar postura actual como A</button><button id="arm-teach-place" type="button">Guardar postura actual como B</button></div>
@@ -541,8 +553,8 @@ input,select,textarea{font-family:var(--font-menu);}
           <label>Carga máxima (u)<input id="conveyor-capacity" type="number" min="1" max="2000" step="1" value="8"></label>
           <div class="conveyor-actions" role="group" aria-label="Sentido de la cinta"><button id="conveyor-forward" type="button" aria-pressed="false">Avance</button><button id="conveyor-reverse" type="button" aria-pressed="false">Inversa</button></div>
           <p id="conveyor-direction-note">Sentido indicado en el plano.</p>
-          <button id="conveyor-toggle" type="button" aria-pressed="false">Iniciar tramo</button>
-          <p>Activa la batería y deja libres la entrada y la salida. Cada tramo conserva su propio sentido.</p>
+          <button id="conveyor-toggle" type="button" aria-pressed="false">Iniciar marcha de la línea</button>
+          <p>Activa la batería y deja libres la entrada y la salida. Al unir un tramo, su avance sigue el sentido del tramo receptor.</p>
         </div>
         <dl class="conveyor-facts"><div><dt>Carga / límite del tramo</dt><dd id="conveyor-load">—</dd></div><div><dt>Velocidad de la banda</dt><dd id="conveyor-speed">—</dd></div><div><dt>Energía disponible</dt><dd id="conveyor-energy">—</dd></div><div><dt>Línea conectada</dt><dd id="conveyor-connected">—</dd></div></dl>
         <p id="conveyor-feedback" role="status" aria-live="polite"></p>
@@ -635,7 +647,7 @@ input,select,textarea{font-family:var(--font-menu);}
     <div id="page-manual" role="tabpanel" aria-labelledby="tab-manual" hidden>
       <h3>Manual del banco de pruebas</h3>
       <details><summary>Desarme inmediato o por etapas</summary><p>Configuración → Juego → Desarme de conjuntos → Guardar. Inmediato conserva el gesto actual. Por etapas, en el banco de pruebas, detiene el montaje y coloca sus piezas en huecos libres del suelo, de arriba hacia abajo. Actívalo con Shift + varias sacudidas o Alt → Desarmar todo. Si espera, libera espacio; no hace falta volver a agitar. Pausar detiene el proceso y salir y volver al banco conserva las piezas pendientes. Campaña y puzles mantienen el desarme inmediato. La selección aparece abajo a la derecha.</p></details>
-      <p class="manual-note"><strong>Empieza con una máquina y un cubo.</strong> P abre este panel y pausa la simulación. «Volver a la sala» la reanuda. Los controles indicados son los predeterminados; si los cambiaste, revisa Configuración → Teclado.</p>
+      <p class="manual-note"><strong>Empieza con una máquina y un cubo.</strong> P abre este panel mientras la simulación sigue en marcha. Esc abre la pausa. Los controles indicados son los predeterminados; si los cambiaste, revisa Configuración → Teclado.</p>
       <details open><summary>Colocar y conectar piezas</summary>
         <p>Mantén Q → Tab → Banco rápido, elige una pieza y suelta Q. Apunta al suelo o a una superficie: la vista previa azul muestra dónde quedará. Rojo significa espacio ocupado. La rueda gira la vista previa en pasos de 90°. Haz clic para confirmar; Esc o clic derecho cancelan.</p>
         <p>Para prolongar una cinta, apunta cerca de su flecha de salida y mantén Shift. La vista previa se alinea con la conexión: confirma con clic sin soltar Shift. Se unen las bases y se conservan los rodillos. Las repisas se colocan en paredes; depósito, enfriador y cuerpo sólido van en el suelo. Mesa de trabajo abre el taller existente.</p>
@@ -645,13 +657,13 @@ input,select,textarea{font-family:var(--font-menu);}
         <ol>
           <li>Mantén Q → Tab → Banco rápido y elige Servo pivote o Servo bisagra. Suelta Q y confirma la vista previa con clic.</li>
           <li>Clic derecho en la articulación → Configurar servo, o selecciónala y abre P → Mecanismos.</li>
-          <li>Prueba Desde −20°, Hasta 20°, velocidad 30 °/s y Movimiento: Ida y vuelta. Pulsa Iniciar y cierra P para reanudar la simulación.</li>
+          <li>Prueba Desde −20°, Hasta 20°, velocidad 30 °/s y Movimiento: Ida y vuelta. Pulsa Iniciar y observa el giro.</li>
           <li>Detener y bloquear conserva el ángulo actual. Mantener posición y Mover una vez llegan al objetivo y quedan bloqueados. Ida y vuelta alterna entre los extremos.</li>
         </ol>
         <p>Recorrido disponible: −90° a 90°. Velocidad: 5–180 °/s. La fuerza, el peso y los obstáculos condicionan el movimiento real.</p>
         <p><strong>Pivote manual:</strong> clic derecho sobre una pirámide de base cuadrada → Preparar Servo pivote. Une su base al cuerpo con Shift; conecta la cara inferior de un cubo a la punta con Shift. Ese cubo inicia el tramo móvil.</p>
         <p><strong>Bisagra manual:</strong> prepara una pirámide como Servo bisagra y conecta por su punta otra pirámide con Shift. Cada base sostiene un tramo rígido; las puntas permanecen unidas al abrirse lateralmente.</p>
-        <p>La energía interna permite probar los servos. Una batería externa activa conectada al conjunto comparte su reserva; estar cerca no basta. Si se bloquea, revisa energía, carga, fuerza y espacio. Para mover todas las patas, únelas al mismo cuerpo. En Marcha del conjunto elige inicio mínimo/máximo por articulación, pulsa Iniciar marcha del conjunto y cierra P. Todas se preparan y repiten juntas; Detener conjunto las bloquea a la vez. Un fallo de energía o bloqueo persistente detiene el mecanismo completo. Ajusta los recorridos y apoyos para conseguir equilibrio.</p>
+        <p>La energía interna permite probar los servos. Una batería externa activa conectada al conjunto comparte su reserva; estar cerca no basta. Si se bloquea, revisa energía, carga, fuerza y espacio. Para mover todas las patas, únelas al mismo cuerpo. En Marcha del conjunto elige inicio mínimo/máximo por articulación, pulsa Iniciar marcha del conjunto desde P. Todas se preparan y repiten juntas; Detener conjunto las bloquea a la vez. Un fallo de energía o bloqueo persistente detiene el mecanismo completo. Ajusta los recorridos y apoyos para conseguir equilibrio.</p>
       </details>
       <details><summary>Hélice y primer dron</summary>
         <ol><li>Mantén Q, pulsa Tab y elige <strong>Dron de prueba</strong>. Suelta Q y haz clic: aparece una hélice con batería I cargada y apagada.</li>
@@ -670,7 +682,7 @@ input,select,textarea{font-family:var(--font-menu);}
           <li><strong>Prepara un cubo normal.</strong> Elígelo desde Q → Piezas, suelta Q y haz clic. Acércalo debajo de la cara naranja del extremo del brazo. Apóyalo en el suelo y suéltalo sin Shift, para que quede separado. C permite agacharte.</li>
           <li><strong>Abre el brazo.</strong> Clic derecho sobre una pieza del brazo → Configurar agarre y secuencia. En «Qué puede tomar», elige Cualquier sólido y pulsa Aplicar filtro, carga y alcance.</li>
           <li><strong>Comprueba el contacto.</strong> Pulsa Comprobar toma. Centra la cara naranja sobre el cubo. Puedes ajustar el alcance de toma entre 1,8 y 5 cm. Si indica distancia, alineación o filtro, corrige eso y vuelve a comprobar.</li>
-          <li><strong>Haz una entrega.</strong> Desmarca Repetir la secuencia y pulsa Iniciar secuencia. El panel se cierra: el brazo toma el cubo, gira a B y lo suelta. Con un brazo nuevo no hace falta enseñar A y B otra vez.</li>
+          <li><strong>Haz una entrega.</strong> Desmarca Repetir la secuencia y pulsa Iniciar secuencia. El brazo toma el cubo, gira a B y lo suelta. Con un brazo nuevo no hace falta enseñar A y B otra vez.</li>
           <li><strong>Comprueba el resultado.</strong> Abre P → Mecanismos. Debe mostrar «Ciclo completado» y una entrega. Sin Repetir queda en B. Usa Ir a A · sin tomar para volver; para varias entregas, activa Repetir antes de iniciar.</li>
         </ol>
         <p>Para elegir por dónde empieza, abre Marcar posición inicial, apunta y ajusta la altura con la rueda. Pulsa Ir a posición inicial para probarla en vacío. Al iniciar la secuencia, el brazo pasa por allí antes de ir a A. Si el panel indica recorrido bloqueado, despeja el paso o cambia la postura.</p>
@@ -693,7 +705,7 @@ input,select,textarea{font-family:var(--font-menu);}
           <li>Crea una cinta desde Q → Tab. Déjala nivelada y apoyada. También puedes construirla con un plano en P → Mecanismos, acercando las piezas solicitadas e integrándolas con clic derecho.</li>
           <li>Crea una Batería I, II o III desde el catálogo rápido. Estas copias de prueba aparecen cargadas y apagadas.</li>
           <li>Toma la batería, acércala a una cara libre del chasis y suelta con Shift para unirla. Clic derecho sobre la batería → Activar batería. Estar cerca no basta para transmitir energía.</li>
-          <li>Clic derecho sobre la cinta → «Configurar cinta y extender…». Pulsa Iniciar tramo. Cada tramo tiene su propio control: encender la batería no inicia la banda.</li>
+          <li>Clic derecho sobre la cinta → «Configurar cinta y extender…». Pulsa Iniciar marcha de la línea para arrancar los tramos unidos al mismo chasis. Clic derecho en un tramo permite detenerlo o invertir solo ese tramo.</li>
           <li>Deja un cubo suelto sobre la banda y mantén libre la salida. Si la batería se agota, apágala y apóyala en el suelo para recargar.</li>
         </ol>
         <p>En el taller también puedes fabricar baterías con uno, dos o tres cubos normales unidos en línea sobre la mesa. Las baterías fabricadas conservan los julios de esas piezas; no aparecen llenas por fabricarlas.</p>
@@ -711,7 +723,7 @@ input,select,textarea{font-family:var(--font-menu);}
         <p><strong>Rotor:</strong> dos enganches unidos forman un eje. Fija una mitad al soporte y la otra a la pieza que girará. En P → Mecanismos revisa rpm, sentido, torque y capacidad. En un brazo, usa los controles del brazo para mover sus ejes.</p>
         <p><strong>Qué significa cada ajuste:</strong> rpm controla velocidad; torque limita fuerza de giro; capacidad limita la carga. En un brazo se aplica al objeto sostenido. Los rotores ordinarios cuentan el peso de la red conectada.</p>
         <p><strong>Taller:</strong> deja la pieza sobre la mesa, suéltala, apunta a la mesa y pulsa E. Lee el efecto y el coste de la mejora antes de aplicarla. La investigación disponible se conserva en el navegador.</p>
-        <p><strong>Sensor de contacto:</strong> crea uno desde el catálogo rápido o prepara una pieza en el taller. Clic derecho sobre él → Sensor · conectar punta… → elige un rotor. Al tocar una pared con la punta activa, invierte ese rotor si está encendido y a menos de 3 m. No es un detector de cajas ni un botón para arrancar el brazo. Sepáralo de la pared antes de otro contacto.</p>
+        <p><strong>Sensor configurable.</strong> Elige un sensor en Banco rápido o adáptalo en el taller. Clic derecho → Configurar sensor. Selecciona contacto, movimiento, láser o peso, elige el mecanismo y la acción. El alcance del láser y del movimiento se ajusta entre 25 cm y 2 m. Mantén Alt para ver el haz. El enlace admite hasta 3 m.</p>
       </details>
       <details><summary>6 · Planos, guardado y repisas</summary>
         <p><strong>Catálogo rápido (Q → Tab):</strong> crea copias completas para experimentar en el banco. Respeta el límite de piezas de la sala.</p>
@@ -721,7 +733,7 @@ input,select,textarea{font-family:var(--font-menu);}
       </details>
       <details><summary>7 · Si algo no funciona</summary>
         <ul>
-          <li><strong>No se mueve:</strong> cierra el panel. Si sigue detenido, lee el estado del mecanismo y comprueba la energía, el límite de carga y el espacio para moverse.</li>
+          <li><strong>No se mueve:</strong> lee el estado del mecanismo y comprueba la energía, el límite de carga y el espacio para moverse.</li>
           <li><strong>Espera sin tomar:</strong> usa Comprobar toma; revisa que el cubo esté suelto, centrado bajo la cara naranja y casi tocándola. Detén sus rutas y suéltalo de tu mano.</li>
           <li><strong>Toma otro objeto:</strong> selecciona una pieza específica o un filtro de tipo/color y pulsa Aplicar filtro y carga.</li>
           <li><strong>Choca durante el giro:</strong> Detener, despejar el recorrido, ajustar A/B y probar el movimiento vacío.</li>

@@ -58,7 +58,7 @@
     const label=document.createElement('label');label.textContent=item.label+' · '+format(item.angle,'°');
     const select=document.createElement('select');select.setAttribute('aria-label','Posición inicial de '+item.label);
     for(const [value,text]of [[1,'Desde mínimo ('+format(item.min,'°')+')'],[-1,'Desde máximo ('+format(item.max,'°')+') · opuesto']]){const option=document.createElement('option');option.value=String(value);option.textContent=text;select.appendChild(option);}
-    select.value=String(item.direction);select.addEventListener('change',()=>marchAction({type:'phase',id:item.id,direction:Number(select.value)}));label.appendChild(select);
+    select.disabled=!!march?.running;select.value=String(item.direction);select.addEventListener('change',()=>marchAction({type:'phase',id:item.id,direction:Number(select.value)}));label.appendChild(select);
     const button=document.createElement('button');button.type='button';button.textContent='Ajustar recorrido';button.addEventListener('click',()=>marchAction({type:'select',id:item.id}));row.append(label,button);list.appendChild(row);
    }
   }
@@ -68,7 +68,7 @@
    get('controls').hidden=!next;get('empty').hidden=!!next;
    get('title').textContent=next?.label||(next?.kind==='hinge'?'Servo bisagra':next?.kind==='pivot'?'Servo pivote':'Servos Q-bits');
    if(!next){for(const id of ['apply','start','stop','invert'])get(id).disabled=true;return;}
-   const blocked=next.available===false;
+   const blocked=!!next.enabled||next.available===false;
    get('description').textContent=next.kind==='hinge'?'Dos triángulos que se abren lateralmente. Sus puntas permanecen siempre unidas.':'Una pirámide conecta la extremidad por su punta y orienta su giro desde la base.';
    if(!dirty)for(const key of fields)get(key).value=String(next[key]??({min:-40,max:40,speed:45,mode:'hold',target:0}[key]));
    for(const key of ['min','max','target']){get(key).min=String(next.angleMin??-90);get(key).max=String(next.angleMax??90);}

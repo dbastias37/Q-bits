@@ -2,7 +2,15 @@
 
 Actualizado: 18 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega · fricción y reposo en el piso
+## Última entrega · motores, sensores y autonomía
+
+P mantiene la física del banco y la campaña en marcha. El brazo muestra el giro real del eje, admite ajustes con el motor detenido y utiliza las rpm elegidas durante el recorrido. En una prueba de giro de 90° de la base con Cannon, 24 y 72 rpm de consigna alcanzaron picos de 24,2 y 43,9 rpm respectivamente.
+
+El sensor del taller y del banco rápido conserva el modo de contacto. P → Mecanismos permite elegir movimiento con umbral en cm/s, láser direccional o peso en unidades. Alt muestra el haz hasta el primer obstáculo. La señal inicia o detiene el mecanismo enlazado y admite inversión cuando tiene sentido de marcha. Las baterías internas, las externas y el depósito almacenan tres veces más julios con el mismo porcentaje de carga. Los motores conservan su potencia.
+
+Al soldar tramos de cinta, el tramo que llega adopta el flujo del receptor en la unión, incluso si su eje local apunta al revés. Iniciar marcha acciona todos los tramos del mismo chasis. Desde el clic derecho se puede detener o invertir únicamente el tramo seleccionado.
+
+## Entrega anterior · fricción y reposo en el piso
 
 Un cuerpo liberado por la pinza conservaba el material de arrastre cooperativo. Con un impulso inicial de 0,15 m/s sobre el piso del banco y la fricción en 0,38, se desplazaba unos 39,8 cm en tres segundos. Ahora usa la fricción del piso en reposo y al restaurar el banco. El material de arrastre se aplica al mover la carga en equipo. En la misma prueba a 60, 120 y 240 pasos/s, el desplazamiento fue inferior a 0,3 mm y el cuerpo entró en reposo. Los montajes articulados detenidos también admiten amortiguación cuando todo el conjunto está quieto sobre un apoyo horizontal. En apoyos anchos sobre el piso, el umbral de reposo admite oscilaciones angulares diminutas entre contactos. Se probó un brazo apagado tras un pequeño empujón lateral y una cinta con patas que seguía derivando a 60 pasos/s. Mediciones de la simulación con Cannon.
 

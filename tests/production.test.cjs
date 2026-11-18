@@ -21,7 +21,7 @@ for(const level of [19,20])test(`level${level} physically produces and delivers 
  until(t,()=>s.complete||s.failed,60,i=>{if(i%60===0)audit(t,s);if(!packageRendered&&material(t,s).some(g=>g.parts.length===2)){assert.doesNotThrow(()=>{t.drawStoryWorld();t.drawQubits();});packageRendered=true;}});
  assert(s.complete,s.reason);assert.equal(s.ledger.accepted.length,s.goal.target);assert.equal(s.ledger.stock.length,0);assert.equal(material(t,s).length,0);audit(t,s);
  assert(s.autonomy>=s.goal.minAutonomy);assert(s.joules>0&&s.joules<=s.goal.budget);assert.equal(s.rotor.enabled,false);
- const spent=[s.rotor.aId,s.rotor.bId].reduce((n,id)=>n+(.8-t.rotorPart(id).part.mood.energy)*20,0);assert(Math.abs(spent-s.joules)<1e-7,'all station work is charged to the actual rotor batteries');
+ const spent=[s.rotor.aId,s.rotor.bId].reduce((n,id)=>n+(.8-t.rotorPart(id).part.mood.energy)*60,0);assert(Math.abs(spent-s.joules)<1e-7,'all station work is charged to the actual rotor batteries');
  if(level===20)assert(packageRendered);assert.equal(joins,level===20?s.goal.target:0,'only completed packages produce one joining event');assert(t.story.progress['lore.production'+level]);
  t.tickCampaign(1.2);assert(t.story.campaign.gates[0].solved);t.tickCampaign(1);t.position[2]=-4.3;t.tickCampaign(.01);assert.equal(t.story.phase,'finishing');
 });
@@ -39,13 +39,13 @@ test('packing reserves the original pair once and waits atomically for a free ph
  const job=s.packJob,ids=[...job.item.ids],count=s.ledger.packed.length;step(t,1);assert.equal(s.packJob,job);assert.equal(job.time,.7);assert.deepEqual([...job.item.ids],ids);assert.equal(s.ledger.packed.length,count);assert(!material(t,s).some(g=>g.parts.length===2));audit(t,s);
  t.removeGroup(g);until(t,()=>material(t,s).some(g=>g.parts.length===2),2);audit(t,s);assert.equal(s.ledger.packed.length,count);
 });
-test('pause, catalogue, hidden document, transition and parameter panel freeze all production clocks and inventory',()=>{
+test('pause, catalogue, hidden document, and transition freeze all production clocks and inventory',()=>{
  const {t,sandbox}=campaign(20),s=t.story.campaign.production;t.startProduction();step(t,3);
  const snapshot=()=>JSON.stringify({time:s.time,autonomy:s.autonomy,j:s.joules,stock:s.ledger.stock,accepted:s.ledger.accepted,buffer:s.buffer,job:s.packJob});const before=snapshot();
  for(const mode of ['pause','codex','menu']){t.story.mode=mode;t.tickProduction(100);assert.equal(snapshot(),before);}t.story.mode='playing';
  sandbox.document.hidden=true;t.tickProduction(100);assert.equal(snapshot(),before);sandbox.document.hidden=false;
  t.story.transition={};t.tickProduction(100);assert.equal(snapshot(),before);t.story.transition=null;
- sandbox.document.querySelector('#panel').hidden=false;t.tickProduction(100);assert.equal(snapshot(),before);
+ sandbox.document.querySelector('#panel').hidden=false;t.tickProduction(.1);assert(s.time>JSON.parse(before).time);
 });
 test('manual intervention invalidates the entire attempt; explicit reset cannot mix old deliveries with a new batch',()=>{
  const {t}=campaign(19),s=t.story.campaign.production;t.startProduction();until(t,()=>s.ledger.accepted.length===1,25);const oldId=s.ledger.accepted[0].id,oldBatch=s.batch;

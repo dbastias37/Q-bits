@@ -33,7 +33,7 @@ test('four connected motors share one battery pool with exact aggregate expendit
  const {t}=lab(),{cells,rotors}=fixture(t),beforeJ=joules(t,cells),beforeInternal=internal(t);start(t,rotors);
  const watts=rotors.reduce((sum,r)=>sum+t.rotorPowerState(r).inputWatts,0);t.updateRotorPower(1.25);
  close(beforeJ-joules(t,cells),watts*1.25);close(rotors.reduce((sum,r)=>sum+r.power.spentJoules,0),watts*1.25);assert.deepEqual(internal(t),beforeInternal);
- assert(rotors.every(r=>r.power.external&&r.power.drainA===0&&r.power.drainB===0));assert.equal(t.externalBatterySummary(rotors[0]).capacity,240);
+ assert(rotors.every(r=>r.power.external&&r.power.drainA===0&&r.power.drainB===0));assert.equal(t.externalBatterySummary(rotors[0]).capacity,720);
 });
 
 test('pool debit is proportional to stored joules and independent of rotor iteration order',()=>{
@@ -75,9 +75,9 @@ test('ordinary mood and cooler recovery cannot change external charge or frozen 
 });
 
 test('disabled grounded cells recharge at four joules per second in the lab with finite capacity',()=>{
- const {t}=lab(),g=t.addQubit([0,.045,0]),part=battery(t,g.parts[0],0,false);assert.equal(t.externalBatteryCapacity(part),120);assert.equal(t.gameBatteryCapacity(part),120);
- t.rechargeExternalBatteries(15);close(part.mood.energy,.5);t.rechargeExternalBatteries(15);close(part.mood.energy,1);t.rechargeExternalBatteries(100);assert.equal(part.mood.energy,1);
- t.story.scene='campaign';assert.equal(t.externalBatteryCapacity(part),60);part.mood.energy=0;t.rechargeExternalBatteries(15);close(part.mood.energy,.5);
+ const {t}=lab(),g=t.addQubit([0,.045,0]),part=battery(t,g.parts[0],0,false);assert.equal(t.externalBatteryCapacity(part),360);assert.equal(t.gameBatteryCapacity(part),360);
+ t.rechargeExternalBatteries(45);close(part.mood.energy,.5);t.rechargeExternalBatteries(45);close(part.mood.energy,1);t.rechargeExternalBatteries(100);assert.equal(part.mood.energy,1);
+ t.story.scene='campaign';assert.equal(t.externalBatteryCapacity(part),180);part.mood.energy=0;t.rechargeExternalBatteries(45);close(part.mood.energy,.5);
 });
 
 test('charge requires direct cell-to-floor support, rest, disabled state and a stopped physical network',()=>{
@@ -95,18 +95,18 @@ test('charge requires direct cell-to-floor support, rest, disabled state and a s
  for(const guard of guards){const reset=guard();t.rechargeExternalBatteries(10);assert.equal(part.mood.energy,0);reset();}
  for(const dt of [0,-1,NaN,Infinity]){t.rechargeExternalBatteries(dt);assert.equal(part.mood.energy,0);}
  const second=lab(),f=fixture(second.t,1,1,.045+.09*5/56),cell=f.cells[0];cell.mood.externalBattery.enabled=false;cell.mood.energy=0;assert(second.t.configureRotor(f.rotors[0],{enabled:true}));second.t.rechargeExternalBatteries(10);assert.equal(cell.mood.energy,0);
- second.t.configureRotor(f.rotors[0],{enabled:false});second.t.rechargeExternalBatteries(10);close(cell.mood.energy,1/3);
+ second.t.configureRotor(f.rotors[0],{enabled:false});second.t.rechargeExternalBatteries(10);close(cell.mood.energy,1/9);
 });
 
 test('a vertical three-cell physical battery recharges all cells through its own bottom cell',()=>{
  const {t}=lab(),g=t.makeGroup([.045,.135,.225].map(y=>({id:t.allocateUnitId(),weight:1,shape:'cube',p:t.V(0,y,0),q:t.Q()})));
- g.parts.forEach(p=>battery(t,p,0,false,g.parts[0].id));t.rechargeExternalBatteries(3);g.parts.forEach(p=>close(p.mood.energy,.1));
- g.parts[2].mood.externalBattery.enabled=true;t.rechargeExternalBatteries(3);g.parts.forEach(p=>close(p.mood.energy,.1));
+ g.parts.forEach(p=>battery(t,p,0,false,g.parts[0].id));t.rechargeExternalBatteries(3);g.parts.forEach(p=>close(p.mood.energy,1/30));
+ g.parts[2].mood.externalBattery.enabled=true;t.rechargeExternalBatteries(3);g.parts.forEach(p=>close(p.mood.energy,1/30));
 });
 
 test('battery fragments cannot recharge through a chassis or another disconnected fragment with the same pack ID',()=>{
  const {t}=lab(),g=t.makeGroup([.045,.135,.225].map(y=>({id:t.allocateUnitId(),weight:1,shape:'cube',p:t.V(0,y,0),q:t.Q()}))),bottom=battery(t,g.parts[0],0,false),top=battery(t,g.parts[2],0,false,bottom.id);
- t.rechargeExternalBatteries(3);close(bottom.mood.energy,.1);assert.equal(top.mood.energy,0);
+ t.rechargeExternalBatteries(3);close(bottom.mood.energy,1/30);assert.equal(top.mood.energy,0);
  delete bottom.mood.externalBattery;top.mood.energy=0;t.rechargeExternalBatteries(3);assert.equal(top.mood.energy,0,'normal chassis floor contact never charges an elevated battery');
 });
 

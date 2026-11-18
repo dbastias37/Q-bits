@@ -22,10 +22,10 @@
    get('target').textContent=s.selectedLabel||'Selecciona un tramo para cambiar su marcha.';
    get('status').textContent=c?.status||'Completa todas las piezas del plano para habilitar la cinta.';
    get('controls').hidden=!c;
-   get('toggle').disabled=!c||s.available===false;get('toggle').textContent=c?.enabled?'Detener tramo':'Iniciar tramo';get('toggle').setAttribute('aria-pressed',String(!!c?.enabled));
-   for(const direction of [1,-1]){const button=get(direction===1?'forward':'reverse');button.disabled=!c||s.available===false;button.setAttribute('aria-pressed',String(!!c&&c.direction===direction));}
+   get('toggle').disabled=!c||s.available===false;get('toggle').textContent=(c?.lineRunning??c?.enabled)?'Detener línea':'Iniciar marcha de la línea';get('toggle').setAttribute('aria-pressed',String(!!(c?.lineRunning??c?.enabled)));
+   for(const direction of [1,-1]){const button=get(direction===1?'forward':'reverse');button.disabled=!c||!!c.enabled||s.available===false;button.setAttribute('aria-pressed',String(!!c&&c.direction===direction));}
    get('direction-note').textContent=c?.direction===-1?'Sentido inverso al indicado en el plano.':'Sentido indicado en el plano.';
-   get('capacity').disabled=!c||s.available===false;if(c)get('capacity').value=c.capacity;
+   get('capacity').disabled=!c||!!c.enabled||s.available===false;if(c)get('capacity').value=c.capacity;
    get('load').textContent=c?number(c.load,' u')+' / '+number(c.capacity,' u'):'—';
    get('speed').textContent=c?number(c.speed,' m/s',2):'—';
    get('energy').textContent=c?number(c.energy,' J'):'—';
@@ -40,7 +40,7 @@
   get('capacity').addEventListener('change',()=>{if(!get('capacity').disabled)act('capacity',{capacity:Number(get('capacity').value)});});
   get('extend').addEventListener('change',refresh);
   get('supports').addEventListener('change',refresh);
-  get('toggle').addEventListener('click',()=>{if(!get('toggle').disabled&&last?.conveyor)act('toggle',{enabled:!last.conveyor.enabled});});
+  get('toggle').addEventListener('click',()=>{if(!get('toggle').disabled&&last?.conveyor)act('toggle',{enabled:!(last.conveyor.lineRunning??last.conveyor.enabled)});});
   get('forward').addEventListener('click',()=>{if(!get('forward').disabled&&last?.conveyor)act('direction',{direction:1});});
   get('reverse').addEventListener('click',()=>{if(!get('reverse').disabled&&last?.conveyor)act('direction',{direction:-1});});
   return {refresh,get snapshot(){return last;}};

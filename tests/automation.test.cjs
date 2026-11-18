@@ -31,7 +31,7 @@ for(const level of [16,17,18])test(`level ${level} completes through actual Cann
  assert(t.configureRotor(r,{enabled:true}));run(t);
  assert(s.run.complete,JSON.stringify(s.run));assert(!s.run.failed);assert(s.run.seconds+1e-8>=s.goal.seconds);
  assert(s.run.joules>0&&s.run.joules<=s.goal.budget);assert.equal(r.enabled,false);
- const spent=[r.aId,r.bId].reduce((n,id)=>n+(.8-t.rotorPart(id).part.mood.energy)*20,0);near(s.run.joules,spent,1e-7);
+ const spent=[r.aId,r.bId].reduce((n,id)=>n+(.8-t.rotorPart(id).part.mood.energy)*60,0);near(s.run.joules,spent,1e-7);
  if(level===18){const end=t.rotorPart(s.endpoint);assert(end.p.distanceTo(s.origin)>.6);assert(end.p.distanceTo(s.target)<.07);step(t,.5);assert(t.rotorPart(s.endpoint).p.distanceTo(s.target)<.09,'physical receiver supports the delivered piece');}
  assert(t.story.progress['lore.rotor'+level]);
  t.tickCampaign(1.2);assert(t.story.campaign.gates[0].solved);assert.doesNotThrow(()=>t.drawStoryWorld());
@@ -48,10 +48,10 @@ test('idle, stalled and relocated benches do not earn autonomous seconds',()=>{
  t.configureRotor(r,{rpm:30,enabled:false});for(const g of t.rotorGroups(r))g.body.position.x+=.3;
  t.configureRotor(r,{enabled:true});step(t,3);assert(!s.run.complete);near(s.run.seconds,0);assert.match(s.run.reason,/Conserva el banco/);
 });
-test('pause and panels freeze autonomy; changing motor or grabbing restarts the measurement',()=>{
+test('pause freezes autonomy and P keeps it running; changing motor or grabbing restarts the measurement',()=>{
  const {t,sandbox}=campaign(16),s=t.story.campaign.automation,r=s.rotor;t.configureRotor(r,{enabled:true});step(t,1);assert(s.run.seconds>.5);
  const before=JSON.stringify(s.run);t.story.mode='pause';t.tickAutomation(10);assert.equal(JSON.stringify(s.run),before);
- t.story.mode='playing';sandbox.document.querySelector('#panel').hidden=false;t.tickAutomation(10);assert.equal(JSON.stringify(s.run),before);sandbox.document.querySelector('#panel').hidden=true;
+ t.story.mode='playing';sandbox.document.querySelector('#panel').hidden=false;t.tickAutomation(.1);assert(s.run.seconds>JSON.parse(before).seconds);sandbox.document.querySelector('#panel').hidden=true;
  t.configureRotor(r,{rpm:20});near(s.run.seconds,0);step(t,1);assert(s.run.seconds>.5);
  const a=t.rotorPart(r.aId);t.grabQubit({g:a.g,part:a.part,point:a.p,distance:1});assert(t.getHeld());near(s.run.seconds,0);assert.equal(r.enabled,false);
 });

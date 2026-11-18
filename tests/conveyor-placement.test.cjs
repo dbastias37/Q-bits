@@ -84,3 +84,21 @@ test('a conveyor welded to an arm keeps its own context menu while the real grip
  const surface=t.conveyorSurfacePoses(c)[0];t.story.ready=true;sandbox.document.body.dataset.booting='false';sandbox.document.pointerLockElement=t.canvas;t.setLook({camera:[surface.p.x-.1,surface.p.y+.6,surface.p.z],yaw:0,pitch:-Math.PI/2});const beltHit=t.aimQubit(2,t.V(0,-1,0));assert.equal(beltHit.part.id,c.baseId);t.handleSecondary({clientX:640,clientY:360});let menu=t.getCommandState();assert.match(menu.title,/Cinta Q-bits/);assert(menu.items.some(item=>item.label==='Configurar cinta y extender…'));menu.items.find(item=>item.label==='Invertir sentido del tramo').run();assert.equal(c.direction,-1);
  const grip=t.rotorPart(arm.gripperId);sandbox.document.pointerLockElement=t.canvas;t.setLook({camera:[grip.p.x,grip.p.y-.2,grip.p.z],yaw:0,pitch:Math.PI/2});const gripHit=t.aimQubit(2,t.V(0,1,0));assert.equal(gripHit.part.id,arm.gripperId);t.handleSecondary({clientX:640,clientY:360});menu=t.getCommandState();assert.match(menu.title,/Brazo Q-bits/);assert(menu.items.some(item=>item.label==='Configurar agarre y secuencia…'));assert(!menu.items.some(item=>item.label==='Invertir sentido del tramo'));
 });
+
+test('manual reverse-facing weld inherits physical flow, starts one line and keeps section overrides local',()=>{
+ const {t}=setup(),fixed=build(t),incoming=build(t,{point:t.V(3,0,0),quarterTurns:2});
+ const target=t.rotorPart(fixed.baseId).g,source=t.rotorPart(incoming.baseId).g;
+ const exit=t.conveyorPortWorld(fixed,'exit'),back=t.conveyorPortWorld(incoming,'exit');
+ assert(exit.direction.dot(back.direction)<-.99);
+ const position=source.body.position.vadd(exit.p.vsub(back.p));
+ assert(t.weld({source,target,position,quaternion:source.body.quaternion.clone()}));
+ assert.equal(fixed.direction,1);assert.equal(incoming.direction,-1,'the physically reversed belt moves with the receiving belt');
+ const corner=extend(t,incoming,'left'),loose=build(t,{point:t.V(4,0,1)});battery(t,fixed);
+ const roller=t.rotorPart(t.conveyorRotors(corner)[0].bId);t.setSelected(roller);
+ const start=()=>t.conveyorPanelAction('toggle',{enabled:true});
+ assert(start().ok);assert([fixed,incoming,corner].every(c=>c.running));assert(!loose.running);
+ assert(t.configureConveyor(incoming,{direction:1}));assert.equal(fixed.direction,1);assert(corner.running);
+ assert(t.stopConveyor(incoming));assert(fixed.running&&corner.running);assert(!t.conveyorPanelSnapshot().conveyor.lineRunning);
+ assert(start().ok);assert(incoming.running);assert.equal(incoming.direction,1,'explicit local reversal survives a restart');
+ assert(t.conveyorPanelAction('toggle',{enabled:false}).ok);assert([fixed,incoming,corner].every(c=>!c.running));
+});

@@ -4,7 +4,7 @@ Estas herramientas están disponibles en el banco de pruebas. Un cable conduce e
 
 ## Primera conexión
 
-1. Entra al banco. Mantén **Q**, pulsa **Tab** para abrir **Banco rápido**, elige **Depósito de energía**, suelta Q y haz clic. Aparece delante de ti, en un lugar libre del suelo, con **12.000 J** y la salida apagada.
+1. Entra al banco. Mantén **Q**, pulsa **Tab** para abrir **Banco rápido**, elige **Depósito de energía**, suelta Q y haz clic. Aparece delante de ti, en un lugar libre del suelo, con **36.000 J** y la salida apagada.
 2. Crea cerca una máquina, por ejemplo **Cinta recta**, con el mismo catálogo. Déjala detenida.
 3. Vuelve a **Q → Tab** y elige **Cable · 4 cubos**. Suelta Q y haz clic: aparecen los cuatro cubos y comienza el tendido. Todavía no se consumen.
 4. Apunta al depósito y haz clic para fijar la **Salida**.
@@ -53,7 +53,7 @@ Clic derecho en el conductor → **Recoger cable y recuperar cubos**. Los cubos 
 
 Puedes conectar varias máquinas y varios depósitos. Las fuentes encendidas de una misma red comparten su energía; un circuito con varios caminos no duplica la carga ni el consumo. El cable no gasta julios por sí mismo: los gastan los motores, las bandas, los agarres y las demás herramientas activas.
 
-Cada depósito almacena hasta **12.000 J**. Su duración depende de las máquinas conectadas, su carga y el trabajo que realizan. Un depósito vacío y encendido mantiene la red sin energía; los motores no cambian automáticamente a sus reservas internas mientras siga siendo su fuente activa.
+Cada depósito almacena hasta **36.000 J**. Su duración depende de las máquinas conectadas, su carga y el trabajo que realizan. Un depósito vacío y encendido mantiene la red sin energía; los motores no cambian automáticamente a sus reservas internas mientras siga siendo su fuente activa.
 
 Para recargarlo en este banco: clic derecho → **Apagar salida** → **Recargar · banco de pruebas**. Es una recarga manual e instantánea de prueba, disponible únicamente con la salida apagada. El depósito no se recarga solo por estar en el suelo.
 
