@@ -80,6 +80,12 @@ t.updateRobotPoseDraft(0,true);
 if(!t.getRobotPoseDraft().solution?.pose)throw Error(t.getRobotPoseDraft().reason);
 capture('arm-b-placement-blueprint',[.8,.75,1.22],[.13,.22,.2],()=>{draw();t.drawRobotPoseDraft();});
 t.canvas.dispatchEvent({type:'mousedown',button:2});
+t.setLook({camera:aim,yaw:0,pitch:Math.atan2(-aim[1],.9)});
+if(!t.robotPanelAction('pose',{pose:'home',heightCm:15}).ok)throw Error('Could not open the home blueprint');
+t.updateRobotPoseDraft(0,true);
+if(!t.getRobotPoseDraft().solution?.pose)throw Error(t.getRobotPoseDraft().reason);
+capture('arm-home-placement-blueprint',[.8,.75,1.22],[.13,.22,.2],()=>{draw();t.drawRobotPoseDraft();});
+t.canvas.dispatchEvent({type:'mousedown',button:2});
 const basePoint=t.rotorPart(configuredArm.baseId).p;
 const lightEye=[basePoint.x-.1,basePoint.y+.17,basePoint.z+.24],lightLook=[basePoint.x,basePoint.y+.02,basePoint.z];
 const drawLight=()=>{draw();t.drawRobotArmLights();};
@@ -91,7 +97,9 @@ capture('arm-light-waiting',lightEye,lightLook,drawLight);
 t.stopRobotArm(configuredArm);
 t.configureRotor(t.robotArmRotors(configuredArm)[0],{capacity:2},true);
 const pickup=t.robotKinematics(configuredArm).point;
-t.addQubit([pickup.x,.045,pickup.z],3);
+// The waiting wrist has settled under gravity. Put a low load beneath the
+// actual face instead of spawning a full cube intersecting the wrist.
+t.addQubit([pickup.x,t.unitGroundHeight('pyramid'),pickup.z],3,'pyramid');
 if(!t.startRobotArm(configuredArm))throw Error(configuredArm.status);
 for(let i=0;i<180&&configuredArm.running;i++)t.stepPhysics(1/120);
 if(t.robotArmSignal(configuredArm)!=='blocked')throw Error('Expected the excess payload to block the arm');

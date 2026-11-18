@@ -488,9 +488,10 @@ input,select,textarea{font-family:var(--font-menu);}
         <div id="arm-controls" hidden>
           <ol class="arm-sequence" aria-label="Secuencia del brazo"><li id="arm-phase-detect">1 · Detectar</li><li id="arm-phase-grab">2 · Tomar</li><li id="arm-phase-move">3 · Ir a B</li><li id="arm-phase-release">4 · Soltar</li><li id="arm-phase-return">5 · Volver a A</li></ol>
           <details open>
-            <summary>Posiciones A y B</summary>
-            <p>Apunta a la cara del objeto para A y a la superficie de entrega para B. Azul significa que la pinza alcanza la postura. Usa la rueda en la sala para afinar la altura.</p>
+            <summary>Posición inicial y recorrido A/B</summary>
+            <p>Marca A sobre el objeto y B en la entrega. Puedes añadir una posición inicial para acercarte a A desde arriba. Apunta con la mira, sube o baja con la rueda y confirma con clic cuando el brazo se vea azul.</p>
             <div class="arm-poses">
+              <div><button id="arm-pose-home" type="button">Marcar posición inicial</button><span id="arm-home-state">Opcional</span><label>Altura sobre la mira (cm)<input id="arm-home-height" type="number" min="0" step="0.1" value="20"></label><button id="arm-goto-home" type="button">Ir a posición inicial</button><button id="arm-clear-home" type="button">Quitar posición inicial</button></div>
               <div><button id="arm-pose-pick" type="button">Marcar A · tomar</button><span id="arm-pick-state">Por enseñar</span><label>Altura sobre la mira (cm)<input id="arm-pick-height" type="number" min="0" step="0.1" value="3"></label></div>
               <div><button id="arm-pose-place" type="button">Marcar B · soltar</button><span id="arm-place-state">Por enseñar</span><label>Altura sobre la mira (cm)<input id="arm-place-height" type="number" min="0" step="0.1" value="13"></label></div>
             </div>
@@ -672,7 +673,7 @@ input,select,textarea{font-family:var(--font-menu);}
           <li><strong>Haz una entrega.</strong> Desmarca Repetir la secuencia y pulsa Iniciar secuencia. El panel se cierra: el brazo toma el cubo, gira a B y lo suelta. Con un brazo nuevo no hace falta enseñar A y B otra vez.</li>
           <li><strong>Comprueba el resultado.</strong> Abre P → Mecanismos. Debe mostrar «Ciclo completado» y una entrega. Sin Repetir queda en B. Usa Ir a A · sin tomar para volver; para varias entregas, activa Repetir antes de iniciar.</li>
         </ol>
-        <p>Si algo se atasca, abre el panel y pulsa Detener. Se libera el objeto y se frenan los ejes. Retira el obstáculo o corrige la causa antes de reiniciar.</p>
+        <p>Para elegir por dónde empieza, abre Marcar posición inicial, apunta y ajusta la altura con la rueda. Pulsa Ir a posición inicial para probarla en vacío. Al iniciar la secuencia, el brazo pasa por allí antes de ir a A. Si el panel indica recorrido bloqueado, despeja el paso o cambia la postura.</p>
         <button id="manual-arm-controls" type="button">Abrir controles del brazo</button>
       </details>
       <details><summary>2 · Llevar objetos desde una cinta</summary>

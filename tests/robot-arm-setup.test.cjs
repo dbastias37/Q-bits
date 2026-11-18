@@ -171,3 +171,118 @@ test('target validation rejects an occupied posture even when the pin is geometr
   assert.equal(blocked.pose,undefined);
   assert.match(blocked.reason,/piezas en la postura/);
 });
+
+test('initial position is taught with the mouse, recalled on start and removable from the program', () => {
+  const {t,sandbox}=lab(), arm=armAt(t), initial=t.robotKinematics(arm), previous=JSON.stringify(arm.poses);
+  const point=t.robotKinematicSample(initial,[.22,0,0,0]).point;
+  t.updateRobotArmPanel();
+  const control=id=>sandbox.document.querySelector('#arm-'+id);
+  sandbox.document.pointerLockElement=t.canvas;
+  control('home-height').value=10;
+  control('pose-home').dispatchEvent({type:'click'});
+  aim(t,t.V(point.x,0,point.z));
+  t.canvas.dispatchEvent({type:'wheel',deltaY:-1,shiftKey:true});
+  assert.equal(t.getRobotPoseDraft().heightCm,10.5);
+  t.canvas.dispatchEvent({type:'mousedown',button:0});
+  assert.equal(t.getRobotPoseDraft(),null);
+  assert(arm.poses.home);assert.equal(control('home-state').textContent,'Guardada');
+  const saved=t.saveLab();
+  assert.equal(JSON.stringify(saved.robotArms[0].poses.home),JSON.stringify(arm.poses.home));
+  const record=t.mechanismSnapshot(t.rotorPart(arm.baseId).g);
+  assert(t.savedMechanismValid(record));assert(t.spawnSavedMechanism(record,t.V(3,0,0)));
+  assert.equal(JSON.stringify(t.robotArms.at(-1).poses.home),JSON.stringify(arm.poses.home));
+  assert(t.startRobotArm(arm));assert.equal(arm.state,'home');
+  stepUntil(t,()=>arm.state==='wait');t.stopRobotArm(arm);
+  const grip=t.rotorPart(arm.gripperId);t.setSelected({g:grip.g,part:grip.part});
+  control('clear-home').dispatchEvent({type:'click'});assert.equal(JSON.stringify(arm.poses),previous);
+});
+
+test('a physical transfer lifts the payload over an obstacle in the middle of the direct arc',()=>{
+  const {t}=lab(),arm=armAt(t),model=t.robotKinematics(arm);
+  const middle=t.robotKinematicSample(model,[Math.PI/4,0,0,0]).point;
+  const wall=t.storyWall(t.V(middle.x,.05,middle.z),t.V(.023,.05,.023));
+  const payload=t.addQubit([model.point.x,.046,model.point.z]);
+  t.configureRobotArm(arm,{repeat:false});assert(t.startRobotArm(arm));
+  let waypoints=0,crossed=false;
+  stepUntil(t,()=>{
+    waypoints=Math.max(waypoints,arm.waypoints?.length||0);
+    const box=t.bounds(payload);
+    if(box.max.x>wall.min.x&&box.min.x<wall.max.x&&box.max.z>wall.min.z&&box.min.z<wall.max.z){
+      assert(box.min.y>=wall.max.y-.002,'load clears the obstacle');crossed=true;
+    }
+    return !arm.running;
+  });
+  assert(waypoints>0);assert(crossed);assert.equal(arm.cycles,1,arm.status);
+});
+
+test('placing a braked arm against a tabletop uses one hand anchor and preserves all live joints',()=>{
+  const {t,sandbox}=lab();
+  sandbox.document.body.dataset.booting='false';sandbox.document.pointerLockElement=t.canvas;
+  t.storyWall(t.V(0,.2,0),t.V(.9,.2,.9));assert(t.spawnSavedMechanism(t.robotArmBlueprintTemplate(),t.V(0,.43,0)));
+  const arm=t.robotArms[0],base=t.rotorPart(arm.baseId),g=base.g,partIds=arm.joints.map(j=>[j.aId,j.bId]);
+  const look=p=>t.setLook({camera:[p.x,p.y,p.z+1],yaw:0,pitch:0});
+  look(g.body.position);t.grabQubit({g,part:base.part,point:g.body.position.clone(),distance:1});
+  assert.equal(t.getHeld().items.filter(item=>item.joint).length,1);
+  look(t.V(.12,.3,.05));
+  let gap=0;
+  for(let i=0;i<780;i++){
+    if(i===180)t.releaseQubit();
+    t.stepPhysics(1/120);
+    for(const [a,b] of partIds)gap=Math.max(gap,t.couplerTip(t.rotorPart(a)).point.distanceTo(t.couplerTip(t.rotorPart(b)).point));
+  }
+  assert(gap<.008);assert.equal(t.robotArmRotors(arm).length,4);
+  assert(Math.abs(t.bounds(g).min.y-.4)<.002);assert(Math.abs(g.body.position.x-.12)<.01);
+});
+
+test('welding a live arm with a small solver offset keeps the original hinge on the new support',()=>{
+  const {t}=lab(),arm=armAt(t),base=t.rotorPart(arm.baseId).g,r=t.robotArmRotors(arm)[0];
+  for(const g of t.rotorConnectedGroups([base]))if(g!==base){g.body.position.y+=.006;g.body.aabbNeedsUpdate=true;}
+  const top=t.poses(base).filter(p=>p.part.shape==='cube').sort((a,b)=>b.p.x-a.p.x)[0];
+  const support=t.addQubit([top.p.x,top.p.y+.09,top.p.z]);
+  const joined=t.weld({source:support,target:base,position:support.body.position.clone(),quaternion:t.Q()});
+  assert(joined);assert.equal(t.rotorPart(arm.baseId).g,joined);
+  for(let i=0;i<120;i++)t.stepPhysics(1/120);
+  assert(t.robotArms.includes(arm));assert(t.robotArmRotors(arm).includes(r));
+  assert(t.couplerTip(t.rotorPart(r.aId)).point.distanceTo(t.couplerTip(t.rotorPart(r.bId)).point)<.004);
+});
+
+test('a four-legged table falls and then rests on both the room floor and an elevated white surface',()=>{
+  for(const height of [0,.4]){
+    const {t}=lab();
+    if(height)t.storyWall(t.V(0,height/2,0),t.V(.9,height/2,.9));
+    const parts=[];
+    const cube=(x,y,z)=>parts.push({id:t.allocateUnitId(),shape:'cube',weight:1,p:t.V(x,height+.16+y,z),q:t.Q()});
+    for(let x=-2;x<=2;x++)for(let z=-1;z<=1;z++)cube(.09*x,.225,.09*z);
+    for(const x of [-.18,.18])for(const z of [-.09,.09])for(const y of [.045,.135])cube(x,y,z);
+    const table=t.makeGroup(parts);table.body.velocity.x=.04;
+    for(let i=0;i<300;i++)t.stepPhysics(1/120);
+    assert(Math.abs(t.bounds(table).min.y-height)<.002);const rest=table.body.position.clone();
+    for(let i=0;i<300;i++)t.stepPhysics(1/120);
+    assert(table.body.position.distanceTo(rest)<.0005);assert.equal(table.body.sleepState,2);
+  }
+});
+
+test('tilting a held piece keeps the same axis after the player looks sideways and uses its centre',()=>{
+  const {t,sandbox}=lab();sandbox.document.body.dataset.booting='false';sandbox.document.pointerLockElement=t.canvas;
+  const g=t.addQubit([0,1,0]);
+  t.setLook({camera:[0,1,1],yaw:0,pitch:0});
+  t.grabQubit({g,part:g.parts[0],point:t.V(.045,1,0),distance:1});
+  t.handleKey({code:'ShiftLeft',preventDefault(){}});
+  const held=t.getHeld();assert(held.anchor.norm()<1e-8);assert(held.joint.pivotA.norm()<1e-8);
+  t.keys.add('KeyW');t.updateGrab(1/120);
+  const before=held.rotation.clone();
+  t.setLook({camera:[1,1,0],yaw:Math.PI/2,pitch:0});t.updateGrab(1/120);
+  const turn=held.rotation.mult(before.inverse());
+  assert(Math.abs(turn.x)>.005);assert(Math.abs(turn.y)<1e-8);assert(Math.abs(turn.z)<1e-8);
+});
+
+test('an empty arm approaches B around the other side when a tall obstacle closes the short arc',()=>{
+  const {t}=lab(),arm=armAt(t),model=t.robotKinematics(arm);
+  const middle=t.robotKinematicSample(model,[Math.PI/4,0,0,0]).point;
+  t.storyWall(t.V(middle.x,.3,middle.z),t.V(.05,.3,.05));
+  assert(t.robotPanelAction('goto',{pose:'place'}).ok);
+  assert(arm.waypoints.length);assert.match(t.robotArmStatus(arm),/rodeando/);
+  stepUntil(t,()=>!arm.jogging);
+  assert.match(arm.status,/Postura lista/);
+  assert(Math.abs(t.robotTargetError(t.robotArmRotors(arm)[0],arm.poses.place[0]))<.05);
+});

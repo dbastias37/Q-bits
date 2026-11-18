@@ -30,8 +30,9 @@ Puedes preparar otro cubo con **Convertir cubo en agarre**. Conserva su materia 
 1. En **P → Mecanismos → Brazo Q-bits**, pulsa **Marcar A · tomar** y apunta a la cara del objeto.
 2. Haz clic cuando la vista previa esté azul. En rojo, cambia el punto o la altura. La rueda ajusta en pasos de 2 cm y Shift + rueda en pasos de 0,5 cm. Esc o clic derecho vuelven al panel.
 3. Pulsa **Marcar B · soltar**, apunta a la superficie de entrega y ajusta la altura de la pinza de acuerdo con el tamaño de la carga. Guarda con clic.
-4. Usa **Ir a A** e **Ir a B** sin carga para comprobar el trayecto físico. La vista previa comprueba la postura final. La prueba de recorrido permite detectar obstáculos entre A y B.
-5. Para ajustar cada articulación con los motores, abre **Rotores y ajuste manual**, elige el paso de **5° / 15° / 45° / 90°** y utiliza −/+. Puedes guardar la postura actual como A o B.
+4. Para elegir desde dónde se acerca a A, pulsa **Marcar posición inicial**. La rueda sube y baja la pinza en vertical. Confirma con clic y usa **Ir a posición inicial** para probar. Al arrancar, el brazo visita esa postura una vez. **Quitar posición inicial** recupera el arranque directo hacia A.
+5. Prueba **Ir a A** e **Ir a B** en vacío. La vista previa azul indica que la postura cabe. Al moverse, el brazo comprueba el recorrido desde donde está, con el tamaño de la carga que sostiene. Puede levantar el hombro antes de girar o rodear el obstáculo por el otro lado. Los desvíos más largos consumen más energía. Si el paso queda cerrado, el panel indica qué corregir.
+6. Para ajustar cada articulación con los motores, abre **Rotores y ajuste manual**, elige el paso de **5° / 15° / 45° / 90°** y utiliza −/+. Puedes guardar la postura actual como A o B.
 
 En **Rotores y ajuste manual** puedes configurar rpm, torque y capacidad antes de arrancar. **Ajustar ejes al límite de la pinza** sube los ejes que admiten menos que el ajuste de la pinza. Los motores conservan sus límites de torque. La luz de la base queda verde durante el movimiento, respira en verde cuando espera un objeto y queda roja si se traba. Mira el estado del panel para conocer el motivo.
 

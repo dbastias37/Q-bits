@@ -32,7 +32,7 @@
    const key=gripper?.id??null;if(key!==gripperKey){
     dirty=false;gripperKey=key;targetStamp='';axisStamp='';motorAxis=0;wasAxisLimited=false;showFeedback(null);
     get('pick-height').value=Number((Math.min(gripper?.reachCm??5,5)*.6).toFixed(1));
-    get('place-height').value=13;
+    get('place-height').value=13;get('home-height').value=20;
    }
    const targets=s.targets||[],stamp=JSON.stringify(targets.map(t=>[t.id,t.label]));
    if(stamp!==targetStamp){const old=get('filter-piece').value;get('filter-piece').replaceChildren();const empty=el('option','Elige una pieza de la sala');empty.value='';get('filter-piece').append(empty);for(const target of targets){const opt=el('option',target.label||'Pieza #'+target.id);opt.value=String(target.id);get('filter-piece').append(opt);}get('filter-piece').value=old;targetStamp=stamp;}
@@ -43,7 +43,7 @@
    get('release').disabled=!gripper;get('capture-shape').disabled=!gripper||!!arm?.running||s.canCaptureShape===false;get('capture-piece').disabled=!gripper||!!arm?.running||s.canCapturePiece===false;
    get('check').disabled=!gripper;
    const moving=!!arm?.running,holding=!!arm?.holding;
-   for(const pose of ['pick','place']){
+   for(const pose of ['home','pick','place']){
     get('pose-'+pose).disabled=!arm||moving||holding||arm.posable===false;
     get(pose+'-height').disabled=get('pose-'+pose).disabled;
    }
@@ -61,6 +61,8 @@
    for(const id of ['motor-axis','motor-rpm','motor-torque','motor-capacity','apply-motor'])get(id).disabled=!arm||moving;
    get('fit-load').disabled=!arm||moving||!arm.canFit;
    get('goto-pick').disabled=!arm||moving||holding||!arm.pickReady;get('goto-place').disabled=!arm||moving||holding||!arm.placeReady;
+   get('home-state').textContent=arm?.homeReady?'Guardada':'Opcional';
+   get('goto-home').disabled=!arm?.homeReady||moving||holding;get('clear-home').disabled=!arm?.homeReady||moving;
    get('pick-state').textContent=arm?.pickReady?'Guardada':'Por enseñar';get('place-state').textContent=arm?.placeReady?'Guardada':'Por enseñar';
    get('repeat').checked=arm?.repeat!==false;get('repeat').disabled=!arm||!!arm.running;
    for(const id of ['teach-pick','teach-place'])get(id).disabled=!arm||!!arm.running;
@@ -78,10 +80,12 @@
    for(const phase of PHASES){const node=get('phase-'+phase);node.dataset.active=String(!!arm?.running&&phases[arm.phase]===phase);node.setAttribute('aria-current',!!arm?.running&&phases[arm.phase]===phase?'step':'false');}
   }
   for(const type of ['blueprint','convert','register','start','stop','grab','release','check'])get(type).addEventListener('click',()=>act(type));
-  for(const pose of ['pick','place'])get('pose-'+pose).addEventListener('click',()=>act('pose',{pose,heightCm:Number(get(pose+'-height').value)}));
+  for(const pose of ['home','pick','place'])get('pose-'+pose).addEventListener('click',()=>act('pose',{pose,heightCm:Number(get(pose+'-height').value)}));
   get('motor-axis').addEventListener('change',()=>{motorAxis=Number(get('motor-axis').value);motorFields(last?.arm);});
   get('apply-motor').addEventListener('click',()=>act('motor',{joint:motorAxis,rpm:Number(get('motor-rpm').value),maxTorque:Number(get('motor-torque').value),capacity:Number(get('motor-capacity').value)}));
   get('fit-load').addEventListener('click',()=>act('fitLoad'));
+  get('goto-home').addEventListener('click',()=>act('goto',{pose:'home'}));
+  get('clear-home').addEventListener('click',()=>act('clearHome'));
   get('goto-pick').addEventListener('click',()=>act('goto',{pose:'pick'}));get('goto-place').addEventListener('click',()=>act('goto',{pose:'place'}));
   get('teach-pick').addEventListener('click',()=>act('teach',{pose:'pick'}));get('teach-place').addEventListener('click',()=>act('teach',{pose:'place'}));
   get('repeat').addEventListener('change',()=>act('repeat',{value:get('repeat').checked}));

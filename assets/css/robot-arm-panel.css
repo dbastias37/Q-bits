@@ -13,7 +13,7 @@
 #arm-panel .arm-joint{display:grid;grid-template-columns:minmax(0,1fr) auto 38px auto;gap:4px;align-items:center;font:10px/1.4 system-ui,sans-serif;margin:4px 0}
 #arm-panel .arm-joint span{overflow-wrap:anywhere}
 #panel #arm-panel .arm-joint output{float:none;text-align:center;color:#728277;font-size:9px}
-#arm-panel .arm-poses{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0}
+#arm-panel .arm-poses{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,125px),1fr));gap:6px;margin:10px 0}
 #arm-panel .arm-poses>div{padding:8px 5px;border:1px solid #94ac9a30;border-radius:9px;text-align:center}
 #arm-panel .arm-poses span{display:block;font:9px/1.5 system-ui,sans-serif;color:#7d8d82;margin-top:3px}
 #arm-panel .arm-facts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0 4px;border-top:1px solid #91ab9730;padding-top:10px}

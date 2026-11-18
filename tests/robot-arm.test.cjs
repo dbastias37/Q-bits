@@ -56,7 +56,9 @@ test('registering another controller on an existing arm is rejected',()=>{
 });
 test('a wall blocks the transfer without tunnelling or silently completing a cycle',()=>{
  const {t}=lab(),arm=blueprintArm(t),hit=t.rotorPart(arm.gripperId),pivot=t.couplerTip(t.rotorPart(arm.joints[0].aId)).point,turn=t.Q();turn.setFromAxisAngle(t.V(0,1,0),Math.PI/4);
- const middle=pivot.vadd(turn.vmult(hit.p.vsub(pivot))),wall=t.storyWall(t.V(middle.x,.3,middle.z),t.V(.05,.3,.05));t.addQubit([hit.p.x,.046,hit.p.z]);t.configureRobotArm(arm,{repeat:false});assert(t.startRobotArm(arm));until(t,()=>!arm.running,2400);
+ const middle=pivot.vadd(turn.vmult(hit.p.vsub(pivot))),wall=t.storyWall(t.V(middle.x,.3,middle.z),t.V(.05,.3,.05));
+ const opposite=pivot.vsub(middle.vsub(pivot));t.storyWall(t.V(opposite.x,.3,opposite.z),t.V(.05,.3,.05));
+ t.addQubit([hit.p.x,.046,hit.p.z]);t.configureRobotArm(arm,{repeat:false});assert(t.startRobotArm(arm));until(t,()=>!arm.running,2400);
  assert.equal(arm.cycles,0);assert.equal(t.robotGrips.size,0);assert.match(arm.status,/bloqueado|energía/);assert(t.rotorPart(arm.gripperId).p.x<wall.p.x-wall.half.x,'wrist remains on the starting side of the obstruction');
 });
 test('a taught program survives saving a rotated mechanism with new rigid-body frames',()=>{

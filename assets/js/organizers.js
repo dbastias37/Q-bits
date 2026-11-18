@@ -57,6 +57,7 @@
     grippers.add(arm.gripperId);
     for(const joint of arm.joints){const key=joint?.aId+':'+joint?.bId;if(!jointKeys.has(key)||claimed.has(key)||item.joints.find(j=>j.aId===joint.aId&&j.bId===joint.bId)?.servo)return false;claimed.add(key);}
     const poseValid=pose=>Array.isArray(pose)&&pose.length===arm.joints.length&&pose.every(q=>vector(q,4)&&Math.abs(Math.hypot(...q)-1)<.01);
+    if(arm.poses.home!==undefined&&!poseValid(arm.poses.home))return false;
     if(!poseValid(arm.poses.pick)||arm.poses.place!==null&&!poseValid(arm.poses.place))return false;
    }
   }

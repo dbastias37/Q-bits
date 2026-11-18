@@ -1576,7 +1576,12 @@ function grabQubit(hitOverride=null){
  undockCampaignGroup(hit.g);
  selected=hit;const stable=list.length>1||hit.g.parts.length>1,rootPoint=stable?hit.g.body.position.clone():hit.point.clone();
  automationIntervention('Tomaste una pieza: ensayo reiniciado.');
- const ordered=[hit.g,...list.filter(g=>g!==hit.g)],items=[],passive=passiveConveyorRollers(list);for(const g of list)if(g.virtualConveyor){const base=rotorPart(g.virtualConveyor.conveyor.baseId)?.g;if(base)passive.set(g,base);}passive.delete(hit.g);
+ const ordered=[hit.g,...list.filter(g=>g!==hit.g)],items=[],passive=passiveConveyorRollers(list);for(const g of list)if(g.virtualConveyor){const base=rotorPart(g.virtualConveyor.conveyor.baseId)?.g;if(base)passive.set(g,base);}for(const arm of robotArms){
+  const base=robotGripperHit(arm.baseId)?.g;if(!base||!list.includes(base))continue;
+  const component=rotorConnectedGroups([base]),driver=component.includes(hit.g)?hit.g:base;
+  for(const g of component)if(g!==driver)passive.set(g,driver);
+ }
+ passive.delete(hit.g);
  const gripMass=new Map(list.filter(g=>!passive.has(g)).map(g=>[g,g.body.mass]));
  for(const [roller,driver]of passive)if(!roller.virtualConveyor)gripMass.set(driver,(gripMass.get(driver)||0)+roller.body.mass);
  for(const g of ordered){
@@ -1590,7 +1595,7 @@ function grabQubit(hitOverride=null){
   }
   items.push({g,anchor:local,anchorBody,joint,passiveGrip,gripDriver:passive.get(g)||null,gripMass:mass,relative:sub(point,rootPoint),initialQ:g.body.quaternion.clone(),restQ:null});
  }
- held={...hit,...items[0],pickedPartId,items,weight,stable,rootOffset:stable?sub(rootPoint,hit.point):V(),age:0,distance:clamp(hit.distance,.3,2.5),rotation:hit.g.body.quaternion.clone(),initialRotation:hit.g.body.quaternion.clone()};
+ held={...hit,...items[0],pickedPartId,items,weight,stable,rootOffset:stable?sub(rootPoint,hit.point):V(),age:0,distance:clamp(hit.distance,.3,2.5),rotation:hit.g.body.quaternion.clone(),initialRotation:hit.g.body.quaternion.clone(),tiltAxis:V(Math.cos(yaw),0,-Math.sin(yaw))};
  storyOnGrab(hit.g);
  speech.shake=null;queueSpeech(hit.g,'close',{part:hit.part,kind:'pickup',priority:62,cooldown:18});
 }
@@ -2236,6 +2241,7 @@ function createRobotArm(options={}){
  const arm={id:++robotArmSerial,gripperId:hit.part.id,baseId:base.part.id,joints:members.map(r=>({aId:r.aId,bId:r.bId})),repeat:options.repeat!==false,poses:{},running:false,jogging:false,state:'idle',status:'Listo · enseña Tomar y Dejar',brakes:[],cycles:0};
  const pose=robotReadPose(arm);arm.poses.pick=robotPoseValid(options.poses?.pick,members.length)?JSON.parse(JSON.stringify(options.poses.pick)):pose;
  arm.poses.place=robotPoseValid(options.poses?.place,members.length)?JSON.parse(JSON.stringify(options.poses.place)):null;
+ if(robotPoseValid(options.poses?.home,members.length))arm.poses.home=options.poses.home.map(q=>[...q]);
  robotArms.push(arm);for(const rotor of members)configureRotor(rotor,{enabled:false,mount:'wheel'},true);robotApplyBrakes(arm);return arm;
 }
 function registerRobotArm(gripperId){
@@ -2251,7 +2257,7 @@ function registerRobotArm(gripperId){
 }
 function configureRobotArm(arm,patch={}){if(!robotArms.includes(arm)||patch.repeat!==undefined&&typeof patch.repeat!=='boolean')return false;if(patch.repeat!==undefined)arm.repeat=patch.repeat;return true;}
 function stopRobotArm(arm,reason='Detenido',blocked=false){
- if(!robotArms.includes(arm))return false;arm.running=false;arm.jogging=false;arm.state=blocked?'blocked':'idle';arm.status=reason;redraw=true;
+ if(!robotArms.includes(arm))return false;arm.running=false;arm.jogging=false;arm.waypoints=[];arm.state=blocked?'blocked':'idle';arm.status=reason;redraw=true;
  // Stopping is safe inside a weld transaction, while an old body may already
  // be absent. Do not refresh/prune the shared topology until rebuilding ends.
  for(const rotor of robotArmRotors(arm)){rotor.enabled=false;rotor.actualRpm=0;rotor.driveVelocity=0;rotor.constraint?.disableMotor();unpinRotor(rotor);for(const g of rotorGroups(rotor))if(g){g.body.angularVelocity.set(0,0,0);g.body.wakeUp();}}
@@ -2283,8 +2289,9 @@ function robotBeginMotion(arm,target,jogging=false){
  if(members.length!==arm.joints.length||!base||!hit||!component.includes(base.g)||!robotPoseValid(target,members.length)){arm.status='Revisa el montaje y guarda las posturas del brazo.';return false;}
  if(component.some(g=>(held?.items||[]).some(item=>item.g===g))){arm.status='Suelta el brazo de tu mano antes de iniciarlo.';return false;}
  const problem=robotPowerProblem(arm);if(problem){arm.state='blocked';arm.status=problem;redraw=true;return false;}
+ if(!robotSetRoute(arm,target))return false;
  robotRemoveBrakes(arm);robotReleaseBase(arm);conveyorAcquireBase(arm,base.g.body);
- arm.target=JSON.parse(JSON.stringify(target));arm.running=!jogging;arm.jogging=jogging;arm.elapsed=0;arm.settled=0;arm.lastError=Infinity;arm.stuck=0;
+ arm.running=!jogging;arm.jogging=jogging;arm.elapsed=0;arm.settled=0;arm.lastError=Infinity;arm.stuck=0;
  for(const rotor of members)if(!configureRotor(rotor,{enabled:true,mount:'wheel'},true)){stopRobotArm(arm,'No se pudo iniciar',true);return false;}
  arm.deadline=robotMotionDeadline(arm);return true;
 }
@@ -2296,7 +2303,7 @@ function jogRobotArm(arm,index,degrees){
 function startRobotArm(arm){
  if(!robotArms.includes(arm)||arm.running||arm.jogging||robotGrips.has(arm.gripperId))return false;
  if(!robotPoseValid(arm.poses.pick,arm.joints.length)||!robotPoseValid(arm.poses.place,arm.joints.length)){if(arm)arm.status='Guarda primero las posturas Tomar y Dejar';return false;}
- if(!robotBeginMotion(arm,arm.poses.pick))return false;arm.state='return';arm.status='Volviendo a Tomar';return true;
+ if(!robotBeginMotion(arm,arm.poses.home||arm.poses.pick))return false;arm.state=arm.poses.home?'home':'return';arm.status=arm.poses.home?'Yendo a la posición inicial':'Volviendo a Tomar';return true;
 }
 function robotTargetError(rotor,target){
  const current=robotRelativePose(rotor),difference=new CANNON.Quaternion(...target).mult(current.inverse()),axis=V(0,1,0);
@@ -2313,7 +2320,7 @@ function updateRobotArms(dt){
    arm.scan=(arm.scan||0)-dt;
    if(arm.scan<=0){
     arm.scan=.10;const feedback={};
-    if(gripperGrab(arm.gripperId,feedback)){arm.target=JSON.parse(JSON.stringify(arm.poses.place));arm.state='carry';arm.elapsed=0;arm.stuck=0;arm.lastError=Infinity;arm.deadline=robotMotionDeadline(arm);arm.status='Tomado · llevando a B';}
+    if(gripperGrab(arm.gripperId,feedback)){if(!robotSetRoute(arm,arm.poses.place))continue;arm.state='carry';arm.elapsed=0;arm.stuck=0;arm.lastError=Infinity;arm.deadline=robotMotionDeadline(arm);arm.status='Tomado · llevando a B';}
     else if(['blocked','energy','rotor-load'].includes(feedback.code))stopRobotArm(arm,feedback.message,true);
     else arm.status=feedback.message;
    }
@@ -2322,11 +2329,19 @@ function updateRobotArms(dt){
   const errors=members.map((r,i)=>Math.abs(robotTargetError(r,arm.target[i]))),max=Math.max(...errors),speed=Math.max(...members.map(r=>Math.abs(r.actualRpm||0)));
   arm.settled=max<.05&&speed<1.2?arm.settled+dt:0;
   if(max<arm.lastError-.003){arm.lastError=max;arm.stuck=0;}else arm.stuck+=dt;
-  if(arm.elapsed>arm.deadline||max>.1&&(arm.stuck>3||arm.stuck>.4&&members.some(r=>r.stalled))){stopRobotArm(arm,'Movimiento bloqueado · revisa espacio, fuerza y carga',true);continue;}
+  if(arm.elapsed>arm.deadline||max>.1&&(arm.stuck>3||arm.stuck>.4&&members.some(r=>r.stalled))){
+   if(!arm.routeRetried&&arm.destination){robotSetRoute(arm,arm.destination,true);continue;}
+   stopRobotArm(arm,'Movimiento bloqueado · revisa espacio, fuerza y carga',true);continue;
+  }
   if(arm.settled<.12)continue;arm.settled=0;arm.elapsed=0;arm.stuck=0;arm.lastError=Infinity;
+  if(arm.waypoints?.length){arm.target=arm.waypoints.shift();arm.deadline=robotMotionDeadline(arm);continue;}
+  if(arm.state==='home'){
+   if(robotSetRoute(arm,arm.poses.pick)){arm.state='return';arm.status='Yendo a A';}
+   continue;
+  }
   if(arm.jogging){stopRobotArm(arm,'Postura lista · puedes guardarla');continue;}
   if(arm.state==='return'){arm.state='wait';arm.status='Esperando objeto compatible bajo la cara de agarre';arm.scan=0;}
-  else if(arm.state==='carry'){releaseGripper(arm.gripperId);arm.cycles++;if(!arm.repeat){stopRobotArm(arm,'Ciclo completado');continue;}arm.target=JSON.parse(JSON.stringify(arm.poses.pick));arm.state='return';arm.deadline=robotMotionDeadline(arm);arm.status='Soltado · volviendo a A';}
+  else if(arm.state==='carry'){releaseGripper(arm.gripperId);arm.cycles++;if(!arm.repeat){stopRobotArm(arm,'Ciclo completado');continue;}if(!robotSetRoute(arm,arm.poses.pick))continue;arm.state='return';arm.deadline=robotMotionDeadline(arm);arm.status='Soltado · volviendo a A';}
  }
 }
 function driveRobotArms(dt){
@@ -2336,7 +2351,8 @@ function driveRobotArms(dt){
    const reduction=robotJointReduction(rotor),error=robotTargetError(rotor,arm.target[i]),limit=Math.min(rotor.rpm,robotGrips.has(arm.gripperId)?12:20)*2*Math.PI/60/reduction;
    let brake=arm.jointBrakes.get(rotor.id);
    if(brake&&Math.abs(error)>.05){world.removeConstraint(brake);arm.jointBrakes.delete(rotor.id);brake=null;}
-   if(!brake&&Math.abs(error)<.012&&Math.abs(rotor.actualRpm||0)<1.2){brake=robotJointBrake(rotor);if(brake){arm.jointBrakes.set(rotor.id,brake);world.addConstraint(brake);}}
+   const brakeTolerance=arm.state==='carry' ? .03 : .012;
+   if(!brake&&Math.abs(error)<brakeTolerance&&Math.abs(rotor.actualRpm||0)<1.2){brake=robotJointBrake(rotor);if(brake){arm.jointBrakes.set(rotor.id,brake);world.addConstraint(brake);}}
    if(brake){rotor.driveVelocity=0;rotor.motorImpulse=0;rotor.constraint.disableMotor();continue;}
    const speed=-clamp(error*5,-limit,limit);rotor.driveVelocity=speed;rotor.constraint.enableMotor();rotor.constraint.setMotorSpeed(speed);rotor.constraint.setMotorMaxForce(rotor.maxTorque*reduction*dt);
   }
@@ -2347,7 +2363,10 @@ function robotArmSignal(arm){
  if(arm.state==='wait'&&arm.running)return 'waiting';
  return arm.running||arm.jogging?'running':'off';
 }
-function robotArmStatus(arm){return arm?arm.status:'Selecciona un cubo de agarre o un brazo';}
+function robotArmStatus(arm){
+ if(!arm)return 'Selecciona un cubo de agarre o un brazo';
+ return arm.waypoints?.length&&(arm.running||arm.jogging)?arm.status+' · rodeando un obstáculo':arm.status;
+}
 function robotStopForGroups(list){stopServoMarchForGroups(list);flightStopForGroups(list);conveyorStopForGroups(list);for(const arm of robotArms)if(rotorConnectedGroups([robotGripperHit(arm.gripperId)?.g].filter(Boolean)).some(g=>list.includes(g)))stopRobotArm(arm,'Detenido para manipular');for(const grip of [...robotGrips.values()])if(list.includes(grip.g)||list.includes(robotGripperHit(grip.id)?.g))releaseGripper(grip.id);}
 function robotBeforeRemoveGroup(g){robotStopForGroups([g]);for(const arm of robotArms)if(arm.brakes.some(c=>c.bodyA===g.body||c.bodyB===g.body))robotRemoveBrakes(arm);}
 function clearRobotArms(){cancelRobotPoseDraft();for(const arm of [...robotArms]){stopRobotArm(arm);robotRemoveBrakes(arm);}for(const id of [...robotGrips.keys()])releaseGripper(id);robotArms.length=0;robotWorkingParts.clear();}
@@ -2397,8 +2416,111 @@ function robotKinematicSample(model,angles){
  return {point:add(origin,rotation.vmult(model.point)),normal:rotation.vmult(model.normal),links};
 }
 
-// The damped least-squares solve is at most 4 × 4. Damping also handles
-// straight arms and hinges with no leverage along the requested direction.
+function robotAnglesToPose(model,angles){
+ const pose=model.relative.map(q=>[...q]);
+ for(const link of model.chain){
+  const i=link.index,turn=Q();turn.setFromAxisAngle(V(0,1,0),angles[i]*link.sign);
+  const q=turn.mult(new CANNON.Quaternion(...pose[i]));q.normalize();pose[i]=[q.x,q.y,q.z,q.w];
+ }
+ return pose;
+}
+
+function robotRouteScene(model,grip){
+ const moving=new Set(model.chain.map(link=>link.child)),obstacles=[];
+ const reach=model.reach+Math.max(...model.chain.map(link=>link.position.distanceTo(link.pivot)+link.child.body.boundingRadius))+(grip?.body.boundingRadius||0);
+ const pad=V(reach,reach,reach),center=model.chain[0].pivot,region={min:sub(center,pad),max:add(center,pad)};
+ for(const g of groups)if(!moving.has(g)&&g!==grip?.g&&!g.virtualConveyor&&boundsOverlap(region,physicalGroupBounds(g)))obstacles.push(...rigidCollisionParts(g),...conveyorGroupSurfaces(g).map(collisionEntry));
+ for(const wall of [...puzzleObstacleBounds(),...alphaObstacles()]){
+  const entry=collisionEntry({p:wall.p,q:wall.q||Q(),half:wall.half});if(boundsOverlap(region,entry))obstacles.push(entry);
+ }
+ for(const c of cargos)if(c!==grip?.cargo&&boundsOverlap(region,cargoBounds(c)))obstacles.push(collisionEntry(cargoPose(c)));
+ const wrist=model.chain.at(-1),inverse=wrist.rotation.inverse();
+ const load=grip?{offset:inverse.vmult(sub(grip.body.position,wrist.position)),q:inverse.mult(grip.body.quaternion)}:null;
+ return (angles,clearance=0)=>{
+  const sample=robotKinematicSample(model,angles),occupied=[];
+  const clear=solids=>!solids.some(e=>e.min.y<-.0015||e.max.y>ROOM_HEIGHT||Math.max(-e.min.x,-e.min.z,e.max.x,e.max.z)>ROOM_SIZE/2)&&!collisionEntriesOverlap(solids,obstacles,.001)&&!occupied.some(previous=>collisionEntriesOverlap(solids,previous,.001));
+  for(const {link,position,rotation} of sample.links){
+   const solids=rigidQueryPoses(link.child,position,rotation).concat(conveyorGroupSurfaces(link.child,position,rotation)).map(collisionEntry);
+   if(!clear(solids))return false;
+   occupied.push(solids);
+  }
+  if(load){
+   const end=sample.links.at(-1),p=add(end.position,end.rotation.vmult(load.offset)),q=end.rotation.mult(load.q);
+   const solids=grip.g?rigidQueryPoses(grip.g,p,q):[{...cargoPose(grip.cargo),p,q}];
+   if(!clear(solids.map(collisionEntry)))return false;
+   if(clearance>0){
+    const below=solids.map(s=>collisionEntry({...s,p:sub(s.p,V(0,clearance,0))}));
+    if(collisionEntriesOverlap(below,obstacles,.001))return false;
+   }
+  }
+  return true;
+ };
+}
+
+// Plan in hinge space. A folded posture on either side allows a lift, a
+// base rotation and a descent without dragging the wrist or payload sideways.
+function robotPlanRoute(arm,target){
+ const model=robotKinematics(arm);if(!model)return null;
+ const members=robotArmRotors(arm),end=members.map((r,i)=>robotTargetError(r,target[i]));
+ for(const link of model.chain)end[link.index]*=link.sign;
+ const zero=end.map(()=>0),clear=robotRouteScene(model,robotGrips.get(arm.gripperId));
+ const edge=(a,b,clearance=0)=>{
+  const delta=a.map((v,i)=>b[i]-v),span=Math.max(...delta.map(Math.abs));
+  if(span>Math.PI+.00001)return false;
+  const samples=Math.max(1,Math.ceil(delta.reduce((sum,v)=>sum+Math.abs(v),0)*model.reach/.025));
+  for(let j=1;j<=samples;j++)if(!clear(a.map((v,i)=>v+delta[i]*j/samples),clearance))return false;
+  return true;
+ };
+ const [base,shoulder,elbow,wrist]=model.chain;
+ if(!clear(end)){
+  // Approaching a loose pickup can leave the braked wrist a few mm lower
+  // under gravity. Allow a small lift within the servo settling tolerance.
+  if(!shoulder||target!==arm.poses.pick)return null;
+  const requested=robotKinematicSample(model,end).point;
+  let adjusted=false;
+  for(const lift of [-.012,.012,-.025,.025,-.04,.04]){
+   const candidate=[...end];candidate[shoulder.index]+=lift;
+   if(wrist)candidate[wrist.index]-=lift;
+   const point=robotKinematicSample(model,candidate).point;
+   if(point.y<=requested.y||point.distanceTo(requested)>.022||!clear(candidate))continue;
+   end.splice(0,end.length,...candidate);target=robotAnglesToPose(model,end);adjusted=true;break;
+  }
+  if(!adjusted)return null;
+ }
+ if(edge(zero,end))return [target];
+ const yawFirst=[...zero];yawFirst[base.index]=end[base.index];
+ const yawLast=[...end];yawLast[base.index]=0;
+ for(const mid of [yawFirst,yawLast])if(edge(zero,mid)&&edge(mid,end))return [robotAnglesToPose(model,mid),target];
+ const reverseSweep=()=>{
+  const yaw=end[base.index];if(Math.abs(yaw)<.12)return null;
+  const around=[...end];around[base.index]-=Math.sign(yaw)*2*Math.PI;
+  const mid=around.map(a=>a*.5);
+  return edge(zero,mid)&&edge(mid,around)?[robotAnglesToPose(model,mid),target]:null;
+ };
+ if(!shoulder)return reverseSweep();
+ for(const bend of [.03,.08,.18,.35,.44,.55,.63,.7,.8,1,1.2,1.45].flatMap(angle=>[angle,-angle])){
+  if(bend===.8){const alternate=reverseSweep();if(alternate)return alternate;}
+  const fold=[...zero];fold[shoulder.index]=bend;
+  if(elbow)fold[elbow.index]=-bend*.55;
+  if(wrist)fold[wrist.index]=-bend*.45;
+  const swing=[...fold];swing[base.index]=end[base.index];
+  if(!edge(zero,fold))continue;
+  if(edge(fold,end))return [robotAnglesToPose(model,fold),target];
+  // A loaded gripper deflects under gravity. Leave vertical clearance while
+  // crossing the obstacle, then descend to the exact delivery posture.
+  if(edge(fold,swing,.032)&&edge(swing,end))return [robotAnglesToPose(model,fold),robotAnglesToPose(model,swing),target];
+ }
+ return null;
+}
+function robotSetRoute(arm,target,retry=false){
+ const route=robotPlanRoute(arm,target);
+ if(!route){stopRobotArm(arm,'Recorrido bloqueado · despeja el paso o cambia la altura de la postura en P.',true);return false;}
+ arm.destination=target;arm.routeRetried=retry;
+ arm.target=route.shift();arm.waypoints=route;arm.elapsed=0;arm.settled=0;arm.stuck=0;arm.lastError=Infinity;
+ arm.deadline=robotMotionDeadline(arm);return true;
+}
+
+// Damping handles straight arms and hinges with no leverage in the requested direction.
 function robotSolveStep(columns,residual){
  const matrix=columns.map((a,i)=>[...columns.map((b,j)=>a[0].dot(b[0])+a[1].dot(b[1])+(i===j?.00008:0)),a[0].dot(residual[0])+a[1].dot(residual[1])]);
  const count=matrix.length;
@@ -2441,12 +2563,7 @@ function solveRobotPose(model,target,normal,warm=null){
    if(!best||score<best.score)best={sample,angles:[...angles],score};
    if(gap<.0045&&alignment>.98){
     if(!robotPoseClear(sample)){blocked=true;break;}
-    const pose=model.relative.map(q=>[...q]);
-    for(const link of model.chain){
-     const turn=Q(),index=link.index;turn.setFromAxisAngle(V(0,1,0),angles[index]*link.sign);
-     const q=turn.mult(new CANNON.Quaternion(...pose[index]));q.normalize();pose[index]=[q.x,q.y,q.z,q.w];
-    }
-    return {sample,angles,pose};
+    return {sample,angles,pose:robotAnglesToPose(model,angles)};
    }
    const columns=[];
    for(const {link,pivot,axis}of sample.links)columns[link.index]=[axis.cross(sub(sample.point,pivot)),mul(axis.cross(sample.normal),.1)];
@@ -2460,7 +2577,7 @@ function solveRobotPose(model,target,normal,warm=null){
 let robotPoseDraft=null;
 const ROBOT_MAX_POSE_OFFSET_CM=100*Math.hypot(ROOM_SIZE,ROOM_SIZE,ROOM_HEIGHT);
 function beginRobotPoseDraft(arm,name,heightCm){
- if(!['pick','place'].includes(name)||!Number.isFinite(heightCm)||heightCm<0||heightCm>ROBOT_MAX_POSE_OFFSET_CM||held||arm.running||arm.jogging||robotGrips.has(arm.gripperId))return false;
+ if(!['home','pick','place'].includes(name)||!Number.isFinite(heightCm)||heightCm<0||heightCm>ROBOT_MAX_POSE_OFFSET_CM||held||arm.running||arm.jogging||robotGrips.has(arm.gripperId))return false;
  const model=robotKinematics(arm);if(!model)return false;
  cancelUnitCreation();cancelShelfPlacement();cancelPowerCable();
  robotPoseDraft={arm,name,model,heightCm,nextUpdate:0};
@@ -2487,11 +2604,12 @@ function updateRobotPoseDraft(time=performance.now(),force=false){
  if(!surface||surface.normal.norm2()<.9){
   draft.solution=null;draft.surface=null;draft.reason='Apunta a la cara del objeto o a una superficie de entrega';redraw=true;return;
  }
- const target=add(surface.point,mul(surface.normal,draft.heightCm/100));
+ const heightAxis=draft.name==='home'?V(0,1,0):surface.normal;
+ const target=add(surface.point,mul(heightAxis,draft.heightCm/100));
  if(!force&&draft.target?.distanceTo(target)<.002&&draft.surface?.normal.dot(surface.normal)>.999)return;
  const warm=draft.solution?.pose&&draft.target?.distanceTo(target)<.1?draft.solution.angles:null;
  draft.target=target;draft.surface=surface;
- draft.solution=solveRobotPose(draft.model,target,mul(surface.normal,-1),warm);
+ draft.solution=solveRobotPose(draft.model,target,mul(heightAxis,-1),warm);
  draft.reason=draft.solution.reason;redraw=true;
 }
 function confirmRobotPoseDraft(){
@@ -2499,7 +2617,7 @@ function confirmRobotPoseDraft(){
  updateRobotPoseDraft(performance.now(),true);
  if(!draft.solution?.pose||!robotArms.includes(draft.arm))return false;
  draft.arm.poses[draft.name]=draft.solution.pose;document.querySelector('#arm-'+draft.name+'-height').value=draft.heightCm;
- draft.arm.status=(draft.name==='pick'?'A · Tomar':'B · Soltar')+' guardada';
+ draft.arm.status=({home:'Posición inicial',pick:'A · Tomar',place:'B · Soltar'}[draft.name])+' guardada';
  returnRobotPosePanel();return true;
 }
 function robotPoseMouse(event){
@@ -3193,7 +3311,7 @@ function connectRotorTips(aId,bId,options={}){
  stopRoute(a.g);stopRoute(b.g);leaveHaul(a.g);leaveHaul(b.g);invalidateMechanicalIndex();rotors.push(rotor);invalidateMechanicalIndex();for(const [part,label]of [[a.part,'A'],[b.part,'B']])if(/^Enganche (?:\d+|[AB] · \d+)$/.test(part.mood.name))part.mood.name='Enganche '+label+' · '+part.id;refreshRotors();
  if(options.enabled)configureRotor(rotor,{enabled:true});return rotor;
 }
-function refreshRotors(){
+function refreshRotors(rebound=null){
  syncVirtualConveyors();
  for(const conveyor of conveyors)if(conveyor.virtual&&!virtualConveyorCandidates(conveyor))materializeConveyor(conveyor);
  for(const rotor of [...rotors]){
@@ -3202,7 +3320,7 @@ function refreshRotors(){
   if(!a||!b||a.g===b.g||(rotor.servo?!servoShapesValid(a,b,rotor.servo):unitShape(a)!=='coupler'||unitShape(b)!=='coupler')){disconnectRotor(rotor);continue;}
   if(rotor.constraint&&(rotor.constraint.bodyA!==a.g.body||rotor.constraint.bodyB!==b.g.body)){world.removeConstraint(rotor.constraint);rotor.constraint=null;unpinRotor(rotor);}
   if(!rotor.constraint){
-   if(!(rotor.servo?servoTipsCompatible(a,b,rotor.servo):rotorTipsCompatible(a,b,.004))){disconnectRotor(rotor);continue;}
+   if(!rebound?.has(rotor)&&!(rotor.servo?servoTipsCompatible(a,b,rotor.servo):rotorTipsCompatible(a,b,.004))){disconnectRotor(rotor);continue;}
    const af=rotorEndpoint(a,rotor.servo,'a'),bf=rotorEndpoint(b,rotor.servo,'b');
    rotor.constraint=new CANNON.HingeConstraint(a.g.body,b.g.body,{pivotA:add(a.part.offset,a.part.q.vmult(af.localPoint)),pivotB:add(b.part.offset,b.part.q.vmult(bf.localPoint)),axisA:a.part.q.vmult(af.localAxis),axisB:b.part.q.vmult(mul(bf.localAxis,-1)),maxForce:1000,collideConnected:true});
    for(const equation of rotor.constraint.equations)setPhysicsEquation(equation,1e10,4);
@@ -3277,9 +3395,13 @@ world.solver.solve=function(dt,physicsWorld){
  const driven=new Set();for(const rotor of rotors)if(rotor.enabled&&rotor.mount==='wheel')for(const g of rotorConnectedGroups(rotorGroups(rotor)))driven.add(g.body);
  for(const grip of robotGrips.values())if(driven.has(robotGripperHit(grip.id)?.g.body))driven.add(grip.body);
  // Large assemblies retain their summed mass and inertia, with quieter contacts.
- for(const contact of physicsWorld.contacts)if([contact.bi,contact.bj].some(body=>body.qubitGroup?.parts.length>1))contact.restitution=Math.min(contact.restitution,.025);
+ for(const contact of physicsWorld.contacts){
+  if(story.scene==='lab'&&Math.abs(contact.ni.y)>.97&&Math.abs(contact.getImpactVelocityAlongNormal())<.35)contact.restitution=0;
+  else if(contact.bi.qubitGroup?.parts.length>1||contact.bj.qubitGroup?.parts.length>1)contact.restitution=Math.min(contact.restitution,.025);
+ }
  const articulated=new Set();for(const rotor of rotors){const pair=rotorGroups(rotor);if(pair.some(g=>!articulated.has(g.body)))for(const g of rotorConnectedGroups(pair))articulated.add(g.body);}
  for(const g of groups)if(!(held?.items||[]).some(item=>item.g===g))g.body.angularDamping=articulated.has(g.body)||g.route||g.haulJob||g.blueprintJob||g.parts.some(p=>p.mood.flight?.enabled)?settings.damping:groupAngularDamping(g.parts.length);
+ if(story.scene==='lab')settleSupportedGroups(dt,physicsWorld.contacts,driven,articulated);
  const skinPairs=conveyorFrictionPairs(physicsWorld),changed=[];for(const eq of physicsWorld.frictionEquations){if(skinPairs.get(eq.bi)?.has(eq.bj)||skinPairs.get(eq.bj)?.has(eq.bi)){changed.push([eq,eq.minForce,eq.maxForce]);eq.minForce=0;eq.maxForce=0;}else if(driven.has(eq.bi)||driven.has(eq.bj)){changed.push([eq,eq.minForce,eq.maxForce]);eq.minForce*=dt;eq.maxForce*=dt;}}
  try{return solveRotorContacts.call(this,dt,physicsWorld);}finally{for(const [eq,min,max]of changed){eq.minForce=min;eq.maxForce=max;}}
 };
@@ -3448,7 +3570,7 @@ function placeSnappedMechanism(placement){
 function settleSnappedMechanisms(source,target){
  const members=rotorConnectedGroups([source,target]);
  for(const rotor of rotors)if(rotorGroups(rotor).some(g=>members.includes(g)))unpinRotor(rotor);
- for(const g of members){g.body.velocity.set(0,0,0);g.body.angularVelocity.set(0,0,0);g.body.wakeUp();}
+ for(const g of members){g.body.velocity.set(0,0,0);g.body.angularVelocity.set(0,0,0);g.body.force.set(0,0,0);g.body.torque.set(0,0,0);g.body.wakeUp();}
 }
 function findSnap(){
  if(!held||held.shakeSeparated||!shiftDown()||!heldMechanismCanSnap())return null;
@@ -3506,8 +3628,16 @@ function weld(candidate,{sound=true}={}){
  if(!candidate.propellerTip&&!assembliesTouch(sourceEntries.filter(a=>boundsOverlap(a,nearTarget)).map(a=>a.pose),targetEntries.filter(b=>boundsOverlap(b,nearSource)).map(b=>b.pose)))return null;
  if(candidate.propellerTip){const both=sourceParts.concat(targetParts),hub=both.find(p=>p.part.id===candidate.hubId),blade=both.find(p=>p.part.id===candidate.bladeId);if(!hub||!blade||rotorForPart(candidate.hubId)||propellerSocket(hub,blade)!==candidate.side)return null;}
  const parts=sourceParts.map(o=>({id:o.part.id,weight:o.part.weight,shape:o.part.shape,p:o.p,q:o.q,mood:copyMood(o.part.mood)})).concat(worldParts(target));
+ const rebound=new Set();
+ for(const r of rotors){
+  if(!r.constraint||!robotArmForRotor(r)||!rotorGroups(r).some(g=>g===source||g===target))continue;
+  // Check the original live sockets before retiring either body. A small
+  // solver offset is safe because the weld moves the whole chain rigidly.
+  if(!rotorTipsCompatible(rotorPart(r.aId),rotorPart(r.bId),.008)){announce('Deja reposar el brazo antes de fijarlo al soporte.');return null;}
+  rebound.add(r);
+ }
  const placement=mechanismSnapPoses(source,position,quaternion);settleSnappedMechanisms(source,target);placeSnappedMechanism(placement);
- const ref=target.body.quaternion.clone();removeGroup(source);removeGroup(target);const joined=makeGroup(parts,ref);refreshRotors();
+ const ref=target.body.quaternion.clone();removeGroup(source);removeGroup(target);const joined=makeGroup(parts,ref);refreshRotors(rebound);
  batchConveyorBodyUpdates(()=>{for(const conveyor of conveyors)if(conveyorComplete(conveyor)&&conveyorEnsureSurfaces(conveyor))virtualizeConveyor(conveyor);});
  selected={g:joined,part:joined.parts[0]};queueSpeech(joined,'happy',{kind:'joined',indices:[7,9,15,17]});announce(candidate.propellerTip?(propellerLayout(joined).length?'Hélice lista · conecta una batería y abre Vuelo con clic derecho':'Primera pala colocada · acerca otro triangular al lado libre de la punta'):'Unidos · '+joined.parts.length+' '+groupUnitLabel(joined)+' · '+totalWeight(joined)+' u');if(sound)emitJoinSound(candidate.face?.p||position);return joined;
 }
@@ -3672,7 +3802,7 @@ function updateGrab(dt){
  const grabSpeed=savedPreferences.grabSpeed||1;
  if(shiftDown()){
   const tilt=Number(keys.has('KeyW'))-Number(keys.has('KeyS')),turn=Number(keys.has('KeyA'))-Number(keys.has('KeyD'));
-  if(tilt||turn){const axis=V(Math.cos(yaw)*tilt,turn,-Math.sin(yaw)*tilt);axis.normalize();const q=Q();q.setFromAxisAngle(axis,dt*settings.rotationSpeed*(savedPreferences.invertPieceRotation?-1:1));held.rotation=q.mult(held.rotation);}
+  if(tilt||turn){const axis=add(mul(held.tiltAxis||V(1,0,0),tilt),V(0,turn,0));axis.normalize();const q=Q();q.setFromAxisAngle(axis,dt*settings.rotationSpeed*(savedPreferences.invertPieceRotation?-1:1));held.rotation=q.mult(held.rotation);}
  }
  const rootTarget=campaignDockTarget(tutorialGripTarget(add(add(V(...camera),mul(direction(),held.distance)),held.rootOffset||V()))),rotationDelta=held.rotation.mult(held.initialRotation.inverse());
  const snapPoses=snap&&snap.source===held.g?mechanismSnapPoses(held.g,snap.position,snap.quaternion):[];
@@ -4392,6 +4522,26 @@ function rechargeExternalBatteries(dt){
   }
  }
 }
+// Dissipate sub-centimetre creep only on a quiet horizontal contact patch.
+// Falling, pushing, tipping, powered transport and zero-friction play remain dynamic.
+function settleSupportedGroups(dt,contacts,driven,articulated){
+ if(world.defaultContactMaterial.friction<=0)return;
+ const supports=new Map();
+ for(const contact of contacts){
+  const up=contact.ni.y;if(Math.abs(up)<.995)continue;
+  const body=up>0?contact.bj:contact.bi,base=up>0?contact.bi:contact.bj,g=body.qubitGroup;
+  if(!g||body.type!==CANNON.Body.DYNAMIC||body.sleepState===CANNON.Body.SLEEPING||driven.has(body)||driven.has(base)||articulated.has(body)||g.robotHeld||g.route||g.haulJob||g.blueprintJob||(held?.items||[]).some(i=>i.g===g))continue;
+  if(body.velocity.norm2()>.0009||body.angularVelocity.norm2()>.0225||base.velocity.norm2()>.0001||base.angularVelocity.norm2()>.0025||g.parts.some(p=>p.mood.flight?.enabled))continue;
+  const r=up>0?contact.rj:contact.ri;
+  let patch=supports.get(body);if(!patch){patch={count:0,x0:Infinity,x1:-Infinity,z0:Infinity,z1:-Infinity};supports.set(body,patch);}
+  patch.count++;patch.x0=Math.min(patch.x0,r.x);patch.x1=Math.max(patch.x1,r.x);patch.z0=Math.min(patch.z0,r.z);patch.z1=Math.max(patch.z1,r.z);
+ }
+ const decay=Math.exp(-16*dt*Math.min(1,world.defaultContactMaterial.friction/.38));
+ for(const [body,p] of supports)if(p.count>=3&&p.x0<0&&p.x1>0&&p.z0<0&&p.z1>0){
+  body.velocity.x*=decay;body.velocity.z*=decay;body.angularVelocity.scale(decay,body.angularVelocity);
+ }
+}
+
 function stepPhysics(dt){
  mechanicalStepCache={parts:null,components:new Map()};
  try{
@@ -4399,9 +4549,22 @@ function stepPhysics(dt){
  // Bound substep travel to avoid tunnelling through a 9 cm piece.
  for(const g of groups){if(g.virtualConveyor)continue;const b=g.body,speed=b.velocity.norm();if(speed>6)b.velocity.scale(6/speed,b.velocity);const spin=b.angularVelocity.norm();if(spin>30)b.angularVelocity.scale(30/spin,b.angularVelocity);}
  updateCampaignPressure(dt);updateButtonPhysics();prepareRotorPower();updateRotorMotors(dt);driveRobotArms(dt);driveConveyors(dt);driveServos(dt);productionForces(dt);updateFlights(dt);world.step(dt);invalidateConveyorContacts();stabilizeRotors();updateRotorPower(dt);validateServoMarches();tickContactSensors(dt);tickFlightSensors(dt);
- // Correct only tiny solver penetration of a hand-held shape; free bodies keep
- // their normal collision response. A hand cannot push its attachment underground.
- if(held)for(const item of held.items||[held]){if(item.g.virtualConveyor)continue;const b=item.g.body,low=bounds(item.g).min.y;if(low<.001){b.position.y+=.001-low;if(b.velocity.y<0)b.velocity.y=0;b.aabbNeedsUpdate=true;}if(item.floorLocked)b.angularVelocity.set(0,0,0);}
+ // The floor correction must translate a hinged assembly as a whole. Moving
+ // a single link stretches its constraints and stores an impulse on release.
+ if(held){
+  const corrected=new Set();
+  for(const item of held.items||[held]){
+   if(item.g.virtualConveyor)continue;
+   if(item.floorLocked)item.g.body.angularVelocity.set(0,0,0);
+   if(corrected.has(item.g))continue;
+   const component=rotorConnectedGroups([item.g]).filter(g=>!g.virtualConveyor);
+   const low=Math.min(...component.map(g=>bounds(g).min.y));
+   for(const g of component){
+    corrected.add(g);
+    if(low<.001){g.body.position.y+=.001-low;if(g.body.velocity.y<0)g.body.velocity.y=0;g.body.aabbNeedsUpdate=true;}
+   }
+  }
+ }
  for(const c of cargos){if(c.robotPhysical)continue;c.body.velocity.y=0;c.body.position.y=(c.dimensions?.y||c.size)/2;c.body.quaternion.set(0,0,0,1);c.body.angularVelocity.set(0,0,0);c.body.aabbNeedsUpdate=true;}
  updateCooling(dt);updateMoods(dt);updateBlueprints(dt);updatePuzzle(dt);tickAutomation(dt);tickProduction(dt);
  }finally{mechanicalStepCache=null;}
@@ -4501,7 +4664,23 @@ function handleKey(event){
  if(!gameInputActive())return;
  if(event.code.startsWith('Alt')&&!held&&!marquee&&!event.repeat){if(powerInspectionAvailable()){event.preventDefault();keys.add(event.code);redraw=true;return;}const inspection=inspectionNearPin();if(inspection){event.preventDefault();routeInspection=inspection;keys.add(event.code);return;}const hit=aimQubit()||selected;if(hit?.g.parts.length>1){event.preventDefault();openDetachMenu(hit);return;}}
  if(['ShiftLeft','ShiftRight','ControlLeft','ControlRight','AltLeft','AltRight','KeyW','KeyA','KeyS','KeyD','KeyC'].includes(event.code)){
-  event.preventDefault();if(event.code.startsWith('Shift')&&held&&!shiftDown()){held.rotation=held.g.body.quaternion.clone();held.initialRotation=held.rotation.clone();for(const item of held.items||[held]){item.initialQ=item.g.body.quaternion.clone();item.relative=sub(item.anchorBody?.position||add(item.g.body.position,item.g.body.quaternion.vmult(item.anchor)),held.anchorBody.position);}}keys.add(event.code);return;
+  event.preventDefault();
+  if(event.code.startsWith('Shift')&&held&&!shiftDown()){
+   if(!held.stable){
+    // A face remains a natural grab point for dragging. During rotation
+    // move the hand constraint to the centre and preserve its world target.
+    const item=held.items[0],offset=item.g.body.quaternion.vmult(item.anchor);
+    held.rootOffset.vsub(offset,held.rootOffset);
+    item.anchorBody.position.vsub(offset,item.anchorBody.position);
+    item.anchor.set(0,0,0);item.joint.pivotA.set(0,0,0);
+   }
+   held.rotation=held.g.body.quaternion.clone();held.initialRotation=held.rotation.clone();
+   for(const item of held.items||[held]){
+    item.initialQ=item.g.body.quaternion.clone();
+    item.relative=sub(item.g.body.position,held.g.body.position);
+   }
+  }
+  keys.add(event.code);return;
  }
  if(event.repeat)return;
  if(event.code==='KeyB'){event.preventDefault();startCreationTool('quick-cargo');}
@@ -4515,7 +4694,7 @@ function updateTarget(){
  if(robotPoseDraft){
   const draft=robotPoseDraft,valid=!!draft.solution?.pose;
   crosshair.classList.toggle('ready',valid);
-  targetLabel.textContent=(draft.name==='pick'?'A · Tomar':'B · Soltar')+' · '+draft.heightCm.toLocaleString('es-CL')+' cm · '+(valid?'Clic para guardar':draft.reason||'Apunta para marcar')+' · Rueda: altura · Esc: volver';
+  targetLabel.textContent=({home:'Posición inicial',pick:'A · Tomar',place:'B · Soltar'}[draft.name])+' · '+draft.heightCm.toLocaleString('es-CL')+' cm · '+(valid?'Clic para guardar':draft.reason||'Apunta para marcar')+' · Rueda: altura · Esc: volver';
   return;
  }
  snap=findSnap();updateCallout();updateCargoCallout();updateMenuConnector();updateInspection();updatePuzzleHUD();updateMoodSelection();updateAlphaHUD();
@@ -5569,7 +5748,7 @@ function robotPanelSnapshot(){
  if(arm){
   const members=robotArmRotors(arm),running=arm.running||arm.jogging,holding=!!grip,capacity=robotLiftCapacity(config,members);
   snapshot.arm={name:'Brazo Q-bits',status:robotArmStatus(arm),signal:robotArmSignal(arm),running,holding,phase:arm.state==='wait'?'detect':arm.state==='carry'?'move':arm.state,repeat:arm.repeat,
-   pickReady:!!arm.poses.pick,placeReady:!!arm.poses.place,load,pieces,capacity,energy,cycles:arm.cycles,
+   homeReady:!!arm.poses.home,pickReady:!!arm.poses.pick,placeReady:!!arm.poses.place,load,pieces,capacity,energy,cycles:arm.cycles,
    canFit:capacity<config.capacity,posable:robotKinematics(arm)!==null,
    efficiency:Math.max(0,100-load/capacity*100),joints:members.map((r,i)=>({name:robotJointName(i),rpm:r.rpm,maxTorque:r.maxTorque,capacity:r.capacity,angle:arm.poses.pick?-robotTargetError(r,arm.poses.pick[i])*180/Math.PI:0}))};
  }
@@ -5628,14 +5807,15 @@ function robotPanelAction(action,payload={}){
   arm.state=problem?'blocked':'idle';arm.status=problem||'Motores listos';redraw=true;
   return finish(true,problem||'Ajustes de los motores guardados.');
  }
+ if(action==='clearHome'&&!arm.running&&!arm.jogging){delete arm.poses.home;return finish(true,'La secuencia empezará yendo directamente a A.');}
  if(action==='teach')return finish(teachRobotArmPose(arm,payload.pose),robotArmStatus(arm));
  if(action==='repeat')return finish(configureRobotArm(arm,{repeat:payload.value}),'Secuencia '+(payload.value?'en repetición.':'de un ciclo.'));
  if(action==='stop')return finish(stopRobotArm(arm),'Brazo detenido; articulaciones frenadas y objeto liberado.');
  if(action==='goto'){
   if(arm.running||arm.jogging||robotGrips.has(arm.gripperId))return finish(false,'Detén el brazo y suelta el objeto antes de probar una postura.');
-  if(!['pick','place'].includes(payload.pose)||!robotPoseValid(arm.poses[payload.pose],arm.joints.length))return finish(false,'Guarda primero esa postura.');
+  if(!['home','pick','place'].includes(payload.pose)||!robotPoseValid(arm.poses[payload.pose],arm.joints.length))return finish(false,'Guarda primero esa postura.');
   const ok=robotBeginMotion(arm,arm.poses[payload.pose],true);
-  if(ok){arm.state='jog';arm.status='Probando postura '+(payload.pose==='pick'?'A · tomar':'B · soltar');panel.hidden=true;captureMouse();announce(arm.status+' · espera a que termine; P para volver.');}
+  if(ok){arm.state='jog';arm.status='Probando postura '+({home:'inicial',pick:'A · tomar',place:'B · soltar'}[payload.pose]);panel.hidden=true;captureMouse();announce(arm.status+' · espera a que termine; P para volver.');}
   return finish(ok,robotArmStatus(arm));
  }
  if(action==='jog'||action==='start'){
@@ -6335,6 +6515,7 @@ function storedGripperConfigValid(config){
 function storedRobotArmValid(record,keys){
  const arm=record.robotArm;if(arm===undefined)return true;
  if(!arm||arm.version!==1||!keys.has(arm.base)||!keys.get(arm.gripper)?.gripper||typeof arm.repeat!=='boolean'||!Array.isArray(arm.joints)||arm.joints.length<1||arm.joints.length>4||new Set(arm.joints).size!==arm.joints.length||arm.joints.some(i=>!Number.isInteger(i)||i<0||i>=record.joints.length||record.joints[i].servo))return false;
+ if(arm.poses?.home!==undefined&&!robotPoseValid(arm.poses.home,arm.joints.length))return false;
  if(arm.poses!==undefined){for(const name of ['pick','place'])if(arm.poses?.[name]!==null&&(!Array.isArray(arm.poses?.[name])||arm.poses[name].length!==arm.joints.length||arm.poses[name].some(q=>!Array.isArray(q)||q.length!==4||!q.every(Number.isFinite)||Math.abs(Math.hypot(...q)-1)>.0001)))return false;}
  return true;
 }

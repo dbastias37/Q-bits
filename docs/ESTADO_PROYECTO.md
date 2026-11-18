@@ -2,7 +2,17 @@
 
 Actualizado: 18 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega: programación del brazo en el banco — 18 de noviembre de 2026
+## Última entrega · recorrido del brazo y apoyos del banco — 18 de noviembre de 2026
+
+P → Mecanismos → Brazo Q-bits incorpora una posición inicial opcional. La mira elige el punto, la rueda ajusta la altura vertical y el clic guarda. Se puede probar y quitar. La secuencia la visita una vez antes de A. El banco, las plantillas y las repisas conservan la postura con el resto del programa.
+
+El brazo comprueba sus eslabones y la carga entre la postura actual y el destino. Puede separar el giro de la base, levantar el hombro para cruzar o tomar el otro sentido de giro. Ante un atasco vuelve a calcular una vez desde la postura real. Si el espacio, el torque o la energía son insuficientes, el panel indica el motivo. Los motores siguen ejecutando el movimiento con las restricciones físicas.
+
+Al trasladar un brazo frenado, una ancla de mano mueve el conjunto. Las correcciones contra el piso se aplican al conjunto conectado. Una soldadura comprueba los enganches existentes antes de reconstruir la base, conservando sus identidades aun con un pequeño desfase del solver. En el banco se amortiguan los contactos lentos sobre apoyos horizontales. Las piezas sueltas giran alrededor del centro al entrar en rotación y el eje de inclinación conserva la orientación del momento del agarre.
+
+Verificación del bloque: **926 pruebas Node** con Cannon real y DOM/GPU simulados. Incluyen una entrega por encima de un obstáculo de 10 cm, giro en vacío por el lado opuesto, paso cerrado, guardado de posición inicial, montaje en mesa y reposo sobre piso y superficie elevada. **76 capturas GLES** con cero errores de GPU. Shader de foco aprobado. Chromium local quedó bloqueado al crear un socket. Pendiente comprobar en el navegador del jugador su mesa y línea de producción concretas.
+
+## Entrega anterior · programación del brazo en el banco — 18 de noviembre de 2026
 
 Los ejes del brazo aplican su capacidad al objeto de su propia pinza. El brazo de un montaje de 780 u puede iniciar vacío con 0 u de carga. El límite combinado es el menor entre la pinza y los ejes. P → Mecanismos → Brazo Q-bits muestra peso sostenido, cantidad de piezas y el límite, con controles para rpm, torque y capacidad por eje. El peso de los eslabones y el objeto siguen influyendo en esfuerzo y consumo. El alcance configurable es de 1,8 a 5 cm, con 5 cm por defecto también para guardados anteriores.
 
