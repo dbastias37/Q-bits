@@ -2,7 +2,11 @@
 
 Actualizado: 18 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega · motores, sensores y autonomía
+## Última entrega · sensores para conjuntos de rotores
+
+El destino del sensor puede ser un rotor individual, un conjunto creado en P o una instancia de un mecanismo guardado en la sala. La detección de movimiento puede iniciar los cuatro ejes de un móvil en el mismo paso, conservando el sentido configurado en cada rueda. El enlace identifica las piezas de esa copia y admite detección si alguno de sus ejes está dentro de 3 m. Si el conjunto pierde un miembro, el enlace se descarta y puede elegirse nuevamente en el panel. Las copias construidas desde planos anteriores reciben su identidad al colocarlas.
+
+## Entrega anterior · motores, sensores y autonomía
 
 P mantiene la física del banco y la campaña en marcha. El brazo muestra el giro real del eje, admite ajustes con el motor detenido y utiliza las rpm elegidas durante el recorrido. En una prueba de giro de 90° de la base con Cannon, 24 y 72 rpm de consigna alcanzaron picos de 24,2 y 43,9 rpm respectivamente.
 

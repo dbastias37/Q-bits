@@ -1722,7 +1722,7 @@ function updateFlights(dt){
 function tickFlightSensors(dt){
  for(const f of flightStates.values()){
   const signals=new Set();
-  for(const g of f.component)for(const part of g.parts)if(QBitsWorkshop.partState(part).sensor&&!sensorRotor(part)){
+  for(const g of f.component)for(const part of g.parts)if(QBitsWorkshop.partState(part).sensor&&!sensorTarget(part)){
    const cfg=sensorConfig(part);if((f.enabled||cfg.action==='start')&&sensorReading({g,part,...partPose(g,part)},cfg).active)signals.add(cfg.action);
   }
   for(const action of ['reverse','start','stop']){
@@ -6296,7 +6296,7 @@ function newMood(id,saved=null){
  const m={name:'Q-bit '+id,strikes:0,severity:0,lastAnger:-1000,restTotal:0,energy:.8,state:'neutral',reason:'',agitation:0,restLeft:0,idle:0,fullTime:0,blocked:0,calm:0,boredOnce:false,personality,blend:[1,0,0]};
  if(saved)Object.assign(m,saved,{blend:[...(saved.blend||[1,0,0])],...(saved.externalBattery?{externalBattery:{...saved.externalBattery}}:{}),...(saved.gripper?{gripper:JSON.parse(JSON.stringify(saved.gripper))}:{}),...(saved.flight?{flight:QBitsPropellerPower.config(saved.flight)}:{})});m.name=m.name.replace(/^(?:Kiubit|Qubit) (\d+)$/,'Q-bit $1');return m;
 }
-function copyMood(m){return m?{...m,blend:[...m.blend],...(m.externalBattery?{externalBattery:{...m.externalBattery}}:{}),...(m.sensorConfig?{sensorConfig:{...m.sensorConfig}}:{}),...(m.sensorLink?{sensorLink:{...m.sensorLink}}:{}),...(m.gripper?{gripper:JSON.parse(JSON.stringify(m.gripper))}:{}),...(m.flight?{flight:{...m.flight}}:{})}:null;}
+function copyMood(m){return m?{...m,blend:[...m.blend],...(m.externalBattery?{externalBattery:{...m.externalBattery}}:{}),...(Array.isArray(m.sensorMachine?.members)?{sensorMachine:{...m.sensorMachine,members:m.sensorMachine.members.map(pair=>({...pair}))}}:{}),...(m.sensorConfig?{sensorConfig:{...m.sensorConfig}}:{}),...(m.sensorLink?{sensorLink:{...m.sensorLink}}:{}),...(m.gripper?{gripper:JSON.parse(JSON.stringify(m.gripper))}:{}),...(m.flight?{flight:{...m.flight}}:{})}:null;}
 function moodName(m){return m.state==='excited'?'Entusiasmado':m.state==='restless'?(m.severity>=3?'Alterado':'Inquieto'):'Neutro';}
 function moodColor(m){const colors=[[.53,.60,.61],[.38,.66,.56],[.76,.48,.38]],rgb=[0,0,0];for(let i=0;i<3;i++)for(let k=0;k<3;k++)rgb[k]+=colors[i][k]*m.blend[i];return rgb;}
 function moodCSS(m){return 'rgb('+moodColor(m).map(c=>Math.round(c*255)).join(',')+')';}
@@ -6777,6 +6777,7 @@ function saveMechanism(subject,name=null){
 
  if(savedMechanisms.length>=64){announce('Hay 64 mecanismos guardados. Exporta o elimina uno antes de añadir otro.');return null;}
  const record=mechanismSnapshot(subject,name);if(!record){announce('No se puede guardar: revisa el encaje de las puntas del rotor.');return null;}
+ const component=new Set(mechanismGroups(subject));rememberSensorMachine(record.name,rotors.filter(r=>rotorGroups(r).every(g=>component.has(g))));
  savedMechanisms.push(record);const durable=persistMechanisms();updateAlphaPanel();announce(record.name+' guardado · '+mechanismPartCount(record)+' piezas'+(durable?'':' · solo en esta sesión'));return record;
 }
 function spawnSavedMechanism(record,point,rotation=Q()){
@@ -6796,6 +6797,7 @@ function spawnSavedMechanism(record,point,rotation=Q()){
   for(const [i,parts]of data.entries()){const created=parts.map((part,j)=>{const id=ids.get(part.key),config=record.groups[i].parts[j].gripper,mood=part.battery?{...newMood(id),energy:0,externalBattery:{version:1,ownerId:id,packId:ids.get(part.battery.pack),enabled:part.battery.enabled}}:config?{...newMood(id),gripper:{...config}}:null;return {id,shape:part.shape,weight:part.weight,p:part.p,q:part.q,mood:record.groups[i].parts[j].flight?{...(mood||newMood(id)),flight:{...record.groups[i].parts[j].flight}}:mood};});made.push(makeGroup(created));}
   for(const joint of record.joints){const rotor=connectRotorTips(ids.get(joint.a),ids.get(joint.b),{...joint,...storedRotorDrive(joint),enabled:false});if(!rotor)throw new Error('Las puntas del mecanismo ya no encajan.');joints.push(rotor);}
   for(let i=0;i<joints.length;i++)configureRotor(joints[i],record.joints[i].servo?{...record.joints[i],enabled:false}:record.joints[i]);
+  rememberSensorMachine(record.name,joints);
   for(const set of record.rotorSets||[])createRotorSet(set.name,set.joints.map(index=>joints[index]));
   if(record.robotArm&&typeof restoreRobotArmTemplate==='function')restoreRobotArmTemplate(record.robotArm,ids,joints);
   if(record.conveyors&&typeof restoreConveyorTemplate==='function'){const modules=restoreConveyorTemplate(record.conveyors,ids,joints);if(!Array.isArray(modules)||modules.length!==record.conveyors.length)throw new Error('La cinta no pudo recuperar sus rodillos.');}
@@ -6933,6 +6935,7 @@ function completeMechanismBlueprint(bp,targets){
    made.push(makeGroup(rigid[i],bp.q));
   }
   for(const joint of record.joints){const rotor=connectRotorTips(ids.get(joint.a),ids.get(joint.b),{...joint,enabled:false});if(!rotor)throw new Error('Las puntas ya no coinciden');joints.push(rotor);}
+  rememberSensorMachine(record.name,joints);
   for(const set of record.rotorSets||[])createRotorSet(set.name,set.joints.map(i=>joints[i]));
   if(record.robotArm&&typeof restoreRobotArmTemplate==='function')restoreRobotArmTemplate(record.robotArm,ids,joints);
   if(record.conveyors&&typeof restoreConveyorTemplate==='function'){const modules=restoreConveyorTemplate(record.conveyors,ids,joints);if(!Array.isArray(modules)||modules.length!==record.conveyors.length)throw new Error('La cinta no pudo recuperar sus rodillos.');}
@@ -8186,8 +8189,8 @@ function restoreContactState(saved){
  contactStates.clear();rotorContactStates.clear();
  const valid=entry=>entry&&typeof entry.latched==='boolean'&&Number.isFinite(entry.clearSeconds)&&entry.clearSeconds>=0&&entry.clearSeconds<=.08;
  const copy=entry=>({latched:entry.latched,clearSeconds:entry.clearSeconds});
- const linked=new Set();for(const g of groups)for(const part of g.parts)if(QBitsWorkshop.partState(part).sensor){const r=sensorRotor(part);if(r)linked.add(sensorOutputKey(r,sensorConfig(part).action));}
- for(const entry of Array.isArray(saved?.sensors)?saved.sensors:[]){if(!valid(entry)||!Number.isSafeInteger(entry.id))continue;const part=rotorPart(entry.id)?.part;if(part&&QBitsWorkshop.partState(part).sensor&&sensorRotor(part))contactStates.set(entry.id,copy(entry));}
+ const linked=new Set();for(const g of groups)for(const part of g.parts)if(QBitsWorkshop.partState(part).sensor){const r=sensorTarget(part);if(r)linked.add(sensorOutputKey(r,sensorConfig(part).action));}
+ for(const entry of Array.isArray(saved?.sensors)?saved.sensors:[]){if(!valid(entry)||!Number.isSafeInteger(entry.id))continue;const part=rotorPart(entry.id)?.part;if(part&&QBitsWorkshop.partState(part).sensor&&sensorTarget(part))contactStates.set(entry.id,copy(entry));}
  for(const entry of Array.isArray(saved?.rotors)?saved.rotors:[])if(valid(entry)&&linked.has(entry.key))rotorContactStates.set(entry.key,copy(entry));
 }
 function persistWorkshop(){try{localStorage.setItem('qbits.workshop.v1',JSON.stringify(workshopProfile));return true;}catch{return false;}}
@@ -8389,55 +8392,114 @@ function openWorkshopMenu(dir=direction()){
 function showWorkshopResearch(){
  if(!openWorkshopPanel('upgrades'))return false;workshopPanel.setMode('research');return true;
 }
-function sensorRotor(part){const link=part?.mood?.sensorLink;if(!link)return null;const rotor=rotors.find(r=>r.aId===link.aId&&r.bId===link.bId);return rotor&&rotorPart(rotor.aId)&&rotorPart(rotor.bId)?rotor:null;}
+function sensorMotorKey(r){return r.aId+'-'+r.bId;}
+function sensorGroup(kind,name,members){
+ if(members.length<2)return null;
+ const parts=mechanicalPartIndex();if(members.some(r=>!r||!parts.has(r.aId)||!parts.has(r.bId)))return null;
+ const sorted=members.slice().sort((a,b)=>a.aId-b.aId),first=sorted[0];
+ return {kind,name,members:sorted,aId:first.aId,bId:first.bId,signature:sorted.map(sensorMotorKey).join(',')};
+}
+// Keep the instance on its physical anchor. Template copies receive fresh endpoint IDs.
+function rememberSensorMachine(name,joints){
+ const group=sensorGroup('machine',name,joints);if(!group)return;
+ rotorPart(group.aId).part.mood.sensorMachine={name,members:group.members.map(r=>({aId:r.aId,bId:r.bId}))};
+}
+function sensorMachine(anchor){
+ const saved=mechanicalPartIndex().get(anchor.aId)?.part.mood.sensorMachine;
+ if(!Array.isArray(saved?.members)||saved.members.length>MAX_QUBITS||typeof saved.name!=='string')return null;
+ const members=saved.members.map(pair=>pair&&rotorForPair(pair));
+ const group=sensorGroup('machine',saved.name,members);
+ if(!group||group.aId!==anchor.aId)return null;
+ const connected=new Set(rotorConnectedGroups(rotorGroups(anchor)));
+ return members.every(r=>rotorGroups(r).every(g=>connected.has(g)))?group:null;
+}
+function sensorSet(set){return set?sensorGroup('set',set.name,rotorSetMembers(set)):null;}
+function sensorTarget(part){
+ const link=part?.mood?.sensorLink;if(!link)return null;
+ const r=rotorForPart(link.aId);if(!r||r.aId!==link.aId||r.bId!==link.bId||!rotorPart(r.aId)||!rotorPart(r.bId))return null;
+ if(!link.kind)return r;
+ const group=link.kind==='set'?sensorSet(rotorSetFor(r)):link.kind==='machine'?sensorMachine(r):null;
+ return group&&group.signature===link.signature?group:null;
+}
+function sensorNearest(hit,target){
+ let nearest=null;
+ for(const r of target.members||[target]){
+  const a=rotorPart(r.aId);if(!a)continue;
+  const point=couplerTip(a).point,distance=hit.p.distanceTo(point);
+  if(!nearest||distance<nearest.distance)nearest={point,distance};
+ }
+ return nearest;
+}
+function sensorChoice(target){return target.members?target.kind+':'+target.aId:String(target.id);}
+function sensorCanReverse(target){
+ return (target?.members||(target?[target]:[])).every(r=>!r.servo&&!robotArmForRotor(r));
+}
 function sensorFace(part){const profile=unitProfile(part),index=profile.faceNormals.reduce((best,n,i)=>n.x>profile.faceNormals[best].x?i:best,0);return {normal:profile.faceNormals[index],center:profile.faceCenters[index]};}
-function linkContactSensor(sensorId,rotor){
- const hit=rotorPart(sensorId);if(certifiedAutomation()||!hit||!QBitsWorkshop.partState(hit.part).sensor||!rotors.includes(rotor)||rotorGroups(rotor).some(g=>!g)){announce('Necesitas un sensor adaptado y un rotor completo.');return false;}
- if(hit.p.distanceTo(couplerTip(rotorPart(rotor.aId)).point)>3){announce('Acerca sensor y rotor: el enlace alcanza 3 m.');return false;}
- hit.part.mood.sensorLink={aId:rotor.aId,bId:rotor.bId};contactStates.delete(sensorId);announce('Sensor conectado al mecanismo');return true;
+function linkContactSensor(sensorId,target){
+ const hit=rotorPart(sensorId);if(certifiedAutomation()||!hit||!QBitsWorkshop.partState(hit.part).sensor||!(target?.members||[target]).every(r=>rotors.includes(r)&&rotorGroups(r).every(Boolean))){announce('Elige un sensor adaptado y un destino completo.');return false;}
+ if(sensorNearest(hit,target).distance>3){announce('Acerca sensor y rotor: el enlace alcanza 3 m.');return false;}
+ hit.part.mood.sensorLink={aId:target.aId,bId:target.bId,...(target.members?{kind:target.kind,signature:target.signature}:{})};contactStates.delete(sensorId);announce('Sensor conectado al mecanismo');return true;
 }
 function unlinkContactSensor(sensorId){const hit=rotorPart(sensorId);if(!hit)return false;delete hit.part.mood.sensorLink;contactStates.delete(sensorId);return true;}
 function showSensorMenu(hit){
- selected={g:hit.g,part:hit.part};closeCommandMenu(false);pause();panel.hidden=false;updatePanel();switchPanelTab('mechanisms');sensorField('panel').scrollIntoView?.({block:'start'});
+ clearRotorSelection();selected={g:hit.g,part:hit.part};closeCommandMenu(false);pause();panel.hidden=false;updatePanel();switchPanelTab('mechanisms');sensorField('panel').scrollIntoView?.({block:'start'});
 }
 function sensorField(name){return document.querySelector('#sensor-'+name);}
 function selectedSensor(){return selected?.part&&QBitsWorkshop.partState(selected.part).sensor?rotorPart(selected.part.id):null;}
-function sensorTargetBusy(r){const arm=r&&robotArmForRotor(r);return !!(r?.enabled||arm?.running||arm?.jogging);}
+function sensorTargetBusy(target){
+ return (target?.members||(target?[target]:[])).some(r=>{const arm=robotArmForRotor(r);return r.enabled||arm?.running||arm?.jogging;});
+}
 function refreshSensorPanel(){
  const hit=selectedSensor();sensorField('panel').hidden=!hit;if(!hit)return;
- const cfg=sensorConfig(hit.part),linked=sensorRotor(hit.part),flight=flightForGroup(hit.g),target=sensorField('target');
+ const cfg=sensorConfig(hit.part),linked=sensorTarget(hit.part),flight=flightForGroup(hit.g),target=sensorField('target');
  target.replaceChildren();const option=(value,label)=>{const el=document.createElement('option');el.value=value;el.textContent=label;target.append(el);};
  option('',flight?'Dron acoplado':'Sin enlace');
+
+ const addGroup=group=>{
+  if(!group)return;
+  if((!linked||sensorChoice(group)!==sensorChoice(linked))&&!(sensorNearest(hit,group)?.distance<=3))return;
+  const id=sensorChoice(group);
+  option(id,(group.kind==='set'?'Conjunto · ':'Mecanismo · ')+group.name+' · '+group.members.length+' rotores · #'+group.aId);
+ };
+ for(const set of rotorSets)addGroup(sensorSet(set));
+ for(const r of rotors)addGroup(sensorMachine(r));
  for(const r of rotors){
   const a=rotorPart(r.aId);if(!a||r!==linked&&hit.p.distanceTo(couplerTip(a).point)>3)continue;
   option(String(r.id),(robotArmForRotor(r)?'Brazo':sensorBelt(r)?'Cinta':r.servo?'Servo':'Rotor')+' · eje #'+r.id);
  }
- target.value=linked?String(linked.id):'';
+ target.value=linked?sensorChoice(linked):'';
  for(const field of ['mode','action','range','weight','speed'])sensorField(field).value=String(cfg[field]);
  sensorField('range-row').hidden=!['laser','motion'].includes(cfg.mode);sensorField('weight-row').hidden=cfg.mode!=='weight';sensorField('speed-row').hidden=cfg.mode!=='motion';
  const busy=sensorTargetBusy(linked)||!!flight?.enabled;
  for(const field of ['mode','action','target','range','weight','speed'])sensorField(field).disabled=busy;
- const reverse=sensorField('reverse');reverse.disabled=!!(linked&&(robotArmForRotor(linked)||linked.servo));
+ const reverse=sensorField('reverse');reverse.disabled=!sensorCanReverse(linked);
 }
 for(const field of ['mode','action','target','range','weight','speed'])sensorField(field).addEventListener('change',()=>{
  const hit=selectedSensor();if(!hit||certifiedAutomation())return;
- let r=sensorRotor(hit.part);if(sensorTargetBusy(r)||flightForGroup(hit.g)?.enabled){refreshSensorPanel();return;}
+ let r=sensorTarget(hit.part);if(sensorTargetBusy(r)||flightForGroup(hit.g)?.enabled){refreshSensorPanel();return;}
  const cfg=sensorConfig(hit.part),value=sensorField(field).value;
  if(field==='target'){
   if(value==='')unlinkContactSensor(hit.part.id);
-  else{const next=rotors.find(r=>String(r.id)===value);if(sensorTargetBusy(next)||!linkContactSensor(hit.part.id,next)){refreshSensorPanel();return;}}
-  r=sensorRotor(hit.part);
+  else{
+   const [kind,id]=value.split(':'),anchor=id&&rotorForPart(Number(id));
+   const next=kind==='set'&&anchor?sensorSet(rotorSetFor(anchor)):kind==='machine'&&anchor?sensorMachine(anchor):rotors.find(r=>String(r.id)===value);
+   if(!next||sensorTargetBusy(next)||!linkContactSensor(hit.part.id,next)){refreshSensorPanel();return;}
+  }
+  r=sensorTarget(hit.part);
  }else if(['mode','action'].includes(field))cfg[field]=value;
  else if(value!==''&&Number.isFinite(Number(value)))cfg[field]=Number(value);
- if(cfg.action==='reverse'&&r&&(robotArmForRotor(r)||r.servo))cfg.action='start';
- hit.part.mood.sensorConfig=cfg;hit.part.mood.sensorConfig=sensorConfig(hit.part);
+ const implicit=field!=='action'&&hit.part.mood.sensorConfig?.action===undefined;
+ if(implicit)delete cfg.action;
+ if(!sensorCanReverse(r)&&(cfg.action==='reverse'||cfg.action===undefined))cfg.action='start';
+ hit.part.mood.sensorConfig=cfg;const clean=sensorConfig(hit.part);
+ if(cfg.action===undefined)delete clean.action;hit.part.mood.sensorConfig=clean;
  sensorSamples.delete(hit.part);refreshSensorPanel();redraw=true;
 });
 function liveSensorPanel(hit){
- const cfg=sensorConfig(hit.part),r=sensorRotor(hit.part),reading=sensorReading(hit,cfg);
+ const cfg=sensorConfig(hit.part),r=sensorTarget(hit.part),reading=sensorReading(hit,cfg);
  const units={laser:' cm',weight:' u',motion:' cm/s'};
  const value=Number.isFinite(reading.value)?' · '+Number(reading.value.toFixed(2))+units[cfg.mode]:'';
- const out=r&&hit.p.distanceTo(couplerTip(rotorPart(r.aId)).point)>3;
+ const out=r&&sensorNearest(hit,r).distance>3;
  sensorField('reading').textContent=(reading.active?'Detectado':'En espera')+value+(out?' · enlace fuera de 3 m':!r&&!flightForGroup(hit.g)?' · elige un mecanismo':'');
 }
 function sensorContactActive(hit){
@@ -8454,7 +8516,7 @@ function sensorConfig(part){
  const cfg=part.mood.sensorConfig||{};
  return {mode:['motion','laser','weight'].includes(cfg.mode)?cfg.mode:'contact',range:SENSOR_RANGES.includes(cfg.range)?cfg.range:50,
   weight:Number.isFinite(cfg.weight)?clamp(cfg.weight,.25,MAX_QUBITS):1,speed:Number.isFinite(cfg.speed)?clamp(cfg.speed,1,500):5,
-  action:['start','stop'].includes(cfg.action)?cfg.action:'reverse'};
+  action:['start','stop','reverse'].includes(cfg.action)?cfg.action:part.mood.sensorLink?.kind?'start':'reverse'};
 }
 function sensorBeam(hit,range,own){
  const face=sensorFace(hit.part),axis=hit.q.vmult(face.normal),origin=add(hit.p,hit.q.vmult(face.center));
@@ -8519,9 +8581,56 @@ function sensorReading(hit,cfg=sensorConfig(hit.part)){
  const sample={time:simTime,value,active:cfg.mode==='laser'?Number.isFinite(value):value>=(cfg.mode==='motion'?cfg.speed:cfg.weight)};
  sensorSamples.set(hit.part,sample);return sample;
 }
-function sensorOutputKey(r,action){return r.aId+':'+r.bId+(action==='reverse'?'':':'+action);}
+function sensorOutputKey(r,action){return r.aId+':'+r.bId+(r.members?':group:'+r.signature:'')+(action==='reverse'?'':':'+action);}
 function sensorBelt(r){return conveyors.find(c=>c.joints.some(j=>j.aId===r.aId&&j.bId===r.bId));}
+function sensorGroupCommand(target,action){
+ const motors=[],arms=new Set(),belts=new Set(),servos=new Set();
+ for(const r of target.members){
+  const arm=robotArmForRotor(r),belt=sensorBelt(r);
+  if(arm)arms.add(arm);
+  else if(belt){for(const section of action==='start'?conveyorLine(belt):[belt])belts.add(section);}
+  else if(r.servo)servos.add(r);
+  else motors.push(r);
+ }
+ if(action==='reverse'&&(arms.size||servos.size||!target.members.some(r=>r.enabled)))return false;
+ const ids=list=>({rotorIds:list.map(r=>r.id)});
+ if(action==='stop'){
+  for(const arm of arms)stopRobotArm(arm);
+  for(const belt of belts)stopConveyor(belt);
+  for(const r of servos)sensorCommand(r,'stop');
+  return !motors.length||configureRotorSet(ids(motors),{enabled:false});
+ }
+ // Apply ordinary motors as one validated command. If another controller cannot
+ // start, undo the new commands without stopping members that were already running.
+ const undo=[];
+ if(motors.length){
+  const idle=motors.filter(r=>!r.enabled),invert=action==='reverse';
+  if(!configureRotorSet(ids(motors),invert?{invert:true}:{enabled:true}))return false;
+  if(invert)undo.push(()=>configureRotorSet(ids(motors),{invert:true}));
+  else if(idle.length)undo.push(()=>configureRotorSet(ids(idle),{enabled:false}));
+ }
+ function apply(command,revert){
+  if(command()){undo.push(revert);return true;}
+  for(const rollback of undo.reverse())rollback();return false;
+ }
+ for(const belt of belts){
+  if(action==='reverse'){
+   const direction=belt.direction;
+   if(!apply(()=>configureConveyor(belt,{direction:-direction}),()=>configureConveyor(belt,{direction})))return false;
+  }else if(!belt.running&&!apply(()=>startConveyor(belt),()=>stopConveyor(belt)))return false;
+ }
+ for(const arm of arms)if(!arm.running&&!arm.jogging&&!apply(()=>startRobotArm(arm),()=>stopRobotArm(arm)))return false;
+ for(const r of servos){
+  if(r.enabled)continue;
+  const march=servoMarchMembers(r);
+  if(march.every(m=>servos.has(m)&&!m.enabled)){
+   if(!apply(()=>startServoMarch(r),()=>stopServoMarch(servoMarchFor(r))))return false;
+  }else if(!apply(()=>startServo(r),()=>sensorCommand(r,'stop')))return false;
+ }
+ return true;
+}
 function sensorCommand(r,action){
+ if(r.members)return sensorGroupCommand(r,action);
  const arm=robotArmForRotor(r),belt=sensorBelt(r);
  if(action==='reverse'){
   if(!r.enabled||arm||r.servo)return false;
@@ -8536,11 +8645,11 @@ function sensorCommand(r,action){
 function tickContactSensors(dt){
  if(storySuspended()||story.transition||certifiedAutomation()||!Number.isFinite(dt)||dt<=0)return;
  const live=new Set(),inputs=new Map();
- for(const g of groups)for(const part of g.parts){if(!QBitsWorkshop.partState(part).sensor)continue;live.add(part.id);const hit={g,part,...partPose(g,part)},r=sensorRotor(part);
+ for(const g of groups)for(const part of g.parts){if(!QBitsWorkshop.partState(part).sensor)continue;live.add(part.id);const hit={g,part,...partPose(g,part)},r=sensorTarget(part);
   if(part.mood.sensorLink&&!r){delete part.mood.sensorLink;contactStates.delete(part.id);continue;}
   if(!r){contactStates.delete(part.id);continue;}
   const cfg=sensorConfig(part),key=sensorOutputKey(r,cfg.action);
-  const touching=!held?.items?.some(item=>item.g===g)&&hit.p.distanceTo(couplerTip(rotorPart(r.aId)).point)<=3&&sensorReading(hit,cfg).active;
+  const touching=!held?.items?.some(item=>item.g===g)&&sensorNearest(hit,r).distance<=3&&sensorReading(hit,cfg).active;
   contactStates.set(part.id,QBitsContacts.step(contactStates.get(part.id),touching,dt).state);
   const input=inputs.get(key)||{r,action:cfg.action,touching:false,id:part.id};if(touching){input.touching=true;input.id=part.id;}inputs.set(key,input);
  }
@@ -8548,14 +8657,14 @@ function tickContactSensors(dt){
  // One rotor receives one edge from the union of its sensors. Adjacent contacts
  // cannot undo one another; every linked tip must clear before it can rearm.
  for(const [key,input]of inputs){const {r}=input,next=QBitsContacts.step(rotorContactStates.get(key),input.touching,dt);rotorContactStates.set(key,next.state);
-  if(next.fire&&sensorCommand(r,input.action)){r.sensorPulses=(r.sensorPulses||0)+1;r.lastSensorId=input.id;}
+  if(next.fire&&sensorCommand(r,input.action))for(const motor of r.members||[r]){motor.sensorPulses=(motor.sensorPulses||0)+1;motor.lastSensorId=input.id;}
  }
  for(const key of rotorContactStates.keys())if(!inputs.has(key))rotorContactStates.delete(key);
 }
 function drawWorkshop(){
  // Furniture is drawn once by drawStoryWorld using the same oriented solids
  // as its Cannon colliders. Only fitted-piece indicators are drawn here.
- for(const g of groups)for(const part of g.parts)if(QBitsWorkshop.partState(part).sensor){const pose=partPose(g,part),face=sensorFace(part),point=add(pose.p,pose.q.vmult(add(face.center,mul(face.normal,.004)))),r=sensorRotor(part),tipQ=Q();tipQ.setFromVectors(V(1,0,0),face.normal);drawBox(point,pose.q.mult(tipQ),V(.009,.023,.023),r?[.25,.8,.49,1]:[.7,.57,.25,1]);if(altDown()&&sensorConfig(part).mode==='laser'){const beam=sensorBeam({g,part,...pose},sensorConfig(part).range,new Set(rotorConnectedGroups([g]).map(member=>member.body)));drawLines([beam.origin,beam.end],[1,.24,.12,1]);}if(r){const tip=couplerTip(rotorPart(r.aId)).point;drawLines([point,tip],[.2,.7,.43,.7]);}}
+ for(const g of groups)for(const part of g.parts)if(QBitsWorkshop.partState(part).sensor){const pose=partPose(g,part),face=sensorFace(part),point=add(pose.p,pose.q.vmult(add(face.center,mul(face.normal,.004)))),r=sensorTarget(part),tipQ=Q();tipQ.setFromVectors(V(1,0,0),face.normal);drawBox(point,pose.q.mult(tipQ),V(.009,.023,.023),r?[.25,.8,.49,1]:[.7,.57,.25,1]);if(altDown()&&sensorConfig(part).mode==='laser'){const beam=sensorBeam({g,part,...pose},sensorConfig(part).range,new Set(rotorConnectedGroups([g]).map(member=>member.body)));drawLines([beam.origin,beam.end],[1,.24,.12,1]);}if(r){const tip=sensorNearest(pose,r).point;drawLines([point,tip],[.2,.7,.43,.7]);}}
 }
 function workshopGrip(g){return g.parts.reduce((n,p)=>n+QBitsWorkshop.movementFactors(p).grip,0)/Math.max(1,g.parts.length);}
 
@@ -9288,7 +9397,7 @@ function liveMechanismPanel(time){
  if(panel.hidden||document.querySelector('#page-mechanisms').hidden){panelActiveStamp='';return;}
  if(time<panelNextRead)return;panelNextRead=time+200;
  const sensor=selectedSensor(),arm=robotPanelSubject().arm,belt=conveyorPanelSubject(),flight=flightPanelSubject(),members=controlRotors();
- const stamp=[arm?.running,arm?.jogging,belt?.running,belt&&conveyorLine(belt).every(c=>c.running),flight?.enabled,sensor&&sensorTargetBusy(sensorRotor(sensor.part)),...members.map(r=>r.enabled)].join('|');
+ const stamp=[arm?.running,arm?.jogging,belt?.running,belt&&conveyorLine(belt).every(c=>c.running),flight?.enabled,sensor&&sensorTargetBusy(sensorTarget(sensor.part)),...members.map(r=>r.enabled)].join('|');
  if(panelActiveStamp!==stamp){if(panelActiveStamp)updateMechanismPanel();panelActiveStamp=stamp;}
  if(sensor)liveSensorPanel(sensor);
  if(arm){

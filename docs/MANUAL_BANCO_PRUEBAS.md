@@ -83,7 +83,7 @@ Qué significa cada ajuste: rpm controla velocidad; torque limita fuerza de giro
 
 Taller: deja la pieza sobre la mesa, suéltala, apunta a la mesa y pulsa E. Lee el efecto y el coste de la mejora antes de aplicarla. La investigación disponible se conserva en el navegador.
 
-**Sensor configurable.** Elige un sensor en Banco rápido o adáptalo en el taller. Clic derecho → Configurar sensor. Selecciona contacto, movimiento, láser o peso, elige el mecanismo y la acción. El alcance del láser y del movimiento se ajusta entre 25 cm y 2 m. Mantén Alt para ver el haz. El enlace admite hasta 3 m.
+**Sensor configurable.** Elige un sensor en Banco rápido o adáptalo en el taller. Clic derecho → Configurar sensor. Selecciona contacto, movimiento, láser o peso, elige el mecanismo y la acción. El alcance del láser y del movimiento se ajusta entre 25 cm y 2 m. Mantén Alt para ver el haz. El enlace admite hasta 3 m. Para que una pieza en movimiento arranque un móvil, selecciona Movimiento cercano, el conjunto o el mecanismo del móvil e Iniciar. Para controlar un eje individual, elige Rotor.
 
 ## Servos · primera extremidad
 

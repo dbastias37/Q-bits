@@ -416,9 +416,9 @@ input,select,textarea{font-family:var(--font-menu);}
         <label id="sensor-range-row">Alcance<select id="sensor-range"><option value="25">I · 25 cm</option><option value="50">II · 50 cm</option><option value="100">III · 1 m</option><option value="200">IV · 2 m</option></select></label>
         <label id="sensor-speed-row">Velocidad mínima (cm/s)<input id="sensor-speed" type="number" min="1" max="500" step="1"></label>
         <label id="sensor-weight-row">Peso mínimo (u)<input id="sensor-weight" type="number" min="0.25" max="2000" step="0.25"></label>
-        <label>Mecanismo a controlar<select id="sensor-target"></select></label>
+        <label>Destino del sensor<select id="sensor-target"></select></label>
         <label>Al detectar<select id="sensor-action"><option value="reverse" id="sensor-reverse">Invertir marcha</option><option value="start">Iniciar</option><option value="stop">Detener</option></select></label>
-        <p>Orienta la punta con Shift. Mantén Alt para ver el láser. Elige un mecanismo a menos de 3 m. La acción se repite cuando la zona queda libre y vuelve a detectar.</p>
+        <p>Orienta la punta con Shift. Mantén Alt para ver el láser. Elige un rotor, un conjunto con nombre o un mecanismo guardado colocado en la sala. Acerca el sensor a menos de 3 m de uno de sus ejes. La acción se repite cuando la zona queda libre y vuelve a detectar.</p>
         <strong id="sensor-reading"></strong>
       </section>
       <section id="servo-panel" aria-labelledby="servo-title">
@@ -723,7 +723,7 @@ input,select,textarea{font-family:var(--font-menu);}
         <p><strong>Rotor:</strong> dos enganches unidos forman un eje. Fija una mitad al soporte y la otra a la pieza que girará. En P → Mecanismos revisa rpm, sentido, torque y capacidad. En un brazo, usa los controles del brazo para mover sus ejes.</p>
         <p><strong>Qué significa cada ajuste:</strong> rpm controla velocidad; torque limita fuerza de giro; capacidad limita la carga. En un brazo se aplica al objeto sostenido. Los rotores ordinarios cuentan el peso de la red conectada.</p>
         <p><strong>Taller:</strong> deja la pieza sobre la mesa, suéltala, apunta a la mesa y pulsa E. Lee el efecto y el coste de la mejora antes de aplicarla. La investigación disponible se conserva en el navegador.</p>
-        <p><strong>Sensor configurable.</strong> Elige un sensor en Banco rápido o adáptalo en el taller. Clic derecho → Configurar sensor. Selecciona contacto, movimiento, láser o peso, elige el mecanismo y la acción. El alcance del láser y del movimiento se ajusta entre 25 cm y 2 m. Mantén Alt para ver el haz. El enlace admite hasta 3 m.</p>
+        <p><strong>Sensor configurable.</strong> Elige un sensor en Banco rápido o adáptalo en el taller. Clic derecho → Configurar sensor. Selecciona contacto, movimiento, láser o peso, elige el mecanismo y la acción. El alcance del láser y del movimiento se ajusta entre 25 cm y 2 m. Mantén Alt para ver el haz. El enlace admite hasta 3 m. Para que una pieza en movimiento arranque un móvil, selecciona Movimiento cercano, el conjunto o el mecanismo del móvil e Iniciar. Para controlar un eje individual, elige Rotor.</p>
       </details>
       <details><summary>6 · Planos, guardado y repisas</summary>
         <p><strong>Catálogo rápido (Q → Tab):</strong> crea copias completas para experimentar en el banco. Respeta el límite de piezas de la sala.</p>

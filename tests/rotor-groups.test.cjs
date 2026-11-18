@@ -105,3 +105,68 @@ test('removing the sole precise selection never falls back to another axle shari
  t.disconnectRotor(members[0]);assert.equal(t.selectedRotors().length,0);assert.equal(t.getSelected(),null);assert.equal(t.controlRotors().length,0);
  assert.equal(t.rotorSets[0].rotorIds.length,3);assert.equal(t.selectRotorSet({rotorIds:[999999]}),false);assert.equal(t.controlRotors().length,0);
 });
+
+function sensorControls(game){
+ const {t,sandbox}=game,g=t.addQubit([0,.045,1.5]),part=g.parts[0];
+ part.mood.workshop={version:1,ownerId:part.id,sensor:true,battery:1,lightweight:1,movement:1,baseWeight:1,ballast:0};
+ const field=name=>sandbox.document.querySelector('#sensor-'+name);
+ t.showSensorMenu(t.rotorPart(part.id));
+ const change=(name,value)=>{field(name).value=value;field(name).dispatchEvent({type:'change'});};
+ const choose=label=>{
+  const option=Array.from(field('target').children).find(node=>node.textContent.startsWith(label));
+  assert(option,'missing sensor choice '+label);change('target',option.value);
+ };
+ const drop=()=>{t.addQubit([.14,.38,1.5]);for(let i=0;i<14;i++)t.stepPhysics(1/120);};
+ return {part,change,choose,drop,field};
+}
+test('a falling cube starts all four named mobile rotors through the sensor panel, leaving a fifth motor off',()=>{
+ const game=lab(),{t}=game,{members}=chassis(t),other=t.spawnRotor(t.V(1,.3,0));
+ const set=t.createRotorSet('Ascensor',members),sensor=sensorControls(game);
+ sensor.change('mode','motion');sensor.choose('Conjunto · Ascensor · 4 rotores');
+ assert.equal(sensor.field('action').value,'start');
+ t.renameRotorSet(set,'Plataforma');sensor.drop();
+ assert(members.every(r=>r.enabled&&r.sensorPulses===1));assert(!other.enabled);
+ assert(t.configureRotorSet(set,{enabled:false}));t.dissolveRotorSet(set);
+ t.tickContactSensors(.01);assert(!sensor.part.mood.sensorLink);
+ assert(members.every(r=>!r.enabled));
+});
+test('the installed copy of a saved mechanism can be started independently without a named rotor set',()=>{
+ const game=lab(),{t}=game,{base,members}=chassis(t);
+ const record=t.saveMechanism(base,'Móvil');assert(record);
+ assert(t.spawnSavedMechanism(record,t.V(1.2,0,0)));
+ const duplicate=t.rotors.slice(4);assert.equal(duplicate.length,4);assert.equal(t.rotorSets.length,0);
+ const sensor=sensorControls(game);sensor.change('mode','motion');
+ const options=Array.from(sensor.field('target').children).filter(el=>el.textContent.startsWith('Mecanismo · Móvil'));
+ assert.equal(options.length,2);sensor.change('target',options[1].value);sensor.drop();
+ assert(duplicate.every(r=>r.enabled));assert(members.every(r=>!r.enabled));
+ const sensorId=sensor.part.id,anchors=duplicate.map(r=>r.aId);
+ t.beginCampaignLevel(1);t.enterLab(false);
+ const restored=t.rotorPart(sensorId);t.showSensorMenu(restored);
+ assert.equal(sensor.field('target').value,options[1].value);
+ assert(anchors.every(id=>t.rotorForPart(id).enabled));
+});
+test('a discharged member prevents a partial group start and selecting a single axle still starts only that axle',()=>{
+ const game=lab(),{t}=game,{members}=chassis(t);
+ t.createRotorSet('Tracción',members);const sensor=sensorControls(game);
+ sensor.change('mode','motion');sensor.choose('Conjunto · Tracción');
+ t.rotorPart(members[2].aId).part.mood.energy=0;t.tickContactSensors(.01);
+ const load=t.addQubit([.12,.25,1.5]);load.body.velocity.y=-.6;
+ // Stay in the same physics instant so passive recharge cannot refill the empty axle.
+ sensor.change('speed','5');t.tickContactSensors(.01);assert(members.every(r=>!r.enabled));
+ sensor.change('target',String(members[1].id));sensor.change('action','start');t.tickContactSensors(.01);
+ assert.deepEqual(members.map(r=>r.enabled),[false,true,false,false]);
+});
+
+test('a group can be reversed and stopped by separate sensors without losing the original wheel orientations',()=>{
+ const game=lab(),{t}=game,{members}=chassis(t),directions=members.map(r=>r.direction);
+ const set=t.createRotorSet('Móvil',members),reverse=sensorControls(game);
+ reverse.change('mode','motion');reverse.change('action','reverse');reverse.choose('Conjunto · Móvil');
+ assert.equal(reverse.field('action').value,'reverse');
+ const stop=sensorControls(game);stop.change('mode','weight');stop.change('action','stop');stop.choose('Conjunto · Móvil');
+ // Place the weight sensor away from the motion detector.
+ const scale=t.rotorPart(stop.part.id).g;scale.body.position.set(-1,.045,0);scale.body.aabbNeedsUpdate=true;
+ assert(t.configureRotorSet(set,{enabled:true}));reverse.drop();
+ assert.deepEqual(members.map(r=>r.direction),directions.map(d=>-d));assert(members.every(r=>r.enabled));
+ t.addQubit([-1,.15,0]);for(let i=0;i<80;i++)t.stepPhysics(1/120);
+ assert(members.every(r=>!r.enabled));
+});
