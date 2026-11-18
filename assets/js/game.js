@@ -2158,7 +2158,7 @@ function gripperCheck(partOrId,detailed=false){
  const nearest=candidates[0];
  if(!nearest)return fail('alignment','Sin objeto frente a la cara naranja. Centra un cubo suelto frente a ella. Alcance: '+rangeText+'.');
  if(nearest.busy)return fail('busy','Objeto ocupado o articulado. Suéltalo y detén sus órdenes; prueba con un cubo suelto.');
- if(!nearest.matches)return fail('filter','El objeto no coincide con el filtro. Elige Cualquier sólido y pulsa Aplicar filtro y carga.');
+ if(!nearest.matches)return fail('filter','El objeto no coincide con el filtro. Elige Cualquier sólido y pulsa Aplicar filtro, carga y alcance.');
  if(nearest.weight>config.capacity)return fail('load','Objeto demasiado pesado: '+nearest.weight.toFixed(1)+' / '+config.capacity+' u. Reduce la carga o ajusta el agarre.');
  if(nearest.distance>limit)return fail('distance','Objeto a '+(nearest.distance*100).toFixed(1)+' cm de la cara naranja. Alcance: '+rangeText+'. Acerca el objeto o ajusta el brazo.');
  return fail('blocked','Hay un obstáculo entre la cara naranja y el objeto. Deja libre el contacto.');
@@ -2451,8 +2451,9 @@ function solveRobotPose(model,target,normal,warm=null){
 }
 
 let robotPoseDraft=null;
+const ROBOT_MAX_POSE_OFFSET_CM=100*Math.hypot(ROOM_SIZE,ROOM_SIZE,ROOM_HEIGHT);
 function beginRobotPoseDraft(arm,name,heightCm){
- if(!['pick','place'].includes(name)||!Number.isFinite(heightCm)||heightCm<.5||heightCm>120||held||arm.running||arm.jogging||robotGrips.has(arm.gripperId))return false;
+ if(!['pick','place'].includes(name)||!Number.isFinite(heightCm)||heightCm<0||heightCm>ROBOT_MAX_POSE_OFFSET_CM||held||arm.running||arm.jogging||robotGrips.has(arm.gripperId))return false;
  const model=robotKinematics(arm);if(!model)return false;
  cancelUnitCreation();cancelShelfPlacement();cancelPowerCable();
  robotPoseDraft={arm,name,model,heightCm,nextUpdate:0};
@@ -4443,7 +4444,7 @@ document.addEventListener('mouseup',onPhysicalMouseUp);
 function handleWheel(event){
  if(robotPoseDraft){
   event.preventDefault();const draft=robotPoseDraft;
-  draft.heightCm=clamp(Math.round((draft.heightCm-Math.sign(event.deltaY)*(event.shiftKey?.5:2))*10)/10,.5,120);
+  draft.heightCm=clamp(Math.round((draft.heightCm-Math.sign(event.deltaY)*(event.shiftKey?.5:2))*10)/10,0,ROBOT_MAX_POSE_OFFSET_CM);
   updateRobotPoseDraft(performance.now(),true);updateTarget();return;
  }
  if(cullingLab.benchmark)return;
