@@ -36,3 +36,45 @@ test('batched shape insertion preserves native Cannon mass, inertia, AABB and bo
  const {t,sandbox}=lab(),turn=t.Q();turn.setFromEuler(.2,.3,.1);const parts=Array.from({length:20},(_,i)=>{const q=t.Q();q.setFromEuler(i*.11,i*.17,i*.03);return {id:t.allocateUnitId(),shape:['cube','pyramid','tetra','coupler'][i%4],weight:1+i%3,p:t.V(i%5*.22,1+Math.floor(i/5)*.22,i%3*.19),q};}),g=t.makeGroup(parts,turn),reference=new sandbox.CANNON.Body({mass:g.body.mass});reference.position.copy(g.body.position);reference.quaternion.copy(g.body.quaternion);
  g.body.shapes.forEach((shape,i)=>reference.addShape(shape,g.body.shapeOffsets[i],g.body.shapeOrientations[i]));reference.updateMassProperties();g.body.computeAABB();reference.computeAABB();near(g.body.boundingRadius,reference.boundingRadius);for(const k of ['x','y','z']){near(g.body.inertia[k],reference.inertia[k]);near(g.body.invInertia[k],reference.invInertia[k]);near(g.body.aabb.lowerBound[k],reference.aabb.lowerBound[k]);near(g.body.aabb.upperBound[k],reference.aabb.upperBound[k]);}
 });
+
+test('released and restored robot cargo stops on the floor with the normal friction setting',()=>{
+ for(const hz of [60,120,240]){
+  const {t}=lab(),grip=t.addQubit([0,.145,0]).parts[0];assert(t.configureGripper(grip,{}));
+  let cargo=t.newCargo(t.V(),1,1,'#ff0000');
+  assert(t.gripperGrab(grip));assert(t.releaseGripper(grip));t.removeGroup(t.rotorPart(grip.id).g);
+  for(const restore of [false,true]){
+   if(restore){
+    const saved=t.saveLab();t.clearNarrativeScene();t.story.scene='campaign';t.story.lab=saved;t.enterLab(false);
+    cargo=t.cargos[0];assert(cargo.robotPhysical);
+   }
+   const start=cargo.body.position.clone();cargo.body.wakeUp();cargo.body.velocity.x=.15;
+   for(let i=0;i<3*hz;i++)t.stepPhysics(1/hz);
+   assert(Math.hypot(cargo.body.position.x-start.x,cargo.body.position.z-start.z)<.002);
+   assert.equal(cargo.body.sleepState,2);assert.equal(cargo.body.type,1);
+  }
+ }
+});
+
+test('a braked mechanism settles after a small lateral nudge at every simulation rate',()=>{
+ for(const hz of [60,120,240]){
+  const {t}=lab();assert(t.spawnSavedMechanism(t.robotArmBlueprintTemplate(),t.V()));
+  const body=t.rotorPart(t.robotArms[0].baseId).g.body;
+  for(let i=0;i<2*hz;i++)t.stepPhysics(1/hz);
+  const start=body.position.clone();for(const g of t.groups){g.body.wakeUp();g.body.velocity.x=.035;}
+  for(let i=0;i<3*hz;i++)t.stepPhysics(1/hz);
+  assert(Math.hypot(body.position.x-start.x,body.position.z-start.z)<.009);
+  assert.equal(body.sleepState,2);
+ }
+});
+
+test('a stopped conveyor on legs stays at rest even with alternating floor contacts at 60 Hz',()=>{
+ const {t}=lab();assert(t.spawnSavedMechanism(t.conveyorBlueprintTemplate('straight',true),t.V()));
+ const body=t.rotorPart(t.conveyors[0].baseId).g.body;
+ for(let i=0;i<120;i++)t.stepPhysics(1/60);
+ body.wakeUp();body.velocity.x=.035;
+ for(let i=0;i<180;i++)t.stepPhysics(1/60);
+ const atRest=body.position.clone();
+ assert.equal(body.sleepState,2);assert.equal(body.type,1);
+ for(let i=0;i<360;i++)t.stepPhysics(1/60);
+ near(body.position.distanceTo(atRest),0);
+});

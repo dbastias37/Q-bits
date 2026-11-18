@@ -2176,7 +2176,7 @@ function gripperGrab(partOrId,feedback=null){
  if(!spendGripperEnergy(hit,.05))return false;
  const constraint=robotLockConstraint(hit.g.body,chosen.body,Math.max(12,config.capacity*5));constraint.collideConnected=false;
  for(const eq of constraint.equations)setPhysicsEquation(eq,1e8,4);
- if(chosen.cargo){chosen.body.mass=chosen.weight*.25;chosen.body.type=CANNON.Body.DYNAMIC;chosen.body.fixedRotation=false;chosen.body.updateMassProperties();chosen.cargo.robotHeld=hit.part.id;chosen.cargo.robotPhysical=true;}
+ if(chosen.cargo){chosen.body.material=world.defaultMaterial;chosen.body.mass=chosen.weight*.25;chosen.body.type=CANNON.Body.DYNAMIC;chosen.body.fixedRotation=false;chosen.body.updateMassProperties();chosen.cargo.robotHeld=hit.part.id;chosen.cargo.robotPhysical=true;}
  if(chosen.g){stopRoute(chosen.g);leaveHaul(chosen.g);chosen.g.robotHeld=hit.part.id;}
  chosen.body.wakeUp();hit.g.robotGrip=hit.part.id;world.addConstraint(constraint);robotGrips.set(hit.part.id,{id:hit.part.id,...chosen,constraint});return true;
 }
@@ -4525,19 +4525,41 @@ function rechargeExternalBatteries(dt){
 // Dissipate sub-centimetre creep only on a quiet horizontal contact patch.
 // Falling, pushing, tipping, powered transport and zero-friction play remain dynamic.
 function settleSupportedGroups(dt,contacts,driven,articulated){
+ for(const g of groups)if(g.floorSettleUntil!==undefined&&(world.defaultContactMaterial.friction<=0||simTime>g.floorSettleUntil||g.body.sleepState===CANNON.Body.SLEEPING||driven.has(g.body))){
+  g.body.sleepSpeedLimit=.025;delete g.floorSettleUntil;
+ }
  if(world.defaultContactMaterial.friction<=0)return;
- const supports=new Map();
+ const supports=new Map(),passive=new Map(),fixedDrives=new Set();
+ for(const r of rotors)if(r.enabled&&r.mount!=='wheel')for(const g of rotorGroups(r))fixedDrives.add(g);
+ function quietAssembly(group){
+  if(passive.has(group))return passive.get(group);
+  const members=rotorConnectedGroups([group]);
+  const quiet=members.every(g=>g.virtualConveyor||(
+   !fixedDrives.has(g)&&!driven.has(g.body)&&g.body.type===CANNON.Body.DYNAMIC&&
+   !g.robotGrip&&!g.robotHeld&&!g.route&&!g.haulJob&&!g.blueprintJob&&
+   g.body.velocity.norm2()<.0064&&g.body.angularVelocity.norm2()<.0225&&
+   !g.parts.some(p=>p.mood.flight?.enabled)&&!(held?.items||[]).some(i=>i.g===g)
+  ));
+  for(const g of members)passive.set(g,quiet);
+  return quiet;
+ }
  for(const contact of contacts){
   const up=contact.ni.y;if(Math.abs(up)<.995)continue;
   const body=up>0?contact.bj:contact.bi,base=up>0?contact.bi:contact.bj,g=body.qubitGroup;
-  if(!g||body.type!==CANNON.Body.DYNAMIC||body.sleepState===CANNON.Body.SLEEPING||driven.has(body)||driven.has(base)||articulated.has(body)||g.robotHeld||g.route||g.haulJob||g.blueprintJob||(held?.items||[]).some(i=>i.g===g))continue;
-  if(body.velocity.norm2()>.0009||body.angularVelocity.norm2()>.0225||base.velocity.norm2()>.0001||base.angularVelocity.norm2()>.0025||g.parts.some(p=>p.mood.flight?.enabled))continue;
+  if(!g||body.type!==CANNON.Body.DYNAMIC||body.sleepState===CANNON.Body.SLEEPING||driven.has(body)||driven.has(base)||g.robotHeld||g.route||g.haulJob||g.blueprintJob||(held?.items||[]).some(i=>i.g===g))continue;
+  if(Math.abs(body.velocity.y)>.03||body.velocity.norm2()>.0064||body.angularVelocity.norm2()>.0225||base.velocity.norm2()>.0001||base.angularVelocity.norm2()>.0025||g.parts.some(p=>p.mood.flight?.enabled))continue;
+  if(articulated.has(body)&&!quietAssembly(g))continue;
   const r=up>0?contact.rj:contact.ri;
-  let patch=supports.get(body);if(!patch){patch={count:0,x0:Infinity,x1:-Infinity,z0:Infinity,z1:-Infinity};supports.set(body,patch);}
-  patch.count++;patch.x0=Math.min(patch.x0,r.x);patch.x1=Math.max(patch.x1,r.x);patch.z0=Math.min(patch.z0,r.z);patch.z1=Math.max(patch.z1,r.z);
+  let patch=supports.get(body);if(!patch){patch={floorOnly:true,count:0,x0:Infinity,x1:-Infinity,z0:Infinity,z1:-Infinity};supports.set(body,patch);}
+  patch.floorOnly&&=base===floor;patch.count++;patch.x0=Math.min(patch.x0,r.x);patch.x1=Math.max(patch.x1,r.x);patch.z0=Math.min(patch.z0,r.z);patch.z1=Math.max(patch.z1,r.z);
  }
  const decay=Math.exp(-16*dt*Math.min(1,world.defaultContactMaterial.friction/.38));
  for(const [body,p] of supports)if(p.count>=3&&p.x0<0&&p.x1>0&&p.z0<0&&p.z1>0){
+  // Small angular oscillations of broad feet can restart Cannon's sleep timer
+  // every other step at 60 Hz. Let its normal delayed sleep settle the chassis.
+  if(p.floorOnly&&body.qubitGroup.parts.length>1&&body.velocity.norm2()<.0004){
+   body.sleepSpeedLimit=.065;body.qubitGroup.floorSettleUntil=simTime+.1;
+  }
   body.velocity.x*=decay;body.velocity.z*=decay;body.angularVelocity.scale(decay,body.angularVelocity);
  }
 }
@@ -5274,7 +5296,7 @@ function aimCargo(max=8,dir=direction()){const c=raycastCargo(max,dir);if(!c)ret
 function newCargo(p,side=settings.cargoSide,required=settings.cargoRequired,color=settings.cargoColor){
  if(!Number.isInteger(side)||side<1||side>12||!Number.isInteger(required)||required<1||required>MAX_QUBITS||!/^#[0-9a-f]{6}$/i.test(color))return null;
  if(cargos.length>=12)return null;const size=side*CUBE_SIZE;
- const body=new CANNON.Body({mass:0});body.addShape(new CANNON.Box(V(size/2,size/2,size/2)));body.position.set(p.x,size/2,p.z);body.material=haulMaterial;body.fixedRotation=true;body.linearDamping=.08;body.updateMassProperties();world.addBody(body);
+ const body=new CANNON.Body({mass:0});body.addShape(new CANNON.Box(V(size/2,size/2,size/2)));body.position.set(p.x,size/2,p.z);body.material=world.defaultMaterial;body.fixedRotation=true;body.linearDamping=.08;body.updateMassProperties();world.addBody(body);
  const c={id:++cargoSerial,side,size,required,color,body,job:null,pin:null,lastStatus:'En reposo'};body.cargoRef=c;cargos.push(c);return c;
 }
 function restoreLabCargo(record){
@@ -5302,6 +5324,7 @@ function spawnCargo(){
  }announce('No hay espacio libre delante.');return null;
 }
 function setCargoMoving(c,moving){
+ c.body.material=moving?haulMaterial:world.defaultMaterial;
  const type=moving?CANNON.Body.DYNAMIC:CANNON.Body.STATIC;
  if(c.body.type===type)return;
  c.body.type=type;c.body.mass=moving?c.required*.25:0;c.body.velocity.set(0,0,0);c.body.angularVelocity.set(0,0,0);c.body.force.set(0,0,0);c.body.updateMassProperties();c.body.wakeUp();

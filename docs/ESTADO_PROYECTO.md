@@ -2,7 +2,11 @@
 
 Actualizado: 18 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega · fluidez al girar la cámara
+## Última entrega · fricción y reposo en el piso
+
+Un cuerpo liberado por la pinza conservaba el material de arrastre cooperativo. Con un impulso inicial de 0,15 m/s sobre el piso del banco y la fricción en 0,38, se desplazaba unos 39,8 cm en tres segundos. Ahora usa la fricción del piso en reposo y al restaurar el banco. El material de arrastre se aplica al mover la carga en equipo. En la misma prueba a 60, 120 y 240 pasos/s, el desplazamiento fue inferior a 0,3 mm y el cuerpo entró en reposo. Los montajes articulados detenidos también admiten amortiguación cuando todo el conjunto está quieto sobre un apoyo horizontal. En apoyos anchos sobre el piso, el umbral de reposo admite oscilaciones angulares diminutas entre contactos. Se probó un brazo apagado tras un pequeño empujón lateral y una cinta con patas que seguía derivando a 60 pasos/s. Mediciones de la simulación con Cannon.
+
+## Entrega anterior · fluidez al girar la cámara
 
 El limitador de FPS conserva el tiempo sobrante entre refrescos. Con un monitor simulado de 144 Hz y un límite de 60 FPS, la cadencia pasa de 48 a 60 imágenes por segundo. El giro mantiene la sensibilidad configurada. Prueba automática con varias frecuencias y pausa larga. Pendiente medir la cadencia real en el equipo del jugador.
 
