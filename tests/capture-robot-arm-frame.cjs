@@ -68,6 +68,34 @@ if(!renderedCenter||Math.abs(renderedCenter[1]-cargo.body.position.y)>1e-9||rend
 snapshots[snapshots.length-1].cargoRenderedCenter=renderedCenter;
 lab();if(!t.placeMechanismBlueprint(template,t.V(0,0,0)))throw Error('Could not place the ghost blueprint');
 capture('arm-blueprint',[target[0]+distance*.40,target[1]+distance*.25,target[2]+distance],target,()=>t.drawAlpha(),info);
+// The scene uses the same paused pose editor and status lights as gameplay.
+lab();if(!t.spawnSavedMechanism(template,t.V()))throw Error('Missing arm setup fixture');
+const configuredArm=t.robotArms[0],armFixtureGrip=t.rotorPart(configuredArm.gripperId),model=t.robotKinematics(configuredArm);
+const destination=t.robotKinematicSample(model,[.8,0,0,0]).point,aim=[destination.x,1.05,destination.z+.9];
+t.setSelected({g:armFixtureGrip.g,part:armFixtureGrip.part});
+sandbox.document.pointerLockElement=t.canvas;
+t.setLook({camera:aim,yaw:0,pitch:Math.atan2(-aim[1],.9)});
+if(!t.robotPanelAction('pose',{pose:'place',heightCm:13}).ok)throw Error('Could not open the pose blueprint');
+t.updateRobotPoseDraft(0,true);
+if(!t.getRobotPoseDraft().solution?.pose)throw Error(t.getRobotPoseDraft().reason);
+capture('arm-b-placement-blueprint',[.8,.75,1.22],[.13,.22,.2],()=>{draw();t.drawRobotPoseDraft();});
+t.canvas.dispatchEvent({type:'mousedown',button:2});
+const basePoint=t.rotorPart(configuredArm.baseId).p;
+const lightEye=[basePoint.x-.1,basePoint.y+.17,basePoint.z+.24],lightLook=[basePoint.x,basePoint.y+.02,basePoint.z];
+const drawLight=()=>{draw();t.drawRobotArmLights();};
+if(!t.startRobotArm(configuredArm))throw Error(configuredArm.status);
+capture('arm-light-running',lightEye,lightLook,drawLight);
+for(let i=0;i<180&&configuredArm.state!=='wait';i++)t.stepPhysics(1/120);
+if(t.robotArmSignal(configuredArm)!=='waiting')throw Error(configuredArm.status);
+capture('arm-light-waiting',lightEye,lightLook,drawLight);
+t.stopRobotArm(configuredArm);
+t.configureRotor(t.robotArmRotors(configuredArm)[0],{capacity:2},true);
+const pickup=t.robotKinematics(configuredArm).point;
+t.addQubit([pickup.x,.045,pickup.z],3);
+if(!t.startRobotArm(configuredArm))throw Error(configuredArm.status);
+for(let i=0;i<180&&configuredArm.running;i++)t.stepPhysics(1/120);
+if(t.robotArmSignal(configuredArm)!=='blocked')throw Error('Expected the excess payload to block the arm');
+capture('arm-light-blocked',lightEye,lightLook,drawLight);
 // Compare the identical irregular rigid assembly drawn per piece and in its
 // cached combined mesh. Rotations exercise both world and per-piece normals.
 lab();const batchParts=[];

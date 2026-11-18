@@ -116,6 +116,12 @@ for shot in data['snapshots']:
  if shot['name'].startswith('virtual-conveyor-') and shot['name']!='virtual-conveyor-dismantled':assert shot['physicalBodies']==1 and shot['virtualRollers']==3 and shot['liveJoints']==0,'virtual conveyor reintroduced roller physics'
  if shot['name'] in ('placement-blue','placement-snap'):assert blue>500,('missing placement ghost',blue)
  if shot['name'].endswith('-blueprint'):assert blue>500,('missing cyan blueprint',blue)
+ if shot['name'].startswith('arm-light-'):
+  if shot['name'].endswith('-blocked'):
+   light=sum(r>g+35 and r>b+35 for r,g,b in zip(raw[0::4],raw[1::4],raw[2::4]))
+  else:
+   light=sum(g>r+25 and g>b+15 for r,g,b in zip(raw[0::4],raw[1::4],raw[2::4]))
+  assert light>50,('missing arm status light',shot['name'],light)
  if shot.get('directionalArrows'):
   orange=sum(r>g+25 and g>b+10 for r,g,b in zip(raw[0::4],raw[1::4],raw[2::4]));assert orange>20,('missing conveyor direction arrows',shot['name'],orange)
  if shot['name'].startswith('conveyor-') and shot['name'].endswith('-cargo'):assert blue>50,('missing conveyor payload',blue)

@@ -16,7 +16,7 @@
   // explicitly up to 40 J (80 J in the laboratory), represented by its existing
   // 0..1 energy bar. The laboratory supplies twice the reservoir capacity. Both
   // sides supply equal absolute joules even with unequal capacities. Ordinary
-  // attached Q-bits add load, not battery capacity. This is an explicit motor
+  // rotors count attached Q-bits as load. Those pieces provide no battery capacity. This is an explicit motor
   // model, not a specification of a particular real-world motor or battery.
   const MODEL = Object.freeze({
     joulesPerSide: 20,
@@ -34,8 +34,8 @@
   /**
    * Evaluate one simulation step without modifying state.
    *
-   * load/capacity use game weight units (1 u = a standard Q-bit), including both
-   * Enganches and every rigid group connected through the mechanism network.
+   * load/capacity use game weight units (1 u = a standard Q-bit). The controller
+   * supplies the gripped payload for arm joints and the network load for other rotors.
    * torque is N m; actualRpm is relative motion around the axle, not world spin.
    * Invalid/negative dt acts as a paused step. dt=0 can preview live demand and
    * preflight limits, but never spends energy. Disabled motors have no demand.
