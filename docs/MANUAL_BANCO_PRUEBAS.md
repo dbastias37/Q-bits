@@ -37,8 +37,8 @@ El brazo repite dos posturas que tú guardas: A para tomar y B para soltar. Unir
 1. Crea el brazo. En la sala, mantén Q, pulsa Tab para entrar al catálogo rápido, elige Brazo Q-bits, suelta Q y haz clic. Aparece completo y detenido, con A preparada para un cubo en el suelo y B a un cuarto de vuelta.
 2. Déjalo en el suelo, con espacio alrededor. Para aprender, usa el brazo recién creado y separado de otras máquinas. Su base se fija durante el movimiento; no necesitas unirla a una cinta. Su energía interna permite la primera prueba.
 3. Prepara un cubo normal. Elígelo desde Q → Piezas, suelta Q y haz clic. Acércalo debajo de la cara naranja del extremo del brazo. Apóyalo en el suelo y suéltalo sin Shift, para que quede separado. C permite agacharte.
-4. Abre el brazo. Clic derecho sobre una pieza del brazo → Configurar agarre y secuencia. En «Qué puede tomar», elige Cualquier sólido y pulsa Aplicar filtro y carga.
-5. Comprueba el contacto. Pulsa Comprobar toma. La cara naranja debe quedar centrada y casi tocar la parte superior del cubo: máximo 1,8 cm. Si indica distancia, alineación o filtro, corrige eso y vuelve a comprobar.
+4. Abre el brazo. Clic derecho sobre una pieza del brazo → Configurar agarre y secuencia. En «Qué puede tomar», elige Cualquier sólido y pulsa Aplicar filtro, carga y alcance.
+5. Comprueba el contacto. Pulsa Comprobar toma. Centra la cara naranja sobre el cubo. Puedes ajustar el alcance de toma entre 1,8 y 5 cm. Si indica distancia, alineación o filtro, corrige eso y vuelve a comprobar.
 6. Haz una entrega. Desmarca Repetir la secuencia y pulsa Iniciar secuencia. El panel se cierra: el brazo toma el cubo, gira a B y lo suelta. Con un brazo nuevo no hace falta enseñar A y B otra vez.
 7. Comprueba el resultado. Abre P → Mecanismos. Debe mostrar «Ciclo completado» y una entrega. Sin Repetir queda en B. Usa Ir a A · sin tomar para volver; para varias entregas, activa Repetir antes de iniciar.
 
@@ -48,14 +48,14 @@ Si algo se atasca, abre el panel y pulsa Detener. Se libera el objeto y se frena
 
 1. Detén ambas máquinas. Puedes apoyar el brazo en el suelo o en una estructura estable junto a la cinta. También puedes unir su base a una cara fija del chasis con Shift; deja libres la banda, los rodillos y las articulaciones.
 2. Coloca un cubo sobre la banda detenida. El cubo debe quedar suelto, nunca unido al brazo o a la cinta.
-3. Enseña A a esa altura. Abre el brazo, elige un paso de 5° y ajusta Base, Hombro, Codo y Muñeca. Cada giro cierra el panel: espera y vuelve con P. Mantén la cara naranja apuntando hacia el objeto. Comprueba la toma y pulsa Guardar A · tomar cuando esté al alcance.
-4. Enseña B. Ajusta los ejes hasta dejar la pinza sobre el destino, con espacio libre para la carga durante todo el recorrido. Pulsa Guardar B · soltar.
+3. Enseña A a esa altura. En P → Mecanismos → Brazo Q-bits, pulsa Marcar A · tomar y apunta a la cara superior del objeto. Ajusta la altura con la rueda y haz clic cuando el blueprint esté azul.
+4. Enseña B. Pulsa Marcar B · soltar y apunta a la superficie de entrega. Ajusta la altura según el tamaño de la carga y haz clic cuando la vista previa esté azul.
 5. Prueba el recorrido vacío. Usa Ir a A e Ir a B. Estos botones mueven los motores, no guardan posiciones ni toman objetos. Si el brazo choca, cambia A/B o la ubicación de las máquinas.
 6. Prueba un cubo con la cinta detenida. Desmarca Repetir e inicia el brazo. Una vez lograda la entrega, activa Repetir e inicia también la cinta desde sus propios controles.
 
 Unión y programación son cosas distintas. Un brazo puede estar bien unido y tener el agarre fuera de la trayectoria. La cara naranja debe pasar por encima de la carga. Si la cinta va demasiado rápido para tomarla, baja sus rpm o detén la cinta durante la prueba.
 
-Las máquinas unidas comparten energía y carga conectada. El brazo inicial admite 64 u por rotor: brazo (26) + cinta recta (30) + esquina (41) suman 97 u antes de añadir batería y carga. Si aparece sobrecarga, separa las máquinas o ajusta explícitamente la capacidad de sus rotores en Mecanismos; aumentar la carga del agarre no cambia ese límite.
+Las máquinas unidas comparten energía y carga conectada. El brazo inicial admite 64 u por rotor: brazo (26) + cinta recta (30) + esquina (41) suman 97 u antes de añadir batería y carga. Si aparece sobrecarga, abre Rotores y ajuste manual y pulsa Dar capacidad a todos los ejes. También puedes separar las máquinas y conectarlas por cable para compartir energía.
 
 ## 3 · Cintas y baterías
 
@@ -109,8 +109,8 @@ Repisa: almacena el objeto real. Al recuperarlo, los controles quedan detenidos.
 ## 7 · Si algo no funciona
 
 - No se mueve: cierra el panel. Si sigue detenido, lee el estado del mecanismo y comprueba energía y carga conectada.
-- Espera sin tomar: usa Comprobar toma; revisa que el cubo esté suelto, centrado bajo la cara naranja y casi tocándola. Detén sus rutas y suéltalo de tu mano.
-- Toma otro objeto: selecciona una pieza específica o un filtro de tipo/color y pulsa Aplicar filtro y carga.
+- Espera sin tomar: usa Comprobar toma; revisa que el cubo esté suelto, centrado bajo la cara naranja y dentro del alcance configurado. Detén sus rutas y suéltalo de tu mano.
+- Toma otro objeto: selecciona una pieza específica o un filtro de tipo/color y pulsa Aplicar filtro, carga y alcance.
 - Choca durante el giro: Detener, despejar el recorrido, ajustar A/B y probar el movimiento vacío.
 - No vuelve a A: una sola entrega termina en B. Usa Ir a A o activa Repetir para el siguiente ciclo.
 - La unión dejó todo sin funcionar: revisa la carga conectada de los rotores. Unir otra máquina también añade su peso.

@@ -1,8 +1,16 @@
 # Q-bits — punto de continuación
 
-Actualizado: 17 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
+Actualizado: 18 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega: selección de conjuntos grandes y rodillos virtuales — 17 de noviembre de 2026
+## Última entrega: programación del brazo en el banco — 18 de noviembre de 2026
+
+La captura del jugador mostraba 780 u conectadas frente a 64 u en la base. El arranque corta por capacidad del rotor antes de buscar un objeto. P → Mecanismos → Brazo Q-bits muestra la carga de la red, permite ajustar rpm, torque y capacidad por eje y ofrece una acción para cubrir la carga conectada con reserva para la pinza. El alcance configurable del agarre es de 1,8 a 5 cm, con 5 cm por defecto también para guardados anteriores. La toma verifica además que el objeto no sobrecargue los ejes.
+
+Marcar A y B abre un blueprint de la pinza y los eslabones calculado desde las bisagras del montaje. Se ajusta la altura con la rueda y se guarda con clic si la postura es alcanzable y está libre. La escena permanece quieta durante la selección y el panel permite ensayar el trayecto vacío con los motores reales. Los ángulos guardados y los ajustes de rotor se recuperan por el flujo existente. La luz de la base y el estado del panel distinguen encendido (verde), espera (verde con pulso lento) y bloqueo (rojo).
+
+Verificación: **919 pruebas Node aprobadas** con Cannon real y DOM/GPU simulados. Incluyen reproducción de 780/64 u, ajuste a 784 u con una pinza de 4 u, extremos del alcance, rechazo de posturas imposibles u ocupadas y ciclo físico completo tras guardar A y B con clic. **75 escenas GLES** sin errores, incluidas la vista previa y los tres estados de la luz. Shader de foco aprobado. Chromium local no arrancó por una restricción de sockets. Queda pendiente contrastar la comodidad del panel y del mouse en el navegador del jugador y ensayar el recorrido con su línea concreta.
+
+## Entrega anterior: selección de conjuntos grandes y rodillos virtuales — 17 de noviembre de 2026
 
 Los módulos estándar de cinta conservan sus piezas, motores, peso y energía como datos, pero sus tres rodillos salen del mundo físico: no crean cuerpos ni bisagras independientes. El chasis recibe la masa exactamente una vez y tres envolventes de colisión fijas; la banda sigue transportando cargas mediante contacto y fuerza limitada. El giro, el contorno y la sombra de los rodillos son visuales, con velocidad y aceleración derivadas del motor. Se conserva el consumo por cada motor, el trabajo de tracción, la batería externa y las paradas por sobrecarga, agotamiento o pérdida de apoyo. Las adaptaciones incompatibles recuperan la articulación real. No se aplica esta conversión a brazos, servos o rotores sueltos.
 

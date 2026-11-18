@@ -10,7 +10,7 @@ function model(){return {available:true,selectedLabel:'Brazo 1',gripper:{id:4,mo
 
 test('gripper edits are explicit and target changes discard the previous piece draft',()=>{
  const p=panel();p.setState(model());assert.equal(p.node('filter-color').value,'#00ff99');assert.equal(p.node('color-row').hidden,false);p.node('filter-color').value='#112233';p.node('filter-color').dispatch('input');p.ui.refresh();assert.equal(p.node('filter-color').value,'#112233');assert.equal(p.calls.length,0);
- p.node('apply-filter').dispatch('click');assert.deepEqual(p.calls.at(-1),{type:'filter',payload:{mode:'color',color:'#112233',shape:'cube',targetId:2,capacity:4}});
+ p.node('apply-filter').dispatch('click');assert.deepEqual(p.calls.at(-1),{type:'filter',payload:{mode:'color',color:'#112233',shape:'cube',targetId:2,capacity:4,reachCm:5}});
  p.node('filter-color').value='#123456';p.node('filter-color').dispatch('input');const next=model();next.gripper.id=9;next.gripper.color='#cccccc';p.setState(next);assert.equal(p.node('filter-color').value,'#cccccc');
 });
 

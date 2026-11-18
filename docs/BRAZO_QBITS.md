@@ -1,6 +1,6 @@
 # Brazo Q-bits — construir, enseñar y repetir
 
-Implementado el 16 de noviembre de 2026. Brazo y cintas disponibles en el banco de pruebas.
+Implementado el 16 de noviembre de 2026. Controles de programación actualizados el 18 de noviembre. Brazo y cintas disponibles en el banco de pruebas.
 
 **Empieza por [el manual paso a paso](MANUAL_BANCO_PRUEBAS.md)**, disponible también en P → Manual. Para probarlo sin construir el plano: mantén Q → Tab → Brazo Q-bits, suelta Q y haz clic. Puede funcionar separado, apoyado en el suelo; unirlo a una cinta no programa la toma ni la entrega.
 
@@ -27,11 +27,17 @@ Puedes preparar otro cubo con **Convertir cubo en agarre**. Conserva su materia 
 
 ## Enseñar otra entrega
 
-Selecciona el paso **5° / 15° / 45° / 90°** y ajusta Base, Hombro, Codo o Muñeca con los botones −/+. Espera a que termine y guarda **A · tomar**. Ajusta la postura de entrega y guarda **B · soltar**. No hay teletransporte del objeto ni posicionamiento automático hacia cualquier punto: los motores recorren físicamente los ángulos enseñados y necesitan espacio libre.
+1. En **P → Mecanismos → Brazo Q-bits**, pulsa **Marcar A · tomar** y apunta a la cara del objeto.
+2. Haz clic cuando la vista previa esté azul. En rojo, cambia el punto o la altura. La rueda ajusta en pasos de 2 cm y Shift + rueda en pasos de 0,5 cm. Esc o clic derecho vuelven al panel.
+3. Pulsa **Marcar B · soltar**, apunta a la superficie de entrega y ajusta la altura de la pinza de acuerdo con el tamaño de la carga. Guarda con clic.
+4. Usa **Ir a A** e **Ir a B** sin carga para comprobar el trayecto físico. La vista previa comprueba la postura final. La prueba de recorrido permite detectar obstáculos entre A y B.
+5. Para ajustar cada articulación con los motores, abre **Rotores y ajuste manual**, elige el paso de **5° / 15° / 45° / 90°** y utiliza −/+. Puedes guardar la postura actual como A o B.
 
-La carga predeterminada del agarre es **4 u**, ajustable de 1 a 16. El plano usa rotores del banco configurados a 12 rpm de motor, 4 N·m de motor y 64 u de carga total. Base directa; hombro, codo y muñeca con reducción 3:1 (máximo de salida de 4 rpm y 12 N·m con esos ajustes). La energía usa torque y rpm del eje del motor, conservando potencia mecánica y las pérdidas existentes. La reducción se deriva del controlador y también corrige brazos guardados; desaparece al desmontar ese controlador. Esto no modifica los ajustes de otros mecanismos. El peso del objeto también cuenta para los rotores, además de todas las cintas y estructuras conectadas. Un brazo (26 u), una cinta recta (30 u) y una esquina (41 u) unidos superan el límite inicial de 64 u. El estado identifica el eje, la carga y el límite; no los eleva automáticamente. El panel muestra carga, energía útil, entregas y porcentaje de capacidad de agarre libre, no una probabilidad de éxito inventada.
+En **Rotores y ajuste manual** puedes configurar rpm, torque y capacidad antes de arrancar. **Dar capacidad a todos los ejes** sube los límites que quedan por debajo del peso de la red, con reserva para la carga que admite la pinza. Los motores conservan sus límites de torque. La luz de la base queda verde durante el movimiento, respira en verde cuando espera un objeto y queda roja si se traba. Mira el estado del panel para conocer el motivo.
 
-La toma tiene alcance corto, hasta 1,8 cm frente a la cara. Rechaza objetivos propios, objetos sujetos por otro agarre o por el jugador, huecos de formas y objetos tapados por una pared. El agarre usa una restricción física con fuerza limitada y consume energía al tomar y sostener. Los ejes frenados mantienen su postura; los que se mueven respetan el torque y el consumo de los rotores. Una carga excesiva, falta de energía, pérdida de agarre o trayecto bloqueado exige corregir la causa y reiniciar.
+La carga predeterminada del agarre es **4 u**. El plano usa rotores del banco configurados a 12 rpm de motor, 4 N·m de motor y 64 u de carga total. Base directa; hombro, codo y muñeca con reducción 3:1 (máximo de salida de 4 rpm y 12 N·m con esos ajustes). La energía usa torque y rpm del eje del motor, conservando potencia mecánica y las pérdidas existentes. La reducción se deriva del controlador y también corrige brazos guardados; desaparece al desmontar ese controlador. Esto no modifica los ajustes de otros mecanismos. El peso del objeto también cuenta para los rotores, además de todas las cintas y estructuras conectadas. Un brazo (26 u), una cinta recta (30 u) y una esquina (41 u) unidos superan el límite inicial de 64 u. El estado identifica el eje, la carga y el límite; no los eleva automáticamente. El panel muestra carga, energía útil, entregas y porcentaje de capacidad de agarre libre, no una probabilidad de éxito inventada.
+
+El alcance de toma es ajustable de 1,8 a 5 cm frente a la cara y empieza en 5 cm. Rechaza objetivos propios, objetos sujetos por otro agarre o por el jugador, huecos de formas y objetos tapados por una pared. El agarre usa una restricción física con fuerza limitada y consume energía al tomar y sostener. Los ejes frenados mantienen su postura; los que se mueven respetan el torque y el consumo de los rotores. Una carga excesiva, falta de energía, pérdida de agarre o trayecto bloqueado exige corregir la causa y reiniciar.
 
 ## Guardar y recuperar
 

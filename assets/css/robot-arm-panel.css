@@ -36,3 +36,14 @@
 #saved-library-mechanisms>div{display:flex;gap:5px;margin:4px 0}
 #saved-library-mechanisms button:first-child{flex:1;text-align:left;overflow-wrap:anywhere}
 @media(max-width:380px){#arm-panel{padding:10px}#arm-panel .arm-joint{grid-template-columns:minmax(0,1fr) auto 30px auto;gap:2px}#panel #arm-panel .arm-joint button{font-size:9px;padding:6px 3px}}
+#arm-panel .arm-indicator{display:flex;align-items:center;gap:7px;margin:10px 0 4px;font:11px/1.4 system-ui,sans-serif}
+#arm-panel .arm-indicator span{width:9px;height:9px;border-radius:50%;background:#808c85}
+#arm-panel .arm-indicator[data-state=running] span,#arm-panel .arm-indicator[data-state=waiting] span{background:#169b55;box-shadow:0 0 8px #169b5580}
+#arm-panel .arm-indicator[data-state=waiting] span{animation:arm-status-breath 2.8s ease-in-out infinite}
+#arm-panel .arm-indicator[data-state=blocked] span{background:#c4343b;box-shadow:0 0 8px #c4343b80}
+@keyframes arm-status-breath{0%,100%{opacity:.38}50%{opacity:1}}
+@media(prefers-reduced-motion:reduce){#arm-panel .arm-indicator span{animation:none!important}}
+#arm-panel .arm-poses button{width:100%}
+#arm-panel .arm-poses label{display:block;margin:.35rem 0 0;text-align:left}
+#arm-panel .arm-motor-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:6px 0}
+#panel #arm-panel input[type=number]{width:100%;min-height:30px;padding:3px 4px;font-size:11px}
