@@ -90,7 +90,11 @@ if(t.robotArmSignal(configuredArm)!=='waiting')throw Error(configuredArm.status)
 capture('arm-light-waiting',lightEye,lightLook,drawLight);
 t.stopRobotArm(configuredArm);
 t.configureRotor(t.robotArmRotors(configuredArm)[0],{capacity:2},true);
-if(t.startRobotArm(configuredArm)||t.robotArmSignal(configuredArm)!=='blocked')throw Error('Expected arm to be blocked by the rotor limit');
+const pickup=t.robotKinematics(configuredArm).point;
+t.addQubit([pickup.x,.045,pickup.z],3);
+if(!t.startRobotArm(configuredArm))throw Error(configuredArm.status);
+for(let i=0;i<180&&configuredArm.running;i++)t.stepPhysics(1/120);
+if(t.robotArmSignal(configuredArm)!=='blocked')throw Error('Expected the excess payload to block the arm');
 capture('arm-light-blocked',lightEye,lightLook,drawLight);
 // Compare the identical irregular rigid assembly drawn per piece and in its
 // cached combined mesh. Rotations exercise both world and per-piece normals.

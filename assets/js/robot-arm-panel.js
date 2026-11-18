@@ -5,7 +5,7 @@
  const number=(n,suffix='')=>finite(n)?Math.round(Number(n)*10)/10+suffix:'—';
  function create(hooks){
   const get=id=>document.querySelector('#arm-'+id),el=(tag,text)=>{const node=document.createElement(tag);if(text!==undefined)node.textContent=text;return node;};
-  let last=null,gripperKey=null,dirty=false,busy=false,targetStamp='',jogStep=15,motorAxis=0,axisStamp='',wasOverloaded=false;
+  let last=null,gripperKey=null,dirty=false,busy=false,targetStamp='',jogStep=15,motorAxis=0,axisStamp='',wasAxisLimited=false;
   function showFeedback(result,nearGrip=false){for(const id of ['feedback','check-result'])get(id).textContent='';const node=get(nearGrip?'check-result':'feedback');node.textContent=result?.message||'';node.dataset.error=String(result?.ok===false);}
   function act(type,payload={}){
    if(busy)return;busy=true;let result;
@@ -30,7 +30,7 @@
    get('indicator-label').textContent={off:'Apagado',running:'Encendido',waiting:'Esperando objeto',blocked:'Trabado'}[signal];
    get('controls').hidden=!arm;get('gripper-controls').hidden=!gripper;get('gripper-id').textContent=gripper?'Cubo de agarre · '+(gripper.name||'#'+gripper.id):'';
    const key=gripper?.id??null;if(key!==gripperKey){
-    dirty=false;gripperKey=key;targetStamp='';axisStamp='';motorAxis=0;wasOverloaded=false;showFeedback(null);
+    dirty=false;gripperKey=key;targetStamp='';axisStamp='';motorAxis=0;wasAxisLimited=false;showFeedback(null);
     get('pick-height').value=Number((Math.min(gripper?.reachCm??5,5)*.6).toFixed(1));
     get('place-height').value=13;
    }
@@ -47,10 +47,10 @@
     get('pose-'+pose).disabled=!arm||moving||holding||arm.posable===false;
     get(pose+'-height').disabled=get('pose-'+pose).disabled;
    }
-   const overloaded=!!arm?.joints?.some(j=>arm.connectedLoad>j.capacity);
-   if(overloaded&&!wasOverloaded)get('motors').open=true;
-   wasOverloaded=overloaded;
-   get('connected-load').textContent=arm?.connectedLoad==null?'':'Carga conectada '+number(arm.connectedLoad,' u')+' · capacidad sugerida por eje '+number(arm.neededCapacity,' u')+' con reserva para la pinza.';
+   const axisLimited=!!arm?.canFit;
+   if(axisLimited&&!wasAxisLimited)get('motors').open=true;
+   wasAxisLimited=axisLimited;
+   get('payload-limit').textContent=arm?.capacity==null?'':'Límite combinado '+number(arm.capacity,' u')+' · pinza '+number(gripper?.capacity,' u')+(axisLimited?' · un eje admite menos que la pinza.':'.');
    const motorStamp=JSON.stringify(arm?.joints?.map(j=>[j.name,j.rpm,j.maxTorque,j.capacity])||[]);
    if(motorStamp!==axisStamp){
     axisStamp=motorStamp;const axis=get('motor-axis');axis.replaceChildren();
@@ -71,7 +71,9 @@
     const minus=el('button','−'+jogStep+'°'),plus=el('button','+'+jogStep+'°'),value=el('output',number(joint.angle,'°'));minus.type=plus.type='button';minus.setAttribute('aria-label','Girar '+label.textContent+' menos '+jogStep+' grados');plus.setAttribute('aria-label','Girar '+label.textContent+' más '+jogStep+' grados');minus.disabled=plus.disabled=moving||holding;
     minus.addEventListener('click',()=>act('jog',{joint:i,degrees:-jogStep}));plus.addEventListener('click',()=>act('jog',{joint:i,degrees:jogStep}));row.append(label,minus,value,plus);joints.append(row);
    }
-   get('load').textContent=number(arm?.load??gripper?.load??0,' u')+' / '+number(arm?.capacity??gripper?.capacity,' u');get('energy').textContent=number(arm?.energy??gripper?.energy,' J');get('cycles').textContent=number(arm?.cycles??0);get('efficiency').textContent=arm?.efficiency==null?'—':number(arm.efficiency,' %');
+   const pieces=arm?.pieces??gripper?.pieces;
+   get('load').textContent=number(arm?.load??gripper?.load??0,' u')+' / '+number(arm?.capacity??gripper?.capacity,' u')+(pieces?' · '+pieces+(pieces===1?' pieza':' piezas'):'');
+   get('energy').textContent=number(arm?.energy??gripper?.energy,' J');get('cycles').textContent=number(arm?.cycles??0);get('efficiency').textContent=arm?.efficiency==null?'—':number(arm.efficiency,' %');
    const phases={waiting:'detect',detect:'detect',grabbing:'grab',grab:'grab',moving:'move',move:'move',place:'move',releasing:'release',release:'release',returning:'return',return:'return',pick:'return'};
    for(const phase of PHASES){const node=get('phase-'+phase);node.dataset.active=String(!!arm?.running&&phases[arm.phase]===phase);node.setAttribute('aria-current',!!arm?.running&&phases[arm.phase]===phase?'step':'false');}
   }

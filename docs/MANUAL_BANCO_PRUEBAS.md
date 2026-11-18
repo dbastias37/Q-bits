@@ -55,7 +55,7 @@ Si algo se atasca, abre el panel y pulsa Detener. Se libera el objeto y se frena
 
 Unión y programación son cosas distintas. Un brazo puede estar bien unido y tener el agarre fuera de la trayectoria. La cara naranja debe pasar por encima de la carga. Si la cinta va demasiado rápido para tomarla, baja sus rpm o detén la cinta durante la prueba.
 
-Las máquinas unidas comparten energía y carga conectada. El brazo inicial admite 64 u por rotor: brazo (26) + cinta recta (30) + esquina (41) suman 97 u antes de añadir batería y carga. Si aparece sobrecarga, abre Rotores y ajuste manual y pulsa Dar capacidad a todos los ejes. También puedes separar las máquinas y conectarlas por cable para compartir energía.
+El brazo mide como carga el objeto que sostiene. El menor límite entre pinza y ejes determina el máximo configurado. Una unidad equivale al peso de un Q-bit estándar. El peso de los eslabones y del objeto exige torque durante el movimiento, y el brazo y la cinta pueden compartir batería.
 
 ## 3 · Cintas y baterías
 
@@ -79,7 +79,7 @@ En el taller también puedes fabricar baterías con uno, dos o tres cubos normal
 
 Rotor: dos enganches unidos forman un eje. Fija una mitad al soporte y la otra a la pieza que girará. En P → Mecanismos revisa rpm, sentido, torque y capacidad. En un brazo, usa los controles del brazo para mover sus ejes.
 
-Qué significa cada ajuste: rpm controla velocidad; torque limita fuerza de giro; capacidad limita el peso de toda la red conectada. El límite de carga del agarre solo se aplica al objeto que toma.
+Qué significa cada ajuste: rpm controla velocidad; torque limita fuerza de giro; capacidad limita la carga. En un brazo se aplica al objeto sostenido. Los rotores ordinarios cuentan el peso de la red conectada.
 
 Taller: deja la pieza sobre la mesa, suéltala, apunta a la mesa y pulsa E. Lee el efecto y el coste de la mejora antes de aplicarla. La investigación disponible se conserva en el navegador.
 
@@ -108,12 +108,12 @@ Repisa: almacena el objeto real. Al recuperarlo, los controles quedan detenidos.
 
 ## 7 · Si algo no funciona
 
-- No se mueve: cierra el panel. Si sigue detenido, lee el estado del mecanismo y comprueba energía y carga conectada.
+- No se mueve: cierra el panel. Si sigue detenido, lee el estado del mecanismo y comprueba la energía, el límite de carga y el espacio para moverse.
 - Espera sin tomar: usa Comprobar toma; revisa que el cubo esté suelto, centrado bajo la cara naranja y dentro del alcance configurado. Detén sus rutas y suéltalo de tu mano.
 - Toma otro objeto: selecciona una pieza específica o un filtro de tipo/color y pulsa Aplicar filtro, carga y alcance.
 - Choca durante el giro: Detener, despejar el recorrido, ajustar A/B y probar el movimiento vacío.
 - No vuelve a A: una sola entrega termina en B. Usa Ir a A o activa Repetir para el siguiente ciclo.
-- La unión dejó todo sin funcionar: revisa la carga conectada de los rotores. Unir otra máquina también añade su peso.
+- La unión dejó todo sin funcionar: comprueba si el montaje estorba el recorrido o si otro rotor alcanzó su límite de carga conectada.
 
 ## Hélices · primer dron
 

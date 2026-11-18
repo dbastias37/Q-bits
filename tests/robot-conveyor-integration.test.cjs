@@ -26,7 +26,21 @@ for(const first of ['arm','conveyor'])test(`a real welded arm and conveyor share
  const beforeFinalStop=poses();stop[second]();assert.deepEqual(poses(),beforeFinalStop,'the final brake and anchor release do not teleport any part');assert.equal(body.type,1,'last owner restores original dynamic body');assert.equal(body.fixedRotation,false);assert.equal(body.mass,originalMass);assert.equal(t.rotors.length,7);assert.equal(t.robotArms.length,1);assert.equal(t.conveyors.length,1);
  assert(t.mechanismSnapshot(t.rotorPart(conveyor.baseId).g),'combined machine remains saveable after both controllers stop');
 });
-test('joined machine overload reports the connected weight and the responsible arm joint',()=>{
- const {t,arm}=setup(),rotor=t.robotArmRotors(arm)[1];t.configureRotor(rotor,{capacity:40},true);
- assert.equal(t.startRobotArm(arm),false);assert.match(arm.status,/Hombro: carga conectada 57\.0 \/ 40 u/);assert.match(arm.status,/cintas unidas/);assert(t.robotArmRotors(arm).every(r=>!r.enabled));
+test('a welded conveyor and arm report distinct loads while sharing the same body and battery',()=>{
+ const {t,arm,conveyor}=setup(),members=t.robotArmRotors(arm),motor=members[1];
+ t.configureRotor(motor,{capacity:2},true);
+ for(const rotor of members)assert.equal(t.rotorPowerState(rotor).load,0);
+ assert.equal(t.rotorPowerState(t.conveyorRotors(conveyor)[0]).load,57);
+ assert.match(t.rotorPowerDescription(motor),/Carga en la pinza 0\.0 \/ 2 u/);
+ const point=t.robotKinematics(arm).point;
+ const payload=t.addQubit([point.x,point.y-.06,point.z],2);
+ assert(t.gripperGrab(arm.gripperId));
+ assert.equal(t.rotorPowerState(motor).load,2);
+ assert.equal(t.rotorPowerState(t.conveyorRotors(conveyor)[0]).load,59);
+ payload.parts[0].weight=3;
+ tick(t,1);
+ assert.equal(t.robotArmSignal(arm),'blocked');
+ assert.match(arm.status,/Hombro.*objeto de 3\.0 u/);
+ assert.equal(t.robotGrips.size,0);
+ assert.equal(t.rotorPowerState(motor).load,0);
 });

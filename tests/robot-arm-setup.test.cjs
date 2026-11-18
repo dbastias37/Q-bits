@@ -52,7 +52,7 @@ test('gripper reach is adjustable from 1.8 to 5 cm and old configurations pick u
   assert(t.gripperGrab(id));
 });
 
-test('the 780 u mounting blocks at 64 u, then P adjusts all four axes with room for the payload', () => {
+test('an arm mounted on 780 u starts unloaded, gates the actual payload and adjusts the limiting axis in P', () => {
   const {t,sandbox} = lab(), recipe = t.robotArmBlueprintTemplate();
   const baseParts = recipe.groups[0].parts;
   const minX = Math.min(...baseParts.map(p=>p.p[0]));
@@ -63,34 +63,50 @@ test('the 780 u mounting blocks at 64 u, then P adjusts all four axes with room 
     baseParts.push({key:firstKey+i,shape:'cube',weight:i===251?1:3,p:[x,.045,z],q:[0,0,0,1]});
   }
   const arm = armAt(t,recipe), members = t.robotArmRotors(arm);
-  assert.equal(t.robotPanelSnapshot().arm.connectedLoad,780);
-  assert.equal(t.robotPanelAction('start').ok,false);
-  assert.match(arm.status,/780\.0 \/ 64 u/);
-  assert.equal(t.robotArmSignal(arm),'blocked');
+  const base = t.rotorPart(arm.baseId).g;
+  const assemblyWeight = t.rotorConnectedGroups([base]).flatMap(g=>g.parts).reduce((sum,p)=>sum+p.weight,0);
+  assert.equal(assemblyWeight,780);
+  assert(members.every(rotor=>t.rotorPowerState(rotor).load===0));
   t.updateRobotArmPanel();
   const field = name => sandbox.document.querySelector('#arm-'+name);
-  assert.equal(field('indicator-label').textContent,'Trabado');
-  field('fit-load').dispatchEvent({type:'click'});
-  assert(members.every(r => r.capacity===784));
-  assert.equal(t.robotArmSignal(arm),'off');
+  assert.equal(field('load').textContent,'0 u / 4 u');
   field('motor-axis').value='1';
   field('motor-axis').dispatchEvent({type:'change'});
   field('motor-rpm').value='8';
   field('motor-torque').value='3.5';
-  field('motor-capacity').value='790';
+  field('motor-capacity').value='2';
   field('apply-motor').dispatchEvent({type:'click'});
   assert.equal(members[1].rpm,8);
   assert.equal(members[1].maxTorque,3.5);
-  assert.equal(members[1].capacity,790);
-  assert.equal(members[0].capacity,784);
-  assert.equal(t.robotArmSignal(arm),'off');
+  assert.equal(members[1].capacity,2);
+  assert.equal(t.robotPanelSnapshot().arm.capacity,2);
+  assert.equal(field('load').textContent,'0 u / 2 u');
   assert(t.robotPanelAction('start').ok);
   assert.equal(t.robotArmSignal(arm),'running');
   stepUntil(t,() => arm.state==='wait',3);
   assert.equal(t.robotArmSignal(arm),'waiting');
   assert.equal(t.robotPanelAction('fitLoad').ok,false,'editing is locked during production');
-  assert(t.robotPanelAction('stop').ok);
+
+  const grip = t.robotKinematics(arm).point;
+  const object = t.addQubit([grip.x,t.unitGroundHeight('pyramid'),grip.z],3,'pyramid');
+  assert.match(t.robotPanelAction('check').message,/Hombro.*objeto de 3\.0 u.*límite de 2 u/);
+  stepUntil(t,() => !arm.running,3);
+  assert.equal(t.robotArmSignal(arm),'blocked');
+  assert.equal(t.robotGrips.size,0);
+  assert.equal(object.robotHeld,undefined);
+  t.updateRobotArmPanel();
+  assert.equal(field('indicator-label').textContent,'Trabado');
+
+  field('fit-load').dispatchEvent({type:'click'});
+  assert.equal(members[1].capacity,4);
+  assert.equal(members[0].capacity,64);
   assert.equal(t.robotArmSignal(arm),'off');
+  assert(t.robotPanelAction('grab').ok);
+  assert(members.every(rotor=>t.rotorPowerState(rotor).load===3));
+  t.updateRobotArmPanel();
+  assert.equal(field('load').textContent,'3 u / 4 u · 1 pieza');
+  assert(t.robotPanelAction('release').ok);
+  assert(members.every(rotor=>t.rotorPowerState(rotor).load===0));
 });
 
 test('blueprint mouse clicks set A and B and the physical arm delivers the cube', () => {

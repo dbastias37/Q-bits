@@ -2136,6 +2136,8 @@ function gripperCheck(partOrId,detailed=false){
  if(component.some(g=>heldGroups.has(g)))return fail('held-arm','Suelta el brazo de tu mano antes de iniciarlo.');
  if(gripperSupply(hit).storedJ<.05)return fail('energy','Agarre sin energía. Recarga o acopla y activa una batería.');
  const candidates=[],reach=gripperReach(config),limit=reach+.00001,rangeText=(reach*100).toLocaleString('es-CL',{maximumFractionDigits:1})+' cm';
+ const arm=robotArms.find(a=>a.gripperId===hit.part.id);
+ const capacity=arm?robotLiftCapacity(config,robotArmRotors(arm)):config.capacity;
  const search=detailed ? .8 : .13;
  for(const g of groups){if(component.includes(g))continue;
   const part=config.mode==='form'?(gripperFormSignature(g)===config.formSignature?g.parts[0]:null):g.parts.find(part=>gripperMatches(config,{g,part}));
@@ -2148,12 +2150,11 @@ function gripperCheck(partOrId,detailed=false){
   const distance=gripperFaceDistance(hit,candidate,search);if(distance<Infinity)candidates.push({...candidate,distance});
  }
  candidates.sort((a,b)=>a.distance-b.distance||(a.part?.id||a.cargo.id)-(b.part?.id||b.cargo.id));
- const chosen=candidates.find(c=>!c.busy&&c.matches&&c.weight<=config.capacity&&c.distance<=limit&&gripperPathClear(hit,c,component));
+ const chosen=candidates.find(c=>!c.busy&&c.matches&&c.weight<=capacity&&c.distance<=limit&&gripperPathClear(hit,c,component));
  if(chosen){
-  const arm=robotArms.find(a=>a.gripperId===hit.part.id);
-  const problem=arm&&robotPowerProblem(arm,chosen.weight);
-  if(problem)return fail('rotor-load',problem);
-  return {ok:true,code:'ready',message:'Objeto al alcance ('+(chosen.distance*100).toFixed(1)+' cm) · '+chosen.weight.toFixed(1)+' / '+config.capacity+' u.',candidate:chosen};
+  const problem=arm&&robotPowerProblem(arm);
+  if(problem)return fail('energy',problem);
+  return {ok:true,code:'ready',message:'Objeto al alcance ('+(chosen.distance*100).toFixed(1)+' cm) · '+chosen.weight.toFixed(1)+' / '+capacity+' u.',candidate:chosen};
  }
  const nearest=candidates[0];
  if(!nearest)return fail('alignment','Sin objeto frente a la cara naranja. Centra un cubo suelto frente a ella. Alcance: '+rangeText+'.');
@@ -2161,6 +2162,7 @@ function gripperCheck(partOrId,detailed=false){
  if(!nearest.matches)return fail('filter','El objeto no coincide con el filtro. Elige Cualquier sólido y pulsa Aplicar filtro, carga y alcance.');
  if(nearest.weight>config.capacity)return fail('load','Objeto demasiado pesado: '+nearest.weight.toFixed(1)+' / '+config.capacity+' u. Reduce la carga o ajusta el agarre.');
  if(nearest.distance>limit)return fail('distance','Objeto a '+(nearest.distance*100).toFixed(1)+' cm de la cara naranja. Alcance: '+rangeText+'. Acerca el objeto o ajusta el brazo.');
+ if(arm&&nearest.weight>capacity&&gripperPathClear(hit,nearest,component))return fail('rotor-load',robotPayloadProblem(arm,nearest.weight));
  return fail('blocked','Hay un obstáculo entre la cara naranja y el objeto. Deja libre el contacto.');
 }
 function gripperGrab(partOrId,feedback=null){
@@ -2178,9 +2180,11 @@ function updateRobotGrips(dt){
  for(const [id,grip]of [...robotGrips]){
   const hit=robotGripperHit(id),config=hit?.part.mood.gripper;if(grip.g)grip.weight=totalWeight(grip.g);
   if(grip.cargo){grip.weight=grip.cargo.required||grip.cargo.side**3;if(grip.body.mass!==grip.weight*.25){grip.body.mass=grip.weight*.25;grip.body.updateMassProperties();grip.body.wakeUp();}}
-  if(!hit||!config||!world.bodies.includes(grip.body)||grip.g&&!groups.includes(grip.g)||grip.cargo&&!cargos.includes(grip.cargo)||grip.weight>config.capacity||!spendGripperEnergy(hit,dt*(.08+.08*grip.weight))){releaseGripper(id);const arm=robotArms.find(a=>a.gripperId===id);if(arm)stopRobotArm(arm,'Sin energía o carga incompatible',true);continue;}
+  const arm=robotArms.find(a=>a.gripperId===id),overload=arm?robotPayloadProblem(arm,grip.weight):'';
+  if(overload){stopRobotArm(arm,overload,true);continue;}
+  if(!hit||!config||!world.bodies.includes(grip.body)||grip.g&&!groups.includes(grip.g)||grip.cargo&&!cargos.includes(grip.cargo)||grip.weight>config.capacity||!spendGripperEnergy(hit,dt*(.08+.08*grip.weight))){releaseGripper(id);if(arm)stopRobotArm(arm,'Sin energía o carga incompatible',true);continue;}
   // Constraint failure is visible as release, never a teleport back to the hand.
-  if(gripperFaceDistance(hit,grip)>.10){releaseGripper(id);const arm=robotArms.find(a=>a.gripperId===id);if(arm)stopRobotArm(arm,'Agarre perdido',true);}
+  if(gripperFaceDistance(hit,grip)>.10){releaseGripper(id);if(arm)stopRobotArm(arm,'Agarre perdido',true);}
  }
 }
 function robotArmRotors(arm){return arm.joints.map(rotorForPair).filter(Boolean);}
@@ -2188,9 +2192,14 @@ function robotArmRotors(arm){return arm.joints.map(rotorForPair).filter(Boolean)
 // under its own weight, exceeding a direct 4 N·m drive. Base yaw stays direct.
 // Derive this from the controller so old saves receive the fix and detached
 // rotors immediately revert to their ordinary drive, without stale metadata.
-function robotJointReduction(rotor){
- for(const arm of robotArms)for(let i=1;i<arm.joints.length;i++)if(arm.joints[i].aId===rotor.aId&&arm.joints[i].bId===rotor.bId)return 3;
- return 1;
+function robotArmForRotor(rotor){
+ return robotArms.find(arm=>arm.joints.some(j=>j.aId===rotor.aId&&j.bId===rotor.bId));
+}
+function robotJointReduction(rotor,arm=robotArmForRotor(rotor)){
+ return arm&&(arm.joints[0].aId!==rotor.aId||arm.joints[0].bId!==rotor.bId)?3:1;
+}
+function robotLiftCapacity(config,members){
+ return Math.min(config.capacity,...members.map(rotor=>rotor.capacity));
 }
 function robotArmForGroup(g,partId){
  if(!g)return null;
@@ -2249,18 +2258,16 @@ function stopRobotArm(arm,reason='Detenido',blocked=false){
  releaseGripper(arm.gripperId);robotReleaseBase(arm);robotApplyBrakes(arm);return true;
 }
 function teachRobotArmPose(arm,name){if(!robotArms.includes(arm)||!['pick','place'].includes(name)||arm.running||arm.jogging)return false;arm.poses[name]=robotReadPose(arm);arm.status=name==='pick'?'Postura Tomar guardada':'Postura Dejar guardada';return true;}
-function robotConnectedLoad(arm){
- const component=rotorConnectedGroups([robotGripperHit(arm.gripperId)?.g].filter(Boolean));
- return component.reduce((sum,g)=>sum+totalWeight(g),0)+robotGripLoad(component);
+function robotPayloadProblem(arm,weight,members=robotArmRotors(arm)){
+ const limit=members.findIndex(rotor=>weight>rotor.capacity);
+ return limit<0?'':robotJointName(limit)+' · objeto de '+weight.toFixed(1)+' u supera el límite de '+members[limit].capacity+' u del eje. Usa una carga más liviana o ajusta el eje en P.';
 }
-function robotPowerProblem(arm,extraLoad=0){
- const load=robotConnectedLoad(arm),component=rotorConnectedGroups([robotGripperHit(arm.gripperId)?.g].filter(Boolean));
- const joinedBelts=conveyors.some(c=>component.includes(rotorPart(c.baseId)?.g));
- for(const [i,rotor] of robotArmRotors(arm).entries()){
-  const name=robotJointName(i);
-  if(load+extraLoad>rotor.capacity)return name+': carga '+(extraLoad?'con el objeto ':'conectada ')+(load+extraLoad).toFixed(1)+' / '+rotor.capacity+' u.'+(joinedBelts?' Incluye las cintas unidas.':'')+' Ajusta la capacidad en P → Mecanismos → Brazo o separa el montaje.';
+function robotPowerProblem(arm){
+ const members=robotArmRotors(arm),overload=robotPayloadProblem(arm,robotGrips.get(arm.gripperId)?.weight||0,members);
+ if(overload)return overload;
+ for(const [i,rotor] of members.entries()){
   const power=rotorPowerState({...rotor,enabled:true});
-  if(power.stopReason==='empty')return name+' sin energía. '+(power.external?'Apaga y recarga la batería externa.':'Deja descansar los enganches o acopla y activa una batería.');
+  if(power.stopReason==='empty')return robotJointName(i)+' sin energía. '+(power.external?'Apaga y recarga la batería externa.':'Deja descansar los enganches o acopla y activa una batería.');
  }
  return '';
 }
@@ -3222,7 +3229,7 @@ function configureRotor(rotor,patch={},automatic=false){
  if(rotor.servo&&(patch.mount&&patch.mount!=='wheel'||patch.moving&&patch.moving!=='b'))return false;
  if(rotor.servo&&!automatic&&patch.enabled===true)return startServo(rotor);
  if(!automatic){const conveyor=conveyors.find(c=>c.joints.some(j=>j.aId===rotor.aId&&j.bId===rotor.bId));if(conveyor){if(patch.enabled===true){announce('Usa Iniciar cinta en Mecanismos.');return false;}if(conveyor.running)stopConveyor(conveyor,'Detenida para ajustar');}}
- if(!automatic){const arm=robotArms.find(a=>a.joints.some(j=>j.aId===rotor.aId&&j.bId===rotor.bId));if(arm){if(patch.enabled===true){announce('Usa Ajustar ejes o Iniciar secuencia del brazo.');return false;}if(arm.running||arm.jogging)stopRobotArm(arm,'Detenido para ajustar');}}
+ if(!automatic){const arm=robotArmForRotor(rotor);if(arm){if(patch.enabled===true){announce('Usa Ajustar ejes o Iniciar secuencia del brazo.');return false;}if(arm.running||arm.jogging)stopRobotArm(arm,'Detenido para ajustar');}}
  patch={...patch};if(story.scene==='campaign')patch.maxTorque=Math.min(patch.maxTorque??rotor.maxTorque,campaignTorqueCap());
  if(!rotors.includes(rotor)||patch.rpm!==undefined&&!Number.isFinite(patch.rpm)||patch.direction!==undefined&&![1,-1].includes(patch.direction)||patch.moving!==undefined&&!['a','b'].includes(patch.moving)||patch.mount!==undefined&&!['wheel','fixed'].includes(patch.mount)||patch.maxTorque!==undefined&&!Number.isFinite(patch.maxTorque)||patch.capacity!==undefined&&!Number.isFinite(patch.capacity))return false;
  if(rotor.virtualConveyor&&patch.moving&&patch.moving!==rotor.moving)materializeConveyor(rotor.virtualConveyor);
@@ -4293,23 +4300,28 @@ function externallyPoweredInternalIds(){
  return ids;
 }
 function gameBatteryCapacity(part){return isExternalBattery(part)?externalBatteryCapacity(part):QBitsWorkshop.batteryCapacity(part)*(story.scene==='lab'?2:1);}
+function rotorDrivenLoad(component,arm){
+ // An arm's rated load is the payload on its own gripper. The mass of its
+ // links still contributes to measured torque through the physical constraints.
+ return arm?robotGrips.get(arm.gripperId)?.weight||0:component.reduce((sum,g)=>sum+totalWeight(g),0)+robotGripLoad(component);
+}
 function rotorPowerState(rotor,dt=0){
- const a=rotorPart(rotor.aId),b=rotorPart(rotor.bId),component=rotorConnectedGroups(rotorGroups(rotor));
- const load=component.reduce((sum,g)=>sum+totalWeight(g),0)+robotGripLoad(component);
+ const a=rotorPart(rotor.aId),b=rotorPart(rotor.bId),component=rotorConnectedGroups(rotorGroups(rotor)),arm=robotArmForRotor(rotor);
+ const load=rotorDrivenLoad(component,arm);
  // Evaluate the motor shaft: torque falls and RPM rises by the same ratio.
  // Mechanical power is conserved; the existing efficiency/loss model applies.
- const reduction=robotJointReduction(rotor);
+ const reduction=robotJointReduction(rotor,arm);
  const state={enabled:rotor.enabled,rpm:rotor.rpm,actualRpm:(rotor.actualRpm||0)*reduction,actualTorque:(rotor.actualTorque||0)/reduction,stalled:rotor.stalled,maxTorque:rotor.maxTorque,load,capacity:rotor.capacity,energyA:a?.part.mood.energy??0,energyB:b?.part.mood.energy??0,capacityJoulesA:gameBatteryCapacity(a?.part),capacityJoulesB:gameBatteryCapacity(b?.part)},external=externalBatterySummary(component);
  return external.active?QBitsRotorPower.evaluateExternal(state,external,dt):QBitsRotorPower.evaluate(state,dt);
 }
 function rotorPowerDescription(rotor,compact=false){
- const power=rotorPowerState(rotor),energy=[rotor.aId,rotor.bId].map(id=>Math.round((rotorPart(id)?.part.mood.energy||0)*100));
- const load=power.load??(rotorConnectedGroups(rotorGroups(rotor)).reduce((sum,g)=>sum+totalWeight(g),0)+robotGripLoad(rotorConnectedGroups(rotorGroups(rotor)))),consumption=(power.external?power.externalDrainPerSecond:Math.max(power.drainPerSecondA,power.drainPerSecondB))*100;
+ const arm=robotArmForRotor(rotor),power=rotorPowerState(rotor),energy=[rotor.aId,rotor.bId].map(id=>Math.round((rotorPart(id)?.part.mood.energy||0)*100));
+ const load=power.load,consumption=(power.external?power.externalDrainPerSecond:Math.max(power.drainPerSecondA,power.drainPerSecondB))*100;
  const state=rotor.stopReason?rotorStopLabel(rotor.stopReason):rotor.enabled?(rotor.stalled?'atascado':'encendido'):'apagado';
  if(compact)return 'Rotor '+state+' · '+Math.abs(rotor.actualRpm||0).toFixed(0)+' rpm · '+load.toFixed(1)+' / '+rotor.capacity+' u · '+(power.external?'batería externa · ':'')+'−'+consumption.toFixed(2)+' %/s';
  const supply=power.external?'Batería externa '+Math.round(power.externalEnergy*100)+' % · reservas internas conservadas':'Energía A '+energy[0]+' % · B '+energy[1]+' %';
- const reduction=robotJointReduction(rotor);
- return (story.campaign?.production?.rotor===rotor?'Motor: el objetivo suma también el consumo de la línea. ':'')+supply+' · consumo '+consumption.toFixed(2)+' %/s ('+power.inputWatts.toFixed(2)+' W). Carga '+load.toFixed(1)+' / '+rotor.capacity+' u. '+(reduction>1?'Reducción '+reduction+':1 · ':'')+(reduction>1?'Torque de salida ':'Torque usado ')+(rotor.actualTorque||0).toFixed(2)+' / '+(rotor.maxTorque*reduction).toFixed(2)+' N·m. Giro real '+Math.abs(rotor.actualRpm||0).toFixed(1)+' / '+(rotor.rpm/reduction).toFixed(1)+' rpm objetivo.';
+ const reduction=robotJointReduction(rotor,arm);
+ return (story.campaign?.production?.rotor===rotor?'Motor: el objetivo suma también el consumo de la línea. ':'')+supply+' · consumo '+consumption.toFixed(2)+' %/s ('+power.inputWatts.toFixed(2)+' W). '+(arm?'Carga en la pinza ':'Carga ')+load.toFixed(1)+' / '+rotor.capacity+' u. '+(reduction>1?'Reducción '+reduction+':1 · ':'')+(reduction>1?'Torque de salida ':'Torque usado ')+(rotor.actualTorque||0).toFixed(2)+' / '+(rotor.maxTorque*reduction).toFixed(2)+' N·m. Giro real '+Math.abs(rotor.actualRpm||0).toFixed(1)+' / '+(rotor.rpm/reduction).toFixed(1)+' rpm objetivo.';
 }
 function rotorStopLabel(reason){return reason==='overload'?'sobrecarga':reason==='empty'?'sin energía':'';}
 function checkRotorPower(rotor){
@@ -5547,19 +5559,19 @@ function robotPanelSubject(){
 }
 function robotPanelSnapshot(){
  const {selection,hit,arm}=robotPanelSubject(),component=hit?rotorConnectedGroups([hit.g]):[],config=hit?.part.mood.gripper;
- const load=hit?robotGrips.get(hit.part.id)?.weight||0:0,supply=hit?gripperSupply(hit):null;
+ const grip=hit?robotGrips.get(hit.part.id):null,load=grip?.weight||0,pieces=grip?.g?.parts.length,supply=hit?gripperSupply(hit):null;
  const motorIds=new Set(arm?arm.joints.flatMap(j=>[j.aId,j.bId]).concat(arm.gripperId):hit?[hit.part.id]:[]);
  const energy=supply?.active?supply.storedJ:[...motorIds].reduce((sum,id)=>{const p=rotorPart(id)?.part;return sum+(p?p.mood.energy*gameBatteryCapacity(p):0);},0);
  const sample=selection&&!component.includes(selection.g)?selection:null;
  const source=selection?.part,canConvert=!selection?.g?.robotHeld&&!selection?.g?.blueprintJob&&!robotArmForGroup(selection?.g)&&story.scene==='lab'&&!puzzle.active&&source?.shape==='cube'&&!source.mood.gripper&&!isExternalBattery(source)&&!source.mood.production&&!source.mood.matter&&!QBitsWorkshop.hasAdaptation(source);
  const snapshot={available:story.scene==='lab'&&!puzzle.active,selectedLabel:selection?(selection.part.mood.name||'Pieza '+selection.part.id)+(hit&&sample?' · muestra para '+hit.part.mood.name:''):'Selecciona el brazo o un Q-bit para adaptarlo.',canConvert:!!canConvert,canRegister:!!hit&&!arm&&component.length>1,canCaptureShape:!!sample,canCapturePiece:!!sample,
- targets:groups.filter(g=>!component.includes(g)).flatMap(g=>g.parts.map(p=>({id:p.id,label:(p.mood.name||'Pieza')+' · #'+p.id}))).concat(cargos.filter(c=>c.intake==null).map(c=>({id:-c.id,label:'Cuerpo '+c.id+' · '+c.color+' · '+c.required+' u'}))),gripper:config?{...config,reachCm:gripperReach(config)*100,id:hit.part.id,name:hit.part.mood.name,energy:supply.storedJ,load}:null};
+ targets:groups.filter(g=>!component.includes(g)).flatMap(g=>g.parts.map(p=>({id:p.id,label:(p.mood.name||'Pieza')+' · #'+p.id}))).concat(cargos.filter(c=>c.intake==null).map(c=>({id:-c.id,label:'Cuerpo '+c.id+' · '+c.color+' · '+c.required+' u'}))),gripper:config?{...config,reachCm:gripperReach(config)*100,id:hit.part.id,name:hit.part.mood.name,energy:supply.storedJ,load,pieces}:null};
  if(arm){
-  const members=robotArmRotors(arm),running=arm.running||arm.jogging,holding=robotGrips.has(arm.gripperId),connectedLoad=robotConnectedLoad(arm),neededCapacity=Math.ceil(connectedLoad-load+config.capacity);
+  const members=robotArmRotors(arm),running=arm.running||arm.jogging,holding=!!grip,capacity=robotLiftCapacity(config,members);
   snapshot.arm={name:'Brazo Q-bits',status:robotArmStatus(arm),signal:robotArmSignal(arm),running,holding,phase:arm.state==='wait'?'detect':arm.state==='carry'?'move':arm.state,repeat:arm.repeat,
-   pickReady:!!arm.poses.pick,placeReady:!!arm.poses.place,load,capacity:config.capacity,energy,cycles:arm.cycles,connectedLoad,neededCapacity,capacityMax:MAX_QUBITS,
-   canFit:neededCapacity<=MAX_QUBITS&&members.some(r=>r.capacity<neededCapacity),posable:robotKinematics(arm)!==null,
-   efficiency:Math.max(0,100-load/config.capacity*100),joints:members.map((r,i)=>({name:robotJointName(i),rpm:r.rpm,maxTorque:r.maxTorque,capacity:r.capacity,angle:arm.poses.pick?-robotTargetError(r,arm.poses.pick[i])*180/Math.PI:0}))};
+   pickReady:!!arm.poses.pick,placeReady:!!arm.poses.place,load,pieces,capacity,energy,cycles:arm.cycles,
+   canFit:capacity<config.capacity,posable:robotKinematics(arm)!==null,
+   efficiency:Math.max(0,100-load/capacity*100),joints:members.map((r,i)=>({name:robotJointName(i),rpm:r.rpm,maxTorque:r.maxTorque,capacity:r.capacity,angle:arm.poses.pick?-robotTargetError(r,arm.poses.pick[i])*180/Math.PI:0}))};
  }
  return snapshot;
 }
@@ -5609,9 +5621,8 @@ function robotPanelAction(action,payload={}){
    if(!Number.isInteger(joint)||!members[joint]||!Number.isFinite(rpm)||rpm<1||rpm>120||!Number.isFinite(maxTorque)||maxTorque<.02||maxTorque>4||!Number.isInteger(capacity)||capacity<2||capacity>MAX_QUBITS)return finish(false,'Revisa las rpm, el torque y la capacidad del eje.');
    if(!configureRotor(members[joint],{rpm,maxTorque,capacity},true))return finish(false,'No se pudo ajustar el eje.');
   }else{
-   const needed=Math.ceil(robotConnectedLoad(arm)-(robotGrips.get(arm.gripperId)?.weight||0)+hit.part.mood.gripper.capacity);
-   if(needed>MAX_QUBITS)return finish(false,'La carga supera '+MAX_QUBITS+' u. Separa parte del montaje.');
-   for(const rotor of members)if(rotor.capacity<needed)configureRotor(rotor,{capacity:needed},true);
+   const capacity=hit.part.mood.gripper.capacity;
+   for(const rotor of members)if(rotor.capacity<capacity)configureRotor(rotor,{capacity},true);
   }
   const problem=robotPowerProblem(arm);
   arm.state=problem?'blocked':'idle';arm.status=problem||'Motores listos';redraw=true;
@@ -5705,10 +5716,17 @@ function updateMechanismPanel(){
  document.querySelector('#rotor-torque').value=torque;document.querySelector('#rotor-torque-value').textContent=torque.toFixed(2)+' N·m';
  document.querySelector('#rotor-capacity').value=capacity;document.querySelector('#rotor-capacity-value').textContent=common('capacity',v=>String(Math.round(v)));
  const component=targets.length?rotorConnectedGroups(rotorGroups(targets[0])):[],sameMechanism=targets.every(r=>rotorGroups(r).every(g=>component.includes(g)));
- const load=targets.length?Math.max(...targets.map(r=>{const members=rotorConnectedGroups(rotorGroups(r));return members.reduce((n,g)=>n+totalWeight(g),0)+robotGripLoad(members);})):0;
+ const payloads=[],connectedLoads=[];
+ for(const r of targets){
+  const arm=robotArmForRotor(r);
+  (arm?payloads:connectedLoads).push(rotorDrivenLoad(arm?[]:rotorConnectedGroups(rotorGroups(r)),arm));
+ }
+ const loadSummary=[];
+ if(payloads.length)loadSummary.push('Carga en la pinza '+formatWeight(Math.max(...payloads))+' u');
+ if(connectedLoads.length)loadSummary.push('Carga conectada '+Math.ceil(Math.max(...connectedLoads))+' u'+(sameMechanism?'':' como máximo por mecanismo'));
  const supplies=targets.map(r=>({rotor:r,external:externalBatterySummary(r)}));
  const battery=supplies.length?Math.min(...supplies.map(s=>s.external.active?s.external.energy:Math.min(...[s.rotor.aId,s.rotor.bId].map(id=>rotorPart(id)?.part.mood.energy??0)))):0;
- document.querySelector('#rotor-power-readout').textContent=targets.length?'Carga conectada '+Math.ceil(load)+(sameMechanism?'':' como máximo por mecanismo')+' · batería mínima '+Math.round(battery*100)+' %'+(targets.some(r=>r.stopReason)?' · '+[...new Set(targets.filter(r=>r.stopReason).map(r=>rotorStopLabel(r.stopReason)))].join(', '):''):'Estos ajustes se usarán en los próximos rotores.';
+ document.querySelector('#rotor-power-readout').textContent=targets.length?loadSummary.join(' · ')+' · batería mínima '+Math.round(battery*100)+' %'+(targets.some(r=>r.stopReason)?' · '+[...new Set(targets.filter(r=>r.stopReason).map(r=>rotorStopLabel(r.stopReason)))].join(', '):''):'Estos ajustes se usarán en los próximos rotores.';
  const poweredExternally=supplies.filter(s=>s.external.active).length;
  document.querySelector('#rotor-supply-status').textContent=targets.length?(poweredExternally===targets.length?'Batería externa activa · se conserva la reserva interna de los rotores.':poweredExternally?'Alimentación mixta · algunos rotores usan sus reservas internas.':'Reserva interna · acopla y activa una batería externa para conservar la carga de los rotores.'):'Taller → Baterías externas: versiones de 1, 2 y 3 cubos disponibles desde el inicio.';
  const batteryList=document.querySelector('#connected-batteries');batteryList.replaceChildren();const shownPacks=new Set();

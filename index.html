@@ -309,7 +309,7 @@ input,select,textarea{font-family:var(--font-menu);}
 <link rel="stylesheet" href="assets/css/subtitles.css?v=20261116-robot-arm-1">
 <link rel="stylesheet" href="assets/css/glass-panels.css?v=20261116-robot-arm-1">
 <link rel="stylesheet" href="assets/css/workshop-panel.css?v=20261116-robot-arm-1">
-<link rel="stylesheet" href="assets/css/robot-arm-panel.css?v=20261118-arm-controls">
+<link rel="stylesheet" href="assets/css/robot-arm-panel.css?v=20261118-arm-payload">
 <link rel="stylesheet" href="assets/css/conveyor-panel.css?v=20261116-quick-catalogue-1">
 <link rel="stylesheet" href="assets/css/servo-panel.css?v=20261117-culling-1">
   <link rel="stylesheet" href="assets/css/culling-lab.css?v=20261117-culling-1">
@@ -497,13 +497,13 @@ input,select,textarea{font-family:var(--font-menu);}
           </details>
           <details id="arm-motors">
             <summary>Rotores y ajuste manual</summary>
-            <p id="arm-connected-load"></p>
-            <div class="arm-actions"><button id="arm-fit-load" type="button">Dar capacidad a todos los ejes</button></div>
+            <p id="arm-payload-limit"></p>
+            <div class="arm-actions"><button id="arm-fit-load" type="button">Ajustar ejes al límite de la pinza</button></div>
             <label>Eje<select id="arm-motor-axis"></select></label>
             <div class="arm-motor-fields">
               <label>Velocidad (rpm)<input id="arm-motor-rpm" type="number" min="1" max="120" step="any"></label>
               <label>Torque (N·m)<input id="arm-motor-torque" type="number" min="0.02" max="4" step="any"></label>
-              <label>Capacidad (u)<input id="arm-motor-capacity" type="number" min="2" max="2000" step="1"></label>
+              <label>Carga máxima (u)<input id="arm-motor-capacity" type="number" min="2" max="2000" step="1"></label>
             </div>
             <button id="arm-apply-motor" type="button">Aplicar ajuste al eje</button>
             <p>Hombro, codo y muñeca tienen reducción 3:1. La secuencia limita el motor a 20 rpm sin carga y 12 rpm con carga.</p>
@@ -515,7 +515,7 @@ input,select,textarea{font-family:var(--font-menu);}
           <label><input id="arm-repeat" type="checkbox" checked> Repetir la secuencia</label><div class="arm-actions"><button id="arm-start" type="button">Iniciar secuencia</button><button id="arm-stop" type="button">Detener</button></div>
           <p>Sin Repetir, termina en B. Con Repetir, vuelve a A y espera otro objeto. Detener suelta la carga. Un brazo unido a una cinta sigue necesitando sus propias posturas A y B.</p>
         </div>
-        <dl class="arm-facts"><div><dt>Carga sostenida / límite</dt><dd id="arm-load">0 u / —</dd></div><div><dt>Energía disponible</dt><dd id="arm-energy">—</dd></div><div><dt>Entregas completas</dt><dd id="arm-cycles">0</dd></div><div><dt>Capacidad de agarre libre</dt><dd id="arm-efficiency">—</dd></div></dl>
+        <dl class="arm-facts"><div><dt>Objeto sostenido / límite</dt><dd id="arm-load">0 u / —</dd></div><div><dt>Energía disponible</dt><dd id="arm-energy">—</dd></div><div><dt>Entregas completas</dt><dd id="arm-cycles">0</dd></div><div><dt>Margen de carga</dt><dd id="arm-efficiency">—</dd></div></dl>
         <p id="arm-feedback" role="status" aria-live="polite"></p>
       </section>
 
@@ -685,7 +685,7 @@ input,select,textarea{font-family:var(--font-menu);}
           <li><strong>Prueba un cubo con la cinta detenida.</strong> Desmarca Repetir e inicia el brazo. Una vez lograda la entrega, activa Repetir e inicia también la cinta desde sus propios controles.</li>
         </ol>
         <p class="manual-note"><strong>Unión y programación son cosas distintas.</strong> Un brazo puede estar bien unido y tener el agarre fuera de la trayectoria. La cara naranja debe pasar por encima de la carga. Si la cinta va demasiado rápido para tomarla, baja sus rpm o detén la cinta durante la prueba.</p>
-        <p>Las máquinas unidas comparten energía y carga conectada. El brazo inicial admite 64 u por rotor: brazo (26) + cinta recta (30) + esquina (41) suman 97 u antes de añadir batería y carga. Si aparece sobrecarga, revisa Rotores y ajuste manual y pulsa Dar capacidad a todos los ejes. También puedes separar las máquinas y conectarlas por cable para compartir energía.</p>
+        <p>La capacidad del brazo se aplica al objeto que sostiene la pinza. El límite efectivo es el menor entre la pinza y sus ejes. El peso de los eslabones y del objeto influye en el torque y el consumo. Si compartes batería con la cinta, revisa también la energía disponible.</p>
       </details>
       <details><summary>3 · Cintas y baterías</summary>
         <ol>
@@ -708,7 +708,7 @@ input,select,textarea{font-family:var(--font-menu);}
       </details>
       <details><summary>5 · Rotores, taller y sensor</summary>
         <p><strong>Rotor:</strong> dos enganches unidos forman un eje. Fija una mitad al soporte y la otra a la pieza que girará. En P → Mecanismos revisa rpm, sentido, torque y capacidad. En un brazo, usa los controles del brazo para mover sus ejes.</p>
-        <p><strong>Qué significa cada ajuste:</strong> rpm controla velocidad; torque limita fuerza de giro; capacidad limita el peso de toda la red conectada. El límite de carga del agarre solo se aplica al objeto que toma.</p>
+        <p><strong>Qué significa cada ajuste:</strong> rpm controla velocidad; torque limita fuerza de giro; capacidad limita la carga. En un brazo se aplica al objeto sostenido. Los rotores ordinarios cuentan el peso de la red conectada.</p>
         <p><strong>Taller:</strong> deja la pieza sobre la mesa, suéltala, apunta a la mesa y pulsa E. Lee el efecto y el coste de la mejora antes de aplicarla. La investigación disponible se conserva en el navegador.</p>
         <p><strong>Sensor de contacto:</strong> crea uno desde el catálogo rápido o prepara una pieza en el taller. Clic derecho sobre él → Sensor · conectar punta… → elige un rotor. Al tocar una pared con la punta activa, invierte ese rotor si está encendido y a menos de 3 m. No es un detector de cajas ni un botón para arrancar el brazo. Sepáralo de la pared antes de otro contacto.</p>
       </details>
@@ -720,12 +720,12 @@ input,select,textarea{font-family:var(--font-menu);}
       </details>
       <details><summary>7 · Si algo no funciona</summary>
         <ul>
-          <li><strong>No se mueve:</strong> cierra el panel. Si sigue detenido, lee el estado del mecanismo y comprueba energía y carga conectada.</li>
+          <li><strong>No se mueve:</strong> cierra el panel. Si sigue detenido, lee el estado del mecanismo y comprueba la energía, el límite de carga y el espacio para moverse.</li>
           <li><strong>Espera sin tomar:</strong> usa Comprobar toma; revisa que el cubo esté suelto, centrado bajo la cara naranja y casi tocándola. Detén sus rutas y suéltalo de tu mano.</li>
           <li><strong>Toma otro objeto:</strong> selecciona una pieza específica o un filtro de tipo/color y pulsa Aplicar filtro y carga.</li>
           <li><strong>Choca durante el giro:</strong> Detener, despejar el recorrido, ajustar A/B y probar el movimiento vacío.</li>
           <li><strong>No vuelve a A:</strong> una sola entrega termina en B. Usa Ir a A o activa Repetir para el siguiente ciclo.</li>
-          <li><strong>La unión dejó todo sin funcionar:</strong> revisa la carga conectada de los rotores. Unir otra máquina también añade su peso.</li>
+          <li><strong>La unión dejó todo sin funcionar:</strong> comprueba si el montaje estorba el recorrido o si otro rotor alcanzó su límite de carga conectada.</li>
         </ul>
       </details>
     </div>
@@ -748,6 +748,6 @@ input,select,textarea{font-family:var(--font-menu);}
   </section>
   <script src="assets/js/opening.js?v=20261116-block-joins-1" defer></script>
   <script src="assets/js/servo-panel.js?v=20261117-culling-1" defer></script>
-  <script src="assets/js/boot.js?v=20261118-arm-controls" defer></script>
+  <script src="assets/js/boot.js?v=20261118-arm-payload" defer></script>
 </body>
 </html>
