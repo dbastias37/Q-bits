@@ -664,8 +664,8 @@ input,select,textarea{font-family:var(--font-menu);}
       <details><summary>Desarme inmediato o por etapas</summary><p>Configuración → Juego → Desarme de conjuntos → Guardar. Inmediato conserva el gesto actual. Por etapas, en el banco de pruebas, detiene el montaje y coloca sus piezas en huecos libres del suelo, de arriba hacia abajo. Actívalo con Shift + varias sacudidas o Alt → Desarmar todo. Si espera, libera espacio; no hace falta volver a agitar. Pausar detiene el proceso y salir y volver al banco conserva las piezas pendientes. Campaña y puzles mantienen el desarme inmediato. La selección aparece abajo a la derecha.</p></details>
       <p class="manual-note"><strong>Empieza con una máquina y un cubo.</strong> P abre este panel mientras la simulación sigue en marcha. Esc abre la pausa. Los controles indicados son los predeterminados; si los cambiaste, revisa Configuración → Teclado.</p>
       <details open><summary>Colocar y conectar piezas</summary>
-        <p>Mantén Q → Tab → Banco rápido, elige una pieza y suelta Q. Apunta al suelo o a una superficie: la vista previa azul muestra dónde quedará. Rojo significa espacio ocupado. La rueda gira la vista previa en pasos de 90°. Haz clic para confirmar; Esc o clic derecho cancelan.</p>
-        <p>Para prolongar una cinta, apunta cerca de su flecha de salida y mantén Shift. La vista previa se alinea con la conexión: confirma con clic sin soltar Shift. Se unen las bases y se conservan los rodillos. Las repisas se colocan en paredes; depósito, enfriador y cuerpo sólido van en el suelo. Mesa de trabajo abre el taller existente.</p>
+        <p>Mantén Q → Tab → Banco rápido, elige una pieza y suelta Q. Apunta al suelo o a una superficie: la vista previa azul muestra dónde quedará. Rojo significa espacio ocupado. Por defecto la posición es libre y la rueda gira 90° por paso. Mantén Shift para ver y usar la cuadrícula del suelo. Con Shift y rueda puedes elegir cualquier ángulo. Suelta Shift para volver a mover el plano libremente. Haz clic para colocar o pulsa Esc para cancelar.</p>
+        <p>Para prolongar una cinta, apunta cerca de su flecha de salida y mantén Shift. La vista previa se alinea con la conexión: confirma con clic sin soltar Shift. Se unen las bases y se conservan los rodillos. Las repisas se colocan en paredes; depósito, enfriador y cuerpo sólido van en el suelo. La tarjeta Mesa de trabajo permite colocarla o reubicarla. Haz clic derecho en una zona libre de la mesa para retirarla. El clic derecho sobre una pieza abre sus propiedades y E abre el taller.</p>
         <p>Con una pieza en la mano: rueda abajo acerca y rueda arriba aleja. Configuración → Juego permite invertir la distancia y el giro por separado. N, B y los botones Crear también preparan una vista previa.</p>
       </details>
       <details><summary>Servos · pivote, bisagra y primera extremidad</summary>
@@ -778,6 +778,6 @@ input,select,textarea{font-family:var(--font-menu);}
   </section>
   <script src="assets/js/opening.js?v=20261116-block-joins-1" defer></script>
   <script src="assets/js/servo-panel.js?v=20261117-culling-1" defer></script>
-  <script src="assets/js/boot.js?v=20261119-drone-routes" defer></script>
+  <script src="assets/js/boot.js?v=20261119-workshop-placement" defer></script>
 </body>
 </html>

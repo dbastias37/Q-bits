@@ -9,11 +9,11 @@ Para alimentar máquinas separadas desde un depósito grande, consulta [Cables y
 ## Colocar y conectar desde el banco rápido
 
 1. Mantén **Q → Tab → Banco rápido**, elige un elemento y suelta Q. Aparece una vista previa sin físicas; todavía no se crea material.
-2. Apunta al suelo o a una superficie horizontal cercana. **Azul** permite colocar; **rojo** indica espacio ocupado. La rueda gira el objeto en pasos de 90°.
+2. Apunta al suelo o a una superficie horizontal cercana. **Azul** permite colocar; **rojo** indica espacio ocupado. El plano se mueve libremente y la rueda gira por caras en pasos de 90°. Mantén **Shift** para alinearlo a la cuadrícula de 9 cm del piso. **Shift + rueda** gira de forma continua en 360°. Al soltar Shift se conserva el ángulo y la posición vuelve a ser libre.
 3. **Clic** confirma exactamente esa posición. **Esc o clic derecho** cancelan. Si no cabe, mueve la vista previa: el juego no buscará otro sitio por su cuenta.
 4. Para prolongar una cinta, apunta cerca de su **flecha de salida y mantén Shift**. La vista previa alinea su entrada; confirma con clic manteniendo Shift. Las bases se unen físicamente y cada rodillo conserva su eje. Funciona con tramos rectos y ambas esquinas, sobre cintas niveladas.
 
-Las repisas siguen colocándose en paredes. Depósitos, enfriadores y cuerpos sólidos van en el suelo. La tarjeta Mesa de trabajo abre el taller existente. Los cables primero colocan sus cubos y después abren el tendido. **N, B y los botones Crear** usan también la colocación previa. Los planos de construcción siguen necesitando material existente.
+Las repisas siguen colocándose en paredes. Depósitos, enfriadores y cuerpos sólidos van en el suelo. **Mesa de trabajo** prepara una vista previa para colocarla o reubicarla. Clic derecho sobre una pieza de la mesa abre sus opciones. **E** abre el taller. Para retirarla, haz clic derecho sobre una zona libre de la mesa y elige **Retirar mesa**. Los cables primero colocan sus cubos y después abren el tendido. **N, B y los botones Crear** usan también la colocación previa. Los planos de construcción siguen necesitando material existente.
 
 **Manipulación:** rueda hacia abajo acerca y hacia arriba aleja. En **Configuración → Juego**, «Invertir rueda al acercar y alejar objetos» e «Invertir giro de las piezas» se guardan por separado. El segundo ajuste afecta tanto Shift + WASD como el giro de la vista previa. La velocidad de movimiento mantiene su ajuste independiente.
 

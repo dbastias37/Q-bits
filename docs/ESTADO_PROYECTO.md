@@ -1,8 +1,14 @@
 # Q-bits — punto de continuación
 
-Actualizado: 18 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
+Actualizado: 19 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega · autonomía y vuelo con trayectorias
+## Última entrega · mesa desplegable y colocación de planos
+
+El clic derecho sobre la pieza muestra sus opciones y E abre el taller. El tablero libre ofrece retirar la mesa. Q → Banco rápido → Mesa de trabajo permite colocarla o reubicarla. Al volver de campaña o del puzle se recuperan su posición y orientación o su estado retirado.
+
+Los planos de construcción y las copias del banco rápido se previsualizan antes de confirmar. En el piso, Shift muestra y activa una cuadrícula de 9 cm. La rueda normal cambia de cara y Shift + rueda permite elegir el ángulo en 360°. La reconstrucción de la escena conserva el ángulo exacto de los planos. La prolongación automática de una cinta desde su panel sigue usando la salida del tramo receptor.
+
+## Entrega anterior · autonomía y vuelo con trayectorias
 
 Las reservas internas, externas y estacionarias almacenan cinco veces más energía que en la entrega anterior. Una celda externa del banco almacena 1800 J y sigue recargándose en 90 segundos en el suelo. Una hélice aporta hasta 135 N y una celda hasta 65 W. En la prueba con Cannon, una celda y una hélice sostienen a 0,8 m un montaje de 30 piezas que incluye un sensor de peso. Su umbral no modifica la masa.
 

@@ -56,3 +56,35 @@ test('large rigid bodies are heavier than one cube, receive gentler contact resp
  for(let i=0;i<90;i++){t.stepPhysics(1/120);for(const c of t.world.contacts)if(c.bi===large.body||c.bj===large.body){contacts++;assert(c.restitution<=.025);}}
  assert(contacts>0);assert.equal(large.parts.length,8);assert(large.body.angularVelocity.norm()<.2);
 });
+test('workpiece receives the context click, E opens the bench, and packing leaves its objects in the world',()=>{
+ const {t,sandbox}=lab(),bench=t.setupWorkshop(),p=bench.p,part=t.addQubit([p.x,p.y+.045,p.z]);
+ aim(t,part.body.position);t.handleSecondary({clientX:640,clientY:360});
+ assert(t.getCommandState()?.items.some(i=>i.label.startsWith('Tomar ')));assert(!t.getWorkshopPanel()?.isOpen);
+ assert(t.openWorkshopMenu(t.V(0,p.y-2.5,-2).unit()));assert(t.getWorkshopPanel().isOpen);t.closeWorkshopPanel(false);
+ sandbox.document.pointerLockElement=t.canvas;aim(t,t.V(p.x+.4,p.y,p.z));t.handleSecondary({clientX:640,clientY:360});
+ t.getCommandState().items.find(i=>i.label==='Retirar mesa').run();assert.equal(t.getWorkshopBench(),null);
+ assert(t.groups.includes(part));assert(!t.openWorkshopMenu());assert(!t.setupWorkshop());assert.equal(t.saveLab().workshop,null);
+ for(let i=0;i<180;i++)t.stepPhysics(1/120);assert(t.bounds(part).min.y<.02);
+ t.story.lab=t.saveLab();t.story.scene='campaign';t.enterLab(false);assert.equal(t.getWorkshopBench(),null);
+});
+test('quick workshop previews and re-deploys one oriented desk with matching usable and physical surfaces',()=>{
+ const {t}=lab(),original=t.setupWorkshop(),p=t.V(2.313,0,-1.324);aim(t,p);
+ t.beginCreationPlacement('quick-workshop');assert.equal(t.getWorkshopBench(),original);t.handleKey({code:'Escape',preventDefault(){}});assert.equal(t.getWorkshopBench(),original);
+ t.beginCreationPlacement('quick-workshop');t.keys.add('ShiftRight');t.handleWheel({deltaY:400,preventDefault(){}});
+ const preview=t.getCreationPreview(),shown=preview.poses.map(v=>v.p.clone());assert(preview.grid&&preview.valid,preview.reason);
+ const bench=t.confirmCreationPlacement();assert(bench);bench.walls.forEach((wall,i)=>near(wall.p,shown[i]));
+ assert(original.walls.every(w=>!t.world.bodies.includes(w.body)));assert(t.onWorkshop(bench.p.vadd(bench.q.vmult(t.V(.65,.05,.35)))));
+ assert(!t.onWorkshop(bench.p.vadd(bench.q.vmult(t.V(0,.05,.48)))));
+ t.story.lab=t.saveLab();t.story.scene='campaign';t.enterLab(false);const restored=t.getWorkshopBench();near(restored.p,bench.p);near(restored.q.vmult(t.V(1,0,0)),bench.q.vmult(t.V(1,0,0)));
+});
+test('construction blueprints use free coordinates, a temporary 9 cm floor grid and continuous wheel yaw',()=>{
+ const {t,sandbox}=lab();const cursor=t.V(1.133,0,-.326);aim(t,cursor);t.updateRobotArmPanel();sandbox.document.querySelector('#arm-blueprint').dispatchEvent({type:'click'});
+ const preview=t.getCreationPreview();assert(preview?.plan);near(preview.point,cursor);
+ t.handleWheel({deltaY:100,preventDefault(){}});assert.equal(preview.turns,1);
+ t.keys.add('ShiftLeft');t.handleWheel({deltaY:27,preventDefault(){}});assert(preview.turns>1&&preview.turns<1.1);
+ near(preview.point,t.V(1.17,0,-.36));const dir=preview.q.vmult(t.V(1,0,0));
+ t.handleKeyUp({code:'ShiftLeft'});t.updateCreationPlacement();near(preview.point,cursor);near(preview.q.vmult(t.V(1,0,0)),dir);
+ t.keys.add('ShiftLeft');t.updateCreationPlacement();const shown=preview.poses[0].p.clone();
+ const bp=t.confirmCreationPlacement();assert(bp);assert(t.blueprintTargets(bp).some(o=>o.p.distanceTo(shown)<1e-8));assert.equal(t.groups.length,0);
+ const saved=t.alphaSceneSnapshot();t.clearAlphaScene();t.restoreAlphaScene(saved);near(t.blueprints[0].q.vmult(t.V(1,0,0)),dir);
+});

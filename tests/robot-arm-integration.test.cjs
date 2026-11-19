@@ -13,7 +13,7 @@ test('real panel converts a selected cube without adding matter or energy and le
 });
 test('blueprint UI places a recipe and creates neither bodies nor active motors',()=>{
  const {t,sandbox}=lab();t.setLook({camera:[0,1.68,2],pitch:-.8,yaw:0});t.updateRobotArmPanel();sandbox.document.querySelector('#arm-blueprint').dispatchEvent({type:'click'});
- assert.equal(t.blueprints.length,1);assert.equal(t.groups.length,0);assert.equal(t.rotors.length,0);assert.equal(t.robotArms.length,0);
+ assert.equal(t.blueprints.length,0);assert(t.getCreationPreview().valid);assert(t.confirmCreationPlacement());assert.equal(t.blueprints.length,1);assert.equal(t.groups.length,0);assert.equal(t.rotors.length,0);assert.equal(t.robotArms.length,0);
  assert.equal(t.blueprintTargets(t.blueprints[0]).length,26);
 });
 test('panel teaches the assembled arm and preserves identity when selecting its base or sample',()=>{
