@@ -2,7 +2,8 @@
 (function(){'use strict';
  const P=window.QBitsPreferences,C=window.QBitsControls,S=window.QBitsSubtitles;
  window.QBitsSettings={init(hooks){
-  const tx=P.transaction(hooks.storage||localStorage),screen=document.querySelector('#settings-screen'),fields=document.querySelector('#settings-fields'),confirm=document.querySelector('#settings-confirm'),status=document.querySelector('#settings-status');
+  let tx=P.transaction(hooks.storage||localStorage);
+  const screen=document.querySelector('#settings-screen'),fields=document.querySelector('#settings-fields'),confirm=document.querySelector('#settings-confirm'),status=document.querySelector('#settings-status');
   let tab='look',returnMode='menu',returnFocus=null,open=false,capture=null,padFrame=0,lastPadStatus=0;
   const reset=document.querySelector('#settings-reset');
   const clone=value=>JSON.parse(JSON.stringify(value));
@@ -90,6 +91,8 @@
    }
   }
   function renderGameplay(){
+   field(tx.draft,'tabletScale','Tamaño de la tableta','range',[75,125,5,' %']);
+   field(tx.draft,'tabletHand','Mano de la tableta','select',[[['left','Izquierda'],['right','Derecha']]]);
    field(tx.draft,'disassemblyMode','Desarme de conjuntos','select',[[['instant','Inmediato · actual'],['staged','Por etapas · banco de pruebas']]]);
    note('En el banco de pruebas, Shift + agitar o Desarmar todo: inmediato conserva el gesto actual; por etapas detiene el mecanismo y coloca sus piezas en espacios libres del suelo, de arriba hacia abajo. Si falta espacio, espera. Las piezas pendientes se conservan al salir del banco. La campaña y los puzles mantienen el desarme inmediato.');
    field(tx.draft,'invertObjectDistance','Invertir rueda al acercar y alejar objetos','check');
@@ -147,11 +150,11 @@
   function close(){clearCapture();if(padFrame)cancelAnimationFrame(padFrame);padFrame=0;open=false;confirm.hidden=true;screen.hidden=true;hooks.close(returnMode);returnFocus?.focus({preventScroll:true});}
   function save(exit=false){clearCapture();try{const saved=tx.save();hooks.apply(saved);status.textContent='Configuración guardada';if(exit)close();else render();return true;}catch{status.textContent='No se pudo guardar. Revisa el almacenamiento del navegador; tus cambios siguen aquí.';return false;}}
   function requestClose(){clearCapture();changed();if(tx.dirty){confirm.hidden=false;document.querySelector('#settings-keep').focus();}else close();}
-  const api={get isOpen(){return open;},get draft(){return P.effective(tx.draft);},requestClose,open(mode){returnFocus=document.activeElement;returnMode=mode;tx.begin();open=true;clearCapture();if(!padFrame)padFrame=requestAnimationFrame(pollPad);hooks.open();screen.hidden=false;confirm.hidden=true;status.textContent='Configuración guardada';render();document.querySelector('#settings-back').focus();}};
+  const api={get isOpen(){return open;},get draft(){return P.effective(tx.draft);},requestClose,open(mode){returnFocus=document.activeElement;returnMode=mode;tx=P.transaction(hooks.storage||localStorage);tx.begin();open=true;clearCapture();if(!padFrame)padFrame=requestAnimationFrame(pollPad);hooks.open();screen.hidden=false;confirm.hidden=true;status.textContent='Configuración guardada';render();document.querySelector('#settings-back').focus();}};
   for(const button of screen.querySelectorAll('[data-settings-tab]'))button.addEventListener('click',()=>{clearCapture();tab=button.dataset.settingsTab;render();changed();});
   document.querySelector('#settings-save').addEventListener('click',()=>save(false));
   document.querySelector('#settings-back').addEventListener('click',requestClose);
-  reset.addEventListener('click',()=>{clearCapture();const defaults=P.defaults();if(tab==='look')tx.draft.profiles[tx.draft.style]=clone(P.styles[tx.draft.style]);else if(tab==='performance'){P.setQuality(tx.draft,'balanced');tx.draft.textureScale=1;tx.draft.culling=defaults.culling;tx.draft.physicsHz=defaults.physicsHz;}else if(tab==='game'){for(const key of ['disassemblyMode','grabSpeed','invertObjectDistance','invertPieceRotation'])tx.draft[key]=defaults[key];}else if(tab==='audio'){tx.draft.music=defaults.music;tx.draft.volume=defaults.volume;tx.draft.guideVoice=defaults.guideVoice;tx.draft.guideVolume=defaults.guideVolume;tx.draft.footsteps=defaults.footsteps;tx.draft.footstepVolume=defaults.footstepVolume;tx.draft.joinSounds=defaults.joinSounds;tx.draft.joinVolume=defaults.joinVolume;}else if(tab==='subtitles')tx.draft.subtitles=defaults.subtitles;else tx.draft.controls[tab==='keyboard'?'keyboard':'gamepad']=defaults.controls[tab==='keyboard'?'keyboard':'gamepad'];render();changed();});
+  reset.addEventListener('click',()=>{clearCapture();const defaults=P.defaults();if(tab==='look')tx.draft.profiles[tx.draft.style]=clone(P.styles[tx.draft.style]);else if(tab==='performance'){P.setQuality(tx.draft,'balanced');tx.draft.textureScale=1;tx.draft.culling=defaults.culling;tx.draft.physicsHz=defaults.physicsHz;}else if(tab==='game'){for(const key of ['tabletScale','tabletHand','disassemblyMode','grabSpeed','invertObjectDistance','invertPieceRotation'])tx.draft[key]=defaults[key];}else if(tab==='audio'){tx.draft.music=defaults.music;tx.draft.volume=defaults.volume;tx.draft.guideVoice=defaults.guideVoice;tx.draft.guideVolume=defaults.guideVolume;tx.draft.footsteps=defaults.footsteps;tx.draft.footstepVolume=defaults.footstepVolume;tx.draft.joinSounds=defaults.joinSounds;tx.draft.joinVolume=defaults.joinVolume;}else if(tab==='subtitles')tx.draft.subtitles=defaults.subtitles;else tx.draft.controls[tab==='keyboard'?'keyboard':'gamepad']=defaults.controls[tab==='keyboard'?'keyboard':'gamepad'];render();changed();});
   document.querySelector('#settings-keep').addEventListener('click',()=>{confirm.hidden=true;document.querySelector('#settings-back').focus();});
   document.querySelector('#settings-discard').addEventListener('click',()=>{tx.discard();close();});
   document.querySelector('#settings-confirm-save').addEventListener('click',()=>save(true));

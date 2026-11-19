@@ -2,7 +2,7 @@
 
 ### Prueba de culling · 17 de noviembre de 2026
 
-Configuración → Rendimiento permite activar/desactivar el descarte fuera de cámara. En el banco, **Num7** abre una vista externa con avatar y campo de visión, **Num8** muestra mediciones y **Num9** compara la misma escena OFF/ON. **P → Prueba de rendimiento** ofrece botones equivalentes. La física y las máquinas continúan fuera de pantalla. [Uso, mediciones y límites](docs/CULLING_QBITS.md).
+Configuración → Rendimiento permite activar/desactivar el descarte fuera de cámara. En el banco, **Num7** abre una vista externa con avatar y campo de visión, **Num8** muestra mediciones y **Num9** compara la misma escena OFF/ON. **M3 → Ayuda → Manual → Prueba de rendimiento** ofrece botones equivalentes. La física y las máquinas continúan fuera de pantalla. [Uso, mediciones y límites](docs/CULLING_QBITS.md).
 
 Juego de puzles en primera persona, ambientado en salas blancas minimalistas. Mueve y une Q-bits, organiza al equipo, activa circuitos y transforma materia para abrir nuevas rutas.
 
@@ -87,7 +87,7 @@ El [estado del proyecto](docs/ESTADO_PROYECTO.md) concentra lo terminado y el si
 | Dar órdenes y elegir un destino | Menú de clic derecho sobre la pieza y después sobre el suelo |
 | Tomar un grupo seleccionado | Clic derecho → Tomar selección |
 | Duplicar selección en el laboratorio | V |
-| Elegir Q-bit o T-bit en el laboratorio | Mantener Q, apuntar con el mouse y soltar Q; centro o Esc para cancelar |
+| Elegir Q-bit o T-bit en el laboratorio | Q → Piezas → elegir en el catálogo |
 | Crear la pieza elegida en el laboratorio | Clic izquierdo después de elegir con Q; también N o P → Piezas → Crear |
 | Detener una orden | R |
 | Avanzar o completar el texto del diálogo | E o Espacio |
@@ -105,7 +105,7 @@ El panel de pruebas incluye controles adicionales y ajustes del laboratorio. En 
 
 ## T-bits en el banco de pruebas
 
-Mantén **Q** para abrir el selector radial de vidrio: apunta a una figura y suelta Q para elegirla. El centro y Esc cancelan. Después de elegir, **el siguiente clic izquierdo crea una sola pieza** delante del jugador. Esc o clic derecho cancelan esa creación pendiente; pausar o cambiar de escena también la cancela. N sigue disponible como atajo. Las figuras giran suavemente y aceleran al señalarlas; la descripción aparece con la misma línea animada del Q-bit. Las flechas también permiten recorrer las opciones. Mientras está abierto, la escena se detiene y el mouse controla el selector sin mover la cámara. Se cierra sin elegir al pausar o cambiar de pestaña; cambiar el tamaño de la ventana cancela la opción resaltada. Abre el selector con el mouse capturado y las manos libres, en el banco sin puzzle activo.
+En el banco de pruebas, **Q** abre el catálogo de la tableta. Elige la forma y apunta la vista previa hacia la superficie. Un clic izquierdo coloca una pieza. Esc o clic derecho cancelan la colocación.
 
 También en **P → Piezas → Tipo de pieza** se elige entre el Q-bit cúbico y dos T-bits grises. El botón Crear y el atajo N usan esa elección. Las nuevas formas se crean en el banco libre.
 
@@ -250,7 +250,7 @@ El tiempo de trabajo útil se acumula dentro de un único lote sin intervención
 
 ## Mesa de trabajo y sensor configurable
 
-Entra al **Banco de pruebas**. La mesa aparece inicialmente a la izquierda de la entrada. Puedes retirarla con clic derecho sobre una zona libre y volver a colocarla desde Q → Banco rápido → Mesa de trabajo. Sobre una pieza, el clic derecho abre sus propias opciones. Deja las piezas sobre ella y suéltalas; apunta a la mesa y pulsa **E** para abrir el panel del taller. Sus pestañas **Baterías**, **Mejoras** y **Cuerpos** muestran las opciones, una vista previa y el motivo de cualquier bloqueo. Elegir una opción o mover un control todavía no modifica las piezas: pulsa el botón de aplicación para confirmar. El resultado permanece sobre la mesa, con el panel abierto. **Volver**, el botón de cierre o **Esc** regresan al juego sin aplicar elecciones pendientes. La simulación queda pausada mientras trabajas en el panel. Los ejercicios certificados de campaña mantienen sus configuraciones.
+Entra al **Banco de pruebas**. La mesa aparece inicialmente a la izquierda de la entrada. Puedes retirarla con clic derecho sobre una zona libre y volver a colocarla desde Q → Equipo → Mesa de trabajo. Sobre una pieza, el clic derecho abre sus propias opciones. Deja las piezas sobre ella y suéltalas; apunta a la mesa y pulsa **E** para abrir el panel del taller. Sus pestañas **Baterías**, **Mejoras** y **Cuerpos** muestran las opciones, una vista previa y el motivo de cualquier bloqueo. Elegir una opción o mover un control todavía no modifica las piezas: pulsa el botón de aplicación para confirmar. El resultado permanece sobre la mesa, con el panel abierto. **Volver**, el botón de cierre o **Esc** regresan al juego sin aplicar elecciones pendientes. La simulación continúa mientras trabajas. Si te alejas, la tableta vuelve al banco. Los ejercicios certificados de campaña mantienen sus configuraciones.
 
 En **Mejoras**, la sección **Investigaciones** desbloquea una opción y **Adaptaciones** la instala en la pieza. En **Cuerpos**, un grupo de Q-bits normales puede reorganizarse con medidas enteras de largo, ancho y alto. El producto de las tres medidas debe coincidir con la cantidad de cubos del grupo y el resultado debe caber sobre la mesa. Por ejemplo, cuatro cubos permiten un cuerpo de 2 × 2 × 1. Se conservan las piezas, su masa y su energía; no se añaden cubos al cambiar el tamaño. Usa un grupo quieto, sin rotores, baterías externas ni adaptaciones, y deja libre el volumen del resultado.
 
@@ -331,14 +331,16 @@ En **P → Mecanismos** coloca el blueprint de **18 cubos + 8 enganches**. Acerc
 El renderizador agrupa los cubos de cuerpos rígidos irregulares en una malla cacheada, conservando las piezas y sus físicas. Los mecanismos completos se muestran separados de los Q-bits sueltos en el contador.
 
 
-## Banco rápido — catálogo en Q
+## Tableta del banco de pruebas
 
-Mantén **Q**, pulsa **Tab** para abrir **Banco rápido**, señala una tarjeta, suelta **Q** y haz clic para crear una copia completa. Las flechas recorren las tarjetas y **RePág / AvPág** cambian de página. También puedes pulsar las pestañas y botones de página con el puntero del selector.
+Pulsa el botón central del mouse (M3) para desplegar o guardar la tableta. P abre los controles y Q abre el catálogo. Usa la rueda sobre la navegación para recorrer Cuerpos, Mecanismos, Archivo y Ayuda. Sobre los controles, la rueda desplaza el contenido. Cerca de una mesa desplegada, Shift + rueda alterna entre Banco y Mesa.
 
-Incluye brazo, cintas recta y de esquina, agarre, baterías, sensor, sólido, enfriador y tus formas/mecanismos guardados. Las copias del banco aparecen con motores detenidos y baterías cargadas pero apagadas. La repisa requiere confirmar su ubicación en una pared; Taller abre el taller existente. Las tarjetas de vidrio se paginan y solo se animan las visibles. Esta creación libre es exclusiva del banco: respeta el límite de piezas y conserva la construcción mediante blueprints en la campaña.
+WASD permite caminar con la tableta abierta. Haz clic en una pieza visible para consultar sus propiedades. El botón ⇄ cambia la tableta de mano. Configuración → Juego permite elegir la mano y el tamaño (75–125 %).
+
+El catálogo organiza las copias de prueba en Piezas, Máquinas, Equipo y Guardados. Después de elegir una tarjeta, apunta la vista previa y confirma con clic. Las copias se colocan con los motores detenidos y las baterías apagadas.
 
 ## Manual del banco de pruebas
 
-Abre **P → Manual**, o **Guía paso a paso** desde el panel del brazo. Incluye primera entrega, toma desde una cinta, baterías, controles, rotores, sensores y guardado. También se puede leer [el manual aquí](docs/MANUAL_BANCO_PRUEBAS.md).
+Abre **M3 → Ayuda → Manual**, o **Guía paso a paso** desde el panel del brazo. Incluye primera entrega, toma desde una cinta, baterías, controles, rotores, sensores y guardado. También se puede leer [el manual aquí](docs/MANUAL_BANCO_PRUEBAS.md).
 
-[Cables y depósito de energía](docs/CABLES_ENERGIA_QBITS.md): primera conexión desde Q → Banco rápido, alcance por material, extensión, inspección con Alt y recuperación de cubos.
+[Cables y depósito de energía](docs/CABLES_ENERGIA_QBITS.md): primera conexión desde Q → Equipo, alcance por material, extensión, inspección con Alt y recuperación de cubos.

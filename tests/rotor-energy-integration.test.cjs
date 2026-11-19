@@ -27,11 +27,11 @@ test('capacity counts weighted connected pieces and stops an already running mot
  assert.equal(t.configureRotor(r,{enabled:true}),false,'cannot bypass a load cutoff by toggling');
  assert(t.configureRotor(r,{capacity:4,enabled:true}));assert.equal(r.enabled,true);
 });
-test('Q menu freezes rotor energy along with world simulation',()=>{
+test('tablet catalog leaves rotor energy and world simulation running',()=>{
  const game=lab(),{t,sandbox}=game,r=t.spawnRotor(t.V(0,.4,0));t.configureRotor(r,{enabled:true});
  const before=energies(t,r),time=t.getSimTime();sandbox.document.dispatchEvent({type:'keydown',code:'KeyQ',repeat:false});
- assert(t.radialOpen());for(let i=0;i<10;i++)game.frame(1000+i*50);
- assert.deepEqual(energies(t,r),before);assert.equal(t.getSimTime(),time);
+ assert(!sandbox.document.querySelector('#page-catalog').hidden);for(let i=0;i<10;i++)t.frame(performance.now()+1000+i*50);
+ assert.notDeepEqual(energies(t,r),before);assert(t.getSimTime()>time);
 });
 test('motor bank exposes mount, torque, capacity, demand and real speed',()=>{
  const game=lab(),{t,sandbox}=game,r=t.spawnRotor();const node=id=>sandbox.document.querySelector('#'+id);

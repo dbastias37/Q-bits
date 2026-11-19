@@ -4,11 +4,11 @@ Disponible dentro del juego en **P → Manual** y desde **Guía paso a paso** en
 
 Empieza con una máquina y un cubo. P muestra los ajustes mientras la simulación sigue en marcha. Los controles indicados son los predeterminados; si los cambiaste, revisa Configuración → Teclado.
 
-Para alimentar máquinas separadas desde un depósito grande, consulta [Cables y depósito de energía](CABLES_ENERGIA_QBITS.md): creación con Q → Banco rápido, tendido, extensión, inspección y recuperación del material.
+Para alimentar máquinas separadas desde un depósito grande, consulta [Cables y depósito de energía](CABLES_ENERGIA_QBITS.md): creación con Q → Equipo, tendido, extensión, inspección y recuperación del material.
 
 ## Colocar y conectar desde el banco rápido
 
-1. Mantén **Q → Tab → Banco rápido**, elige un elemento y suelta Q. Aparece una vista previa sin físicas; todavía no se crea material.
+1. Abre el catálogo con **Q** y elige un elemento. Aparece una vista previa sin físicas; todavía no se crea material.
 2. Apunta al suelo o a una superficie horizontal cercana. **Azul** permite colocar; **rojo** indica espacio ocupado. El plano se mueve libremente y la rueda gira por caras en pasos de 90°. Mantén **Shift** para alinearlo a la cuadrícula de 9 cm del piso. **Shift + rueda** gira de forma continua en 360°. Al soltar Shift se conserva el ángulo y la posición vuelve a ser libre.
 3. **Clic** confirma exactamente esa posición. **Esc o clic derecho** cancelan. Si no cabe, mueve la vista previa: el juego no buscará otro sitio por su cuenta.
 4. Para prolongar una cinta, apunta cerca de su **flecha de salida y mantén Shift**. La vista previa alinea su entrada; confirma con clic manteniendo Shift. Las bases se unen físicamente y cada rodillo conserva su eje. Funciona con tramos rectos y ambas esquinas, sobre cintas niveladas.
@@ -34,9 +34,9 @@ La selección se muestra **abajo a la derecha**, frente al contador de població
 
 El brazo repite dos posturas que tú guardas: A para tomar y B para soltar. Unirlo a una cinta no le enseña esas posiciones.
 
-1. Crea el brazo. En la sala, mantén Q, pulsa Tab para entrar al catálogo rápido, elige Brazo Q-bits, suelta Q y haz clic. Aparece completo y detenido, con A preparada para un cubo en el suelo y B a un cuarto de vuelta.
+1. Crea el brazo. En la sala, abre Q → Máquinas, elige Brazo Q-bits y confirma con clic. Aparece completo y detenido, con A preparada para un cubo en el suelo y B a un cuarto de vuelta.
 2. Déjalo en el suelo, con espacio alrededor. Para aprender, usa el brazo recién creado y separado de otras máquinas. Su base se fija durante el movimiento; no necesitas unirla a una cinta. Su energía interna permite la primera prueba.
-3. Prepara un cubo normal. Elígelo desde Q → Piezas, suelta Q y haz clic. Acércalo debajo de la cara naranja del extremo del brazo. Apóyalo en el suelo y suéltalo sin Shift, para que quede separado. C permite agacharte.
+3. Prepara un cubo normal. Elígelo desde Q → Piezas, confirma con clic. Acércalo debajo de la cara naranja del extremo del brazo. Apóyalo en el suelo y suéltalo sin Shift, para que quede separado. C permite agacharte.
 4. Abre el brazo. Clic derecho sobre una pieza del brazo → Configurar agarre y secuencia. En «Qué puede tomar», elige Cualquier sólido y pulsa Aplicar filtro, carga y alcance.
 5. Comprueba el contacto. Pulsa Comprobar toma. Centra la cara naranja sobre el cubo. Puedes ajustar el alcance de toma entre 1,8 y 5 cm. Si indica distancia, alineación o filtro, corrige eso y vuelve a comprobar.
 6. Haz una entrega. Desmarca Repetir la secuencia y pulsa Iniciar secuencia. El brazo toma el cubo, gira a B y lo suelta. Con un brazo nuevo no hace falta enseñar A y B otra vez.
@@ -59,7 +59,7 @@ El brazo mide como carga el objeto que sostiene. El menor límite entre pinza y 
 
 ## 3 · Cintas y baterías
 
-1. Crea una cinta desde Q → Tab. Déjala nivelada y apoyada. También puedes construirla con un plano en P → Mecanismos, acercando las piezas solicitadas e integrándolas con clic derecho.
+1. Crea una cinta desde Q → Máquinas. Déjala nivelada y apoyada. También puedes construirla con un plano en P → Mecanismos, acercando las piezas solicitadas e integrándolas con clic derecho.
 2. Crea una Batería I, II o III desde el catálogo rápido. Estas copias de prueba aparecen cargadas y apagadas.
 3. Toma la batería, acércala a una cara libre del chasis y suelta con Shift para unirla. Clic derecho sobre la batería → Activar batería. Estar cerca no basta para transmitir energía.
 4. Clic derecho sobre la cinta → «Configurar cinta y extender…». Pulsa Iniciar marcha de la línea para arrancar los tramos unidos al mismo chasis. Clic derecho en un tramo permite detenerlo o invertir solo ese tramo.
@@ -69,7 +69,7 @@ En el taller también puedes fabricar baterías con uno, dos o tres cubos normal
 
 ## 4 · Tomar, unir, separar y mover
 
-- Crear: mantén Q, elige, suelta Q y haz clic. Tab cambia entre piezas y catálogo rápido mientras Q está abierto. Esc cancela la creación pendiente.
+- Crear: abre Q, elige una categoría y un objeto y confirma con clic. Esc cancela la creación pendiente.
 - Tomar: clic sobre una pieza, con la mano libre y sin una selección previa. Otro clic la suelta. La rueda acerca o aleja; C te agacha.
 - Unir: sostén la pieza, acerca caras compatibles y suelta con Shift cuando veas el encaje. Shift + WASD gira la pieza sostenida.
 - Separar: Alt apuntando a una pieza abre las opciones. Shift + varias sacudidas desarma una estructura sostenida. Se conservan sus piezas.
@@ -87,7 +87,7 @@ Taller: deja la pieza sobre la mesa, suéltala, apunta a la mesa y pulsa E. Lee 
 
 ## Servos · primera extremidad
 
-1. Mantén **Q → Tab → Banco rápido** y elige **Servo pivote** o **Servo bisagra**. Suelta Q y confirma la vista previa con clic.
+1. Abre **Q → Máquinas** y elige **Servo pivote** o **Servo bisagra**. Confirma la vista previa con clic.
 2. Clic derecho en la articulación → **Configurar servo**, o selecciónala y abre **P → Mecanismos**.
 3. Empieza con **−20° a 20°**, **30 °/s** e **Ida y vuelta**. Pulsa Iniciar para ver el movimiento. Detener y bloquear conserva el ángulo alcanzado.
 4. Para una sola postura, elige Mantener posición o Mover una vez y una posición objetivo dentro del recorrido. Ambos llegan y quedan bloqueados mecánicamente. El rango total disponible es **−90° a 90°**, con velocidad entre **5 y 180 °/s**.
@@ -98,7 +98,7 @@ La energía interna permite probarlo; una batería externa activa, conectada al 
 
 ## 6 · Planos, guardado y repisas
 
-Catálogo rápido (Q → Tab): crea copias completas para experimentar en el banco. Respeta el límite de piezas de la sala.
+Catálogo rápido (Q → Máquinas): crea copias completas para experimentar en el banco. Respeta el límite de piezas de la sala.
 
 Blueprint o plano: es una guía de construcción. Acerca los tipos de piezas que pide; clic derecho → Integrar cercanos. Solo funciona al completarlo.
 
@@ -117,7 +117,7 @@ Repisa: almacena el objeto real. Al recuperarlo, los controles quedan detenidos.
 
 ## Hélices · primer dron
 
-1. Mantén **Q**, pulsa **Tab** y elige **Dron de prueba**. Suelta Q y haz clic. Aparece una hélice con batería I cargada y apagada.
+1. En **Q → Máquinas**, elige **Dron de prueba**. Confirma con clic. Aparece una hélice con batería I cargada y apagada.
 2. Haz clic derecho en la batería y enciéndela. Después haz clic derecho en el enganche y abre **Vuelo**.
 3. Deja **altura 0,5 m** y **velocidad 0**. Pulsa **Despegar** y observa la altura en directo desde P.
 4. Para desplazarte, mira hacia el destino, abre Vuelo, pulsa **Avanzar hacia donde miro**, elige velocidad **0,3 m/s** y aplica. Velocidad 0 frena y mantiene posición.

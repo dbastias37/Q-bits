@@ -35,7 +35,7 @@ test('real radial geometry hits every visible sector and rejects gaps, hole, out
 
 test('hover accelerates only the chosen figure, draws its description and keeps the same DOM nodes', () => {
   const game = setup(), { sandbox } = game;
-  key(game, 'keydown', 'KeyQ');
+  game.t.openUnitRadial();
   const root = sandbox.document.querySelector('#unit-radial');
   const stage = root.children.find(child => child.className === 'radial-stage');
   const detail = stage.children.find(child => child.className === 'radial-description');
@@ -58,13 +58,13 @@ test('hover accelerates only the chosen figure, draws its description and keeps 
 
 test('resizing clears stale hover and accepts native pixel movement at the new dimensions', () => {
   const game = setup(), { t, sandbox } = game;
-  key(game, 'keydown', 'KeyQ');hover(game, 0);
+  game.t.openUnitRadial();hover(game, 0);
   sandbox.innerWidth=640;sandbox.innerHeight=480;
   sandbox.dispatchEvent({ type: 'resize' });
   const state=game.radial.getState(),mechanisms=state.figures.filter(item=>item.section==='mechanisms').length,g=sandbox.QBitsRadial.layout(640,480,state.figures.length-mechanisms,mechanisms);
   assert.equal(game.radial.hovered,null);
   assert.equal(state.x,g.cx);assert.equal(state.y,g.cy-g.inner*.25);
-  hover(game,2);key(game,'keyup','KeyQ');
+  hover(game,2);game.t.closeUnitRadial(true);
   assert.equal(t.settings.unitShape,'pyramid');
   assert.equal(t.groups.length,0,'a selection does not create a piece');
   t.setLook({camera:[0,2,2],yaw:0,pitch:-Math.PI/4});key(game,'keydown','KeyN');assert.equal(t.getSelected().part.shape,'pyramid');
@@ -72,28 +72,28 @@ test('resizing clears stale hover and accepts native pixel movement at the new d
 
 test('reopening during fade-out keeps the selector visible and final closing hides it', () => {
   const game=setup(),{t,sandbox}=game;
-  key(game,'keydown','KeyQ');game.frame();
+  game.t.openUnitRadial();game.frame();
   const overlay=sandbox.document.querySelector('#unit-radial');
   assert(overlay.classList.contains('visible'));
   t.closeUnitRadial(false);game.frame(performance.now()+100);
-  key(game,'keydown','KeyQ');game.frame(performance.now()+500);
+  game.t.openUnitRadial();game.frame(performance.now()+500);
   assert.equal(game.radial.isOpen,true);assert.equal(overlay.hidden,false);assert(overlay.classList.contains('visible'));
   t.closeUnitRadial(false);game.frame(performance.now()+500);assert.equal(overlay.hidden,true);
 });
 
 test('bad relative pointer samples cannot poison later selection', () => {
-  const game=setup();key(game,'keydown','KeyQ');
+  const game=setup();game.t.openUnitRadial();
   const before=game.radial.getState();
   game.sandbox.document.dispatchEvent({type:'mousemove',movementX:NaN,movementY:undefined});
   const after=game.radial.getState();assert.equal(after.x,before.x);assert.equal(after.y,before.y);
-  hover(game,1);key(game,'keyup','KeyQ');assert.equal(game.t.settings.unitShape,'tetra');
+  hover(game,1);game.t.closeUnitRadial(true);assert.equal(game.t.settings.unitShape,'tetra');
 });
 
 test('queued navigation remains suspended while choosing and resumes after cancellation', () => {
   const game=setup(),{t}=game;let steps=0;
   const owner={},iterator=(function*(){steps++;yield;return []})();
   t.navigationJobs.set(owner,{owner,iterator,valid:()=>true,complete(){}});
-  key(game,'keydown','KeyQ');t.runNavigationJobs();assert.equal(steps,0);
+  game.t.openUnitRadial();t.runNavigationJobs();assert.equal(steps,0);
   t.closeUnitRadial(false);t.runNavigationJobs();assert(steps>0);
 });
 

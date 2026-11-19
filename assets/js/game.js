@@ -409,6 +409,7 @@ function dispatchControlAction(id,down,source='keyboard',event={}){
  const token=source+':'+id,holders=controlHolds.get(id)||new Set();
  if(down){if(holders.has(token))return;holders.add(token);controlHolds.set(id,holders);if(holders.size>1)return;}
  else {holders.delete(token);if(holders.size)return;controlHolds.delete(id);}
+ if(id==='tablet'){if(down)toggleTablet();return;}
  if(id==='hud'){setHudInput(down,source);return;}
  const action=window.QBitsControls?.actions.find(a=>a.id===id);if(!action)return;
  const e=controlEvent(action.code,event,source);
@@ -431,7 +432,15 @@ function releaseInputSource(source){for(const [id,holders]of [...controlHolds])i
 function resetGameInputs(){keyboardInput?.clear();releaseInputSource('gamepad');gamepadActive=false;gamepadMove=[0,0];controller?.reset();if(hudInputActive){hudReturnCapture=false;setHudInput(false);}keys.clear();}
 function onPhysicalKeyDown(event){
  if(cullingLab.benchmark){if(event.code==='Escape'){event.preventDefault();cancelCullingBenchmark();}return;}
- if(workshopPanel?.isOpen){if(['Escape','KeyE','KeyP'].includes(event.code)&&(!editableTarget(event.target)||event.code==='Escape')){event.preventDefault();closeWorkshopPanel(true);}return;}
+ if(tabletVisible()&&!event.defaultPrevented){
+  const action=window.QBitsControls?.keyboardAction(savedPreferences.controls.keyboard,event.code);
+  if(action==='tablet'||event.code==='Escape'||workshopPanel?.isOpen&&event.code==='KeyE'&&!editableTarget(event.target)){
+   event.preventDefault();if(!event.repeat)stowTablet();return;
+  }
+  if(!tabletTyping(event.target)&&!tabletTyping(document.activeElement)&&['forward','backward','left','right','crouch'].includes(action)){
+   keyboardInput.down(event.code,event);event.preventDefault();return;
+  }
+ }
  if(event.defaultPrevented||settingsScreen?.isOpen||editableTarget(event.target)||editableTarget(document.activeElement))return;
  if(story.mode==='playing'&&!event.ctrlKey&&!event.altKey&&!event.metaKey&&!window.QBitsControls?.keyboardAction(savedPreferences.controls.keyboard,event.code)&&['Numpad7','Numpad8','Numpad9','Slash'].includes(event.code)){event.preventDefault();if(!event.repeat)({'Numpad7':toggleCullingObserver,'Numpad8':toggleCullingStats,'Numpad9':startCullingBenchmark,'Slash':toggleCulling})[event.code]();return;}
  if(!event.repeat&&!event.ctrlKey&&!event.altKey&&!event.metaKey&&(event.code==='Backquote'||event.key==='º')&&quickWake()){event.preventDefault();return;}
@@ -443,8 +452,16 @@ function onPhysicalKeyDown(event){
  gamepadActive=false;
  if(keyboardInput?.down(event.code,event))event.preventDefault();else if(!keyboardInput)handleKey(event);
 }
-function onPhysicalKeyUp(event){if(keyboardInput?.up(event.code,event))event.preventDefault();else if(!keyboardInput)handleKeyUp(event);}
-function onPhysicalMouseDown(event){robotPoseHandledClick=false;if(robotPoseDraft){robotPoseHandledClick=event.button===0;robotPoseMouse(event);return;}if(hudInputActive||settingsScreen?.isOpen||workshopPanel?.isOpen)return;gamepadActive=false;if(keyboardInput?.down('Mouse'+event.button,event))event.preventDefault();else if(!keyboardInput)onCanvasMouseDown(event);}
+function onPhysicalKeyUp(event){
+ if(keyboardInput?.up(event.code,event)){event.preventDefault();return;}
+ if(!keyboardInput){handleKeyUp(event);return;}
+ // Opening a panel releases input capture. A walking key can span that change.
+ const action=window.QBitsControls.keyboardAction(savedPreferences.controls.keyboard,event.code);
+ if(tabletMovement[action])keys.delete(tabletMovement[action]);
+}
+function onPhysicalMouseDown(event){
+ if(!settingsScreen?.isOpen&&!robotPoseDraft&&window.QBitsControls?.keyboardAction(savedPreferences.controls.keyboard,'Mouse'+event.button)==='tablet'){event.preventDefault();toggleTablet();return;}
+ robotPoseHandledClick=false;if(robotPoseDraft){robotPoseHandledClick=event.button===0;robotPoseMouse(event);return;}if(hudInputActive||settingsScreen?.isOpen||workshopPanel?.isOpen)return;gamepadActive=false;if(keyboardInput?.down('Mouse'+event.button,event))event.preventDefault();else if(!keyboardInput)onCanvasMouseDown(event);}
 function onPhysicalMouseUp(event){if(keyboardInput?.up('Mouse'+event.button,event))event.preventDefault();else if(!keyboardInput||(event.button===0&&savedPreferences.controls?.keyboard.bindings.primary==='Mouse0'&&!controlHolds.has('primary')))onCanvasMouseUp(event);}
 function inputMenuScope(){
  if(workshopPanel?.isOpen)return document.querySelector('#workshop-screen');
@@ -572,7 +589,7 @@ async function captureMouse() {
 let robotPoseHandledClick=false;
 canvas.addEventListener('click',()=>{
  if(robotPoseHandledClick){robotPoseHandledClick=false;return;}
- captureMouse();
+ if(!tabletVisible())captureMouse();
 });
 function editableTarget(target){return !!target&&(['INPUT','TEXTAREA','SELECT'].includes(target.tagName)||target.isContentEditable);}
 function blockNativeContext(event){if(!editableTarget(event.target)){event.preventDefault();event.stopPropagation();}}
@@ -585,7 +602,7 @@ document.addEventListener('pointerlockchange', () => {
   locked = document.pointerLockElement === canvas;
   resetAssemblyShake();
   if(!locked)closeUnitRadial(false);
-  keys.clear();
+  if(locked||panel.hidden||!tabletVisible())keys.clear();
   if (locked) { story.intentionalUnlock=false;story.preserveGrip=false;hint.hidden=true;completePendingPickup(); }
   else { const expected=story.intentionalUnlock;story.intentionalUnlock=false;
     if(!expected&&robotPoseDraft){returnRobotPosePanel();return;}
@@ -1346,7 +1363,7 @@ function quickProfile(entry){
 // A placement preview owns no bodies, material IDs, joints or inventory.
 let creationPreview=null;
 function creationPlacementAllowed(id){return creationChoiceAllowed(id)||puzzle.active&&alphaSettings.allowPuzzleSpawn&&['cube','tetra','pyramid'].includes(id);}
-function startCreationTool(id){if(held||powerDraft)return false;initUnitRadial();if(!creationPlacementAllowed(id))return false;panel.hidden=true;captureMouse();return beginCreationPlacement(id);}
+function startCreationTool(id){if(held||powerDraft)return false;refreshQuickEntries();if(!creationPlacementAllowed(id))return false;if(panel.hidden)captureMouse();else stowTablet();return beginCreationPlacement(id);}
 function creationRecord(id){
  const entry=quickEntries.get(id);if(entry?.record)return copySavedMechanism(entry.record);
  if(id!=='rotor')return null;
@@ -1482,8 +1499,13 @@ function spawnQuickElement(id){
  return confirmCreationPlacement();
 }
 
+function refreshQuickEntries(){
+ quickEntries.clear();if(story.scene==='lab')for(const entry of quickCatalogue())quickEntries.set(entry.id,entry);
+}
 function initUnitRadial(){
- const catalogue=story.scene==='lab'?quickCatalogue():[],stamp=JSON.stringify(catalogue);if(unitRadial&&quickCatalogueStamp===stamp)return;if(unitRadial)unitRadial.dispose();unitRadial=null;quickCatalogueStamp=stamp;quickEntries.clear();for(const entry of catalogue)quickEntries.set(entry.id,entry);
+ refreshQuickEntries();const catalogue=[...quickEntries.values()],stamp=JSON.stringify(catalogue);
+ if(unitRadial&&quickCatalogueStamp===stamp)return;
+ if(unitRadial)unitRadial.dispose();unitRadial=null;quickCatalogueStamp=stamp;
  if(!window.QBitsRadial)throw new Error('No se pudo preparar el selector de piezas.');
  const entries=[
   {id:'cube',title:'Q-bit',subtitle:'Cubo',description:'Módulo de 9 × 9 × 9 cm. Seis pirámides o doce T-bits triangulares completan este volumen.',color:[43,46,49]},
@@ -4813,7 +4835,7 @@ function showArmControls(){
 function openPanel(){
  cancelUnitCreation();closeWorkshopPanel(false);cancelShelfPlacement();closeCommandMenu(false);selectedCargo=aimCargo(4)?.cargo||selectedCargo;
  if(!selectedRotors().length)selected=held?{g:held.g,part:held.part}:aimQubit()||selected;
- pause();panel.hidden=false;updatePanel();
+ if(panel.hidden)releaseForTablet();showTablet();updatePanel();switchPanelTab(tabletTab==='catalog'&&(story.scene!=='lab'||puzzle.active)?'cube':tabletTab);
  if(selectedSensor())switchPanelTab('mechanisms');
  else if(selected?.part.mood.gripper||robotArmForGroup(selected?.g,selected?.part.id))showArmControls();
  else if(selectedRotors().length||activeRotorSet())switchPanelTab('mechanisms');
@@ -4832,7 +4854,7 @@ for(const name of ['mass','gravity','bounce','force','friction','damping','speed
  updatePanel();
 });
 for(const name of ['guide','line'])document.querySelector('#'+name).addEventListener('change',e=>settings[name]=e.target.value);
-for(const name of ['cube','route','cargo','puzzle','alpha','mechanisms','manual'])document.querySelector('#tab-'+name).addEventListener('click',()=>switchPanelTab(name));
+for(const name of ['catalog','cube','route','cargo','puzzle','alpha','mechanisms','manual'])document.querySelector('#tab-'+name).addEventListener('click',()=>switchPanelTab(name));
 document.querySelector('#arm-help').addEventListener('click',()=>switchPanelTab('manual'));
 document.querySelector('#manual-arm-controls').addEventListener('click',showArmControls);
 document.querySelector('#create').addEventListener('click',()=>startCreationTool(creationShape()));
@@ -4840,8 +4862,10 @@ document.querySelector('#unit-shape').addEventListener('change',event=>{if(creat
 document.querySelector('#remove').addEventListener('click',()=>{deleteQubit(selected);updatePanel();});
 document.querySelector('#split').addEventListener('click',()=>{detachPart(selected,true);updatePanel();});
 document.querySelector('#stop').addEventListener('click',()=>{if(selectedCargo)stopHaul(selectedCargo);for(const g of selectedTeam()){leaveHaul(g);stopRoute(g);}});
-document.querySelector('#resume').addEventListener('click',()=>{panel.hidden=true;if(!story.ready||story.mode==='playing')captureMouse();});
+document.querySelector('#resume').addEventListener('click',stowTablet);
 canvas.addEventListener('mousedown',onPhysicalMouseDown);
+panel.addEventListener('mousedown',event=>{if(window.QBitsControls?.keyboardAction(savedPreferences.controls.keyboard,'Mouse'+event.button)==='tablet')onPhysicalMouseDown(event);});
+for(const surface of [panel,canvas])surface.addEventListener('auxclick',event=>{if(event.button===1)event.preventDefault();});
 document.addEventListener('mouseup',onPhysicalMouseUp);
 function handleWheel(event){
  if(robotPoseDraft){
@@ -4878,6 +4902,11 @@ function handleKey(event){
   if(!['KeyW','KeyA','KeyS','KeyD','KeyC','ShiftLeft','ShiftRight'].includes(event.code))return;
  }
  if(powerDraft&&event.code==='Escape'){event.preventDefault();cancelPowerCable();announce('Cable cancelado · material conservado');return;}
+ if(tabletVisible()&&['KeyW','KeyA','KeyS','KeyD','KeyC'].includes(event.code)){event.preventDefault();keys.add(event.code);return;}
+ if(tabletVisible()&&event.code==='KeyQ'&&!puzzle.active&&!event.repeat&&!event.altKey&&!event.ctrlKey&&!event.metaKey){
+  event.preventDefault();closeWorkshopPanel(false);switchPanelTab('catalog');return;
+ }
+ if(tabletVisible()&&['KeyP','Escape'].includes(event.code)){event.preventDefault();if(!event.repeat)stowTablet();return;}
  if(workshopPanel?.isOpen){event.preventDefault();if(['Escape','KeyE','KeyP'].includes(event.code))closeWorkshopPanel(true);return;}
  if(shelfPreview){if(['Escape','KeyP'].includes(event.code)){event.preventDefault();cancelShelfPlacement();announce('Colocación cancelada');return;}if(event.code==='KeyE'){event.preventDefault();confirmShelfPlacement();return;}if(!['KeyW','KeyA','KeyS','KeyD','KeyC','ShiftLeft','ShiftRight'].includes(event.code))return;}
  if(settingsScreen?.isOpen)return;
@@ -4890,14 +4919,14 @@ function handleKey(event){
   return;
  }
  if(event.code==='KeyQ'&&!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&unitRadialAllowed()){
-  event.preventDefault();openUnitRadial();return;
+  event.preventDefault();if(story.scene==='lab'){if(powerDraft)return;openPanel();switchPanelTab('catalog');}else openUnitRadial();return;
  }
  if(event.code==='Escape'&&pendingUnitCreation){event.preventDefault();cancelUnitCreation();announce('Creación cancelada');return;}
  if(storyInput(event))return;
  speech.lastInput=simTime;
  if(event.code==='Escape'){closeCommandMenu(false);moveChoice=null;pendingCargo=null;routeInspection=null;if(!menu.hidden)closeDetachMenu(false);finishMarquee(true);pause();return;}
  const editing=['INPUT','SELECT','BUTTON'].includes(document.activeElement?.tagName);
- if(event.code==='KeyP'&&!event.repeat&&!editing){event.preventDefault();if(panel.hidden)openPanel();else panel.hidden=true;return;}
+ if(event.code==='KeyP'&&!event.repeat&&!editing){event.preventDefault();if(panel.hidden)openPanel();else stowTablet();return;}
  if(!gameInputActive())return;
  if(event.code.startsWith('Alt')&&!held&&!marquee&&!event.repeat){if(powerInspectionAvailable()){event.preventDefault();keys.add(event.code);redraw=true;return;}const inspection=inspectionNearPin();if(inspection){event.preventDefault();routeInspection=inspection;keys.add(event.code);return;}const hit=aimQubit()||selected;if(hit?.g.parts.length>1){event.preventDefault();openDetachMenu(hit);return;}}
  if(['ShiftLeft','ShiftRight','ControlLeft','ControlRight','AltLeft','AltRight','KeyW','KeyA','KeyS','KeyD','KeyC'].includes(event.code)){
@@ -5762,6 +5791,17 @@ function onCanvasMouseDown(event){
  if(robotPoseDraft){robotPoseMouse(event);return;}
  if(powerDraft&&powerCableClick(event))return;
  if(workshopPanel?.isOpen)return;
+ if(tabletVisible()&&event.button===0){
+  const rect=canvas.getBoundingClientRect(),dir=screenRay(event.clientX-rect.left,event.clientY-rect.top);
+  const hit=aimQubit(ROOM_SIZE*1.5,dir),cargo=aimCargo(4,dir);
+  if(cargo){selectedCargo=cargo.cargo;switchPanelTab('cargo');}
+  else if(hit&&(hit.distance<=4||flightForGroup(hit.g))){
+   clearSelection();selected=hit;updatePanel();
+   const machine=selectedSensor()||rotorForPart(hit.part.id)||robotArmForGroup(hit.g,hit.part.id)||flightForGroup(hit.g)||conveyorForGroup(hit.g);
+   switchPanelTab(machine?'mechanisms':'cube');
+  }
+  if(cargo)updatePanel();event.preventDefault();return;
+ }
  if(shelfPreview){event.preventDefault();if(event.button===2)cancelShelfPlacement();else if(event.button===0){updateShelfPlacement(wallAim());confirmShelfPlacement();}return;}
  if(hudInputActive)return;
  if(radialOpen()){event.preventDefault();if(event.button===0)unitRadial.activate();return;}
@@ -5867,7 +5907,7 @@ function handleSecondary(event){
  if(!hit&&!cargoHit&&aimWorkshop(dir)){
   openCommandMenu(workshopBench.p,'Mesa de trabajo',[
    {label:'Abrir taller · E',run:()=>openWorkshopPanel()},
-   {label:'Retirar mesa',run:()=>{packWorkshop();captureMouse();announce('Mesa retirada · Q → Banco rápido para colocarla.');}},
+   {label:'Retirar mesa',run:()=>{packWorkshop();captureMouse();announce('Mesa retirada · Q → Equipo para colocarla.');}},
    {label:'Cerrar',run:()=>captureMouse()}
   ]);return;
  }
@@ -6262,7 +6302,165 @@ function updateInspection(){
  if(info.pending){el.textContent=info.status+' · R cancela';return;}
  el.textContent=info.status+' · '+info.metres.toFixed(2)+' m restantes · '+(info.waiting?'~'+Math.ceil(info.seconds)+' s de arrastre después de reunir el equipo':'~'+Math.ceil(info.seconds)+' s');
 }
-function switchPanelTab(name){panel.scrollTop=0;for(const tab of ['cube','route','cargo','puzzle','alpha','mechanisms','manual']){document.querySelector('#page-'+tab).hidden=tab!==name;document.querySelector('#tab-'+tab).setAttribute('aria-selected',String(tab===name));}}
+const tabletSections={
+ bodies:{label:'Cuerpos',tabs:['catalog','cube','route','cargo']},
+ machines:{label:'Mecanismos',tabs:['mechanisms']},
+ files:{label:'Archivo',tabs:['alpha','puzzle']},
+ help:{label:'Ayuda',tabs:['manual']}
+};
+const tabletPages={
+ catalog:['Catálogo','Elige un objeto para ver su plano en la sala. Confirma con clic. Shift alinea la posición a la cuadrícula.'],
+ cube:['Piezas','Selecciona una pieza en la sala para ver su masa y ajustar el agarre o la física.'],
+ route:['Recorrido','Selecciona las piezas que van a moverse. Usa el menú del suelo para indicar el destino.'],
+ cargo:['Cuerpos','Selecciona un cuerpo para ajustar sus propiedades y las órdenes de transporte.'],
+ mechanisms:['Mecanismos','Selecciona la máquina en la sala. Los indicadores siguen en vivo mientras ajustas los controles disponibles.'],
+ alpha:['Archivo del banco','Consulta las formas guardadas, los planos y las herramientas del banco.'],
+ puzzle:['Puzle','Prepara el desafío y consulta sus condiciones antes de iniciarlo.'],
+ manual:['Manual','Abre el capítulo del mecanismo que quieras probar. Encontrarás los controles y los pasos para montarlo.']
+};
+let tabletTab='cube',catalogFilter='Piezas',tabletStowTimer=0,tabletWheelTime=-Infinity;
+const tabletEl=id=>document.getElementById(id);
+const tabletMovement={forward:'KeyW',backward:'KeyS',left:'KeyA',right:'KeyD',crouch:'KeyC'};
+function tabletTyping(el){
+ return !!el&&(el.isContentEditable||el.tagName==='TEXTAREA'||el.tagName==='INPUT'&&
+  !['range','checkbox','radio','button','color'].includes(el.type));
+}
+function releaseForTablet(){
+ const walking=Object.values(tabletMovement).filter(code=>keys.has(code));pause();
+ for(const code of walking)keys.add(code);
+}
+function tabletPreferences(){
+ panel.dataset.hand=savedPreferences.tabletHand||'left';
+ panel.style.setProperty('--tablet-scale',String((savedPreferences.tabletScale||100)/100));
+ const label=inputLabel('tablet')==='Clic central'?'M3':inputLabel('tablet');
+ tabletEl('tablet-close-hint').textContent=label+' · guardar';tabletEl('tablet-hud-hint').textContent=label+' · Tableta';
+}
+function tabletNearBench(){
+ if(story.scene!=='lab'||puzzle.active||!workshopBench)return false;
+ const {p,q,surfaceHalf}=workshopBench;
+ const dx=position[0]-p.x,dz=position[2]-p.z,cos=1-2*q.y*q.y,sin=2*q.w*q.y;
+ const x=Math.max(0,Math.abs(dx*cos-dz*sin)-surfaceHalf.x);
+ const z=Math.max(0,Math.abs(dx*sin+dz*cos)-surfaceHalf.z);
+ return x*x+z*z<=3.5*3.5;
+}
+function syncTabletMode(){
+ const workshop=!!workshopPanel?.isOpen,near=tabletNearBench();
+ panel.dataset.mode=workshop?'workshop':'bank';
+ tabletEl('tablet-bank').setAttribute('aria-pressed',String(!workshop));
+ const button=tabletEl('tablet-workshop');button.disabled=!near;button.title=near?'Trabajar en la mesa':'Acércate a una mesa desplegada';
+ button.setAttribute('aria-pressed',String(workshop));
+}
+function tabletVisible(){return !panel.hidden&&story.mode==='playing'&&!story.transition&&story.scene==='lab';}
+function showTablet(){
+ clearTimeout(tabletStowTimer);delete panel.dataset.stowing;
+ panel.hidden=false;tabletPreferences();syncTabletMode();
+}
+function stowTablet(){
+ if(panel.hidden)return;
+ closeWorkshopPanel(false);panel.hidden=true;panel.dataset.stowing='true';
+ clearTimeout(tabletStowTimer);tabletStowTimer=setTimeout(()=>{delete panel.dataset.stowing;},170);
+ if(!story.ready||story.mode==='playing')captureMouse();
+}
+function toggleTablet(){
+ if(settingsScreen?.isOpen||story.mode!=='playing'||story.transition||document.body.dataset.booting==='true')return;
+ if(panel.hidden)openPanel();else stowTablet();
+}
+function catalogCategory(id){
+ if(id.startsWith('quick-saved-'))return 'Guardados';
+ if(/^quick-(battery|cable|power|workshop|shelf|cooler)/.test(id))return 'Equipo';
+ if(['cube','tetra','pyramid','coupler','quick-cargo','quick-gripper'].includes(id))return 'Piezas';
+ return 'Máquinas';
+}
+function drawTabletCatalog(){
+ const entries=['cube','tetra','pyramid','coupler','rotor',...quickEntries.keys()].filter(creationChoiceAllowed);
+ const filters=tabletEl('catalog-filters'),list=tabletEl('catalog-entries');
+ filters.replaceChildren();list.replaceChildren();
+ const usable=['Piezas','Máquinas','Equipo','Guardados'].filter(name=>entries.some(id=>catalogCategory(id)===name));
+ if(!usable.includes(catalogFilter))catalogFilter=usable[0];
+ for(const name of usable){
+  const button=document.createElement('button');button.type='button';button.textContent=name;
+  button.setAttribute('aria-pressed',String(name===catalogFilter));button.addEventListener('click',()=>{catalogFilter=name;drawTabletCatalog();});filters.append(button);
+ }
+ for(const id of entries.filter(id=>catalogCategory(id)===catalogFilter)){
+  const button=document.createElement('button');button.type='button';button.textContent=creationTitle(id);
+  const description=quickEntries.get(id)?.subtitle||tabletPages.catalog[1];
+  for(const event of ['focus','pointerenter'])button.addEventListener(event,()=>{tabletEl('tablet-help').textContent=description;});
+  button.dataset.creation=id;button.addEventListener('click',()=>startCreationTool(id));list.append(button);
+ }
+}
+function selectTabletGroup(id){switchPanelTab(tabletSections[id].tabs.find(tab=>tab!=='catalog'||story.scene==='lab'&&!puzzle.active));}
+function switchPanelTab(name){
+ if(!tabletPages[name])return;
+ tabletTab=name;const group=Object.keys(tabletSections).find(id=>tabletSections[id].tabs.includes(name));
+ panel.dataset.group=group;tabletPreferences();
+ tabletEl('tablet-center').scrollTop=0;
+ tabletEl('tablet-group-title').textContent=tabletSections[group].label;tabletEl('tablet-title').textContent=tabletPages[name][0];
+ tabletEl('tablet-help').textContent=tabletPages[name][1];
+ for(const id of Object.keys(tabletSections))tabletEl('wheel-'+id).setAttribute('aria-pressed',String(id===group));
+ for(const tab of Object.keys(tabletPages)){
+  const button=tabletEl('tab-'+tab);button.hidden=!tabletSections[group].tabs.includes(tab)||tab==='catalog'&&(story.scene!=='lab'||puzzle.active);
+  tabletEl('page-'+tab).hidden=tab!==name;button.setAttribute('aria-selected',String(tab===name));
+ }
+ drawMachineLinks();
+ if(name==='catalog'){refreshQuickEntries();drawTabletCatalog();}
+}
+const machineLinks=[
+ ['servo-panel','Servos','Ajusta los límites, la velocidad y la marcha de las articulaciones.'],
+ ['flight-panel','Vuelo','Configura la altura, las paradas y los puntos de la trayectoria.'],
+ ['arm-panel','Brazo','Ajusta la posición inicial y los puntos A y B antes de iniciar la secuencia.'],
+ ['conveyor-panel','Cintas','Prueba el sentido de la línea y comprueba la carga del tramo.'],
+ ['sensor-panel','Sensor','Elige qué detecta el sensor, el destino y la acción que ejecutará.'],
+ ['create-rotor','Rotores','Selecciona un rotor o un conjunto para ajustar el sentido, la fuerza y la velocidad.']
+];
+function drawMachineLinks(){
+ const nav=tabletEl('machine-links');nav.replaceChildren();nav.hidden=tabletTab!=='mechanisms';if(nav.hidden)return;
+ for(const [id,name,help] of machineLinks){
+  const section=tabletEl(id);if(section.hidden)continue;
+  const button=document.createElement('button');button.type='button';button.textContent=name;
+  button.addEventListener('click',()=>{
+   for(const other of nav.children)other.setAttribute('aria-pressed',String(other===button));
+   tabletEl('tablet-help').textContent=help;section.scrollIntoView?.({block:'start'});
+  });
+  nav.append(button);
+ }
+}
+function tabletWheel(event){
+ if(panel.hidden||!event.deltaY)return;
+ if(!event.shiftKey&&(workshopPanel?.isOpen||event.target?.closest?.('#tablet-center, .tablet-guide')))return;
+ event.preventDefault();event.stopPropagation();
+ const now=performance.now();if(now-tabletWheelTime<160)return;tabletWheelTime=now;
+ if(event.shiftKey){
+  if(workshopPanel?.isOpen){closeWorkshopPanel(false);switchPanelTab(tabletTab);}
+  else if(tabletNearBench())openWorkshopPanel();
+  return;
+ }
+ const order=Object.keys(tabletSections),index=order.indexOf(panel.dataset.group);
+ selectTabletGroup(order[(index+Math.sign(event.deltaY)+order.length)%order.length]);
+}
+for(const id of Object.keys(tabletSections))tabletEl('wheel-'+id).addEventListener('click',()=>selectTabletGroup(id));
+tabletEl('tablet-workshop').addEventListener('click',()=>{if(tabletNearBench())openWorkshopPanel();});
+tabletEl('tablet-bank').addEventListener('click',()=>{closeWorkshopPanel(false);switchPanelTab(tabletTab);});
+tabletEl('tablet-hand').addEventListener('click',()=>{
+ const next=savedPreferences.tabletHand==='right'?'left':'right';savedPreferences.tabletHand=next;tabletPreferences();
+ try{window.localStorage.setItem(preferences.KEY,JSON.stringify(savedPreferences));}catch{announce('Mano cambiada para esta sesión.');}
+});
+panel.addEventListener('wheel',tabletWheel,{passive:false});
+let tabletMotionFrame=0,tabletPointerX=0,tabletPointerY=0;
+panel.addEventListener('pointermove',event=>{
+ if(panel.hidden||event.pointerType==='touch')return;
+ tabletPointerX=event.clientX;tabletPointerY=event.clientY;
+ if(tabletMotionFrame)return;
+ tabletMotionFrame=requestAnimationFrame(()=>{
+  tabletMotionFrame=0;if(panel.hidden)return;
+  const r=panel.getBoundingClientRect();
+  panel.style.setProperty('--px',((tabletPointerX-r.left)/r.width*4-2).toFixed(1)+'px');
+  panel.style.setProperty('--py',((tabletPointerY-r.top)/r.height*3-1.5).toFixed(1)+'px');
+ });
+});
+panel.addEventListener('pointerleave',()=>{
+ cancelAnimationFrame(tabletMotionFrame);tabletMotionFrame=0;panel.style.setProperty('--px','0px');panel.style.setProperty('--py','0px');
+});
+
 function drawCargos(){
  for(const c of cargos){
   if(c.dimensions){drawMatter(c);continue;}
@@ -7555,7 +7753,7 @@ const chapters=[['00','El primer encuentro','Prólogo · tomar, mover y enfriar'
 const ui={main:document.querySelector('#main-screen'),pause:document.querySelector('#pause-screen'),levels:document.querySelector('#levels-screen'),complete:document.querySelector('#chapter-complete'),dialogue:document.querySelector('#story-dialogue'),text:document.querySelector('#story-text'),speaker:document.querySelector('#story-speaker'),choices:document.querySelector('#story-choices'),objective:document.querySelector('#story-objective'),veil:document.querySelector('#scene-veil'),top:document.querySelector('#eye-top'),bottom:document.querySelector('#eye-bottom'),cooling:document.querySelector('#cooling-track'),marker:document.querySelector('#world-label')};
 function gameMode(mode){if(mode!=='playing'){window.QBitsGuideAudio?.setPaused(true);window.QBitsFootsteps?.setPaused(true);window.QBitsJoinAudio?.setPaused(true);}if(mode!=='playing')closeUnitRadial(false);story.mode=mode;if(mode!=='playing'){cullingLab.observer=false;document.body.dataset.cullingObserver='false';cullingLab.lastFrame=null;}updateCullingHud(true);window.QBitsMusic?.setPaused(!['playing','menu','levels','codex','settings'].includes(mode));document.body.dataset.gameMode=mode;for(const [key,el] of [['menu',ui.main],['pause',ui.pause],['levels',ui.levels],['complete',ui.complete],['codex',document.querySelector('#codex-screen')]])el.hidden=mode!==key;document.querySelector('#pause-button').hidden=mode!=='playing';hint.hidden=true;redraw=true;}
 function gameScene(scene){story.scene=scene;document.body.dataset.gameScene=scene;const label=document.querySelector('#chapter-label');label.hidden=scene==='lab';document.querySelector('#chapter-number').textContent=scene==='intro'?'PRÓLOGO / 00':'NIVEL / '+String(story.level||1).padStart(2,'0');document.querySelector('#chapter-name').textContent=scene==='intro'?'El primer encuentro':chapters[story.level||1][1];}
-function storySuspended(){return !!workshopPanel?.isOpen||radialOpen()||story.ready&&(story.mode!=='playing'||document.hidden);}
+function storySuspended(){return radialOpen()||story.ready&&(story.mode!=='playing'||document.hidden);}
 function storyWalkAllowed(){return !story.ready||story.scene!=='intro'||['deliver','cooling','cooled','choice','repeat'].includes(story.phase);}
 function storyLookAllowed(){return !workshopPanel?.isOpen&&(!story.ready||story.mode==='playing'&&!['asleep','invocation','opening'].includes(story.phase));}
 function storyActionAllowed(){return !story.ready||story.mode==='playing'&&!story.transition&&!encounterLocksActions()&&(story.scene!=='intro'||['pickup','carry','deliver','cooling','cooled'].includes(story.phase));}
@@ -7718,7 +7916,7 @@ function storyInput(event){
  if(document.body.dataset.booting==='true')return true;
  if(story.transition){event.preventDefault();return true;}
  if(!story.ready)return false;const editing=editableTarget(document.activeElement);
- if(event.code==='KeyP'&&!event.repeat&&!editing){event.preventDefault();if(!panel.hidden){panel.hidden=true;if(story.mode==='playing')captureMouse();}else openPanel();return true;}
+ if(event.code==='KeyP'&&!event.repeat&&!editing){event.preventDefault();if(!panel.hidden)stowTablet();else openPanel();return true;}
  if(event.code==='Escape'){
   event.preventDefault();if(story.transition&&panel.hidden)return true;if(!panel.hidden){panel.hidden=true;if(story.mode==='playing')openPauseMenu();return true;}
   if(story.mode==='codex'){closeCodex();return true;}if(story.mode==='levels'){backFromLevels();return true;}if(story.mode==='pause'){resumeGame();return true;}if(story.mode==='playing'){if(!commandMenu.hidden){closeCommandMenu(true);return true;}if(!menu.hidden){closeDetachMenu(true);return true;}openPauseMenu();return true;}return true;
@@ -8548,6 +8746,7 @@ function workshopPanelInspect(draft,snapshot=workshopPanelSnapshot()){
  model.error=batteryWorkshopCheck(hit?.part.id,count);model.allowed=!model.error;model.applyLabel='Crear batería '+['','I','II','III'][count];model.action={kind:'battery',count};return model;
 }
 function workshopPanelApply(draft,model){
+ if(!tabletNearBench())return {ok:false,message:'Acércate a la mesa para aplicar el cambio.'};
  let ok=false;const action=model.action;if(!action)return {ok:false,message:'Elige una operación disponible.'};
  if(action.kind==='body')ok=workshopBodyApply(model.targetId,action.dimensions);
  else if(action.kind==='research')ok=purchaseWorkshopResearch(action.key);
@@ -8559,10 +8758,11 @@ function workshopPanelApply(draft,model){
 function initWorkshopPanel(){if(!workshopPanel&&window.QBitsWorkshopPanel)workshopPanel=window.QBitsWorkshopPanel.create({snapshot:workshopPanelSnapshot,inspect:workshopPanelInspect,apply:workshopPanelApply,onClose:()=>closeWorkshopPanel(true)});return workshopPanel;}
 function openWorkshopPanel(tab='batteries'){
  if(story.scene!=='lab'||puzzle.active||story.mode!=='playing'||story.transition)return false;
- if(!setupWorkshop()){announce('Coloca la mesa desde Q → Banco rápido.');return false;}
- if(!initWorkshopPanel())return false;awardWorkshopCredits();closeCommandMenu(false);closeDetachMenu(false);panel.hidden=true;pause();workshopPanel.open(tab);return true;
+ if(!setupWorkshop()){announce('Coloca la mesa desde Q → Equipo.');return false;}
+ if(!tabletNearBench()){announce('Acércate a la mesa para trabajar.');return false;}
+ if(!initWorkshopPanel())return false;awardWorkshopCredits();closeCommandMenu(false);closeDetachMenu(false);if(panel.hidden)releaseForTablet();workshopPanel.open(tab);showTablet();return true;
 }
-function closeWorkshopPanel(resume=true){if(!workshopPanel?.isOpen)return;workshopPanel.close();if(resume)captureMouse();}
+function closeWorkshopPanel(resume=true){if(!workshopPanel?.isOpen)return;workshopPanel.close();syncTabletMode();if(resume)stowTablet();}
 function showWorkshopBatteries(){return openWorkshopPanel('batteries');}
 function applyWorkshopUpgrade(id,patch){
  if(story.scene!=='lab'||puzzle.active||!workshopBench){announce('Las adaptaciones se preparan en la mesa del banco de pruebas.');return false;}
@@ -9233,7 +9433,7 @@ function applyPhysicsRate(hz){
 function applyPreferences(next){
  cullingLab.lastFrame=null;cullingLab.frameSamples.length=0;
  resetGameInputs();
- savedPreferences=preferences.sanitize(next);visuals=preferences.effective(savedPreferences);applyPhysicsRate(savedPreferences.physicsHz);
+ savedPreferences=preferences.sanitize(next);tabletPreferences();visuals=preferences.effective(savedPreferences);applyPhysicsRate(savedPreferences.physicsHz);
  window.qbitsSelectionHud?.setHint?.('Mantén '+inputLabel('hud')+' para elegir · Ctrl + clic para quitar');
  window.QBitsSubtitles?.apply(savedPreferences);
  window.QBitsGuideAudio?.configure(savedPreferences);window.QBitsFootsteps?.configure(savedPreferences);window.QBitsJoinAudio?.configure(savedPreferences);
@@ -9647,7 +9847,12 @@ function frame(time) {
   tickStory(dt);
   liveMechanismPanel(time);
   const frozen=storySuspended()||!!story.transition;
-  const active=gameInputActive()&&!document.hidden&&!frozen;
+  if(tabletVisible()){
+   const near=tabletNearBench();
+   if(workshopPanel?.isOpen&&!near){closeWorkshopPanel(false);switchPanelTab(tabletTab);}
+   if(tabletEl('tablet-workshop').disabled===near)syncTabletMode();
+  }
+  const active=(gameInputActive()||tabletVisible())&&!document.hidden&&!frozen;
   if(!frozen)updatePosture(dt,active&&storyWalkAllowed(),keys.has('KeyC'));
   if (active) {
     const forward = clamp(Number(keys.has('KeyW')) - Number(keys.has('KeyS'))-gamepadMove[1],-1,1);

@@ -3,12 +3,16 @@ const assert=require('node:assert/strict');
 const createGame=require('./game-harness.cjs');
 function lab(){const game=createGame(),{t,sandbox}=game;t.clearNarrativeScene();Object.assign(t.story,{ready:true,mode:'playing',scene:'lab',phase:'idle',progress:{}});sandbox.document.body.dataset.booting='false';sandbox.document.pointerLockElement=t.canvas;return game;}
 function key(game,type,code){game.sandbox.document.dispatchEvent({type,code,repeat:false});}
-function choose(game,id){key(game,'keydown','KeyQ');const before=game.radial.getState(),figure=before.figures.find(f=>f.id===id);game.sandbox.document.dispatchEvent({type:'mousemove',movementX:figure.x-before.x,movementY:figure.y-before.y});key(game,'keyup','KeyQ');}
+function choose(game,id){key(game,'keydown','KeyQ');if(game.t.story.scene==='lab'){
+ const node=id=>game.sandbox.document.querySelector('#'+id);
+ if(id==='rotor')node('catalog-filters').children.find(b=>b.textContent==='Máquinas').dispatchEvent({type:'click'});
+ node('catalog-entries').children.find(b=>b.dataset.creation===id).dispatchEvent({type:'click'});key(game,'keyup','KeyQ');return;
+ }const before=game.radial.getState(),figure=before.figures.find(f=>f.id===id);game.sandbox.document.dispatchEvent({type:'mousemove',movementX:figure.x-before.x,movementY:figure.y-before.y});key(game,'keyup','KeyQ');}
 function click(game){game.t.setLook({camera:[game.t.groups.length*.5,2,2],yaw:0,pitch:-Math.PI/4});game.t.canvas.dispatchEvent({type:'mousedown',button:0});game.sandbox.document.dispatchEvent({type:'mouseup',button:0});}
 function node(game,id){return game.sandbox.document.querySelector('#'+id);}
 
-test('Q lower mechanisms create a single Enganche or a two-body Rotor on the next click',()=>{
- const game=lab(),{t}=game;choose(game,'coupler');click(game);
+test('Tablet catalog mechanisms create a single Enganche or a two-body Rotor on the next click',()=>{
+ const game=lab(),{t,sandbox}=game;t.canvas.requestPointerLock=()=>{sandbox.document.pointerLockElement=t.canvas;};choose(game,'coupler');click(game);
  assert.equal(t.groups.length,1);assert.equal(t.groups[0].parts[0].shape,'coupler');
  choose(game,'rotor');click(game);assert.equal(t.groups.length,3);assert.equal(t.rotors.length,1);
  assert.equal(t.rotorGroups(t.rotors[0]).length,2);assert.equal(t.rotors[0].enabled,false);
@@ -44,7 +48,7 @@ test('right-click rotation submenu has both directions and an explicit mobile-si
  node(game,'command-actions').children.find(b=>b.textContent.includes('Girar lado A')).dispatchEvent({type:'click'});assert.equal(rotor.moving,'a');
 });
 test('Q lens transition changes FOV while world time and camera pose remain frozen, then returns',()=>{
- const game=lab(),{t}=game;const before=t.getLook(),time=t.getSimTime();key(game,'keydown','KeyQ');
+ const game=lab(),{t}=game;t.story.scene='campaign';t.story.progress.level5=true;const before=t.getLook(),time=t.getSimTime();key(game,'keydown','KeyQ');
  t.updateHeldFocus(.05,false);assert(t.menuFocus.amount>0&&t.menuFocus.amount<.5);
  for(let i=0;i<25;i++)t.updateHeldFocus(.05,false);
  assert(t.heldFocus.focal>1.8);assert.deepEqual(t.getLook(),before);assert.equal(t.getSimTime(),time);

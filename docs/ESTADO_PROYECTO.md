@@ -2,9 +2,15 @@
 
 Actualizado: 19 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega · mesa desplegable y colocación de planos
+## Última entrega · tableta del banco de pruebas
 
-El clic derecho sobre la pieza muestra sus opciones y E abre el taller. El tablero libre ofrece retirar la mesa. Q → Banco rápido → Mesa de trabajo permite colocarla o reubicarla. Al volver de campaña o del puzle se recuperan su posición y orientación o su estado retirado.
+M3 despliega o guarda la tableta. P y Q abren los controles y el catálogo en la misma interfaz. La rueda sobre el selector recorre cuatro secciones. Shift + rueda alterna entre Banco y Mesa a menos de 3,5 m del borde de una mesa desplegada. Al alejarse se recupera el banco. WASD, la simulación y las máquinas siguen activos. El botón ⇄ y Configuración → Juego permiten personalizar la mano y el tamaño.
+
+El vidrio, el brillo y el paralaje usan capas CSS. La selección del catálogo prepara el mismo plano que el botón de creación. La campaña conserva su rueda y sus condiciones de desbloqueo.
+
+## Entrega anterior · mesa desplegable y colocación de planos
+
+El clic derecho sobre la pieza muestra sus opciones y E abre el taller. El tablero libre ofrece retirar la mesa. Q → Equipo → Mesa de trabajo permite colocarla o reubicarla. Al volver de campaña o del puzle se recuperan su posición y orientación o su estado retirado.
 
 Los planos de construcción y las copias del banco rápido se previsualizan antes de confirmar. En el piso, Shift muestra y activa una cuadrícula de 9 cm. La rueda normal cambia de cara y Shift + rueda permite elegir el ángulo en 360°. La reconstrucción de la escena conserva el ángulo exacto de los planos. La prolongación automática de una cinta desde su panel sigue usando la salida del tramo receptor.
 

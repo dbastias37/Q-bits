@@ -14,7 +14,7 @@ test('controller navigates the real main-screen scope and confirms its focused b
 test('radial accepts its own remapped modifier but still rejects an unrelated modified shortcut',()=>{
  for(const [code,flag]of [['AltLeft','altKey'],['ControlLeft','ctrlKey']]){
   const {t,sandbox}=setup(),d=P.defaults();C.assignBinding(d.controls,'keyboard','radial',code);t.applyPreferences(d);sandbox.document.pointerLockElement=t.canvas;
-  sandbox.document.dispatchEvent({type:'keydown',code,[flag]:true,repeat:false});assert(t.radialOpen(),code+' opens the wheel');sandbox.document.dispatchEvent({type:'keyup',code});assert(!t.radialOpen());
+  sandbox.document.dispatchEvent({type:'keydown',code,[flag]:true,repeat:false});assert(!sandbox.document.querySelector('#page-catalog').hidden,code+' opens the catalog');sandbox.document.dispatchEvent({type:'keyup',code});assert(!t.radialOpen());
  }
  const {t,sandbox}=setup();sandbox.document.pointerLockElement=t.canvas;sandbox.document.dispatchEvent({type:'keydown',code:'KeyQ',ctrlKey:true,repeat:false});assert(!t.radialOpen());sandbox.document.dispatchEvent({type:'keyup',code:'KeyQ'});sandbox.document.dispatchEvent({type:'keydown',code:'KeyQ',altKey:true,repeat:false});assert(!t.radialOpen());
 });
@@ -28,7 +28,7 @@ test('HUD held with X can navigate and confirm with triangle, and advertises the
  t.pollGamepadInput(.05);current=pad([0]);t.pollGamepadInput(.05);assert(t.getInputState().hudInputActive);assert.match(hint,/△/);current=pad([0,15]);t.pollGamepadInput(.05);assert.equal(moved,1);current=pad([0]);t.pollGamepadInput(.05);current=pad([0,3]);t.pollGamepadInput(.05);assert.equal(activated,1);current=pad([]);t.pollGamepadInput(.05);assert(!t.getInputState().hudInputActive);
 });
 test('radial held with X confirms a highlighted choice with triangle',()=>{
- const {t,sandbox}=setup(),d=P.defaults();C.assignBinding(d.controls,'gamepad','radial',0);t.applyPreferences(d);let current=pad();sandbox.navigator.getGamepads=()=>[current];t.pollGamepadInput(.05);current=pad([0]);t.pollGamepadInput(.05);assert(t.radialOpen());assert.match(sandbox.document.querySelector('#unit-radial .radial-help').textContent,/△/);current=pad([0,15]);t.pollGamepadInput(.05);const hovered=t.getUnitRadial().hovered;assert(hovered);current=pad([0]);t.pollGamepadInput(.05);current=pad([0,3]);t.pollGamepadInput(.05);assert(!t.radialOpen());assert.equal(t.creationShape(),hovered);
+ const {t,sandbox}=setup(),d=P.defaults();t.story.scene='campaign';t.story.progress.level5=true;C.assignBinding(d.controls,'gamepad','radial',0);t.applyPreferences(d);let current=pad();sandbox.navigator.getGamepads=()=>[current];t.pollGamepadInput(.05);current=pad([0]);t.pollGamepadInput(.05);assert(t.radialOpen());assert.match(sandbox.document.querySelector('#unit-radial .radial-help').textContent,/△/);current=pad([0,15]);t.pollGamepadInput(.05);const hovered=t.getUnitRadial().hovered;assert(hovered);current=pad([0]);t.pollGamepadInput(.05);current=pad([0,3]);t.pollGamepadInput(.05);assert(!t.radialOpen());assert.equal(t.creationShape(),hovered);
 });
 test('custom controller pause button resumes from pause while menu X and circle keep their roles',()=>{
  const {t,sandbox}=setup(),d=P.defaults();C.assignBinding(d.controls,'gamepad','pause',3);t.applyPreferences(d);let current=pad();sandbox.navigator.getGamepads=()=>[current];t.pollGamepadInput(.05);current=pad([3]);t.pollGamepadInput(.05);assert.equal(t.story.mode,'pause');current=pad([]);t.pollGamepadInput(.05);current=pad([3]);t.pollGamepadInput(.05);assert.equal(t.story.mode,'playing');

@@ -21,11 +21,11 @@ function hover(game, shape) {
   assert.equal(game.radial.hovered, shape);
 }
 
-test('holding Q opens once, and releasing it commits the hovered type without creating a unit', () => {
+test('the radial selector opens once, and confirming commits the hovered type without creating a unit', () => {
   const game = lab(), { t, sandbox } = game;
   t.settings.unitShape = 'cube';
   const count = t.groups.length;
-  key(game, 'KeyQ');
+  game.t.openUnitRadial();
   assert(t.radialOpen());
   assert.equal(sandbox.document.querySelector('#radial-option-cube').getAttribute('aria-selected'), 'true');
   assert(sandbox.document.querySelector('#unit-radial').classList.contains('virtual-pointer'));
@@ -35,13 +35,13 @@ test('holding Q opens once, and releasing it commits the hovered type without cr
   assert.equal(game.radial.getState().x, choice.x);
   assert.equal(game.radial.hovered, 'tetra', 'repeated Q must not reset the current choice');
   assert.equal(t.settings.unitShape, 'cube');
-  release(game, 'KeyQ');
+  game.t.closeUnitRadial(true);
   assert.equal(t.radialOpen(), false);
   assert.equal(t.settings.unitShape, 'tetra');
   assert.equal(sandbox.document.querySelector('#unit-shape').value, 'tetra');
   assert.equal(t.groups.length, count);
   assert.equal(sandbox.document.pointerLockElement, t.canvas);
-  release(game, 'KeyQ');
+  game.t.closeUnitRadial(true);
   assert.equal(t.groups.length, count, 'a duplicate release does not create a piece');
 });
 
@@ -49,15 +49,15 @@ test('dead zone, outside release and Escape retain the previous type', () => {
   for (const outside of [false, true]) {
     const game = lab(), { t } = game;
     t.settings.unitShape = 'pyramid';
-    key(game, 'KeyQ');
+    game.t.openUnitRadial();
     if(outside){hover(game, 'tetra');game.radial.moveTo(0, 0);}
-    release(game, 'KeyQ');
+    game.t.closeUnitRadial(true);
     assert.equal(t.settings.unitShape, 'pyramid');
     assert.equal(t.radialOpen(), false);
   }
   const game = lab(), { t } = game;
-  t.settings.unitShape = 'pyramid';key(game, 'KeyQ');hover(game, 'tetra');
-  key(game, 'Escape');release(game, 'KeyQ');
+  t.settings.unitShape = 'pyramid';game.t.openUnitRadial();hover(game, 'tetra');
+  key(game, 'Escape');game.t.closeUnitRadial(true);
   assert.equal(t.settings.unitShape, 'pyramid');
   assert.equal(t.story.mode, 'playing');
   assert.equal(t.radialOpen(), false);
@@ -68,7 +68,7 @@ test('dead zone, outside release and Escape retain the previous type', () => {
 test('selection changes the shape N creates and preserves the existing creation workflow', () => {
   const game = lab(), { t } = game;
   for (const shape of ['tetra', 'pyramid', 'cube']) {
-    key(game, 'KeyQ');hover(game, shape);release(game, 'KeyQ');
+    game.t.openUnitRadial();hover(game, shape);game.t.closeUnitRadial(true);
     t.setLook({camera:[['tetra','pyramid','cube'].indexOf(shape),2,2],yaw:0,pitch:-Math.PI/4});key(game, 'KeyN');
     assert.equal(t.getSelected().part.shape, shape);
     assert.equal(t.creationShape(), shape);
@@ -80,7 +80,7 @@ test('opening clears movement keys and freezes movement, posture, physics and na
   const piece = t.addQubit([0, 2, 0]);
   key(game, 'KeyW');key(game, 'KeyC');key(game, 'ShiftLeft');
   assert(t.keys.size >= 3);
-  key(game, 'KeyQ');
+  game.t.openUnitRadial();
   assert.equal(t.keys.size, 0);
   assert(t.storySuspended());
   const before = {
@@ -97,14 +97,14 @@ test('opening clears movement keys and freezes movement, posture, physics and na
   assert.equal(piece.body.position.y, before.pieceY);
   assert.equal(t.groups.length, before.count);
   assert.equal(t.keys.size, 0);
-  release(game, 'KeyQ');
+  game.t.closeUnitRadial(true);
   assert.equal(t.keys.size, 0);
   assert.equal(t.storySuspended(), false);
 });
 
 test('locked mouse controls the selector without rotating the camera or interacting with units', () => {
   const game = lab(), { t, sandbox } = game;
-  key(game, 'KeyQ');
+  game.t.openUnitRadial();
   const before = t.getLook(), pointer = game.radial.getState(), height = t.posture.crouchHeight, count = t.groups.length;
   sandbox.document.dispatchEvent({ type: 'mousemove', movementX: 47, movementY: -23 });
   assert.equal(game.radial.getState().x, pointer.x + 47);
@@ -120,15 +120,15 @@ test('locked mouse controls the selector without rotating the camera or interact
   assert(t.radialOpen());
 });
 
-test('Q requires actual pointer capture, and arrow keys can select once captured', () => {
+test('the radial selector requires actual pointer capture, and arrow keys can select once captured', () => {
   const game = lab({ locked: false }), { t, sandbox } = game;
-  key(game, 'KeyQ');
+  game.t.openUnitRadial();
   assert.equal(t.radialOpen(), false);
   sandbox.document.pointerLockElement = t.canvas;
-  key(game, 'KeyQ');
+  game.t.openUnitRadial();
   key(game, 'ArrowRight');key(game, 'ArrowRight');
   assert.equal(game.radial.hovered, 'tetra');
-  release(game, 'KeyQ');
+  game.t.closeUnitRadial(true);
   assert.equal(t.settings.unitShape, 'tetra');
   assert.equal(sandbox.document.pointerLockElement, t.canvas);
 });
@@ -140,8 +140,8 @@ test('blur, hidden tab and pause discard hover instead of committing it', () => 
     game => game.t.openPauseMenu()
   ]) {
     const game = lab(), { t } = game;
-    t.settings.unitShape = 'cube';key(game, 'KeyQ');hover(game, 'pyramid');
-    cancel(game);release(game, 'KeyQ');
+    t.settings.unitShape = 'cube';game.t.openUnitRadial();hover(game, 'pyramid');
+    cancel(game);game.t.closeUnitRadial(true);
     assert.equal(t.radialOpen(), false);
     assert.equal(t.settings.unitShape, 'cube');
     assert.equal(t.story.mode, 'pause');
@@ -155,8 +155,8 @@ test('pointer-lock loss, lock errors and WebGL loss cancel selection', () => {
     game => game.t.canvas.dispatchEvent({ type: 'webglcontextlost' })
   ]) {
     const game = lab(), { t } = game;
-    t.settings.unitShape = 'tetra';key(game, 'KeyQ');hover(game, 'pyramid');
-    cancel(game);release(game, 'KeyQ');
+    t.settings.unitShape = 'tetra';game.t.openUnitRadial();hover(game, 'pyramid');
+    cancel(game);game.t.closeUnitRadial(true);
     assert.equal(t.radialOpen(), false);
     assert.equal(t.settings.unitShape, 'tetra');
   }
@@ -165,8 +165,8 @@ test('pointer-lock loss, lock errors and WebGL loss cancel selection', () => {
 test('scene transitions and scene replacement cancel a pending selection', () => {
   for (const change of [game => game.t.sceneFade(() => {}), game => game.t.clearNarrativeScene()]) {
     const game = lab(), { t } = game;
-    t.settings.unitShape = 'tetra';key(game, 'KeyQ');hover(game, 'pyramid');
-    change(game);release(game, 'KeyQ');
+    t.settings.unitShape = 'tetra';game.t.openUnitRadial();hover(game, 'pyramid');
+    change(game);game.t.closeUnitRadial(true);
     assert.equal(t.radialOpen(), false);
     assert.equal(t.settings.unitShape, 'tetra');
   }
@@ -206,18 +206,20 @@ test('Q does not interrupt a held unit and modified Q shortcuts do not open the 
   assert(t.getHeld());
   key(game, 'KeyQ');
   assert.equal(t.radialOpen(), false);
+    assert(game.sandbox.document.querySelector('#panel').hidden);
   assert.equal(t.getHeld().g, g);
   t.releaseQubit();
   for (const modifier of ['ctrlKey', 'metaKey', 'altKey']) {
     key(game, 'KeyQ', { [modifier]: true });
     assert.equal(t.radialOpen(), false);
+    assert(game.sandbox.document.querySelector('#panel').hidden);
   }
 });
 
 test('releasing Q after eligibility changes never applies the hover choice', () => {
   const game = lab(), { t } = game;
-  t.settings.unitShape = 'cube';key(game, 'KeyQ');hover(game, 'tetra');
-  t.story.scene = 'campaign';release(game, 'KeyQ');
+  t.settings.unitShape = 'cube';game.t.openUnitRadial();hover(game, 'tetra');
+  t.story.scene = 'campaign';game.t.closeUnitRadial(true);
   assert.equal(t.radialOpen(), false);
   assert.equal(t.settings.unitShape, 'cube');
 });
@@ -226,9 +228,9 @@ function click(game, button = 0) {
   game.t.canvas.dispatchEvent({ type: 'mousedown', button });
   game.sandbox.document.dispatchEvent({ type: 'mouseup', button });
 }
-function choose(game, shape) { key(game, 'KeyQ');hover(game, shape);release(game, 'KeyQ'); }
+function choose(game, shape) { game.t.openUnitRadial();hover(game, shape);game.t.closeUnitRadial(true); }
 
-test('Q selection arms exactly one primary click to create the chosen shape', () => {
+test('radial selection arms exactly one primary click to create the chosen shape', () => {
   for (const shape of ['cube', 'tetra', 'pyramid']) {
     const game = lab(), { t } = game;
     choose(game, shape);
@@ -258,7 +260,7 @@ test('reopening Q replaces the pending choice, and dead-zone cancellation disarm
   const game = lab(), { t } = game;
   choose(game, 'tetra');choose(game, 'pyramid');click(game);
   assert.equal(t.groups[0].parts[0].shape, 'pyramid');
-  choose(game, 'cube');key(game, 'KeyQ');release(game, 'KeyQ');click(game);
+  choose(game, 'cube');game.t.openUnitRadial();game.t.closeUnitRadial(true);click(game);
   assert.equal(t.groups.length, 1, 'cancelled selector must not leave the earlier creation armed');
 });
 

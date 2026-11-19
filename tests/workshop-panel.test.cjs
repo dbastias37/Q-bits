@@ -5,7 +5,7 @@ function bar(t,count){const p=t.getWorkshopBench().p,g=t.makeGroup(Array.from({l
 const click=node=>node.dispatchEvent({type:'click'});
 
 test('large workshop drafts choices without mutating pieces and leaves the applied result on the bench',()=>{
- const game=lab(),{t}=game,g=bar(t,2),before=t.worldParts(g);assert(t.openWorkshopPanel());assert(t.storySuspended());assert.equal(node(game,'screen').hidden,false);const panel=t.getWorkshopPanel();
+ const game=lab(),{t}=game,g=bar(t,2),before=t.worldParts(g);assert(t.openWorkshopPanel());assert(!t.storySuspended());assert.equal(node(game,'screen').hidden,false);const panel=t.getWorkshopPanel();
  panel.choose('battery:3');assert.equal(node(game,'apply').disabled,true);assert.match(node(game,'reason').textContent,/3 cubos/);assert(g.parts.every(p=>!t.isExternalBattery(p)));panel.choose('battery:2');assert.equal(node(game,'apply').disabled,false);assert.equal(panel.model.preview.size[0],2);
  click(node(game,'apply'));assert(g.parts.every(t.isExternalBattery));assert(panel.isOpen);assert.equal(panel.draft.choice,'battery:keep');assert.match(node(game,'feedback').textContent,/creada/);assert.equal(t.getHeld(),null);
  const after=t.worldParts(g);for(let i=0;i<after.length;i++){assert.equal(after[i].id,before[i].id);assert.equal(after[i].weight,before[i].weight);assert(after[i].p.distanceTo(before[i].p)<1e-12);}
