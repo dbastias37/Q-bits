@@ -335,7 +335,7 @@ El renderizador agrupa los cubos de cuerpos rígidos irregulares en una malla ca
 
 Pulsa el botón central del mouse (M3) para desplegar o guardar la tableta. P abre los controles y Q abre el catálogo. Usa la rueda sobre la navegación para recorrer Cuerpos, Mecanismos, Archivo y Ayuda. Sobre los controles, la rueda desplaza el contenido. Cerca de una mesa desplegada, Shift + rueda alterna entre Banco y Mesa.
 
-WASD permite caminar con la tableta abierta. Haz clic en una pieza visible para consultar sus propiedades. El botón ⇄ cambia la tableta de mano. Configuración → Juego permite elegir la mano y el tamaño (75–125 %).
+WASD permite caminar con la tableta abierta. Haz clic en una pieza visible para consultar sus propiedades. El botón ⇄ cambia la tableta de mano. Arrastra el nombre **Q-bits** de la cabecera para moverla. En **Configuración → Juego** puedes elegir **Cristal** o **Industrial**, cambiar la mano, ajustar el tamaño (75–125 %) y afinar la posición horizontal y vertical.
 
 El catálogo organiza las copias de prueba en Piezas, Máquinas, Equipo y Guardados. Después de elegir una tarjeta, apunta la vista previa y confirma con clic. Las copias se colocan con los motores detenidos y las baterías apagadas.
 

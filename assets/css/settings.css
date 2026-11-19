@@ -38,3 +38,8 @@
 #settings-screen[data-binding-capture='keyboard'] .settings-binding-row button:focus,
 #settings-screen[data-binding-capture='gamepad'] .settings-binding-row button:focus{outline:2px solid #377f85;outline-offset:3px;}
 @media(max-width:760px){.settings-tabs{gap:2px 14px;}.settings-binding-row{grid-template-columns:minmax(0,1fr) minmax(120px,48%);gap:10px;}}
+
+#settings-screen :is(.settings-tabs button,.settings-footer button,.settings-confirm-actions button,.settings-binding-actions button,.settings-row select) {
+  font:10px/1.55 var(--font-menu); white-space:normal; min-width:0; max-width:100%;
+}
+#settings-screen .settings-tabs {flex-wrap:wrap;gap:4px 14px}

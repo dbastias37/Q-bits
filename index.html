@@ -12,7 +12,7 @@
   <link rel="preload" href="assets/fonts/led-calculator/LEDCalculator.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="stylesheet" href="assets/css/radial-menu.css?v=20261116-quick-catalogue-1">
   <link rel="stylesheet" href="assets/css/quick-catalogue.css?v=20261116-quick-catalogue-1">
-  <link rel="stylesheet" href="assets/css/settings.css?v=20261116-robot-arm-1">
+  <link rel="stylesheet" href="assets/css/settings.css?v=20261119-desk-glass">
   <style>
     * { box-sizing: border-box; }
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000; }
@@ -313,7 +313,7 @@ input,select,textarea{font-family:var(--font-menu);}
 <link rel="stylesheet" href="assets/css/conveyor-panel.css?v=20261116-quick-catalogue-1">
 <link rel="stylesheet" href="assets/css/servo-panel.css?v=20261117-culling-1">
   <link rel="stylesheet" href="assets/css/culling-lab.css?v=20261117-culling-1">
-  <link rel="stylesheet" href="assets/css/tablet.css?v=20261119-holo-tablet">
+  <link rel="stylesheet" href="assets/css/tablet.css?v=20261119-desk-glass">
 </head>
 <body data-game-mode="boot" data-game-scene="lab" data-booting="true">
   <section id="boot-screen" aria-label="Inicio de Q-bits" data-stage="loading">
@@ -369,7 +369,7 @@ input,select,textarea{font-family:var(--font-menu);}
   <section id="panel" class="tablet" hidden aria-label="Tableta Q-bits" data-mode="bank" data-group="bodies">
     <div class="tablet-projection">
       <header class="tablet-header">
-        <div class="tablet-brand"><i aria-hidden="true"></i> Q-bits</div>
+        <div class="tablet-brand" id="tablet-grip" title="Arrastrar para mover la tableta"><i aria-hidden="true"></i> Q-bits</div>
         <nav aria-label="Entorno de trabajo"><button id="tablet-bank" aria-pressed="true">Banco</button><button id="tablet-workshop" aria-pressed="false" disabled>Mesa</button></nav>
         <button id="tablet-hand" title="Cambiar de mano" aria-label="Cambiar de mano">⇄</button>
         <button id="resume" aria-label="Guardar tableta" title="Guardar tableta">×</button>
@@ -801,6 +801,6 @@ input,select,textarea{font-family:var(--font-menu);}
   </section>
   <script src="assets/js/opening.js?v=20261116-block-joins-1" defer></script>
   <script src="assets/js/servo-panel.js?v=20261117-culling-1" defer></script>
-  <script src="assets/js/boot.js?v=20261119-holo-tablet" defer></script>
+  <script src="assets/js/boot.js?v=20261119-desk-glass" defer></script>
 </body>
 </html>

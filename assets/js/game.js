@@ -1901,7 +1901,7 @@ function updateFlightPanel(){
  document.querySelector('#flight-start').disabled=f.enabled;document.querySelector('#flight-land').disabled=!f.enabled;
 }
 function openFlightPanel(hit,editor=false){
- closeCommandMenu(false);pause();clearRotorSelection();selected=hit;multiSelection=[];selectedCargo=null;panel.hidden=false;updatePanel();switchPanelTab('mechanisms');
+ closeCommandMenu(false);pause();clearRotorSelection();selected=hit;multiSelection=[];selectedCargo=null;showTablet();updatePanel();switchPanelTab('mechanisms');
  if(editor)flightField('editor').open=true;
  flightField(editor?'editor':'panel').scrollIntoView?.({block:'start'});
 }
@@ -2775,7 +2775,7 @@ function returnRobotPosePanel(){
  if(!arm||!robotArms.includes(arm))return;
  const grip=robotGripperHit(arm.gripperId);
  if(grip)selected={g:grip.g,part:grip.part};
- robotPanelGripperId=arm.gripperId;pause();panel.hidden=false;
+ robotPanelGripperId=arm.gripperId;pause();showTablet();
  switchPanelTab('mechanisms');updatePanel();const control=document.querySelector('#arm-pose-'+name);control.scrollIntoView?.({block:'nearest'});control.focus({preventScroll:true});
 }
 function updateRobotPoseDraft(time=performance.now(),force=false){
@@ -5919,7 +5919,7 @@ function handleSecondary(event){
   if(c.job)items.push({label:'Sumar selección ('+number+')',disabled:!number,run:()=>{addCrew(c,team);captureMouse();}});
   items.push({label:c.job?'Cambiar destino':'Arrastrar con selección ('+number+')',disabled:!number&&!c.job,run:()=>{pendingCargo={cargo:c,team:c.job?[...new Set(c.job.slots.map(s=>s.g).concat(team))]:[...team]};captureMouse();announce('Clic derecho en el suelo → Llevar carga a este punto.');}});
   if(c.job)items.push({label:'Detener equipo',run:()=>{stopHaul(c);captureMouse();}});
-  items.push({label:'Color y peso · pruebas',run:()=>{panel.hidden=false;updatePanel();switchPanelTab('cargo');}});
+  items.push({label:'Color y peso · pruebas',run:()=>{showTablet();updatePanel();switchPanelTab('cargo');}});
   items.push({label:'Cerrar',run:()=>captureMouse()});openCommandMenu(c.body.position,'Cuerpo · '+c.required+' u · '+(c.job?.activeCount||0)+' / '+c.required,items);return;
  }
  if(hit){
@@ -5933,7 +5933,7 @@ function handleSecondary(event){
   if(gripperId){
    robotPanelGripperId=gripperId;
    openCommandMenu(partPose(hit.g,hit.part).p,arm?'Brazo Q-bits · '+robotArmStatus(arm):'Cubo de agarre',[
-    {label:'Configurar agarre y secuencia…',run:()=>{closeCommandMenu(false);pause();panel.hidden=false;updatePanel();showArmControls();}},
+    {label:'Configurar agarre y secuencia…',run:()=>{closeCommandMenu(false);pause();showTablet();updatePanel();showArmControls();}},
     ...(arm?[{label:arm.running||arm.jogging?'Detener brazo':'Iniciar secuencia',run:()=>{if(arm.running||arm.jogging)stopRobotArm(arm);else startRobotArm(arm);captureMouse();}}]:[{label:'Tomar objeto compatible',run:()=>{gripperGrab(gripperId);captureMouse();}}]),
     {label:'Soltar objeto',run:()=>{if(arm?.running)stopRobotArm(arm);releaseGripper(gripperId);captureMouse();}},
     {label:'Tomar mecanismo',disabled:!canCarry(rotorConnectedGroups([hit.g]))||hit.distance>2.8,run:()=>takeSelection(hit)},
@@ -5945,7 +5945,7 @@ function handleSecondary(event){
   const conveyor=ownedConveyor||conveyorForGroup(hit.g);
   if(conveyor){
    openCommandMenu(partPose(hit.g,hit.part).p,'Cinta Q-bits · '+conveyorStatus(conveyor),[
-    {label:'Configurar cinta y extender…',run:()=>{closeCommandMenu(false);pause();panel.hidden=false;updatePanel();switchPanelTab('mechanisms');}},
+    {label:'Configurar cinta y extender…',run:()=>{closeCommandMenu(false);pause();showTablet();updatePanel();switchPanelTab('mechanisms');}},
     {label:'Iniciar marcha de la línea',disabled:conveyorLine(conveyor).every(c=>c.running),run:()=>{if(startConveyorLine(conveyor))announce('Línea en marcha');else announce(conveyorStatus(conveyor));captureMouse();}},
     {label:'Detener tramo',disabled:!conveyor.running,run:()=>{stopConveyor(conveyor);announce(conveyorStatus(conveyor));captureMouse();}},
     {label:'Invertir sentido del tramo',run:()=>{configureConveyor(conveyor,{direction:-conveyor.direction});announce(conveyorStatus(conveyor));captureMouse();}},
@@ -5981,7 +5981,7 @@ function selectedRotor(){return selected?.g?(rotorForPart(selected.part?.id)||ro
 function rotorMenuPoint(rotor){const members=rotorGroups(rotor);return members.length?members.reduce((v,g)=>add(v,mul(g.body.position,1/members.length)),V()):V(...camera);}
 function rotorControlSubject(){return activeRotorSet()||{name:'Selección de rotores',rotorIds:controlRotors().map(r=>r.id)};}
 function individualControlRotor(){const members=controlRotors();return members.length===1?members[0]:null;}
-function openRotorControls(){closeCommandMenu(false);pause();panel.hidden=false;updatePanel();switchPanelTab('mechanisms');}
+function openRotorControls(){closeCommandMenu(false);pause();showTablet();updatePanel();switchPanelTab('mechanisms');}
 function runRotorControls(patch){
  const members=controlRotors();if(!members.length)return false;
  if(!panel.hidden&&members.some(r=>r.enabled)&&patch.enabled!==false)return false;
@@ -6012,7 +6012,7 @@ function showRotorRotation(rotor,point=rotorMenuPoint(rotor)){
   {label:'Sentido antihorario',run:()=>run(-1)},
   {label:'Detener rotación',run:()=>{configureRotor(rotor,{enabled:false});captureMouse();}},
   {label:'Elegir lado que gira…',run:()=>showRotorSide(rotor,point)},
-  {label:'Motor · velocidad, fuerza y energía…',run:()=>{const g=rotorGroups(rotor)[rotor.moving==='a'?0:1],id=rotor.moving==='a'?rotor.aId:rotor.bId;selected={g,part:g.parts.find(p=>p.id===id)};panel.hidden=false;updatePanel();switchPanelTab('mechanisms');}},
+  {label:'Motor · velocidad, fuerza y energía…',run:()=>{const g=rotorGroups(rotor)[rotor.moving==='a'?0:1],id=rotor.moving==='a'?rotor.aId:rotor.bId;selected={g,part:g.parts.find(p=>p.id===id)};showTablet();updatePanel();switchPanelTab('mechanisms');}},
   {label:'Guardar mecanismo · Rotor',run:()=>{saveMechanism(rotor);captureMouse();}},
   {label:'Cerrar',run:()=>captureMouse()}
  ]);
@@ -6318,7 +6318,7 @@ const tabletPages={
  puzzle:['Puzle','Prepara el desafío y consulta sus condiciones antes de iniciarlo.'],
  manual:['Manual','Abre el capítulo del mecanismo que quieras probar. Encontrarás los controles y los pasos para montarlo.']
 };
-let tabletTab='cube',catalogFilter='Piezas',tabletStowTimer=0,tabletWheelTime=-Infinity;
+let tabletTab='cube',catalogFilter='Piezas',tabletWheelTime=-Infinity;
 const tabletEl=id=>document.getElementById(id);
 const tabletMovement={forward:'KeyW',backward:'KeyS',left:'KeyA',right:'KeyD',crouch:'KeyC'};
 function tabletTyping(el){
@@ -6329,9 +6329,20 @@ function releaseForTablet(){
  const walking=Object.values(tabletMovement).filter(code=>keys.has(code));pause();
  for(const code of walking)keys.add(code);
 }
+let tabletPose=null, drawTabletMesh=null;
+function layoutTablet(){
+ if(panel.hidden)return;
+ const f=window.QBitsTabletView.placement(innerWidth,innerHeight,savedPreferences);
+ tabletPose=f;
+ Object.assign(panel.style,{width:f.width+'px',height:f.height+'px',left:(f.x-f.width/2)+'px',
+  top:(f.y-f.height/2)+'px',transform:'matrix3d('+f.pose.join(',')+')'});
+ panel.dataset.style=savedPreferences.tabletStyle;
+ redraw=true;
+}
+window.addEventListener('resize',layoutTablet);
 function tabletPreferences(){
  panel.dataset.hand=savedPreferences.tabletHand||'left';
- panel.style.setProperty('--tablet-scale',String((savedPreferences.tabletScale||100)/100));
+ layoutTablet();
  const label=inputLabel('tablet')==='Clic central'?'M3':inputLabel('tablet');
  tabletEl('tablet-close-hint').textContent=label+' · guardar';tabletEl('tablet-hud-hint').textContent=label+' · Tableta';
 }
@@ -6351,14 +6362,16 @@ function syncTabletMode(){
  button.setAttribute('aria-pressed',String(workshop));
 }
 function tabletVisible(){return !panel.hidden&&story.mode==='playing'&&!story.transition&&story.scene==='lab';}
+const tabletReducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
+let tabletMotionStart=0,tabletStowTimer=0;
 function showTablet(){
- clearTimeout(tabletStowTimer);delete panel.dataset.stowing;
+ if(panel.hidden){tabletMotionStart=performance.now();clearTimeout(tabletStowTimer);delete panel.dataset.stowing;}
  panel.hidden=false;tabletPreferences();syncTabletMode();
 }
 function stowTablet(){
  if(panel.hidden)return;
- closeWorkshopPanel(false);panel.hidden=true;panel.dataset.stowing='true';
- clearTimeout(tabletStowTimer);tabletStowTimer=setTimeout(()=>{delete panel.dataset.stowing;},170);
+ closeWorkshopPanel(false);panel.hidden=true;redraw=true;tabletMotionStart=performance.now();
+ panel.dataset.stowing='true';tabletStowTimer=setTimeout(()=>{delete panel.dataset.stowing;redraw=true;},170);
  if(!story.ready||story.mode==='playing')captureMouse();
 }
 function toggleTablet(){
@@ -6440,25 +6453,31 @@ function tabletWheel(event){
 for(const id of Object.keys(tabletSections))tabletEl('wheel-'+id).addEventListener('click',()=>selectTabletGroup(id));
 tabletEl('tablet-workshop').addEventListener('click',()=>{if(tabletNearBench())openWorkshopPanel();});
 tabletEl('tablet-bank').addEventListener('click',()=>{closeWorkshopPanel(false);switchPanelTab(tabletTab);});
+function saveTabletPosition(){
+ try{window.localStorage.setItem(preferences.KEY,JSON.stringify(savedPreferences));}
+ catch{announce('Ajuste aplicado para esta sesión.');}
+}
 tabletEl('tablet-hand').addEventListener('click',()=>{
- const next=savedPreferences.tabletHand==='right'?'left':'right';savedPreferences.tabletHand=next;tabletPreferences();
- try{window.localStorage.setItem(preferences.KEY,JSON.stringify(savedPreferences));}catch{announce('Mano cambiada para esta sesión.');}
+ savedPreferences.tabletHand=savedPreferences.tabletHand==='right'?'left':'right';
+ savedPreferences.tabletX=100-savedPreferences.tabletX;tabletPreferences();saveTabletPosition();
 });
 panel.addEventListener('wheel',tabletWheel,{passive:false});
-let tabletMotionFrame=0,tabletPointerX=0,tabletPointerY=0;
-panel.addEventListener('pointermove',event=>{
- if(panel.hidden||event.pointerType==='touch')return;
- tabletPointerX=event.clientX;tabletPointerY=event.clientY;
- if(tabletMotionFrame)return;
- tabletMotionFrame=requestAnimationFrame(()=>{
-  tabletMotionFrame=0;if(panel.hidden)return;
-  const r=panel.getBoundingClientRect();
-  panel.style.setProperty('--px',((tabletPointerX-r.left)/r.width*4-2).toFixed(1)+'px');
-  panel.style.setProperty('--py',((tabletPointerY-r.top)/r.height*3-1.5).toFixed(1)+'px');
- });
+const tabletGrip=tabletEl('tablet-grip');
+let tabletDrag=null;
+tabletGrip.addEventListener('pointerdown',event=>{
+ if(event.button!==0||!tabletPose)return;
+ tabletDrag={id:event.pointerId,x:event.clientX,y:event.clientY,startX:savedPreferences.tabletX,startY:savedPreferences.tabletY};
+ tabletGrip.setPointerCapture(event.pointerId);event.preventDefault();
 });
-panel.addEventListener('pointerleave',()=>{
- cancelAnimationFrame(tabletMotionFrame);tabletMotionFrame=0;panel.style.setProperty('--px','0px');panel.style.setProperty('--py','0px');
+tabletGrip.addEventListener('pointermove',event=>{
+ if(!tabletDrag||tabletDrag.id!==event.pointerId||panel.hidden)return;
+ const {x,y,startX,startY}=tabletDrag;
+ if(tabletPose.travelX>0)savedPreferences.tabletX=clamp(startX+100*(event.clientX-x)/tabletPose.travelX,0,100);
+ if(tabletPose.travelY>0)savedPreferences.tabletY=clamp(startY+100*(event.clientY-y)/tabletPose.travelY,0,100);
+ layoutTablet();
+});
+tabletGrip.addEventListener('lostpointercapture',()=>{
+ if(tabletDrag){tabletDrag=null;saveTabletPosition();}
 });
 
 function drawCargos(){
@@ -7410,7 +7429,7 @@ function alphaSecondary(dir=direction()){
  if(hit.bp){const b=hit.bp;openCommandMenu(b.p,b.shape.name+' · '+b.status,[{label:'Integrar cercanos ('+nearBlueprint(b).length+')',run:()=>{activateBlueprint(b);captureMouse();}},{label:'Retirar blueprint',run:()=>{cancelBlueprint(b);captureMouse();}},{label:'Cerrar',run:()=>captureMouse()}]);}
  else {const c=hit.cooler;openCommandMenu(hit.point,'Enfriador · '+c.occupants+' / '+c.capacity,[{label:c.enabled?'Desactivar':'Activar',run:()=>{c.enabled=!c.enabled;captureMouse();}},{label:'Retirar enfriador',run:()=>{removeCooler(c);captureMouse();}},{label:'Cerrar',run:()=>captureMouse()}]);}return true;
 }
-function openAlphaPanel(hit=null){pause();panel.hidden=false;if(hit)selected=hit;updatePanel();switchPanelTab('alpha');updateAlphaPanel();}
+function openAlphaPanel(hit=null){pause();showTablet();if(hit)selected=hit;updatePanel();switchPanelTab('alpha');updateAlphaPanel();}
 function renameQubit(){if(!selected||!groups.includes(selected.g))return;const input=document.querySelector('#qubit-name'),name=String(input.value||'').replace(/[\u0000-\u001f]/g,'').trim().slice(0,24);selected.part.mood.name=name||unitLabel(selected.part)+' '+selected.part.id;input.value=selected.part.mood.name;announce('Nombre guardado');}
 function updateAlphaPanel(){
  document.querySelector('#qubit-name').value=selected?.part.mood.name||'';document.querySelector('#qubit-name').disabled=!selected;
@@ -7500,7 +7519,7 @@ for(const key of ['maxRest','coolSeconds','capacity','blueprintRange','exitEnerg
 for(const key of ['coolingOn','allowPuzzleSpawn'])document.querySelector('#alpha-'+key).addEventListener('change',e=>{if(certifiedAutomation()){updateAlphaPanel();return;}alphaSettings[key]=!!e.target.checked;updatePuzzlePanel();updateAlphaPanel();});
 document.querySelector('#completion-continue').addEventListener('click',()=>{document.querySelector('#completion-panel').hidden=true;captureMouse();});
 document.querySelector('#completion-restart').addEventListener('click',()=>{document.querySelector('#completion-panel').hidden=true;startPuzzle();captureMouse();});
-document.querySelector('#completion-lab').addEventListener('click',()=>{document.querySelector('#completion-panel').hidden=true;leavePuzzle();panel.hidden=false;switchPanelTab('puzzle');});
+document.querySelector('#completion-lab').addEventListener('click',()=>{document.querySelector('#completion-panel').hidden=true;leavePuzzle();showTablet();switchPanelTab('puzzle');});
 
 // Low-poly reconstruction of the supplied STL silhouette: 122.25 mm diameter,
 // 20.45 mm actuator height, stepped circular housing and four mounting tabs.
@@ -8838,7 +8857,7 @@ function linkContactSensor(sensorId,target){
 }
 function unlinkContactSensor(sensorId){const hit=rotorPart(sensorId);if(!hit)return false;delete hit.part.mood.sensorLink;contactStates.delete(sensorId);return true;}
 function showSensorMenu(hit){
- clearRotorSelection();selected={g:hit.g,part:hit.part};closeCommandMenu(false);pause();panel.hidden=false;updatePanel();switchPanelTab('mechanisms');sensorField('panel').scrollIntoView?.({block:'start'});
+ clearRotorSelection();selected={g:hit.g,part:hit.part};closeCommandMenu(false);pause();showTablet();updatePanel();switchPanelTab('mechanisms');sensorField('panel').scrollIntoView?.({block:'start'});
 }
 function sensorField(name){return document.querySelector('#sensor-'+name);}
 function selectedSensor(){return selected?.part&&QBitsWorkshop.partState(selected.part).sensor?rotorPart(selected.part.id):null;}
@@ -9765,6 +9784,14 @@ function renderScene(time=performance.now()){
   }else{
     if(radialGlassAllocated){radialGlass.release();radialGlassAllocated=false;}
     unitRadial?.setGlassActive(false);
+  }
+  if((!panel.hidden||panel.dataset.stowing) && tabletPose && story.mode==='playing'){
+    const progress=clamp((time-tabletMotionStart)/170,0,1);
+    const lift=tabletReducedMotion.matches?0:28*(panel.hidden?progress*progress:(1-progress)**2);
+    panel.style.translate=lift?('0 '+lift+'px'):'none';
+    suspendSceneAttributes();
+    drawTabletMesh??=window.QBitsTabletView.renderer(gl,shader,submitDraw);
+    drawTabletMesh(lift?{...tabletPose,y:tabletPose.y+lift}:tabletPose);restoreSceneProgram();
   }
   radialGlassStamp=glass.stamp;
   redraw=false;

@@ -60,3 +60,37 @@ test('hand changes persist and old preferences acquire the default tablet scale'
  assert.equal(preferences.sanitize({}).tabletScale,100);
  assert.equal(preferences.sanitize({tabletScale:250}).tabletScale,125);
 });
+
+test('both 3D housings stay on screen at every corner and scale',()=>{
+ const {sandbox}=lab(),{placement}=sandbox.QBitsTabletView,points=sandbox.QBitsTabletModel.positions;
+ assert.equal(preferences.sanitize({tabletHand:'right'}).tabletX,100);
+ assert.equal(preferences.sanitize({tabletX:-20,tabletY:180,tabletStyle:'unknown'}).tabletStyle,'glass');
+ for(const [w,h] of [[320,568],[667,375],[1366,768],[2048,1024]]){
+  for(const hand of ['left','right'])for(const style of ['glass','alloy'])for(const scale of [75,100,125]){
+   for(const corner of [[0,0],[100,0],[0,100],[100,100]]){
+    const f=placement(w,h,{tabletStyle:style,tabletHand:hand,tabletScale:scale,tabletX:corner[0],tabletY:corner[1]});
+    const m=f.pose;
+    for(let i=0;i<points.length;i+=3){
+     const x=points[i]*f.width,y=points[i+1]*f.height,z=points[i+2]*f.depth;
+     const divisor=m[3]*x+m[7]*y+m[11]*z+1;
+     const px=f.x+(m[0]*x+m[4]*y+m[8]*z)/divisor,py=f.y+(m[1]*x+m[5]*y+m[9]*z)/divisor;
+     assert(px>=0&&px<w&&py>=0&&py<h,'Projected housing fits the viewport');
+    }
+   }
+  }
+ }
+});
+
+test('dragging the header persists both coordinates and does not change the active page',()=>{
+ const {t,el,middle,sandbox}=lab();
+ let stored;
+ sandbox.localStorage.setItem=(key,value)=>{if(key===preferences.KEY)stored=JSON.parse(value);};
+ middle(t.canvas);
+ const grip=el('tablet-grip');grip.setPointerCapture=()=>{};
+ grip.dispatchEvent({type:'pointerdown',button:0,pointerId:4,clientX:150,clientY:490});
+ grip.dispatchEvent({type:'pointermove',pointerId:4,clientX:400,clientY:390});
+ grip.dispatchEvent({type:'lostpointercapture',pointerId:4});
+ assert(stored.tabletX>0&&stored.tabletX<100);
+ assert(stored.tabletY>0&&stored.tabletY<100);
+ assert.equal(el('panel').dataset.group,'bodies');
+});

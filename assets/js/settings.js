@@ -92,7 +92,11 @@
   }
   function renderGameplay(){
    field(tx.draft,'tabletScale','Tamaño de la tableta','range',[75,125,5,' %']);
-   field(tx.draft,'tabletHand','Mano de la tableta','select',[[['left','Izquierda'],['right','Derecha']]]);
+   field(tx.draft,'tabletStyle','Estilo de la tableta','select',[[['glass','Cristal'],['alloy','Industrial']]]);
+   field(tx.draft,'tabletHand','Mano de la tableta','select',[[['left','Izquierda'],['right','Derecha']]],{onChange:()=>{tx.draft.tabletX=100-tx.draft.tabletX;render();}});
+   field(tx.draft,'tabletX','Posición horizontal','range',[0,100,1,' %']);
+   field(tx.draft,'tabletY','Posición vertical','range',[0,100,1,' %']);
+   note('También puedes mover la tableta arrastrando el nombre Q-bits de su cabecera.');
    field(tx.draft,'disassemblyMode','Desarme de conjuntos','select',[[['instant','Inmediato · actual'],['staged','Por etapas · banco de pruebas']]]);
    note('En el banco de pruebas, Shift + agitar o Desarmar todo: inmediato conserva el gesto actual; por etapas detiene el mecanismo y coloca sus piezas en espacios libres del suelo, de arriba hacia abajo. Si falta espacio, espera. Las piezas pendientes se conservan al salir del banco. La campaña y los puzles mantienen el desarme inmediato.');
    field(tx.draft,'invertObjectDistance','Invertir rueda al acercar y alejar objetos','check');
@@ -154,7 +158,7 @@
   for(const button of screen.querySelectorAll('[data-settings-tab]'))button.addEventListener('click',()=>{clearCapture();tab=button.dataset.settingsTab;render();changed();});
   document.querySelector('#settings-save').addEventListener('click',()=>save(false));
   document.querySelector('#settings-back').addEventListener('click',requestClose);
-  reset.addEventListener('click',()=>{clearCapture();const defaults=P.defaults();if(tab==='look')tx.draft.profiles[tx.draft.style]=clone(P.styles[tx.draft.style]);else if(tab==='performance'){P.setQuality(tx.draft,'balanced');tx.draft.textureScale=1;tx.draft.culling=defaults.culling;tx.draft.physicsHz=defaults.physicsHz;}else if(tab==='game'){for(const key of ['tabletScale','tabletHand','disassemblyMode','grabSpeed','invertObjectDistance','invertPieceRotation'])tx.draft[key]=defaults[key];}else if(tab==='audio'){tx.draft.music=defaults.music;tx.draft.volume=defaults.volume;tx.draft.guideVoice=defaults.guideVoice;tx.draft.guideVolume=defaults.guideVolume;tx.draft.footsteps=defaults.footsteps;tx.draft.footstepVolume=defaults.footstepVolume;tx.draft.joinSounds=defaults.joinSounds;tx.draft.joinVolume=defaults.joinVolume;}else if(tab==='subtitles')tx.draft.subtitles=defaults.subtitles;else tx.draft.controls[tab==='keyboard'?'keyboard':'gamepad']=defaults.controls[tab==='keyboard'?'keyboard':'gamepad'];render();changed();});
+  reset.addEventListener('click',()=>{clearCapture();const defaults=P.defaults();if(tab==='look')tx.draft.profiles[tx.draft.style]=clone(P.styles[tx.draft.style]);else if(tab==='performance'){P.setQuality(tx.draft,'balanced');tx.draft.textureScale=1;tx.draft.culling=defaults.culling;tx.draft.physicsHz=defaults.physicsHz;}else if(tab==='game'){for(const key of ['tabletScale','tabletHand','tabletStyle','tabletX','tabletY','disassemblyMode','grabSpeed','invertObjectDistance','invertPieceRotation'])tx.draft[key]=defaults[key];}else if(tab==='audio'){tx.draft.music=defaults.music;tx.draft.volume=defaults.volume;tx.draft.guideVoice=defaults.guideVoice;tx.draft.guideVolume=defaults.guideVolume;tx.draft.footsteps=defaults.footsteps;tx.draft.footstepVolume=defaults.footstepVolume;tx.draft.joinSounds=defaults.joinSounds;tx.draft.joinVolume=defaults.joinVolume;}else if(tab==='subtitles')tx.draft.subtitles=defaults.subtitles;else tx.draft.controls[tab==='keyboard'?'keyboard':'gamepad']=defaults.controls[tab==='keyboard'?'keyboard':'gamepad'];render();changed();});
   document.querySelector('#settings-keep').addEventListener('click',()=>{confirm.hidden=true;document.querySelector('#settings-back').focus();});
   document.querySelector('#settings-discard').addEventListener('click',()=>{tx.discard();close();});
   document.querySelector('#settings-confirm-save').addEventListener('click',()=>save(true));

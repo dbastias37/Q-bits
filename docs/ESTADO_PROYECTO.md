@@ -6,7 +6,7 @@ Actualizado: 19 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
 M3 despliega o guarda la tableta. P y Q abren los controles y el catálogo en la misma interfaz. La rueda sobre el selector recorre cuatro secciones. Shift + rueda alterna entre Banco y Mesa a menos de 3,5 m del borde de una mesa desplegada. Al alejarse se recupera el banco. WASD, la simulación y las máquinas siguen activos. El botón ⇄ y Configuración → Juego permiten personalizar la mano y el tamaño.
 
-El vidrio, el brillo y el paralaje usan capas CSS. La selección del catálogo prepara el mismo plano que el botón de creación. La campaña conserva su rueda y sus condiciones de desbloqueo.
+El cuerpo 3D utiliza el tablero biselado de SciFi Desk y se dibuja en WebGL. La cara interactiva comparte su proyección. En Configuración → Juego se eligen los acabados Cristal e Industrial y la posición en ambos ejes. Arrastrar Q-bits en la cabecera guarda la nueva ubicación. La selección del catálogo prepara el mismo plano que el botón de creación. La campaña conserva su rueda y sus condiciones de desbloqueo.
 
 ## Entrega anterior · mesa desplegable y colocación de planos
 
