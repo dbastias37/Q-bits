@@ -309,7 +309,7 @@ input,select,textarea{font-family:var(--font-menu);}
 <link rel="stylesheet" href="assets/css/subtitles.css?v=20261116-robot-arm-1">
 <link rel="stylesheet" href="assets/css/glass-panels.css?v=20261116-robot-arm-1">
 <link rel="stylesheet" href="assets/css/workshop-panel.css?v=20261116-robot-arm-1">
-<link rel="stylesheet" href="assets/css/robot-arm-panel.css?v=20261118-arm-payload">
+<link rel="stylesheet" href="assets/css/robot-arm-panel.css?v=20261119-drone-routes">
 <link rel="stylesheet" href="assets/css/conveyor-panel.css?v=20261116-quick-catalogue-1">
 <link rel="stylesheet" href="assets/css/servo-panel.css?v=20261117-culling-1">
   <link rel="stylesheet" href="assets/css/culling-lab.css?v=20261117-culling-1">
@@ -460,6 +460,7 @@ input,select,textarea{font-family:var(--font-menu);}
         </div>
         <p id="servo-feedback" role="status" aria-live="polite"></p>
       </section>
+      <section id="flight-fleet" hidden><h3>Drones de la sala</h3><div id="flight-fleet-list" class="actions"></div></section>
       <section id="flight-panel" aria-labelledby="flight-title" hidden>
         <h3 id="flight-title">Hélices · vuelo modular</h3>
         <p id="flight-status" role="status"></p>
@@ -468,6 +469,20 @@ input,select,textarea{font-family:var(--font-menu);}
         <label>Velocidad de avance (m/s)<input id="flight-speed" type="number" min="0" max="1.2" step="0.1" value="0"></label>
         <div class="actions"><button id="flight-apply" type="button">Aplicar altura y velocidad</button><button id="flight-heading" type="button">Avanzar hacia donde miro</button></div>
         <div class="actions"><button id="flight-start" type="button">Despegar</button><button id="flight-land" type="button">Aterrizar</button><button id="flight-stop" type="button">Apagar motores</button></div>
+        <details id="flight-editor"><summary>Crear trayectoria</summary>
+          <p>El centro del plano es el lugar de despegue. Elige una acción y haz clic en el plano para añadir el punto. También puedes introducir sus coordenadas en metros. Con velocidad 0, la ruta usa 0,5 m/s.</p>
+          <label>Recorrido<select id="flight-mode"><option value="once">Una vez · aterrizar al final</option><option value="loop">En bucle hasta pedir aterrizaje</option></select></label>
+          <fieldset id="flight-fields"><legend>Nuevo punto</legend>
+            <label>Acción<select id="flight-action"><option value="pass">Pasar al siguiente</option><option value="wait">Parar en vuelo</option><option value="land">Aterrizar y volver a despegar</option></select></label>
+            <label>Altura de vuelo (m)<input id="flight-altitude" type="number" min="0.15" max="3" step="0.05" value="0.5"></label>
+            <label>Duración de la parada (s)<input id="flight-wait" type="number" min="0" max="120" step="1" value="3"></label>
+            <label>Escala del plano<select id="flight-scale"><option value="2">±2 m</option><option value="7">±7 m</option><option value="28">±28 m</option></select></label>
+            <div id="flight-map" aria-label="Plano del recorrido visto desde arriba"><svg id="flight-path" viewBox="0 0 100 100" aria-hidden="true"></svg></div>
+            <div class="flight-xy"><label>X (m)<input id="flight-x" type="number" min="-28" max="28" step="0.05" value="0"></label><label>Z (m)<input id="flight-z" type="number" min="-28" max="28" step="0.05" value="0"></label></div>
+            <div class="actions"><button id="flight-add" type="button">Añadir punto</button><button id="flight-undo" type="button">Quitar último</button></div>
+          </fieldset>
+          <ol id="flight-points"></ol><p id="flight-route-feedback" role="status"></p>
+        </details>
         <p id="flight-telemetry"></p>
         <p>Velocidad 0 mantiene posición horizontal. Aterrizar conserva energía para bajar; apagar motores corta la sustentación. P muestra el vuelo en directo. Más peso o altura exige más esfuerzo. Una batería agotada provoca caída.</p>
         <p>Un sensor montado en el mismo dron invierte el avance cuando su cara activa toca una pared. El agarre conserva su menú propio y su carga cuenta para el vuelo.</p>
@@ -669,6 +684,8 @@ input,select,textarea{font-family:var(--font-menu);}
         <ol><li>Mantén Q, pulsa Tab y elige <strong>Dron de prueba</strong>. Suelta Q y haz clic: aparece una hélice con batería I cargada y apagada.</li>
         <li>Clic derecho en la batería → encender. Clic derecho en el enganche → <strong>Vuelo</strong>.</li>
         <li>Deja altura 0,5 m y velocidad 0. Pulsa <strong>Despegar</strong> y vuelve a la sala. Después prueba velocidad 0,3 y <strong>Avanzar hacia donde miro</strong>.</li>
+        <li>Para programar el vuelo, elige <strong>Crear trayectoria</strong> en el enganche. Marca puntos en el plano y elige paso, espera en vuelo o aterrizaje con despegue. Un recorrido único aterriza al terminar. En bucle, puedes pedir el aterrizaje desde cualquier punto.</li>
+        <li>Selecciona un dron en el aire con un clic o búscalo en <strong>P → Mecanismos → Drones de la sala</strong>. Acopla el sensor al chasis por debajo de las palas. Su umbral de detección es independiente del peso de la pieza.</li>
         <li>Usa <strong>Aterrizar</strong> antes de quedarte sin batería. Una vez apoyado, apaga la batería para recargarla.</li>
         <li>Montaje manual: toma un triangular, mantén Shift y acerca una punta a la del enganche; suelta cuando aparezca «Pala alineada». Repite con otro triangular en el lado libre. La base y los costados cuadrados del enganche reciben chasis y batería.</li>
         <li>Une de 1 a 4 hélices completas al mismo chasis, orientadas hacia arriba y con espacio libre entre palas. Una quinta impide arrancar hasta separarla. El peso de baterías, chasis, sensores, brazos y carga se suma.</li></ol>
@@ -761,6 +778,6 @@ input,select,textarea{font-family:var(--font-menu);}
   </section>
   <script src="assets/js/opening.js?v=20261116-block-joins-1" defer></script>
   <script src="assets/js/servo-panel.js?v=20261117-culling-1" defer></script>
-  <script src="assets/js/boot.js?v=20261118-arm-payload" defer></script>
+  <script src="assets/js/boot.js?v=20261119-drone-routes" defer></script>
 </body>
 </html>

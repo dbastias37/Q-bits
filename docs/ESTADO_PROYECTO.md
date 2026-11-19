@@ -2,7 +2,13 @@
 
 Actualizado: 18 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega · sensores para conjuntos de rotores
+## Última entrega · autonomía y vuelo con trayectorias
+
+Las reservas internas, externas y estacionarias almacenan cinco veces más energía que en la entrega anterior. Una celda externa del banco almacena 1800 J y sigue recargándose en 90 segundos en el suelo. Una hélice aporta hasta 135 N y una celda hasta 65 W. En la prueba con Cannon, una celda y una hélice sostienen a 0,8 m un montaje de 30 piezas que incluye un sensor de peso. Su umbral no modifica la masa.
+
+El enganche abre **Crear trayectoria**. Cada punto guarda posición relativa al despegue, altura y acción. El jugador puede programar una pasada o un bucle, esperar en vuelo, aterrizar, esperar y despegar. Los planos y el laboratorio conservan la programación. La lista de drones en P y la selección a distancia permiten interrumpir el recorrido y aterrizar.
+
+## Entrega anterior · sensores para conjuntos de rotores
 
 El destino del sensor puede ser un rotor individual, un conjunto creado en P o una instancia de un mecanismo guardado en la sala. La detección de movimiento puede iniciar los cuatro ejes de un móvil en el mismo paso, conservando el sentido configurado en cada rueda. El enlace identifica las piezas de esa copia y admite detección si alguno de sus ejes está dentro de 3 m. Si el conjunto pierde un miembro, el enlace se descarta y puede elegirse nuevamente en el panel. Las copias construidas desde planos anteriores reciben su identidad al colocarlas.
 

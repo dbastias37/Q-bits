@@ -119,9 +119,11 @@ Repisa: almacena el objeto real. Al recuperarlo, los controles quedan detenidos.
 
 1. Mantén **Q**, pulsa **Tab** y elige **Dron de prueba**. Suelta Q y haz clic. Aparece una hélice con batería I cargada y apagada.
 2. Haz clic derecho en la batería y enciéndela. Después haz clic derecho en el enganche y abre **Vuelo**.
-3. Deja **altura 0,5 m** y **velocidad 0**. Pulsa **Despegar** y vuelve a la sala: P mantiene la simulación pausada mientras lees los controles.
+3. Deja **altura 0,5 m** y **velocidad 0**. Pulsa **Despegar** y observa la altura en directo desde P.
 4. Para desplazarte, mira hacia el destino, abre Vuelo, pulsa **Avanzar hacia donde miro**, elige velocidad **0,3 m/s** y aplica. Velocidad 0 frena y mantiene posición.
 5. Usa **Aterrizar** antes de agotar la batería. El descenso necesita energía. **Apagar motores** corta la sustentación y el conjunto cae si está en el aire. Una vez apoyado, apaga la batería para recargar.
+
+**Trayectoria.** Haz clic derecho en el enganche y elige **Crear trayectoria**. Sus puntos se miden desde el despegue, en los ejes de la sala. Elige la altura y la acción, y haz clic en el plano o introduce X y Z. Puedes pasar, esperar en vuelo o aterrizar y esperar antes del siguiente despegue. **Una vez** termina en tierra. **En bucle** vuelve al primer punto hasta pulsar **Aterrizar** o agotar la batería. Los drones visibles se pueden seleccionar en vuelo. En **P → Mecanismos → Drones de la sala** puedes recuperar el control incluso si pierdes el dron de vista.
 
 **Montaje manual.** Necesitas **1 enganche + 2 T-bits triangulares**. Sostén un triangular, mantén Shift y acerca su punta a la punta superior del enganche. El encaje orienta la pala: suelta cuando aparezca «Pala alineada». Repite en el lado libre con el segundo triangular. No se consumen créditos adicionales. El plano de Hélice usa tus piezas existentes; Banco rápido crea copias de prueba.
 
@@ -131,7 +133,7 @@ Puedes conectar **1, 2, 3 o 4 hélices** al mismo conjunto. Una quinta impide el
 
 Los triangulares obtenidos al dividir un Q-bit estándar pesan 1/12 u cada uno. Las piezas creadas directamente desde Q usan el peso seleccionado en P → Piezas. Por eso dos hélices geométricamente iguales pueden levantar cargas distintas. La hélice rápida usa triangulares de 1/12 u.
 
-**Sensor.** Une un sensor al chasis y elige «Dron acoplado» en el panel. Puede despegar, apagar los motores o invertir el avance cuando se cumple la condición elegida.
+**Sensor.** Cada cubo sensor estándar aporta 1 u. Adaptar un cubo que ya está en el chasis conserva su peso. El umbral de detección de peso solo determina cuándo se activa. Coloca el sensor bajo el plano de las palas. Une un sensor al chasis y elige «Dron acoplado» en el panel. Puede despegar, apagar los motores o invertir el avance cuando se cumple la condición elegida.
 
 **Mano y brazo.** El cubo de agarre conserva su menú, filtros, límite de carga y consumo. Su objeto sostenido se suma al peso del dron. Los rotores y brazos pueden formar parte del montaje, pero necesitan energía suficiente y un montaje libre: una base fija o una cinta anclada impide despegar. No todos los conjuntos pesados podrán volar con cuatro hélices.
 

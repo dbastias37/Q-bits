@@ -18,7 +18,7 @@ test('blueprint UI places a recipe and creates neither bodies nor active motors'
 });
 test('panel teaches the assembled arm and preserves identity when selecting its base or sample',()=>{
  const {t,sandbox}=lab();assert(t.spawnSavedMechanism(t.robotArmBlueprintTemplate(),t.V(0,0,0)));const arm=t.robotArms[0],base=t.rotorPart(arm.baseId);select(t,base.g,base.part);t.updateRobotArmPanel();
- const s=t.robotPanelSnapshot();assert(s.arm);assert.equal(s.canConvert,false,'base cannot receive an accidental second adaptation');assert.equal(s.arm.joints.length,4);assert.equal(s.arm.energy,864,'only motor endpoints and gripper supply internal energy');
+ const s=t.robotPanelSnapshot();assert(s.arm);assert.equal(s.canConvert,false,'base cannot receive an accidental second adaptation');assert.equal(s.arm.joints.length,4);assert.equal(s.arm.energy,4320,'only motor endpoints and gripper supply internal energy');
  sandbox.document.querySelector('#arm-teach-place').dispatchEvent({type:'click'});assert(arm.poses.place);sandbox.document.querySelector('#arm-repeat').checked=false;sandbox.document.querySelector('#arm-repeat').dispatchEvent({type:'change'});assert.equal(arm.repeat,false);
  const extra=t.addQubit([1,.05,0]);select(t,extra);assert.equal(t.robotPanelSnapshot().gripper.id,arm.gripperId);
  assert(t.robotPanelAction('capturePiece').ok);assert.equal(t.rotorPart(arm.gripperId).part.mood.gripper.targetId,extra.parts[0].id);

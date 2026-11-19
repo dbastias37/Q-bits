@@ -12,8 +12,8 @@
     maxTorque: Object.freeze([.02, 4]),
     capacity: Object.freeze([2, 2000])
   });
-  // The game supplies each fitted capacity (60–120 J per side in campaign,
-  // 120–240 J in the lab). Legacy model callers retain their original
+  // The game supplies each fitted capacity (300–600 J per side in campaign,
+  // 600–1200 J in the lab). Legacy model callers retain their original
   // 20 J fallback. Charge is represented by the existing
   // 0..1 energy bar. The laboratory supplies twice the reservoir capacity. Both
   // sides supply equal absolute joules even with unequal capacities. Ordinary
@@ -57,8 +57,8 @@
     // The simulation limits commanded speed to 120 RPM. This wider guard only
     // bounds corrupt/external measurements and keeps every power value finite.
     const rpm = state.stalled ? 0 : Math.min(10000, Math.abs(finite(state.actualRpm, 0)));
-    const capacityJoulesA = clamp(finite(state.capacityJoulesA, MODEL.joulesPerSide), 20, 240);
-    const capacityJoulesB = clamp(finite(state.capacityJoulesB, MODEL.joulesPerSide), 20, 240);
+    const capacityJoulesA = clamp(finite(state.capacityJoulesA, MODEL.joulesPerSide), 20, 1200);
+    const capacityJoulesB = clamp(finite(state.capacityJoulesB, MODEL.joulesPerSide), 20, 1200);
     const beforeA = clamp(finite(state.energyA, 0), 0, 1);
     const beforeB = clamp(finite(state.energyB, 0), 0, 1);
     let stopReason = !state.enabled ? null : load > capacity ? 'overload' : Math.min(beforeA, beforeB) <= MODEL.emptyEpsilon ? 'empty' : null;

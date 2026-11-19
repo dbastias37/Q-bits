@@ -31,7 +31,7 @@ for(const level of [16,17,18])test(`level ${level} completes through actual Cann
  assert(t.configureRotor(r,{enabled:true}));run(t);
  assert(s.run.complete,JSON.stringify(s.run));assert(!s.run.failed);assert(s.run.seconds+1e-8>=s.goal.seconds);
  assert(s.run.joules>0&&s.run.joules<=s.goal.budget);assert.equal(r.enabled,false);
- const spent=[r.aId,r.bId].reduce((n,id)=>n+(.8-t.rotorPart(id).part.mood.energy)*60,0);near(s.run.joules,spent,1e-7);
+ const spent=[r.aId,r.bId].reduce((n,id)=>n+(.8-t.rotorPart(id).part.mood.energy)*300,0);near(s.run.joules,spent,1e-7);
  if(level===18){const end=t.rotorPart(s.endpoint);assert(end.p.distanceTo(s.origin)>.6);assert(end.p.distanceTo(s.target)<.07);step(t,.5);assert(t.rotorPart(s.endpoint).p.distanceTo(s.target)<.09,'physical receiver supports the delivered piece');}
  assert(t.story.progress['lore.rotor'+level]);
  t.tickCampaign(1.2);assert(t.story.campaign.gates[0].solved);assert.doesNotThrow(()=>t.drawStoryWorld());

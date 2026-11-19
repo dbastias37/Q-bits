@@ -22,7 +22,7 @@ test('a colored physical solid with the hauling material traverses a real corner
 test('battery switch and exhaustion stop the whole belt without draining motor reserves',()=>{
  const {t}=lab(),{conveyor:c,battery}=make(t),load=payload(t,c);for(const r of t.conveyorRotors(c)){t.rotorPart(r.aId).part.mood.energy=.3;t.rotorPart(r.bId).part.mood.energy=.3;}
  assert(t.startConveyor(c));tick(t,1);battery.mood.externalBattery.enabled=false;tick(t,.25);const stopped=load.body.position.clone();assert(!c.running);assert(t.conveyorRotors(c).every(r=>!r.enabled));tick(t,.5);assert(load.body.position.distanceTo(stopped)<.01);
- battery.mood.externalBattery.enabled=true;battery.mood.energy=.00002;assert(t.startConveyor(c));tick(t,.05);assert(!c.running);assert(battery.mood.energy>=0);
+ battery.mood.externalBattery.enabled=true;battery.mood.energy=.000004;assert(t.startConveyor(c));tick(t,.05);assert(!c.running);assert(battery.mood.energy>=0);
  for(const r of t.conveyorRotors(c))assert(t.rotorPart(r.aId).part.mood.energy>=.3,'external operation never spends the internal motor reserve');
 });
 test('an eight-unit capacity stops on an overweight real contact and rejects legacy bypass',()=>{

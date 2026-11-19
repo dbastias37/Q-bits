@@ -21,7 +21,7 @@ for(const level of [19,20])test(`level${level} physically produces and delivers 
  until(t,()=>s.complete||s.failed,60,i=>{if(i%60===0)audit(t,s);if(!packageRendered&&material(t,s).some(g=>g.parts.length===2)){assert.doesNotThrow(()=>{t.drawStoryWorld();t.drawQubits();});packageRendered=true;}});
  assert(s.complete,s.reason);assert.equal(s.ledger.accepted.length,s.goal.target);assert.equal(s.ledger.stock.length,0);assert.equal(material(t,s).length,0);audit(t,s);
  assert(s.autonomy>=s.goal.minAutonomy);assert(s.joules>0&&s.joules<=s.goal.budget);assert.equal(s.rotor.enabled,false);
- const spent=[s.rotor.aId,s.rotor.bId].reduce((n,id)=>n+(.8-t.rotorPart(id).part.mood.energy)*60,0);assert(Math.abs(spent-s.joules)<1e-7,'all station work is charged to the actual rotor batteries');
+ const spent=[s.rotor.aId,s.rotor.bId].reduce((n,id)=>n+(.8-t.rotorPart(id).part.mood.energy)*300,0);assert(Math.abs(spent-s.joules)<1e-7,'all station work is charged to the actual rotor batteries');
  if(level===20)assert(packageRendered);assert.equal(joins,level===20?s.goal.target:0,'only completed packages produce one joining event');assert(t.story.progress['lore.production'+level]);
  t.tickCampaign(1.2);assert(t.story.campaign.gates[0].solved);t.tickCampaign(1);t.position[2]=-4.3;t.tickCampaign(.01);assert.equal(t.story.phase,'finishing');
 });

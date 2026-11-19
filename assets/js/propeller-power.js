@@ -3,10 +3,16 @@
  // Deliberately calibrated for Q-bits: u is material weight, 0.25 kg/u.
  // No real aircraft specification is implied. Height reduces available thrust;
  // batteries supply power AND energy, never increase a motor's thrust ceiling.
- const SPEC=Object.freeze({maxPropellers:4,kgPerUnit:.25,forcePerPropeller:14.7,wattsPerCell:10,idleWatts:.15,liftWatts:.22,heightLoss:.16,maxHeight:3,maxSpeed:1.2,maxRpm:2400});
+ const SPEC=Object.freeze({maxPropellers:4,kgPerUnit:.25,forcePerPropeller:135,wattsPerCell:65,idleWatts:.15,liftWatts:.018,heightLoss:.16,maxHeight:3,maxSpeed:1.2,maxRpm:2400});
  const clamp=(n,a,b)=>Math.max(a,Math.min(b,n)),finite=(n,d=0)=>Number.isFinite(n)?n:d;
- function config(value={}){return {height:clamp(finite(value.height,.5),.15,SPEC.maxHeight),speed:clamp(finite(value.speed,0),0,SPEC.maxSpeed),heading:clamp(finite(value.heading,0),-Math.PI,Math.PI)};}
- function validConfig(v){return !!v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).every(k=>['height','speed','heading'].includes(k))&&['height','speed','heading'].every(k=>Number.isFinite(v[k])&&config(v)[k]===v[k]);}
+ const maxPoints=48;
+ function validRoute(route){
+  return !!route&&typeof route.loop==='boolean'&&Array.isArray(route.points)&&route.points.length<=maxPoints&&route.points.every(p=>
+   p&&[p.x,p.z].every(n=>Number.isFinite(n)&&Math.abs(n)<=28)&&Number.isFinite(p.height)&&p.height>=.15&&p.height<=SPEC.maxHeight&&
+   ['pass','wait','land'].includes(p.action)&&Number.isFinite(p.wait)&&p.wait>=0&&p.wait<=120);
+ }
+ function config(value={}){return {height:clamp(finite(value.height,.5),.15,SPEC.maxHeight),speed:clamp(finite(value.speed,0),0,SPEC.maxSpeed),heading:clamp(finite(value.heading,0),-Math.PI,Math.PI),...(validRoute(value.route)?{route:{loop:value.route.loop,points:value.route.points.map(({x,z,height,action,wait})=>({x,z,height,action,wait}))}}:{})};}
+ function validConfig(v){return !!v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).every(k=>['height','speed','heading','route'].includes(k))&&(v.route===undefined||validRoute(v.route))&&['height','speed','heading'].every(k=>Number.isFinite(v[k])&&config(v)[k]===v[k]);}
  function evaluate(s={},dt=0){
   const n=Math.floor(clamp(finite(s.count),0,256)),mass=Math.max(0,finite(s.mass)),gravity=clamp(finite(s.gravity,9.8),0,40),height=Math.max(0,finite(s.height)),cells=Math.max(0,Math.floor(finite(s.cells))),energy=Math.max(0,finite(s.energy)),seconds=clamp(finite(dt),0,.1),efficiency=1/(1+height*SPEC.heightLoss);
   const powerLimit=clamp(finite(s.availableWatts,cells*SPEC.wattsPerCell),0,cells*SPEC.wattsPerCell),watts=force=>n?SPEC.idleWatts*n+SPEC.liftWatts*n*Math.pow(Math.max(0,force)/n,1.5)/Math.sqrt(efficiency):0;
@@ -31,5 +37,5 @@
   if(!running){fx=fy=fz=0;}else{fx*=fraction;fy*=fraction;fz*=fraction;}
   return {reason,canLift,fx,fy,fz,inputWatts,spentJoules,maxForce,maxLoad:gravity>0?maxForce/gravity/SPEC.kgPerUnit:0,load:mass/SPEC.kgPerUnit,remainingSeconds:inputWatts>0?Math.max(0,energy-spentJoules)/inputWatts:null,rpm:running?SPEC.maxRpm*Math.sqrt(force/Math.max(1e-8,motorLimit))*fraction:0,exhausted:running&&seconds>0&&energy<=inputWatts*seconds};
  }
- return Object.freeze({SPEC,config,validConfig,evaluate});
+ return Object.freeze({SPEC,maxPoints,config,validConfig,evaluate});
 });

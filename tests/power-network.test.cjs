@@ -8,18 +8,18 @@ function motor(t,p=t.V(0,0,2)){const r=t.spawnRotor(p,{capacity:256});assert(r);
 function link(t,r,m,materials=spool(t,2),points=[]){const out=t.connectPowerCable({kind:'reservoir',id:r.id},{kind:'part',id:m.aId},points,materials);assert(out.ok,out.error);return out.cable;}
 function start(t,r){assert(t.configureRotor(r,{enabled:true}));t.prepareRotorPower();r.actualTorque=.13;r.actualRpm=30;r.stalled=false;}
 
-test('remote 36 kJ reservoir uses real static collision but adds no mechanical mass',()=>{
+test('remote 180 kJ reservoir uses real static collision but adds no mechanical mass',()=>{
  const {t}=lab(),r=t.createPowerReservoir(t.V(0,0,0),{enabled:true}),m=motor(t);assert(r);link(t,r,m);
  assert.equal(r.wall.body.mass,0);assert(t.world.bodies.includes(r.wall.body));assert(t.storyWorld.walls.includes(r.wall));
- const supply=t.externalBatterySummary(m),power=t.rotorPowerState(m);assert.equal(supply.capacity,36000);assert.equal(supply.cells.length,1);assert.equal(power.load,2);assert.equal(t.rotorConnectedGroups(t.rotorGroups(m)).length,2);
+ const supply=t.externalBatterySummary(m),power=t.rotorPowerState(m);assert.equal(supply.capacity,180000);assert.equal(supply.cells.length,1);assert.equal(power.load,2);assert.equal(t.rotorConnectedGroups(t.rotorGroups(m)).length,2);
  assert.equal(t.createPowerReservoir(t.V(0,0,0)),null,'cannot overlap itself');assert.equal(t.createPowerReservoir(t.V(0,.4,0)),null,'must sit on floor');
 });
 
 test('lossless cable debits only exact useful system demand and preserves internal motor charge',()=>{
  const {t}=lab(),r=t.createPowerReservoir(t.V(0,0,0),{energy:.8,enabled:true}),m=motor(t);link(t,r,m);
- const internal=t.rotorGroups(m).flatMap(g=>g.parts).map(p=>p.mood.energy);start(t,m);const watts=t.rotorPowerState(m).inputWatts,before=r.cell.mood.energy*36000;t.updateRotorPower(2);
- close(before-r.cell.mood.energy*36000,watts*2);assert.deepEqual(t.rotorGroups(m).flatMap(g=>g.parts).map(p=>p.mood.energy),internal);
- t.updatePowerNetwork(100);close(r.cell.mood.energy*36000,before-watts*2);r.enabled=false;t.updatePowerNetwork(100);close(r.cell.mood.energy*36000,before-watts*2);
+ const internal=t.rotorGroups(m).flatMap(g=>g.parts).map(p=>p.mood.energy);start(t,m);const watts=t.rotorPowerState(m).inputWatts,before=r.cell.mood.energy*180000;t.updateRotorPower(2);
+ close(before-r.cell.mood.energy*180000,watts*2);assert.deepEqual(t.rotorGroups(m).flatMap(g=>g.parts).map(p=>p.mood.energy),internal);
+ t.updatePowerNetwork(100);close(r.cell.mood.energy*180000,before-watts*2);r.enabled=false;t.updatePowerNetwork(100);close(r.cell.mood.energy*180000,before-watts*2);
 });
 
 test('all machines on a branching cyclic network see identical deduplicated source sets',()=>{
@@ -42,7 +42,7 @@ test('actual polyline length sets the budget and extra cubes extend a stretched 
  const {t}=lab(),r=t.createPowerReservoir(t.V(0,0,0),{enabled:true}),m=motor(t),material=spool(t,1);
  const bad=t.connectPowerCable({kind:'reservoir',id:r.id},{kind:'part',id:m.aId},[t.V(-3,.01,0),t.V(-3,.01,2)],material);assert.equal(bad.ok,false);assert.equal(t.powerCables.length,0);
  const c=link(t,r,m,material);close(c.maxLength,2);for(const g of t.rotorGroups(m))g.body.position.z+=2;t.updatePowerNetwork(.1);assert.equal(c.active,false);assert.equal(t.externalBatterySummary(m).active,false);
- const extended=t.extendPowerCable(c,spool(t,2));assert(extended.ok);assert.equal(c.active,true);close(c.maxLength,6);assert.equal(t.externalBatterySummary(m).capacity,36000);
+ const extended=t.extendPowerCable(c,spool(t,2));assert(extended.ok);assert.equal(c.active,true);close(c.maxLength,6);assert.equal(t.externalBatterySummary(m).capacity,180000);
  const oldLength=c.length;assert.equal(t.reroutePowerCable(c,{kind:'part',id:m.aId},[t.V(-7,.01,0)]).ok,false);close(c.length,oldLength);
 });
 
@@ -82,7 +82,7 @@ test('portable external batteries and reservoir share an exact conductive pool w
  p.mood.externalBattery={version:1,ownerId:p.id,packId:p.id,enabled:true};p.mood.energy=.5;
  assert(t.connectPowerCable({kind:'part',id:p.id},{kind:'part',id:m.aId},[],spool(t,2)).ok);
  assert(t.connectPowerCable({kind:'reservoir',id:r.id},{kind:'part',id:p.id},[],spool(t,2)).ok);
- const supply=t.externalBatterySummary(m);assert.equal(supply.capacity,36360);assert.equal(supply.cells.length,2);close(supply.storedJ,18180);
+ const supply=t.externalBatterySummary(m);assert.equal(supply.capacity,181800);assert.equal(supply.cells.length,2);close(supply.storedJ,90900);
  p.mood.externalBattery.enabled=false;p.mood.energy=0;t.rechargeExternalBatteries(10);assert.equal(p.mood.energy,0,'wired disabled cell requires unplugging to recharge');
  for(const cable of [...t.powerCables])t.removePowerCable(cable);t.rechargeExternalBatteries(10);close(p.mood.energy,1/9);
 });
@@ -101,9 +101,9 @@ test('one reservoir feeds independent rotor, conveyor and gripper with one exact
  for(const id of [m.aId,conveyor.baseId,part.id])assert(t.connectPowerCable({kind:'reservoir',id:r.id},{kind:'part',id},[],spool(t,4)).ok);
  assert(t.startConveyor(conveyor));start(t,m);t.prepareRotorPower();for(const rotor of t.rotors){rotor.actualTorque=.12;rotor.actualRpm=32;rotor.stalled=false;}
  const internals=Array.from(t.rotors.flatMap(rotor=>[rotor.aId,rotor.bId]),id=>t.rotorPart(id).part.mood.energy),gripInternal=part.mood.energy;
- const before=r.cell.mood.energy*36000,watts=t.rotors.reduce((sum,rotor)=>sum+t.rotorPowerState(rotor).inputWatts,0);
+ const before=r.cell.mood.energy*180000,watts=t.rotors.reduce((sum,rotor)=>sum+t.rotorPowerState(rotor).inputWatts,0);
  assert(t.spendGripperEnergy(t.rotorPart(part.id),2));assert(t.conveyorSpendTraction(conveyor,3));t.updateRotorPower(.5);
- close(before-r.cell.mood.energy*36000,5+watts*.5);assert.deepEqual(Array.from(t.rotors.flatMap(rotor=>[rotor.aId,rotor.bId]),id=>t.rotorPart(id).part.mood.energy),internals);close(part.mood.energy,gripInternal);
- r.cell.mood.energy=1/36000;assert.equal(t.spendGripperEnergy(t.rotorPart(part.id),2),false);assert.equal(t.conveyorSpendTraction(conveyor,2),false);close(r.cell.mood.energy*36000,1);
+ close(before-r.cell.mood.energy*180000,5+watts*.5);assert.deepEqual(Array.from(t.rotors.flatMap(rotor=>[rotor.aId,rotor.bId]),id=>t.rotorPart(id).part.mood.energy),internals);close(part.mood.energy,gripInternal);
+ r.cell.mood.energy=1/180000;assert.equal(t.spendGripperEnergy(t.rotorPart(part.id),2),false);assert.equal(t.conveyorSpendTraction(conveyor,2),false);close(r.cell.mood.energy*180000,1);
  t.updateRotorPower(100);assert.equal(r.cell.mood.energy,0);assert(t.rotors.every(rotor=>!rotor.enabled));assert.equal(t.spendGripperEnergy(t.rotorPart(part.id),.1),false);assert.equal(t.conveyorSpendTraction(conveyor,.1),false);
 });

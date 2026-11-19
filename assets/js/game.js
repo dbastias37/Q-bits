@@ -1324,7 +1324,7 @@ function quickSingleRecord(type,count=1){
  return {version:1,type,name:type==='battery'?'Batería '+['','I','II','III'][count]:'Cubo de agarre',groups:[{parts}],joints:[]};
 }
 function quickCatalogue(){
- const list=[{id:'quick-power-reservoir',title:'Depósito de energía',action:'power-reservoir',subtitle:'36000 J · 100 % · apagado'},
+ const list=[{id:'quick-power-reservoir',title:'Depósito de energía',action:'power-reservoir',subtitle:'180000 J · 100 % · apagado'},
  ...[1,4,8].map(count=>({id:'quick-cable-'+count,title:'Cable · '+count+' cubo'+(count>1?'s':''),action:'power-cable',count,weight:1,subtitle:(count*2)+' m · suelo y paredes'})),
  ...[['small','pequeño',.5],['large','grande',2]].map(([id,label,weight])=>({id:'quick-cable-'+id,title:'Cable · '+(weight*2)+' m',action:'power-cable',count:1,weight,subtitle:(weight*2)+' m · ampliable'})),
  ...['pivot','hinge'].map(kind=>({id:'quick-servo-'+kind,title:kind==='pivot'?'Servo pivote':'Servo bisagra',record:servoBlueprintTemplate(kind),subtitle:'Articulación · apagada'})),
@@ -1658,41 +1658,98 @@ function propellerBlueprintTemplate(withBattery=false){
  if(withBattery)parts.push({key:3,shape:'cube',weight:1,p:[0,HALF,0],q:[0,0,0,1],battery:{pack:3,enabled:false}});
  return {version:1,type:'coupler',name:withBattery?'Dron de prueba · 1 hélice':'Hélice · 1 enganche + 2 T-bits',groups:[{parts}],joints:[]};
 }
-function flightForGroup(g){const component=rotorConnectedGroups([g]),modules=propellerModules(component);if(!modules.length)return null;
+function flightForGroup(g){const component=rotorConnectedGroups([g]),modules=propellerModules(component).sort((a,b)=>a.id-b.id);if(!modules.length)return null;
  const key=Math.min(...modules.map(m=>m.id));let flight=flightStates.get(key);
  if(!flight){flight={id:key,enabled:false,landing:false,spool:0,phase:0,status:'Apagado',contact:null};flightStates.set(key,flight);}
  flight.component=component;flight.modules=modules;return flight;
 }
-function stopFlight(flight,reason='Apagado'){if(!flight)return;flight.hold=null;flight.enabled=false;flight.landing=false;flight.spool=0;flight.power=null;flight.status=reason;}
+function stopFlight(flight,reason='Apagado'){if(!flight)return;flight.trip=null;flight.hold=null;flight.enabled=false;flight.landing=false;flight.spool=0;flight.power=null;flight.status=reason;}
 function flightStopForGroups(list){for(const flight of flightStates.values())if(flight.component?.some(g=>list.includes(g)))stopFlight(flight,'Detenido para manipular');}
 function flightConfig(flight){return QBitsPropellerPower.config(flight.modules[0]?.hub.mood.flight);}
-function configureFlight(flight,patch){if(!flight)return false;if(patch.speed===0)flight.hold=null;const config=QBitsPropellerPower.config({...flightConfig(flight),...patch});for(const m of flight.modules)m.hub.mood.flight={...config};return true;}
-function propellerBlocked(module,component){
+function configureFlight(flight,patch){if(!flight)return false;if(patch.speed===0)flight.hold=null;const config=QBitsPropellerPower.config({...flightConfig(flight),...patch});for(const m of flight.modules)m.hub.mood.flight=QBitsPropellerPower.config(config);return true;}
+function propellerObstruction(module){
  const hub=partPose(module.g,module.hub),tip=couplerTip(hub).point,inv=hub.q.inverse(),radius=CUBE_SIZE*Math.SQRT2+.003,ignored=new Set([module.hub.id,...module.blades.map(p=>p.id)]);
  const intersects=pose=>{const points=corners(pose).map(p=>inv.vmult(sub(p,tip))),min=V(...['x','y','z'].map(k=>Math.min(...points.map(p=>p[k])))),max=V(...['x','y','z'].map(k=>Math.max(...points.map(p=>p[k]))));
   if(max.y<.001||min.y>CUBE_SIZE/2+.002)return false;const x=clamp(0,min.x,max.x),z=clamp(0,min.z,max.z);return Math.hypot(x,z)<radius;
  };
- for(const g of groups){if(g!==module.g&&g.body.position.distanceTo(tip)>g.body.boundingRadius+radius+.1)continue;for(const p of poses(g))if(!ignored.has(p.part.id)&&intersects(p))return true;}
- for(const c of cargos)if(intersects(cargoPose(c)))return true;
- for(const wall of storyWorld.walls)if(intersects(wall))return true;
- return tip.y<.001;
+ for(const g of groups){if(g!==module.g&&g.body.position.distanceTo(tip)>g.body.boundingRadius+radius+.1)continue;for(const p of poses(g))if(!ignored.has(p.part.id)&&intersects(p))return QBitsWorkshop.partState(p.part).sensor?'sensor':'solid';}
+ for(const c of cargos)if(intersects(cargoPose(c)))return 'solid';
+ for(const wall of storyWorld.walls)if(intersects(wall))return 'solid';
+ return tip.y<.001?'solid':null;
 }
 function flightSnapshot(flight,dt=0){
- const {component,modules}=flight,config=flightConfig(flight),supply=externalBatterySummary(component),load=component.reduce((n,g)=>n+totalWeight(g),0)+robotGripLoad(component),mass=load*.25;
+ const {component,modules}=flight,config=modules[0].hub.mood.flight||QBitsPropellerPower.config(),supply=externalBatterySummary(component),load=component.reduce((n,g)=>n+totalWeight(g),0)+robotGripLoad(component),mass=load*.25;
  const height=Math.max(0,Math.min(...component.map(g=>bounds(g).min.y))),baseMass=component.reduce((n,g)=>n+g.body.mass,0),velocity=component.reduce((sum,g)=>add(sum,mul(g.body.velocity,g.body.mass/Math.max(.001,baseMass))),V());
  const targetSpeed=flight.landing?0:config.speed,rotorWatts=rotors.filter(r=>r.enabled&&rotorGroups(r).some(g=>component.includes(g))).reduce((n,r)=>n+rotorPowerState(r).inputWatts,0),gripWatts=[...robotGrips.values()].filter(grip=>component.includes(robotGripperHit(grip.id)?.g)).reduce((n,grip)=>n+.08+.08*grip.weight,0),otherWatts=rotorWatts+gripWatts;
  const center=component.reduce((sum,g)=>add(sum,mul(g.body.position,g.body.mass/Math.max(.001,baseMass))),V());if(!flight.hold)flight.hold=center.clone();
- const state={...config,targetHeight:config.height,height,count:modules.length,mass,gravity:Math.abs(world.gravity.y),cells:supply.powerCells,availableWatts:Math.max(0,supply.powerCells*QBitsPropellerPower.SPEC.wattsPerCell-otherWatts),energy:Math.max(0,supply.storedJ-rotorWatts*Math.max(0,dt)),vx:velocity.x,vy:velocity.y,vz:velocity.z,targetVx:flight.landing?0:targetSpeed?-Math.sin(config.heading)*targetSpeed:clamp((flight.hold.x-center.x)*1.5,-.4,.4),targetVz:flight.landing?0:targetSpeed?-Math.cos(config.heading)*targetSpeed:clamp((flight.hold.z-center.z)*1.5,-.4,.4),enabled:flight.enabled,landing:flight.landing,spool:flight.spool,
- held:component.some(g=>cubeIsHeld(g)||g.blueprintJob||g.robotHeld),fixed:component.some(g=>g.body.type!==CANNON.Body.DYNAMIC)||rotors.some(r=>r.enabled&&r.mount==='fixed'&&rotorGroups(r).some(g=>component.includes(g))),blocked:modules.some(m=>partPose(m.g,m.hub).q.vmult(V(0,1,0)).y<.65||propellerBlocked(m,component))};
+ let obstruction=null;
+ for(const module of modules){obstruction=partPose(module.g,module.hub).q.vmult(V(0,1,0)).y<.65?'tilt':propellerObstruction(module);if(obstruction)break;}
+ const state={targetHeight:config.height,height,count:modules.length,mass,gravity:Math.abs(world.gravity.y),cells:supply.powerCells,availableWatts:Math.max(0,supply.powerCells*QBitsPropellerPower.SPEC.wattsPerCell-otherWatts),energy:Math.max(0,supply.storedJ-rotorWatts*Math.max(0,dt)),vx:velocity.x,vy:velocity.y,vz:velocity.z,targetVx:flight.landing?0:targetSpeed?-Math.sin(config.heading)*targetSpeed:clamp((flight.hold.x-center.x)*1.5,-.4,.4),targetVz:flight.landing?0:targetSpeed?-Math.cos(config.heading)*targetSpeed:clamp((flight.hold.z-center.z)*1.5,-.4,.4),enabled:flight.enabled,landing:flight.landing,spool:flight.spool,
+ held:component.some(g=>cubeIsHeld(g)||g.blueprintJob||g.robotHeld),fixed:component.some(g=>g.body.type!==CANNON.Body.DYNAMIC)||rotors.some(r=>r.enabled&&r.mount==='fixed'&&rotorGroups(r).some(g=>component.includes(g))),blocked:!!obstruction};
+ if(flight.trip&&!flight.landing)Object.assign(state,flightGuidance(flight,center,height,velocity,dt));
  const power=QBitsPropellerPower.evaluate(state,dt),totalWatts=power.inputWatts+otherWatts;
- return {...power,remainingSeconds:totalWatts>0?Math.max(0,supply.storedJ-power.spentJoules)/totalWatts:null,height,config,supply,baseMass,velocity};
+ return {...power,center,obstruction,remainingSeconds:totalWatts>0?Math.max(0,supply.storedJ-power.spentJoules)/totalWatts:null,height,config,supply,baseMass,velocity};
 }
 function flightReason(reason){return {incomplete:'Falta una pala',limit:'Máximo 4 hélices por conjunto',battery:'Conecta y enciende una batería',empty:'Batería agotada',blocked:'Hélice obstruida o inclinada · deja libre su giro',held:'Suelta el conjunto antes de despegar',fixed:'Libera el anclaje fijo antes de despegar',overload:'Demasiado peso o poca potencia · aligera o añade hélices/batería'}[reason]||'Listo';}
+function flightProblem(s){
+ if(s.reason==='overload')return flightReason(s.reason)+' · '+s.load.toFixed(1)+' u a bordo / '+(s.maxLoad/1.03).toFixed(1)+' u admitidas al despegar';
+ if(s.reason==='blocked'&&s.obstruction==='sensor')return 'Hélice obstruida por el sensor · fíjalo al costado del chasis, por debajo de las palas';
+ if(s.reason==='blocked'&&s.obstruction==='tilt')return 'Hélice inclinada · orienta el eje hacia arriba';
+ return flightReason(s.reason);
+}
+function requestFlightLanding(f){
+ f.trip=null;f.landing=true;f.status='Aterrizando';
+}
+function flightGuidance(f,center,height,velocity,dt){
+ const trip=f.trip,point=trip.points[trip.index],x=trip.origin.x+point.x,z=trip.origin.z+point.z;
+ const reach=Math.hypot(center.x-x,center.z-z)<.065&&Math.abs(height-point.height)<.065;
+ const down=trip.phase==='descend'||trip.phase==='ground';
+ const lift=trip.phase==='lift',dx=(lift?trip.depart.x:x)-center.x,dz=(lift?trip.depart.z:z)-center.z;
+ const speed=f.modules[0].hub.mood.flight.speed||.5,factor=Math.min(1.6,speed/Math.max(.001,Math.hypot(dx,dz)));
+ const guidance={targetHeight:point.height,targetVx:dx*factor,targetVz:dz*factor,landing:down,enabled:f.enabled&&trip.phase!=='ground'};
+ if(dt<=0)return guidance;
+ function advance(){
+  trip.index++;
+  if(trip.index===trip.points.length){if(!trip.loop){requestFlightLanding(f);return;}trip.index=0;}
+  trip.phase='lift';trip.depart=center.clone();
+ }
+ if(lift&&Math.abs(height-point.height)<.055)trip.phase='travel';
+ else if(trip.phase==='travel'&&reach){
+  trip.remaining=point.wait;
+  if(point.action==='land')trip.phase='descend';
+  else if(point.action==='wait')trip.phase='wait';
+  else advance();
+ }else if(trip.phase==='descend'&&flightTouchdown(f,height,velocity)){
+  trip.phase='ground';f.spool=0;
+ }else if(trip.phase==='wait'||trip.phase==='ground'){
+  if(trip.phase==='ground')f.spool=0;
+  trip.remaining-=dt;if(trip.remaining<=0)advance();
+ }
+ return guidance;
+}
+function flightTouchdown(f,height,velocity){
+ if(Math.abs(velocity.y)>=.12)return false;
+ if(height<.012)return true;
+ const bodies=new Set(f.component.map(g=>g.body));
+ for(const grip of robotGrips.values())if(f.component.includes(robotGripperHit(grip.id)?.g))bodies.add(grip.body);
+ return world.contacts.some(c=>bodies.has(c.bi)!==bodies.has(c.bj)&&(bodies.has(c.bi)?-c.ni.y:c.ni.y)>.85);
+}
 function startFlight(flight){
  if(!flight||!mechanismsAvailable())return false;
- const snapshot=flightSnapshot(flight);if(!snapshot.canLift){flight.status=flightReason(snapshot.reason);announce(flight.status);return false;}
+ if(flight.enabled)return false;
+ const snapshot=flightSnapshot(flight);if(!snapshot.canLift){flight.status=flightProblem(snapshot);
+  announce(flight.status);return false;}
+ const config=flightConfig(flight),route=config.route;
+ if(route?.points.length){
+  const origin=snapshot.center,bound=ROOM_SIZE/2;
+  const boxes=flight.component.map(g=>bounds(g));
+  if(route.points.some(p=>boxes.some(b=>b.min.x+p.x< -bound||b.max.x+p.x>bound||b.min.z+p.z< -bound||b.max.z+p.z>bound))){
+   flight.status='Trayectoria fuera de la sala · acerca los puntos al origen';announce(flight.status);return false;
+  }
+  flight.trip={...route,index:0,phase:'lift',origin:origin.clone(),depart:origin.clone(),remaining:0};
+ }else flight.trip=null;
  for(const g of flight.component){stopRoute(g);leaveHaul(g);g.body.wakeUp();}
- configureFlight(flight,flightConfig(flight));flight.enabled=true;flight.landing=false;flight.spool=0;flight.hold=null;flight.contact=null;flight.status='Despegando';announce('Dron · altura '+flightConfig(flight).height.toFixed(2)+' m');return true;
+ configureFlight(flight,config);flight.enabled=true;flight.landing=false;flight.spool=0;flight.hold=null;flight.contact=null;flight.status='Despegando';announce('Dron · altura '+flightConfig(flight).height.toFixed(2)+' m');return true;
 }
 function updateFlights(dt){
  if(!Number.isFinite(dt)||dt<=0)return;
@@ -1700,8 +1757,8 @@ function updateFlights(dt){
   if(!f.enabled)continue;
   for(const member of f.component)for(const part of member.parts)robotWorkingParts.add(part);
   f.spool=Math.min(1,f.spool+dt*2);const s=flightSnapshot(f,dt);f.power=s;
-  if(['limit','battery','empty','blocked','held','fixed'].includes(s.reason)){stopFlight(f,flightReason(s.reason));continue;}
-  if(f.landing&&s.height<.012&&Math.abs(s.velocity.y)<.12){stopFlight(f,'Aterrizado · apaga la batería para recargar');continue;}
+  if(['limit','battery','empty','blocked','held','fixed'].includes(s.reason)){stopFlight(f,flightProblem(s));continue;}
+  if(f.landing&&flightTouchdown(f,s.height,s.velocity)){stopFlight(f,'Aterrizado · apaga la batería para recargar');continue;}
   // A single energy debit for the entire physical network. Other powered tools
   // debit the remaining reservoir later in the step; no cell can be spent twice.
   const fraction=s.supply.storedJ>0?s.spentJoules/s.supply.storedJ:0;
@@ -1714,7 +1771,7 @@ function updateFlights(dt){
   const roots=new Set(f.modules.map(m=>m.g));for(const root of roots){const hub=f.modules.find(m=>m.g===root).hub,up=partPose(root,hub).q.vmult(V(0,1,0)),axis=up.cross(V(0,1,0)),b=root.body,budget=Math.hypot(s.fx,s.fy,s.fz)*.1/roots.size;
    const torque=V(axis.x*.5-b.angularVelocity.x*.04,-b.angularVelocity.y*.025,axis.z*.5-b.angularVelocity.z*.04),size=torque.norm();if(size>budget)torque.scale(budget/size,torque);b.torque.vadd(torque,b.torque);
   }
-  f.phase=(f.phase+s.rpm*Math.PI/30*dt)%(Math.PI*2);f.status=s.reason==='overload'?flightReason(s.reason):f.landing?'Aterrizando':s.height<flightConfig(f).height-.06?'Subiendo':'En vuelo';
+  f.phase=(f.phase+s.rpm*Math.PI/30*dt)%(Math.PI*2);f.status=s.reason==='overload'?flightProblem(s):f.landing?'Aterrizando':f.trip?({lift:'Despegue o ajuste de altura',travel:'En ruta',wait:'Parada en vuelo',descend:'Descenso',ground:'Parada en tierra'}[f.trip.phase]+' · punto '+(f.trip.index+1)+'/'+f.trip.points.length):s.height<s.config.height-.06?'Subiendo':'En vuelo';
   if(s.exhausted)stopFlight(f,'Batería agotada · sin sustentación');
  }
  const liveIds=new Set(groups.flatMap(propellerLayout).map(m=>m.id));for(const [id,f]of flightStates)if(!liveIds.has(id)){stopFlight(f);flightStates.delete(id);}
@@ -1739,20 +1796,84 @@ function propellerVisualPose(g,part){if(g.virtualConveyor)return virtualConveyor
  const hub=partPose(g,module.hub),tip=couplerTip(hub).point,turn=Q();turn.setFromAxisAngle(hub.q.vmult(V(0,1,0)),phase);return {...pose,p:add(tip,turn.vmult(sub(pose.p,tip))),q:turn.mult(pose.q)};
 }
 function flightPanelSubject(){return selected?.g?flightForGroup(selected.g):null;}
+function flightField(id){return document.querySelector('#flight-'+id);}
+function updateFlightFleet(){
+ const list=flightField('fleet-list'),seen=new Set();list.replaceChildren();
+ for(const g of groups){
+  if(seen.has(g)||!propellerLayout(g).length)continue;
+  const f=flightForGroup(g);if(!f)continue;f.component.forEach(member=>seen.add(member));
+  const button=document.createElement('button'),hub=f.modules[0];
+  button.type='button';button.textContent='Dron '+f.id+' · '+f.status;
+  button.addEventListener('click',()=>openFlightPanel({g:hub.g,part:hub.hub}));list.appendChild(button);
+ }
+ flightField('fleet').hidden=!list.children.length;
+}
+function routeOf(f){return f.modules[0].hub.mood.flight?.route||{loop:false,points:[]};}
+let flightEditorSubject=null,flightEditorStamp='';
+function drawFlightRoute(f){
+ if(flightEditorSubject!==f){flightEditorSubject=f;flightEditorStamp='';flightField('route-feedback').textContent='';}
+ const route=routeOf(f),scale=Number(flightField('scale').value)||2;
+ const stamp=JSON.stringify([route,scale,f.enabled]);if(stamp===flightEditorStamp)return;flightEditorStamp=stamp;
+ flightField('mode').value=route.loop?'loop':'once';flightField('mode').disabled=f.enabled;
+ flightField('fields').disabled=f.enabled;flightField('undo').disabled=!route.points.length;
+ const list=flightField('points'),path=flightField('path');list.replaceChildren();path.replaceChildren();
+ const svg=(tag,attrs)=>{const el=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [k,v]of Object.entries(attrs))el.setAttribute(k,v);path.appendChild(el);return el;};
+ const coords=route.points.map(p=>[50+50*p.x/scale,50+50*p.z/scale]);
+ svg('polyline',{points:[[50,50],...coords,...(route.loop?coords.slice(0,1):[])].map(pair=>pair.join(',')).join(' '),fill:'none',stroke:'#37878a','stroke-width':.8});
+ svg('circle',{cx:50,cy:50,r:1.6,fill:'#394743'});
+ route.points.forEach((p,i)=>{
+  const [x,y]=coords[i];svg('circle',{cx:x,cy:y,r:2.4,fill:'#216b68'});svg('text',{x:x+2.7,y:y-1,'font-size':5}).textContent=String(i+1);
+  const item=document.createElement('li');item.textContent='X '+p.x+' · Z '+p.z+' · '+p.height+' m · '+({pass:'Paso',wait:'Espera en vuelo',land:'Aterrizaje'}[p.action])+(p.action==='pass'?'':' · '+p.wait+' s');list.appendChild(item);
+ });
+}
+function editFlightRoute(action){
+ const f=flightPanelSubject();if(!f||f.enabled)return;
+ const route=routeOf(f),points=[...route.points],feedback=flightField('route-feedback');
+ if(action==='add'){
+  const read=id=>flightField(id).value===''?NaN:Number(flightField(id).value);
+  const point={x:read('x'),z:read('z'),height:read('altitude'),action:flightField('action').value,wait:read('wait')};points.push(point);
+ }else if(action==='undo')points.pop();
+ const next={loop:flightField('mode').value==='loop',points};
+ if(!QBitsPropellerPower.validConfig({...flightConfig(f),route:next})){feedback.textContent='Revisa las coordenadas (±28 m), altura (0,15–3 m) y parada (0–120 s). Máximo '+QBitsPropellerPower.maxPoints+' puntos.';return;}
+ configureFlight(f,{route:next});feedback.textContent=points.length?'Trayectoria guardada en el dron.':'Trayectoria vacía · vuelo manual.';drawFlightRoute(f);
+}
+for(const action of ['add','undo'])flightField(action).addEventListener('click',()=>editFlightRoute(action));
+flightField('mode').addEventListener('change',()=>editFlightRoute('mode'));
+flightField('scale').addEventListener('change',()=>{const f=flightPanelSubject();if(f)drawFlightRoute(f);});
+flightField('map').addEventListener('click',event=>{
+ const rect=flightField('map').getBoundingClientRect(),scale=Number(flightField('scale').value);
+ if(flightPanelSubject()?.enabled||!rect.width||!rect.height)return;
+ flightField('x').value=((2*(event.clientX-rect.left)/rect.width-1)*scale).toFixed(2);
+ flightField('z').value=((2*(event.clientY-rect.top)/rect.height-1)*scale).toFixed(2);
+ editFlightRoute('add');
+});
 function updateFlightPanel(){
  const f=flightPanelSubject(),section=document.querySelector('#flight-panel');section.hidden=!f;if(!f)return;
- const s=flightSnapshot(f),c=flightConfig(f);document.querySelector('#flight-status').textContent=f.status+' · '+f.modules.length+'/4 hélices · '+s.load.toFixed(2)+' / '+s.maxLoad.toFixed(2)+' u · '+Math.round(s.supply.storedJ)+' J';
+ drawFlightRoute(f);const s=flightSnapshot(f),c=s.config;document.querySelector('#flight-status').textContent=f.status+' · '+f.modules.length+'/4 hélices · '+s.load.toFixed(2)+' / '+s.maxLoad.toFixed(2)+' u · '+Math.round(s.supply.storedJ)+' J';
  document.querySelector('#flight-height').value=String(c.height);document.querySelector('#flight-speed').value=String(c.speed);
- document.querySelector('#flight-telemetry').textContent='Altura '+s.height.toFixed(2)+' m · '+(f.power?.rpm||0).toFixed(0)+' rpm · '+(f.power?.inputWatts||0).toFixed(2)+' W'+(f.power?.remainingSeconds!=null?' · autonomía estimada '+f.power.remainingSeconds.toFixed(0)+' s · alcance estimado '+(f.power.remainingSeconds*Math.min(c.speed,Math.hypot(s.velocity.x,s.velocity.z))).toFixed(1)+' m':'')+'. La estimación cambia con la carga, altura y consumo del resto de herramientas.';
+ document.querySelector('#flight-telemetry').textContent='Altura '+s.height.toFixed(2)+' m · '+(f.power?.rpm||0).toFixed(0)+' rpm · '+(f.power?.inputWatts||0).toFixed(2)+' W'+(f.power?.remainingSeconds!=null?' · autonomía estimada '+f.power.remainingSeconds.toFixed(0)+' s · alcance estimado '+(f.power.remainingSeconds*Math.hypot(s.velocity.x,s.velocity.z)).toFixed(1)+' m':'')+'. La estimación cambia con la carga, altura y consumo del resto de herramientas.';
  for(const id of ['height','speed','apply','heading'])document.querySelector('#flight-'+id).disabled=f.enabled;
  document.querySelector('#flight-start').disabled=f.enabled;document.querySelector('#flight-land').disabled=!f.enabled;
 }
-function openFlightPanel(hit){selected=hit;closeCommandMenu(false);pause();panel.hidden=false;updatePanel();switchPanelTab('mechanisms');}
+function openFlightPanel(hit,editor=false){
+ closeCommandMenu(false);pause();clearRotorSelection();selected=hit;multiSelection=[];selectedCargo=null;panel.hidden=false;updatePanel();switchPanelTab('mechanisms');
+ if(editor)flightField('editor').open=true;
+ flightField(editor?'editor':'panel').scrollIntoView?.({block:'start'});
+}
+function showFlightMenu(hit,flight){
+ clearRotorSelection();selected=hit;multiSelection=[];selectedCargo=null;
+ const items=[{label:'Crear trayectoria',run:()=>openFlightPanel(hit,true)},{label:'Vuelo · altura, velocidad y batería…',run:()=>openFlightPanel(hit)},
+  {label:flight.enabled?'Aterrizar':'Despegar',run:()=>{if(flight.enabled)requestFlightLanding(flight);else startFlight(flight);captureMouse();}}];
+ if(hit.distance<=4)items.push({label:'Guardar mecanismo',disabled:flight.enabled,run:()=>{saveMechanism(hit.g);captureMouse();}},
+  {label:'Tomar dron',disabled:hit.distance>2.8||!canCarry(flight.component),run:()=>takeSelection(hit)},
+  {label:'Separar pieza…',run:()=>{stopFlight(flight);openDetachMenu(hit);}});
+ items.push({label:'Cerrar',run:()=>captureMouse()});openCommandMenu(hit.point||partPose(hit.g,hit.part).p,'Dron '+flight.id+' · '+flight.status,items);
+}
 function flightPanelAction(action){const f=flightPanelSubject();if(!f)return false;
  if(f.enabled&&['heading','apply'].includes(action))return false;
  if(action==='apply')configureFlight(f,{height:Number(document.querySelector('#flight-height').value),speed:Number(document.querySelector('#flight-speed').value)});
  if(action==='heading')configureFlight(f,{heading:Math.atan2(Math.sin(yaw),Math.cos(yaw))});
- if(action==='start')startFlight(f);if(action==='land'){f.landing=true;f.status='Aterrizaje solicitado';}if(action==='stop')stopFlight(f,'Apagado · caída libre si está en el aire');
+ if(action==='start')startFlight(f);if(action==='land')requestFlightLanding(f);if(action==='stop')stopFlight(f,'Apagado · caída libre si está en el aire');
  updateFlightPanel();return true;
 }
 for(const action of ['apply','heading','start','land','stop'])document.querySelector('#flight-'+action).addEventListener('click',()=>flightPanelAction(action));
@@ -4100,7 +4221,7 @@ function landingProjection(g){
 // charge, not mass, to a remote motor. Stored cable material stays recoverable.
 const powerReservoirs=[],powerCables=[];
 let powerReservoirSerial=0,powerCableSerial=0;
-const POWER_RESERVOIR_CAPACITY=36000;
+const POWER_RESERVOIR_CAPACITY=180000;
 function powerVector(value){
  const a=Array.isArray(value)?value:value&&[value.x,value.y,value.z];
  return a?.length===3&&a.every(Number.isFinite)?V(...a):null;
@@ -4470,13 +4591,13 @@ function externalBatteryState(part){
  return state;
 }
 function isExternalBattery(part){return !!externalBatteryState(part);}
-function batterySceneScale(){return story.scene==='lab'?6:3;}
+function batterySceneScale(){return story.scene==='lab'?30:15;}
 function externalBatteryCapacity(part){const reservoir=powerReservoirCell(part);return reservoir?reservoir.capacity:isExternalBattery(part)?60*batterySceneScale():0;}
 function externalBatteryComponent(subject){return rotorConnectedGroups(Array.isArray(subject)?subject:subject?.parts?[subject]:subject&&Number.isSafeInteger(subject.aId)&&Number.isSafeInteger(subject.bId)?rotorGroups(subject):[]);}
 function externalBatteryCells(subject){return powerCables.length?getCableSupply(subject):externalBatteryComponent(subject).flatMap(g=>g.parts).filter(part=>externalBatteryState(part)?.enabled).sort((a,b)=>a.id-b.id);}
 function externalBatterySummary(subject){
  const cells=externalBatteryCells(subject),capacity=cells.reduce((sum,part)=>sum+externalBatteryCapacity(part),0),storedJ=cells.reduce((sum,part)=>sum+part.mood.energy*externalBatteryCapacity(part),0);
- const powerCells=cells.reduce((sum,cell)=>sum+(powerReservoirCell(cell)?POWER_RESERVOIR_CAPACITY/360:1),0);
+ const powerCells=cells.reduce((sum,cell)=>sum+(powerReservoirCell(cell)?POWER_RESERVOIR_CAPACITY/1800:1),0);
  return {cells,powerCells,storedJ,capacity,energy:capacity?storedJ/capacity:0,active:cells.length>0};
 }
 function externallyPoweredInternalIds(){
@@ -4578,7 +4699,7 @@ function rechargeExternalBatteries(dt){
   for(const pack of externalBatteryPackComponents(g)){
    if(pack.some(part=>externalBatteryState(part).enabled))continue;
    const grounded=pack.some(part=>{const floor=Math.min(...corners(partPose(g,part)).map(point=>point.y));return floor>=-.006&&floor<=.008;});if(!grounded)continue;
-   for(const part of pack){const capacity=externalBatteryCapacity(part),rate=story.scene==='lab'?4:2;part.mood.energy=clamp(part.mood.energy+dt*rate/capacity,0,1);}
+   for(const part of pack){const capacity=externalBatteryCapacity(part),rate=story.scene==='lab'?20:10;part.mood.energy=clamp(part.mood.energy+dt*rate/capacity,0,1);}
   }
  }
 }
@@ -5630,6 +5751,9 @@ function onCanvasMouseDown(event){
   return;
  }
  if(event.button===2){if(marquee)finishMarquee(true);handleSecondary(event);return;}
+ if(!held&&gameInputActive()){
+  const hit=aimQubit(ROOM_SIZE*1.5),f=hit&&flightForGroup(hit.g);if(f&&(hit.distance>2.7||f.enabled)){showFlightMenu(hit,f);return;}
+ }
  const hadSelection=selectedTeam().length>0||selectedRotors().length>0;
  if(!menu.hidden||!commandMenu.hidden){closeDetachMenu(false);closeCommandMenu(false);}
  if(hadSelection){clearSelection();if(document.pointerLockElement===canvas&&!aimQubit()&&!aimCargo(3))startMarquee();return;}
@@ -5699,7 +5823,14 @@ function handleSecondary(event){
  if(powerSecondary(dir))return;
  const cargoHit=aimCargo(4,dir),hit=aimQubit(4,dir),shelfHit=aimShelf(dir,4);
  if(shelfHit&&shelfHit.distance<Math.min(cargoHit?.distance??Infinity,hit?.distance??Infinity)){openShelfMenu(shelfHit.shelf,shelfHit.cellIndex);return;}
- if(selectedRotors().length){showRotorSetMenu();return;}
+ if(!cargoHit&&!hit&&!shelfHit){
+  const distant=aimQubit(ROOM_SIZE*1.5,dir),flight=distant&&flightForGroup(distant.g);
+  if(flight){showFlightMenu(distant,flight);return;}
+ }
+ if(selectedRotors().length){
+  const flight=hit&&flightForGroup(hit.g);if(flight&&(flight.modules.some(m=>m.id===hit.part.id)||rotorForPart(hit.part.id))){showFlightMenu(hit,flight);return;}
+  showRotorSetMenu();return;
+ }
  if(openWorkshopMenu(dir)||openReconfigurationMenu(dir)||openProductionMenu(dir)||alphaSecondary(dir))return;
  if(cargoHit){
   selectedCargo=cargoHit.cargo;const c=selectedCargo,team=selectedTeam(),number=team.reduce((n,g)=>n+g.parts.length,0),items=[];
@@ -5715,7 +5846,7 @@ function handleSecondary(event){
   selectedCargo=null;pendingCargo=null;selected=hit;if(!multiSelection.includes(hit.g))multiSelection=[];
   if(event.altKey||altDown()){openDetachMenu(hit);return;}
   if(isExternalBattery(hit.part)){showExternalBatteryMenu(hit.part.id);return;}
-  const flight=flightForGroup(hit.g);if(flight&&!hit.part.mood.gripper&&!QBitsWorkshop.partState(hit.part).sensor){openCommandMenu(hit.p||partPose(hit.g,hit.part).p,'Dron · '+flight.status,[{label:'Vuelo · altura, velocidad y batería…',run:()=>openFlightPanel(hit)},{label:flight.enabled?'Aterrizar':'Despegar',run:()=>{if(flight.enabled){flight.landing=true;flight.status='Aterrizando';}else startFlight(flight);captureMouse();}},{label:'Guardar mecanismo',run:()=>{saveMechanism(hit.g);captureMouse();}},{label:'Tomar dron',disabled:!canCarry(flight.component),run:()=>takeSelection(hit)},{label:'Separar pieza…',run:()=>{stopFlight(flight);openDetachMenu(hit);}},{label:'Cerrar',run:()=>captureMouse()}]);return;}
+  const flight=flightForGroup(hit.g);if(flight&&!hit.part.mood.gripper&&!QBitsWorkshop.partState(hit.part).sensor){showFlightMenu(hit,flight);return;}
   const ownedConveyor=conveyorForPart(hit.part.id);
   if(QBitsWorkshop.partState(hit.part).sensor&&(flight||ownedConveyor||conveyorForGroup(hit.g)||robotArmForGroup(hit.g,hit.part.id))){showSensorMenu(hit);return;}
   const arm=ownedConveyor&&!hit.part.mood.gripper?null:robotArmForGroup(hit.g,hit.part.id),gripperId=arm?.gripperId||(hit.part.mood.gripper?hit.part.id:null);
@@ -5961,7 +6092,7 @@ function updateConveyorPanel(){if(!window.QBitsConveyorPanel||typeof conveyorBlu
 function builtInMechanismRecipes(){return [propellerBlueprintTemplate(),robotArmBlueprintTemplate(),...(typeof conveyorBlueprintTemplate==='function'?['straight','left','right'].map(kind=>conveyorBlueprintTemplate(kind,false)):[])].filter(Boolean);}
 
 function updateMechanismPanel(){
- refreshSensorPanel();updateRobotArmPanel();updateConveyorPanel();updateFlightPanel();updateServoPanel();
+ refreshSensorPanel();updateRobotArmPanel();updateConveyorPanel();updateFlightFleet();updateFlightPanel();updateServoPanel();
  const targets=controlRotors(),rotor=targets[0]||selectedRotor(),set=activeRotorSet(),available=mechanismsAvailable(),rpm=rotor?.rpm??mechanismDefaults.rpm;
  const common=(field,format)=>targets.length>1&&targets.some(r=>r[field]!==targets[0][field])?'Varios':format(rotor?.[field]??mechanismDefaults[field]);
  document.querySelector('#mechanism-unlock').textContent=story.scene==='lab'?'Disponibles en el banco. En campaña: completa el nivel 5, La primera unión.':mechanismsUnlocked()?'Enganche y Rotor desbloqueados.':'Completa el nivel 5, La primera unión, para desbloquearlos en campaña.';
@@ -6296,7 +6427,7 @@ function newMood(id,saved=null){
  const m={name:'Q-bit '+id,strikes:0,severity:0,lastAnger:-1000,restTotal:0,energy:.8,state:'neutral',reason:'',agitation:0,restLeft:0,idle:0,fullTime:0,blocked:0,calm:0,boredOnce:false,personality,blend:[1,0,0]};
  if(saved)Object.assign(m,saved,{blend:[...(saved.blend||[1,0,0])],...(saved.externalBattery?{externalBattery:{...saved.externalBattery}}:{}),...(saved.gripper?{gripper:JSON.parse(JSON.stringify(saved.gripper))}:{}),...(saved.flight?{flight:QBitsPropellerPower.config(saved.flight)}:{})});m.name=m.name.replace(/^(?:Kiubit|Qubit) (\d+)$/,'Q-bit $1');return m;
 }
-function copyMood(m){return m?{...m,blend:[...m.blend],...(m.externalBattery?{externalBattery:{...m.externalBattery}}:{}),...(Array.isArray(m.sensorMachine?.members)?{sensorMachine:{...m.sensorMachine,members:m.sensorMachine.members.map(pair=>({...pair}))}}:{}),...(m.sensorConfig?{sensorConfig:{...m.sensorConfig}}:{}),...(m.sensorLink?{sensorLink:{...m.sensorLink}}:{}),...(m.gripper?{gripper:JSON.parse(JSON.stringify(m.gripper))}:{}),...(m.flight?{flight:{...m.flight}}:{})}:null;}
+function copyMood(m){return m?{...m,blend:[...m.blend],...(m.externalBattery?{externalBattery:{...m.externalBattery}}:{}),...(Array.isArray(m.sensorMachine?.members)?{sensorMachine:{...m.sensorMachine,members:m.sensorMachine.members.map(pair=>({...pair}))}}:{}),...(m.sensorConfig?{sensorConfig:{...m.sensorConfig}}:{}),...(m.sensorLink?{sensorLink:{...m.sensorLink}}:{}),...(m.gripper?{gripper:JSON.parse(JSON.stringify(m.gripper))}:{}),...(m.flight?{flight:QBitsPropellerPower.config(m.flight)}:{})}:null;}
 function moodName(m){return m.state==='excited'?'Entusiasmado':m.state==='restless'?(m.severity>=3?'Alterado':'Inquieto'):'Neutro';}
 function moodColor(m){const colors=[[.53,.60,.61],[.38,.66,.56],[.76,.48,.38]],rgb=[0,0,0];for(let i=0;i<3;i++)for(let k=0;k<3;k++)rgb[k]+=colors[i][k]*m.blend[i];return rgb;}
 function moodCSS(m){return 'rgb('+moodColor(m).map(c=>Math.round(c*255)).join(',')+')';}
@@ -6481,7 +6612,7 @@ function updateCooling(dt){
   const candidates=groups.filter(g=>!g.route&&!g.haulJob&&!g.blueprintJob&&!(held?.items||[]).some(i=>i.g===g)).map(g=>({g,b:bounds(g)})).filter(o=>o.b.min.y>=-.005&&o.b.min.y<.05&&Math.max(...poses(o.g).flatMap(corners).map(v=>Math.hypot(v.x-c.p.x,v.z-c.p.z)))<.315).sort((a,b)=>Number(c.entries.has(b.g.parts[0].id))-Number(c.entries.has(a.g.parts[0].id)));
   for(const {g} of candidates){if(count+g.parts.length>c.capacity)continue;count+=g.parts.length;
    if(!c.enabled||!alphaSettings.coolingOn)continue;g.cooler=c;
-   for(const part of g.parts){if(isExternalBattery(part)||externalInternals.has(part.id))continue;seen.add(part.id);if(rotorForPart(part.id)?.powerActive||robotWorkingParts.has(part))continue;let e=c.entries.get(part.id);if(!e){e={elapsed:0,done:false};c.entries.set(part.id,e);}const coolingSeconds=(c.coolSeconds||alphaSettings.coolSeconds)*gameBatteryCapacity(part)/60;e.duration=coolingSeconds;e.elapsed=Math.min(coolingSeconds,e.elapsed+dt);
+   for(const part of g.parts){if(isExternalBattery(part)||externalInternals.has(part.id))continue;seen.add(part.id);if(rotorForPart(part.id)?.powerActive||robotWorkingParts.has(part))continue;let e=c.entries.get(part.id);if(!e){e={elapsed:0,done:false};c.entries.set(part.id,e);}const coolingSeconds=(c.coolSeconds||alphaSettings.coolSeconds)*gameBatteryCapacity(part)/300;e.duration=coolingSeconds;e.elapsed=Math.min(coolingSeconds,e.elapsed+dt);
     const m=part.mood;m.coolProgress=e.elapsed/coolingSeconds;
     if(e.elapsed>=coolingSeconds){if(!e.done){m.energy=alphaSettings.exitEnergy;m.state='neutral';m.reason='';m.restLeft=0;m.agitation=0;m.strikes=0;m.severity=0;m.fullTime=0;m.calm=4;e.done=true;}m.energy=Math.min(m.energy,alphaSettings.exitEnergy);}
    }
@@ -6701,7 +6832,7 @@ function savedMechanismValid(record){
  }catch{return false;}
 }
 function copySavedMechanism(record){
- return {version:1,type:record.type,name:record.name,groups:record.groups.map(g=>({parts:g.parts.map(p=>({key:p.key,shape:p.shape,weight:p.weight,p:[...p.p],q:[...p.q],...(p.battery?{battery:{pack:p.battery.pack,enabled:p.battery.enabled}}:{}),...(p.gripper?{gripper:{...p.gripper}}:{}),...(p.flight?{flight:{...p.flight}}:{})}))})),joints:record.joints.map(j=>({a:j.a,b:j.b,rpm:j.rpm,direction:j.direction,moving:j.moving,...storedRotorDrive(j),enabled:j.enabled})),...(record.rotorSets?{rotorSets:record.rotorSets.map(set=>({name:set.name,joints:[...set.joints]}))}:{}),...(record.robotArm?{robotArm:JSON.parse(JSON.stringify(record.robotArm))}:{}),...(record.conveyors?{conveyors:JSON.parse(JSON.stringify(record.conveyors))}:{})};
+ return {version:1,type:record.type,name:record.name,groups:record.groups.map(g=>({parts:g.parts.map(p=>({key:p.key,shape:p.shape,weight:p.weight,p:[...p.p],q:[...p.q],...(p.battery?{battery:{pack:p.battery.pack,enabled:p.battery.enabled}}:{}),...(p.gripper?{gripper:{...p.gripper}}:{}),...(p.flight?{flight:QBitsPropellerPower.config(p.flight)}:{})}))})),joints:record.joints.map(j=>({a:j.a,b:j.b,rpm:j.rpm,direction:j.direction,moving:j.moving,...storedRotorDrive(j),enabled:j.enabled})),...(record.rotorSets?{rotorSets:record.rotorSets.map(set=>({name:set.name,joints:[...set.joints]}))}:{}),...(record.robotArm?{robotArm:JSON.parse(JSON.stringify(record.robotArm))}:{}),...(record.conveyors?{conveyors:JSON.parse(JSON.stringify(record.conveyors))}:{})};
 }
 function alignMechanismSnapshot(record){
  // A live hinge solver may leave millimetres of drift. Canonicalize only this
@@ -6794,7 +6925,7 @@ function spawnSavedMechanism(record,point,rotation=Q()){
  }
  try{
   for(const parts of data)for(const part of parts)ids.set(part.key,allocateUnitId());
-  for(const [i,parts]of data.entries()){const created=parts.map((part,j)=>{const id=ids.get(part.key),config=record.groups[i].parts[j].gripper,mood=part.battery?{...newMood(id),energy:0,externalBattery:{version:1,ownerId:id,packId:ids.get(part.battery.pack),enabled:part.battery.enabled}}:config?{...newMood(id),gripper:{...config}}:null;return {id,shape:part.shape,weight:part.weight,p:part.p,q:part.q,mood:record.groups[i].parts[j].flight?{...(mood||newMood(id)),flight:{...record.groups[i].parts[j].flight}}:mood};});made.push(makeGroup(created));}
+  for(const [i,parts]of data.entries()){const created=parts.map((part,j)=>{const id=ids.get(part.key),config=record.groups[i].parts[j].gripper,mood=part.battery?{...newMood(id),energy:0,externalBattery:{version:1,ownerId:id,packId:ids.get(part.battery.pack),enabled:part.battery.enabled}}:config?{...newMood(id),gripper:{...config}}:null;return {id,shape:part.shape,weight:part.weight,p:part.p,q:part.q,mood:record.groups[i].parts[j].flight?{...(mood||newMood(id)),flight:QBitsPropellerPower.config(record.groups[i].parts[j].flight)}:mood};});made.push(makeGroup(created));}
   for(const joint of record.joints){const rotor=connectRotorTips(ids.get(joint.a),ids.get(joint.b),{...joint,...storedRotorDrive(joint),enabled:false});if(!rotor)throw new Error('Las puntas del mecanismo ya no encajan.');joints.push(rotor);}
   for(let i=0;i<joints.length;i++)configureRotor(joints[i],record.joints[i].servo?{...record.joints[i],enabled:false}:record.joints[i]);
   rememberSensorMachine(record.name,joints);
@@ -6930,7 +7061,7 @@ function completeMechanismBlueprint(bp,targets){
   for(let i=0;i<rigid.length;i++){
    for(let j=0;j<rigid[i].length;j++){const p=rigid[i][j],recipe=record.groups[i].parts[j],storedJ=p.mood.energy*gameBatteryCapacity(p);
     if(recipe.battery){p.mood.externalBattery={version:1,ownerId:p.id,packId:ids.get(recipe.battery.pack),enabled:false};p.mood.energy=storedJ/(60*batterySceneScale());}
-    if(recipe.gripper)p.mood.gripper={...recipe.gripper};if(recipe.flight)p.mood.flight={...recipe.flight};
+    if(recipe.gripper)p.mood.gripper={...recipe.gripper};if(recipe.flight)p.mood.flight=QBitsPropellerPower.config(recipe.flight);
    }
    made.push(makeGroup(rigid[i],bp.q));
   }

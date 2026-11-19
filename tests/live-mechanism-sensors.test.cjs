@@ -67,11 +67,11 @@ test('weight measures a resting load once and clears when lifted',()=>{
  assert(!t.sensorReading(t.rotorPart(hit.part.id)).active);
 });
 
-test('a lab motor draws the same watts and runs three times as long at identical shaft load',()=>{
+test('a lab motor draws the same watts and runs five times as long at identical shaft load',()=>{
  const {t}=lab(),r=t.spawnRotor(t.V(0,.4,0),{mount:'fixed'});assert(t.configureRotor(r,{enabled:true}));
  r.actualTorque=.2;r.actualRpm=30;const now=t.rotorPowerState(r),a=t.rotorPart(r.aId).part;
- const formerSeconds=2*40*a.mood.energy/now.inputWatts;
- assert(Math.abs(now.remainingSeconds/formerSeconds-3)<1e-9);
+ const formerSeconds=2*120*a.mood.energy/now.inputWatts;
+ assert(Math.abs(now.remainingSeconds/formerSeconds-5)<1e-9);
 });
 
 test('a beam starts a complete arm and a second beam stops all its joints',()=>{

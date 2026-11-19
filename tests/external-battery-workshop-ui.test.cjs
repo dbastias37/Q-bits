@@ -12,7 +12,7 @@ test('all three external battery versions are available immediately and preserve
  for(const size of [1,2,3]){const game=lab(),{t}=game,g=bar(t,size),ids=g.parts.map(p=>p.id),mass=g.body.mass,energy=g.parts.reduce((n,p)=>n+p.mood.energy*t.gameBatteryCapacity(p),0),credits=t.getWorkshopProfile().credits;
   assert.equal(t.getWorkshopProfile().research.length,0);assert.equal(t.batteryWorkshopCheck(ids[0],size),'');
   assert(t.createExternalBattery(ids[0],size));const info=t.externalBatteryPackInfo(ids[0]);
-  assert.equal(info.parts.length,size);assert.equal(info.capacity,360*size);near(info.storedJ,energy);assert.equal(info.enabled,false);
+  assert.equal(info.parts.length,size);assert.equal(info.capacity,1800*size);near(info.storedJ,energy);assert.equal(info.enabled,false);
   assert.deepEqual(g.parts.map(p=>p.id),ids);near(g.body.mass,mass);assert.equal(t.groups.length,1);assert.equal(t.getWorkshopProfile().credits,credits);
   assert(g.parts.every(p=>p.shape==='cube'&&t.isExternalBattery(p)));
  }

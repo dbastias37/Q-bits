@@ -33,7 +33,7 @@ test('four connected motors share one battery pool with exact aggregate expendit
  const {t}=lab(),{cells,rotors}=fixture(t),beforeJ=joules(t,cells),beforeInternal=internal(t);start(t,rotors);
  const watts=rotors.reduce((sum,r)=>sum+t.rotorPowerState(r).inputWatts,0);t.updateRotorPower(1.25);
  close(beforeJ-joules(t,cells),watts*1.25);close(rotors.reduce((sum,r)=>sum+r.power.spentJoules,0),watts*1.25);assert.deepEqual(internal(t),beforeInternal);
- assert(rotors.every(r=>r.power.external&&r.power.drainA===0&&r.power.drainB===0));assert.equal(t.externalBatterySummary(rotors[0]).capacity,720);
+ assert(rotors.every(r=>r.power.external&&r.power.drainA===0&&r.power.drainB===0));assert.equal(t.externalBatterySummary(rotors[0]).capacity,3600);
 });
 
 test('pool debit is proportional to stored joules and independent of rotor iteration order',()=>{
@@ -74,10 +74,10 @@ test('ordinary mood and cooler recovery cannot change external charge or frozen 
  cells[0].mood.externalBattery.enabled=false;t.updateMoods(1);assert(internal(t).some((value,i)=>value>beforeInternal[i]));
 });
 
-test('disabled grounded cells recharge at four joules per second in the lab with finite capacity',()=>{
- const {t}=lab(),g=t.addQubit([0,.045,0]),part=battery(t,g.parts[0],0,false);assert.equal(t.externalBatteryCapacity(part),360);assert.equal(t.gameBatteryCapacity(part),360);
+test('disabled grounded cells recharge at twenty joules per second in the lab with finite capacity',()=>{
+ const {t}=lab(),g=t.addQubit([0,.045,0]),part=battery(t,g.parts[0],0,false);assert.equal(t.externalBatteryCapacity(part),1800);assert.equal(t.gameBatteryCapacity(part),1800);
  t.rechargeExternalBatteries(45);close(part.mood.energy,.5);t.rechargeExternalBatteries(45);close(part.mood.energy,1);t.rechargeExternalBatteries(100);assert.equal(part.mood.energy,1);
- t.story.scene='campaign';assert.equal(t.externalBatteryCapacity(part),180);part.mood.energy=0;t.rechargeExternalBatteries(45);close(part.mood.energy,.5);
+ t.story.scene='campaign';assert.equal(t.externalBatteryCapacity(part),900);part.mood.energy=0;t.rechargeExternalBatteries(45);close(part.mood.energy,.5);
 });
 
 test('charge requires direct cell-to-floor support, rest, disabled state and a stopped physical network',()=>{

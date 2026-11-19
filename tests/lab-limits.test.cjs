@@ -10,7 +10,7 @@ test('the laboratory doubles motor autonomy without changing its work, draw or c
  rotor.actualRpm=30;rotor.actualTorque=.2;
  const extended=t.rotorPowerState(rotor,1);
  t.story.scene='campaign';const ordinary=t.rotorPowerState(rotor,1);
- assert.equal(extended.capacityJoulesA,120);assert.equal(ordinary.capacityJoulesA,60);
+ assert.equal(extended.capacityJoulesA,600);assert.equal(ordinary.capacityJoulesA,300);
  near(extended.inputWatts,ordinary.inputWatts);near(extended.mechanicalWatts,ordinary.mechanicalWatts);near(extended.spentJoules,ordinary.spentJoules);
  near(extended.drainA*2,ordinary.drainA);near(extended.drainB*2,ordinary.drainB);
  near(extended.remainingSeconds+1,(ordinary.remainingSeconds+1)*2);
@@ -21,12 +21,12 @@ test('a campaign visit preserves laboratory charge and load settings without car
  t.rotorPart(rotor.aId).part.mood.energy=.37;t.rotorPart(rotor.bId).part.mood.energy=.61;
  t.configureRotor(rotor,{capacity:2000});t.settings.maxCarry=96;t.settings.maxSelect=200;
  const ids=[rotor.aId,rotor.bId];t.beginCampaignLevel(16);
- const campaignRotor=t.rotors[0];assert(campaignRotor);assert.equal(t.rotorPowerState(campaignRotor).capacityJoulesA,60);
+ const campaignRotor=t.rotors[0];assert(campaignRotor);assert.equal(t.rotorPowerState(campaignRotor).capacityJoulesA,300);
  assert.equal(t.settings.maxCarry,2000);
  t.enterLab(false);const restored=t.rotors.find(r=>r.aId===ids[0]&&r.bId===ids[1]);assert(restored);
  assert.equal(restored.capacity,2000);assert.equal(t.settings.maxCarry,96);assert.equal(t.settings.maxSelect,200);
  near(t.rotorPart(ids[0]).part.mood.energy,.37);near(t.rotorPart(ids[1]).part.mood.energy,.61);
- assert.equal(t.rotorPowerState(restored).capacityJoulesA,120);
+ assert.equal(t.rotorPowerState(restored).capacityJoulesA,600);
 });
 
 test('the enlarged creation limit admits 2000 pieces and rejects another rotor atomically',()=>{

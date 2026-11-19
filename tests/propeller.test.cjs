@@ -11,11 +11,11 @@ function drone(t,n=1,cells=Math.min(n,3)){
 }
 test('power model limits lift, battery power, height, count and exact last energy fraction',()=>{
  const s={count:1,mass:.6,height:.2,targetHeight:.5,cells:1,energy:100,enabled:true,spool:1};
- const a=power.evaluate(s,1/120);assert(a.fy>.6*9.8);assert(a.spentJoules>0);assert(a.inputWatts<=10);assert(a.canLift);
- assert(power.evaluate({...s,mass:6},0).reason==='overload');assert(power.evaluate({...s,cells:0}).reason==='battery');assert(power.evaluate({...s,energy:0}).reason==='empty');assert(power.evaluate({...s,count:5}).reason==='limit');
+ const a=power.evaluate(s,1/120);assert(a.fy>.6*9.8);assert(a.spentJoules>0);assert(a.inputWatts<=power.SPEC.wattsPerCell);assert(a.canLift);
+ assert(power.evaluate({...s,mass:16},0).reason==='overload');assert(power.evaluate({...s,cells:0}).reason==='battery');assert(power.evaluate({...s,energy:0}).reason==='empty');assert(power.evaluate({...s,count:5}).reason==='limit');
  assert(power.evaluate({...s,height:3}).maxForce<a.maxForce);assert.equal(power.evaluate({...s,enabled:false},.1).spentJoules,0);assert.equal(power.evaluate(s,0).spentJoules,0);
  const end=power.evaluate({...s,energy:1e-5},.1);assert.equal(end.spentJoules,1e-5);assert(end.exhausted);assert(end.fy<a.fy*.001);
- for(const count of [1,2,3,4]){const r=power.evaluate({...s,count,cells:3,mass:count},.01);assert(r.canLift);assert(r.inputWatts<=30+1e-7);}
+ for(const count of [1,2,3,4]){const r=power.evaluate({...s,count,cells:3,mass:count},.01);assert(r.canLift);assert(r.inputWatts<=3*power.SPEC.wattsPerCell+1e-7);}
  assert(Object.values(power.evaluate({count:NaN,mass:Infinity,energy:NaN,height:-Infinity,cells:NaN},NaN)).every(v=>typeof v!=='number'||Number.isFinite(v)));
 });
 test('two triangular tips snap manually to opposite sockets and retain IDs, weight and energy',()=>{
@@ -30,12 +30,12 @@ test('hub-to-blade reverse snap works and a used tip cannot also form a conventi
 });
 for(const n of [1,2,3,4])test(`${n} propellers physically lift and hold the connected chassis with ${Math.min(n,3)} battery cells`,()=>{
  const{t}=lab(),{g,f}=drone(t,n),ids=g.parts.map(p=>p.id),constraints=t.world.constraints.length,energy=t.externalBatterySummary(g).storedJ;assert(t.startFlight(f),f.status);tick(t,5);
- assert(f.enabled,f.status);assert(Math.abs(t.bounds(g).min.y-.35)<.04,JSON.stringify({height:t.bounds(g).min.y,status:f.status}));assert(t.externalBatterySummary(g).storedJ<energy);assert.equal(t.world.constraints.length,constraints);assert.deepEqual(g.parts.map(p=>p.id),ids);assert.equal(t.groups.length,1);assert(f.power.inputWatts<=Math.min(n,3)*10+.00001);
+ assert(f.enabled,f.status);assert(Math.abs(t.bounds(g).min.y-.35)<.04,JSON.stringify({height:t.bounds(g).min.y,status:f.status}));assert(t.externalBatterySummary(g).storedJ<energy);assert.equal(t.world.constraints.length,constraints);assert.deepEqual(g.parts.map(p=>p.id),ids);assert.equal(t.groups.length,1);assert(f.power.inputWatts<=Math.min(n,3)*power.SPEC.wattsPerCell+.00001);
  f.landing=true;tick(t,5);assert(!f.enabled,f.status);assert(t.bounds(g).min.y<.015);assert.equal(g.body.type,1,'body remains dynamic');
 });
 test('fifth propeller, absent batteries, held assembly and physical overload fail without spending energy',()=>{
  const{t}=lab(),{g,f}=drone(t,5),energy=t.externalBatterySummary(g).storedJ;assert(!t.startFlight(f));assert.match(f.status,/Máximo 4/);assert.equal(t.externalBatterySummary(g).storedJ,energy);
- t.clearNarrativeScene();Object.assign(t.story,{scene:'lab',mode:'playing'});const single=drone(t);const battery=single.g.parts.find(t.isExternalBattery);battery.mood.externalBattery.enabled=false;assert(!t.startFlight(single.f));assert.match(single.f.status,/batería/);battery.mood.externalBattery.enabled=true;t.setHeld({g:single.g,items:[{g:single.g}]});assert(!t.startFlight(single.f));t.setHeld(null);single.g.parts.find(p=>p.shape==='coupler').weight=20;assert(!t.startFlight(single.f));assert.match(single.f.status,/peso/);
+ t.clearNarrativeScene();Object.assign(t.story,{scene:'lab',mode:'playing'});const single=drone(t);const battery=single.g.parts.find(t.isExternalBattery);battery.mood.externalBattery.enabled=false;assert(!t.startFlight(single.f));assert.match(single.f.status,/batería/);battery.mood.externalBattery.enabled=true;t.setHeld({g:single.g,items:[{g:single.g}]});assert(!t.startFlight(single.f));t.setHeld(null);single.g.parts.find(p=>p.shape==='coupler').weight=70;assert(!t.startFlight(single.f));assert.match(single.f.status,/peso/);
 });
 test('rotating clearance includes foreign pieces, preventing thrust through a blocked blade disk',()=>{
  const{t}=lab(),{g,f}=drone(t),hub=t.rotorPart(f.modules[0].id),tip=t.couplerTip(hub).point;const obstacle=t.addQubit([tip.x,tip.y+.03,tip.z+.1]);assert(!t.startFlight(f));assert.match(f.status,/obstruida/);t.removeGroup(obstacle);assert(t.startFlight(f));tick(t,1);assert(f.phase>0);const blade=f.modules[0].blades[0],before=t.partPose?null:blade.offset.clone(),visual=t.propellerVisualPose(g,blade);assert(visual.q);assert.deepEqual(blade.offset,before);t.detachPart({g,part:blade});assert(!f.enabled);
@@ -66,13 +66,77 @@ test('quick drone and panel controls are available, paused inspection spends not
 });
 test('a mounted hand carries a real cube, shares its battery and counts the payload in flight load',()=>{
  const{t}=lab(),record=t.propellerBlueprintTemplate(true);for(const p of record.groups[0].parts)p.p[1]+=.18;record.groups[0].parts.push({key:4,shape:'cube',weight:1,p:[0,.135,0],q:[0,0,0,1],gripper:t.copyGripperConfig({capacity:4})});assert(t.savedMechanismValid(record));
- const g=t.spawnSavedMechanism(record,t.V()),grip=g.parts.find(p=>p.mood.gripper),cell=g.parts.find(t.isExternalBattery);cell.mood.energy=1;cell.mood.externalBattery.enabled=true;const payload=t.addQubit([0,.045,0]);assert(t.gripperGrab(grip.id));const f=t.flightForGroup(g);t.configureFlight(f,{height:.35});const loaded=t.flightSnapshot(f).load;assert(Math.abs(loaded-25/6)<1e-9);assert(t.startFlight(f),f.status);tick(t,4);assert(f.enabled,f.status);assert(t.robotGrips.has(grip.id),'hand keeps its physical payload');assert(payload.body.position.y>.25);assert((1-cell.mood.energy)*t.gameBatteryCapacity(cell)>12);assert(t.releaseGripper(grip.id));assert(Math.abs(t.flightSnapshot(f).load-(loaded-1))<1e-9);tick(t,1);assert(payload.body.position.y<.06);
+ const g=t.spawnSavedMechanism(record,t.V()),grip=g.parts.find(p=>p.mood.gripper),cell=g.parts.find(t.isExternalBattery);cell.mood.energy=1;cell.mood.externalBattery.enabled=true;const payload=t.addQubit([0,.045,0]);assert(t.gripperGrab(grip.id));const f=t.flightForGroup(g);t.configureFlight(f,{height:.35});const loaded=t.flightSnapshot(f).load;assert(Math.abs(loaded-25/6)<1e-9);assert(t.startFlight(f),f.status);tick(t,4);assert(f.enabled,f.status);assert(t.robotGrips.has(grip.id),'hand keeps its physical payload');assert(payload.body.position.y>.25);assert((1-cell.mood.energy)*t.gameBatteryCapacity(cell)>1);assert(t.releaseGripper(grip.id));assert(Math.abs(t.flightSnapshot(f).load-(loaded-1))<1e-9);tick(t,1);assert(payload.body.position.y<.06);
 });
 test('snapshots cannot share flight setting objects and shelving preserves the assembled mechanism',()=>{
  const{t}=lab(),{g,f}=drone(t);t.configureFlight(f,{height:.65,speed:.2});const before=t.worldParts(g),hub=before.find(p=>p.shape==='coupler');hub.mood.flight.height=2;assert.equal(t.flightConfig(f).height,.65);const s=t.saveLab();s.groups[0].parts.find(p=>p.shape==='coupler').mood.flight.height=1.5;assert.equal(t.flightConfig(f).height,.65);
  const shelf=t.createShelf({p:t.V(0,.4,-13.996),q:t.Q(),wall:'north'});assert(shelf);t.setMultiSelection([g]);t.setSelected({g,part:g.parts[0]});assert(t.startFlight(f));assert(!t.storeShelfSelection(shelf,0));t.stopFlight(f);const energy=t.externalBatterySummary(g).storedJ,ids=Array.from(g.parts,p=>p.id).sort();assert(t.storeShelfSelection(shelf,0));assert(t.withdrawShelf(shelf,0));const restored=t.groups.find(g=>g.parts.some(p=>p.id===f.id));assert(restored);assert.deepEqual(Array.from(restored.parts,p=>p.id).sort(),ids);const rf=t.flightForGroup(restored);assert(!rf.enabled);assert.equal(t.flightConfig(rf).height,.65);assert.equal(t.externalBatterySummary(restored).storedJ,energy);
 });
 test('excess load at altitude settles instead of creating unlimited lift, and simultaneous motors reserve battery output',()=>{
- const{t}=lab(),{g,f}=drone(t);const hub=g.parts.find(p=>p.shape==='coupler');hub.weight=3.8;g.body.mass=(3.8+1+1/6)*.25;g.body.updateMassProperties();t.configureFlight(f,{height:3});assert(t.startFlight(f));tick(t,5);assert(t.bounds(g).min.y<2);assert(f.enabled);assert(f.power.inputWatts<=10+1e-7);assert(f.power.spentJoules>0);
+ const{t}=lab(),{g,f}=drone(t);const hub=g.parts.find(p=>p.shape==='coupler');hub.weight=48;g.body.mass=(48+1+1/6)*.25;g.body.updateMassProperties();t.configureFlight(f,{height:3});assert(t.startFlight(f));tick(t,5);assert(t.bounds(g).min.y<2);assert(f.enabled);assert(f.power.inputWatts<=power.SPEC.wattsPerCell+1e-7);assert(f.power.spentJoules>0);
  const noBudget=power.evaluate({count:2,mass:1,height:.5,targetHeight:1,cells:2,availableWatts:0,energy:100,enabled:true},.01);assert.equal(noBudget.maxForce,0);assert.equal(noBudget.canLift,false);assert.equal(noBudget.fy,0);assert.equal(noBudget.inputWatts,0);
+});
+test('one cell lifts a 30-piece chassis with a weight sensor and independent detection threshold',()=>{
+ const {t}=lab(),record=t.propellerBlueprintTemplate(true),parts=record.groups[0].parts;
+ for(let z=-1;z<=1;z++)for(let x=-4;x<=4;x++){
+  if(!x&&!z)continue;
+  parts.push({key:parts.length,shape:'cube',weight:1,p:[x*.09,.045,z*.09],q:[0,0,0,1]});
+ }
+ const g=t.spawnSavedMechanism(record,t.V()),f=t.flightForGroup(g),sensor=g.parts.at(-1),cell=g.parts.find(t.isExternalBattery);
+ assert.equal(g.parts.length,30);cell.mood.energy=1;cell.mood.externalBattery.enabled=true;
+ const before=t.flightSnapshot(f);sensor.mood.workshop={version:1,ownerId:sensor.id,sensor:true,battery:1,lightweight:1,movement:1,baseWeight:1,ballast:0};
+ sensor.mood.sensorConfig={mode:'weight',weight:120,action:'start'};
+ assert.equal(t.flightSnapshot(f).load,before.load);assert(Math.abs(before.load-(28+1/6))<1e-8);
+ t.configureFlight(f,{height:.8});assert(t.startFlight(f),f.status);tick(t,5);
+ assert(f.enabled,f.status);assert(Math.abs(t.bounds(g).min.y-.8)<.04);assert(cell.mood.energy<1);assert.equal(t.sensorReading(t.rotorPart(sensor.id)).active,false);
+});
+const point=(x,z,action,wait=0)=>({x,z,height:.35,action,wait});
+test('finite route holds in the air, touches down, takes off again and lands at the last point',()=>{
+ const {t}=lab(),{f,g}=drone(t),start=g.body.position.clone();
+ t.configureFlight(f,{route:{loop:false,points:[point(.4,0,'wait',1),point(.4,-.4,'land',1),point(0,-.4,'pass')]}});
+ assert(t.startFlight(f));const phases=new Set();let hover=0,ground=0,climbed=false;
+ for(let i=0;i<4800&&f.enabled;i++){
+  t.stepPhysics(1/120);if(!f.trip)continue;
+  const {index,phase}=f.trip;phases.add(index+'-'+phase);
+  if(phase==='wait'){hover++;assert(Math.abs(t.bounds(g).min.y-.35)<.07);}
+  if(phase==='ground'){ground++;assert(t.bounds(g).min.y<.016);}
+  if(index===2&&t.bounds(g).min.y>.25)climbed=true;
+ }
+ assert(hover>=119&&ground>=119&&climbed,JSON.stringify([...phases]));assert(!f.enabled,f.status);assert(t.bounds(g).min.y<.015);
+ assert(Math.hypot(g.body.position.x-start.x,g.body.position.z-start.z+.4)<.13);
+});
+test('remote click opens the editor, the saved loop repeats and a manual landing cancels it',()=>{
+ const {t,sandbox}=lab(),{f,g}=drone(t);const field=id=>sandbox.document.querySelector('#flight-'+id);
+ const aim=()=>{const p=t.rotorPart(f.id).p;t.setLook({camera:[p.x,p.y,p.z+7],yaw:0,pitch:0});sandbox.document.pointerLockElement=t.canvas;};
+ aim();t.handleSecondary({clientX:640,clientY:360});let menu=t.getCommandState();
+ menu.items.find(i=>i.label==='Crear trayectoria').run();assert(field('editor').open);
+ field('mode').value='loop';field('action').value='pass';field('altitude').value='.35';field('wait').value='0';field('scale').value='2';
+ field('map').dispatchEvent({type:'click',clientX:736,clientY:360});
+ field('x').value='0';field('z').value='0';field('add').dispatchEvent({type:'click'});
+ assert.equal(t.flightConfig(f).route.points[0].x,.3);assert(t.flightConfig(f).route.loop);
+ const record=t.mechanismSnapshot(g),copy=t.copySavedMechanism(record);
+ const saved=copy.groups[0].parts.find(p=>p.flight).flight;saved.route.points[0].x=80;assert(!t.savedMechanismValid(copy));assert.equal(t.flightConfig(f).route.points[0].x,.3);
+ assert(t.startFlight(f));let laps=0,last=0;
+ for(let i=0;i<4800&&laps<2;i++){t.stepPhysics(1/120);assert(f.trip,f.status);if(f.trip.index===0&&last===1)laps++;last=f.trip.index;}
+ assert.equal(laps,2);aim();t.handleSecondary({clientX:640,clientY:360});menu=t.getCommandState();
+ assert(menu.items.every(i=>!i.label.includes('Tomar')));menu.items.find(i=>i.label==='Aterrizar').run();tick(t,5);assert(!f.enabled);assert(!f.trip);assert(t.bounds(g).min.y<.02);
+});
+test('sensor inside the blade disk reports obstruction separately from a load cutoff',()=>{
+ const {t}=lab(),{f}=drone(t),tip=t.couplerTip(t.rotorPart(f.id)).point;
+ const g=t.addQubit([tip.x,tip.y+.03,tip.z+.1]),part=g.parts[0];
+ part.mood.workshop={version:1,ownerId:part.id,sensor:true,battery:1,lightweight:1,movement:1,baseWeight:1,ballast:0};
+ assert(!t.startFlight(f));assert.match(f.status,/obstruida por el sensor/);assert.doesNotMatch(f.status,/peso/);
+ t.removeGroup(g);assert(t.startFlight(f));
+});
+test('restored routes start disarmed and invalid offsets cannot start motors or spend energy',()=>{
+ const {t}=lab(),{f,g}=drone(t),route={loop:true,points:[point(.4,0,'wait',2)]};
+ t.configureFlight(f,{route});const store=t.saveLab(),template=t.mechanismSnapshot(g);
+ t.clearNarrativeScene();t.story.scene='campaign';t.story.lab=store;t.enterLab(false);
+ const restored=t.groups.find(g=>g.parts.some(p=>p.id===f.id)),flight=t.flightForGroup(restored);
+ assert(!flight.enabled);assert.deepEqual(JSON.parse(JSON.stringify(t.flightConfig(flight).route)),route);
+ const copy=t.spawnSavedMechanism(template,t.V(3,0,0)),copyFlight=t.flightForGroup(copy);
+ assert.equal(t.flightConfig(copyFlight).route.points[0].wait,2);
+ t.configureFlight(flight,{route:{loop:false,points:[point(20,0,'pass')]}});
+ const before=t.externalBatterySummary(restored).storedJ;assert(!t.startFlight(flight));assert.match(flight.status,/fuera de la sala/);assert(!flight.enabled);
+ assert.equal(t.externalBatterySummary(restored).storedJ,before);
 });

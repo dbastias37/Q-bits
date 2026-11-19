@@ -47,3 +47,12 @@
 #arm-panel .arm-poses label{display:block;margin:.35rem 0 0;text-align:left}
 #arm-panel .arm-motor-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:6px 0}
 #panel #arm-panel input[type=number]{width:100%;min-height:30px;padding:3px 4px;font-size:11px}
+
+#flight-editor{margin:12px 0;padding:10px;border:1px solid #64888666;border-radius:6px}
+#flight-editor summary{cursor:pointer;font-weight:600}
+#flight-fields{margin:8px 0;padding:8px;border:1px solid #64888644;min-width:0}
+#flight-map{position:relative;width:100%;aspect-ratio:1;max-width:320px;margin:8px auto;cursor:crosshair;background-color:#eaf4f1;background-image:linear-gradient(#82a8a744 1px,transparent 1px),linear-gradient(90deg,#82a8a744 1px,transparent 1px);background-size:10% 10%;border:1px solid #688d89}
+#flight-map svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#flight-fields:disabled #flight-map{cursor:default;opacity:.7}
+.flight-xy{display:flex;gap:8px}.flight-xy label{min-width:0;flex:1}
+#flight-editor ol{padding-left:1.8em;font-size:.85em}
