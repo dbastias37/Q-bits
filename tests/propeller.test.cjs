@@ -140,3 +140,12 @@ test('restored routes start disarmed and invalid offsets cannot start motors or 
  const before=t.externalBatterySummary(restored).storedJ;assert(!t.startFlight(flight));assert.match(flight.status,/fuera de la sala/);assert(!flight.enabled);
  assert.equal(t.externalBatterySummary(restored).storedJ,before);
 });
+
+test('restart returns a flying route to its takeoff pose and its first waypoint',()=>{
+ const {t}=lab(),{g,f}=drone(t),origin=g.body.position.clone();
+ t.configureFlight(f,{route:{loop:true,points:[point(.4,0,'wait',2)]}});
+ assert(t.startFlight(f));tick(t,3);assert(g.body.position.distanceTo(origin)>.2);
+ const energy=t.externalBatterySummary(g).storedJ;
+ assert(t.restartMechanism(g));assert(g.body.position.distanceTo(origin)<.001);
+ assert.equal(f.trip.index,0);assert.equal(f.trip.phase,'lift');assert.equal(t.externalBatterySummary(g).storedJ,energy);
+});

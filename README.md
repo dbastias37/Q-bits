@@ -89,7 +89,7 @@ El [estado del proyecto](docs/ESTADO_PROYECTO.md) concentra lo terminado y el si
 | Duplicar selección en el laboratorio | V |
 | Elegir Q-bit o T-bit en el laboratorio | Q → Piezas → elegir en el catálogo |
 | Crear la pieza elegida en el laboratorio | Clic izquierdo después de elegir con Q; también N o P → Piezas → Crear |
-| Detener una orden | R |
+| Reiniciar conjunto o recorrido desde su posición inicial | R |
 | Avanzar o completar el texto del diálogo | E o Espacio |
 | Operar la cámara de reconfiguración | Dejar las piezas en ENTRADA y pulsar E mirando la cámara; también clic derecho. |
 | Abrir el taller del banco | Apuntar a la mesa y pulsar E; dejar y soltar las piezas sobre ella antes de aplicar cambios. |
@@ -188,7 +188,7 @@ El banco de pruebas ofrece ambos mecanismos desde el inicio, debajo de las figur
 
 - **Clic derecho → Rotación:** horario, antihorario o detener. El sentido se observa desde el lado móvil, mirando hacia su punta.
 - **Elegir lado que gira:** A o B. Las piezas añadidas a cada mitad se mueven con ella. El montaje predeterminado **Rueda libre** deja ambas mitades físicas: el contacto con el suelo puede mover el conjunto. **Eje fijo** ancla la base para pruebas estacionarias. Se pueden accionar varios rotores de rueda en un mismo chasis; un eje fijo excluye otros motores encendidos de ese conjunto.
-- **P → Mecanismos:** velocidad objetivo de 1 a 120 rpm, torque máximo de 0.02 a 4 N·m y capacidad de 2 a 128 u. Los valores iniciales son 30 rpm, 0.4 N·m y 16 u. El arranque es gradual y la velocidad real depende del esfuerzo. El panel muestra rpm reales, torque utilizado, carga y consumo. Al tomar un rotor se detiene y se transporta el mecanismo conectado.
+- **P → Mecanismos:** velocidad objetivo de 1 a 360 rpm y carga de 2 a 16 000 u. En el banco, el torque llega a 32 N·m y un eje nuevo parte con 30 rpm, 3,2 N·m y 256 u. Los servos admiten entre 5 y 540 °/s. El arranque es gradual y la velocidad real depende del esfuerzo. El panel muestra rpm reales, torque utilizado, carga y consumo. Al tomar un rotor se detiene y se transporta el mecanismo conectado.
 - **Rodar en el piso:** coloca el eje horizontal y añade la rueda al lado móvil. Una rueda hecha de cubos levanta su eje al pasar sobre las aristas; no se convierte en un círculo. Usa suficiente torque y evita que el soporte invada su recorrido. El eje permanece unido frente a obstáculos, que pueden frenar o bloquear el giro.
 - **Chasis con varias ruedas:** toma un rotor completo por el enganche que se fijará al cuerpo y une su cara cuadrada con Shift. El ajuste desplaza todo el mecanismo conservando sus articulaciones; puedes repetirlo para cuatro ruedas. La comprobación de espacio incluye ambas mitades y sus piezas. El agarre manual y la capacidad de cada motor siguen contando el peso conectado: ajusta sus límites en P si construyes un chasis pesado. No se sueldan entre sí los dos lados de un mismo eje ni selecciones de piezas sueltas sin conexión.
 - **Carga y energía:** la capacidad suma el peso de todas las piezas conectadas, incluidos ambos enganches (un Q-bit normal pesa 1 u). Superarla corta el motor. Ambos enganches alimentan sus barras de energía; las piezas añadidas no aportan batería. Consumen al estar encendidos, por trabajo y por calentamiento durante un atasco. Apagados recuperan energía con el sistema de descanso existente; no se reinician solos al agotarse. Pausar o abrir Q congela el consumo.

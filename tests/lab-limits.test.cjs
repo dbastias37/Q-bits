@@ -6,7 +6,7 @@ function lab(){const game=createGame(),{t,sandbox}=game;t.clearNarrativeScene();
 
 test('the laboratory doubles motor autonomy without changing its work, draw or campaign calibration',()=>{
  const {t}=lab(),rotor=t.spawnRotor(t.V(0,.4,0),{mount:'fixed'});assert(rotor);
- assert.equal(rotor.capacity,32);assert(t.configureRotor(rotor,{enabled:true}));
+ assert.equal(rotor.capacity,256);assert(t.configureRotor(rotor,{enabled:true}));
  rotor.actualRpm=30;rotor.actualTorque=.2;
  const extended=t.rotorPowerState(rotor,1);
  t.story.scene='campaign';const ordinary=t.rotorPowerState(rotor,1);
@@ -44,7 +44,7 @@ test('expanded load remains validated and survives mechanism export and import',
  const {t}=lab(),rotor=t.spawnRotor(t.V(0,.4,0),{capacity:2000});assert(rotor);
  const record=t.saveMechanism(rotor,'Carga ampliada');assert(record);assert.equal(record.joints[0].capacity,2000);
  const exported=t.mechanismsExportData();assert.equal(t.importMechanismsData(exported),1);
- const invalid=JSON.parse(JSON.stringify(exported));invalid.mechanisms[0].joints[0].capacity=2001;
+ const invalid=JSON.parse(JSON.stringify(exported));invalid.mechanisms[0].joints[0].capacity=16001;
  assert.throws(()=>t.importMechanismsData(invalid),/inválido/);
  assert.equal(t.savedMechanisms[0].joints[0].capacity,2000);
 });

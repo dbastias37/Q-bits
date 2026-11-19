@@ -6,11 +6,11 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  const DEFAULTS = Object.freeze({ rpm: 30, maxTorque: .4, capacity: 16 });
+  const DEFAULTS = Object.freeze({ rpm: 30, maxTorque: 3.2, capacity: 128 });
   const LIMITS = Object.freeze({
-    rpm: Object.freeze([1, 120]),
-    maxTorque: Object.freeze([.02, 4]),
-    capacity: Object.freeze([2, 2000])
+    rpm: Object.freeze([1, 360]),
+    maxTorque: Object.freeze([.02, 32]),
+    capacity: Object.freeze([2, 16000])
   });
   // The game supplies each fitted capacity (300–600 J per side in campaign,
   // 600–1200 J in the lab). Legacy model callers retain their original
@@ -54,7 +54,7 @@
     // torque. Explicitly stalled means its controller still demands holding
     // current at the configured limit; low RPM alone does not imply a stall.
     const torque = state.stalled ? maxTorque : Math.min(maxTorque, Math.abs(finite(state.actualTorque, 0)));
-    // The simulation limits commanded speed to 120 RPM. This wider guard only
+    // The simulation limits commanded speed to 360 RPM. This wider guard only
     // bounds corrupt/external measurements and keeps every power value finite.
     const rpm = state.stalled ? 0 : Math.min(10000, Math.abs(finite(state.actualRpm, 0)));
     const capacityJoulesA = clamp(finite(state.capacityJoulesA, MODEL.joulesPerSide), 20, 1200);

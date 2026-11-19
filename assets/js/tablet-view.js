@@ -59,8 +59,8 @@ window.QBitsTabletView = (() => {
   function placement(viewWidth, viewHeight, prefs) {
     const scale = prefs.tabletScale / 100;
     const alloy = prefs.tabletStyle === 'alloy';
-    const yaw = (alloy ? .29 : .215) * (prefs.tabletHand === 'right' ? -1 : 1);
-    const pitch = alloy ? -.18 : -.115;
+    const yaw = (alloy ? .34 : .27) * (1 - prefs.tabletX / 50);
+    const pitch = (alloy ? .19 : .14) * (.45 - prefs.tabletY / 100) - .065;
     const cx = Math.cos(pitch), sx = Math.sin(pitch), cy = Math.cos(yaw), sy = Math.sin(yaw);
     // The CSS and GL matrices both use positive Y down and positive Z toward the player.
     const distance = 1350;
@@ -68,8 +68,8 @@ window.QBitsTabletView = (() => {
       0, scale*cx, sx, -sx/distance,
       scale*sy, -scale*sx*cy, cx*cy, -cx*cy/distance, 0,0,0,1];
     const margin = Math.min(20, viewWidth*.025, viewHeight*.025);
-    const width = Math.min(760, (viewWidth-2*margin)/(scale*1.10));
-    const height = Math.min(460, (viewHeight-2*margin)/(scale*1.15));
+    const fit = Math.min(1, (viewWidth-2*margin)/(760*scale*1.10), (viewHeight-2*margin)/(460*scale*1.15));
+    const width = 760*fit, height = 460*fit;
     const depth = width * (alloy ? 1 : .68);
     let minX=Infinity, maxX=-Infinity, minY=Infinity, maxY=-Infinity;
     for (const x of [-width/2,width/2]) for (const y of [-height/2,height/2]) for (const z of [0,-.056*depth]) {

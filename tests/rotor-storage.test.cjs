@@ -82,11 +82,11 @@ test('invalid imports are atomic and reject malformed references, values, geomet
   const mutations=[
     s=>{s.groups[0].parts[0].key=s.groups[1].parts[0].key;},
     s=>{s.joints[0].a=127;},s=>{s.joints[0].b=s.joints[0].a;},
-    s=>{s.joints[0].rpm=Infinity;},s=>{s.joints[0].rpm=121;},s=>{s.joints[0].direction=0;},
+    s=>{s.joints[0].rpm=Infinity;},s=>{s.joints[0].rpm=361;},s=>{s.joints[0].direction=0;},
     s=>{s.joints[0].moving='both';},s=>{s.joints[0].enabled='true';},
     ...['up',null,1].map(value=>s=>{s.joints[0].mount=value;}),
-    ...[NaN,Infinity,.019,4.001,null,'0.4'].map(value=>s=>{s.joints[0].maxTorque=value;}),
-    ...[NaN,Infinity,1.99,2000.01,null,'16'].map(value=>s=>{s.joints[0].capacity=value;}),
+    ...[NaN,Infinity,.019,32.001,null,'0.4'].map(value=>s=>{s.joints[0].maxTorque=value;}),
+    ...[NaN,Infinity,1.99,16000.01,null,'16'].map(value=>s=>{s.joints[0].capacity=value;}),
     s=>{s.groups[0].parts[0].p[0]=NaN;},s=>{s.groups[0].parts[0].q=[0,0,0,2];},
     s=>{s.groups[0].parts[0].shape='wheel';},s=>{s.groups[0].parts[0].weight=-1;},
     s=>{s.groups[1].parts[0].p[1]+=.03;},
@@ -179,14 +179,14 @@ test('drive limits survive saving, duplication, export/import and laboratory res
 
 test('older mechanism and lab records receive explicit safe wheel drive defaults',()=>{
   const game=setup(),{t}=game,r=rotor(game),record=clone(t.mechanismSnapshot(r));
-  for(const joint of record.joints)for(const key of ['mount','maxTorque','capacity'])delete joint[key];
+  for(const joint of record.joints)for(const key of ['driveRating','mount','maxTorque','capacity'])delete joint[key];
   assert(t.savedMechanismValid(record));assert.equal(t.importMechanismsData({version:1,mechanisms:[record]}),1);
-  const check=drive=>{assert.equal(drive.mount,'wheel');assert.equal(drive.maxTorque,.4);assert.equal(drive.capacity,16);};
+  const check=drive=>{assert.equal(drive.mount,'wheel');assert.equal(drive.maxTorque,3.2);assert.equal(drive.capacity,128);};
   check(t.savedMechanisms[0].joints[0]);const made=t.spawnSavedMechanism(record,t.V(3,0,2));assert(made);check(made);
-  const snapshot=t.saveLab();for(const state of snapshot.rotors)for(const key of ['mount','maxTorque','capacity'])delete state[key];
+  const snapshot=t.saveLab();for(const state of snapshot.rotors)for(const key of ['driveRating','mount','maxTorque','capacity'])delete state[key];
   delete snapshot.mechanismDefaults;
   t.clearNarrativeScene();t.story.scene='campaign';t.story.lab=snapshot;t.enterLab(false);
-  t.rotors.forEach(check);check(t.saveLab().mechanismDefaults);
+  t.rotors.forEach(check);assert.equal(t.saveLab().mechanismDefaults.capacity,256);
 });
 
 test('damaged laboratory drive settings cannot inject invalid controls or unsupported keys',()=>{
@@ -194,7 +194,7 @@ test('damaged laboratory drive settings cannot inject invalid controls or unsupp
   const snapshot=t.saveLab();snapshot.mechanismDefaults={rpm:NaN,direction:0,moving:'both',mount:'ceiling',maxTorque:Infinity,capacity:-5,injected:123};
   t.clearNarrativeScene();t.story.scene='campaign';t.story.lab=snapshot;t.enterLab(false);
   const defaults=t.saveLab().mechanismDefaults;
-  assert.equal(defaults.rpm,30);assert.equal(defaults.direction,1);assert.equal(defaults.moving,'b');assert.equal(defaults.mount,'wheel');assert.equal(defaults.maxTorque,.4);assert.equal(defaults.capacity,16);assert.equal(defaults.injected,undefined);
+  assert.equal(defaults.rpm,30);assert.equal(defaults.direction,1);assert.equal(defaults.moving,'b');assert.equal(defaults.mount,'wheel');assert.equal(defaults.maxTorque,3.2);assert.equal(defaults.capacity,256);assert.equal(defaults.injected,undefined);
   const state=t.serializeRotorState();state[0].capacity=Infinity;
   assert.equal(t.restoreRotorState(state).length,0);assert.equal(t.rotors.length,0);
 });

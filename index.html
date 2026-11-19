@@ -12,7 +12,7 @@
   <link rel="preload" href="assets/fonts/led-calculator/LEDCalculator.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="stylesheet" href="assets/css/radial-menu.css?v=20261116-quick-catalogue-1">
   <link rel="stylesheet" href="assets/css/quick-catalogue.css?v=20261116-quick-catalogue-1">
-  <link rel="stylesheet" href="assets/css/settings.css?v=20261119-desk-glass">
+  <link rel="stylesheet" href="assets/css/settings.css?v=20261119-marcha-2">
   <style>
     * { box-sizing: border-box; }
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000; }
@@ -313,7 +313,7 @@ input,select,textarea{font-family:var(--font-menu);}
 <link rel="stylesheet" href="assets/css/conveyor-panel.css?v=20261116-quick-catalogue-1">
 <link rel="stylesheet" href="assets/css/servo-panel.css?v=20261117-culling-1">
   <link rel="stylesheet" href="assets/css/culling-lab.css?v=20261117-culling-1">
-  <link rel="stylesheet" href="assets/css/tablet.css?v=20261119-desk-glass">
+  <link rel="stylesheet" href="assets/css/tablet.css?v=20261119-marcha-2">
 </head>
 <body data-game-mode="boot" data-game-scene="lab" data-booting="true">
   <section id="boot-screen" aria-label="Inicio de Q-bits" data-stage="loading">
@@ -454,7 +454,7 @@ input,select,textarea{font-family:var(--font-menu);}
           <div class="servo-fields">
             <label>Desde (°)<input id="servo-min" type="number" min="-90" max="90" step="5" value="-40" inputmode="decimal"></label>
             <label>Hasta (°)<input id="servo-max" type="number" min="-90" max="90" step="5" value="40" inputmode="decimal"></label>
-            <label>Velocidad (°/s)<input id="servo-speed" type="number" min="5" max="180" step="5" value="45" inputmode="decimal"></label>
+            <label>Velocidad (°/s)<input id="servo-speed" type="number" min="5" max="540" step="5" value="45" inputmode="decimal"></label>
             <label>Movimiento<select id="servo-mode"><option value="hold">Mantener posición</option><option value="once">Mover una vez</option><option value="repeat">Ida y vuelta</option></select></label>
             <label id="servo-target-row">Posición objetivo (°)<input id="servo-target" type="number" min="-90" max="90" step="5" value="0" inputmode="decimal"></label>
           </div>
@@ -534,9 +534,9 @@ input,select,textarea{font-family:var(--font-menu);}
             <div class="arm-actions"><button id="arm-fit-load" type="button">Ajustar ejes al límite de la pinza</button></div>
             <label>Eje<select id="arm-motor-axis"></select></label>
             <div class="arm-motor-fields">
-              <label>Velocidad (rpm)<input id="arm-motor-rpm" type="number" min="1" max="120" step="any"></label>
-              <label>Torque (N·m)<input id="arm-motor-torque" type="number" min="0.02" max="4" step="any"></label>
-              <label>Carga máxima (u)<input id="arm-motor-capacity" type="number" min="2" max="2000" step="1"></label>
+              <label>Velocidad (rpm)<input id="arm-motor-rpm" type="number" min="1" max="360" step="any"></label>
+              <label>Torque (N·m)<input id="arm-motor-torque" type="number" min="0.02" max="32" step="any"></label>
+              <label>Carga máxima (u)<input id="arm-motor-capacity" type="number" min="2" max="16000" step="1"></label>
             </div>
             <button id="arm-apply-motor" type="button">Aplicar ajuste al eje</button>
             <p id="arm-live-speed"></p>
@@ -587,9 +587,9 @@ input,select,textarea{font-family:var(--font-menu);}
       <div class="actions"><button id="rotor-set-create" type="button">Crear conjunto</button><button id="rotor-set-dissolve" type="button">Disolver conjunto</button></div>
       <p>Ctrl + clic en cada rotor: añadir o quitar. Después, escribe un nombre y crea el conjunto. Cada rotor pertenece a un conjunto; si lo incluyes en otro, se traslada.</p>
       <div class="actions"><button id="rotor-start" type="button">Iniciar marcha</button><button id="rotor-stop" type="button">Detener</button><button id="rotor-invert" type="button">Invertir marcha</button></div>
-      <label>Velocidad <output id="rotor-rpm-value">30</output><input id="rotor-rpm" type="range" min="1" max="120" step="1" value="30"></label>
-      <label>Fuerza <output id="rotor-force-value">40</output><input id="rotor-force" type="range" min="2" max="400" step="1" value="40"></label>
-      <label>Carga máxima <output id="rotor-capacity-value">32</output><input id="rotor-capacity" type="range" min="2" max="2000" step="1" value="32"></label>
+      <label>Velocidad <output id="rotor-rpm-value">30</output><input id="rotor-rpm" type="range" min="1" max="360" step="1" value="30"></label>
+      <label>Fuerza <output id="rotor-force-value">320</output><input id="rotor-force" type="range" min="2" max="3200" step="1" value="320"></label>
+      <label>Carga máxima <output id="rotor-capacity-value">256</output><input id="rotor-capacity" type="range" min="2" max="16000" step="1" value="256"></label>
       <p id="rotor-power-readout" role="status" aria-live="polite"></p>
       <p id="rotor-supply-status"></p>
       <div id="connected-batteries" class="actions" aria-label="Baterías conectadas"></div>
@@ -607,7 +607,7 @@ input,select,textarea{font-family:var(--font-menu);}
       <details><summary>Montaje y ajustes avanzados</summary>
       <p id="rotor-individual-note"></p>
       <label>Montaje<select id="rotor-mount"><option value="wheel">Rueda libre · el conjunto puede moverse</option><option value="fixed">Eje fijo · base anclada al banco</option></select></label>
-      <label>Torque máximo <output id="rotor-torque-value">0.40 N·m</output><input id="rotor-torque" type="range" min="0.02" max="4" step="0.02" value="0.4"></label>
+      <label>Torque máximo <output id="rotor-torque-value">3.20 N·m</output><input id="rotor-torque" type="range" min="0.02" max="32" step="0.02" value="3.2"></label>
       <label>Lado que gira<select id="rotor-side"><option value="a">Lado A · lado B como base</option><option value="b">Lado B · lado A como base</option></select></label>
       <p>Velocidad representa vueltas por minuto. Fuerza 40 equivale al torque 0,40; carga 1 equivale al peso de un Q-bit normal. La carga incluye todas las piezas conectadas. Sin batería o con sobrecarga, el motor se detiene.</p>
       <p id="rotor-technical-readout"></p>
@@ -622,7 +622,7 @@ input,select,textarea{font-family:var(--font-menu);}
     <div id="page-route" role="tabpanel" hidden>
       <p>Clic derecho para seleccionar un Q-bit. Después, clic derecho en el suelo → Ir a este punto. Para un grupo, arrastra con clic izquierdo desde un espacio vacío. La estructura busca espacio libre y rueda sobre sus aristas; más peso significa menor velocidad.</p>
       <label>Velocidad base <output id="speedValue"></output><input id="speed" type="range" min="0.12" max="0.7" step="0.02" value="0.32"></label>
-      <p>R detiene el recorrido. Si un objeto bloquea el paso, se busca otro camino o se detiene.</p><button id="stop" type="button">Detener selección</button>
+      <p>R vuelve al punto de partida y reinicia el recorrido. Si un objeto bloquea el paso, se busca otro camino o se detiene.</p><button id="stop" type="button">Detener selección</button>
     </div>
     <div id="page-cargo" role="tabpanel" hidden>
       <p id="cargo-editing"></p>
@@ -681,7 +681,7 @@ input,select,textarea{font-family:var(--font-menu);}
           <li>Prueba Desde −20°, Hasta 20°, velocidad 30 °/s y Movimiento: Ida y vuelta. Pulsa Iniciar y observa el giro.</li>
           <li>Detener y bloquear conserva el ángulo actual. Mantener posición y Mover una vez llegan al objetivo y quedan bloqueados. Ida y vuelta alterna entre los extremos.</li>
         </ol>
-        <p>Recorrido disponible: −90° a 90°. Velocidad: 5–180 °/s. La fuerza, el peso y los obstáculos condicionan el movimiento real.</p>
+        <p>Recorrido disponible: −90° a 90°. Velocidad: 5–540 °/s. La fuerza, el peso y los obstáculos condicionan el movimiento real.</p>
         <p><strong>Pivote manual:</strong> clic derecho sobre una pirámide de base cuadrada → Preparar Servo pivote. Une su base al cuerpo con Shift; conecta la cara inferior de un cubo a la punta con Shift. Ese cubo inicia el tramo móvil.</p>
         <p><strong>Bisagra manual:</strong> prepara una pirámide como Servo bisagra y conecta por su punta otra pirámide con Shift. Cada base sostiene un tramo rígido; las puntas permanecen unidas al abrirse lateralmente.</p>
         <p>La energía interna permite probar los servos. Una batería externa activa conectada al conjunto comparte su reserva; estar cerca no basta. Si se bloquea, revisa energía, carga, fuerza y espacio. Para mover todas las patas, únelas al mismo cuerpo. En Marcha del conjunto elige inicio mínimo/máximo por articulación, pulsa Iniciar marcha del conjunto desde P. Todas se preparan y repiten juntas; Detener conjunto las bloquea a la vez. Un fallo de energía o bloqueo persistente detiene el mecanismo completo. Ajusta los recorridos y apoyos para conseguir equilibrio.</p>
@@ -739,7 +739,7 @@ input,select,textarea{font-family:var(--font-menu);}
           <li><strong>Tomar:</strong> clic sobre una pieza, con la mano libre y sin una selección previa. Otro clic la suelta. La rueda acerca o aleja; C te agacha.</li>
           <li><strong>Unir:</strong> sostén la pieza, acerca caras compatibles y suelta con Shift cuando veas el encaje. Shift + WASD gira la pieza sostenida.</li>
           <li><strong>Separar:</strong> Alt apuntando a una pieza abre las opciones. Shift + varias sacudidas desarma una estructura sostenida. Se conservan sus piezas.</li>
-          <li><strong>Dar un destino:</strong> selecciona el equipo; clic derecho en el suelo → Ir a este punto. R detiene esa orden. Un objeto con una ruta activa no queda disponible para la pinza hasta detenerlo.</li>
+          <li><strong>Dar un destino:</strong> selecciona el equipo; clic derecho en el suelo → Ir a este punto. R repite el recorrido desde el inicio. Detener selección cancela la orden. Un objeto con una ruta activa no queda disponible para la pinza hasta detenerlo.</li>
         </ul>
       </details>
       <details><summary>5 · Rotores, taller y sensor</summary>
@@ -800,7 +800,7 @@ input,select,textarea{font-family:var(--font-menu);}
    <div id="settings-confirm" hidden role="alertdialog" aria-modal="true" aria-labelledby="settings-confirm-title"><div class="settings-confirm-card"><h3 id="settings-confirm-title">¿Salir sin guardar?</h3><p>Tienes cambios pendientes en la configuración.</p><div class="settings-confirm-actions"><button id="settings-keep" type="button">Seguir editando</button><button id="settings-discard" type="button">Salir sin guardar</button><button id="settings-confirm-save" type="button">Guardar y salir</button></div></div></div>
   </section>
   <script src="assets/js/opening.js?v=20261116-block-joins-1" defer></script>
-  <script src="assets/js/servo-panel.js?v=20261117-culling-1" defer></script>
-  <script src="assets/js/boot.js?v=20261119-desk-glass" defer></script>
+  <script src="assets/js/servo-panel.js?v=20261119-marcha-2" defer></script>
+  <script src="assets/js/boot.js?v=20261119-marcha-2" defer></script>
 </body>
 </html>

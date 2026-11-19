@@ -2,7 +2,15 @@
 
 Actualizado: 19 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega · tableta del banco de pruebas
+## Última entrega · recuperación y marcha
+
+R o clic derecho → Reiniciar conjunto recupera la postura de arranque y vuelve a ejecutar la última orden de la máquina. Un recorrido vuelve al punto de partida y conserva su destino. El reinicio comprueba el espacio y conserva la carga de las baterías. Un cuadrúpedo antiguo puede reconstruir su apoyo con las referencias de sus articulaciones.
+
+Los cuadrúpedos alternan el apoyo entre diagonales. La fricción del pie apoyado tiene en cuenta el peso del chasis. En el banco, la capacidad inicial pasa de 32 a 256 u por eje y la máxima de 2000 a 16 000 u. Los rotores admiten hasta 360 rpm y los servos hasta 540 °/s. Los planos anteriores reciben el aumento de capacidad y torque al importarlos.
+
+La tableta gira de forma continua al moverla por la pantalla. El cuerpo de vidrio, el marco y los controles comparten perspectiva y mantienen su proporción.
+
+## Entrega anterior · tableta del banco de pruebas
 
 M3 despliega o guarda la tableta. P y Q abren los controles y el catálogo en la misma interfaz. La rueda sobre el selector recorre cuatro secciones. Shift + rueda alterna entre Banco y Mesa a menos de 3,5 m del borde de una mesa desplegada. Al alejarse se recupera el banco. WASD, la simulación y las máquinas siguen activos. El botón ⇄ y Configuración → Juego permiten personalizar la mano y el tamaño.
 

@@ -67,9 +67,11 @@ test('both 3D housings stay on screen at every corner and scale',()=>{
  assert.equal(preferences.sanitize({tabletX:-20,tabletY:180,tabletStyle:'unknown'}).tabletStyle,'glass');
  for(const [w,h] of [[320,568],[667,375],[1366,768],[2048,1024]]){
   for(const hand of ['left','right'])for(const style of ['glass','alloy'])for(const scale of [75,100,125]){
-   for(const corner of [[0,0],[100,0],[0,100],[100,100]]){
+   for(const corner of [[0,0],[25,25],[50,50],[75,75],[100,0],[0,100],[100,100]]){
     const f=placement(w,h,{tabletStyle:style,tabletHand:hand,tabletScale:scale,tabletX:corner[0],tabletY:corner[1]});
     const m=f.pose;
+    assert.equal(Math.sign(m[8]),Math.sign(50-corner[0]));
+    assert(Math.abs(f.width/f.height-760/460)<1e-9);
     for(let i=0;i<points.length;i+=3){
      const x=points[i]*f.width,y=points[i+1]*f.height,z=points[i+2]*f.depth;
      const divisor=m[3]*x+m[7]*y+m[11]*z+1;

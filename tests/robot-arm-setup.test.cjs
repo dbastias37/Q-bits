@@ -99,7 +99,7 @@ test('an arm mounted on 780 u starts unloaded, gates the actual payload and adju
 
   field('fit-load').dispatchEvent({type:'click'});
   assert.equal(members[1].capacity,4);
-  assert.equal(members[0].capacity,64);
+  assert.equal(members[0].capacity,512);
   assert.equal(t.robotArmSignal(arm),'off');
   assert(t.robotPanelAction('grab').ok);
   assert(members.every(rotor=>t.rotorPowerState(rotor).load===3));
@@ -285,4 +285,11 @@ test('an empty arm approaches B around the other side when a tall obstacle close
   stepUntil(t,()=>!arm.jogging);
   assert.match(arm.status,/Postura lista/);
   assert(Math.abs(t.robotTargetError(t.robotArmRotors(arm)[0],arm.poses.place[0]))<.05);
+});
+
+test('a stopped robot arm restarts its taught sequence',()=>{
+ const {t}=lab(),arm=armAt(t),base=t.rotorPart(arm.baseId).g;
+ assert(t.startRobotArm(arm));stepUntil(t,()=>arm.state==='wait',5);t.stopRobotArm(arm);
+ assert(t.restartMechanism(base));assert(arm.running);assert(['home','return'].includes(arm.state));
+ stepUntil(t,()=>arm.state==='wait',5);
 });

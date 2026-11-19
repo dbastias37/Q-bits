@@ -14,7 +14,7 @@ test('campaign torque tiers load in browsers and CommonJS, with immutable limits
   assert(Object.isFrozen(progression));
   assert(Object.isFrozen(progression.TIERS));
   for (const tier of Object.values(progression.TIERS)) assert(Object.isFrozen(tier));
-  assert.equal(power.LIMITS.maxTorque[1], 4, 'test-bank motor limits remain unchanged');
+  assert.equal(power.LIMITS.maxTorque[1], 32, 'laboratory torque range');
 });
 
 test('completion unlocks finite tiers while selecting a level or legacy progress does not', () => {

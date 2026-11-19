@@ -23,7 +23,7 @@
   }
   function draft(){
    const data={};for(const key of fields)data[key]=key==='mode'?get(key).value:Number(get(key).value);
-   const low=last?.angleMin??-90,high=last?.angleMax??90,slow=last?.speedMin??5,fast=last?.speedMax??180;
+   const low=last?.angleMin??-90,high=last?.angleMax??90,slow=last?.speedMin??5,fast=last?.speedMax??540;
    if(fields.filter(k=>k!=='mode').some(k=>!finite(get(k).value))||data.min<low||data.max>high||data.min>=data.max||data.speed<slow||data.speed>fast||!['hold','once','repeat'].includes(data.mode)){
     feedback({ok:false,message:`Usa un recorrido de ${low}° a ${high}°, con inicio menor que final, y velocidad de ${slow} a ${fast} °/s.`});return null;
    }
@@ -72,7 +72,7 @@
    get('description').textContent=next.kind==='hinge'?'Dos triángulos que se abren lateralmente. Sus puntas permanecen siempre unidas.':'Una pirámide conecta la extremidad por su punta y orienta su giro desde la base.';
    if(!dirty)for(const key of fields)get(key).value=String(next[key]??({min:-40,max:40,speed:45,mode:'hold',target:0}[key]));
    for(const key of ['min','max','target']){get(key).min=String(next.angleMin??-90);get(key).max=String(next.angleMax??90);}
-   get('speed').min=String(next.speedMin??5);get('speed').max=String(next.speedMax??180);
+   get('speed').min=String(next.speedMin??5);get('speed').max=String(next.speedMax??540);
    for(const key of fields)get(key).disabled=blocked;
    get('apply').disabled=blocked;get('start').disabled=blocked||!!next.enabled;get('stop').disabled=!next.enabled;get('invert').disabled=blocked;
    get('start').setAttribute('aria-pressed',String(!!next.enabled));

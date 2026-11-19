@@ -41,3 +41,12 @@ test('two joined sections physically pass a load across their seam and release t
   assert(t.startConveyor(first));tick(t,.02);assert(t.startConveyor(second));const before=liveBattery.mood.energy;if(order[0]===0){const load=payload(t,first,2);assert(reaches(t,second,load,10)<8);}else tick(t,.05);assert(liveBattery.mood.energy<before);const controllers=[first,second];t.stopConveyor(controllers[order[0]]);tick(t,.01);assert.equal(shared.type,4,'remaining powered section retains the common frame');t.stopConveyor(controllers[order[1]]);assert.equal(shared.type,1,'last stop restores the original dynamic frame');assert.equal(shared.fixedRotation,false);
  }
 });
+
+test('restart rewinds the virtual rollers and resumes the powered belt',()=>{
+ const {t}=lab(),{conveyor,battery}=make(t);assert(t.startConveyor(conveyor));tick(t,.5);
+ const rollers=t.conveyorRotors(conveyor),charge=battery.mood.energy;
+ assert(rollers.every(r=>Math.abs(r.visualPhase)>.01));
+ assert(t.restartMechanism(t.rotorPart(conveyor.baseId).g));assert(conveyor.running);
+ assert(rollers.every(r=>r.visualPhase===0&&r.enabled));assert.equal(battery.mood.energy,charge);
+ tick(t,.5);assert(rollers.every(r=>Math.abs(r.actualRpm)>20));
+});

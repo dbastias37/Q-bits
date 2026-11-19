@@ -31,7 +31,7 @@
   const s=j.servo;
   return !!s&&typeof s==='object'&&!Array.isArray(s)&&['pivot','hinge'].includes(s.kind)&&
    a.shape==='pyramid'&&b.shape===(s.kind==='pivot'?'cube':'pyramid')&&
-   j.moving==='b'&&j.mount==='wheel'&&['min','max','speed','target'].every(key=>Number.isFinite(s[key]))&&s.min>=-90&&s.max<=90&&s.speed>=5&&s.speed<=180&&s.min<s.max&&s.target>=s.min&&s.target<=s.max&&
+   j.moving==='b'&&j.mount==='wheel'&&['min','max','speed','target'].every(key=>Number.isFinite(s[key]))&&s.min>=-90&&s.max<=90&&s.speed>=5&&s.speed<=540&&s.min<s.max&&s.target>=s.min&&s.target<=s.max&&
    ['hold','once','repeat'].includes(s.mode)&&[1,-1].includes(s.direction)&&
    Array.isArray(s.reference)&&s.reference.length===4&&s.reference.every(Number.isFinite)&&Math.abs(Math.hypot(...s.reference)-1)<.0001;
  }
