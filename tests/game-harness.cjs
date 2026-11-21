@@ -129,7 +129,11 @@ module.exports = function createGame(options = {}) {
     chapters,LEVELS,beginReconfiguration,reconfigurationInput,tickReconfiguration,setupReconfiguration,reconfigurationObjective,showCodex,closeCodex,catalogueRecipe,rememberCatalogueRecipe,groupWorkUnits,showCampaignResults,
     savedMechanisms,mechanismSnapshot,mechanismGroups,mechanismPartCount,savedMechanismValid,saveMechanism,spawnSavedMechanism,persistMechanisms,loadSavedMechanisms,mechanismsExportData,importMechanismsData,serializeRotorState,restoreRotorState,clearPuzzleScene,leavePuzzle,
     beginCampaignLevel,beginIntro,showMain,hideStoryDialogue,
-    aimQubit,planRoute,planCargoPath,startRoute,stopRoute,stepPhysics,groups,cargos,V,Q,world,story,bounds,
+    aimQubit,planRoute,planCargoPath,startRoute,stopRoute,
+    stepPhysics:stepSimulation, // compatibility alias to the production pipeline
+    stepPhysicsOnly:stepPhysics,stepSimulation,stepLogic,advanceSimulation,resetSimulationClock,simulationSuspended,
+    getTickState:()=>({physicsAccumulator:accumulator,logicAccumulator,simTime,physicsDt:FIXED_STEP,logicDt:LOGIC_DT,...tickStats}),
+    groups,cargos,V,Q,world,story,bounds,
     ...(typeof drawRigidOutline==='function'?{drawRigidOutline}:{}),
     ...(typeof rotatedGroupBounds==='function'?{rotatedGroupBounds,collisionPoseBounds,collisionEntry,gripPenetration,gripTranslationContact,gripTranslatedDepth}:{}),
     ...(typeof rigidGroupsOverlap==='function'?{rigidCollisionParts,rigidGroupsOverlap}:{}),stabilizeRotors,poses,corners,drawQubits,drawCargos,drawStoryWorld,drawStoryGlass,updateTarget,updateSpeech,updateStoryMarker,

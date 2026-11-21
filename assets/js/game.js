@@ -635,6 +635,7 @@ document.addEventListener('keydown', onPhysicalKeyDown);
 document.addEventListener('keyup', onPhysicalKeyUp);
 window.addEventListener('blur',()=>{resetGameInputs();if(story.ready&&story.mode==='playing')openPauseMenu();else pause();});
 document.addEventListener('visibilitychange', () => {
+  resetSimulationClock();
   if(document.hidden){resetGameInputs();if(story.ready&&story.mode==='playing')openPauseMenu();else pause();}
 });
 window.addEventListener('resize', resize);
@@ -650,6 +651,11 @@ canvas.addEventListener('webglcontextrestored', () => window.location.reload());
 // Q-bits lab · rigid bodies, compound structures, face rolling and drop guides.
 const CUBE_SIZE=.09, HALF=.045, MAX_QUBITS=2000;
 let FIXED_STEP=1/savedPreferences.physicsHz;
+// Keep the existing 60/120/240 Hz setting and its constraint recalibration.
+const LOGIC_HZ=15, LOGIC_DT=1/LOGIC_HZ;
+const MAX_FRAME_DT=.05, MAX_PHYSICS_STEPS=12, TICK_EPS=1e-9;
+let logicAccumulator=0;
+const tickStats={physics:0,logic:0,droppedSeconds:0};
 const V=(x=0,y=0,z=0)=>new CANNON.Vec3(x,y,z), Q=()=>new CANNON.Quaternion();
 const add=(a,b)=>a.vadd(b), sub=(a,b)=>a.vsub(b), mul=(a,s)=>a.scale(s);
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
@@ -1531,7 +1537,7 @@ function unitRadialAllowed(){
 function openUnitRadial(){
  if(powerDraft){announce('Termina el cable o pulsa Esc antes de abrir Q.');return false;}
  if(radialOpen()||!unitRadialAllowed())return false;
- cancelUnitCreation();initUnitRadial();for(const id of ['cube','tetra','pyramid','coupler','rotor'])unitRadial.setLocked?.(id,!creationChoiceAllowed(id));keys.clear();routeInspection=null;accumulator=0;
+ cancelUnitCreation();initUnitRadial();for(const id of ['cube','tetra','pyramid','coupler','rotor'])unitRadial.setLocked?.(id,!creationChoiceAllowed(id));keys.clear();routeInspection=null;resetSimulationClock();
  unitRadial.open(creationShape(),{virtualPointer:gameInputActive()});
  const radialHelp=document.querySelector('#unit-radial .radial-help');if(radialHelp)radialHelp.textContent=gamepadActive?window.QBitsControls.gamepadHint(savedPreferences.controls.gamepad,'radial')+' · suelta '+window.QBitsControls.labelFor('radial',savedPreferences,'gamepad')+' para elegir':'Suelta '+inputLabel('radial')+' para elegir · '+inputLabel('primary')+' para crear · Tab: Banco rápido';
  document.body.dataset.unitRadial='open';hint.hidden=true;redraw=true;
@@ -1542,7 +1548,7 @@ function closeUnitRadial(commit=false){
  if(!radialOpen())return false;
  const choice=unitRadial.hovered;
  const valid=commit&&unitRadialAllowed()&&creationChoiceAllowed(choice);
- unitRadial.close();document.body.dataset.unitRadial='closed';keys.clear();accumulator=0;
+ unitRadial.close();document.body.dataset.unitRadial='closed';keys.clear();resetSimulationClock();
  if(valid){if(!choice.startsWith('quick-'))settings.unitShape=choice;syncUnitControls();beginCreationPlacement(choice);}
  redraw=true;return valid;
 }
@@ -5026,6 +5032,54 @@ function stepPhysics(dt){
  updateCooling(dt);updateMoods(dt);updateBlueprints(dt);updatePuzzle(dt);tickAutomation(dt);tickProduction(dt);
  }finally{mechanicalStepCache=null;}
 }
+// Only wall-time debt is discarded during pause; completed simulation time
+// and the fractional slow tick survive. A new scene also clears that fraction.
+function resetSimulationClock(time=null,resetLogic=false){
+ previousTime=time;accumulator=0;
+ if(resetLogic)logicAccumulator=0;
+}
+function simulationSuspended(){
+ return document.hidden||storySuspended()||!!story.transition||
+  !!settingsScreen?.isOpen||radialOpen()||!!robotPoseDraft||!!cullingLab.benchmark;
+}
+function stepLogic(dt){
+ if(!Number.isFinite(dt)||dt<=0||simulationSuspended())return;
+ tickStats.logic++;
+ tickReconfiguration(dt);
+ if(story.scene==='campaign'&&!story.encounter)tickMoodHints();
+ updateSpeechLogic();
+}
+// Atomic explicit substep. Tests may pass a controlled dt without subdividing it.
+function stepSimulation(dt){
+ if(!Number.isFinite(dt)||dt<=0)return;
+ stepPhysics(dt);tickStats.physics++;
+ logicAccumulator+=dt;
+ while(logicAccumulator+TICK_EPS>=LOGIC_DT){
+  logicAccumulator=Math.max(0,logicAccumulator-LOGIC_DT);
+  stepLogic(LOGIC_DT);
+ }
+}
+function advanceSimulation(dt){
+ if(simulationSuspended()){accumulator=0;return 0;}
+ if(!Number.isFinite(dt)||dt<=0)return 0;
+ const accepted=Math.min(dt,MAX_FRAME_DT);
+ tickStats.droppedSeconds+=dt-accepted;
+ accumulator+=accepted;
+ let simulatedDt=0,steps=0;
+ while(accumulator+TICK_EPS>=FIXED_STEP&&steps<MAX_PHYSICS_STEPS){
+  const step=FIXED_STEP;
+  // Consume first: a domain callback may reset clocks or change the scene.
+  accumulator=Math.max(0,accumulator-step);
+  stepSimulation(step);simulatedDt+=step;steps++;
+  if(simulationSuspended()){accumulator=0;break;}
+ }
+ if(accumulator+TICK_EPS>=FIXED_STEP){
+  const dropped=Math.floor((accumulator+TICK_EPS)/FIXED_STEP)*FIXED_STEP;
+  accumulator=Math.max(0,accumulator-dropped);
+  tickStats.droppedSeconds+=dropped;
+ }
+ return simulatedDt;
+}
 function updatePanel(){
  if(selected&&!groups.includes(selected.g))selected=null;
  syncUnitControls();
@@ -7941,7 +7995,7 @@ function scanSpeech(){
  }
  for(const [id,s] of speech.people)if(!s.g)speech.people.delete(id);
 }
-function updateSpeech(){
+function updateSpeechLogic(){
  if(!speech.ready)return;
  const max=1;
  if(!speechAvailable()){for(const b of speech.slots)if(b.s)clearSpeechSlot(b);speech.queue.length=0;return;}
@@ -7964,8 +8018,13 @@ function updateSpeech(){
    if(startSpeech(e,slot))break;
   }
  }
+}
+function updateSpeechLayout(){
+ if(!speech.ready||!speechAvailable())return;
  if(simTime>=speech.nextLayout){speech.nextLayout=simTime+1/30;layoutSpeech();}
 }
+// Retain the direct-call contract for existing domain tests and utilities.
+function updateSpeech(){updateSpeechLogic();updateSpeechLayout();}
 function initSpeech(){
  const layer=document.querySelector('#qbit-dialogues');
  for(let i=0;i<3;i++){const node=document.createElement('div'),text=document.createElement('span'),face=document.createElement('span');node.className='qbit-speech';face.className='qbit-face';node.append(text,face);node.hidden=true;layer.appendChild(node);speech.slots.push({node,text,face,s:null,event:null});}
@@ -7988,7 +8047,7 @@ document.addEventListener('webkitfullscreenchange',syncFullscreenButton);
 // Campaign prologue. Scene state, narrative timers and test tools share one clock.
 const chapters=[['00','El primer encuentro','Prólogo · tomar, mover y enfriar'],['01','Primer contacto','Llevar un Q-bit a un destino'],['02','Cada uno por su camino','Dos destinos independientes'],['03','Dos lados','Dos botones simultáneos'],['04','Juntos pesamos más','Dos Q-bits en un botón'],['05','La primera unión','Dos piezas · circuito de líquido'],['06','Cambiar de forma','Tres puertas · L, cuadrado y T'],['07','Seis piezas','Rectángulo y escalera'],['08','Salimos juntos','Seis compañeros · fin del primer bloque'],['09','La fuente','Conocer al equipo · transformar materia'],['10','El camino de vuelta','Dos estaciones · transporte y descanso'],['11','Dos rutas','Elegir materia y organizar al equipo'],['12','La instalación','Tres estaciones · el equipo completo']];
 const ui={main:document.querySelector('#main-screen'),pause:document.querySelector('#pause-screen'),levels:document.querySelector('#levels-screen'),complete:document.querySelector('#chapter-complete'),dialogue:document.querySelector('#story-dialogue'),text:document.querySelector('#story-text'),speaker:document.querySelector('#story-speaker'),choices:document.querySelector('#story-choices'),objective:document.querySelector('#story-objective'),veil:document.querySelector('#scene-veil'),top:document.querySelector('#eye-top'),bottom:document.querySelector('#eye-bottom'),cooling:document.querySelector('#cooling-track'),marker:document.querySelector('#world-label')};
-function gameMode(mode){if(mode!=='playing'){window.QBitsGuideAudio?.setPaused(true);window.QBitsFootsteps?.setPaused(true);window.QBitsJoinAudio?.setPaused(true);}if(mode!=='playing')closeUnitRadial(false);story.mode=mode;if(mode!=='playing'){cullingLab.observer=false;document.body.dataset.cullingObserver='false';cullingLab.lastFrame=null;}updateCullingHud(true);window.QBitsMusic?.setPaused(!['playing','menu','levels','codex','settings'].includes(mode));document.body.dataset.gameMode=mode;for(const [key,el] of [['menu',ui.main],['pause',ui.pause],['levels',ui.levels],['complete',ui.complete],['codex',document.querySelector('#codex-screen')]])el.hidden=mode!==key;document.querySelector('#pause-button').hidden=mode!=='playing';hint.hidden=true;redraw=true;}
+function gameMode(mode){if(story.mode!==mode)resetSimulationClock();if(mode!=='playing'){window.QBitsGuideAudio?.setPaused(true);window.QBitsFootsteps?.setPaused(true);window.QBitsJoinAudio?.setPaused(true);}if(mode!=='playing')closeUnitRadial(false);story.mode=mode;if(mode!=='playing'){cullingLab.observer=false;document.body.dataset.cullingObserver='false';cullingLab.lastFrame=null;}updateCullingHud(true);window.QBitsMusic?.setPaused(!['playing','menu','levels','codex','settings'].includes(mode));document.body.dataset.gameMode=mode;for(const [key,el] of [['menu',ui.main],['pause',ui.pause],['levels',ui.levels],['complete',ui.complete],['codex',document.querySelector('#codex-screen')]])el.hidden=mode!==key;document.querySelector('#pause-button').hidden=mode!=='playing';hint.hidden=true;redraw=true;}
 function gameScene(scene){story.scene=scene;document.body.dataset.gameScene=scene;const label=document.querySelector('#chapter-label');label.hidden=scene==='lab';document.querySelector('#chapter-number').textContent=scene==='intro'?'PRÓLOGO / 00':'NIVEL / '+String(story.level||1).padStart(2,'0');document.querySelector('#chapter-name').textContent=scene==='intro'?'El primer encuentro':chapters[story.level||1][1];}
 function storySuspended(){return radialOpen()||story.ready&&(story.mode!=='playing'||document.hidden);}
 function storyWalkAllowed(){return !story.ready||story.scene!=='intro'||['deliver','cooling','cooled','choice','repeat'].includes(story.phase);}
@@ -8049,7 +8108,7 @@ function quickWake(){
  if(!initial)beginIntro();else{gameMode('playing');story.started=true;}
  hideStoryDialogue();storyObjective('');story.phase='asleep';story.phaseTime=6.7;
  ui.veil.style.opacity='1';ui.top.style.height='52%';ui.bottom.style.height='52%';canvas.style.filter='none';
- previousTime=performance.now();accumulator=0;showWakeButton();return true;
+ resetSimulationClock();showWakeButton();return true;
 }
 function beginCreationNarration(){
  // The opening lines play in darkness. The player's gesture creates the light.
@@ -8094,6 +8153,7 @@ function drawStoryGlass(){
 }
 const storyTargetMesh=buildLathe([[.88,.006],[1,.006]],72);
 function clearNarrativeScene(){
+ resetSimulationClock(performance.now(),true);
  cancelCullingBenchmark();cullingLab.observer=false;cullingLab.lastFrame=null;document.body.dataset.cullingObserver='false';
  window.QBitsFootsteps?.reset();window.QBitsJoinAudio?.stop();
  clearRobotArms();if(typeof clearConveyors==='function')clearConveyors();
@@ -8164,7 +8224,7 @@ function storyInput(event){
  if(story.scene==='intro'&&!storyWalkAllowed()&&['KeyW','KeyA','KeyS','KeyD','KeyC','ShiftLeft','ShiftRight'].includes(event.code)&&!held){event.preventDefault();return true;}
  return false;
 }
-function tickStory(dt){
+function tickStory(dt,advanceSlowSystems=true){
  window.QBitsGuideAudio?.setPaused(storySuspended()||!!story.transition);window.QBitsFootsteps?.setPaused(document.hidden||storySuspended()||!!story.transition);window.QBitsJoinAudio?.setPaused(document.hidden||storySuspended()||!!story.transition);
  if(story.transition){if(panel.hidden)tickSceneFade(dt);return;}if(storySuspended())return;
  story.elapsed+=dt;story.phaseTime+=dt;renderDialogue(dt);
@@ -8195,7 +8255,7 @@ function tickStory(dt){
    }else if(story.phase==='cooling'){story.phase='deliver';ui.cooling.hidden=true;say('Un poquito más dentro. Todavía me falta enfriarme.',{hold:true});}
   }
  }
- if(story.scene==='campaign'){tickBlockTwo(dt);tickReconfiguration(dt);if(!story.encounter)tickCampaign(dt);}
+ if(story.scene==='campaign'){tickBlockTwo(dt,advanceSlowSystems);if(advanceSlowSystems)tickReconfiguration(dt);if(!story.encounter)tickCampaign(dt);}
 }
 function updateStoryMarker(){
  updateCampaignLabels();layoutEncounterBubbles();ui.marker.hidden=true;if(story.mode!=='playing'||!panel.hidden||story.transition)return;
@@ -8606,7 +8666,7 @@ function tickMoodHints(){
  const m=g.parts.find(p=>p.mood.state==='restless').mood,key=m.severity>=3?'alterado':m.reason;if(c.moodLessons.has(key))return;c.moodLessons.add(key);c.lessonAt=story.elapsed+40;
  const lines={agotado:'Está agotado. Dale un descanso o llévalo al enfriador; el equipo retomará la orden cuando pueda.',bloqueado:'El camino está bloqueado. Libera el paso: repetir la orden no despeja el obstáculo.','sin actividad':'Lleva un rato sin una tarea. También nos inquietamos por eso. Déjalo calmarse y dale algo que hacer.',alterado:'Está bastante alterado. Dale tiempo; el enfriador ayuda a calmarlo.'};if(lines[key])say(lines[key],{after:hideStoryDialogue});
 }
-function tickBlockTwo(dt){if(!story.campaign)return;if(story.encounter)tickEncounter(dt);else{tickSources(dt);tickMoodHints();}}
+function tickBlockTwo(dt,advanceSlowSystems=true){if(!story.campaign)return;if(story.encounter)tickEncounter(dt);else{tickSources(dt);if(advanceSlowSystems)tickMoodHints();}}
 function campaignAmbientAllowed(){return story.scene==='campaign'&&story.mode==='playing'&&!story.transition&&!story.encounter&&!story.dialogue&&story.elapsed>8;}
 
 // Workshop research is persistent; fitted modules belong to existing piece IDs.
@@ -9666,7 +9726,7 @@ function setPhysicsEquation(equation,stiffness,relaxation){
  equation.qbitsSpook={stiffness,relaxation};equation.setSpookParams(stiffness,relaxation,FIXED_STEP);
 }
 function applyPhysicsRate(hz){
- const step=1/hz;if(step===FIXED_STEP)return;FIXED_STEP=step;accumulator=0;
+ const step=1/hz;if(step===FIXED_STEP)return;FIXED_STEP=step;resetSimulationClock();
  for(const constraint of world.constraints)for(const equation of constraint.equations)if(equation.qbitsSpook){const {stiffness,relaxation}=equation.qbitsSpook;equation.setSpookParams(stiffness,relaxation,step);}
 }
 function applyPreferences(next){
@@ -9936,12 +9996,12 @@ function startCullingBenchmark(){
  resetGameInputs();cullingLab.observer=false;document.body.dataset.cullingObserver='false';cullingLab.stats=true;cullingLab.result=null;cullingLab.lastFrame=null;
  cullingLab.gpu?.dispose();cullingLab.gpu=null;
  cullingLab.benchmark={phase:0,frame:0,enabled:false,order:[false,true,true,false],off:[],on:[],config:{width:canvas.width,height:canvas.height,shadows:visuals.shadows,style:visuals.style,pieces:scenePartCount()}};
- panel.hidden=true;menu.hidden=true;commandMenu.hidden=true;accumulator=0;redraw=true;updateCullingHud(true);return true;
+ panel.hidden=true;menu.hidden=true;commandMenu.hidden=true;resetSimulationClock();redraw=true;updateCullingHud(true);return true;
 }
 function finishCullingBenchmark(cancelled=false){
  const bench=cullingLab.benchmark;if(!bench)return;
  if(!cancelled){const summary=rows=>({samples:rows.length,cpu:window.QBitsCulling.summarize(rows.map(r=>r.cpuMs)),calls:window.QBitsCulling.summarize(rows.map(r=>r.calls)),triangles:window.QBitsCulling.summarize(rows.map(r=>r.triangles)),hidden:window.QBitsCulling.summarize(rows.map(r=>r.hiddenPieces))});cullingLab.result={off:summary(bench.off),on:summary(bench.on),config:bench.config};}
- cullingLab.benchmark=null;cullingLab.lastFrame=null;cullingLab.frameSamples.length=0;cullingLab.gpu?.dispose();cullingLab.gpu=null;accumulator=0;previousTime=performance.now();redraw=true;updateCullingHud(true);
+ cullingLab.benchmark=null;cullingLab.lastFrame=null;cullingLab.frameSamples.length=0;cullingLab.gpu?.dispose();cullingLab.gpu=null;resetSimulationClock();redraw=true;updateCullingHud(true);
  if(cancelled)announce('Comparación cancelada · configuración conservada');
 }
 function cancelCullingBenchmark(){finishCullingBenchmark(true);}
@@ -10071,10 +10131,11 @@ function liveMechanismPanel(time){
  if(selectedRotor()?.servo&&selectedRotor().enabled)updateServoPanel();
  if(members.length)document.querySelector('#rotor-technical-readout').textContent=rotorPowerDescription(members[0]);
 }
-function frame(time) {
+function frame(time=performance.now()) {
   if (!running) return;
   if(cullingLab.benchmark){advanceCullingBenchmark(time);requestAnimationFrame(frame);return;}
-  const dt = Math.min(Math.max((time - previousTime) / 1000, 0), 0.05);
+  const rawDt=previousTime===null?0:Math.max((time-previousTime)/1000,0);
+  const dt=Number.isFinite(rawDt)?Math.min(rawDt,MAX_FRAME_DT):0;
   let distance = 0;
   previousTime = time;
   window.QBitsGuideAudio?.setPaused(storySuspended()||!!story.transition);window.QBitsFootsteps?.setPaused(document.hidden||storySuspended()||!!story.transition);window.QBitsJoinAudio?.setPaused(document.hidden||storySuspended()||!!story.transition);
@@ -10091,7 +10152,7 @@ function frame(time) {
     updateHeldFocus(dt,false);if(redraw&&!document.hidden)renderScene(time);
     requestAnimationFrame(frame);return;
   }
-  tickStory(dt);
+  tickStory(dt,false);
   liveMechanismPanel(time);
   const frozen=storySuspended()||!!story.transition;
   if(tabletVisible()){
@@ -10134,16 +10195,14 @@ function frame(time) {
   else if (!document.hidden&&!frozen) {
     const simulationStart=cullingLab.stats?performance.now():0;
     window.QBitsFootsteps?.update(camera,yaw,walkingAudioGroups(),dt);window.QBitsJoinAudio?.update(camera,yaw,dt);
-    accumulator += dt;
-    let simulatedDt=0;
-    while (accumulator >= FIXED_STEP) { stepPhysics(FIXED_STEP); accumulator -= FIXED_STEP; simulatedDt+=FIXED_STEP; }
+    const simulatedDt=advanceSimulation(rawDt);
     updateDisassembly(dt);
     updateBatteryLiquids(simulatedDt);
     updateTarget();
-    updateSpeech();updateStoryMarker();
+    updateSpeechLayout();updateStoryMarker();
     if(cullingLab.stats)cullingLab.simulationMs=performance.now()-simulationStart;
     redraw = true;
-  }
+  }else{accumulator=0;}
   if (redraw && !document.hidden && visualFrameDue(time,visuals.fps)) {
     renderScene(time);
   }
@@ -10169,10 +10228,10 @@ window.QBitsGame={
     if(gl.isContextLost())throw new Error('Se perdió la conexión con la tarjeta gráfica.');
     onProgress(.9);await nextPaint();
     gamePrepared=true;onProgress(1);
-    previousTime=performance.now();accumulator=0;requestAnimationFrame(frame);
+    resetSimulationClock();requestAnimationFrame(frame);
   },
-  menu(){if(!gamePrepared)return;previousTime=performance.now();accumulator=0;showMain();},
-  play(){if(!gamePrepared)return;story.started=true;previousTime=performance.now();accumulator=0;resumeGame();}
+  menu(){if(!gamePrepared)return;resetSimulationClock();showMain();},
+  play(){if(!gamePrepared)return;story.started=true;resetSimulationClock();resumeGame();}
 };
 
 })();

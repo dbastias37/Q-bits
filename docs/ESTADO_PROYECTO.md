@@ -1,8 +1,20 @@
 # Q-bits — punto de continuación
 
-Actualizado: 19 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
+Actualizado: 21 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega · recuperación y marcha
+## Última entrega · ticks de sistemas y continuidad de simulación
+
+El bucle separa el tiempo de pared (`advanceSimulation`), el subpaso compuesto (`stepSimulation`) y las decisiones lentas (`stepLogic`). La física conserva el selector 240/120/60 Hz, su valor predeterminado de 240 y la recalibración de restricciones. Elegir 60 en Configuración → Rendimiento → Pasos de simulación por segundo activa el paso de 1/60 s. El reloj lógico usa 15 Hz y recibe únicamente tiempo efectivamente simulado, intercalado entre pasos físicos.
+
+Reconfiguración, avisos de ánimo y decisiones de diálogos ambientales usan el tick lento. El layout de los diálogos y la presentación permanecen en RAF. `tickStory(dt,false)` conserva narrativa y fundidos sin duplicar los sistemas extraídos; sus llamadas directas mantienen el contrato anterior mediante el argumento opcional. Consumo/cortes de energía, sensores de mecanismos, controladores, enfriadores, moods, blueprints, puzles y contabilidad de automatización/producción conservan por ahora su secuencia física. No se ha trasladado toda la lógica a 15 Hz.
+
+Cada avance acepta hasta 50 ms y un máximo de 12 pasos; descarta deuda adicional. Pausa, radial, ajustes, pestaña oculta, transiciones, edición de postura y benchmark suspenden los pasos. La tableta y el taller conservan la simulación activa. Los límites de pausa/reanudación reinician el reloj de pared; conservan la fracción lógica. Reconstruir una escena elimina ambas fracciones sin reiniciar `simTime`.
+
+Verificación: **992/992 pruebas Node aprobadas**, cero fallos, cancelaciones u omisiones, con lógica real y Cannon y DOM/GPU simulados. Son las 967 pruebas originales y 25 casos nuevos en `tests/tick-scheduler.test.cjs`: RAF 30/60/144 × física 60/120/240, descarte de atrasos, pausas, tableta/radial, ajustes, benchmark, postura, cambios de escena/frecuencia, corte energético atómico y reconfiguración sin doble avance. El harness expone el mismo `stepSimulation` de producción bajo el alias histórico `t.stepPhysics`, además de `stepPhysicsOnly`, `stepLogic` y `advanceSimulation`.
+
+Siguiente paso: probar los montajes del jugador a 60 Hz y contrastar estabilidad con 120/240. La interpolación visual queda pendiente. Extraer temporizadores de moods/enfriadores requiere conservar recorridos, tiempo elegible y eventos físicos; mover energía o sensores completos perdería muestras o retrasaría cortes. No se certifican FPS ni una partida visual con esta validación.
+
+## Entrega anterior · recuperación y marcha
 
 R o clic derecho → Reiniciar conjunto recupera la postura de arranque y vuelve a ejecutar la última orden de la máquina. Un recorrido vuelve al punto de partida y conserva su destino. El reinicio comprueba el espacio y conserva la carga de las baterías. Un cuadrúpedo antiguo puede reconstruir su apoyo con las referencias de sus articulaciones.
 
