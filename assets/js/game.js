@@ -8,6 +8,9 @@ function readQbitsStorage(key){
  return previous;
 }
 const story={ready:false,mode:'menu',scene:'lab',phase:'idle',started:false,elapsed:0,phaseTime:0,dialogue:null,transition:null,intentionalUnlock:false,preserveGrip:false,progress:{},lab:null,guideId:null,dropAligned:false};
+const saveStore=window.QBitsSavedGames.createStore({storage:()=>window.localStorage});
+const saveSession={preparing:false,restoring:false,restoreWarnings:[],labActive:false,labLoaded:false,campaignActive:false,checkpoint:null,nextAutosave:0,returnMode:'menu',focusMode:'campaign',confirmation:null,message:''};
+const AUTOSAVE_MS=15000;
 let unitRadial=null,pendingUnitCreation=null;
 let radialGlassStamp='',radialGlassAllocated=false;
 const preferences=window.QBitsPreferences;
@@ -636,8 +639,9 @@ document.addEventListener('keyup', onPhysicalKeyUp);
 window.addEventListener('blur',()=>{resetGameInputs();if(story.ready&&story.mode==='playing')openPauseMenu();else pause();});
 document.addEventListener('visibilitychange', () => {
   resetSimulationClock();
-  if(document.hidden){resetGameInputs();if(story.ready&&story.mode==='playing')openPauseMenu();else pause();}
+  if(document.hidden){resetGameInputs();if(story.ready&&story.mode==='playing')openPauseMenu();else pause();saveCurrentGame();}
 });
+window.addEventListener('pagehide',()=>{saveCurrentGame();});
 window.addEventListener('resize', resize);
 canvas.addEventListener('webglcontextlost', event => {
   event.preventDefault();
@@ -718,6 +722,7 @@ const rotorSets=[];let rotorSetSerial=0,selectedRotorIds=[];
 const alphaSettings={maxRest:180,coolSeconds:35,capacity:4,blueprintRange:1.5,exitEnergy:.5,glow:.6,coolingOn:true,allowPuzzleSpawn:false};
 const coolers=[],blueprints=[],savedShapes=[],savedMechanisms=[],buttonBodies=[];let alphaSerial=0;
 const moodSettings={drain:.035,recovery:.06,idleSeconds:90},moodLabels=[];
+const freshLabDefaults={settings:{...settings},moodSettings:{...moodSettings},alphaSettings:{...alphaSettings},position:[...position],yaw,pitch};
 
 // Dialogue catalogue v10: 253 approved lines + 20 close-up + 20 shaking + 20 impact reactions.
 const QBIT_LINES = {
@@ -3020,6 +3025,93 @@ function conveyorFrictionPairs(physicsWorld){
  return pairs;
 }
 
+// A fast falling piece can cross the 4 mm skin between discrete collision
+// queries. Limit an imminent top-face crossing with a unilateral solver
+// equation, including the reaction on the chassis. These predictive equations
+// are NOT world.contacts: only actual contact can trigger traction or sensors.
+function conveyorImpactVelocity(body,dt){
+ const dynamic=body.type===CANNON.Body.DYNAMIC;
+ const linear=mul(body.velocity,dynamic?Math.pow(1-body.linearDamping,dt):1);
+ const angular=mul(body.angularVelocity,dynamic?Math.pow(1-body.angularDamping,dt):1);
+ // Called inside solve: Cannon has already added gravity to body.force.
+ if(dynamic){linear.vadd(mul(body.force,body.invMass*dt),linear);angular.vadd(mul(body.invInertiaWorld.vmult(body.torque),dt),angular);}
+ return {linear,angular};
+}
+function conveyorImpactConstraints(dt,physicsWorld,solver){
+ if(!conveyors.length||!(dt>0))return;
+ const heldBodies=new Set((held?.items||[]).map(item=>item.g.body)),attached=new Set();
+ for(const joint of physicsWorld.constraints){attached.add(joint.bodyA);attached.add(joint.bodyB);}
+ const candidates=[];
+ for(const body of physicsWorld.bodies){
+  const g=body.qubitGroup,c=body.cargoRef;
+  if(body.type!==CANNON.Body.DYNAMIC||body.sleepState===CANNON.Body.SLEEPING||!body.collisionResponse||
+   !g&&!c||g?.virtualConveyor||g?.robotHeld||c?.robotHeld||c&&!c.robotPhysical||heldBodies.has(body)||attached.has(body))continue;
+  // Reject quiet bodies before allocating prediction vectors. Ignoring damping
+  // here gives an upper bound; torque-driven motion takes the full path below.
+  if(body.torque.norm2()===0&&(body.velocity.norm()+body.force.norm()*body.invMass*dt+body.angularVelocity.norm()*body.boundingRadius)*dt<CUBE_SIZE*.25)continue;
+  const velocity=conveyorImpactVelocity(body,dt);
+  // Slow support is already handled by Cannon's ordinary contacts.
+  if((velocity.linear.norm()+velocity.angular.norm()*body.boundingRadius)*dt<CUBE_SIZE*.25)continue;
+  candidates.push({body,velocity,vertices:null});
+ }
+ if(!candidates.length)return;
+ for(const conveyor of conveyors){
+  const base=conveyor.surfaceBody;if(!base||!base.collisionResponse)continue;
+  const component=conveyorComponentBodies(conveyor),baseVelocity=conveyorImpactVelocity(base,dt);
+  for(const surface of conveyorSurfacePoses(conveyor)){
+   // This is a top-face sweep, not a replacement for side/underside collisions.
+   if(surface.up.y<.7||baseVelocity.angular.norm()*dt>.1)continue;
+   const normal=surface.up;
+   for(const candidate of candidates){
+    const {body,velocity}=candidate;
+    if(component.has(body)||!(body.collisionFilterGroup&base.collisionFilterMask)||!(base.collisionFilterGroup&body.collisionFilterMask))continue;
+    const localCenter=surface.inverse.vmult(sub(body.position,surface.p));
+    const travel=(sub(velocity.linear,baseVelocity.linear).norm()+velocity.angular.norm()*body.boundingRadius)*dt;
+    const radius=body.boundingRadius;
+    if(Math.abs(localCenter.x)>surface.half.x+radius+travel||Math.abs(localCenter.z)>surface.half.z+radius+travel||
+     localCenter.y-radius>surface.half.y+travel||localCenter.y+radius<surface.half.y)continue;
+    if(!candidate.vertices){
+     candidate.vertices=[];
+     for(let i=0;i<body.shapes.length;i++){
+      const shape=body.shapes[i];if(shape.collisionResponse===false)continue;
+      const rotation=body.quaternion.mult(body.shapeOrientations[i]),offset=body.quaternion.vmult(body.shapeOffsets[i]);
+      let points;
+      if(shape.halfExtents){const h=shape.halfExtents;points=[];for(const x of [-h.x,h.x])for(const y of [-h.y,h.y])for(const z of [-h.z,h.z])points.push(V(x,y,z));}
+      else if(shape.vertices)points=shape.vertices;
+      else continue;
+      candidate.vertices.push({shape,points:points.map(point=>{const r=add(offset,rotation.vmult(point));return {r,p:add(body.position,r)};})});
+     }
+    }
+    for(const collider of candidate.vertices){
+     const points=collider.points.map(point=>({...point,gap:normal.dot(sub(point.p,surface.p))-surface.half.y}));
+     const low=Math.min(...points.map(point=>point.gap));
+     // A piece already below/inside the skin belongs to the normal narrowphase.
+     if(low<0)continue;
+     const support=points.filter(point=>point.gap<=low+1e-6);
+     // The centre of an actual supporting face is also solid. This admits a
+     // load wider than the lane without filling holes between compound shapes.
+     if(support.length>1){const r=V();for(const point of support)r.vadd(mul(point.r,1/support.length),r);points.push({r,p:add(body.position,r),gap:low});}
+     for(const point of points){
+      const baseArm=sub(point.p,base.position);
+      const relative=sub(add(velocity.linear,velocity.angular.cross(point.r)),add(baseVelocity.linear,baseVelocity.angular.cross(baseArm)));
+      const descent=relative.dot(normal)*dt;if(descent>=0||point.gap+descent>0)continue;
+      const fraction=clamp(point.gap/-descent,0,1),impact=add(point.p,mul(relative,dt*fraction));
+      const local=surface.inverse.vmult(sub(impact,surface.p));
+      if(Math.abs(local.x)>surface.half.x-.0001||Math.abs(local.z)>surface.half.z-.0001)continue;
+      const equation=new CANNON.ContactEquation(body,base);
+      equation.ni.copy(mul(normal,-1));equation.ri.copy(point.r);
+      equation.rj.copy(sub(sub(point.p,mul(normal,point.gap+.0005)),base.position));
+      equation.si=collider.shape;equation.sj=surface.surface.shape;
+      // Permit 0.5 mm of overlap so the next narrowphase sees the real top.
+      equation.restitution=0;equation.a=1/dt;equation.b=1;equation.eps=1e-8;
+      solver.addEquation(equation);body.wakeUp();if(base.type===CANNON.Body.DYNAMIC)base.wakeUp();
+     }
+    }
+   }
+  }
+ }
+}
+
 function conveyorReleaseBase(conveyor){
  const pin=conveyor.pin;if(!pin)return;conveyor.pin=null;pin.owners.delete(conveyor);if(pin.owners.size)return;
  conveyorPins.delete(pin.body);const {body,type,fixedRotation}=pin;body.type=type;body.fixedRotation=fixedRotation;body.updateMassProperties();body.wakeUp();
@@ -3838,6 +3930,7 @@ world.solver.solve=function(dt,physicsWorld){
  for(const g of groups)if(!(held?.items||[]).some(item=>item.g===g))g.body.angularDamping=articulated.has(g.body)||g.route||g.haulJob||g.blueprintJob||g.parts.some(p=>p.mood.flight?.enabled)?settings.damping:groupAngularDamping(g.parts.length);
  if(story.scene==='lab')settleSupportedGroups(dt,physicsWorld.contacts,driven,articulated);
  const footLimits=walkingFootFriction(physicsWorld,dt),skinPairs=conveyorFrictionPairs(physicsWorld),changed=[];for(const eq of physicsWorld.frictionEquations){if(skinPairs.get(eq.bi)?.has(eq.bj)||skinPairs.get(eq.bj)?.has(eq.bi)){changed.push([eq,eq.minForce,eq.maxForce]);eq.minForce=0;eq.maxForce=0;}else if(footLimits?.has(eq)){changed.push([eq,eq.minForce,eq.maxForce]);eq.maxForce=footLimits.get(eq);eq.minForce=-eq.maxForce;}else if(driven.has(eq.bi)||driven.has(eq.bj)){changed.push([eq,eq.minForce,eq.maxForce]);eq.minForce*=dt;eq.maxForce*=dt;}}
+ conveyorImpactConstraints(dt,physicsWorld,this);
  try{return solveRotorContacts.call(this,dt,physicsWorld);}finally{for(const [eq,min,max]of changed){eq.minForce=min;eq.maxForce=max;}}
 };
 // Completed conveyor rollers are motor records plus a visual angle. The
@@ -6785,7 +6878,127 @@ function updateCargoCallout(){
 // when leaving the challenge; rewards and deliveries use a single transaction.
 const puzzleConfig={frameSeconds:12,energySeconds:8};
 function puzzleBlockedEdit(kind='edit'){if(certifiedAutomation()){announce('Ensayo certificado: usa las piezas del banco. Reinicia el nivel para restaurarlas.');return true;}if(kind==='mechanism'&&mechanismsAvailable())return false;if(story.ready&&story.scene==='campaign'&&panel.hidden){announce('La materia genera nuevos Q-bits. P abre el banco de herramientas de prueba.');return true;}if(!puzzle.active||kind==='qubit'&&alphaSettings.allowPuzzleSpawn)return false;announce('Puzle activo · los recursos se obtienen en los portales. P → Puzle para volver al banco.');return true;}
-function saveLab(){syncVirtualConveyors(0);cancelPowerCable();return {workshop:workshopPlacement&&{...workshopPlacement},disassembly:serializeDisassembly(),powerNetwork:serializePowerNetwork(),mechanismDefaults:typeof mechanismDefaults==='undefined'?null:{...mechanismDefaults},rotors:serializeRotorState(),rotorSets:serializeRotorSets(),robotArms:serializeRobotArms(),conveyors:typeof serializeConveyors==='function'?serializeConveyors():[],contacts:serializeContactState(),shelves:serializeShelves(),alphaScene:alphaSceneSnapshot(),settings:{...settings},moodSettings:{...moodSettings},position:[...position],yaw,pitch,groups:groups.map(g=>({parts:worldParts(g),q:g.body.quaternion.clone(),v:g.body.velocity.clone(),w:g.body.angularVelocity.clone()})),cargos:cargos.map(c=>({id:c.id,p:c.body.position.clone(),side:c.side,required:c.required,color:c.color,...(c.robotPhysical?{robotPhysical:true,q:c.body.quaternion.clone(),v:c.body.velocity.clone(),w:c.body.angularVelocity.clone()}:{} )}))};}
+function saveLab(options={}){syncVirtualConveyors(0);if(!options.passive)cancelPowerCable();return {workshop:workshopPlacement&&{...workshopPlacement},disassembly:serializeDisassembly(),powerNetwork:serializePowerNetwork(),mechanismDefaults:typeof mechanismDefaults==='undefined'?null:{...mechanismDefaults},rotors:serializeRotorState(),rotorSets:serializeRotorSets(),robotArms:serializeRobotArms(),conveyors:typeof serializeConveyors==='function'?serializeConveyors():[],contacts:serializeContactState(),shelves:serializeShelves(),alphaScene:alphaSceneSnapshot(),settings:{...settings},moodSettings:{...moodSettings},position:[...position],yaw,pitch,groups:groups.map(g=>({parts:worldParts(g),q:g.body.quaternion.clone(),v:g.body.velocity.clone(),w:g.body.angularVelocity.clone()})),cargos:cargos.map(c=>({id:c.id,p:c.body.position.clone(),side:c.side,required:c.required,color:c.color,...(c.robotPhysical?{robotPhysical:true,q:c.body.quaternion.clone(),v:c.body.velocity.clone(),w:c.body.angularVelocity.clone()}:{} )})),runtime:captureLabRuntime()};}
+// JSON removes Cannon prototypes. Rebuild only the explicitly stored pose and
+// velocity fields, before enterLab clears the current scene. Inventory IDs are
+// unique across bodies, wire, shelves and pending disassembly, not just bodies.
+function hydrateLabSnapshot(saved){
+ const invalid=()=>{throw new Error('El banco guardado contiene datos inválidos.');};
+ if(!saved||typeof saved!=='object'||Array.isArray(saved))return invalid();
+ let data;try{data=JSON.parse(JSON.stringify(saved));}catch{return invalid();}
+ const finite=(n)=>typeof n==='number'&&Number.isFinite(n);
+ const values=(value,size)=>{const list=Array.isArray(value)?value:value&&['x','y','z','w'].slice(0,size).map(key=>value[key]);if(!Array.isArray(list)||list.length!==size||!list.every(finite))return invalid();return list;};
+ const vector=value=>V(...values(value,3));
+ const quaternion=value=>{const list=values(value,4),length=Math.hypot(...list);if(!finite(length)||length<1e-8)return invalid();return new CANNON.Quaternion(...list.map(n=>n/length));};
+ if(!Array.isArray(data.groups)||data.groups.length>MAX_QUBITS||!Array.isArray(data.cargos)||data.cargos.length>12)return invalid();
+ if(!data.settings||typeof data.settings!=='object'||Array.isArray(data.settings))return invalid();
+ for(const [key,value]of Object.entries(settings))if(typeof value==='number'&&data.settings[key]!==undefined&&!finite(data.settings[key]))return invalid();
+ for(const [key,value]of Object.entries(moodSettings))if(typeof value==='number'&&data.moodSettings?.[key]!==undefined&&!finite(data.moodSettings[key]))return invalid();
+ data.position=values(data.position,3);if(!finite(data.yaw)||!finite(data.pitch))return invalid();
+ const ids=new Set(),clock=finite(data.runtime?.time)?data.runtime.time:null;
+ const part=record=>{
+  if(!record||!Number.isSafeInteger(record.id)||record.id<1||ids.has(record.id)||!finite(record.weight)||record.weight<=0||!['cube','tetra','pyramid','coupler'].includes(record.shape))return invalid();
+  ids.add(record.id);values(record.p,3);const q=values(record.q,4);if(Math.hypot(...q)<1e-8)return invalid();
+  const mood=record.mood;if(mood!==null&&mood!==undefined){
+   if(typeof mood!=='object'||Array.isArray(mood)||mood.name!==undefined&&typeof mood.name!=='string'||mood.energy!==undefined&&(!finite(mood.energy)||mood.energy<0||mood.energy>1))return invalid();
+   if(mood.blend!==undefined)values(mood.blend,3);
+   if(mood.gripper&&!validGripperConfig(mood.gripper)||mood.flight&&!QBitsPropellerPower.validConfig(mood.flight))return invalid();
+   // Episodes use an absolute simulation timestamp; a new page starts at zero.
+   if(clock!==null&&finite(mood.lastAnger))mood.lastAnger=simTime-Math.max(0,clock-mood.lastAnger);
+  }
+ };
+ let live=0;for(const group of data.groups){
+  if(!Array.isArray(group?.parts)||!group.parts.length||group.parts.length>MAX_QUBITS)return invalid();live+=group.parts.length;
+  for(const p of group.parts){part(p);p.p=vector(p.p);p.q=quaternion(p.q);}group.q=quaternion(group.q);group.v=vector(group.v);group.w=vector(group.w);
+ }
+ for(const pending of data.disassembly||[]){if(!Array.isArray(pending?.parts))return invalid();live+=pending.parts.length;for(const p of pending.parts)part(p);}
+ if(live>MAX_QUBITS)return invalid();
+ for(const cable of data.powerNetwork?.cables||[])for(const p of cable.materials||[])part(p);
+ for(const shelf of data.shelves||[])for(const cell of shelf.cells||[])for(const item of cell.items||[])for(const group of item.groups||[])for(const p of group.parts||[])part(p);
+ const cargoIds=new Set();for(const cargo of data.cargos){
+  if(!Number.isSafeInteger(cargo?.id)||cargo.id<1||cargoIds.has(cargo.id)||!Number.isInteger(cargo.side)||cargo.side<1||cargo.side>12||!Number.isInteger(cargo.required)||cargo.required<1||cargo.required>MAX_QUBITS||!/^#[0-9a-f]{6}$/i.test(cargo.color))return invalid();
+  cargoIds.add(cargo.id);cargo.p=vector(cargo.p);if(cargo.robotPhysical){cargo.q=quaternion(cargo.q);cargo.v=vector(cargo.v);cargo.w=vector(cargo.w);}
+ }
+ return data;
+}
+// Durable saves add controller intent to the old, deliberately stopped memory
+// snapshot. No bodies, constraints, cached paths or live Maps cross this boundary.
+function captureLabRuntime(){
+ const xyz=v=>v?[v.x,v.y,v.z]:null,copy=value=>value===undefined?null:JSON.parse(JSON.stringify(value));
+ const pair=r=>({aId:r.aId,bId:r.bId});
+ return {version:1,time:simTime,blocked:robotGrips.size?'robot-grip':null,
+  motion:groups.filter(g=>!g.virtualConveyor).map(g=>({id:g.parts[0].id,v:xyz(g.body.velocity),w:xyz(g.body.angularVelocity)})),
+  conveyors:conveyors.filter(c=>c.running).map(c=>({baseId:c.baseId,phase:c.phase||0})),
+  servos:rotors.filter(r=>r.servo&&r.enabled&&!servoMarchFor(r)).map(r=>({...pair(r),goal:r.servoGoal??r.servo.target,settled:r.servoSettled||0,stuck:r.servoStuck||0})),
+  marches:[...servoMarches].map(m=>({members:m.members.map(pair),phase:m.phase,elapsed:m.elapsed,period:m.period,strideRamp:m.strideRamp||0,settled:m.settled,blocked:m.blocked})),
+  arms:robotArms.filter(a=>a.running||a.jogging).map(a=>({gripperId:a.gripperId,state:a.state,jogging:!!a.jogging,destination:copy(a.destination||a.target),cycles:a.cycles||0,scan:a.scan||0})),
+  flights:[...flightStates.values()].filter(f=>f.enabled).map(f=>({id:f.id,landing:!!f.landing,spool:f.spool,phase:f.phase,hold:xyz(f.hold),trip:f.trip?{...copy(f.trip),remaining:Math.max(0,f.trip.remaining||0),origin:xyz(f.trip.origin),depart:xyz(f.trip.depart)}:null,contact:copy(f.contact),contact_start:copy(f.contact_start),contact_stop:copy(f.contact_stop)})),
+  routes:groups.filter(g=>!g.haulJob&&!g.blueprintJob&&(g.route?.goal||g.pendingMoodOrder?.goal)).map(g=>({id:g.parts[0].id,goal:xyz(g.route?.goal||g.pendingMoodOrder.goal)})),
+  coolers:coolers.map(c=>({p:[c.p.x,c.p.z],entries:[...c.entries].map(([id,e])=>({id,elapsed:e.elapsed,done:!!e.done}))}))
+ };
+}
+function restoreLabRuntime(saved){
+ const warnings=[],fail=message=>warnings.push(message),finite=n=>typeof n==='number'&&Number.isFinite(n),array=value=>Array.isArray(value)?value:[];
+ if(!saved)return {ok:true,warnings};
+ if(saved.version!==1||saved.blocked){fail(saved.blocked==='robot-grip'?'El guardado se tomó mientras una pinza sostenía una carga.':'El estado de los mecanismos guardados no es compatible.');return {ok:false,warnings};}
+ const vec=value=>Array.isArray(value)&&value.length===3&&value.every(finite)?V(...value):null;
+ const pair=record=>record&&Number.isSafeInteger(record.aId)&&Number.isSafeInteger(record.bId)?rotorForPair(record):null;
+ const group=id=>Number.isSafeInteger(id)?rotorPart(id)?.g:null;
+ const timer=(value,maximum=1e6)=>finite(value)&&value>=0?Math.min(value,maximum):0;
+ for(const record of array(saved.conveyors)){
+  const c=conveyors.find(c=>c.baseId===record?.baseId);if(!c){fail('Falta un tramo de la cinta guardada.');continue;}
+  if(!startConveyor(c)){fail('Cinta detenida: '+c.status);continue;}if(finite(record.phase))c.phase=record.phase;
+ }
+ for(const record of array(saved.servos)){
+  const r=pair(record);if(!r?.servo||!finite(record.goal)||record.goal<r.servo.min||record.goal>r.servo.max){fail('No se pudo recuperar un servo.');continue;}
+  if(!startServo(r)){fail('Servo detenido: '+(r.servoStatus||'revisa energía'));continue;}
+  r.servoGoal=record.goal;r.servoSettled=timer(record.settled,.12);r.servoStuck=timer(record.stuck,3);
+ }
+ for(const record of array(saved.marches)){
+  const members=array(record?.members).map(pair),wanted=new Set(members);
+  if(!members.length||members.some(r=>!r?.servo)||wanted.size!==members.length||!['align','march'].includes(record.phase)){fail('No se pudo recuperar la marcha del conjunto.');continue;}
+  const actual=servoMarchMembers(members[0]);if(actual.length!==members.length||actual.some(r=>!wanted.has(r))||!startServoMarch(members[0])){fail('Marcha detenida: revisa las articulaciones y su energía.');continue;}
+  const march=servoMarchFor(members[0]);march.phase=record.phase;
+  march.elapsed=timer(record.elapsed)%march.period;march.strideRamp=clamp(timer(record.strideRamp,1),0,1);march.settled=timer(record.settled,.15);march.blocked=timer(record.blocked,3);
+ }
+ for(const record of array(saved.arms)){
+  const arm=robotArms.find(a=>a.gripperId===record?.gripperId);
+  if(!arm||!['home','return','wait','jog'].includes(record.state)||!robotPoseValid(record.destination,arm.joints.length)){
+   fail(record?.state==='carry'?'El brazo necesita su carga antes de reanudar.':'No se pudo recuperar el programa de un brazo.');continue;
+  }
+  if(!robotBeginMotion(arm,record.destination,record.jogging===true)){fail('Brazo detenido: '+arm.status);continue;}
+  arm.state=record.state;arm.cycles=Number.isSafeInteger(record.cycles)&&record.cycles>=0?record.cycles:0;arm.scan=timer(record.scan,.1);arm.status=record.state==='wait'?'Esperando objeto compatible bajo la cara de agarre':'Programa reanudado';
+ }
+ for(const record of array(saved.flights)){
+  const g=group(record?.id),f=g&&flightForGroup(g),hold=record?.hold===null?null:vec(record?.hold);
+  if(!f||f.id!==record.id||!finite(record.spool)||record.spool<0||record.spool>1||!finite(record.phase)||record.hold!==null&&!hold||typeof record.landing!=='boolean'){fail('No se pudo recuperar el estado de un dron.');continue;}
+  let trip=null;
+  if(record.trip){
+   const r=record.trip,origin=vec(r.origin),depart=vec(r.depart),route={loop:r.loop,points:r.points};
+   if(!origin||!depart||!QBitsPropellerPower.validConfig({...flightConfig(f),route})||!r.points.length||!Number.isInteger(r.index)||r.index<0||r.index>=r.points.length||!['lift','travel','wait','descend','ground'].includes(r.phase)||!finite(r.remaining)||r.remaining<0){fail('La trayectoria guardada del dron no es válida.');continue;}
+   trip={loop:r.loop,points:r.points.map(p=>({...p})),index:r.index,phase:r.phase,remaining:r.remaining,origin,depart};
+  }
+  // Do not call startFlight: it moves the route origin to the current position
+  // and ramps thrust from zero. The next physical step performs normal power
+  // and obstruction checks before applying any force or energy debit.
+  f.enabled=true;f.landing=record.landing;f.spool=record.spool;f.phase=record.phase;f.hold=hold;f.trip=trip;f.power=null;f.status=f.landing?'Aterrizando':'Vuelo reanudado';
+  for(const key of ['contact','contact_start','contact_stop']){const state=record[key];f[key]=state&&typeof state.latched==='boolean'&&finite(state.clearSeconds)&&state.clearSeconds>=0&&state.clearSeconds<=.08?{latched:state.latched,clearSeconds:state.clearSeconds}:null;}
+  for(const member of f.component)member.body.wakeUp();
+ }
+ for(const record of array(saved.motion)){
+  const g=group(record?.id),v=vec(record?.v),w=vec(record?.w);if(!g||g.virtualConveyor||!v||!w)continue;
+  // A recreated hinge/controller may have zeroed spin while being configured.
+  if(g.body.type===CANNON.Body.DYNAMIC){g.body.velocity.copy(v);g.body.angularVelocity.copy(w);g.body.wakeUp();}
+ }
+ for(const record of array(saved.routes)){
+  const g=group(record?.id),goal=vec(record?.goal);if(!g||!goal||!startRoute(g,goal,true,false))fail('Una orden de movimiento necesita volver a indicarse.');
+ }
+ for(const record of array(saved.coolers)){
+  const c=Array.isArray(record?.p)&&coolers.find(c=>Math.abs(c.p.x-record.p[0])<1e-6&&Math.abs(c.p.z-record.p[1])<1e-6);if(!c)continue;
+  for(const entry of array(record.entries))if(group(entry?.id)&&finite(entry.elapsed)&&entry.elapsed>=0&&typeof entry.done==='boolean')c.entries.set(entry.id,{elapsed:entry.elapsed,done:entry.done});
+ }
+ return {ok:!warnings.length,warnings};
+}
 function clearPuzzleScene(){
  clearDisassembly();cancelUnitCreation();
  cancelPowerCable();clearPowerNetwork();
@@ -8047,7 +8260,7 @@ document.addEventListener('webkitfullscreenchange',syncFullscreenButton);
 // Campaign prologue. Scene state, narrative timers and test tools share one clock.
 const chapters=[['00','El primer encuentro','Prólogo · tomar, mover y enfriar'],['01','Primer contacto','Llevar un Q-bit a un destino'],['02','Cada uno por su camino','Dos destinos independientes'],['03','Dos lados','Dos botones simultáneos'],['04','Juntos pesamos más','Dos Q-bits en un botón'],['05','La primera unión','Dos piezas · circuito de líquido'],['06','Cambiar de forma','Tres puertas · L, cuadrado y T'],['07','Seis piezas','Rectángulo y escalera'],['08','Salimos juntos','Seis compañeros · fin del primer bloque'],['09','La fuente','Conocer al equipo · transformar materia'],['10','El camino de vuelta','Dos estaciones · transporte y descanso'],['11','Dos rutas','Elegir materia y organizar al equipo'],['12','La instalación','Tres estaciones · el equipo completo']];
 const ui={main:document.querySelector('#main-screen'),pause:document.querySelector('#pause-screen'),levels:document.querySelector('#levels-screen'),complete:document.querySelector('#chapter-complete'),dialogue:document.querySelector('#story-dialogue'),text:document.querySelector('#story-text'),speaker:document.querySelector('#story-speaker'),choices:document.querySelector('#story-choices'),objective:document.querySelector('#story-objective'),veil:document.querySelector('#scene-veil'),top:document.querySelector('#eye-top'),bottom:document.querySelector('#eye-bottom'),cooling:document.querySelector('#cooling-track'),marker:document.querySelector('#world-label')};
-function gameMode(mode){if(story.mode!==mode)resetSimulationClock();if(mode!=='playing'){window.QBitsGuideAudio?.setPaused(true);window.QBitsFootsteps?.setPaused(true);window.QBitsJoinAudio?.setPaused(true);}if(mode!=='playing')closeUnitRadial(false);story.mode=mode;if(mode!=='playing'){cullingLab.observer=false;document.body.dataset.cullingObserver='false';cullingLab.lastFrame=null;}updateCullingHud(true);window.QBitsMusic?.setPaused(!['playing','menu','levels','codex','settings'].includes(mode));document.body.dataset.gameMode=mode;for(const [key,el] of [['menu',ui.main],['pause',ui.pause],['levels',ui.levels],['complete',ui.complete],['codex',document.querySelector('#codex-screen')]])el.hidden=mode!==key;document.querySelector('#pause-button').hidden=mode!=='playing';hint.hidden=true;redraw=true;}
+function gameMode(mode){if(story.mode!==mode)resetSimulationClock();if(mode!=='playing'){window.QBitsGuideAudio?.setPaused(true);window.QBitsFootsteps?.setPaused(true);window.QBitsJoinAudio?.setPaused(true);}if(mode!=='playing')closeUnitRadial(false);story.mode=mode;if(mode!=='playing'){cullingLab.observer=false;document.body.dataset.cullingObserver='false';cullingLab.lastFrame=null;}updateCullingHud(true);window.QBitsMusic?.setPaused(!['playing','menu','levels','codex','settings','saves'].includes(mode));document.body.dataset.gameMode=mode;for(const [key,el] of [['menu',ui.main],['pause',ui.pause],['levels',ui.levels],['complete',ui.complete],['codex',document.querySelector('#codex-screen')],['saves',document.querySelector('#saves-screen')]])el.hidden=mode!==key;document.querySelector('#pause-button').hidden=mode!=='playing';hint.hidden=true;redraw=true;}
 function gameScene(scene){story.scene=scene;document.body.dataset.gameScene=scene;const label=document.querySelector('#chapter-label');label.hidden=scene==='lab';document.querySelector('#chapter-number').textContent=scene==='intro'?'PRÓLOGO / 00':'NIVEL / '+String(story.level||1).padStart(2,'0');document.querySelector('#chapter-name').textContent=scene==='intro'?'El primer encuentro':chapters[story.level||1][1];}
 function storySuspended(){return radialOpen()||story.ready&&(story.mode!=='playing'||document.hidden);}
 function storyWalkAllowed(){return !story.ready||story.scene!=='intro'||['deliver','cooling','cooled','choice','repeat'].includes(story.phase);}
@@ -8103,12 +8316,13 @@ function quickWake(){
  const initial=story.scene==='intro'&&['invocation','asleep'].includes(story.phase);
  if(!['boot','menu'].includes(story.mode)&&!(story.mode==='playing'&&initial))return false;
  if(story.transition&&!initial)return false;
+ if(saveStore.read('campaign').status!=='empty'&&!(story.started&&initial&&saveSession.campaignActive)){showSavedGames('campaign');return true;}
  story.transition=null;document.body.dataset.transitioning='false';document.querySelector('#scene-loading').hidden=true;
  resetGameInputs();pause(false);panel.hidden=true;
  if(!initial)beginIntro();else{gameMode('playing');story.started=true;}
  hideStoryDialogue();storyObjective('');story.phase='asleep';story.phaseTime=6.7;
  ui.veil.style.opacity='1';ui.top.style.height='52%';ui.bottom.style.height='52%';canvas.style.filter='none';
- resetSimulationClock();showWakeButton();return true;
+ resetSimulationClock();persistCampaignCheckpoint(0,false);showWakeButton();return true;
 }
 function beginCreationNarration(){
  // The opening lines play in darkness. The player's gesture creates the light.
@@ -8162,7 +8376,7 @@ function clearNarrativeScene(){
  closeUnitRadial(false);
  releaseQubit();story.preserveGrip=false;clearCampaign();clearStoryWalls();clearPuzzleScene();puzzle.active=false;puzzle.savedLab=null;puzzle.delivery=null;clearSelection();speech.queue.length=0;for(const slot of speech.slots)clearSpeechSlot(slot);hideStoryDialogue();storyObjective('');ui.marker.hidden=true;story.guideId=null;story.phaseTime=0;story.dropAligned=false;story.lost=0;story.arrival=0;story.routeIssued=false;story.phase='idle';ui.top.style.height='0';ui.bottom.style.height='0';canvas.style.filter='none';document.querySelector('#notice').textContent='';document.querySelector('#wake-screen').hidden=true;
 }
-function rememberLab(){if(story.scene==='lab'){story.lab=puzzle.active?puzzle.savedLab:saveLab();story.labAlpha={...alphaSettings};}}
+function rememberLab(){if(story.scene==='lab'&&!(saveSession.labLoaded&&!saveSession.labActive)){if(!saveSession.preparing&&story.started)saveCurrentGame();story.lab=puzzle.active?puzzle.savedLab:saveLab();story.labAlpha={...alphaSettings};}}
 function applyStageDefaults(){Object.assign(settings,{mass:1,gravity:9.8,force:60,maxCarry:2000,maxSelect:2000,speed:.32});world.gravity.set(0,-settings.gravity,0);alphaSettings.coolingOn=true;posture.height=EYE_HEIGHT;bobHeight=0;bobSide=0;world.broadphase.dirty=true;}
 function storyGuide(){return groups.find(g=>g.parts.some(p=>p.id===story.guideId));}
 function spawnGuide(floating=true){const g=addQubit(floating?[0,1.49,2.45]:[-.85,HALF+.004,.3],1);story.guideId=g.parts[0].id;g.parts[0].mood.name='Q-bit';g.storyFloat=floating;if(floating){g.body.type=CANNON.Body.KINEMATIC;g.body.updateMassProperties();const m=g.parts[0].mood;m.energy=.12;m.state='restless';m.reason='acalorado';m.restLeft=120;m.agitation=.8;}return g;}
@@ -8172,7 +8386,7 @@ function beginIntro(replay=false){
  buildWhiteRooms();
  if(replay){ui.veil.style.opacity='0';askPickup('Va de nuevo. Esta vez sin crear el universo: apunta hacia mí y haz clic para tomarme.');}
  else{ui.veil.style.opacity='1';ui.top.style.height='52%';ui.bottom.style.height='52%';beginCreationNarration();}
- updatePanel();
+ updatePanel();persistCampaignCheckpoint(0,false);
 }
 function askPickup(text='Hola. ¿Cómo estás? Soy un Q-bit. Apunta hacia mí y haz clic izquierdo para tomarme.'){
  story.phase='pickup';storyObjective('Apunta al Q-bit y haz clic izquierdo.');say(text,{hold:true});
@@ -8195,16 +8409,210 @@ function captureForTransition(){story.allowTransitionCapture=true;captureMouse()
 function beginLevelOne(){beginCampaignLevel(1);}
 
 function openStoryDoor(dt){const d=storyWorld.door;if(!d)return;storyWorld.doorProgress=Math.min(1,storyWorld.doorProgress+dt/.95);const t=storyWorld.doorProgress,u=t*t*(3-2*t);d.p.y=d.initialY+2.65*u;d.body.position.copy(d.p);d.min=sub(d.p,d.half);d.max=add(d.p,d.half);d.body.aabbNeedsUpdate=true;}
-function saveStoryProgress(key){story.progress[key]=true;try{localStorage.setItem('qbits.campaign.v1',JSON.stringify(story.progress));}catch{}}
+// Persistent slots own JSON data. Live Cannon bodies and narrative callbacks
+// remain in the scene; campaign resumes at an explicit level checkpoint.
+function savedGameMode(){return story.scene==='lab'?'lab':'campaign';}
+function savedGameStatus(message){
+ saveSession.message=message;
+ for(const id of ['saves-status','pause-save-status'])document.querySelector('#'+id).textContent=message;
+}
+function normalizedCampaignProgress(value){
+ const progress={};if(!value||typeof value!=='object'||Array.isArray(value))return progress;
+ for(const [key,entry] of Object.entries(value))if((key==='intro'||/^level(?:[1-9]|1\d|20)$/.test(key)||/^lore\.[a-zA-Z0-9_-]+$/.test(key))&&entry===true)progress[key]=true;
+ if(Number.isInteger(value.torqueTier))progress.torqueTier=QBitsProgression.effectiveTier(value.torqueTier,progress);
+ return progress;
+}
+function writeLegacyCampaignProgress(){try{window.localStorage.setItem('qbits.campaign.v1',JSON.stringify(story.progress));}catch{}}
+function initializeSavedGames(){
+ const campaign=saveStore.read('campaign'),lab=saveStore.read('lab');
+ saveSession.labLoaded=lab.status==='ready';saveSession.labActive=false;saveSession.campaignActive=false;
+ if(campaign.status==='ready'){
+  story.progress=normalizedCampaignProgress(campaign.save.data.progress);saveSession.checkpoint={...campaign.save.data.checkpoint};
+ }else if(campaign.status==='empty'&&Object.keys(story.progress).length){
+  const completed=Array.from({length:LEVELS.length-1},(_,i)=>i+1).filter(n=>story.progress['level'+n]);
+  const last=completed.length?Math.max(...completed):0,level=last?Math.min(LEVELS.length-1,last+1):story.progress.intro?1:0;
+  saveSession.checkpoint={scene:level?'campaign':'intro',level,completed:last===LEVELS.length-1};
+  const result=saveStore.write('campaign',{checkpoint:{...saveSession.checkpoint},progress:{...story.progress}});
+  if(!result.ok)savedGameStatus('Tu progreso anterior sigue disponible. No se pudo crear la partida guardada.');
+ }
+ if(lab.status==='ready')try{story.lab=hydrateLabSnapshot(lab.save.data.snapshot);story.labAlpha={...lab.save.data.alphaSettings};}catch{savedGameStatus('No se pudo restaurar el banco guardado. La copia original se conserva.');}
+ saveSession.nextAutosave=performance.now()+AUTOSAVE_MS;
+}
+function bankSaveBlocked(){
+ if(held||powerDraft||robotPoseDraft||creationPreview||shelfPreview)return 'Termina la colocación o suelta la pieza para guardar el banco.';
+ if(robotGrips.size||groups.some(g=>g.blueprintJob)||cargos.some(c=>c.job))return 'Termina la construcción o el transporte y deja las cargas libres para guardar el banco.';
+ return '';
+}
+function persistCampaignCheckpoint(level=story.scene==='campaign'?story.level:0,completed=story.phase==='complete'){
+ if(saveSession.preparing)return {ok:false,deferred:true};
+ saveSession.checkpoint={scene:level?'campaign':'intro',level:level||0,completed:!!completed};saveSession.campaignActive=true;
+ if(saveSession.restoring||!story.ready||!story.started)return {ok:false,deferred:true};
+ const result=saveStore.write('campaign',{checkpoint:{...saveSession.checkpoint},progress:{...story.progress}});
+ if(!result.ok)savedGameStatus('No se pudo guardar la campaña. La partida anterior se conserva. '+(result.error||''));
+ return result;
+}
+function saveCurrentGame(options={}){
+ if(!story.ready||!story.started||saveSession.preparing||saveSession.restoring)return {ok:false,deferred:true};
+ if(story.transition){const error='Espera a que termine el cambio de escena.';if(options.manual)savedGameStatus(error);return {ok:false,deferred:true,error};}
+ const mode=savedGameMode();let result;
+ if(mode==='lab'){
+  const blocked=puzzle.active?'':bankSaveBlocked();
+  if(story.transition||blocked){const error=blocked||'Espera a que termine el cambio de escena.';if(options.manual)savedGameStatus(error);return {ok:false,deferred:true,error};}
+  let snapshot,hydrated;
+  try{snapshot=puzzle.active?puzzle.savedLab:saveLab({passive:true});if(snapshot)hydrated=hydrateLabSnapshot(snapshot);}
+  catch{const error='No se pudo validar el banco actual. La partida anterior se conserva.';savedGameStatus(error);return {ok:false,error};}
+  if(!snapshot)return {ok:false,deferred:true};
+  result=saveStore.write('lab',{snapshot,alphaSettings:{...alphaSettings}});
+  if(result.ok){story.lab=hydrated;story.labAlpha={...result.save.data.alphaSettings};saveSession.labLoaded=true;saveSession.labActive=true;}
+ }else{
+  const checkpoint=saveSession.checkpoint||{scene:story.scene,level:story.scene==='campaign'?story.level:0,completed:story.phase==='complete'};
+  result=saveStore.write('campaign',{checkpoint:{...checkpoint},progress:{...story.progress}});
+ }
+ saveSession.nextAutosave=performance.now()+AUTOSAVE_MS;
+ if(result.ok)savedGameStatus((mode==='lab'?'Banco de pruebas':'Campaña')+' guardado'+(puzzle.active?' · se conserva el banco anterior al puzle':'')+'.');
+ else savedGameStatus('No se pudo guardar. La partida anterior se conserva. '+(result.error||''));
+ return result;
+}
+function autosaveGame(time=performance.now()){
+ if(story.mode!=='playing'||document.hidden||story.transition||saveSession.preparing||saveSession.restoring||!story.started||time<saveSession.nextAutosave)return;
+ saveSession.nextAutosave=time+AUTOSAVE_MS;const result=saveCurrentGame();
+ // An unfinished gesture is transient; retry shortly without cancelling it.
+ if(result.deferred)saveSession.nextAutosave=time+1000;
+}
+function liveSavedGame(mode){return story.started&&!saveSession.preparing&&savedGameMode()===mode&&(mode==='lab'?saveSession.labActive:saveSession.campaignActive);}
+function refreshSavedGames(){
+ for(const mode of ['campaign','lab']){
+  const record=saveStore.read(mode),live=liveSavedGame(mode),summary=document.querySelector('#saves-'+mode+'-summary'),date=document.querySelector('#saves-'+mode+'-date');
+  document.querySelector('#saves-'+mode+'-continue').disabled=record.status!=='ready'&&!live;
+  date.textContent='';
+  if(record.status==='ready'){
+   const data=record.save.data;date.textContent='Guardado: '+new Date(record.save.savedAt).toLocaleString('es-CL',{dateStyle:'medium',timeStyle:'short'});
+   if(mode==='campaign'){
+    const checkpoint=data.checkpoint,level=checkpoint.level,count=Object.keys(data.progress).filter(key=>/^level\d+$/.test(key)&&data.progress[key]===true).length;
+    summary.textContent=level===0?'Prólogo · El primer encuentro':checkpoint.completed&&level===LEVELS.length-1?'Campaña completada · '+count+' niveles':(checkpoint.completed?'Continuar en nivel '+(level+1)+' · '+chapters[level+1][1]:'Nivel '+level+' · '+chapters[level][1])+' · '+count+' completados';
+   }else{
+    const snapshot=data.snapshot,count=snapshot.groups.reduce((n,g)=>n+g.parts.length,0)+(snapshot.disassembly||[]).reduce((n,job)=>n+(job.parts?.length||0),0);
+    summary.textContent=count+' piezas · '+(snapshot.cargos?.length||0)+' cargas · '+(snapshot.conveyors?.length||0)+' cintas';
+   }
+  }else summary.textContent=record.status==='empty'?'Aún no hay una partida guardada.':record.status==='unsupported'?'Partida de una versión distinta. La copia se conserva.':record.status==='invalid'?'No se puede leer esta partida. La copia se conserva.':'Este navegador no permite acceder al guardado.';
+  if(live&&record.status!=='ready')summary.textContent+=' Puedes continuar esta sesión.';
+ }
+ document.querySelector('#saves-status').textContent=saveSession.message;
+}
+function showSavedGames(mode='campaign'){
+ if(story.transition)return false;
+ if(story.mode!=='saves'){saveSession.returnMode=story.mode;saveCurrentGame();}
+ saveSession.focusMode=mode==='lab'?'lab':'campaign';saveSession.confirmation=null;
+ document.querySelector('#saves-confirm').hidden=true;document.querySelector('#wake-screen').hidden=true;
+ closeWorkshopPanel(false);gameMode('saves');pause(false);panel.hidden=true;
+ ui.veil.style.opacity='0';ui.top.style.height='0';ui.bottom.style.height='0';canvas.style.filter='none';
+ refreshSavedGames();const resume=document.querySelector('#saves-'+saveSession.focusMode+'-continue');
+ (resume.disabled?document.querySelector('#saves-'+saveSession.focusMode+'-new'):resume).focus({preventScroll:true});return true;
+}
+function closeSavedGames(){
+ saveSession.confirmation=null;document.querySelector('#saves-confirm').hidden=true;
+ const mode=saveSession.returnMode;
+ if(mode==='playing'){resumeGame();return;}
+ if(mode==='menu'||mode==='boot'){showMain();return;}
+ gameMode(mode==='complete'?'complete':'pause');document.querySelector(mode==='complete'?'#complete-repeat':'#pause-resume').focus({preventScroll:true});
+}
+function savedGameKey(event){
+ if(event.code==='Escape'){
+  event.preventDefault();
+  if(saveSession.confirmation){const mode=saveSession.confirmation;saveSession.confirmation=null;document.querySelector('#saves-confirm').hidden=true;document.querySelector('#saves-'+mode+'-new').focus({preventScroll:true});}
+  else closeSavedGames();
+ }else if(event.code==='Tab'){
+  const scope=document.querySelector(saveSession.confirmation?'#saves-confirm':'#saves-screen');
+  const buttons=[...scope.querySelectorAll('button:not([disabled])')].filter(button=>!button.hidden&&button.offsetParent!==null);
+  if(buttons.length){const index=buttons.indexOf(document.activeElement);if(index<0||event.shiftKey&&index===0||!event.shiftKey&&index===buttons.length-1){event.preventDefault();buttons[event.shiftKey?buttons.length-1:0].focus();}}
+ }
+ return true;
+}
+function requestNewSavedGame(mode){
+ if(!['campaign','lab'].includes(mode))return false;
+ const record=saveStore.read(mode);
+ if(record.status==='empty'&&!liveSavedGame(mode))return newSavedGame(mode,{fade:true});
+ saveSession.confirmation=mode;document.querySelector('#saves-confirm').hidden=false;
+ document.querySelector('#saves-confirm-text').textContent=mode==='lab'?'Se reemplazará la construcción guardada del banco. Tu campaña y tus planos se conservarán.':'La campaña volverá al prólogo y se reiniciarán sus niveles completados. Tu banco, planos e investigaciones del taller se conservarán.';
+ document.querySelector('#saves-confirm-cancel').focus({preventScroll:true});return true;
+}
+function saveBeforeSwitch(discardMode=null){
+ if(!story.started||saveSession.preparing||discardMode===savedGameMode())return true;
+ const result=saveCurrentGame();return result.ok;
+}
+function runSavedGame(action,fade){
+ saveSession.confirmation=null;document.querySelector('#saves-confirm').hidden=true;
+ const run=()=>{saveSession.restoring=true;saveSession.restoreWarnings=[];try{action();resetSimulationClock(performance.now(),true);}finally{saveSession.restoring=false;saveSession.nextAutosave=performance.now()+AUTOSAVE_MS;}};
+ if(fade){sceneFade(run);captureForTransition();}else run();
+ return true;
+}
+function continueSavedGame(mode,options={}){
+ if(!['campaign','lab'].includes(mode)||story.transition)return false;
+ if(liveSavedGame(mode)){resumeGame();return true;}
+ if(!saveBeforeSwitch(mode)){refreshSavedGames();return false;}
+ const record=saveStore.read(mode);if(record.status!=='ready'){savedGameStatus('No hay una partida válida para continuar. La copia guardada se conserva.');refreshSavedGames();return false;}
+ let snapshot;try{if(mode==='lab')snapshot=hydrateLabSnapshot(record.save.data.snapshot);}catch{savedGameStatus('No se pudo restaurar el banco. La partida actual y la copia guardada se conservan.');return false;}
+ return runSavedGame(()=>{
+  const data=record.save.data;
+  if(mode==='lab'){
+   story.lab=snapshot;story.labAlpha={...data.alphaSettings};saveSession.labLoaded=true;
+   // enterLab normally returns early when already in the lab. A loaded slot
+   // must rebuild bodies, even when invoked from an unstarted lab scene.
+   if(story.scene==='lab')gameScene('intro');enterLab(false);saveSession.labActive=true;
+   savedGameStatus('Banco de pruebas restaurado.'+(saveSession.restoreWarnings.length?' '+saveSession.restoreWarnings.join(' '):''));
+  }else{
+   story.progress=normalizedCampaignProgress(data.progress);writeLegacyCampaignProgress();
+   const checkpoint=data.checkpoint,level=checkpoint.completed?Math.min(LEVELS.length-1,checkpoint.level+1):checkpoint.level;
+   if(level)beginCampaignLevel(level);else beginIntro();
+   if(checkpoint.completed&&checkpoint.level===LEVELS.length-1){
+    saveSession.checkpoint={...checkpoint};story.phase='complete';hideStoryDialogue();storyObjective('');gameMode('complete');pause(false);
+    document.querySelector('#complete-eyebrow').textContent='CAMPAÑA COMPLETADA';document.querySelector('#complete-title').textContent='Cada pieza cuenta.';
+    const completed=Object.keys(story.progress).filter(key=>/^level\d+$/.test(key)&&story.progress[key]===true).length;
+    document.querySelector('#complete-description').textContent='Tu progreso está guardado: '+completed+' niveles completados. Puedes volver a jugarlos o continuar construyendo en el banco.';
+    document.querySelector('#complete-next').hidden=true;document.querySelector('#complete-repeat').focus({preventScroll:true});
+   }
+   savedGameStatus('Campaña restaurada desde el inicio del nivel guardado.');
+  }
+ },options.fade===true);
+}
+function freshSavedLab(){
+ const id=allocateUnitId();
+ return {snapshot:{settings:{...freshLabDefaults.settings},moodSettings:{...freshLabDefaults.moodSettings},position:[...freshLabDefaults.position],yaw:freshLabDefaults.yaw,pitch:freshLabDefaults.pitch,workshop:{...defaultWorkshopPlacement},groups:[{parts:[{id,weight:1,shape:'cube',p:V(0,HALF+.003,0),q:Q(),mood:newMood(id)}],q:Q(),v:V(),w:V()}],cargos:[],rotors:[],rotorSets:[],robotArms:[],conveyors:[],shelves:[],disassembly:[],alphaScene:{coolers:[],blueprints:[]}},alphaSettings:{...freshLabDefaults.alphaSettings}};
+}
+function newSavedGame(mode,options={}){
+ if(!['campaign','lab'].includes(mode)||story.transition||!saveBeforeSwitch(mode))return false;
+ // Earned research credits must reach storage before replacing the campaign,
+ // including when the page closes during the subsequent scene fade.
+ if(mode==='campaign'){
+  const previous=workshopProfile,earned=QBitsWorkshop.awardCompleted(previous,story.progress);
+  if(earned.added){workshopProfile=earned.profile;if(!persistWorkshop()){workshopProfile=previous;savedGameStatus('No se pudieron conservar los créditos del taller. La campaña anterior se mantiene.');return false;}}
+ }
+ const data=mode==='lab'?freshSavedLab():{checkpoint:{scene:'intro',level:0,completed:false},progress:{}};
+ const result=saveStore.write(mode,data,{replace:true});
+ if(!result.ok){savedGameStatus('No se pudo crear la partida. La anterior se conserva. '+(result.error||''));refreshSavedGames();return false;}
+ if(mode==='campaign')window.QBitsMusic?.next?.();
+ return runSavedGame(()=>{
+  if(mode==='lab'){
+   story.lab=hydrateLabSnapshot(result.save.data.snapshot);story.labAlpha={...data.alphaSettings};saveSession.labLoaded=true;
+   if(story.scene==='lab')gameScene('intro');enterLab(false);saveSession.labActive=true;
+  }else{
+   // Workshop research and its one-time credit ledger belong to the player,
+   // not to a campaign slot; restarting cannot erase or farm those rewards.
+   story.progress={};writeLegacyCampaignProgress();beginIntro();
+  }
+  savedGameStatus('Nueva '+(mode==='lab'?'partida del banco':'campaña')+' guardada.');
+ },options.fade===true);
+}
+function saveStoryProgress(key){story.progress[key]=true;writeLegacyCampaignProgress();if(story.scene!=='lab')persistCampaignCheckpoint(story.scene==='campaign'?story.level:0,key==='level'+story.level||story.phase==='complete');}
 function finishFirstLevel(){saveStoryProgress('level1');story.phase='complete';hideStoryDialogue();storyObjective('');gameMode('complete');pause(false);document.querySelector('#complete-repeat').focus({preventScroll:true});}
 function enterLab(capture=true){
- if(story.scene==='lab'){setupWorkshop();gameMode('playing');panel.hidden=true;if(capture)captureMouse();return;}
+ if(story.scene==='lab'){setupWorkshop();gameMode('playing');story.started=true;saveSession.labActive=true;panel.hidden=true;if(capture)captureMouse();return;}
  clearNarrativeScene();gameScene('lab');gameMode('playing');story.started=true;const saved=story.lab;workshopPlacement=saved?.workshop===undefined?defaultWorkshopPlacement:saved.workshop;
  if(saved){Object.assign(settings,saved.settings);Object.assign(moodSettings,saved.moodSettings||{});Object.assign(alphaSettings,story.labAlpha||{});position.splice(0,3,...saved.position);yaw=saved.yaw;pitch=saved.pitch;camera.splice(0,3,...position);for(const g of saved.groups)makeGroup(g.parts,g.q,g.v,g.w);restoreLabMechanisms(saved);for(const c of saved.cargos)restoreLabCargo(c);restoreAlphaScene(saved.alphaScene);}else{settings.maxCarry=MAX_QUBITS;settings.maxSelect=MAX_QUBITS;addQubit([0,HALF+.003,0]);}
- world.gravity.y=-settings.gravity;world.defaultContactMaterial.friction=settings.friction;world.defaultContactMaterial.restitution=settings.bounce;world.broadphase.dirty=true;ui.veil.style.opacity='0';setupWorkshop();updatePanel();if(capture)captureMouse();
+ world.gravity.y=-settings.gravity;world.defaultContactMaterial.friction=settings.friction;world.defaultContactMaterial.restitution=settings.bounce;world.broadphase.dirty=true;ui.veil.style.opacity='0';setupWorkshop();if(saved?.runtime&&saveSession.restoring)saveSession.restoreWarnings=restoreLabRuntime(saved.runtime).warnings;saveSession.labActive=true;updatePanel();if(!saveSession.restoring&&!saveSession.preparing)saveCurrentGame();if(capture)captureMouse();
 }
-function showMain(){document.querySelector('#wake-screen').hidden=true;gameMode('menu');pause(false);panel.hidden=true;document.querySelector('#main-continue').hidden=!story.started;ui.veil.style.opacity='0';ui.top.style.height='0';ui.bottom.style.height='0';canvas.style.filter='none';document.querySelector('#main-play').focus({preventScroll:true});}
-function openPauseMenu(){if(!story.ready||story.mode!=='playing'||story.transition)return;closeWorkshopPanel(false);cancelUnitCreation();cancelShelfPlacement();document.querySelector('#wake-screen').hidden=true;gameMode('pause');pause(false);panel.hidden=true;document.querySelector('#pause-chapter').textContent=story.scene==='intro'?'Prólogo · El primer encuentro':story.scene==='campaign'?'Nivel '+story.level+' · '+chapters[story.level][1]:'Banco de pruebas';document.querySelector('#pause-resume').focus({preventScroll:true});}
+function showMain(){saveCurrentGame();document.querySelector('#wake-screen').hidden=true;gameMode('menu');pause(false);panel.hidden=true;document.querySelector('#main-continue').hidden=!story.started&&!['campaign','lab'].some(mode=>saveStore.read(mode).status==='ready');ui.veil.style.opacity='0';ui.top.style.height='0';ui.bottom.style.height='0';canvas.style.filter='none';document.querySelector('#main-play').focus({preventScroll:true});}
+function openPauseMenu(){if(!story.ready||story.mode!=='playing'||story.transition)return;closeWorkshopPanel(false);cancelUnitCreation();cancelShelfPlacement();document.querySelector('#wake-screen').hidden=true;gameMode('pause');pause(false);panel.hidden=true;saveCurrentGame({manual:true});document.querySelector('#pause-chapter').textContent=story.scene==='intro'?'Prólogo · El primer encuentro':story.scene==='campaign'?'Nivel '+story.level+' · '+chapters[story.level][1]:'Banco de pruebas';document.querySelector('#pause-resume').focus({preventScroll:true});}
 function resumeGame(){if(story.phase==='complete'){gameMode('complete');return;}gameMode('playing');if(story.scene==='intro'&&['asleep','invocation'].includes(story.phase)){ui.veil.style.opacity='1';ui.top.style.height='52%';ui.bottom.style.height='52%';ui.dialogue.hidden=!story.dialogue;if(story.phase==='asleep')showWakeButton();else{document.querySelector('#wake-screen').hidden=true;canvas.focus({preventScroll:true});}return;}if(story.phase==='choice'||story.phase==='repeat')return;captureMouse();}
 function restartCurrent(){sceneFade(()=>{if(story.scene==='intro')beginIntro();else if(story.scene==='campaign')beginCampaignLevel(story.level);else if(puzzle.active)startPuzzle();else{clearNarrativeScene();gameScene('intro');enterLab(false);}});captureForTransition();}
 function showLevelSelector(){story.returnMode=story.mode;gameMode('levels');pause(false);panel.hidden=true;const list=document.querySelector('#level-list');list.replaceChildren();for(let i=0;i<chapters.length;i++){const row=document.createElement('button');row.disabled=false;const number=document.createElement('span'),info=document.createElement('span'),name=document.createElement('strong'),detail=document.createElement('small');number.className='level-number';number.textContent=chapters[i][0];name.textContent=chapters[i][1];detail.textContent=(i===0?story.progress.intro:story.progress['level'+i])?'Completado · volver a jugar':chapters[i][2];info.append(name,detail);row.append(number,info);row.addEventListener('click',()=>{sceneFade(()=>i===0?beginIntro():beginCampaignLevel(i));captureForTransition();});list.appendChild(row);}document.querySelector('#levels-back').focus({preventScroll:true});}
@@ -8212,7 +8620,7 @@ function backFromLevels(){gameMode(story.returnMode||'menu');if(story.mode==='pl
 function storyInput(event){
  if(document.body.dataset.booting==='true')return true;
  if(story.transition){event.preventDefault();return true;}
- if(!story.ready)return false;const editing=editableTarget(document.activeElement);
+ if(!story.ready)return false;if(story.mode==='saves')return savedGameKey(event);const editing=editableTarget(document.activeElement);
  if(event.code==='KeyP'&&!event.repeat&&!editing){event.preventDefault();if(!panel.hidden)stowTablet();else openPanel();return true;}
  if(event.code==='Escape'){
   event.preventDefault();if(story.transition&&panel.hidden)return true;if(!panel.hidden){panel.hidden=true;if(story.mode==='playing')openPauseMenu();return true;}
@@ -8263,9 +8671,12 @@ function updateStoryMarker(){
  if(point){const p=project(point);if(p&&p.x>35&&p.x<canvas.clientWidth-35&&p.y>100&&p.y<canvas.clientHeight-195){ui.marker.style.left=p.x+'px';ui.marker.style.top=(p.y-18)+'px';ui.marker.textContent=label;ui.marker.hidden=false;}}
 }
 function initStory(){
- story.lab=saveLab();story.labAlpha={...alphaSettings};try{story.progress=JSON.parse(readQbitsStorage('qbits.campaign.v1')||'{}')||{};}catch{story.progress={};}story.ready=true;
+ story.lab=saveLab();story.labAlpha={...alphaSettings};try{story.progress=normalizedCampaignProgress(JSON.parse(readQbitsStorage('qbits.campaign.v1')||'{}'));}catch{story.progress={};}story.ready=true;initializeSavedGames();
  const click=(id,fn)=>document.querySelector('#'+id).addEventListener('click',fn);
- click('main-play',()=>{window.QBitsMusic?.next?.();sceneFade(()=>beginIntro(),{out:.3,black:.65});});click('wake-button',wakeUp);click('skip-encounter',finishEncounter);click('main-continue',resumeGame);click('main-levels',showLevelSelector);click('main-lab',()=>{sceneFade(()=>enterLab(false));captureForTransition();});click('pause-button',openPauseMenu);click('pause-resume',resumeGame);click('pause-restart',restartCurrent);click('pause-levels',showLevelSelector);click('pause-main',showMain);click('pause-lab',()=>{sceneFade(()=>enterLab(false));captureForTransition();});click('levels-back',backFromLevels);click('complete-repeat',()=>{sceneFade(()=>beginCampaignLevel(story.level||1));captureForTransition();});click('complete-next',()=>{sceneFade(()=>beginCampaignLevel(Math.min(LEVELS.length-1,story.level+1)));captureForTransition();});click('complete-levels',showLevelSelector);click('complete-main',showMain);click('complete-lab',()=>{sceneFade(()=>enterLab(false));captureForTransition();});
+ click('main-play',()=>showSavedGames('campaign'));click('wake-button',wakeUp);click('skip-encounter',finishEncounter);click('main-continue',()=>story.started?resumeGame():showSavedGames());click('main-levels',showLevelSelector);click('main-lab',()=>showSavedGames('lab'));click('main-saves',()=>showSavedGames());click('pause-button',openPauseMenu);click('pause-resume',resumeGame);click('pause-restart',restartCurrent);click('pause-levels',showLevelSelector);click('pause-main',showMain);click('pause-lab',()=>showSavedGames('lab'));click('pause-save',()=>saveCurrentGame({manual:true}));click('levels-back',backFromLevels);click('complete-repeat',()=>{sceneFade(()=>beginCampaignLevel(story.level||1));captureForTransition();});click('complete-next',()=>{sceneFade(()=>beginCampaignLevel(Math.min(LEVELS.length-1,story.level+1)));captureForTransition();});click('complete-levels',showLevelSelector);click('complete-main',showMain);click('complete-lab',()=>showSavedGames('lab'));
+ for(const mode of ['campaign','lab']){click('saves-'+mode+'-continue',()=>continueSavedGame(mode,{fade:true}));click('saves-'+mode+'-new',()=>requestNewSavedGame(mode));}
+ click('saves-back',closeSavedGames);click('saves-confirm-cancel',()=>{const mode=saveSession.confirmation;saveSession.confirmation=null;document.querySelector('#saves-confirm').hidden=true;document.querySelector('#saves-'+(mode||saveSession.focusMode)+'-new').focus({preventScroll:true});});
+ click('saves-confirm-new',()=>{if(saveSession.confirmation)newSavedGame(saveSession.confirmation,{fade:true});});
  click('main-codex',showCodex);click('pause-codex',showCodex);click('codex-back',closeCodex);initTitleGreeting();gameScene('lab');gameMode('boot');
 }
 
@@ -8377,7 +8788,7 @@ function beginCampaignLevel(number){
  });
  for(let i=0;i<definition.count;i++){const x=definition.count===1?-.85:(i%3-1)*.30,z=.55+Math.floor(i/3)*.3,g=carry?.[i]?makeGroup([{...carry[i],p:V(x,HALF+.004,z),q:Q()}]):addQubit([x,HALF+.004,z],1);c.crew.push(g.parts[0].id);g.parts[0].mood.name='Q-bit '+(i+1);if(i===0)story.guideId=g.parts[0].id;}
  if(number<=2)c.gates[0].targets.forEach((t,i)=>t.assigned=c.crew[i]);makeButtonPhysics(storyWorld.buttons);storyWorld.door=c.gates[0].door;storyWorld.doorProgress=0;world.broadphase.dirty=true;
- setupBlockTwo(c);setupReconfiguration(c);setupAutomation(c);setupProduction(c);updateCampaignObjective();if(number===9)beginEncounter();else if(definition.lines)chapterDialogue(definition.lines);else say(definition.line,{after:hideStoryDialogue});updatePanel();
+ setupBlockTwo(c);setupReconfiguration(c);setupAutomation(c);setupProduction(c);updateCampaignObjective();if(number===9)beginEncounter();else if(definition.lines)chapterDialogue(definition.lines);else say(definition.line,{after:hideStoryDialogue});updatePanel();persistCampaignCheckpoint(number,false);
 }
 function updateCampaignObjective(){
  const c=story.campaign;if(!c)return;const gate=c.gates[c.stage],part=c.gates.length>1?'Sala '+(c.stage+1)+' / '+c.gates.length+' · ':'';let text='';
@@ -10203,6 +10614,7 @@ function frame(time=performance.now()) {
     if(cullingLab.stats)cullingLab.simulationMs=performance.now()-simulationStart;
     redraw = true;
   }else{accumulator=0;}
+  autosaveGame(time);
   if (redraw && !document.hidden && visualFrameDue(time,visuals.fps)) {
     renderScene(time);
   }
@@ -10216,6 +10628,8 @@ window.QBitsGame={
   applyPreferences:()=>applyPreferences(savedPreferences),
   async prepare(onProgress=()=>{}){
     if(gamePrepared)return;
+    saveSession.preparing=true;
+    try{
     initUnitRadial();initStory();initSettingsScreen();initSelectionHud();resize();onProgress(.25);
     await nextPaint();
     // Build the actual prologue before Jugar, retaining its bodies and GPU assets.
@@ -10229,9 +10643,10 @@ window.QBitsGame={
     onProgress(.9);await nextPaint();
     gamePrepared=true;onProgress(1);
     resetSimulationClock();requestAnimationFrame(frame);
+    }finally{saveSession.preparing=false;}
   },
   menu(){if(!gamePrepared)return;resetSimulationClock();showMain();},
-  play(){if(!gamePrepared)return;story.started=true;resetSimulationClock();resumeGame();}
+  play(){if(!gamePrepared)return;story.started=true;resetSimulationClock();if(story.scene==='intro')persistCampaignCheckpoint(0,false);resumeGame();}
 };
 
 })();

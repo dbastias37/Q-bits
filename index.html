@@ -314,6 +314,7 @@ input,select,textarea{font-family:var(--font-menu);}
 <link rel="stylesheet" href="assets/css/servo-panel.css?v=20261117-culling-1">
   <link rel="stylesheet" href="assets/css/culling-lab.css?v=20261117-culling-1">
   <link rel="stylesheet" href="assets/css/tablet.css?v=20261119-marcha-2">
+  <link rel="stylesheet" href="assets/css/saved-games.css?v=20261121-saved-games-1">
 </head>
 <body data-game-mode="boot" data-game-scene="lab" data-booting="true">
   <section id="boot-screen" aria-label="Inicio de Q-bits" data-stage="loading">
@@ -332,11 +333,65 @@ input,select,textarea{font-family:var(--font-menu);}
   <section id="main-screen" class="game-screen" hidden aria-label="Menú principal">
     <button id="title-qbit" class="title-emblem" aria-label="Saludar al Q-bit"><div class="portrait-cube"><i></i><i></i><i></i><i></i><i></i><i></i></div></button><div id="title-greeting" hidden role="status"></div>
     <p class="eyebrow">CADA PIEZA CUENTA</p><h1 aria-label="Q-bits" class="game-title">Q-bits</h1><p class="menu-subtitle">Todo comienza con un encuentro.</p>
-    <div class="menu-actions"><button id="main-play" class="primary">Comenzar campaña <span class="menu-arrow" aria-hidden="true"></span></button><button id="main-continue" hidden>Continuar</button><button id="main-levels">Seleccionar nivel</button><button id="main-lab">Banco de pruebas</button><button id="main-codex">Catálogo de materia</button><button id="main-settings">Configuración</button></div>
+    <div class="menu-actions"><button id="main-play" class="primary">Campaña <span class="menu-arrow" aria-hidden="true"></span></button><button id="main-continue" hidden>Continuar</button><button id="main-levels">Seleccionar nivel</button><button id="main-lab">Banco de pruebas</button><button id="main-saves" type="button">Partidas guardadas</button><button id="main-codex">Catálogo de materia</button><button id="main-settings">Configuración</button></div>
     <small class="menu-foot">Versión de pruebas · Teclado y mouse<br>P abre las herramientas · º ir a Despertar</small>
   </section>
   <section id="pause-screen" class="game-screen frosted" hidden role="dialog" aria-modal="true" aria-label="Pausa">
-    <p class="eyebrow">TÓMATE UN MOMENTO</p><h2>Pausa</h2><p id="pause-chapter" class="menu-subtitle"></p><div class="menu-actions"><button id="pause-resume" class="primary">Continuar <span class="menu-arrow" aria-hidden="true"></span></button><button id="pause-restart">Reiniciar nivel</button><button id="pause-levels">Seleccionar nivel</button><button id="pause-main">Menú principal</button><button id="pause-lab">Banco de pruebas</button><button id="pause-codex">Catálogo de materia</button><button id="pause-settings">Configuración</button></div><small class="menu-foot">Esc · volver &nbsp;&nbsp; P · herramientas de prueba</small>
+    <p class="eyebrow">TÓMATE UN MOMENTO</p><h2>Pausa</h2><p id="pause-chapter" class="menu-subtitle"></p>
+    <div class="menu-actions">
+      <button id="pause-resume" class="primary">Continuar <span class="menu-arrow" aria-hidden="true"></span></button>
+      <button id="pause-save" type="button" aria-describedby="pause-save-status">Guardar partida</button>
+      <small id="pause-save-status" role="status" aria-live="polite" aria-atomic="true"></small>
+      <button id="pause-restart">Reiniciar nivel</button><button id="pause-levels">Seleccionar nivel</button><button id="pause-main">Menú principal</button><button id="pause-lab">Banco de pruebas</button><button id="pause-codex">Catálogo de materia</button><button id="pause-settings">Configuración</button>
+    </div>
+    <small class="menu-foot">Esc · volver &nbsp;&nbsp; P · herramientas de prueba</small>
+  </section>
+  <section id="saves-screen" class="game-screen frosted" hidden role="dialog" aria-modal="true" aria-labelledby="saves-title" aria-describedby="saves-browser-note">
+    <div class="saves-shell">
+      <header class="saves-header">
+        <p class="eyebrow">CADA PIEZA CUENTA</p>
+        <h2 id="saves-title">Partidas guardadas</h2>
+        <p id="saves-browser-note" class="saves-intro">Tus partidas se guardan en este navegador. Elige dónde continuar o empieza una nueva partida.</p>
+      </header>
+      <div class="saves-grid">
+        <article class="saves-card" aria-labelledby="saves-campaign-title">
+          <p class="saves-kicker">EL RECORRIDO</p>
+          <h3 id="saves-campaign-title">Campaña</h3>
+          <p id="saves-campaign-summary" class="saves-summary">Todavía no hay una campaña guardada.</p>
+          <p id="saves-campaign-date" class="saves-date">Sin guardado</p>
+          <p id="saves-campaign-note" class="saves-note">Al continuar, retomas desde el inicio del nivel guardado.</p>
+          <div class="saves-actions">
+            <button id="saves-campaign-continue" class="saves-continue" type="button" disabled aria-label="Continuar campaña" aria-describedby="saves-campaign-summary saves-campaign-note">Continuar</button>
+            <button id="saves-campaign-new" type="button" aria-label="Nueva campaña">Nueva partida</button>
+          </div>
+        </article>
+        <article class="saves-card" aria-labelledby="saves-lab-title">
+          <p class="saves-kicker">ESPACIO PARA EXPERIMENTAR</p>
+          <h3 id="saves-lab-title">Banco de pruebas</h3>
+          <p id="saves-lab-summary" class="saves-summary">Todavía no hay un banco guardado.</p>
+          <p id="saves-lab-date" class="saves-date">Sin guardado</p>
+          <p id="saves-lab-note" class="saves-note">Al continuar, recuperas la escena que guardaste en el banco.</p>
+          <div class="saves-actions">
+            <button id="saves-lab-continue" class="saves-continue" type="button" disabled aria-label="Continuar banco de pruebas" aria-describedby="saves-lab-summary saves-lab-note">Continuar</button>
+            <button id="saves-lab-new" type="button" aria-label="Nuevo banco de pruebas">Nueva partida</button>
+          </div>
+        </article>
+      </div>
+      <footer class="saves-footer">
+        <p id="saves-status" role="status" aria-live="polite" aria-atomic="true"></p>
+        <button id="saves-back" type="button">← Volver</button>
+      </footer>
+    </div>
+    <div id="saves-confirm" hidden role="alertdialog" aria-modal="true" aria-labelledby="saves-confirm-title" aria-describedby="saves-confirm-text">
+      <div class="saves-confirm-card">
+        <h3 id="saves-confirm-title">¿Empezar una nueva partida?</h3>
+        <p id="saves-confirm-text">Empezar de nuevo reemplazará la partida guardada de este modo.</p>
+        <div class="saves-confirm-actions">
+          <button id="saves-confirm-cancel" class="saves-continue" type="button">Conservar partida</button>
+          <button id="saves-confirm-new" type="button">Empezar de nuevo</button>
+        </div>
+      </div>
+    </div>
   </section>
   <section id="levels-screen" class="game-screen frosted" hidden role="dialog" aria-modal="true" aria-label="Seleccionar nivel"><div class="levels-content"><p class="eyebrow">EL RECORRIDO</p><h2>Seleccionar nivel</h2><p class="menu-subtitle">Tres bloques · quince niveles y un prólogo.</p><div id="level-list"></div><button id="levels-back" class="back-button">← Volver</button></div></section>
   <div id="chapter-label" hidden><span id="chapter-number"></span><strong id="chapter-name"></strong></div>
@@ -801,6 +856,6 @@ input,select,textarea{font-family:var(--font-menu);}
   </section>
   <script src="assets/js/opening.js?v=20261116-block-joins-1" defer></script>
   <script src="assets/js/servo-panel.js?v=20261119-marcha-2" defer></script>
-  <script src="assets/js/boot.js?v=20261119-marcha-2" defer></script>
+  <script src="assets/js/boot.js?v=20261121-saved-games-1" defer></script>
 </body>
 </html>

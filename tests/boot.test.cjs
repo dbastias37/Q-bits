@@ -23,7 +23,8 @@ function environment({ autoFonts = true, openingFailure = null, randomValue = .5
     click() { this.dispatchEvent(new Event('click')); }
   }
   const nodes = new Map();
-  for (const selector of ['#boot-screen', '#boot-loading', '#boot-message', '#boot-percent', '#boot-progress', '#boot-play', '#boot-retry', '#boot-title', '#room', '#wake-button', '#main-screen', '#pause-screen', '#main-screen h1', '#main-play', '#opening-canvas']) nodes.set(selector, new Element());
+  for (const selector of ['#boot-screen', '#boot-loading', '#boot-message', '#boot-percent', '#boot-progress', '#boot-play', '#boot-retry', '#boot-title', '#room', '#wake-button', '#main-screen', '#pause-screen', '#saves-screen', '#main-screen h1', '#main-play', '#opening-canvas']) nodes.set(selector, new Element());
+  nodes.get('#saves-screen').hidden = true;
   nodes.get('#boot-play').hidden = true;
   nodes.get('#boot-play').disabled = true;
   nodes.get('#boot-retry').hidden = true;
@@ -125,6 +126,7 @@ function environment({ autoFonts = true, openingFailure = null, randomValue = .5
     await scriptResult('culling.js');
     await scriptResult('glass.js');
     await scriptResult('settings.js');
+    await scriptResult('save-games.js');
     await scriptResult('game.js');
     await scriptResult('music.js');
   }

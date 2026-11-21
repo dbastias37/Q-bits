@@ -54,7 +54,9 @@
     mainMenu.classList.remove('cube-menu');mainMenu.inert=false;
     mainMenu.style.transform='';mainMenu.style.filter='';mainMenu.style.opacity='';openingCanvas.style.filter='';
     screen.hidden=true;document.body.dataset.booting='false';
-    document.querySelector('#wake-button').focus({preventScroll:true});
+    const savedGames=document.querySelector('#saves-screen');
+    if(savedGames&&!savedGames.hidden)document.querySelector('#saves-campaign-continue').focus({preventScroll:true});
+    else document.querySelector('#wake-button').focus({preventScroll:true});
     // The next explicit Despertar gesture unlocks the guide voice.
     return true;
   }
@@ -70,7 +72,7 @@
   function loadScript(path) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = path + '?v=20261119-marcha-2';
+      script.src = path + '?v=20261121-saved-games-1';
       script.onload = resolve;
       script.onerror = () => reject(new Error('No se pudo cargar ' + path));
       document.head.append(script);
@@ -166,6 +168,7 @@
       await loadScript('assets/js/culling.js');
       await loadScript('assets/js/glass.js');
       await loadScript('assets/js/settings.js');
+      await loadScript('assets/js/save-games.js');
       await loadScript('assets/js/game.js');update('code', 1);
       if (!window.QBitsGame) throw new Error('El motor no pudo iniciarse.');
       await QBitsGame.prepare(value => update('scene', value));

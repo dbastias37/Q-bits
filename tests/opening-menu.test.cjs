@@ -25,7 +25,7 @@ test('menu cannot expose an unprepared game', () => {
   assert.equal(game.sandbox.document.querySelector('#main-screen').hidden, true);
 });
 
-test('opening ends at the main menu with the prologue frozen until Comenzar campaña', async () => {
+test('opening keeps the prologue frozen through the menu until Nueva campaña is chosen', async () => {
   const game = createGame(), {t, api, sandbox} = game;
   await prepare(game);
   assert.equal(t.story.mode, 'boot');
@@ -43,6 +43,11 @@ test('opening ends at the main menu with the prologue frozen until Comenzar camp
   assert.equal(dialogue.time, 0);
   assert.equal(t.story.phase, 'invocation');
   sandbox.document.querySelector('#main-play').dispatchEvent({ type: 'click' });
+  assert.equal(t.story.mode, 'saves');
+  assert.equal(sandbox.document.querySelector('#saves-screen').hidden, false);
+  assert.equal(t.story.started, false);
+  assert.equal(t.story.transition, null);
+  sandbox.document.querySelector('#saves-campaign-new').dispatchEvent({ type: 'click' });
   assert.ok(t.story.transition, 'the campaign starts through its existing scene fade');
   for (let i = 0; i < 50; i++) t.tickStory(.1);
   assert.equal(t.story.mode, 'playing');

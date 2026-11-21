@@ -74,7 +74,7 @@ module.exports = function createGame(options = {}) {
   const sandbox = events({
     console, document, navigator: { userAgent: 'logic-test' }, performance, URL, Blob,
     Float32Array, Int32Array, Uint32Array, Uint16Array, Uint8Array, ArrayBuffer, Map, Set,
-    Math: seededMath, JSON, Promise, localStorage: { getItem: () => null, setItem() {} },
+    Math: seededMath, JSON, Promise, localStorage: options.storage || { getItem: () => null, setItem() {} },
     requestAnimationFrame(fn) { frames.set(++nextFrame, fn); return nextFrame; },
     cancelAnimationFrame(id) { frames.delete(id); },
     setTimeout(fn,delay=0,...args) { const id=++nextTimer;timers.set(id,{at:timerTime+Math.max(0,delay),fn,args});return id; },
@@ -93,7 +93,9 @@ module.exports = function createGame(options = {}) {
   } else {
     scripts = [...fs.readFileSync(path.join(root, 'index.html'), 'utf8').matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
   }
+  if (fs.existsSync(gameFile)) scripts.splice(scripts.length-1,0,fs.readFileSync(path.join(root,'assets/js/save-games.js'),'utf8'));
   const hook = `window.__testGame={
+    saveStore,saveSession,saveCurrentGame,continueSavedGame,newSavedGame,showSavedGames,refreshSavedGames,requestNewSavedGame,closeSavedGames,autosaveGame,
     getPhysicsStep:()=>FIXED_STEP,
     drawPreviewReference:(parts,center,q,scale)=>{for(const part of parts){const mesh=unitMeshes[part.shape],p=add(center,q.vmult(mul(V(...part.p),scale))),rotation=q.mult(shelfQuaternion(part.q));bindGeometry(mesh.buffer);gl.uniform1f(uniforms.uKind,5);setPose(p,rotation,V(CUBE_SIZE*scale,CUBE_SIZE*scale,CUBE_SIZE*scale));tint(...(part.mood.externalBattery?[.38,.62,.66,1]:part.shape==='cube'?[.3,.34,.35,1]:[.58,.61,.61,1]));submitDraw(gl.TRIANGLES,0,mesh.count);}},
     ...(typeof beginStagedDisassembly==='function'?{beginStagedDisassembly,updateDisassembly,drawDisassembly,disassemblyJobs,pendingDisassemblyCount,scenePartCount,serializeDisassembly,restoreDisassembly,drawShelfContents,shelfPreviewMesh,buildPreviewMesh,drawPreviewMesh,clearDisassembly}:{}),
@@ -144,6 +146,7 @@ module.exports = function createGame(options = {}) {
     externalBatteryState,isExternalBattery,externalBatteryCapacity,externalBatteryCells,externalBatterySummary,externallyPoweredInternalIds,gameBatteryCapacity,rechargeExternalBatteries,
     unitProfile,unitFaces,unitGroundHeight,isTBit,normalizeUnitShape,rayPart,obbOverlap,drawUnitMesh,drawUnitOutline,
     touchingUnitFaces,findConvexSnap,duplicateSelection,saveLab,enterLab,rememberLab,updateCooling,createCooler,
+    hydrateLabSnapshot,captureLabRuntime,restoreLabRuntime,
     walkingAudioGroups,recordHaulFootstep,updateHauling,rollPoseAt,updateRoutes,makeRollSegment,savedShapeValid,saveShape,savedShapes,blueprintTargets,
     placeBlueprint,activateBlueprint,nearBlueprint,updateBlueprints,blueprints,importShapesData,drawAlpha,
     setHeld:value=>{held=value},setSelected:value=>{selected=value},getSelected:()=>selected,

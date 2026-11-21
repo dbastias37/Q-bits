@@ -1,0 +1,222 @@
+/* Saved campaign and lab slots share the existing menu palette and typefaces.
+   This screen sizes its own content; ordinary menu action columns stay intact. */
+#saves-screen {
+  justify-content: flex-start;
+  align-items: stretch;
+  padding: max(28px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+#saves-screen[hidden],
+#saves-confirm[hidden] { display: none !important; }
+
+#saves-screen .saves-shell {
+  width: min(900px, 100%);
+  margin: auto;
+  flex: 0 0 auto;
+}
+
+#saves-screen .saves-header { max-width: 660px; }
+#saves-screen h2 { margin: 8px 0 14px; max-width: none; text-align: left; }
+#saves-screen .saves-intro {
+  max-width: 62ch;
+  margin: 0;
+  color: #52675e;
+  font: 14px/1.65 var(--font-info);
+}
+
+#saves-screen .saves-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin: 28px 0 20px;
+}
+
+#saves-screen .saves-card {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(20px, 3vw, 30px);
+  border: 1px solid #93ab9f60;
+  border-radius: 16px;
+  background: #ffffffa8;
+  box-shadow: 0 1px 0 #fff inset;
+}
+
+#saves-screen .saves-kicker {
+  margin: 0 0 12px;
+  color: #607a6d;
+  font: 10px/1.5 var(--font-info);
+  letter-spacing: .14em;
+}
+
+#saves-screen h3 {
+  margin: 0 0 20px;
+  font: 400 clamp(16px, 2vw, 19px)/1.55 var(--font-menu);
+  overflow-wrap: anywhere;
+}
+
+#saves-screen .saves-summary {
+  margin: 0 0 8px;
+  color: #2d453b;
+  font: 15px/1.55 var(--font-info);
+  overflow-wrap: anywhere;
+}
+
+#saves-screen .saves-date {
+  margin: 0 0 20px;
+  color: #65786e;
+  font: 12px/1.6 var(--font-info);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+#saves-screen .saves-note {
+  margin: auto 0 0;
+  padding-top: 18px;
+  border-top: 1px solid #a5b9af50;
+  color: #52675e;
+  font: 13px/1.65 var(--font-info);
+}
+
+#saves-screen .saves-actions,
+#saves-screen .saves-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+/* The base menu deliberately removes all button fills and borders with
+   !important; restore them only for these paired, clearly bounded actions. */
+#saves-screen .saves-actions button,
+#saves-screen .saves-confirm-actions button {
+  flex: 1 1 130px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #8ba498 !important;
+  border-radius: 8px !important;
+  background: #ffffff80 !important;
+  color: #2d453b;
+  font: 11px/1.65 var(--font-menu);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+#saves-screen button:hover { transform: none; }
+#saves-screen .saves-actions button:hover:not(:disabled),
+#saves-screen .saves-confirm-actions button:hover:not(:disabled) {
+  background: #e8f0ea !important;
+  text-decoration: none;
+}
+
+#saves-screen button.saves-continue {
+  border-color: #2d493d !important;
+  background: #2d493d !important;
+  color: #fff;
+}
+
+#saves-screen button.saves-continue:hover:not(:disabled) {
+  background: #3d6151 !important;
+}
+
+#saves-screen button:disabled,
+#saves-screen button:disabled:hover {
+  border-color: #c4d0c9 !important;
+  background: #e8eeea !important;
+  color: #6b7a71;
+  cursor: default;
+  transform: none;
+  text-decoration: none;
+}
+
+#saves-screen button:focus-visible {
+  outline: 2px solid #33786c;
+  outline-offset: 3px;
+  text-decoration: none;
+}
+
+#saves-screen .saves-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  padding-top: 8px;
+}
+
+#saves-status {
+  flex: 1 1 250px;
+  margin: 0;
+  color: #355e4d;
+  font: 13px/1.6 var(--font-info);
+  overflow-wrap: anywhere;
+}
+
+#saves-back { margin-left: auto; min-height: 44px; }
+
+#saves-confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  overflow-y: auto;
+  background: #243a306b;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+#saves-screen .saves-confirm-card {
+  width: min(500px, 100%);
+  margin: auto;
+  padding: clamp(22px, 4vw, 34px);
+  border: 1px solid #e3eee7;
+  border-radius: 18px;
+  background: #f5f8f4;
+  box-shadow: 0 18px 60px #0a271d33;
+}
+
+#saves-screen .saves-confirm-card h3 { margin-bottom: 14px; }
+#saves-confirm-text { margin: 0; color: #4d6458; font: 14px/1.7 var(--font-info); }
+#saves-confirm-new { color: #795039; }
+
+#pause-save-status {
+  margin: -6px 16px 2px;
+  color: #355e4d;
+  font: 12px/1.55 var(--font-info);
+  overflow-wrap: anywhere;
+}
+#pause-save-status:empty { display: none; }
+#pause-save:disabled { color: #78857e; cursor: default; text-decoration: none; transform: none; }
+
+@media (max-width: 680px) {
+  #saves-screen .saves-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; margin-top: 22px; }
+  #saves-screen .saves-card { padding: 22px; }
+  #saves-screen h3 { margin-bottom: 16px; }
+  #saves-screen .saves-note { padding-top: 14px; }
+  #saves-screen .saves-actions { margin-top: 18px; }
+  #saves-screen .saves-footer { gap: 8px; }
+  #saves-status { flex-basis: 100%; }
+}
+
+/* The extra save action must remain reachable on a short pause screen. */
+@media (max-height: 820px) {
+  #pause-screen { justify-content: flex-start; }
+  #pause-screen > * { flex-shrink: 0; }
+  #pause-screen .menu-actions { gap: 4px; }
+  #pause-screen .menu-actions button { padding-top: 9px; padding-bottom: 9px; }
+  #pause-screen .menu-foot { position: static; margin-top: 18px; }
+}
+
+@media (prefers-contrast: more) {
+  #saves-screen .saves-card { background: #f8fcf8; border-color: #4e6b5d; }
+  #saves-screen button:disabled { color: #53655a; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #saves-screen button { transition: none; }
+}
