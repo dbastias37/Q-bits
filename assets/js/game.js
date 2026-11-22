@@ -3726,7 +3726,15 @@ function rotorConnectedGroups(initial){
    const component=[seed],seen=new Set(component);for(let i=0;i<component.length;i++)for(const next of topology.edges.get(component[i]))if(!seen.has(next)){seen.add(next);component.push(next);}
    for(const g of component)components.set(g,component);
   }
-  const result=seeds.slice(),seen=new Set(result);for(const seed of seeds)for(const g of components.get(seed)||[])if(!seen.has(g)){seen.add(g);result.push(g);}return result;
+  // Power queries can pass every member of an already connected network.
+  // Expand each shared component once, preserving seed and traversal order.
+  const result=seeds.slice(),seen=new Set(result),expanded=new Set();
+  for(const seed of seeds){
+   const component=components.get(seed);if(!component||expanded.has(component))continue;
+   expanded.add(component);
+   for(const g of component)if(!seen.has(g)){seen.add(g);result.push(g);}
+  }
+  return result;
  }
  // UI/construction queries retain seed-first breadth-first ordering.
  const result=seeds.slice(),seen=new Set(result);

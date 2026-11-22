@@ -2,7 +2,17 @@
 
 Actualizado: 21 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega · partidas persistentes de campaña y banco
+## Última entrega · coste de redes mecánicas grandes en marcha
+
+`rotorConnectedGroups` expande cada componente cacheado una sola vez por consulta. Antes, si energía recibía todos los grupos de una misma red, volvía a recorrer la lista completa por cada grupo: trabajo cuadrático que se repetía por motor activo y subpaso, también con depósitos conectados por cable. Un `Set` local de referencias a componentes elimina únicamente esas expansiones redundantes. Conserva el orden de semillas y de miembros, las invalidaciones de topología, las lecturas actuales de energía, los controladores y la frecuencia física elegida.
+
+Verificación: **1061/1061 pruebas Node aprobadas**, cero fallos, cancelaciones u omisiones (42,64 s en esta ejecución). `tests/mechanical-component-expansion.test.cjs` añade tres regresiones: orden y pertenencia con varias redes/semillas repetidas, límite lineal de visitas sin depender del reloj y desconexión/reconexión/eliminación dentro del mismo subpaso. La prueba de complejidad fallaba antes del ajuste: una consulta de 33 grupos visitaba 1089 miembros.
+
+El diagnóstico comparó escenarios sintéticos de 42 cintas soldadas (34 rectas y 8 curvas), 6 brazos separados en reposo y 2 cubos sueltos: 1506 piezas, con Cannon y lógica reales, DOM/GPU simulados. A 120 Hz, promediando 18 pasos tras calentamiento, el tiempo por paso pasó de 75,6 a 22,0 ms con depósito cableado y de 89,6 a 41,8 ms con una celda externa incorporada al chasis. Coincidieron exactamente los estados finales comparados: poses, velocidades, energía, motores y cintas. Son mediciones exploratorias de este entorno, no FPS del navegador ni una reconstrucción exacta de la partida del jugador; aún queda coste por reducir.
+
+Siguiente paso: contrastar el mismo montaje del jugador con esta versión y separar en el perfil redes/energía, cintas y Cannon. Revisar después consultas repetidas de masa y suministro por red, manteniendo los saldos de energía actualizados y los cortes atómicos. No se ha cambiado el selector de frecuencia ni extraído más sistemas al tick lento.
+
+## Entrega anterior · partidas persistentes de campaña y banco
 
 El menú principal abre **Partidas guardadas**, con una tarjeta por modo, resumen, fecha, **Continuar** y **Nueva partida**. Campaña y Banco de pruebas llevan a esa misma pantalla. Reemplazar una partida existente requiere confirmación dentro del juego; cancelar o pulsar Escape conserva la copia. Esc cierra primero la confirmación y después vuelve al menú anterior. La pantalla congela la simulación mediante el mismo `gameMode` del resto de menús. La pausa incorpora **Guardar partida** y un estado visible del resultado.
 
