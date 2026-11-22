@@ -1,0 +1,59 @@
+[
+  {
+    "name": "matrix-diagnostic-2000-60",
+    "provenance": "Comando comunicado por el autor del diagnóstico; reconstrucción del registro de invocación, no sustituto de commands.json. Los resultados originales están en el JSON completo.",
+    "cwd": "repository root",
+    "command": [
+      "node",
+      "--allow-natives-syntax",
+      "tests/profile-sap-matrix-diagnostic.cjs",
+      "--v8-elements=true",
+      "--baseline-root=../qbits-sap-baseline",
+      "--pieces=2000",
+      "--hz=60",
+      "--warmup=60",
+      "--frames=30",
+      "--repetitions=3",
+      "--phase-budget-ms=20000",
+      "--output=/workspace/scratch/d35588e45a49/sap-results/matrix-diagnostic-2000-60.json"
+    ]
+  },
+  {
+    "name": "browser-smoke",
+    "provenance": "Invocación reconstruida de la comunicación de ejecución. El registro original de error se conserva en chromium-no-disponible.txt.",
+    "cwd": "repository root",
+    "environment": {
+      "QBITS_PLAYWRIGHT": "$CODEX_PRIMARY_RUNTIME_NODE_MODULES/playwright",
+      "QBITS_CHROMIUM": "/usr/bin/chromium"
+    },
+    "command": [
+      "node",
+      "tests/benchmark-cpu-browser.cjs",
+      "--baseline-root=../qbits-sap-baseline",
+      "--mode=frames",
+      "--kinds=independent",
+      "--scales=16",
+      "--repetitions=1",
+      "--warmup=2",
+      "--frames=3",
+      "--output=/workspace/scratch/d35588e45a49/sap-results/browser.json"
+    ],
+    "reportedExitCode": 1,
+    "observedFailure": "socket() failed: Operation not permitted"
+  },
+  {
+    "name": "sap-crossover-2000-60",
+    "provenance": "Invocación registrada en el JSON original del crossover; no es reconstrucción. Se conserva el ejecutable y los argumentos originales. No se inventa un exitCode no registrado.",
+    "cwd": "repository root",
+    "command": [
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "/workspace/scratch/d35588e45a49/qbits/tests/benchmark-sap-crossover.cjs",
+      "--pieces=2000",
+      "--phase-budget-ms=20000",
+      "--output=/workspace/scratch/d35588e45a49/sap-results/sap-crossover-2000-60.json"
+    ],
+    "startedAt": "2026-11-22T19:37:55.303Z",
+    "complete": true,
+    "resultTotalRunWallMs": 51889.173304
+  }
+]
