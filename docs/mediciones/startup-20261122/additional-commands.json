@@ -1,0 +1,148 @@
+[
+  {
+    "name": "reference-cold-existing-runner",
+    "reconstructed": true,
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "argv": [
+      "node",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=/workspace/scratch/8eeca5205951/qbits-startup-baseline",
+      "--optimized-root=/workspace/scratch/8eeca5205951/qbits-startup-baseline",
+      "--reference-commit=4fc563cc8d27e653129fc11a14524a7cfc626a5e",
+      "--mode=matrix",
+      "--families=independent",
+      "--phase=settling",
+      "--scales=2000",
+      "--hz=120",
+      "--warmup=0",
+      "--samples=4",
+      "--repetitions=1",
+      "--case-budget-ms=30000",
+      "--output=docs/mediciones/startup-20261122/reference-cold-existing-runner.json"
+    ],
+    "exitCode": 0,
+    "note": "Both labels use the same merged PR1 reference. Separate fresh worlds, one process; reproduction only, not the final fresh-process A/B."
+  },
+  {
+    "name": "reference-matrix-elements",
+    "reconstructed": true,
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "argv": [
+      "node",
+      "--allow-natives-syntax",
+      "docs/mediciones/startup-20261122/probe-matrix.cjs",
+      "/workspace/scratch/8eeca5205951/qbits-startup-baseline",
+      "docs/mediciones/startup-20261122/reference-matrix-elements.json"
+    ],
+    "exitCode": 0
+  },
+  {
+    "name": "reference-cpu",
+    "reconstructed": true,
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "argv": [
+      "node",
+      "/workspace/scratch/8eeca5205951/profile-startup-probe.cjs",
+      "--root=/workspace/scratch/8eeca5205951/qbits-startup-baseline",
+      "--expected-commit=4fc563cc8d27e653129fc11a14524a7cfc626a5e",
+      "--mode=cpu",
+      "--pieces=2000",
+      "--hz=120",
+      "--frames=4",
+      "--budget-ms=30000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/startup-20261122/reference-cpu.json"
+    ],
+    "exitCode": 0,
+    "note": "CPU used the archived before-set-timers source (efb44a4d...); blocks/heap used final profiler (fabeb886...). Both exact sources are preserved. No forced GC."
+  },
+  {
+    "name": "reference-blocks",
+    "reconstructed": true,
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "argv": [
+      "node",
+      "docs/mediciones/startup-20261122/profile-startup-probe.cjs",
+      "--root=/workspace/scratch/8eeca5205951/qbits-startup-baseline",
+      "--expected-commit=4fc563cc8d27e653129fc11a14524a7cfc626a5e",
+      "--mode=blocks",
+      "--pieces=2000",
+      "--hz=120",
+      "--frames=4",
+      "--budget-ms=30000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/startup-20261122/reference-blocks.json"
+    ],
+    "exitCode": 0,
+    "note": "CPU used the archived before-set-timers source (efb44a4d...); blocks/heap used final profiler (fabeb886...). Both exact sources are preserved. No forced GC."
+  },
+  {
+    "name": "reference-heap",
+    "reconstructed": true,
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "argv": [
+      "node",
+      "docs/mediciones/startup-20261122/profile-startup-probe.cjs",
+      "--root=/workspace/scratch/8eeca5205951/qbits-startup-baseline",
+      "--expected-commit=4fc563cc8d27e653129fc11a14524a7cfc626a5e",
+      "--mode=heap",
+      "--pieces=2000",
+      "--hz=120",
+      "--frames=4",
+      "--budget-ms=30000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/startup-20261122/reference-heap.json"
+    ],
+    "exitCode": 0,
+    "note": "CPU used the archived before-set-timers source (efb44a4d...); blocks/heap used final profiler (fabeb886...). Both exact sources are preserved. No forced GC."
+  },
+  {
+    "name": "exploratory-prelength",
+    "reconstructed": true,
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "argv": [
+      "node",
+      "tests/benchmark-startup.cjs",
+      "--baseline-root=/workspace/scratch/8eeca5205951/qbits-startup-baseline",
+      "--baseline-commit=4fc563cc8d27e653129fc11a14524a7cfc626a5e",
+      "--families=independent",
+      "--scales=2000",
+      "--hz=120",
+      "--frames=4",
+      "--repetitions=1",
+      "--case-budget-ms=30000",
+      "--output=docs/mediciones/startup-20261122/exploratory-prelength.json"
+    ],
+    "exitCode": 1,
+    "note": "The first attempt failed a runner assertion on native Cannon world.time before executing the optimized arm; retained. Corrected instrument preserves the native double counter and verifies actual physical time separately."
+  },
+  {
+    "name": "exploratory-prelength-corrected",
+    "reconstructed": true,
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "argv": [
+      "node",
+      "tests/benchmark-startup.cjs",
+      "--baseline-root=/workspace/scratch/8eeca5205951/qbits-startup-baseline",
+      "--baseline-commit=4fc563cc8d27e653129fc11a14524a7cfc626a5e",
+      "--families=independent",
+      "--scales=2000",
+      "--hz=120",
+      "--frames=4",
+      "--repetitions=1",
+      "--case-budget-ms=30000",
+      "--output=docs/mediciones/startup-20261122/exploratory-prelength-corrected.json"
+    ],
+    "exitCode": 0,
+    "note": "One exploratory fresh-process pair, not the final three-repetition results."
+  },
+  {
+    "name": "matrix-regressions",
+    "reconstructed": true,
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "argv": [
+      "node",
+      "--test",
+      "tests/contact-matrix.test.cjs"
+    ],
+    "exitCode": 0,
+    "note": "19/19 passed on game SHA 847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed; no hard timing assertions."
+  }
+]
