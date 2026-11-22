@@ -1162,7 +1162,57 @@ world.broadphase=new CANNON.SAPBroadphase(world);
 // Long belts have a very large bounding sphere. Use their actual conservative
 // AABB to reject distant bodies before Cannon visits every compound shape.
 world.broadphase.useBoundingBoxes=true;
+installSapPassivePairFilter(world);
 installCompoundNarrowphase(world);
+// Cannon 0.6.2 checks sleep/type before its spatial break. Two passive bodies
+// therefore keep its inner loop running even though they can never add a pair.
+// Keep the complete, natively sorted list and the original pair/break order;
+// only skip j indices which the native predicate always rejects for a passive i.
+function installSapPassivePairFilter(physicsWorld){
+ const broadphase=physicsWorld.broadphase,nativePairs=broadphase.collisionPairs;
+ const passiveTypes=CANNON.Body.STATIC|CANNON.Body.KINEMATIC,sleeping=CANNON.Body.SLEEPING;
+ // Per-broadphase scratch, not body references or a cross-step activity cache.
+ // Capacity follows the largest list seen; small/empty scenes release it.
+ let activeIndices=new Uint32Array(0);
+ broadphase.collisionPairs=function(world,pairsA,pairsB){
+  const bodies=this.axisList,count=bodies.length;
+  if(count<32){
+   if(activeIndices.length)activeIndices=new Uint32Array(0);
+   return nativePairs.call(this,world,pairsA,pairsB);
+  }
+  if(this.dirty){this.sortList();this.dirty=false;}
+  if(activeIndices.length<count)activeIndices=new Uint32Array(count);
+  let activeCount=0;
+  for(let i=0;i<count;i++){
+   const body=bodies[i];
+   if(!(body.type&passiveTypes)&&body.sleepState!==sleeping)activeIndices[activeCount++]=i;
+  }
+  if(!activeCount)return;
+  // Dense active scenes already benefit from the native spatial breaks.
+  if(activeCount*2>count)return nativePairs.call(this,world,pairsA,pairsB);
+  const axis=this.axisIndex,checkBounds=CANNON.SAPBroadphase.checkBounds,lastActive=activeIndices[activeCount-1];
+  let nextActive=0;
+  for(let i=0;i<=lastActive;i++){
+   const bodyA=bodies[i];
+   if(activeIndices[nextActive]===i){
+    nextActive++;
+    for(let j=i+1;j<count;j++){
+     const bodyB=bodies[j];
+     if(!this.needBroadphaseCollision(bodyA,bodyB))continue;
+     if(!checkBounds(bodyA,bodyB,axis))break;
+     this.intersectionTest(bodyA,bodyB,pairsA,pairsB);
+    }
+   }else{
+    for(let k=nextActive;k<activeCount;k++){
+     const bodyB=bodies[activeIndices[k]];
+     if(!this.needBroadphaseCollision(bodyA,bodyB))continue;
+     if(!checkBounds(bodyA,bodyB,axis))break;
+     this.intersectionTest(bodyA,bodyB,pairsA,pairsB);
+    }
+   }
+  }
+ };
+}
 // Cannon 0.6.2 visits every shape pair after the body broadphase. Preserve its
 // dispatch order, bounding-sphere test, materials and equation pools, but query
 // a conservative index for large compounds. This is only a candidate filter:

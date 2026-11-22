@@ -33,6 +33,9 @@ const identity=Object.fromEntries(Object.entries(roots).map(([v,p])=>[v,{headCom
 const quantile=(a,q)=>{const s=[...a].sort((a,b)=>a-b);return s[Math.min(s.length-1,Math.ceil(q*s.length)-1)]??null;};
 const stats=a=>({count:a.length,mean:a.reduce((s,n)=>s+n,0)/Math.max(1,a.length),p50:quantile(a,.5),p95:quantile(a,.95),p99:quantile(a,.99),min:Math.min(...a),max:Math.max(...a)});
 const reports=[];
+// Persist primitive clock values in the host realm. Retaining the VM object
+// also retains its game/world across cases (diagnose-benchmark-retention.cjs).
+const clockSnapshot=t=>({...t.getTickState()});
 function assertEquivalent(before,after,label){
  if(before===after)return;
  const differences=[];
@@ -122,20 +125,20 @@ function runMatrix(){
    for(let r=0;r<repetitions&&!stopped;r++)for(const version of r%2?['optimized','baseline']:['baseline','optimized']){
     const begun=performance.now(),game=setup(version,hz),{t,f}=game;f.scene(kind,pieces,kind==='factory'||kind==='many-mechanisms');
     const setupMs=performance.now()-begun,operation=()=>{t.advanceSimulation(1/60);t.updateBatteryLiquids(1/60);t.updateTarget();t.renderScene();};
-    const stop=(phase,completed)=>{stopped={version,repetition:r+1,phase,completed,budgetMs:budget,elapsedMs:performance.now()-begun,setupMs,inventory:f.inventory(),clock:t.getTickState()};};
+    const stop=(phase,completed)=>{stopped={version,repetition:r+1,phase,completed,budgetMs:budget,elapsedMs:performance.now()-begun,setupMs,inventory:f.inventory(),clock:clockSnapshot(t)};};
     if(setupMs>=budget){stop('setup',0);break;}
     const warmupStart=performance.now();let i=0;
     for(;i<matrixWarmup&&performance.now()-begun<budget;i++)operation();
     const warmupMs=performance.now()-warmupStart;
     if(i<matrixWarmup||performance.now()-begun>=budget){stop('warmup',i);break;}
-    const initial=f.inventory(),clock=t.getTickState(),wall=[],cpu=[];let firstFrameInventory=null;
+    const initial=f.inventory(),clock=clockSnapshot(t),wall=[],cpu=[];let firstFrameInventory=null;
     if(phase==='settled'&&kind==='independent')assert.equal(initial.awakeBodies,0,'independent scene has not settled; increase --warmup');
     for(i=0;i<matrixSamples&&performance.now()-begun<budget;i++){
      const m=timed(operation);wall.push(m.wallMs);cpu.push(m.cpuMs);
      if(i===0)firstFrameInventory=f.inventory();
     }
     if(i<matrixSamples||performance.now()-begun>=budget){stop('measurement',i);stopped.wallSamples=wall;stopped.cpuSamples=cpu;break;}
-    const after=t.getTickState();
+    const after=clockSnapshot(t);
     assert(Math.abs(after.simTime-clock.simTime-matrixSamples/60)<1e-8,'same simulated duration');
     assert.equal(after.physics-clock.physics,matrixSamples*hz/60,'all selected physical steps executed');
     assert.equal(after.droppedSeconds,clock.droppedSeconds,'controlled dt must not drop time');
@@ -158,11 +161,11 @@ function runOutlines(){
    const runs={baseline:[],optimized:[]},states={baseline:[],optimized:[]};let stopped=null;
    for(let r=0;r<repetitions&&!stopped;r++)for(const version of r%2?['optimized','baseline']:['baseline','optimized']){
     const begun=performance.now(),game=setup(version,hz,counted),{t,f,raw}=game;f.scene(kind,pieces,kind==='factory'||kind==='many-mechanisms');
-    const setupMs=performance.now()-begun,initial=f.inventory(),before=f.state(),clock=t.getTickState();
+    const setupMs=performance.now()-begun,initial=f.inventory(),before=f.state(),clock=clockSnapshot(t);
     // This operation includes the visibility-frame setup used by renderScene.
     // It never advances physics; complete state/clock equality is required.
     const operation=()=>{t.beginVisibilityFrame();raw.drawStructureOutlines();};
-    const stop=(phase,completed)=>{stopped={version,repetition:r+1,phase,completed,budgetMs:budget,elapsedMs:performance.now()-begun,setupMs,inventory:f.inventory(),clock:t.getTickState()};};
+    const stop=(phase,completed)=>{stopped={version,repetition:r+1,phase,completed,budgetMs:budget,elapsedMs:performance.now()-begun,setupMs,inventory:f.inventory(),clock:clockSnapshot(t)};};
     if(performance.now()-begun>=budget){stop('setup',0);break;}
     let cold,coldCounts;
     if(counted){beginCounts(game);operation();coldCounts=endCounts(game);}else{const m=timed(operation);cold={wallMs:m.wallMs,cpuMs:m.cpuMs};}
@@ -177,7 +180,7 @@ function runOutlines(){
     const counts=counted?endCounts(game):undefined;
     if(i<samples||performance.now()-begun>=budget){stop('measurement',i);break;}
     const state=f.state();assertEquivalent(before,state,kind+' outlines must not alter simulation');states[version].push(state);
-    runs[version].push({repetition:r+1,setupMs,warmupMs,totalCaseMs:performance.now()-begun,initial,final:f.inventory(),clockBefore:clock,clockAfter:t.getTickState(),measuredOperations:samples,...(counted?{coldCounts,counts}:{cold,wallMsPerOperation:stats(wall),processCpuMsPerOperation:stats(cpu),wallSamples:wall,cpuSamples:cpu})});
+    runs[version].push({repetition:r+1,setupMs,warmupMs,totalCaseMs:performance.now()-begun,initial,final:f.inventory(),clockBefore:clock,clockAfter:clockSnapshot(t),measuredOperations:samples,...(counted?{coldCounts,counts}:{cold,wallMsPerOperation:stats(wall),processCpuMsPerOperation:stats(cpu),wallSamples:wall,cpuSamples:cpu})});
    }
    if(stopped){reports.push({scenario:kind+'-outlines',pieces,hz,stopped,lastCompleted,runs});break;}
    for(let r=0;r<repetitions;r++)assertEquivalent(states.baseline[r],states.optimized[r],kind+' outlines full state');
