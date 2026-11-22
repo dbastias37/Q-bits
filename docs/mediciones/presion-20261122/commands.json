@@ -1,0 +1,1562 @@
+[
+  {
+    "name": "reference-cpu",
+    "argv": [
+      "node",
+      "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/profile-pressure-probe.cjs",
+      "--root=/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+      "--expected-commit=274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+      "--mode=cpu",
+      "--pieces=2000",
+      "--hz=120",
+      "--frames=4",
+      "--budget-ms=30000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/reference-cpu.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/reference-cpu.log",
+    "timeoutSeconds": 90,
+    "startedUtc": "2026-11-22T21:46:57.645943+00:00",
+    "exitCode": 0,
+    "wallSeconds": 2.9225077020018944,
+    "endedUtc": "2026-11-22T21:47:00.568467+00:00"
+  },
+  {
+    "name": "reference-blocks",
+    "argv": [
+      "node",
+      "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/profile-pressure-probe.cjs",
+      "--root=/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+      "--expected-commit=274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+      "--mode=blocks",
+      "--pieces=2000",
+      "--hz=120",
+      "--frames=4",
+      "--budget-ms=30000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/reference-blocks.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/reference-blocks.log",
+    "timeoutSeconds": 90,
+    "startedUtc": "2026-11-22T21:47:00.568829+00:00",
+    "exitCode": 0,
+    "wallSeconds": 1.819807451000088,
+    "endedUtc": "2026-11-22T21:47:02.388647+00:00"
+  },
+  {
+    "name": "exploratory-optimized-cpu",
+    "argv": [
+      "node",
+      "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/profile-pressure-probe.cjs",
+      "--root=/workspace/scratch/8eeca5205951/qbits",
+      "--expected-commit=274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+      "--mode=cpu",
+      "--pieces=2000",
+      "--hz=120",
+      "--frames=4",
+      "--budget-ms=30000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/exploratory-optimized-cpu.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/exploratory-optimized-cpu.log",
+    "timeoutSeconds": 90,
+    "startedUtc": "2026-11-22T21:47:36.527819+00:00",
+    "exitCode": 0,
+    "wallSeconds": 2.5210259149971534,
+    "endedUtc": "2026-11-22T21:47:39.048859+00:00"
+  },
+  {
+    "name": "exploratory-optimized-blocks",
+    "argv": [
+      "node",
+      "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/profile-pressure-probe.cjs",
+      "--root=/workspace/scratch/8eeca5205951/qbits",
+      "--expected-commit=274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+      "--mode=blocks",
+      "--pieces=2000",
+      "--hz=120",
+      "--frames=4",
+      "--budget-ms=30000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/exploratory-optimized-blocks.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/exploratory-optimized-blocks.log",
+    "timeoutSeconds": 90,
+    "startedUtc": "2026-11-22T21:47:39.049241+00:00",
+    "exitCode": 0,
+    "wallSeconds": 1.6688263399992138,
+    "endedUtc": "2026-11-22T21:47:40.718077+00:00"
+  },
+  {
+    "name": "exploratory-cold-2000-120",
+    "argv": [
+      "node",
+      "tests/benchmark-startup.cjs",
+      "--baseline-root=/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+      "--baseline-commit=274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+      "--families=independent",
+      "--scales=2000",
+      "--hz=120",
+      "--frames=4",
+      "--repetitions=3",
+      "--case-budget-ms=30000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/exploratory-cold-2000-120.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/exploratory-cold-2000-120.log",
+    "timeoutSeconds": 120,
+    "startedUtc": "2026-11-22T21:47:40.718467+00:00",
+    "exitCode": 0,
+    "wallSeconds": 10.138315231000888,
+    "endedUtc": "2026-11-22T21:47:50.856790+00:00"
+  },
+  {
+    "name": "exploratory-settled-1000-120",
+    "argv": [
+      "node",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+      "--mode=matrix",
+      "--families=independent",
+      "--phase=settled",
+      "--scales=1000",
+      "--hz=120",
+      "--warmup=60",
+      "--samples=30",
+      "--repetitions=3",
+      "--case-budget-ms=20000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/exploratory-settled-1000-120.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/exploratory-settled-1000-120.log",
+    "timeoutSeconds": 180,
+    "startedUtc": "2026-11-22T21:47:50.857197+00:00",
+    "exitCode": 0,
+    "wallSeconds": 14.768400881999696,
+    "endedUtc": "2026-11-22T21:48:05.625607+00:00"
+  },
+  {
+    "name": "cold-60",
+    "argv": [
+      "node",
+      "tests/benchmark-startup.cjs",
+      "--baseline-root=/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+      "--baseline-commit=274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+      "--repetitions=3",
+      "--active-arms=true",
+      "--families=independent",
+      "--scales=16,100,500,1000,1500,2000",
+      "--hz=60",
+      "--frames=4",
+      "--case-budget-ms=20000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/cold-60.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/cold-60.log",
+    "timeoutSeconds": 1200,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T21:51:17.504959+00:00",
+    "exitCode": 0,
+    "wallSeconds": 22.004979786994227,
+    "endedUtc": "2026-11-22T21:51:39.509954+00:00"
+  },
+  {
+    "name": "cold-120",
+    "argv": [
+      "node",
+      "tests/benchmark-startup.cjs",
+      "--baseline-root=/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+      "--baseline-commit=274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+      "--repetitions=3",
+      "--active-arms=true",
+      "--families=independent",
+      "--scales=16,100,500,1000,1500,2000",
+      "--hz=120",
+      "--frames=4",
+      "--case-budget-ms=20000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/cold-120.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/cold-120.log",
+    "timeoutSeconds": 1200,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T21:51:39.516117+00:00",
+    "exitCode": 0,
+    "wallSeconds": 28.512996989004023,
+    "endedUtc": "2026-11-22T21:52:08.029126+00:00"
+  },
+  {
+    "name": "cold-240",
+    "argv": [
+      "node",
+      "tests/benchmark-startup.cjs",
+      "--baseline-root=/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+      "--baseline-commit=274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+      "--repetitions=3",
+      "--active-arms=true",
+      "--families=independent",
+      "--scales=16,100,500,1000,1500,2000",
+      "--hz=240",
+      "--frames=4",
+      "--case-budget-ms=20000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/cold-240.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/cold-240.log",
+    "timeoutSeconds": 1200,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T21:52:08.036332+00:00",
+    "exitCode": 0,
+    "wallSeconds": 42.4130273280025,
+    "endedUtc": "2026-11-22T21:52:50.449430+00:00"
+  },
+  {
+    "name": "cold-settle-120",
+    "argv": [
+      "node",
+      "tests/benchmark-startup.cjs",
+      "--baseline-root=/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+      "--baseline-commit=274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+      "--repetitions=3",
+      "--active-arms=true",
+      "--families=independent",
+      "--scales=2000",
+      "--hz=120",
+      "--frames=60",
+      "--case-budget-ms=30000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/cold-settle-120.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/cold-settle-120.log",
+    "timeoutSeconds": 1200,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T21:52:50.457611+00:00",
+    "exitCode": 0,
+    "wallSeconds": 34.54312804100482,
+    "endedUtc": "2026-11-22T21:53:25.000751+00:00"
+  },
+  {
+    "name": "controls-120",
+    "argv": [
+      "node",
+      "tests/benchmark-startup.cjs",
+      "--baseline-root=/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+      "--baseline-commit=274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+      "--repetitions=3",
+      "--active-arms=true",
+      "--families=welded,few-articulated,many-mechanisms,factory",
+      "--scales=100,500,2000",
+      "--hz=120",
+      "--frames=4",
+      "--case-budget-ms=20000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/controls-120.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/controls-120.log",
+    "timeoutSeconds": 1200,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T21:53:25.006882+00:00",
+    "exitCode": 0,
+    "wallSeconds": 24.15089676000207,
+    "endedUtc": "2026-11-22T21:53:49.157790+00:00"
+  },
+  {
+    "name": "controls-60",
+    "argv": [
+      "node",
+      "tests/benchmark-startup.cjs",
+      "--baseline-root=/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+      "--baseline-commit=274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+      "--repetitions=3",
+      "--active-arms=true",
+      "--families=welded,few-articulated,many-mechanisms,factory",
+      "--scales=2000",
+      "--hz=60",
+      "--frames=4",
+      "--case-budget-ms=20000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/controls-60.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/controls-60.log",
+    "timeoutSeconds": 1200,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T21:53:49.164123+00:00",
+    "exitCode": 0,
+    "wallSeconds": 9.00873342200066,
+    "endedUtc": "2026-11-22T21:53:58.172867+00:00"
+  },
+  {
+    "name": "controls-240",
+    "argv": [
+      "node",
+      "tests/benchmark-startup.cjs",
+      "--baseline-root=/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+      "--baseline-commit=274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+      "--repetitions=3",
+      "--active-arms=true",
+      "--families=welded,few-articulated,many-mechanisms,factory",
+      "--scales=2000",
+      "--hz=240",
+      "--frames=4",
+      "--case-budget-ms=20000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/controls-240.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/controls-240.log",
+    "timeoutSeconds": 1200,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T21:53:58.178730+00:00",
+    "exitCode": 0,
+    "wallSeconds": 11.255487320995599,
+    "endedUtc": "2026-11-22T21:54:09.434229+00:00"
+  },
+  {
+    "name": "baseline-heap",
+    "argv": [
+      "node",
+      "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/profile-pressure-probe.cjs",
+      "--root=/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+      "--expected-commit=274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+      "--mode=heap",
+      "--pieces=2000",
+      "--hz=120",
+      "--frames=4",
+      "--budget-ms=30000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/baseline-heap.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/baseline-heap.log",
+    "timeoutSeconds": 90,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T21:54:09.439865+00:00",
+    "exitCode": 0,
+    "wallSeconds": 2.3706196560015087,
+    "endedUtc": "2026-11-22T21:54:11.810496+00:00"
+  },
+  {
+    "name": "optimized-cpu",
+    "argv": [
+      "node",
+      "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/profile-pressure-probe.cjs",
+      "--root=/workspace/scratch/8eeca5205951/qbits",
+      "--expected-commit=2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+      "--mode=cpu",
+      "--pieces=2000",
+      "--hz=120",
+      "--frames=4",
+      "--budget-ms=30000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/optimized-cpu.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/optimized-cpu.log",
+    "timeoutSeconds": 90,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T21:54:11.816238+00:00",
+    "exitCode": 0,
+    "wallSeconds": 1.8184419160024845,
+    "endedUtc": "2026-11-22T21:54:13.634691+00:00"
+  },
+  {
+    "name": "optimized-blocks",
+    "argv": [
+      "node",
+      "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/profile-pressure-probe.cjs",
+      "--root=/workspace/scratch/8eeca5205951/qbits",
+      "--expected-commit=2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+      "--mode=blocks",
+      "--pieces=2000",
+      "--hz=120",
+      "--frames=4",
+      "--budget-ms=30000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/optimized-blocks.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/optimized-blocks.log",
+    "timeoutSeconds": 90,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T21:54:13.641030+00:00",
+    "exitCode": 0,
+    "wallSeconds": 1.7690469489971292,
+    "endedUtc": "2026-11-22T21:54:15.410089+00:00"
+  },
+  {
+    "name": "optimized-heap",
+    "argv": [
+      "node",
+      "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/profile-pressure-probe.cjs",
+      "--root=/workspace/scratch/8eeca5205951/qbits",
+      "--expected-commit=2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+      "--mode=heap",
+      "--pieces=2000",
+      "--hz=120",
+      "--frames=4",
+      "--budget-ms=30000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/optimized-heap.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/optimized-heap.log",
+    "timeoutSeconds": 90,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T21:54:15.415705+00:00",
+    "exitCode": 0,
+    "wallSeconds": 2.0689231890064548,
+    "endedUtc": "2026-11-22T21:54:17.484638+00:00"
+  },
+  {
+    "name": "settled-60",
+    "argv": [
+      "node",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+      "--reference-commit=274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+      "--mode=matrix",
+      "--families=independent",
+      "--phase=settled",
+      "--scales=16,100,500,1000,1500,2000",
+      "--hz=60",
+      "--warmup=60",
+      "--samples=30",
+      "--repetitions=3",
+      "--case-budget-ms=20000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/settled-60.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/settled-60.log",
+    "timeoutSeconds": 1200,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T21:54:17.490036+00:00",
+    "exitCode": 0,
+    "wallSeconds": 50.34796387000097,
+    "endedUtc": "2026-11-22T21:55:07.838010+00:00"
+  },
+  {
+    "name": "settled-120",
+    "argv": [
+      "node",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+      "--reference-commit=274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+      "--mode=matrix",
+      "--families=independent",
+      "--phase=settled",
+      "--scales=16,100,500,1000,1500,2000",
+      "--hz=120",
+      "--warmup=60",
+      "--samples=30",
+      "--repetitions=3",
+      "--case-budget-ms=20000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/settled-120.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/settled-120.log",
+    "timeoutSeconds": 1200,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T21:55:07.847600+00:00",
+    "exitCode": 0,
+    "wallSeconds": 81.39426359000208,
+    "endedUtc": "2026-11-22T21:56:29.241875+00:00"
+  },
+  {
+    "name": "settled-240",
+    "argv": [
+      "node",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+      "--reference-commit=274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+      "--mode=matrix",
+      "--families=independent",
+      "--phase=settled",
+      "--scales=16,100,500,1000,1500,2000",
+      "--hz=240",
+      "--warmup=60",
+      "--samples=30",
+      "--repetitions=3",
+      "--case-budget-ms=20000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/settled-240.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/settled-240.log",
+    "timeoutSeconds": 1200,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T21:56:29.248921+00:00",
+    "exitCode": 0,
+    "wallSeconds": 149.2101841449985,
+    "endedUtc": "2026-11-22T21:58:58.459116+00:00"
+  },
+  {
+    "name": "equivalence",
+    "argv": [
+      "node",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+      "--reference-commit=274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+      "--mode=equivalence",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/equivalence.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/equivalence.log",
+    "timeoutSeconds": 1200,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T21:58:58.465587+00:00",
+    "exitCode": 0,
+    "wallSeconds": 28.998242607005523,
+    "endedUtc": "2026-11-22T21:59:27.463841+00:00"
+  },
+  {
+    "name": "cumulative-500-1000-120",
+    "argv": [
+      "node",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=/workspace/scratch/d35588e45a49/qbits-baseline",
+      "--reference-commit=1a0425a250b7911a8c230eb5d8534c54e3a03953",
+      "--mode=matrix",
+      "--families=independent",
+      "--phase=settled",
+      "--scales=500,1000",
+      "--hz=120",
+      "--warmup=60",
+      "--samples=30",
+      "--repetitions=3",
+      "--case-budget-ms=30000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/cumulative-500-1000-120.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/cumulative-500-1000-120.log",
+    "timeoutSeconds": 1200,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      },
+      {
+        "root": "/workspace/scratch/d35588e45a49/qbits-baseline",
+        "commit": "1a0425a250b7911a8c230eb5d8534c54e3a03953",
+        "sha256": {
+          "assets/js/game.js": "d5b6af65ab6a413634e6cf70bc3ea88a16a0ab9cc81b4d5af2364045caf16159",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "cf06cc1b315e830366c03798a8ffa778112692829b9a319b52b88ab07e8c6b0e"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T21:59:27.473450+00:00",
+    "exitCode": 0,
+    "wallSeconds": 35.81421888800105,
+    "endedUtc": "2026-11-22T22:00:03.287680+00:00"
+  },
+  {
+    "name": "cumulative-2000-60",
+    "argv": [
+      "node",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=/workspace/scratch/d35588e45a49/qbits-baseline",
+      "--reference-commit=1a0425a250b7911a8c230eb5d8534c54e3a03953",
+      "--mode=matrix",
+      "--families=independent",
+      "--phase=settled",
+      "--scales=2000",
+      "--hz=60",
+      "--warmup=60",
+      "--samples=30",
+      "--repetitions=3",
+      "--case-budget-ms=30000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/cumulative-2000-60.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/cumulative-2000-60.log",
+    "timeoutSeconds": 1200,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      },
+      {
+        "root": "/workspace/scratch/d35588e45a49/qbits-baseline",
+        "commit": "1a0425a250b7911a8c230eb5d8534c54e3a03953",
+        "sha256": {
+          "assets/js/game.js": "d5b6af65ab6a413634e6cf70bc3ea88a16a0ab9cc81b4d5af2364045caf16159",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "cf06cc1b315e830366c03798a8ffa778112692829b9a319b52b88ab07e8c6b0e"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T22:00:03.298094+00:00",
+    "exitCode": 0,
+    "wallSeconds": 49.436217836999276,
+    "endedUtc": "2026-11-22T22:00:52.734325+00:00"
+  },
+  {
+    "name": "query-deferred-120",
+    "argv": [
+      "node",
+      "tests/benchmark-pressure-pad-query.cjs",
+      "--baseline-root=/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+      "--baseline-commit=274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+      "--mode=timing",
+      "--scales=16,100,500,1000,1500,2000",
+      "--repetitions=3",
+      "--hz=120",
+      "--case-budget-ms=20000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/query-deferred-120.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/query-deferred-120.log",
+    "timeoutSeconds": 900,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487",
+          "tests/pressure-pad-query.test.cjs": "d2e670bee4926257727651834c661771d710a2d1017151fbf7cd5e5d151597b7",
+          "tests/benchmark-pressure-pad-query.cjs": "e3cf3813c83cfb49d233e63ceffeb62a3fee4531a8ad89ca5694f6a3462e7346"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T22:01:16.696246+00:00",
+    "exitCode": 0,
+    "wallSeconds": 33.65041946200654,
+    "endedUtc": "2026-11-22T22:01:50.346730+00:00"
+  },
+  {
+    "name": "query-counts-120",
+    "argv": [
+      "node",
+      "tests/benchmark-pressure-pad-query.cjs",
+      "--baseline-root=/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+      "--baseline-commit=274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+      "--mode=counts",
+      "--scales=16,2000",
+      "--repetitions=1",
+      "--hz=120",
+      "--case-budget-ms=20000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/query-counts-120.json"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/query-counts-120.log",
+    "timeoutSeconds": 900,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487",
+          "tests/pressure-pad-query.test.cjs": "d2e670bee4926257727651834c661771d710a2d1017151fbf7cd5e5d151597b7",
+          "tests/benchmark-pressure-pad-query.cjs": "e3cf3813c83cfb49d233e63ceffeb62a3fee4531a8ad89ca5694f6a3462e7346"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T22:01:50.352905+00:00",
+    "exitCode": 0,
+    "wallSeconds": 3.9492398939983104,
+    "endedUtc": "2026-11-22T22:01:54.302158+00:00"
+  },
+  {
+    "name": "pressure-regressions",
+    "argv": [
+      "node",
+      "--test",
+      "tests/pressure-pad-query.test.cjs"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/pressure-regressions.txt",
+    "timeoutSeconds": 120,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487",
+          "tests/pressure-pad-query.test.cjs": "d2e670bee4926257727651834c661771d710a2d1017151fbf7cd5e5d151597b7",
+          "tests/benchmark-pressure-pad-query.cjs": "e3cf3813c83cfb49d233e63ceffeb62a3fee4531a8ad89ca5694f6a3462e7346"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T22:01:54.308131+00:00",
+    "exitCode": 0,
+    "wallSeconds": 1.017062894999981,
+    "endedUtc": "2026-11-22T22:01:55.325204+00:00"
+  },
+  {
+    "name": "tests-baseline",
+    "argv": [
+      "node",
+      "--test",
+      "tests/assembly-broadphase.test.cjs",
+      "tests/automation.test.cjs",
+      "tests/battery-capacity.test.cjs",
+      "tests/battery-geometry-cache.test.cjs",
+      "tests/battery-liquid-integration.test.cjs",
+      "tests/battery-liquid.test.cjs",
+      "tests/boot.test.cjs",
+      "tests/box-outline-render.test.cjs",
+      "tests/camera-pacing.test.cjs",
+      "tests/cannon-geometry-compatibility.test.cjs",
+      "tests/compound-narrowphase.test.cjs",
+      "tests/contact-matrix.test.cjs",
+      "tests/contact-sensors.test.cjs",
+      "tests/controls-integration.test.cjs",
+      "tests/controls.test.cjs",
+      "tests/conveyor-collisions.test.cjs",
+      "tests/conveyor-compact-data.test.cjs",
+      "tests/conveyor-contact-rejection.test.cjs",
+      "tests/conveyor-impact.test.cjs",
+      "tests/conveyor-join-clearance.test.cjs",
+      "tests/conveyor-modules.test.cjs",
+      "tests/conveyor-panel.test.cjs",
+      "tests/conveyor-placement.test.cjs",
+      "tests/conveyor-render-cache.test.cjs",
+      "tests/conveyor-review.test.cjs",
+      "tests/conveyor-runtime.test.cjs",
+      "tests/conveyor-storage.test.cjs",
+      "tests/conveyor-template.test.cjs",
+      "tests/conveyor-virtual-integration.test.cjs",
+      "tests/conveyor-virtual-lifecycle.test.cjs",
+      "tests/conveyor-virtual-storage.test.cjs",
+      "tests/cooling-spatial-culling.test.cjs",
+      "tests/creation-placement.test.cjs",
+      "tests/crouch.test.cjs",
+      "tests/culling-integration.test.cjs",
+      "tests/culling-math.test.cjs",
+      "tests/culling-preferences.test.cjs",
+      "tests/dialogue-timing.test.cjs",
+      "tests/encounter-bubbles.test.cjs",
+      "tests/external-battery-energy.test.cjs",
+      "tests/external-battery-render.test.cjs",
+      "tests/external-battery-storage.test.cjs",
+      "tests/external-battery-workshop-ui.test.cjs",
+      "tests/footsteps-integration.test.cjs",
+      "tests/footsteps.test.cjs",
+      "tests/furniture-input.test.cjs",
+      "tests/furniture-models.test.cjs",
+      "tests/game-regression.test.cjs",
+      "tests/glass-integration.test.cjs",
+      "tests/glass.test.cjs",
+      "tests/grab-assembly-batch.test.cjs",
+      "tests/grab-speed.test.cjs",
+      "tests/graphics.test.cjs",
+      "tests/grip-lazy-sat.test.cjs",
+      "tests/grip-rotation-envelope.test.cjs",
+      "tests/guide-audio-integration.test.cjs",
+      "tests/guide-audio.test.cjs",
+      "tests/held-focus.test.cjs",
+      "tests/held-interactions.test.cjs",
+      "tests/integration-campaign-recovery.test.cjs",
+      "tests/integration-energy.test.cjs",
+      "tests/integration-sensor-lifecycle.test.cjs",
+      "tests/join-audio-integration.test.cjs",
+      "tests/join-audio.test.cjs",
+      "tests/lab-limits.test.cjs",
+      "tests/lab-save-runtime.test.cjs",
+      "tests/landing-projection.test.cjs",
+      "tests/large-assembly-joins.test.cjs",
+      "tests/large-collision-query.test.cjs",
+      "tests/live-mechanism-sensors.test.cjs",
+      "tests/mechanical-component-expansion.test.cjs",
+      "tests/mechanical-floor-impact.test.cjs",
+      "tests/mechanical-mood-pose.test.cjs",
+      "tests/mechanical-rest.test.cjs",
+      "tests/mechanism-blueprint.test.cjs",
+      "tests/mechanism-restart.test.cjs",
+      "tests/modular-assembly.test.cjs",
+      "tests/music.test.cjs",
+      "tests/opening-menu.test.cjs",
+      "tests/opening.test.cjs",
+      "tests/organizers.test.cjs",
+      "tests/passive-conveyor-motion.test.cjs",
+      "tests/physical-collision-cache.test.cjs",
+      "tests/physics-rate.test.cjs",
+      "tests/placement-scale.test.cjs",
+      "tests/power-cable-inspection.test.cjs",
+      "tests/power-interactions.test.cjs",
+      "tests/power-network-cache.test.cjs",
+      "tests/power-network.test.cjs",
+      "tests/preferences.test.cjs",
+      "tests/preview-batching.test.cjs",
+      "tests/production-frequency.test.cjs",
+      "tests/production-friction.test.cjs",
+      "tests/production-ledger.test.cjs",
+      "tests/production.test.cjs",
+      "tests/progression.test.cjs",
+      "tests/prologue.test.cjs",
+      "tests/propeller.test.cjs",
+      "tests/quick-catalogue.test.cjs",
+      "tests/radial-geometry.test.cjs",
+      "tests/radial-input.test.cjs",
+      "tests/radial-mechanisms.test.cjs",
+      "tests/reconfiguration.test.cjs",
+      "tests/render-backend.test.cjs",
+      "tests/rigid-colliders.test.cjs",
+      "tests/rigid-collision-query.test.cjs",
+      "tests/rigid-render-batch.test.cjs",
+      "tests/robot-arm-integration.test.cjs",
+      "tests/robot-arm-panel.test.cjs",
+      "tests/robot-arm-setup.test.cjs",
+      "tests/robot-arm-shelves.test.cjs",
+      "tests/robot-arm-usability.test.cjs",
+      "tests/robot-arm.test.cjs",
+      "tests/robot-conveyor-integration.test.cjs",
+      "tests/rotor-chassis.test.cjs",
+      "tests/rotor-core.test.cjs",
+      "tests/rotor-energy-integration.test.cjs",
+      "tests/rotor-groups-ui.test.cjs",
+      "tests/rotor-groups.test.cjs",
+      "tests/rotor-load.test.cjs",
+      "tests/rotor-power.test.cjs",
+      "tests/rotor-stop-brake.test.cjs",
+      "tests/rotor-storage.test.cjs",
+      "tests/rotor-ui.test.cjs",
+      "tests/rotor-unpowered.test.cjs",
+      "tests/rotor-wheel.test.cjs",
+      "tests/runtime-lookups.test.cjs",
+      "tests/sap-passive-pairs.test.cjs",
+      "tests/save-games.test.cjs",
+      "tests/saved-games-integration.test.cjs",
+      "tests/selection-cache.test.cjs",
+      "tests/selection-hud-integration.test.cjs",
+      "tests/selection-hud-projection.test.cjs",
+      "tests/selection-hud.test.cjs",
+      "tests/sensor-contact-index.test.cjs",
+      "tests/sensor-discovery-fast-path.test.cjs",
+      "tests/servo-assembly.test.cjs",
+      "tests/servo-march.test.cjs",
+      "tests/servo-panel.test.cjs",
+      "tests/servo-storage.test.cjs",
+      "tests/servo-walker-recognition.test.cjs",
+      "tests/servo-walker-tracking.test.cjs",
+      "tests/servo.test.cjs",
+      "tests/shake-dismantle.test.cjs",
+      "tests/solid-grip.test.cjs",
+      "tests/spatial-query-regressions.test.cjs",
+      "tests/staged-disassembly.test.cjs",
+      "tests/subtitles.test.cjs",
+      "tests/tablet.test.cjs",
+      "tests/tbit-geometry.test.cjs",
+      "tests/tbit-joins.test.cjs",
+      "tests/tbit-lab.test.cjs",
+      "tests/tbit-routes.test.cjs",
+      "tests/tick-scheduler.test.cjs",
+      "tests/transitions.test.cjs",
+      "tests/wide-line-equivalence.test.cjs",
+      "tests/workshop-body-editor.test.cjs",
+      "tests/workshop-integration.test.cjs",
+      "tests/workshop-model.test.cjs",
+      "tests/workshop-panel.test.cjs"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/tests-baseline.txt",
+    "timeoutSeconds": 180,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487",
+          "tests/pressure-pad-query.test.cjs": "d2e670bee4926257727651834c661771d710a2d1017151fbf7cd5e5d151597b7",
+          "tests/benchmark-pressure-pad-query.cjs": "e3cf3813c83cfb49d233e63ceffeb62a3fee4531a8ad89ca5694f6a3462e7346"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T22:01:55.330923+00:00",
+    "exitCode": 0,
+    "wallSeconds": 54.20429172000149,
+    "endedUtc": "2026-11-22T22:02:49.535230+00:00"
+  },
+  {
+    "name": "architecture-baseline",
+    "argv": [
+      "node",
+      "tests/benchmark-architecture-audit.cjs"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/architecture-baseline.json",
+    "timeoutSeconds": 120,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487",
+          "tests/pressure-pad-query.test.cjs": "d2e670bee4926257727651834c661771d710a2d1017151fbf7cd5e5d151597b7",
+          "tests/benchmark-pressure-pad-query.cjs": "e3cf3813c83cfb49d233e63ceffeb62a3fee4531a8ad89ca5694f6a3462e7346"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T22:02:49.542052+00:00",
+    "exitCode": 0,
+    "wallSeconds": 0.7663506890021381,
+    "endedUtc": "2026-11-22T22:02:50.308415+00:00"
+  },
+  {
+    "name": "ground-baseline",
+    "argv": [
+      "node",
+      "tests/benchmark-ground-contacts.cjs"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/ground-baseline.json",
+    "timeoutSeconds": 120,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487",
+          "tests/pressure-pad-query.test.cjs": "d2e670bee4926257727651834c661771d710a2d1017151fbf7cd5e5d151597b7",
+          "tests/benchmark-pressure-pad-query.cjs": "e3cf3813c83cfb49d233e63ceffeb62a3fee4531a8ad89ca5694f6a3462e7346"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T22:02:50.316149+00:00",
+    "exitCode": 0,
+    "wallSeconds": 6.730972991004819,
+    "endedUtc": "2026-11-22T22:02:57.047144+00:00"
+  },
+  {
+    "name": "tests-final",
+    "argv": [
+      "node",
+      "--test",
+      "tests/assembly-broadphase.test.cjs",
+      "tests/automation.test.cjs",
+      "tests/battery-capacity.test.cjs",
+      "tests/battery-geometry-cache.test.cjs",
+      "tests/battery-liquid-integration.test.cjs",
+      "tests/battery-liquid.test.cjs",
+      "tests/boot.test.cjs",
+      "tests/box-outline-render.test.cjs",
+      "tests/camera-pacing.test.cjs",
+      "tests/cannon-geometry-compatibility.test.cjs",
+      "tests/compound-narrowphase.test.cjs",
+      "tests/contact-matrix.test.cjs",
+      "tests/contact-sensors.test.cjs",
+      "tests/controls-integration.test.cjs",
+      "tests/controls.test.cjs",
+      "tests/conveyor-collisions.test.cjs",
+      "tests/conveyor-compact-data.test.cjs",
+      "tests/conveyor-contact-rejection.test.cjs",
+      "tests/conveyor-impact.test.cjs",
+      "tests/conveyor-join-clearance.test.cjs",
+      "tests/conveyor-modules.test.cjs",
+      "tests/conveyor-panel.test.cjs",
+      "tests/conveyor-placement.test.cjs",
+      "tests/conveyor-render-cache.test.cjs",
+      "tests/conveyor-review.test.cjs",
+      "tests/conveyor-runtime.test.cjs",
+      "tests/conveyor-storage.test.cjs",
+      "tests/conveyor-template.test.cjs",
+      "tests/conveyor-virtual-integration.test.cjs",
+      "tests/conveyor-virtual-lifecycle.test.cjs",
+      "tests/conveyor-virtual-storage.test.cjs",
+      "tests/cooling-spatial-culling.test.cjs",
+      "tests/creation-placement.test.cjs",
+      "tests/crouch.test.cjs",
+      "tests/culling-integration.test.cjs",
+      "tests/culling-math.test.cjs",
+      "tests/culling-preferences.test.cjs",
+      "tests/dialogue-timing.test.cjs",
+      "tests/encounter-bubbles.test.cjs",
+      "tests/external-battery-energy.test.cjs",
+      "tests/external-battery-render.test.cjs",
+      "tests/external-battery-storage.test.cjs",
+      "tests/external-battery-workshop-ui.test.cjs",
+      "tests/footsteps-integration.test.cjs",
+      "tests/footsteps.test.cjs",
+      "tests/furniture-input.test.cjs",
+      "tests/furniture-models.test.cjs",
+      "tests/game-regression.test.cjs",
+      "tests/glass-integration.test.cjs",
+      "tests/glass.test.cjs",
+      "tests/grab-assembly-batch.test.cjs",
+      "tests/grab-speed.test.cjs",
+      "tests/graphics.test.cjs",
+      "tests/grip-lazy-sat.test.cjs",
+      "tests/grip-rotation-envelope.test.cjs",
+      "tests/guide-audio-integration.test.cjs",
+      "tests/guide-audio.test.cjs",
+      "tests/held-focus.test.cjs",
+      "tests/held-interactions.test.cjs",
+      "tests/integration-campaign-recovery.test.cjs",
+      "tests/integration-energy.test.cjs",
+      "tests/integration-sensor-lifecycle.test.cjs",
+      "tests/join-audio-integration.test.cjs",
+      "tests/join-audio.test.cjs",
+      "tests/lab-limits.test.cjs",
+      "tests/lab-save-runtime.test.cjs",
+      "tests/landing-projection.test.cjs",
+      "tests/large-assembly-joins.test.cjs",
+      "tests/large-collision-query.test.cjs",
+      "tests/live-mechanism-sensors.test.cjs",
+      "tests/mechanical-component-expansion.test.cjs",
+      "tests/mechanical-floor-impact.test.cjs",
+      "tests/mechanical-mood-pose.test.cjs",
+      "tests/mechanical-rest.test.cjs",
+      "tests/mechanism-blueprint.test.cjs",
+      "tests/mechanism-restart.test.cjs",
+      "tests/modular-assembly.test.cjs",
+      "tests/music.test.cjs",
+      "tests/opening-menu.test.cjs",
+      "tests/opening.test.cjs",
+      "tests/organizers.test.cjs",
+      "tests/passive-conveyor-motion.test.cjs",
+      "tests/physical-collision-cache.test.cjs",
+      "tests/physics-rate.test.cjs",
+      "tests/placement-scale.test.cjs",
+      "tests/power-cable-inspection.test.cjs",
+      "tests/power-interactions.test.cjs",
+      "tests/power-network-cache.test.cjs",
+      "tests/power-network.test.cjs",
+      "tests/preferences.test.cjs",
+      "tests/pressure-pad-query.test.cjs",
+      "tests/preview-batching.test.cjs",
+      "tests/production-frequency.test.cjs",
+      "tests/production-friction.test.cjs",
+      "tests/production-ledger.test.cjs",
+      "tests/production.test.cjs",
+      "tests/progression.test.cjs",
+      "tests/prologue.test.cjs",
+      "tests/propeller.test.cjs",
+      "tests/quick-catalogue.test.cjs",
+      "tests/radial-geometry.test.cjs",
+      "tests/radial-input.test.cjs",
+      "tests/radial-mechanisms.test.cjs",
+      "tests/reconfiguration.test.cjs",
+      "tests/render-backend.test.cjs",
+      "tests/rigid-colliders.test.cjs",
+      "tests/rigid-collision-query.test.cjs",
+      "tests/rigid-render-batch.test.cjs",
+      "tests/robot-arm-integration.test.cjs",
+      "tests/robot-arm-panel.test.cjs",
+      "tests/robot-arm-setup.test.cjs",
+      "tests/robot-arm-shelves.test.cjs",
+      "tests/robot-arm-usability.test.cjs",
+      "tests/robot-arm.test.cjs",
+      "tests/robot-conveyor-integration.test.cjs",
+      "tests/rotor-chassis.test.cjs",
+      "tests/rotor-core.test.cjs",
+      "tests/rotor-energy-integration.test.cjs",
+      "tests/rotor-groups-ui.test.cjs",
+      "tests/rotor-groups.test.cjs",
+      "tests/rotor-load.test.cjs",
+      "tests/rotor-power.test.cjs",
+      "tests/rotor-stop-brake.test.cjs",
+      "tests/rotor-storage.test.cjs",
+      "tests/rotor-ui.test.cjs",
+      "tests/rotor-unpowered.test.cjs",
+      "tests/rotor-wheel.test.cjs",
+      "tests/runtime-lookups.test.cjs",
+      "tests/sap-passive-pairs.test.cjs",
+      "tests/save-games.test.cjs",
+      "tests/saved-games-integration.test.cjs",
+      "tests/selection-cache.test.cjs",
+      "tests/selection-hud-integration.test.cjs",
+      "tests/selection-hud-projection.test.cjs",
+      "tests/selection-hud.test.cjs",
+      "tests/sensor-contact-index.test.cjs",
+      "tests/sensor-discovery-fast-path.test.cjs",
+      "tests/servo-assembly.test.cjs",
+      "tests/servo-march.test.cjs",
+      "tests/servo-panel.test.cjs",
+      "tests/servo-storage.test.cjs",
+      "tests/servo-walker-recognition.test.cjs",
+      "tests/servo-walker-tracking.test.cjs",
+      "tests/servo.test.cjs",
+      "tests/shake-dismantle.test.cjs",
+      "tests/solid-grip.test.cjs",
+      "tests/spatial-query-regressions.test.cjs",
+      "tests/staged-disassembly.test.cjs",
+      "tests/subtitles.test.cjs",
+      "tests/tablet.test.cjs",
+      "tests/tbit-geometry.test.cjs",
+      "tests/tbit-joins.test.cjs",
+      "tests/tbit-lab.test.cjs",
+      "tests/tbit-routes.test.cjs",
+      "tests/tick-scheduler.test.cjs",
+      "tests/transitions.test.cjs",
+      "tests/wide-line-equivalence.test.cjs",
+      "tests/workshop-body-editor.test.cjs",
+      "tests/workshop-integration.test.cjs",
+      "tests/workshop-model.test.cjs",
+      "tests/workshop-panel.test.cjs"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/tests-final.txt",
+    "timeoutSeconds": 180,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487",
+          "tests/pressure-pad-query.test.cjs": "d2e670bee4926257727651834c661771d710a2d1017151fbf7cd5e5d151597b7",
+          "tests/benchmark-pressure-pad-query.cjs": "e3cf3813c83cfb49d233e63ceffeb62a3fee4531a8ad89ca5694f6a3462e7346"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T22:02:57.055185+00:00",
+    "exitCode": 0,
+    "wallSeconds": 54.454189791002136,
+    "endedUtc": "2026-11-22T22:03:51.509388+00:00"
+  },
+  {
+    "name": "architecture-final",
+    "argv": [
+      "node",
+      "tests/benchmark-architecture-audit.cjs"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/architecture-final.json",
+    "timeoutSeconds": 120,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487",
+          "tests/pressure-pad-query.test.cjs": "d2e670bee4926257727651834c661771d710a2d1017151fbf7cd5e5d151597b7",
+          "tests/benchmark-pressure-pad-query.cjs": "e3cf3813c83cfb49d233e63ceffeb62a3fee4531a8ad89ca5694f6a3462e7346"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T22:03:51.515996+00:00",
+    "exitCode": 0,
+    "wallSeconds": 0.7660730259958655,
+    "endedUtc": "2026-11-22T22:03:52.282082+00:00"
+  },
+  {
+    "name": "ground-final",
+    "argv": [
+      "node",
+      "tests/benchmark-ground-contacts.cjs"
+    ],
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "stdout": "/workspace/scratch/8eeca5205951/qbits/docs/mediciones/presion-20261122/ground-final.json",
+    "timeoutSeconds": 120,
+    "expectedSources": [
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits",
+        "commit": "2c6d6ed5677bc4626d8e89ba9d80590031de9d0f",
+        "sha256": {
+          "assets/js/game.js": "0fb81005a9a3b2a8baf54bf2b9a10b266905ab9a30e187008c0b4a50bd934085",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487",
+          "tests/pressure-pad-query.test.cjs": "d2e670bee4926257727651834c661771d710a2d1017151fbf7cd5e5d151597b7",
+          "tests/benchmark-pressure-pad-query.cjs": "e3cf3813c83cfb49d233e63ceffeb62a3fee4531a8ad89ca5694f6a3462e7346"
+        }
+      },
+      {
+        "root": "/workspace/scratch/8eeca5205951/qbits-physics-baseline",
+        "commit": "274a389b77d0f57c9f4c13d56c5caf86070b1b0d",
+        "sha256": {
+          "assets/js/game.js": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+          "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+          "tests/game-harness.cjs": "31fe69bfa20d98ec32685cb7c62e5c3cd55657b29c805499481dc0fea2f20487"
+        }
+      }
+    ],
+    "startedUtc": "2026-11-22T22:03:52.288821+00:00",
+    "exitCode": 0,
+    "wallSeconds": 6.517967282001337,
+    "endedUtc": "2026-11-22T22:03:58.806804+00:00"
+  }
+]
