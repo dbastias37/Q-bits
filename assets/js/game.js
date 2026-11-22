@@ -127,6 +127,7 @@ const vertexSource = `
   uniform vec2 uLook;
   uniform float uAspect;
   uniform float uFocal;
+  uniform vec2 uOutlineStroke;
   uniform float uKind;
   uniform vec3 uCenter;
   uniform float uScale;
@@ -143,7 +144,30 @@ const vertexSource = `
     vec3 right = vec3(cy, 0.0, -sy);
     vec3 up = vec3(sy * sp, cp, cy * sp);
     vec3 forward = vec3(-sy * cp, sp, -cy * cp);
-    vec3 world = uKind > 0.5 ? rotate(aPosition * uDimensions) + uCenter : aPosition;
+    vec3 world;
+    bool strokeVisible = true;
+    if (uKind > 17.5) {
+      // Persistent rigid edges: A/B are local endpoints and metadata contains
+      // endpoint (0/1), side (-1/+1), and material. Moving the camera or body
+      // only changes uniforms; screen-width expansion stays on the GPU.
+      vec3 a = rotate(aPosition) + uCenter, b = rotate(aNormal) + uCenter;
+      vec3 ar = a - uCamera, br = b - uCamera;
+      float ad = dot(ar, forward), bd = dot(br, forward);
+      vec2 delta = vec2(
+        dot(br, right) / max(bd, 0.04) - dot(ar, right) / max(ad, 0.04),
+        dot(ar, up) / max(ad, 0.04) - dot(br, up) / max(bd, 0.04)
+      ) * uFocal * uOutlineStroke.y * 0.5;
+      float pixelLength = length(delta);
+      vec2 normal = vec2(-delta.y, -delta.x) / max(pixelLength, 0.01);
+      float endpointDepth = mix(ad, bd, aPiecePosition.x);
+      world = mix(a, b, aPiecePosition.x) + (right * normal.x + up * normal.y)
+        * (uOutlineStroke.x * endpointDepth / (uFocal * uOutlineStroke.y)) * aPiecePosition.y;
+      // Match wideLineTriangles: omit the entire segment if either endpoint
+      // is behind the near plane, or it projects to less than .01 CSS pixels.
+      strokeVisible = ad > 0.04 && bd > 0.04 && pixelLength >= 0.01;
+    } else {
+      world = uKind > 0.5 ? rotate(aPosition * uDimensions) + uCenter : aPosition;
+    }
     vec3 relative = world - uCamera;
     float depth = dot(relative, forward);
     float focal = uFocal;
@@ -156,6 +180,7 @@ const vertexSource = `
       depth
     );
     if(uJitter>0. && depth>nearClip){vec2 grid=max(vec2(1.),uResolution/(1.+uJitter*7.));vec2 ndc=gl_Position.xy/depth;gl_Position.xy=mix(ndc,floor(ndc*grid+.5)/grid,uJitter)*depth;}
+    if(!strokeVisible)gl_Position=vec4(0.0,0.0,2.0,1.0);
     vec3 texPos=uKind>.5?aPiecePosition:world;
     vec3 n=abs(aPieceNormal);
     vSurfaceUV=n.y>.5?texPos.xz:(n.x>.5?texPos.zy:texPos.xy);
@@ -204,6 +229,10 @@ const fragmentSource = `
   }
   void main() {
     if (uFocusMask > 0.5) { gl_FragColor = vec4(1.0); return; }
+    if (uKind > 17.5) {
+      vec3 color = uKind > 18.5 ? mix(vec3(.06,.09,.1),vec3(.1,.15,.16),vLocalNormal.z) : uTint.rgb;
+      gl_FragColor=vec4(color,uTint.a);return;
+    }
     if (uKind > 16.5) {
       // Cached circuit ribbons encode transverse/longitudinal coordinates in
       // the unused normal channel, preserving one buffer and draw per cable.
@@ -379,7 +408,7 @@ for (const [name, offset] of [['aPosition', 0], ['aNormal', 12], ['aPiecePositio
   gl.enableVertexAttribArray(location);
   gl.vertexAttribPointer(location, 3, gl.FLOAT, false, 24, offset);
 }
-const uniforms = Object.fromEntries(['uJitter','uResolution','uSurface','uTextureMix','uTextureScale','uWarp','uCel','uLighting','uShadows','uFocal','uFocusMask','uGlow','uLightPos[0]','uLightColor[0]','uTime','uCamera','uLook','uAspect','uSize','uHeight','uKind','uCenter','uScale','uShadow','uDimensions','uQuaternion','uTint','uLiquidNormal','uLiquidPlane'].map(name => [name, gl.getUniformLocation(program, name)]));
+const uniforms = Object.fromEntries(['uJitter','uResolution','uSurface','uTextureMix','uTextureScale','uWarp','uCel','uLighting','uShadows','uFocal','uOutlineStroke','uFocusMask','uGlow','uLightPos[0]','uLightColor[0]','uTime','uCamera','uLook','uAspect','uSize','uHeight','uKind','uCenter','uScale','uShadow','uDimensions','uQuaternion','uTint','uLiquidNormal','uLiquidPlane'].map(name => [name, gl.getUniformLocation(program, name)]));
 gl.uniform1f(uniforms.uFocal, heldFocus.focal);
 gl.uniform1f(uniforms.uFocusMask, 0);
 gl.uniform1f(uniforms.uSize, ROOM_SIZE);
@@ -1156,10 +1185,15 @@ function rigidColliderLayout(parts){
   }
  }return layout;
 }
-function addRigidCollisionShapes(body,parts){
+function addRigidCollisionShapes(body,parts,retiredShapes=null){
  const owners=new Map();
  for(const collider of rigidColliderLayout(parts)){
-  const part=collider.parts[0],profile=unitProfile(part),shape=collider.half?new CANNON.Box(collider.half):isTBit(part)?new CANNON.ConvexPolyhedron(profile.vertices.map(v=>v.clone()),profile.faces.map(f=>f.slice())):cubeShape();
+  const part=collider.parts[0],profile=unitProfile(part),retained=isTBit(part)?retiredShapes?.get(part.id):null;
+  const shape=retained|| (collider.half?new CANNON.Box(collider.half):isTBit(part)?new CANNON.ConvexPolyhedron(profile.vertices.map(v=>v.clone()),profile.faces.map(f=>f.slice())):cubeShape());
+  // A weld retires the two old bodies before transferring these individual
+  // convex shapes. Their local geometry is unchanged; only their body frame
+  // changes. Never share a live collider or reuse merged cube runs this way.
+  if(retained){shape.worldVerticesNeedsUpdate=true;shape.worldFaceNormalsNeedsUpdate=true;}
   // Cannon 0.6 addShape recalculates the entire body after every insertion.
   // This body is not in the world yet: append the same cloned shape transforms
   // and calculate its radius/mass once, including unmergeable convex pieces.
@@ -1168,7 +1202,7 @@ function addRigidCollisionShapes(body,parts){
  body.updateBoundingRadius();body.aabbNeedsUpdate=true;return owners;
 }
 function groupAngularDamping(count){return count>1?Math.max(settings.damping,Math.min(.65,.24+Math.log2(count)*.065)):settings.damping;}
-function makeGroup(parts,reference=Q(),velocity=V(),spin=V()) {
+function makeGroup(parts,reference=Q(),velocity=V(),spin=V(),retiredShapes=null) {
  invalidateMechanicalIndex();
  serial=Math.max(serial,...parts.map(p=>p.id));
  const weight=parts.reduce((n,p)=>n+p.weight,0),center=V();
@@ -1177,7 +1211,7 @@ function makeGroup(parts,reference=Q(),velocity=V(),spin=V()) {
  body.collisionFilterMask=-1;body.position.copy(center);body.quaternion.copy(reference);body.velocity.copy(velocity);body.angularVelocity.copy(spin);
  body.linearDamping=.03;body.angularDamping=groupAngularDamping(parts.length);
  const local=parts.map(p=>{const shape=unitShape(p),mood=newMood(p.id,p.mood);if(!p.mood&&shape!=='cube')mood.name=(shape==='coupler'?'Enganche ':'T-bit ')+p.id;return {id:p.id,weight:p.weight,shape,offset:inv.vmult(sub(p.p,center)),q:inv.mult(p.q),mood};});
- const partShapes=addRigidCollisionShapes(body,local),materialShapeCount=body.shapes.length;
+ const partShapes=addRigidCollisionShapes(body,local,retiredShapes),materialShapeCount=body.shapes.length;
  body.updateMassProperties();world.addBody(body);
  const g={body,parts:local,partShapes,materialShapeCount,route:null,pin:null};body.qubitGroup=g;body.addEventListener('wakeup',()=>{g.wakeMechanicalComponent=true;});g.block=analyzeBlock(g);groups.push(g);invalidateMechanicalIndex();registerSpeechGroup(g);return g;
 }
@@ -1312,10 +1346,26 @@ function convexUnitOverlap(a,b,epsilon=.0005){
 // Completed skins are physical surfaces, not extra inventory pieces. Include
 // them in manual placement/sweep checks without changing saved material poses.
 function conveyorGroupSurfaces(g,pos=g.body.position,quat=g.body.quaternion,includeVirtual=true){
- const result=[];for(const conveyor of conveyors){const base=g.parts.find(part=>part.id===conveyor.baseId);if(!base)continue;
+ const result=[];if(!conveyors.length)return result;const topology=mechanicalTopologyIndex(),live=topology.edges.has(g);
+ // Ownership changes invalidate this index. Keep hypothetical placement probes
+ // local, but do not scan a large live chassis once for every conveyor section.
+ for(const conveyor of conveyors){const hit=live?topology.parts.get(conveyor.baseId):null,base=live?(hit?.g===g?hit.part:null):g.parts.find(part=>part.id===conveyor.baseId);if(!base)continue;
   for(const surface of conveyor.surfaces||[]){const offset=add(base.offset,base.q.vmult(surface.center));result.push({p:add(pos,quat.vmult(offset)),q:quat.mult(base.q.mult(surface.q)),half:surface.half});}
   if(includeVirtual&&conveyor.virtual?.body===g.body)for(const proxy of conveyor.virtual.proxies)result.push({p:add(pos,quat.vmult(proxy.offset)),q:quat.mult(proxy.q),half:proxy.half});
  }return result;
+}
+function physicalCollisionParts(g,includeVirtual=true){
+ const rigid=rigidCollisionParts(g);if(!conveyors.length)return rigid;
+ const topology=mechanicalTopologyIndex(),modules=conveyors.filter(c=>topology.parts.get(c.baseId)?.g===g);if(!modules.length)return rigid;
+ let cache=g.physicalCollisionPartsCache;
+ if(!cache||cache.rigid!==rigid||cache.topology!==topology||cache.sources.length!==modules.length||modules.some((c,i)=>{const source=cache.sources[i];return source.conveyor!==c||source.surfaces!==c.surfaces||source.body!==c.surfaceBody||source.virtual!==c.virtual;})){
+  cache=g.physicalCollisionPartsCache={rigid,topology,sources:modules.map(c=>({conveyor:c,surfaces:c.surfaces,body:c.surfaceBody,virtual:c.virtual})),full:null,seam:null};
+ }
+ // Four moving links can validate against the same large destination. Keep
+ // its exact entries and their BVH until geometry/pose/representation changes.
+ // Seam checks have their own array: foreign objects retain roller envelopes.
+ const key=includeVirtual?'full':'seam';
+ return cache[key]||(cache[key]=rigid.concat(conveyorGroupSurfaces(g,g.body.position,g.body.quaternion,includeVirtual).map(collisionEntry)));
 }
 function physicalGroupPoses(g,pos=g.body.position,quat=g.body.quaternion){return poses(g,pos,quat).concat(conveyorGroupSurfaces(g,pos,quat));}
 function physicalGroupBounds(g,pos=g.body.position,quat=g.body.quaternion){
@@ -1343,7 +1393,7 @@ function validPose(g,pos,quat,exclude=[],joiningFrames=null){
   // roller envelopes may overlap across a legal seam; test original matter
   // and skins there. Every foreign obstacle still sees the full envelopes.
   const sourceEntries=seam?(seamEntries||=rigidQueryPoses(g,pos,quat).concat(conveyorGroupSurfaces(g,pos,quat,false)).map(collisionEntry)):entries;
-  return collisionEntriesOverlap(sourceEntries,rigidCollisionParts(other).concat(conveyorGroupSurfaces(other,other.body.position,other.body.quaternion,!seam).map(collisionEntry)));
+  return collisionEntriesOverlap(sourceEntries,physicalCollisionParts(other,!seam));
  });
 }
 function mechanismsUnlocked(){return Object.keys(story.progress).some(key=>/^level\d+$/.test(key)&&Number(key.slice(5))>=5&&story.progress[key]);}
@@ -1629,6 +1679,23 @@ function aimQubit(max=2.7,dir=direction()){
 function carrySet(hit){return rotorConnectedGroups(multiSelection.includes(hit.g)&&multiSelection.length>1?multiSelection.filter(g=>groups.includes(g)):[hit.g]);}
 function manualGripForce(weight){return Math.max(settings.force,weight*.25*(settings.gravity+12));}
 function canCarry(list){return rotorConnectedGroups(list).reduce((n,g)=>n+totalWeight(g),0)<=settings.maxCarry+.0001;}
+function stopRotorsForManipulation(list){
+ const included=new Set(list);if(!rotors.some(rotor=>rotorGroups(rotor).some(g=>included.has(g))))return;
+ // robotStopForGroups has already stopped each controller. Revalidate hinges
+ // once, then stop the complete selection before updating shared motor/brake
+ // state; configuring every stopped roller repeated both global passes.
+ refreshRotors();
+ const torqueCap=story.scene==='campaign'?campaignTorqueCap():null;
+ for(const rotor of rotors)if(rotorGroups(rotor).some(g=>included.has(g))){
+  if(torqueCap!==null)rotor.maxTorque=clamp(Math.min(rotor.maxTorque,torqueCap),.02,32);
+  rotor.enabled=false;rotor.stopReason=null;rotor.actualRpm=0;rotor.constraint?.disableMotor();unpinRotor(rotor);
+  for(const g of rotorGroups(rotor))if(g){g.body.angularVelocity.set(0,0,0);g.body.wakeUp();}
+ }
+ updateRotorMotors();
+ // Stopping the chassis changes each virtual cartridge's derived velocity.
+ // Refresh that kinematic state once, after every affected angular speed is zero.
+ for(const g of list)if(g.virtualConveyor)syncVirtualConveyorGroup(g);
+}
 function grabQubit(hitOverride=null){
  resetAssemblyShake();
  if(!gameInputActive()||held||marquee)return;let hit=hitOverride||aimQubit();if(hit?.g?.storyEmerging)return;const pickedPartId=hit?.part.id;
@@ -1641,7 +1708,7 @@ function grabQubit(hitOverride=null){
  for(const member of list){const run=mechanismRuns.get(member);if(run)run.repositioned=true;}
  robotStopForGroups(list);
  if(story.ready&&story.scene==='intro'&&hit.g===storyGuide()){hit.g.storyFloat=false;hit.g.body.type=CANNON.Body.DYNAMIC;hit.g.body.updateMassProperties();}
- for(const rotor of rotors)if(rotorGroups(rotor).some(g=>list.includes(g)))configureRotor(rotor,{enabled:false});
+ stopRotorsForManipulation(list);
  undockCampaignGroup(hit.g);
  selected=hit;const stable=list.length>1||hit.g.parts.length>1,rootPoint=stable?hit.g.body.position.clone():hit.point.clone();
  automationIntervention('Tomaste una pieza: ensayo reiniciado.');
@@ -2940,10 +3007,15 @@ function virtualizeConveyor(conveyor){
  for(const record of records){const {g,rotor}=record;if(rotor.constraint)world.removeConstraint(rotor.constraint);rotor.constraint=null;rotor.virtualConveyor=conveyor;rotor.visualPhase=0;g.virtualConveyor=record;world.removeBody(g.body);g.body.mass=0;g.body.invMass=0;
   const proxy=record.proxy;conveyorAppendShape(body,proxy.shape,proxy.offset,proxy.q);
  }
- body.mass+=mass;conveyorUpdateBodyProperties(body);conveyor.surfaces=conveyor.surfaces.slice();conveyor.worldGeometry=null;base.physicalBoundsCache=null;base.gripRadiusCache=null;syncVirtualConveyors();return true;
+ body.mass+=mass;conveyorUpdateBodyProperties(body);conveyor.surfaces=conveyor.surfaces.slice();conveyor.worldGeometry=null;base.physicalBoundsCache=null;base.gripRadiusCache=null;
+ for(const record of records)syncVirtualConveyorGroup(record.g);return true;
 }
 function materializeConveyor(conveyor){
- const compact=conveyor?.virtual;if(!compact)return false;syncVirtualConveyors();conveyor.virtual=null;const body=compact.body;
+ const compact=conveyor?.virtual;if(!compact)return false;
+ // Only this cartridge changes representation. Synchronizing the whole line
+ // for every section makes a weld visit the same rollers quadratically.
+ for(const record of compact.records)syncVirtualConveyorGroup(record.g);
+ conveyor.virtual=null;const body=compact.body;
  for(const proxy of compact.proxies){const index=body.shapes.indexOf(proxy.shape);if(index>=0){body.shapes.splice(index,1);body.shapeOffsets.splice(index,1);body.shapeOrientations.splice(index,1);}proxy.shape.body=null;}
  body.mass=Math.max(0,body.mass-compact.mass);conveyorUpdateBodyProperties(body);
  for(const record of compact.records){const {g,rotor}=record;delete g.virtualConveyor;delete rotor.virtualConveyor;g.body.mass=record.mass;g.body.updateMassProperties();g.body.aabbNeedsUpdate=true;rotor.frameCache=null;rotor.restPose=null;if(groups.includes(g)&&!world.bodies.includes(g.body))world.addBody(g.body);}
@@ -4164,11 +4236,13 @@ function weld(candidate,{sound=true}={}){
  }
  const sourceParts=poses(source,position,quaternion),targetParts=poses(target);
  const sourceEntries=sourceParts.map(collisionEntry),targetEntries=targetParts.map(collisionEntry);
- if(sourceEntries.some(a=>targetEntries.some(b=>boundsOverlap(a,b)&&obbOverlap(a.pose,b.pose,.000001))))return null;
- // A joining face must reach both material bounds. Keep the existing exact
- // face test, including composite T-bit faces, but build it only near the seam.
+ // Any intersection or joining face must reach both material bounds. Keep
+ // the exact overlap/face tests, including composite T-bit faces, but index
+ // only material near the other assembly rather than rebuilding a whole line.
  const margin=V(.0001,.0001,.0001),sourceBox=bounds(source,position,quaternion),targetBox=bounds(target),nearSource={min:sub(sourceBox.min,margin),max:add(sourceBox.max,margin)},nearTarget={min:sub(targetBox.min,margin),max:add(targetBox.max,margin)};
- if(!candidate.propellerTip&&!assembliesTouch(sourceEntries.filter(a=>boundsOverlap(a,nearTarget)).map(a=>a.pose),targetEntries.filter(b=>boundsOverlap(b,nearSource)).map(b=>b.pose)))return null;
+ const sourceNear=sourceEntries.filter(a=>boundsOverlap(a,nearTarget)),targetNear=targetEntries.filter(b=>boundsOverlap(b,nearSource));
+ if(collisionEntriesOverlap(sourceNear,targetNear,.000001))return null;
+ if(!candidate.propellerTip&&!assembliesTouch(sourceNear.map(a=>a.pose),targetNear.map(b=>b.pose)))return null;
  if(candidate.propellerTip){const both=sourceParts.concat(targetParts),hub=both.find(p=>p.part.id===candidate.hubId),blade=both.find(p=>p.part.id===candidate.bladeId);if(!hub||!blade||rotorForPart(candidate.hubId)||propellerSocket(hub,blade)!==candidate.side)return null;}
  const parts=sourceParts.map(o=>({id:o.part.id,weight:o.part.weight,shape:o.part.shape,p:o.p,q:o.q,mood:copyMood(o.part.mood)})).concat(worldParts(target));
  const rebound=new Set();
@@ -4181,8 +4255,15 @@ function weld(candidate,{sound=true}={}){
  }
  const placement=mechanismSnapPoses(source,position,quaternion);settleSnappedMechanisms(source,target);placeSnappedMechanism(placement);
  alignJoinedConveyors(source,target,candidate.conveyorAnchor);
- const ref=target.body.quaternion.clone();removeGroup(source);removeGroup(target);const joined=makeGroup(parts,ref);refreshRotors(rebound);
- batchConveyorBodyUpdates(()=>{for(const conveyor of conveyors)if(conveyorComplete(conveyor)&&conveyorEnsureSurfaces(conveyor))virtualizeConveyor(conveyor);});
+ const retiredShapes=new Map();for(const g of [source,target])for(const part of g.parts)if(isTBit(part)&&g.partShapes?.has(part.id))retiredShapes.set(part.id,g.partShapes.get(part.id));
+ const ref=target.body.quaternion.clone(),joined=batchConveyorBodyUpdates(()=>{
+  // The old chassis is retired and the new chassis receives all belt skins
+ // and roller envelopes in one operation. Refresh each body's derived mass
+ // and bounds once, after its final shape list is complete.
+  removeGroup(source);removeGroup(target);const next=makeGroup(parts,ref,V(),V(),retiredShapes);refreshRotors(rebound);
+  for(const conveyor of conveyors)if(conveyorComplete(conveyor)&&conveyorEnsureSurfaces(conveyor))virtualizeConveyor(conveyor);
+  return next;
+ });
  selected={g:joined,part:joined.parts[0]};queueSpeech(joined,'happy',{kind:'joined',indices:[7,9,15,17]});announce(candidate.propellerTip?(propellerLayout(joined).length?'Hélice lista · conecta una batería y abre Vuelo con clic derecho':'Primera pala colocada · acerca otro triangular al lado libre de la punta'):'Unidos · '+joined.parts.length+' '+groupUnitLabel(joined)+' · '+totalWeight(joined)+' u');if(sound)emitJoinSound(candidate.face?.p||position);return joined;
 }
 function applyOrientation(g,desired,strength=160,inertia=g.body.inertia){
@@ -5406,7 +5487,7 @@ const ringVertices=[];for(let i=0;i<48;i++)for(const n of [i,i+1]){const t=n/48*
 const ringGeometry=buffer(ringVertices),lineGeometry=gl.createBuffer();
 const attributes=[['aPosition',0],['aNormal',12],['aPiecePosition',0],['aPieceNormal',12]].map(([name,offset])=>[gl.getAttribLocation(program,name),offset]);
 let boundGeometry=null;
-function bindGeometry(b,batched=false){if(boundGeometry===b)return;gl.bindBuffer(gl.ARRAY_BUFFER,b);for(let i=0;i<attributes.length;i++){const [loc,offset]=attributes[i];gl.vertexAttribPointer(loc,3,gl.FLOAT,false,batched?48:24,offset+(batched&&i>1?24:0));}boundGeometry=b;}
+function bindGeometry(b,batched=false){if(boundGeometry===b)return;gl.bindBuffer(gl.ARRAY_BUFFER,b);for(let i=0;i<attributes.length;i++){const [loc,offset]=attributes[i];gl.vertexAttribPointer(loc,3,gl.FLOAT,false,batched==='outline'?36:batched?48:24,batched==='outline'?(i>1?24:offset):offset+(batched&&i>1?24:0));}boundGeometry=b;}
 function setPose(pos,q=Q(),dimensions=V(CUBE_SIZE,CUBE_SIZE,CUBE_SIZE)){
  gl.uniform3f(uniforms.uCenter,pos.x,pos.y,pos.z);gl.uniform4f(uniforms.uQuaternion,q.x,q.y,q.z,q.w);gl.uniform3f(uniforms.uDimensions,dimensions.x,dimensions.y,dimensions.z);
 }
@@ -5847,33 +5928,32 @@ function drawRigidOutline(g,alpha,chosen){
  let cache=g.outlineCache;
  if(!cache||cache.parts!==g.parts){
   disposeRigidOutline(g);
-  const pieces=g.parts.map(part=>{
-   const tbit=isTBit(part),points=[];
-   if(tbit){const profile=unitProfile(part);for(const edge of profile.edges)for(const i of edge)points.push(add(part.offset,part.q.vmult(mul(profile.vertices[i],1.008))));}
-   else for(let i=0;i<edgeData.length;i+=6)points.push(add(part.offset,part.q.vmult(V(edgeData[i]*(CUBE_SIZE+.0009),edgeData[i+1]*(CUBE_SIZE+.0009),edgeData[i+2]*(CUBE_SIZE+.0009)))));
-   return {tbit,points};
-  });cache=g.outlineCache={parts:g.parts,pieces,batches:[],stamp:null};
- }
- // Screen-width strokes depend on the view, but selection itself does not
- // change their geometry. A still machine reuses its GPU buffer, including
- // when the outline color/opacity changes. Keep only the current view.
- const p=g.body.position,q=g.body.quaternion,basis=cullingLab.renderView?.basis||cameraBasis(),eye=cullingLab.renderView?.eye||camera;
- const stamp=[p.x,p.y,p.z,q.x,q.y,q.z,q.w,...eye,basis.forward.x,basis.forward.y,basis.forward.z,basis.right.x,basis.right.y,basis.right.z,basis.up.x,basis.up.y,basis.up.z,previewViewport?.width||canvas.clientWidth,previewViewport?.height||canvas.clientHeight,heldFocus.focal,visuals.outlineWidth,!!chosen];
- if(!cache.stamp||!stamp.every((value,i)=>value===cache.stamp[i])){
-  if(cache.chosen!==!!chosen){
-   let batchIndex=0,local=[],type=null;
-   const flush=()=>{if(!local.length)return;const batch=cache.batches[batchIndex]||{buffer:gl.createBuffer(),data:[]};batch.type=type;batch.local=local;batch.points=local.map(()=>V());cache.batches[batchIndex++]=batch;local=[];};
-   for(const piece of cache.pieces){if(!chosen&&type!==null&&type!==piece.tbit)flush();type=piece.tbit;for(const point of piece.points)local.push(point);}flush();
-   while(cache.batches.length>batchIndex){const batch=cache.batches.pop();deleteRenderBuffer(batch.buffer);if(boundGeometry===batch.buffer)boundGeometry=null;}cache.chosen=!!chosen;
+  const count=g.parts.reduce((sum,part)=>sum+(isTBit(part)?unitProfile(part).edges.length:edgeData.length/12)*6,0),data=new Float32Array(count*9);let cursor=0;
+  const edge=(a,b,tbit)=>{
+   // The same two triangles and piece order as drawWideLines. Both endpoints
+   // remain local; metadata selects the endpoint and side in the vertex shader.
+   for(let vertex=0;vertex<6;vertex++){
+    data[cursor++]=a.x;data[cursor++]=a.y;data[cursor++]=a.z;
+    data[cursor++]=b.x;data[cursor++]=b.y;data[cursor++]=b.z;
+    data[cursor++]=vertex===2||vertex===3||vertex===5?1:0;
+    data[cursor++]=vertex===0||vertex===2||vertex===3?1:-1;data[cursor++]=tbit?1:0;
+   }
+  };
+  for(const part of g.parts){
+   if(isTBit(part)){
+    const profile=unitProfile(part),points=profile.vertices.map(v=>add(part.offset,part.q.vmult(mul(v,1.008))));
+    for(const [a,b]of profile.edges)edge(points[a],points[b],true);
+   }else for(let i=0;i<edgeData.length;i+=12){
+    const a=add(part.offset,part.q.vmult(V(edgeData[i]*(CUBE_SIZE+.0009),edgeData[i+1]*(CUBE_SIZE+.0009),edgeData[i+2]*(CUBE_SIZE+.0009))));
+    const b=add(part.offset,part.q.vmult(V(edgeData[i+6]*(CUBE_SIZE+.0009),edgeData[i+7]*(CUBE_SIZE+.0009),edgeData[i+8]*(CUBE_SIZE+.0009))));edge(a,b,false);
+   }
   }
-  for(const batch of cache.batches){
-   for(let i=0;i<batch.local.length;i++){const point=batch.points[i];q.vmult(batch.local[i],point);point.vadd(p,point);}
-   const data=wideLineTriangles(batch.points,visuals.outlineWidth,batch.data);batch.count=data.length/6;
-   if(!batch.upload||batch.upload.length<data.length)batch.upload=new Float32Array(data.length);batch.upload.set(data);
-   gl.bindBuffer(gl.ARRAY_BUFFER,batch.buffer);gl.bufferData(gl.ARRAY_BUFFER,batch.upload.subarray(0,data.length),gl.DYNAMIC_DRAW);boundGeometry=null;
-  }cache.stamp=stamp;
+  const batch={buffer:gl.createBuffer(),count};gl.bindBuffer(gl.ARRAY_BUFFER,batch.buffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);boundGeometry=null;
+  cache=g.outlineCache={parts:g.parts,batches:[batch]};
  }
- for(const batch of cache.batches)if(batch.count){bindGeometry(batch.buffer);gl.uniform1f(uniforms.uKind,3);setPose(V(),Q(),V(1,1,1));tint(...(chosen?visualRGB('outlineColor'):batch.type?[.1,.15,.16]:[.06,.09,.1]),alpha);submitDraw(gl.TRIANGLES,0,batch.count);}
+ // Camera motion, carrying, width, color and selection are uniform changes.
+ // Mixed materials also stay in one draw, retaining their original edge order.
+ for(const batch of cache.batches)if(batch.count){bindGeometry(batch.buffer,'outline');gl.uniform1f(uniforms.uKind,chosen?18:19);gl.uniform2f(uniforms.uOutlineStroke,visuals.outlineWidth,Math.max(1,previewViewport?.height||canvas.clientHeight));setPose(g.body.position,g.body.quaternion,V(1,1,1));tint(...visualRGB('outlineColor'),alpha);submitDraw(gl.TRIANGLES,0,batch.count);}
 }
 function selectionGroups(){if(selectedRotors().length)return [];const chosen=new Set(multiSelection);if(selected?.g)chosen.add(selected.g);return groups.filter(g=>chosen.has(g));}
 function selectionHudSnapshot(team=selectionGroups()){
@@ -5910,7 +5990,8 @@ function updateSelectionHud(dt){
 function drawStructureOutlines(){
  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
  const selectedGroups=new Set(selectionGroups());
- const rotorParts=new Set(selectedRotors().flatMap(r=>[r.aId,r.bId]));
+ const chosenRotors=selectedRotors(),rotorParts=new Map(),parts=chosenRotors.length?mechanicalPartIndex():null;
+ for(const rotor of chosenRotors)for(const id of [rotor.aId,rotor.bId]){const hit=parts.get(id);if(!hit)continue;if(!rotorParts.has(hit.g))rotorParts.set(hit.g,new Set());rotorParts.get(hit.g).add(hit.part);}
  for(const g of groups){const visible=renderGroupVisible(g);if(!visible&&(!visuals.markers||!selectedGroups.has(g)))continue;const chosen=selectedGroups.has(g);
   if(visible){
    if(g.block){const p=moodVisualPose(g,blockPose(g));drawOutline(p.p,p.q,p.size,.88,chosen);}
@@ -5919,9 +6000,9 @@ function drawStructureOutlines(){
   // A screen-space marker extends beyond its body's bound. Keep it separate
   // so a selected body just below the view does not hide its visible marker.
   if(chosen&&visuals.markers){const bb=bounds(g);drawSelectionMarker(V(bb.center.x,bb.max.y+.025,bb.center.z),simTime);}
-  if(visible&&rotorParts.size)for(const pose of g.virtualConveyor?g.parts.map(part=>virtualConveyorVisualPose(g,part)):poses(g))if(rotorParts.has(pose.part.id))drawUnitOutline(pose,1,true);
+  if(visible&&rotorParts.has(g))for(const part of rotorParts.get(g))drawUnitOutline(g.virtualConveyor?virtualConveyorVisualPose(g,part):partPose(g,part),1,true);
  }
- if(visuals.markers)for(const rotor of selectedRotors()){const p=rotorMenuPoint(rotor);drawSelectionMarker(V(p.x,p.y+CUBE_SIZE*1.5,p.z),simTime);}
+ if(visuals.markers)for(const rotor of chosenRotors){const p=rotorMenuPoint(rotor);drawSelectionMarker(V(p.x,p.y+CUBE_SIZE*1.5,p.z),simTime);}
  gl.depthMask(true);gl.disable(gl.BLEND);
 }
 document.addEventListener('pointerlockchange',()=>{if(document.pointerLockElement!==canvas)finishMarquee(true);});

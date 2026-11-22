@@ -1,8 +1,43 @@
 # Q-bits — punto de continuación
 
-Actualizado: 21 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
+Actualizado: 22 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega · consultas compartidas de suministro y masa
+## Última entrega · unión, agarre y selección de conjuntos grandes
+
+Tomar un mecanismo detiene sus rotores por lote: `stopRotorsForManipulation` hace una revisión global de articulaciones y una actualización de motores, después de detener los controladores existentes. Conserva frenos, desanclaje, velocidades, límites de par de campaña y la intervención del ensayo. Al terminar sincroniza una vez los rodillos virtuales con el chasis ya detenido; sus velocidades derivadas quedan correctas inmediatamente. En la línea de referencia se eliminan 125 de las 126 revisiones globales repetidas al agarrar.
+
+La unión agrupa la reconstrucción de masa y límites durante la sustitución completa del chasis: cada cuerpo retirado se actualiza una sola vez. Los convexos individuales de T-bits y enganches se transfieren después de retirar sus cuerpos originales, invalidando sus cachés de vértices y normales mundiales; nunca se comparten entre cuerpos vivos ni se reutilizan de esa forma las cajas que agrupan cubos. Materializar o virtualizar una cinta sincroniza sus propios rodillos. Las comprobaciones exactas de solapamiento y contacto de caras sólo indexan el material dentro de los límites ampliados de la otra estructura.
+
+`conveyorGroupSurfaces` consulta la pertenencia de piezas por índice. `physicalCollisionParts` comparte las entradas exactas y el árbol espacial del destino entre comprobaciones de colocación, con variantes independientes para obstáculos externos y las excepciones de envolventes entre bastidores que se van a unir. Piezas, pose, topología, módulos, superficies y representación virtual invalidan esa caché; los huecos reales, la piel delgada y los obstáculos extranjeros siguen comprobándose.
+
+Los contornos rígidos guardan sus aristas locales en un buffer persistente. El shader WebGL1 calcula su anchura en pantalla a partir de la cámara y la pose actuales. Mover, girar, seleccionar o cambiar color/grosor ya no reconstruye ni vuelve a subir todos los triángulos. Las formas y colores de cubos, T-bits y enganches permanecen; los rodillos animados conservan su ruta visual existente. Seleccionar un rotor consulta únicamente sus extremos. Los buffers se liberan al eliminar o reemplazar la geometría.
+
+Mejora adicional: las miniaturas de `selection-hud.js` preparan normales y centros de caras una vez y reutilizan sus arrays de proyección y pintura. Conservan los polígonos, iluminación, orden, animaciones, entrada y frecuencia de 30 Hz. No se reduce la cantidad de material mostrado ni el presupuesto de 2000 piezas.
+
+Verificación: **1081/1081 pruebas Node aprobadas**, cero fallos, cancelaciones u omisiones (41,06 s en esta ejecución). Las once regresiones nuevas y las comprobaciones ampliadas cubren el agarre por lote, velocidad inmediata de rodillos, uniones con masa e inercia listas, ownership de convexos, huecos y pieles, invalidación de ambas variantes de colisión, contornos móviles sin subidas, selección de extremos y proyección de miniaturas con cambios de geometría. Se mantiene la suite de campaña, almacenamiento, cintas, brazos, servos, energía y física real con Cannon.
+
+Comparación contra `6e08195`, con fuentes congeladas y dos corridas sin instrumentación por variante. Escenario: 42 cintas soldadas, seis brazos separados en reposo, dos cubos y 1506 piezas, física a 120 Hz; la comprobación de encaje añade un cubo. Son tiempos de ejecución de cada operación en Node, con DOM/GPU simulados, no FPS del navegador ni una reproducción de la partida concreta del jugador.
+
+| Operación | Antes | Ahora | Reducción |
+| --- | ---: | ---: | ---: |
+| Unir el módulo número 42 | 91,91 ms | 49,23 ms | 46,4 % |
+| Primer agarre de la línea | 59,81 ms | 3,82 ms | 93,6 % |
+| Preparar el primer contorno | 54,84 ms | 9,04 ms | 83,5 % |
+| Contorno con cámara móvil | 22,08 ms | 0,0092 ms | Sin reconstrucción ni nueva subida por movimiento |
+| Render de la escena seleccionada | 34,77 ms | 15,98 ms | 54,0 % |
+| Búsqueda repetida de encaje | 13,38 ms | 1,95 ms | 85,4 % |
+
+La primera preparación es sensible a JIT/GC: los contornos anteriores dieron 37,58–72,10 ms y los finales 8,24–9,83 ms. En 30 dibujos móviles se pasa de 29 subidas y unos 52,8 MB transferidos a cero nuevas subidas. El buffer inicial del chasis pasa de unos 1,82 a 2,73 MB, a cambio de permanecer en GPU. El coste sostenido del solver no mejora en esta entrega: 10,62 frente a 11,00 ms por tick sostenido y 19,78 frente a 20,88 ms al girar, con variación entre las pocas muestras. Una unión grande todavía puede producir un pico de alrededor de 49 ms.
+
+Los ocho estados comparados coinciden exactamente en ambas corridas finales: después de unir, seleccionar/dibujar, tomar, aplicar el controlador, simular, girar, soltar y encontrar un encaje válido. Incluyen identidad y geometría local, masa, poses, velocidades, estados de ánimo, articulaciones/cintas, tiempo y anclas. `game.js` medido: SHA-256 `f0ccd14bb247be9894aa32bd2e91cedbc7c370e0309a40da0113824f7ae2c63e`.
+
+El benchmark separado de miniaturas usa la selección real de un chasis de 970 piezas y seis raíces de brazo. El pintado continuo del chasis baja de 5,00 a 1,17 ms; con varias miniaturas visibles, de 4,39 a 1,27 ms. Las doce capturas de comandos Canvas2D coinciden exactamente en coordenadas, orden, colores, opacidad y cantidades. No se atribuye una mejora estable al primer pintado, cuyos tiempos varían con JIT/GC.
+
+`tests/validate-robot-arm-gles.py` pasa con **91 capturas y cero errores GPU/atributos**. Las veinte comparaciones de contornos cubren color, ancho, cámara observadora, FOV, resolución CSS, foco, plano cercano y rodillos. Reutilizar el buffer y dibujar rodillos conserva los píxeles exactos. Entre el cálculo CPU anterior y el shader hay como máximo cinco píxeles con alguna diferencia de 691200, cuatro por encima de dos niveles, y error medio máximo de 0,00024993 niveles por canal; se conserva la tolerancia estricta ya usada para geometría agrupada. Esta validación ejecuta GLES en Mesa y no sustituye una medición del navegador del jugador.
+
+Siguiente paso: medir la línea real con la nueva versión y separar el coste sostenido de simulación del pico que aún queda al unir. El código conserva JavaScript estático, Cannon 0.6.2, las frecuencias y los formatos de guardado existentes.
+
+## Entrega anterior · consultas compartidas de suministro y masa
 
 Los consumidores reutilizan la pertenencia mecánica y las referencias a fuentes de energía. `mechanicalComponentGroups` entrega una lista interna compartida; `rotorConnectedGroups` conserva sus arrays propios y el orden de semillas anterior. `getCableSupply` parte de los grupos directos del consumidor, deduplica nodos eléctricos y evita expandir el mecanismo completo antes de consultar la misma red. Sin cables, el descubrimiento de baterías se comparte por componente durante el subpaso.
 

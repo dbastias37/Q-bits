@@ -100,7 +100,7 @@ def png(path,pixels):
  raw=b''.join(b'\0'+pixels[y*W*4:(y+1)*W*4] for y in range(H-1,-1,-1))
  path.write_bytes(b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('!2I5B',W,H,8,6,0,0,0))+chunk(b'IDAT',zlib.compress(raw,6))+chunk(b'IEND',b''))
 for command in data['init']:replay(command)
-results=[];reference_pixels=None;batch_equivalence=None;placement_pixels=None;virtual_running_pixels=None
+results=[];reference_pixels=None;batch_equivalence=None;placement_pixels=None;virtual_running_pixels=None;outline_merged_pixels=None;outline_equivalence=[]
 for shot in data['snapshots']:
  # Replay the actual command list; state remains live across captures as in WebGL.
  for command in shot['commands']:replay(command)
@@ -134,10 +134,18 @@ for shot in data['snapshots']:
   changed=sum(any(abs(raw[i+c]-reference_pixels[i+c])>2 for c in range(3)) for i in range(0,len(raw),4))
   mean=sum(abs(a-b) for a,b in zip(raw,reference_pixels))/len(raw)
   assert changed<W*H*.0005 and mean<.01,('rigid batch changes rendered appearance',changed,mean)
-  if shot['name'].startswith('outline-'):assert raw==reference_pixels,('cached outline changes rendered pixels',shot['name'])
+  if shot['name'].startswith('outline-'):
+   # Rigid endpoints now expand in the vertex shader (float32), rather than
+   # JS doubles followed by a float32 upload. Isolated edge coverage can vary
+   # by a pixel; use the same tight raster tolerance as rigid mesh batching.
+   # Reusing that GPU buffer, and unchanged virtual-roller strokes, remain exact.
+   if shot['name'].startswith('outline-virtual-'):assert raw==reference_pixels,('virtual outline changes rendered pixels',shot['name'])
+   elif shot['name'].endswith('-merged'):outline_merged_pixels=raw
+   else:assert raw==outline_merged_pixels,('reusing outline geometry changes rendered pixels',shot['name'])
+   outline_equivalence.append({'name':shot['name'],'pixelsChangedOverTwoLevels':changed,'meanChannelError':mean,'comparedPixels':W*H})
   batch_equivalence={'pixelsChangedOverTwoLevels':changed,'meanChannelError':mean,'comparedPixels':W*H}
  results.append({'name':shot['name'],'parts':shot['parts'],'bodies':shot['bodies'],'joints':shot['joints'],'foregroundPixels':foreground,'bluePixels':blue,'path':str(OUT/(shot['name']+'.png'))})
 assert not data['validation'],'invalid attributes or depth clear'
-print(json.dumps({'compiledShaders':compiled,'linkedPrograms':linked,'gpuErrors':0,'rigidBatchEquivalence':batch_equivalence,'snapshots':results}))
+print(json.dumps({'compiledShaders':compiled,'linkedPrograms':linked,'gpuErrors':0,'rigidBatchEquivalence':batch_equivalence,'outlineEquivalence':outline_equivalence,'snapshots':results}))
 egl('eglMakeCurrent',U,P,P,P,P)(d,None,None,None)
 egl('eglDestroyContext',U,P,P)(d,ctx);egl('eglDestroySurface',U,P,P)(d,surf);egl('eglTerminate',U,P)(d)

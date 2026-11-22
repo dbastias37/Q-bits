@@ -26,6 +26,17 @@
   if(item.revision!==undefined)return String(item.revision);
   return JSON.stringify((item.parts||[]).map(p=>[p.id,p.shape,p.p,p.q,p.vertices,p.faces,p.color]));
  }
+ // Selection geometry is rigid. Prepare its face planes and centers once,
+ // then rotate them with the vertices instead of rebuilding every polygon
+ // and allocating its vectors on each 30 Hz thumbnail frame.
+ function prepareMesh(mesh){
+  const points=mesh.points.map(()=>[0,0,0]),faces=mesh.faces.map(face=>{
+   const a=mesh.points[face.indices[0]],b=mesh.points[face.indices[1]],c=mesh.points[face.indices[2]],ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];
+   const normal=[uy*vz-uz*vy,uz*vx-ux*vz,ux*vy-uy*vx],center=[0,0,0];
+   for(const index of face.indices){const p=mesh.points[index];for(let i=0;i<3;i++)center[i]+=p[i];}for(let i=0;i<3;i++)center[i]/=face.indices.length;
+   return {normal,length:Math.hypot(...normal),center,color:face.color,pts:face.indices.map(i=>points[i]),z:0,r:-1,g:-1,b:-1,fill:''};
+  });return {points,faces,visible:[]};
+ }
  function stateMotion(item,time,reduced,hoverAge=-1){
   if(reduced)return {x:0,y:0,turn:.45,tilt:0,stretch:1};
   const agitation=clamp(finite(item.agitation),0,1),excited=item.mood==='excited',restless=item.mood==='restless';
@@ -101,15 +112,19 @@
    if(entry.contextFailed)return;const canvas=entry.canvas,ctx=entry.ctx||(entry.ctx=canvas.getContext('2d'));if(!ctx){entry.contextFailed=true;return;}const w=canvas.clientWidth||70,h=canvas.clientHeight||76,dpr=Math.min(root.devicePixelRatio||1,2);
    if(canvas.width!==Math.round(w*dpr))canvas.width=Math.round(w*dpr);if(canvas.height!==Math.round(h*dpr))canvas.height=Math.round(h*dpr);
    ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
-   const stamp=fingerprint(entry.item);if(stamp!==entry.stamp){entry.mesh=geometry(entry.item);entry.stamp=stamp;}
+   const stamp=fingerprint(entry.item);if(stamp!==entry.stamp){entry.mesh=geometry(entry.item);entry.paint=prepareMesh(entry.mesh);entry.stamp=stamp;}
    const scale=scaleAt(entry.age,entry.leaving,reduced),opacity=entry.leaving?clamp(1-entry.age/EXIT,0,1):clamp(entry.age/.12,0,1),motion=stateMotion(entry.item,clock,reduced,clock-entry.hoverAt);
    if(!entry.mesh.points.length||scale<=0)return;
    const sy=Math.sin(motion.turn),cy=Math.cos(motion.turn),pitch=.45+motion.tilt,sp=Math.sin(pitch),cp=Math.cos(pitch),zoom=Math.min(w,h)*.54*scale;
-   const transformed=entry.mesh.points.map(([x,y,z])=>{const xx=x*cy+z*sy,zz=z*cy-x*sy;return [xx,y*cp-zz*sp,y*sp+zz*cp];});
-   const faces=[];
-   for(const face of entry.mesh.faces){const pts=face.indices.map(i=>transformed[i]);if(pts.some(p=>!p))continue;const a=pts[0],b=pts[1],c=pts[2],u=b.map((v,i)=>v-a[i]),v=c.map((n,i)=>n-a[i]),n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]],len=Math.hypot(...n);if(len<1e-9||n[2]<=0)continue;const light=.56+.44*Math.max(0,(-.35*n[0]+.65*n[1]+.68*n[2])/len);faces.push({pts,z:pts.reduce((sum,p)=>sum+p[2],0)/pts.length,color:face.color.map(c=>Math.round(clamp(c*light+.012,0,1)*255))});}
+   const paint=entry.paint;for(let i=0;i<entry.mesh.points.length;i++){const [x,y,z]=entry.mesh.points[i],xx=x*cy+z*sy,zz=z*cy-x*sy,p=paint.points[i];p[0]=xx;p[1]=y*cp-zz*sp;p[2]=y*sp+zz*cp;}
+   const faces=paint.visible;faces.length=0;
+   for(const face of paint.faces){const [x,y,z]=face.normal,xx=x*cy+z*sy,zz=z*cy-x*sy,ny=y*cp-zz*sp,nz=y*sp+zz*cp;if(face.length<1e-9||nz<=0)continue;
+    const light=.56+.44*Math.max(0,(-.35*xx+.65*ny+.68*nz)/face.length),r=Math.round(clamp(face.color[0]*light+.012,0,1)*255),g=Math.round(clamp(face.color[1]*light+.012,0,1)*255),b=Math.round(clamp(face.color[2]*light+.012,0,1)*255);
+    if(r!==face.r||g!==face.g||b!==face.b){face.r=r;face.g=g;face.b=b;face.fill='rgb('+r+','+g+','+b+')';}
+    const center=face.center;face.z=center[1]*sp+(center[2]*cy-center[0]*sy)*cp;faces.push(face);
+   }
    faces.sort((a,b)=>a.z-b.z);ctx.globalAlpha=opacity;ctx.lineJoin='round';ctx.lineWidth=.7;
-   for(const face of faces){ctx.beginPath();for(let i=0;i<face.pts.length;i++){const p=face.pts[i],x=w/2+p[0]*zoom+motion.x,y=h*.54-p[1]*zoom*motion.stretch+motion.y;ctx[i?'lineTo':'moveTo'](x,y);}ctx.closePath();ctx.fillStyle='rgb('+face.color.join(',')+')';ctx.fill();ctx.strokeStyle='rgba(100,117,118,.28)';ctx.stroke();}
+   for(const face of faces){ctx.beginPath();for(let i=0;i<face.pts.length;i++){const p=face.pts[i],x=w/2+p[0]*zoom+motion.x,y=h*.54-p[1]*zoom*motion.stretch+motion.y;ctx[i?'lineTo':'moveTo'](x,y);}ctx.closePath();ctx.fillStyle=face.fill;ctx.fill();ctx.strokeStyle='rgba(100,117,118,.28)';ctx.stroke();}
    ctx.globalAlpha=1;
   }
   function update(items,dt=0,flags={}){

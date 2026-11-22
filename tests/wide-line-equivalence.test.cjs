@@ -25,15 +25,32 @@ test('optimized selection strokes upload exactly the same triangles as the previ
  assert(a.uploads.length>3);assert.deepEqual(b.uploads,a.uploads);
 });
 
-test('batched rigid outlines preserve the per-piece triangles and style while reducing selected draws',()=>{
+test('persistent rigid edges preserve every per-piece endpoint, triangle and material in one upload',()=>{
  const a=fixture(source),b=fixture(source);
  for(const chosen of [false,true]){for(const game of [a,b]){
   const {t}=game;t.clearNarrativeScene();t.setLook({camera:[.2,1.4,2.2],yaw:.15,pitch:-.3});Object.assign(t.getVisuals(),{style:'cel',outlineWidth:3});
   const g=t.makeGroup(Array.from({length:16},(_,i)=>{const q=t.Q();q.setFromEuler(i*.13,i*.07,-i*.1);return {id:t.allocateUnitId(),shape:['cube','tetra','pyramid','coupler'][i%4],weight:1,p:t.V(i%4*.14,.3+Math.floor(i/4)*.14,i%3*.12),q};}));
   g.body.quaternion.setFromEuler(.2,-.3,.1);game.uploads.length=0;
-  if(game===a)for(const pose of t.poses(g))t.drawUnitOutline(pose,.85,chosen);else t.drawRigidOutline(g,.85,chosen);
+  if(game===a)for(const pose of t.poses(g))t.drawUnitOutline(pose,.85,chosen);else{
+   t.drawRigidOutline(g,.85,chosen);assert.equal(game.uploads.length,1);const edges=game.uploads[0],points=[];
+   assert.equal(edges.length%54,0);let partIndex=0,partEdges=0;
+   const edgesPerShape={cube:12,tetra:6,pyramid:8,coupler:16};
+   for(let i=0;i<edges.length;i+=54){
+    const first=edges.slice(i,i+6),material=g.parts[partIndex].shape==='cube'?0:1;
+    for(let vertex=0;vertex<6;vertex++){
+     const at=i+vertex*9;assert.deepEqual(edges.slice(at,at+6),first,'triangle vertices retain the same segment endpoints');
+     assert.deepEqual(edges.slice(at+6,at+9),[[0,1],[0,-1],[1,1],[1,1],[0,-1],[1,-1]][vertex].concat(material),'endpoint, side and original material');
+    }
+    points.push(g.body.quaternion.vmult(t.V(...first.slice(0,3))).vadd(g.body.position),g.body.quaternion.vmult(t.V(...first.slice(3,6))).vadd(g.body.position));
+    if(++partEdges===edgesPerShape[g.parts[partIndex].shape]){partIndex++;partEdges=0;}
+   }
+   assert.equal(partIndex,g.parts.length);assert.equal(partEdges,0);
+   // Decode the immutable endpoints through the unchanged CPU reference. The
+   // GLES test separately executes the actual shader and checks rendered pixels.
+   game.uploads.length=0;t.drawWideLines(points,[.1,.5,.7,.85],3);
+  }
  }
  const aa=a.uploads.flat(),bb=b.uploads.flat();assert.equal(bb.length,aa.length);for(let i=0;i<aa.length;i++)assert(Math.abs(aa[i]-bb[i])<2e-7,'triangle component '+i);
- assert.equal(b.uploads.length,chosen?1:8);assert.equal(a.uploads.length,16);
+ assert.equal(b.uploads.length,1);assert.equal(a.uploads.length,16);
  }
 });

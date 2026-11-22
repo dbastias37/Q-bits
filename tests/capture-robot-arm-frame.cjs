@@ -209,6 +209,25 @@ for(const jitter of [0,.45])for(const moved of [false,true]){
  const renderOutline=reference=>{uniform('uJitter',jitter);t.drawGroupSolid(outlineGroup);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);if(reference)for(const pose of t.poses(outlineGroup))t.drawUnitOutline(pose,.85,true);else t.drawRigidOutline(outlineGroup,.85,true);gl.depthMask(true);gl.disable(gl.BLEND);};
  capture(name+'-reference',eye,target,()=>renderOutline(true),{joints:0});capture(name+'-merged',eye,target,()=>renderOutline(false),{joints:0});capture(name+'-cached',eye,target,()=>renderOutline(false),{joints:0});
 }
+// Exercise the persistent stroke shader beyond a stationary selection: custom
+// widths/colors, mixed cel materials, observer projection, CSS resolution,
+// focus masks, and segments crossing/behind the near plane.
+function outlineCase(name,{group=outlineGroup,eye=[1.2,1,1.7],target=[.4,.2,.15],stroke=3,color='#30b5c4',alpha=.85,chosen=true,jitter=0,focal=1.9,cssScale=1,observer=false,focus=false,strokesOnly=false}={}){
+ const visual=t.getVisuals(),old={outlineWidth:visual.outlineWidth,outlineColor:visual.outlineColor,style:visual.style},delta=target.map((v,i)=>v-eye[i]),yaw=Math.atan2(-delta[0],-delta[2]),pitch=Math.asin(delta[1]/Math.hypot(...delta));
+ Object.assign(visual,{outlineWidth:stroke,outlineColor:color,style:'cel'});t.canvas.clientWidth=width*cssScale;t.canvas.clientHeight=height*cssScale;t.heldFocus.focal=focal;
+ if(observer){t.setLook({camera:[-2,2,3],yaw:-.7,pitch:.2});t.cullingLab.renderView={eye,basis:{forward:t.V(-Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)),right:t.V(Math.cos(yaw),0,-Math.sin(yaw)),up:t.V(Math.sin(yaw)*Math.sin(pitch),Math.cos(pitch),Math.cos(yaw)*Math.sin(pitch))}};}
+ else t.setLook({camera:eye,yaw,pitch});
+ const render=reference=>{uniform('uJitter',jitter);uniform('uFocal',focal);uniform('uFocusMask',focus?1:0);if(!strokesOnly)t.drawGroupSolid(group);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);if(reference)for(const pose of t.poses(group))t.drawUnitOutline(pose,alpha,chosen);else t.drawRigidOutline(group,alpha,chosen);gl.depthMask(true);gl.disable(gl.BLEND);};
+ const details={joints:0,outlineStroke:stroke,outlineFocal:focal,outlineObserver:observer,outlineFocus:focus};
+ capture('outline-case-'+name+'-reference',eye,target,()=>render(true),details);capture('outline-case-'+name+'-merged',eye,target,()=>render(false),details);capture('outline-case-'+name+'-cached',eye,target,()=>render(false),details);
+ Object.assign(visual,old);t.canvas.clientWidth=width;t.canvas.clientHeight=height;t.heldFocus.focal=1.9;t.cullingLab.renderView=null;
+}
+outlineCase('thick-color',{stroke:6,color:'#e852c0',alpha:.37});
+outlineCase('mixed-cel',{stroke:2.75,chosen:false});
+outlineCase('observer-focal',{stroke:3,focal:1.35,cssScale:1.5,observer:true,jitter:.45});
+outlineCase('focus',{stroke:4,focus:true});
+const nearOutline=t.makeGroup([{id:t.allocateUnitId(),weight:1,shape:'cube',p:t.V(0,.4,.17),q:t.Q()},{id:t.allocateUnitId(),weight:1,shape:'coupler',p:t.V(.1,.4,.3),q:t.Q()}]);
+outlineCase('near-plane',{group:nearOutline,eye:[0,.4,.2],target:[0,.4,0],stroke:4,strokesOnly:true});
 // Virtual cartridges retain their original meshes while only the chassis
 // participates in physics. Exercise real power, visual phase, stop and removal.
 lab();t.world.gravity.set(0,-t.settings.gravity,0);if(!t.spawnSavedMechanism(t.conveyorBlueprintTemplate('straight',false),t.V()))throw Error('Missing virtual conveyor');

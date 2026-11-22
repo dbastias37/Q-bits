@@ -138,7 +138,7 @@ module.exports = function createGame(options = {}) {
     groups,cargos,V,Q,world,story,bounds,
     ...(typeof drawRigidOutline==='function'?{drawRigidOutline}:{}),
     ...(typeof rotatedGroupBounds==='function'?{rotatedGroupBounds,collisionPoseBounds,collisionEntry,gripPenetration,gripTranslationContact,gripTranslatedDepth}:{}),
-    ...(typeof rigidGroupsOverlap==='function'?{rigidCollisionParts,rigidGroupsOverlap}:{}),stabilizeRotors,poses,corners,drawQubits,drawCargos,drawStoryWorld,drawStoryGlass,updateTarget,updateSpeech,updateStoryMarker,
+    ...(typeof rigidGroupsOverlap==='function'?{rigidCollisionParts,rigidGroupsOverlap}:{}),...(typeof physicalCollisionParts==='function'?{physicalCollisionParts}:{}),stabilizeRotors,poses,corners,drawQubits,drawCargos,drawStoryWorld,drawStoryGlass,updateTarget,updateSpeech,updateStoryMarker,
     measureEncounterBubbles,placeEncounterBubble,addEncounterBubble,encounterBubbles,
     findSnap,weld,makeFragments,detachPart,validPose,physicalGroupPoses,physicalGroupBounds,conveyorGroupSurfaces,settings,spawnQubit,creationShape,updateAlphaHUD,
     rotors,rotorPart,couplerTip,rotorForGroup,rotorForPart,rotorGroups,rotorConnectedGroups,connectRotorTips,configureRotor,disconnectRotor,refreshRotors,spawnRotor,findRotorSnap,updateRotorMotors,allocateUnitId,rotorPowerState,prepareRotorPower,updateRotorPower,updateMoods,mechanismDefaults,

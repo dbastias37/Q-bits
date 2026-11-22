@@ -59,3 +59,18 @@ test('batched joining leaves mass, inertia, broadphase radius and proxy collisio
  for(const k of ['x','y','z']){near(body.inertia[k],reference.inertia[k]);near(body.invInertia[k],reference.invInertia[k]);near(body.aabb.lowerBound[k],reference.aabb.lowerBound[k]);near(body.aabb.upperBound[k],reference.aabb.upperBound[k]);}
  const proxy=second.virtual.proxies[0],position=body.pointToWorldFrame(proxy.offset),obstacle=t.addQubit([position.x,position.y,position.z]),a=[],b=[];t.world.broadphase.collisionPairs(t.world,a,b);assert(a.some((candidate,i)=>candidate===body&&b[i]===obstacle.body||candidate===obstacle.body&&b[i]===body),'new proxy geometry participates before another physics step');
 });
+
+test('extending a stopped line refreshes each retired chassis once and preserves every roller and its mass',()=>{
+ const {t}=lab();let last=belt(t);for(let i=0;i<5;i++)last=extend(t,last);
+ const target=t.rotorPart(last.baseId).g,record=t.conveyorBlueprintTemplate('straight'),placement=t.conveyorBlueprintPlacement(record,last),q=t.Q(),point=placement.point.clone(),beforeGroups=new Set(t.groups);
+ point.y-=.003;q.setFromAxisAngle(t.V(0,1,0),placement.quarterTurns*Math.PI/2);assert(t.spawnSavedMechanism(record,point,q));
+ const next=t.conveyors.at(-1),source=t.rotorPart(next.baseId).g,before=inventory(t),mass=physicsMass(t),rotorIds=t.rotors.map(r=>r.id),refreshes=new Map(),convex=new Map();
+ for(const g of [source,target])for(const part of g.parts)if(part.shape!=='cube'){const shape=g.partShapes.get(part.id);shape.computeWorldVertices(g.body.position,g.body.quaternion);shape.computeWorldFaceNormals(g.body.quaternion);convex.set(part.id,shape);}
+ for(const g of [source,target]){const body=g.body,update=body.updateMassProperties;refreshes.set(body,0);body.updateMassProperties=function(){refreshes.set(body,refreshes.get(body)+1);return update.apply(this,arguments);};}
+ assert(t.joinCompletedConveyorBlueprint({conveyorLink:last.baseId},t.groups.filter(g=>!beforeGroups.has(g))));
+ for(const count of refreshes.values())assert.equal(count,1,'removing several cartridges from one retired body must not rebuild its inertia per cartridge');
+ assert.deepEqual(inventory(t),before);assert.deepEqual(t.rotors.map(r=>r.id),rotorIds);assert.equal(physicsMass(t),mass);
+ const joined=t.rotorPart(next.baseId).g;assert.equal(t.world.bodies.filter(b=>b.qubitGroup).length,1);assert.equal(t.world.constraints.length,0);
+ assert(convex.size>0);for(const [id,shape]of convex){assert.equal(joined.partShapes.get(id),shape,'unchanged convex material transfers without reconstructing its hull');assert(shape.worldVerticesNeedsUpdate);assert(shape.worldFaceNormalsNeedsUpdate);assert.equal(t.world.bodies.filter(body=>body.shapes.includes(shape)).length,1,'a transferred shape has only one live physical owner');}
+ for(const c of t.conveyors){assert.equal(t.rotorPart(c.baseId).g,joined);assert.equal(c.virtual.body,joined.body);assert(c.virtual.proxies.every(p=>joined.body.shapes.includes(p.shape)));for(const r of t.conveyorRotors(c))assert(t.couplerTip(t.rotorPart(r.aId)).point.distanceTo(t.couplerTip(t.rotorPart(r.bId)).point)<1e-8);}
+});
