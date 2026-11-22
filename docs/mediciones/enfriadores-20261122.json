@@ -1,0 +1,47 @@
+{
+  "pieces": 1008,
+  "coolers": 8,
+  "warm": 12,
+  "steps": 30,
+  "repeats": 3,
+  "counts": {
+    "baseline": [
+      {
+        "cpuMs": 23.878533333333333,
+        "wallMs": 23.48172393333333
+      },
+      {
+        "cpuMs": 23.649833333333333,
+        "wallMs": 23.4049695
+      },
+      {
+        "cpuMs": 23.50636666666667,
+        "wallMs": 23.276905199999995
+      }
+    ],
+    "optimized": [
+      {
+        "cpuMs": 2.889733333333333,
+        "wallMs": 2.094854366666664
+      },
+      {
+        "cpuMs": 1.3956666666666666,
+        "wallMs": 0.7428500333333355
+      },
+      {
+        "cpuMs": 0.47863333333333336,
+        "wallMs": 0.23353996666667928
+      }
+    ]
+  },
+  "baselineCpuMs": 23.649833333333333,
+  "optimizedCpuMs": 1.3956666666666666,
+  "reductionPercent": 94.09861944058802,
+  "exactEquivalentSnapshots": 81,
+  "method": "Node real game logic with DOM/GPU stubs; CPU time only for updateCooling, not full frame or browser FPS.",
+  "baselineCommit": "d79a1326e3ace210aad89ce45cb1817af60cf0ac",
+  "baselineSourceSha256": "e41d68412429a05fe9f0219fedd4040a290e1466754a6d2e2f90ad03ce393ff3",
+  "optimizedSourceSha256": "8f4ef6ac6212ee6a97fbcc2495754adefd84f9193f13cd69ecd82d7da1f31e8b",
+  "optimizedGuard": "virtualConveyor preserves native exact-geometry route; physical groups reject XZ-disjoint bounds with 0.316 margin before unchanged 0.315 radial test",
+  "sourceScope": "Frozen baseline plus isolated updateCooling predicate only; not the fully integrated game.js and not browser FPS."
+}

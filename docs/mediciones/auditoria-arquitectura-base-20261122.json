@@ -1,0 +1,222 @@
+{
+  "baselineCommit": "d79a1326e3ace210aad89ce45cb1817af60cf0ac",
+  "sourceSha256": "e41d68412429a05fe9f0219fedd4040a290e1466754a6d2e2f90ad03ce393ff3",
+  "node": "v24.22.3",
+  "method": "Real production functions and Cannon with diagnostic counters; DOM/GPU stubs. No FPS or wall-time claim. Sensor query samples measure reading routines separately from discovery/commands.",
+  "reproduction": "Set QBITS_GAME_SOURCE to the baseline assets/js/game.js, then run node tests/benchmark-architecture-audit.cjs.",
+  "reports": [
+    {
+      "label": "pick-empty-space",
+      "pieces": 1000,
+      "withinReach": 0,
+      "counts": {
+        "poses": 100,
+        "partPose": 1000,
+        "rayPart": 1000
+      }
+    },
+    {
+      "label": "target-ui-empty-space",
+      "pieces": 1000,
+      "withinReach": 0,
+      "counts": {
+        "poses": 300,
+        "partPose": 3000,
+        "rayPart": 3000
+      }
+    },
+    {
+      "label": "no-sensors-tick",
+      "pieces": 1000,
+      "sensors": 0,
+      "counts": {
+        "partState.scan": 1000
+      }
+    },
+    {
+      "label": "no-sensors-render",
+      "pieces": 1000,
+      "sensors": 0,
+      "counts": {
+        "partState.scan": 1000
+      }
+    },
+    {
+      "label": "no-drones-tick",
+      "pieces": 1000,
+      "groups": 100,
+      "drones": 0,
+      "counts": {
+        "propellerLayout": 200
+      }
+    },
+    {
+      "label": "landing-preview-far-obstacles",
+      "heldPieces": 64,
+      "otherPieces": 940,
+      "underneath": 0,
+      "counts": {
+        "bounds": 1,
+        "poses": 95,
+        "partPose": 1004,
+        "corners": 64,
+        "rayPart": 541440
+      }
+    },
+    {
+      "label": "coolers-far-pieces",
+      "coolers": 8,
+      "pieces": 1000,
+      "withinCoolers": 0,
+      "counts": {
+        "bounds": 800,
+        "poses": 800,
+        "partPose": 8000,
+        "corners": 8000
+      }
+    },
+    {
+      "label": "full-battery-recharge-tick",
+      "packs": 32,
+      "cells": 96,
+      "charge": 1,
+      "counts": {
+        "externalBatteryPackComponents": 32,
+        "touchingUnitFaces": 64,
+        "partPose": 32,
+        "corners": 32
+      }
+    },
+    {
+      "label": "battery-liquid-frame",
+      "packs": 32,
+      "cells": 96,
+      "counts": {
+        "batteryVisualPacks": 32,
+        "corners": 96
+      }
+    },
+    {
+      "label": "battery-opaque-render",
+      "packs": 32,
+      "cells": 96,
+      "counts": {
+        "batteryVisualPacks": 32,
+        "corners": 96,
+        "propellerLayout": 32,
+        "submitDraw": 192
+      }
+    },
+    {
+      "label": "battery-transparent-render",
+      "packs": 32,
+      "cells": 96,
+      "counts": {
+        "batteryVisualPacks": 32,
+        "corners": 96,
+        "submitDraw": 32
+      }
+    },
+    {
+      "label": "weight-sensors-same-contact-step",
+      "bodies": 134,
+      "contacts": 512,
+      "counts": {
+        "sensorReading": 16,
+        "sensorWeight": 16,
+        "sensorWeight.contactCandidates": 8192
+      },
+      "readings": 16
+    },
+    {
+      "label": "contact-sensors-same-contact-step",
+      "bodies": 134,
+      "contacts": 512,
+      "counts": {
+        "sensorContactActive": 16,
+        "sensorContactActive.contactCandidates": 8192
+      },
+      "readings": 16
+    },
+    {
+      "label": "motion-sensors-same-sample",
+      "bodies": 134,
+      "counts": {
+        "sensorMotion": 16,
+        "sensorMotion.bodyCandidates": 2144
+      },
+      "readings": 16
+    },
+    {
+      "label": "solid-no-shadow",
+      "pieces": 1000,
+      "groups": 1,
+      "counts": {
+        "batteryVisualPacks": 2,
+        "submitDraw": 2,
+        "partState.scan": 1000
+      }
+    },
+    {
+      "label": "solid-soft-shadow",
+      "pieces": 1000,
+      "groups": 1,
+      "counts": {
+        "poses": 1,
+        "partPose": 1000,
+        "submitDraw": 1002,
+        "batteryVisualPacks": 2,
+        "partState.scan": 1000
+      }
+    },
+    {
+      "label": "solid-sharp-shadow",
+      "pieces": 1000,
+      "groups": 1,
+      "counts": {
+        "poses": 1,
+        "partPose": 1000,
+        "drawSharpShadow": 1000,
+        "submitDraw": 1002,
+        "batteryVisualPacks": 2,
+        "partState.scan": 1000
+      }
+    },
+    {
+      "label": "save-first",
+      "pieces": 1000,
+      "counts": {
+        "worldParts": 100,
+        "poses": 100,
+        "partPose": 1000,
+        "copyMood": 1000,
+        "JSON.stringify": 2,
+        "JSON.stringify.bytes": 776318,
+        "JSON.parse": 2,
+        "JSON.parse.bytes": 776318
+      }
+    },
+    {
+      "label": "save-identical-state-again",
+      "pieces": 1000,
+      "counts": {
+        "worldParts": 100,
+        "poses": 100,
+        "partPose": 1000,
+        "copyMood": 1000,
+        "JSON.stringify": 2,
+        "JSON.stringify.bytes": 776318,
+        "JSON.parse": 3,
+        "JSON.parse.bytes": 1164613
+      }
+    },
+    {
+      "label": "save-storage",
+      "secondWriteCount": 1,
+      "latest": {
+        "key": "qbits.save.lab.v1",
+        "bytes": 388295
+      }
+    }
+  ]
+}

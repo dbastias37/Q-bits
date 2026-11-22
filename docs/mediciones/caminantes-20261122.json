@@ -1,0 +1,143 @@
+{
+  "fecha": "2026-11-22",
+  "tipo": "regresión física con lógica real y Cannon 0.6.2; DOM y GPU simulados",
+  "fuente": {
+    "archivo": "assets/js/game.js",
+    "sha256": "d5b6af65ab6a413634e6cf70bc3ea88a16a0ab9cc81b4d5af2364045caf16159",
+    "incluye": "adaptador AABB, corrección de suelo y sus guardas, reconocimiento, fases geométricas y optimización de enfriadores integrados"
+  },
+  "comando": "QBITS_GAIT_METRICS=1 node --test --test-concurrency=1 tests/servo-walker-tracking.test.cjs tests/servo-walker-recognition.test.cjs",
+  "pruebas": {
+    "aprobadas": 20,
+    "fallidas": 0,
+    "sha256_tracking": "523c2062fc02666ad6aa6c049979fc2a43cc28871a942783bea31fc4162d46a7",
+    "sha256_reconocimiento": "55e83e9b92028e547930798300ee1a055f9067422ef3f74407c835a447324cf5"
+  },
+  "metodo": {
+    "frecuencia": "applyPreferences({physicsHz: hz}) antes de construir las articulaciones; getPhysicsStep() se comprueba contra 1/hz. Incluye recalibración de restricciones.",
+    "asentamiento_previo_s": 0.2,
+    "marcha_s": 10,
+    "ventana_error": "los diez segundos de marcha",
+    "ventana_contactos_s": [
+      2,
+      10
+    ],
+    "avance": "cambio de posición X del cuerpo central mediante la simulación, sin fuerzas auxiliares ni cambio de pose al iniciar",
+    "error": "máximo absoluto de servoAngle - servoGoal, sobre todos los motores y ticks",
+    "deslizamiento": "promedio de la velocidad tangencial en cada contacto real del piso con las patas designadas como cargadas; v_punto = v_cuerpo + omega × r",
+    "apoyo": "número de observaciones pata/paso de la diagonal cargada con al menos un contacto real de suelo, dividido por todas sus observaciones pata/paso",
+    "conservacion": "identidades, masas y configuración de velocidad/par/rangos; ningún cambio de pose o velocidades al planificar; inicio y freno colectivos; sin fuerzas nuevas"
+  },
+  "resultados": [
+    {
+      "montaje": "cuatro caderas y cuatro rodillas, ±20°",
+      "physics_hz_preferencia": 60,
+      "dt_s": 0.016666666666666666,
+      "piezas": 47,
+      "motores": 8,
+      "avance_m": 1.0004431244254117,
+      "error_maximo_seguimiento_grados": 7.743764164301522,
+      "velocidad_tangencial_media_apoyos_m_s": 0.005393762239704123,
+      "fraccion_pasos_pata_cargada_con_contacto": 0.9416666666666667,
+      "desfase_rodillas_grados": [
+        163.3550658849294,
+        163.3550658849294,
+        163.35506588492942,
+        163.3550658849294
+      ]
+    },
+    {
+      "montaje": "cuatro caderas y cuatro rodillas, ±20°",
+      "physics_hz_preferencia": 120,
+      "dt_s": 0.008333333333333333,
+      "piezas": 47,
+      "motores": 8,
+      "avance_m": 1.035046985965787,
+      "error_maximo_seguimiento_grados": 5.556175337852613,
+      "velocidad_tangencial_media_apoyos_m_s": 0.003802135158479931,
+      "fraccion_pasos_pata_cargada_con_contacto": 0.9838541666666667,
+      "desfase_rodillas_grados": [
+        163.356931638821,
+        163.356931638821,
+        163.356931638821,
+        163.356931638821
+      ]
+    },
+    {
+      "montaje": "cuatro caderas y cuatro rodillas, ±20°",
+      "physics_hz_preferencia": 240,
+      "dt_s": 0.004166666666666667,
+      "piezas": 47,
+      "motores": 8,
+      "avance_m": 1.0476089298382256,
+      "error_maximo_seguimiento_grados": 4.973310370234509,
+      "velocidad_tangencial_media_apoyos_m_s": 0.0029492310166064233,
+      "fraccion_pasos_pata_cargada_con_contacto": 0.9177083333333333,
+      "desfase_rodillas_grados": [
+        163.35331165952567,
+        163.35331165952567,
+        163.35331165952567,
+        163.35331165952567
+      ]
+    },
+    {
+      "montaje": "espinillas 9 cm más largas, ±20°",
+      "physics_hz_preferencia": 120,
+      "dt_s": 0.008333333333333333,
+      "piezas": 51,
+      "motores": 8,
+      "avance_m": 1.0425164452662194,
+      "error_maximo_seguimiento_grados": 5.399740528537062,
+      "velocidad_tangencial_media_apoyos_m_s": 0.00324759414491328,
+      "fraccion_pasos_pata_cargada_con_contacto": 0.9557291666666666,
+      "desfase_rodillas_grados": [
+        163.3535801901662,
+        163.3535801901662,
+        163.3535801901662,
+        163.3535801901662
+      ]
+    },
+    {
+      "montaje": "cuatro caderas y cuatro rodillas, ±15°",
+      "physics_hz_preferencia": 120,
+      "dt_s": 0.008333333333333333,
+      "piezas": 47,
+      "motores": 8,
+      "avance_m": 1.016080004325506,
+      "error_maximo_seguimiento_grados": 5.920497255422261,
+      "velocidad_tangencial_media_apoyos_m_s": 0.005573550130278736,
+      "fraccion_pasos_pata_cargada_con_contacto": 0.96875,
+      "desfase_rodillas_grados": [
+        157.5499292668159,
+        157.5499292668159,
+        157.5499292668159,
+        157.5499292668159
+      ]
+    },
+    {
+      "montaje": "ocho articulaciones de marcha y un auxiliar superior, ±20°",
+      "physics_hz_preferencia": 120,
+      "dt_s": 0.008333333333333333,
+      "piezas": 50,
+      "motores": 9,
+      "avance_m": 1.0447885072736522,
+      "error_maximo_seguimiento_grados": 5.502913471944974,
+      "velocidad_tangencial_media_apoyos_m_s": 0.003740938239107215,
+      "fraccion_pasos_pata_cargada_con_contacto": 0.9859375,
+      "desfase_rodillas_grados": [
+        163.35807046248433,
+        163.35807046248433,
+        163.35807046248433,
+        163.35807046248433
+      ],
+      "recorrido_auxiliar_grados": 40.20699922465715
+    }
+  ],
+  "alcance": [
+    "El desfase se calcula una vez al arrancar sólo para cuatro ramas coherentes con cadera y rodilla planares, suelas neutras a alturas compatibles, semirrecorridos no mayores de 30° y elevación lineal estimada pequeña.",
+    "Los casos ambiguos, planos perpendiculares, diferencias de altura mayores de 2 mm, rangos amplios o elevación estimada excesiva conservan las fases anteriores. No se afirma que esos diseños caminen.",
+    "Las patas de retorno pueden arrastrarse: estos resultados demuestran avance, seguimiento y apoyo real, no despegue garantizado de cada pie.",
+    "No es una partida visual ni una medida de FPS o de rendimiento total del navegador. No es un comparativo A/B de CPU.",
+    "Se omiten comparativos con ensayos previos que cambiaban sólo dt sin seleccionar la preferencia de frecuencia."
+  ]
+}

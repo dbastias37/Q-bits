@@ -1130,6 +1130,32 @@ let multiSelection=[],marquee=null,hoverPointer=null,detachChoice=null;
 const menu=document.querySelector('#detach-menu'),selectionRect=document.querySelector('#selection-rect');
 let serial=0, held=null, selected=null, snap=null, accumulator=0, simTime=0, noticeTimer;
 const panel=document.querySelector('#panel'),targetLabel=document.querySelector('#target'),crosshair=document.querySelector('#crosshair');
+function installCannonGeometryCompatibility(){
+ const point=new CANNON.Vec3(),offset=new CANNON.Vec3(),orientation=new CANNON.Quaternion(),shapeAABB=new CANNON.AABB();
+ // A convex's first transformed vertex contributes to both extrema. Its
+ // vertex ordering must never change which physical points the AABB encloses.
+ CANNON.ConvexPolyhedron.prototype.calculateWorldAABB=function(position,quaternion,min,max){
+  min.set(Infinity,Infinity,Infinity);max.set(-Infinity,-Infinity,-Infinity);
+  for(const vertex of this.vertices){
+   quaternion.vmult(vertex,point);point.vadd(position,point);
+   min.x=Math.min(min.x,point.x);min.y=Math.min(min.y,point.y);min.z=Math.min(min.z,point.z);
+   max.x=Math.max(max.x,point.x);max.y=Math.max(max.y,point.y);max.z=Math.max(max.z,point.z);
+  }
+ };
+ // Match Narrowphase.getContacts: world q = body q * local shape q;
+ // a local shape offset belongs to the body frame, not the rotated shape.
+ CANNON.Body.prototype.computeAABB=function(){
+  for(let i=0;i<this.shapes.length;i++){
+   this.quaternion.mult(this.shapeOrientations[i],orientation);
+   this.quaternion.vmult(this.shapeOffsets[i],offset);offset.vadd(this.position,offset);
+   this.shapes[i].calculateWorldAABB(offset,orientation,shapeAABB.lowerBound,shapeAABB.upperBound);
+   if(i===0)this.aabb.copy(shapeAABB);else this.aabb.extend(shapeAABB);
+  }
+  this.aabbNeedsUpdate=false;
+ };
+}
+installCannonGeometryCompatibility();
+
 const world=new CANNON.World();world.gravity.set(0,-settings.gravity,0);world.allowSleep=true;
 world.broadphase=new CANNON.SAPBroadphase(world);
 // Long belts have a very large bounding sphere. Use their actual conservative
@@ -3499,20 +3525,88 @@ function stopServoMarch(march,reason='Conjunto detenido · articulaciones bloque
 function stopServoMarchForGroups(list){for(const m of [...servoMarches])if(m.members.some(r=>rotorGroups(r).some(g=>list.includes(g))))stopServoMarch(m,'Conjunto detenido para manipular');}
 // Identify four distinct branches on a common chassis. Other servo assemblies
 // keep the general synchronized controller and their configured starting ends.
+// Sample the existing servo reference at a commanded angle without moving a
+// live body. This is only used once when a recognized walk starts.
+function walkingJointPose(rotor,parent,parentPose,angle){
+ const a=rotorPart(rotor.aId),b=rotorPart(rotor.bId),forward=a.g===parent,source=forward?a:b,dest=forward?b:a;
+ const joint=partPose(parent,source.part,parentPose.p,parentPose.q),turn=Q();turn.setFromAxisAngle(V(0,0,1),angle*Math.PI/180);
+ const relative=turn.mult(new CANNON.Quaternion(...rotor.servo.reference));
+ const q=joint.q.mult(forward?relative:relative.inverse()).mult(dest.part.q.inverse());q.normalize();
+ const anchor=rotorEndpoint(joint,rotor.servo,forward?'a':'b').point;
+ const offset=rotorEndpoint(partPose(dest.g,dest.part,V(),q),rotor.servo,forward?'b':'a').point;
+ return {g:dest.g,p:sub(anchor,offset),q};
+}
+// The support center comes from actual lower vertices, so rotating a foot in
+// the room cannot change its estimated lever arm through a world AABB.
+function walkingSolePoint(foot){
+ const vertices=physicalGroupPoses(foot.g,foot.p,foot.q).flatMap(corners);if(!vertices.length)return null;
+ const low=Math.min(...vertices.map(p=>p.y));
+ // Quantize only this temporary local support query at nanometre precision,
+ // keeping shared corners tied after 90-degree world rotations.
+ const points=vertices.filter(p=>p.y<=low+.001).map(p=>({x:Math.round((p.x-foot.p.x)*1e9)/1e9,z:Math.round((p.z-foot.p.z)*1e9)/1e9}));
+ const hull=restSupportHull(points);if(hull.length<3)return null;
+ let area=0,x=0,z=0;
+ for(let i=0;i<hull.length;i++){const a=hull[i],b=hull[(i+1)%hull.length],cross=a.x*b.z-b.x*a.z;area+=cross;x+=(a.x+b.x)*cross;z+=(a.z+b.z)*cross;}
+ return Math.abs(area)>1e-10?V(foot.p.x+x/(3*area),low,foot.p.z+z/(3*area)):null;
+}
+
+// A 90-degree knee phase can put the returning diagonal below its supposed
+// supports. For four planar hip/knee branches, cancel the hip's vertical cosine
+// term using the actual neutral geometry and configured angular ranges. Keep
+// a small estimated lift (1/10 to 1/5 unit, at most 5% of leg length). Larger
+// trajectories need a different controller; ambiguous layouts keep their phases.
+function walkingKneePhases(legs,drives){
+ if(!legs.every(l=>l.knee&&l.r.servo.kind==='hinge'&&l.knee.servo.kind==='hinge'))return null;
+ const phases=new Map(),clearance=CUBE_SIZE*.1;let commonAxis=null,lowest=Infinity,highest=-Infinity;
+ for(const leg of legs){
+  const hip=leg.r,knee=leg.knee,trunk=rotorGroups(hip).find(g=>!leg.groups.includes(g));if(!trunk)return null;
+  const trunkPose={p:trunk.body.position,q:trunk.body.quaternion};
+  const upper=walkingJointPose(hip,trunk,trunkPose,(hip.servo.min+hip.servo.max)/2);
+  const foot=walkingJointPose(knee,upper.g,upper,(knee.servo.min+knee.servo.max)/2);if(foot.g!==leg.foot)return null;
+  const ha=rotorPart(hip.aId),ka=rotorPart(knee.aId);
+  const hp=rotorEndpoint(partPose(ha.g,ha.part,...(ha.g===trunk?[trunkPose.p,trunkPose.q]:[upper.p,upper.q])),hip.servo,'a');
+  const kp=rotorEndpoint(partPose(ka.g,ka.part,...(ka.g===upper.g?[upper.p,upper.q]:[foot.p,foot.q])),knee.servo,'a');
+  if(Math.abs(hp.axis.dot(kp.axis))<.995||Math.abs(hp.axis.y)>.1||Math.abs(kp.axis.y)>.1||commonAxis&&Math.abs(commonAxis.dot(hp.axis))<.995)return null;
+  commonAxis??=hp.axis;
+  const sole=walkingSolePoint(foot);if(!sole)return null;
+  lowest=Math.min(lowest,sole.y);highest=Math.max(highest,sole.y);if(highest-lowest>.002)return null;
+  const hipY=hp.axis.cross(sub(sole,hp.point)).y*(ha.g===trunk?1:-1),kneeY=kp.axis.cross(sub(sole,kp.point)).y*(ka.g===upper.g?1:-1);
+  const hipAmplitude=(hip.servo.max-hip.servo.min)/2,kneeAmplitude=(knee.servo.max-knee.servo.min)/2;
+  // The first-order sine approximation stays within 4.6% through 30 degrees.
+  if(hipAmplitude>30||kneeAmplitude>30)return null;
+  const hipGain=hipY*drives.get(hip).sign*hipAmplitude,kneeGain=kneeY*drives.get(knee).sign*kneeAmplitude;
+  const ratio=-hipGain/kneeGain,lift=2*Math.abs(kneeY)*kneeAmplitude*Math.PI/180;
+  if(!Number.isFinite(ratio)||Math.abs(ratio)>1.01||lift<=clearance)return null;
+  const margin=Math.asin(clearance/lift),phase=clamp(Math.acos(clamp(ratio,-1,1)),margin,Math.PI-margin);
+  const maximumLift=Math.min(CUBE_SIZE*.2,Math.abs(hp.point.y-sole.y)*.05);
+  if(lift*Math.sin(phase)>maximumLift)return null;
+  phases.set(knee,phase);
+ }
+ return phases;
+}
+
 function walkingLegs(members,component){
  const links=new Map(component.map(g=>[g,[]]));
  for(const r of members){const [a,b]=rotorGroups(r);links.get(a).push({r,next:b});links.get(b).push({r,next:a});}
- const trunk=component.find(g=>links.get(g).length===4);
- if(!trunk)return null;
- const legs=links.get(trunk).map(({r,next})=>{
-  const branch=links.get(next).filter(link=>link.r!==r);
-  if(branch.length>1||branch[0]&&links.get(branch[0].next).length!==1)return null;
-  const foot=branch[0]?.next||next,hip=rotorPart(r.aId),anchor=rotorEndpoint(hip,r.servo,'a');
-  const arm=sub(foot.body.position,anchor.point),axis=anchor.axis;
-  const tangent=axis.cross(arm);if(hip.g!==trunk)tangent.negate(tangent);
-  return {r,knee:branch[0]?.r,foot,point:anchor.point,tangent};
- });
- if(legs.some(l=>!l)||legs.reduce((n,l)=>n+1+Number(!!l.knee),0)!==members.length)return null;
+ let legs=null;
+ for(const trunk of component){
+  const edges=links.get(trunk);if(edges.length<4)continue;
+  const branches=edges.map(({r,next})=>{
+   const branch=links.get(next).filter(link=>link.r!==r);
+   if(branch.length>1||branch[0]&&links.get(branch[0].next).length!==1)return null;
+   const foot=branch[0]?.next||next,hip=rotorPart(r.aId),anchor=rotorEndpoint(hip,r.servo,'a');
+   const arm=sub(foot.body.position,anchor.point),tangent=anchor.axis.cross(arm);if(hip.g!==trunk)tangent.negate(tangent);
+   return {r,knee:branch[0]?.r,foot,point:anchor.point,tangent,groups:foot===next?[next]:[next,foot]};
+  });
+  if(branches.some(l=>!l)||branches.reduce((n,l)=>n+1+Number(!!l.knee),0)!==members.length)continue;
+  const down=branches.filter(l=>physicalGroupBounds(l.foot).min.y<l.point.y-HALF*.5);
+  if(down.length!==4)continue;
+  // Extra upper branches remain in the shared clock and energy model. Only
+  // four distinct lower branches own the diagonal ground-contact budget.
+  if(branches.some(l=>!down.includes(l)&&l.groups.some(g=>physicalGroupBounds(g).min.y<trunk.body.position.y)))continue;
+  legs=down;break;
+ }
+ if(!legs)return null;
  // Collinear test rigs and four hinges stacked on one axis are not walkers.
  const center=mul(legs.reduce((p,l)=>add(p,l.point),V()),.25);
  const offsets=legs.map(l=>sub(l.point,center));
@@ -3531,6 +3625,7 @@ function walkingLegs(members,component){
   }
   feet.set(leg.foot.body,phaseSign);
  }
+ const phases=walkingKneePhases(legs,drives);if(phases)for(const [knee,phase]of phases)drives.get(knee).offset=phase;
  return {drives,feet,mass:component.reduce((n,g)=>n+g.body.mass,0)};
 }
 
@@ -3736,14 +3831,14 @@ function driveServoMarches(dt){
   if(m.phase==='align'){
    m.settled=maxError<1&&maxRpm<.5?m.settled+dt:0;
    if(maxError<m.bestError-.1){m.bestError=maxError;m.blocked=0;}else m.blocked+=dt;
-   if(m.settled>.15){m.phase='march';m.elapsed=0;m.blocked=0;for(const r of m.members)r.servoStatus='Marcha del conjunto · sincronizada';}
+   if(m.settled>.15){m.phase='march';m.elapsed=0;m.blocked=0;for(const r of m.members)r.servoStatus=m.walk?'Marcha del conjunto · apoyos diagonales':'Oscilación sincronizada · revisa geometría y apoyos para avanzar';}
   }else {if(m.walk)m.strideRamp=Math.min(1,amplitude+dt/m.period);m.elapsed=(m.elapsed+dt)%m.period;m.blocked=maxError>12?m.blocked+dt:0;}
   if(m.blocked>3)stopServoMarch(m,'Conjunto bloqueado · revisa espacio, fuerza y carga');
  }
 }
 function servoMarchSnapshot(r){
  const members=servoMarchMembers(r),march=servoMarchFor(r);
- return {running:!!march,status:march?(march.phase==='align'?'Preparando todas las patas antes de comenzar':'Marcha sincronizada'):(r.servoStatus||'Conjunto detenido'),members:members.map(item=>({id:item.id,label:servoLabel(item)+' · '+item.aId,direction:item.servo.direction,angle:servoAngle(item),min:item.servo.min,max:item.servo.max})),period:march?.period};
+ return {running:!!march,status:march?(march.phase==='align'?(march.walk?'Preparando · cuatro apoyos diagonales':'Preparando oscilación · sin cuatro apoyos reconocidos'):march.walk?'Marcha · cuatro apoyos diagonales':'Oscilación sincronizada · sin cuatro apoyos reconocidos'):(r.servoStatus||'Conjunto detenido'),members:members.map(item=>({id:item.id,label:servoLabel(item)+' · '+item.aId,direction:item.servo.direction,angle:servoAngle(item),min:item.servo.min,max:item.servo.max})),period:march?.period};
 }
 function servoMarchAction(action){
  const r=selectedRotor();if(!r?.servo)return false;
@@ -4192,10 +4287,10 @@ world.solver.solve=function(dt,physicsWorld){
  prepareMechanicalRest(dt,physicsWorld);
  const driven=new Set();for(const rotor of rotors)if(rotor.enabled&&rotor.mount==='wheel')for(const g of rotorConnectedGroups(rotorGroups(rotor)))driven.add(g.body);
  for(const grip of robotGrips.values())if(driven.has(robotGripperHit(grip.id)?.g.body))driven.add(grip.body);
- // Large assemblies retain their summed mass and inertia, with quieter contacts.
+ // Quiet resting contacts stay inelastic. Real impacts keep the selected
+ // material restitution regardless of how many pieces share the body.
  for(const contact of physicsWorld.contacts){
   if(story.scene==='lab'&&Math.abs(contact.ni.y)>.97&&Math.abs(contact.getImpactVelocityAlongNormal())<.35)contact.restitution=0;
-  else if(contact.bi.qubitGroup?.parts.length>1||contact.bj.qubitGroup?.parts.length>1)contact.restitution=Math.min(contact.restitution,.025);
  }
  const articulated=new Set();for(const rotor of rotors){const pair=rotorGroups(rotor);if(pair.some(g=>!articulated.has(g.body)))for(const g of rotorConnectedGroups(pair))articulated.add(g.body);}
  for(const g of groups)if(!(held?.items||[]).some(item=>item.g===g))g.body.angularDamping=articulated.has(g.body)||g.route||g.haulJob||g.blueprintJob||g.parts.some(p=>p.mood.flight?.enabled)?settings.damping:groupAngularDamping(g.parts.length);
@@ -4276,7 +4371,7 @@ function rotorRestUnchanged(g,saved){
  return values.every((value,i)=>Math.abs(value-saved.values[i])<1e-12);
 }
 function stabilizeRotors(){
- syncVirtualConveyors();
+ const floorSeeds=[];syncVirtualConveyors();
  for(const rotor of rotors){
   if(rotor.virtualConveyor?.virtual)continue;
   const pair=rotorGroups(rotor);if(pair.some(g=>!g))continue;
@@ -4300,13 +4395,7 @@ function stabilizeRotors(){
    const solidsOverlap=rigidGroupsOverlap(pair[0],pair[1]);
    if(solidsOverlap&&rotor.beforeStep){for(let i=0;i<2;i++){pair[i].body.position.copy(rotor.beforeStep[i].p);pair[i].body.quaternion.copy(rotor.beforeStep[i].q);pair[i].body.angularVelocity.set(0,0,0);pair[i].body.velocity.set(0,0,0);}rotor.actualRpm=0;}
    rotor.stalled=rotor.enabled&&(solidsOverlap||rotor.stalled);
-   // A falling assembly can cross the contact plane in one substep. Lift the
-   // complete free mechanism together, preserving every connected axle.
-   const component=rotorConnectedGroups(pair);
-   if(component.every(g=>g.body.type===CANNON.Body.DYNAMIC)){
-    const low=Math.min(...component.map(g=>bounds(g).min.y));
-    if(low<-.001)for(const g of component){g.body.position.y+=-.001-low;if(g.body.velocity.y<0)g.body.velocity.y=0;g.body.aabbNeedsUpdate=true;}
-   }
+   floorSeeds.push(pair[0]);
    for(const g of pair){g.body.aabbNeedsUpdate=true;g.body.updateInertiaWorld(true);}
    rotor.restPose=!rotor.enabled&&!solidsOverlap?pair.map(rotorRestPose):null;
    continue;
@@ -4322,6 +4411,32 @@ function stabilizeRotors(){
    b.position.copy(rotor.safePose.p);b.quaternion.copy(rotor.safePose.q);b.velocity.set(0,0,0);b.angularVelocity.set(0,0,0);rotor.actualRpm=0;rotor.stalled=true;
   }
   b.aabbNeedsUpdate=true;b.updateInertiaWorld(true);
+ }
+ // A geometric safety correction is applied once, after every hinge.
+ // Preserve impact velocities for Cannon's next contact response. Only the
+ // actual enabled horizontal plane may provide this last-resort support.
+ if(!floorSeeds.length||!world.bodies.includes(floor)||floor.type!==CANNON.Body.STATIC||!floor.collisionResponse||floor.shapes.length!==1||!(floor.shapes[0] instanceof CANNON.Plane)||floor.shapes[0].collisionResponse===false)return;
+ const planeQ=floor.quaternion.mult(floor.shapeOrientations[0]),normal=planeQ.vmult(V(0,0,1));
+ if(Math.abs(normal.y-1)+Math.abs(normal.x)+Math.abs(normal.z)>1e-8)return;
+ const floorY=floor.position.y+floor.quaternion.vmult(floor.shapeOffsets[0]).y,corrected=new Set();
+ for(const seed of floorSeeds){
+  if(corrected.has(seed))continue;
+  const component=rotorConnectedGroups([seed]).filter(g=>!g.virtualConveyor);for(const g of component)corrected.add(g);
+  if(!component.every(g=>g.body.type===CANNON.Body.DYNAMIC))continue;
+  let low=Infinity;
+  for(const g of component){
+   const body=g.body;
+   if(!body.shapes.length||!body.collisionResponse||!(body.collisionFilterGroup&floor.collisionFilterMask)||!(floor.collisionFilterGroup&body.collisionFilterMask))continue;
+   if(body.shapes.every(shape=>shape.collisionResponse!==false)){
+    if(body.aabbNeedsUpdate)body.computeAABB();low=Math.min(low,body.aabb.lowerBound.y-floorY);continue;
+   }
+   for(let i=0;i<body.shapes.length;i++){
+    const shape=body.shapes[i];if(shape.collisionResponse===false)continue;
+    const q=body.quaternion.mult(body.shapeOrientations[i]),p=add(body.position,body.quaternion.vmult(body.shapeOffsets[i])),min=V(),max=V();
+    shape.calculateWorldAABB(p,q,min,max);low=Math.min(low,min.y-floorY);
+   }
+  }
+  if(low<-.001)for(const g of component){g.body.position.y+=-.001-low;g.body.aabbNeedsUpdate=true;}
  }
 }
 function spawnRotor(p=null,options={}){
@@ -7681,7 +7796,10 @@ function updateCooling(dt){
  const externalInternals=externallyPoweredInternalIds();
  for(const g of groups)g.cooler=null;
  for(const c of coolers){let count=0;const seen=new Set();
-  const candidates=groups.filter(g=>!g.route&&!g.haulJob&&!g.blueprintJob&&!(held?.items||[]).some(i=>i.g===g)).map(g=>({g,b:bounds(g)})).filter(o=>o.b.min.y>=-.005&&o.b.min.y<.05&&Math.max(...poses(o.g).flatMap(corners).map(v=>Math.hypot(v.x-c.p.x,v.z-c.p.z)))<.315).sort((a,b)=>Number(c.entries.has(b.g.parts[0].id))-Number(c.entries.has(a.g.parts[0].id)));
+  // Reject distant physical groups before transforming every piece. Keep
+  // virtual rollers on their native path: poses() may synchronize their body
+  // after bounds() was sampled. The exact radial test remains authoritative.
+  const candidates=groups.filter(g=>!g.route&&!g.haulJob&&!g.blueprintJob&&!(held?.items||[]).some(i=>i.g===g)).map(g=>({g,b:bounds(g)})).filter(o=>o.b.min.y>=-.005&&o.b.min.y<.05&&(o.g.virtualConveyor||o.b.min.x<c.p.x+.316&&o.b.max.x>c.p.x-.316&&o.b.min.z<c.p.z+.316&&o.b.max.z>c.p.z-.316)&&Math.max(...poses(o.g).flatMap(corners).map(v=>Math.hypot(v.x-c.p.x,v.z-c.p.z)))<.315).sort((a,b)=>Number(c.entries.has(b.g.parts[0].id))-Number(c.entries.has(a.g.parts[0].id)));
   for(const {g} of candidates){if(count+g.parts.length>c.capacity)continue;count+=g.parts.length;
    if(!c.enabled||!alphaSettings.coolingOn)continue;g.cooler=c;
    for(const part of g.parts){if(isExternalBattery(part)||externalInternals.has(part.id))continue;seen.add(part.id);if(rotorForPart(part.id)?.powerActive||robotWorkingParts.has(part))continue;let e=c.entries.get(part.id);if(!e){e={elapsed:0,done:false};c.entries.set(part.id,e);}const coolingSeconds=(c.coolSeconds||alphaSettings.coolSeconds)*gameBatteryCapacity(part)/300;e.duration=coolingSeconds;e.elapsed=Math.min(coolingSeconds,e.elapsed+dt);
