@@ -236,6 +236,46 @@ outlineCase('observer-focal',{stroke:3,focal:1.35,cssScale:1.5,observer:true,jit
 outlineCase('focus',{stroke:4,focus:true});
 const nearOutline=t.makeGroup([{id:t.allocateUnitId(),weight:1,shape:'cube',p:t.V(0,.4,.17),q:t.Q()},{id:t.allocateUnitId(),weight:1,shape:'coupler',p:t.V(.1,.4,.3),q:t.Q()}]);
 outlineCase('near-plane',{group:nearOutline,eye:[0,.4,.2],target:[0,.4,0],stroke:4,strokesOnly:true});
+// Regular blocks previously bypassed persistent outlines. Keep their original
+// CPU endpoint expansion as the reference: calling drawUnitOutline here would
+// exercise the new box shader on both sides and miss a shared regression.
+function legacyBoxOutline(p,q,size,alpha,chosen){
+ const expanded=[size.x+.0009,size.y+.0009,size.z+.0009],points=[],visual=t.getVisuals();
+ for(let axis=0;axis<3;axis++)for(const a of [-.5,.5])for(const b of [-.5,.5])for(const end of [-.5,.5]){
+  const local=[0,0,0];local[axis]=end;local[(axis+1)%3]=a;local[(axis+2)%3]=b;
+  points.push(q.vmult(t.V(...local.map((value,i)=>value*expanded[i]))).vadd(p));
+ }
+ const color=chosen?[1,3,5].map(i=>parseInt(visual.outlineColor.slice(i,i+2),16)/255):visual.style==='cel'?[.06,.09,.1]:[.48,.51,.54];
+ t.drawWideLines(points,[...color,alpha],chosen||visual.style==='cel'?visual.outlineWidth:1);
+}
+function boxOutlineCase(name,{counts=[1,1,1],position=[0,.15,0],rotation=[0,0,0],eye=[.26,.27,.4],target=position,stroke=3,color='#30b5c4',style='cel',chosen=false,mood='neutral',jitter=0,focal=1.9,cssScale=1,observer=false,focus=false,strokesOnly=false}={}){
+ lab();const [nx,ny,nz]=counts,parts=[];
+ for(let x=0;x<nx;x++)for(let y=0;y<ny;y++)for(let z=0;z<nz;z++)parts.push({id:t.allocateUnitId(),shape:'cube',weight:1,p:t.V((x-(nx-1)/2)*.09,.15+(y-(ny-1)/2)*.09,(z-(nz-1)/2)*.09),q:t.Q()});
+ const group=t.makeGroup(parts);if(!group.block)throw Error('Box outline fixture is not a regular block');
+ group.body.position.set(...position);group.body.quaternion.setFromEuler(...rotation);group.body.sleep();
+ const m=group.parts[0].mood;Object.assign(m,{state:mood,blend:mood==='excited'?[0,1,0]:mood==='restless'?[0,0,1]:[1,0,0],severity:2});
+ const visual=t.getVisuals(),old={outlineWidth:visual.outlineWidth,outlineColor:visual.outlineColor,style:visual.style,markers:visual.markers},delta=target.map((v,i)=>v-eye[i]),yaw=Math.atan2(-delta[0],-delta[2]),pitch=Math.asin(delta[1]/Math.hypot(...delta));
+ Object.assign(visual,{outlineWidth:stroke,outlineColor:color,style,markers:false});t.canvas.clientWidth=width*cssScale;t.canvas.clientHeight=height*cssScale;t.heldFocus.focal=focal;t.setSelected(chosen?{g:group,part:group.parts[0]}:null);
+ if(observer){t.setLook({camera:[-2,2,3],yaw:-.7,pitch:.2});t.cullingLab.renderView={eye,basis:{forward:t.V(-Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)),right:t.V(Math.cos(yaw),0,-Math.sin(yaw)),up:t.V(Math.sin(yaw)*Math.sin(pitch),Math.cos(pitch),Math.cos(yaw)*Math.sin(pitch))}};}
+ else t.setLook({camera:eye,yaw,pitch});
+ const physical=JSON.stringify({parts:t.worldParts(group),p:group.body.position,q:group.body.quaternion,v:group.body.velocity,w:group.body.angularVelocity,sleep:group.body.sleepState});
+ const render=reference=>{
+  uniform('uJitter',jitter);uniform('uFocal',focal);uniform('uFocusMask',focus?1:0);if(!strokesOnly)t.drawGroupSolid(group);
+  if(reference){const pose=t.moodVisualPose(group,t.blockPose(group));gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);legacyBoxOutline(pose.p,pose.q,pose.size,.88,chosen);gl.depthMask(true);gl.disable(gl.BLEND);}
+  else t.drawStructureOutlines();
+ };
+ const details={joints:0,outlineStroke:chosen||style==='cel'?stroke:1,outlineFocal:focal,outlineObserver:observer,outlineFocus:focus,outlineStyle:style,outlineMood:mood};
+ capture('outline-box-'+name+'-reference',eye,target,()=>render(true),details);capture('outline-box-'+name+'-merged',eye,target,()=>render(false),details);capture('outline-box-'+name+'-cached',eye,target,()=>render(false),details);
+ if(JSON.stringify({parts:t.worldParts(group),p:group.body.position,q:group.body.quaternion,v:group.body.velocity,w:group.body.angularVelocity,sleep:group.body.sleepState})!==physical)throw Error('Box outline capture changed sleeping physics or energy');
+ Object.assign(visual,old);t.canvas.clientWidth=width;t.canvas.clientHeight=height;t.heldFocus.focal=1.9;t.cullingLab.renderView=null;t.setSelected(null);
+}
+boxOutlineCase('solo-cel',{stroke:2.75});
+boxOutlineCase('rectangle-clean',{counts:[3,2,1],rotation:[.22,.37,-.18],eye:[.55,.45,.8],style:'clean',stroke:6});
+boxOutlineCase('selected-moved',{counts:[3,2,1],position:[-.08,.22,.04],rotation:[-.12,.21,.17],eye:[.4,.5,.7],chosen:true,color:'#e852c0',stroke:6});
+boxOutlineCase('mood-excited',{rotation:[.05,.2,0],mood:'excited'});
+boxOutlineCase('mood-restless',{position:[.03,.16,-.02],rotation:[-.03,-.16,.04],mood:'restless',chosen:true,color:'#df7c24',stroke:4});
+boxOutlineCase('observer-focus',{counts:[2,1,1],chosen:true,focal:1.35,cssScale:1.5,observer:true,focus:true,jitter:.45});
+boxOutlineCase('near-plane',{position:[0,.4,.17],eye:[0,.4,.2],target:[0,.4,0],stroke:4,strokesOnly:true});
 // Virtual cartridges retain their original meshes while only the chassis
 // participates in physics. Exercise real power, visual phase, stop and removal.
 lab();t.world.gravity.set(0,-t.settings.gravity,0);if(!t.spawnSavedMechanism(t.conveyorBlueprintTemplate('straight',false),t.V()))throw Error('Missing virtual conveyor');

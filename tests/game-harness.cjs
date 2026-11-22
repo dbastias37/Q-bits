@@ -136,7 +136,7 @@ module.exports = function createGame(options = {}) {
     stepPhysicsOnly:stepPhysics,stepSimulation,stepLogic,advanceSimulation,resetSimulationClock,simulationSuspended,
     getTickState:()=>({physicsAccumulator:accumulator,logicAccumulator,simTime,physicsDt:FIXED_STEP,logicDt:LOGIC_DT,...tickStats}),
     groups,cargos,V,Q,world,story,bounds,
-    ...(typeof drawRigidOutline==='function'?{drawRigidOutline}:{}),
+    ...(typeof drawRigidOutline==='function'?{drawRigidOutline,drawOutline,drawStructureOutlines,blockPose,moodVisualPose}:{}),
     ...(typeof rotatedGroupBounds==='function'?{rotatedGroupBounds,collisionPoseBounds,collisionEntry,gripPenetration,gripTranslationContact,gripTranslatedDepth}:{}),
     ...(typeof rigidGroupsOverlap==='function'?{rigidCollisionParts,rigidGroupsOverlap}:{}),...(typeof physicalCollisionParts==='function'?{physicalCollisionParts}:{}),stabilizeRotors,poses,corners,drawQubits,drawCargos,drawStoryWorld,drawStoryGlass,updateTarget,updateSpeech,updateStoryMarker,
     measureEncounterBubbles,placeEncounterBubble,addEncounterBubble,encounterBubbles,

@@ -152,7 +152,7 @@ const vertexSource = `
       // Persistent rigid edges: A/B are local endpoints and metadata contains
       // endpoint (0/1), side (-1/+1), and material. Moving the camera or body
       // only changes uniforms; screen-width expansion stays on the GPU.
-      vec3 a = rotate(aPosition) + uCenter, b = rotate(aNormal) + uCenter;
+      vec3 a = rotate(aPosition * uDimensions) + uCenter, b = rotate(aNormal * uDimensions) + uCenter;
       vec3 ar = a - uCamera, br = b - uCamera;
       float ad = dot(ar, forward), bd = dot(br, forward);
       vec2 delta = vec2(
@@ -6323,12 +6323,23 @@ const edgeData=[];
 for(let axis=0;axis<3;axis++)for(const a of [-.5,.5])for(const b of [-.5,.5]){
  for(const end of [-.5,.5]){const xyz=[0,0,0];xyz[axis]=end;xyz[(axis+1)%3]=a;xyz[(axis+2)%3]=b;edgeData.push(...xyz,0,1,0);}
 }
-const edgeGeometry=buffer(edgeData);
+// Renderer-owned unit box, shared by every regular block, cargo and box guide.
+// Only its pose, dimensions and stroke uniforms change; no per-body cache or
+// topology invalidation is needed. Rigid irregular outlines keep unit scale.
+const boxOutlineGeometry=(()=>{
+ const data=new Float32Array(12*6*9);let cursor=0;
+ for(let i=0;i<edgeData.length;i+=12)for(let vertex=0;vertex<6;vertex++){
+  for(const start of [i,i+6]){data[cursor++]=edgeData[start];data[cursor++]=edgeData[start+1];data[cursor++]=edgeData[start+2];}
+  data[cursor++]=vertex===2||vertex===3||vertex===5?1:0;
+  data[cursor++]=vertex===0||vertex===2||vertex===3?1:-1;data[cursor++]=0;
+ }
+ const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);boundGeometry=null;return b;
+})();
 function drawOutline(p,q,size,alpha=.85,selectedOutline=false){
  if(!renderSphereVisible(p,Math.hypot(size.x,size.y,size.z)/2+.02))return;
- const expanded=add(size,V(.0009,.0009,.0009)),points=[];
- for(let i=0;i<edgeData.length;i+=6)points.push(add(p,q.vmult(V(edgeData[i]*expanded.x,edgeData[i+1]*expanded.y,edgeData[i+2]*expanded.z))));
- drawWideLines(points,[...(selectedOutline?visualRGB('outlineColor'):visuals.style==='cel'?[.06,.09,.1]:[.48,.51,.54]),alpha],selectedOutline?visuals.outlineWidth:visuals.style==='cel'?visuals.outlineWidth:1);
+ const color=selectedOutline?visualRGB('outlineColor'):visuals.style==='cel'?[.06,.09,.1]:[.48,.51,.54],width=selectedOutline||visuals.style==='cel'?visuals.outlineWidth:1;
+ bindGeometry(boxOutlineGeometry,'outline');gl.uniform1f(uniforms.uKind,18);gl.uniform2f(uniforms.uOutlineStroke,width,Math.max(1,previewViewport?.height||canvas.clientHeight));
+ setPose(p,q,V(size.x+.0009,size.y+.0009,size.z+.0009));tint(...color,alpha);submitDraw(gl.TRIANGLES,0,72);
 }
 function drawUnitOutline(pose,alpha=.7,selectedOutline=true){
  if(!isTBit(pose)){drawOutline(pose.p,pose.q,V(CUBE_SIZE,CUBE_SIZE,CUBE_SIZE),alpha,selectedOutline);return;}
