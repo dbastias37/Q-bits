@@ -1,0 +1,243 @@
+[
+  {
+    "output": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/commands.json",
+    "frames": 25,
+    "validationErrors": 0
+  },
+  {
+    "version": "OpenGL ES 3.2 Mesa 25.0.7-2+deb13u1",
+    "renderer": "llvmpipe (LLVM 19.1.7, 256 bits)"
+  },
+  {
+    "compiledShaders": 2,
+    "linkedPrograms": 1,
+    "gpuErrors": 0,
+    "snapshots": [
+      {
+        "name": "battery-1-0",
+        "cells": 1,
+        "level": 0,
+        "greenPixels": 0,
+        "vesselPixels": 9720,
+        "darkPixels": 2778,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-1-0.png"
+      },
+      {
+        "name": "battery-1-25",
+        "cells": 1,
+        "level": 0.25,
+        "greenPixels": 3642,
+        "vesselPixels": 10230,
+        "darkPixels": 835,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-1-25.png"
+      },
+      {
+        "name": "battery-1-50",
+        "cells": 1,
+        "level": 0.5,
+        "greenPixels": 5336,
+        "vesselPixels": 10762,
+        "darkPixels": 835,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-1-50.png"
+      },
+      {
+        "name": "battery-1-100",
+        "cells": 1,
+        "level": 1,
+        "greenPixels": 7680,
+        "vesselPixels": 11471,
+        "darkPixels": 835,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-1-100.png"
+      },
+      {
+        "name": "battery-2-0",
+        "cells": 2,
+        "level": 0,
+        "greenPixels": 0,
+        "vesselPixels": 12635,
+        "darkPixels": 5603,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-2-0.png"
+      },
+      {
+        "name": "battery-2-25",
+        "cells": 2,
+        "level": 0.25,
+        "greenPixels": 7155,
+        "vesselPixels": 14917,
+        "darkPixels": 1425,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-2-25.png"
+      },
+      {
+        "name": "battery-2-50",
+        "cells": 2,
+        "level": 0.5,
+        "greenPixels": 10101,
+        "vesselPixels": 17325,
+        "darkPixels": 1425,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-2-50.png"
+      },
+      {
+        "name": "battery-2-100",
+        "cells": 2,
+        "level": 1,
+        "greenPixels": 13640,
+        "vesselPixels": 20139,
+        "darkPixels": 1425,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-2-100.png"
+      },
+      {
+        "name": "battery-3-0",
+        "cells": 3,
+        "level": 0,
+        "greenPixels": 0,
+        "vesselPixels": 17603,
+        "darkPixels": 8544,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-3-0.png"
+      },
+      {
+        "name": "battery-3-25",
+        "cells": 3,
+        "level": 0.25,
+        "greenPixels": 10791,
+        "vesselPixels": 21232,
+        "darkPixels": 2035,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-3-25.png"
+      },
+      {
+        "name": "battery-3-50",
+        "cells": 3,
+        "level": 0.5,
+        "greenPixels": 15023,
+        "vesselPixels": 24983,
+        "darkPixels": 2035,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-3-50.png"
+      },
+      {
+        "name": "battery-3-100",
+        "cells": 3,
+        "level": 1,
+        "greenPixels": 19757,
+        "vesselPixels": 29131,
+        "darkPixels": 2035,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-3-100.png"
+      },
+      {
+        "name": "battery-3-100-occluded",
+        "cells": 3,
+        "level": 1,
+        "greenPixels": 10422,
+        "vesselPixels": 50704,
+        "darkPixels": 35808,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-3-100-occluded.png"
+      },
+      {
+        "name": "battery-1-0-behind",
+        "cells": 1,
+        "level": 0,
+        "greenPixels": 0,
+        "vesselPixels": 11278,
+        "darkPixels": 7321,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-1-0-behind.png"
+      },
+      {
+        "name": "battery-1-100-behind",
+        "cells": 1,
+        "level": 1,
+        "greenPixels": 7680,
+        "vesselPixels": 11471,
+        "darkPixels": 835,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-1-100-behind.png"
+      },
+      {
+        "name": "battery-tilted-45-half",
+        "cells": 1,
+        "level": 0.5,
+        "greenPixels": 4994,
+        "vesselPixels": 10211,
+        "darkPixels": 1351,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-tilted-45-half.png"
+      },
+      {
+        "name": "battery-side-90-quarter",
+        "cells": 2,
+        "level": 0.25,
+        "greenPixels": 589,
+        "vesselPixels": 20325,
+        "darkPixels": 3896,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-side-90-quarter.png"
+      },
+      {
+        "name": "battery-bar-90-half",
+        "cells": 3,
+        "level": 0.5,
+        "greenPixels": 8986,
+        "vesselPixels": 27851,
+        "darkPixels": 15461,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-bar-90-half.png"
+      },
+      {
+        "name": "battery-upside-down-quarter",
+        "cells": 3,
+        "level": 0.25,
+        "greenPixels": 10794,
+        "vesselPixels": 21240,
+        "darkPixels": 5128,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-upside-down-quarter.png"
+      },
+      {
+        "name": "battery-stacked-oblique-half",
+        "cells": 2,
+        "level": 0.5,
+        "greenPixels": 9425,
+        "vesselPixels": 18587,
+        "darkPixels": 772,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-stacked-oblique-half.png"
+      },
+      {
+        "name": "battery-depth-oblique-half",
+        "cells": 3,
+        "level": 0.5,
+        "greenPixels": 8014,
+        "vesselPixels": 21496,
+        "darkPixels": 1463,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-depth-oblique-half.png"
+      },
+      {
+        "name": "battery-tilted-empty-behind",
+        "cells": 1,
+        "level": 0,
+        "greenPixels": 0,
+        "vesselPixels": 9760,
+        "darkPixels": 6832,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-tilted-empty-behind.png"
+      },
+      {
+        "name": "battery-tilted-full-behind",
+        "cells": 1,
+        "level": 1,
+        "greenPixels": 8275,
+        "vesselPixels": 10656,
+        "darkPixels": 675,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-tilted-full-behind.png"
+      },
+      {
+        "name": "battery-slosh-impulse",
+        "cells": 3,
+        "level": 0.5,
+        "greenPixels": 15381,
+        "vesselPixels": 25695,
+        "darkPixels": 2035,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-slosh-impulse.png"
+      },
+      {
+        "name": "battery-slosh-settled",
+        "cells": 3,
+        "level": 0.5,
+        "greenPixels": 15023,
+        "vesselPixels": 24983,
+        "darkPixels": 2035,
+        "path": "/workspace/scratch/d35588e45a49/measurements/battery-gles-release/battery-slosh-settled.png"
+      }
+    ]
+  }
+]

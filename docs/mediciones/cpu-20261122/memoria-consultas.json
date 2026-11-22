@@ -1,0 +1,168 @@
+{
+  "schema": 1,
+  "sourceSha256": "19efe4aa93ceac0791968c5d4e85ea6f5a980cf65b0b3302f20a70933ffe6da0",
+  "runtime": "v24.22.3",
+  "method": "Production query and removal functions; structural ownership counts only. No byte estimate, elapsed-time benchmark or proof of garbage collection. Existing live part objects and their source array are counted as external references, not newly allocated objects.",
+  "reports": [
+    {
+      "pieces": 8,
+      "cold": {
+        "indexCalls": 0,
+        "indexBuilds": 0
+      },
+      "warm": {
+        "indexCalls": 0,
+        "indexBuilds": 0
+      },
+      "translated": {
+        "indexCalls": 0,
+        "indexBuilds": 0
+      },
+      "rotated": {
+        "indexCalls": 0,
+        "indexBuilds": 0
+      },
+      "retainedStructure": {
+        "cacheObjects": 0,
+        "bvhNodes": 0,
+        "internalNodes": 0,
+        "leafNodes": 0,
+        "leafArrays": 0,
+        "partEntries": 0,
+        "boundsVectors": 0,
+        "ownedObjectsTotal": 0,
+        "ownedReferenceSlots": 0,
+        "externalReferenceSlots": 0,
+        "externalObjectsReferenced": 0,
+        "numericValueSlots": 0,
+        "arrayLengthSlots": 0
+      },
+      "removal": {
+        "groupReferenceDeliberatelyRetained": true,
+        "cachePropertyCleared": true,
+        "objectsReachableThroughCacheProperty": 0,
+        "targetScopeCleared": true
+      }
+    },
+    {
+      "pieces": 100,
+      "cold": {
+        "indexCalls": 1,
+        "indexBuilds": 1
+      },
+      "warm": {
+        "indexCalls": 1,
+        "indexBuilds": 0
+      },
+      "translated": {
+        "indexCalls": 1,
+        "indexBuilds": 0
+      },
+      "rotated": {
+        "indexCalls": 1,
+        "indexBuilds": 0
+      },
+      "retainedStructure": {
+        "cacheObjects": 1,
+        "bvhNodes": 31,
+        "internalNodes": 15,
+        "leafNodes": 16,
+        "leafArrays": 16,
+        "partEntries": 100,
+        "boundsVectors": 262,
+        "ownedObjectsTotal": 410,
+        "ownedReferenceSlots": 409,
+        "externalReferenceSlots": 101,
+        "externalObjectsReferenced": 101,
+        "numericValueSlots": 886,
+        "arrayLengthSlots": 16
+      },
+      "removal": {
+        "groupReferenceDeliberatelyRetained": true,
+        "cachePropertyCleared": true,
+        "objectsReachableThroughCacheProperty": 0,
+        "targetScopeCleared": true
+      }
+    },
+    {
+      "pieces": 1000,
+      "cold": {
+        "indexCalls": 1,
+        "indexBuilds": 1
+      },
+      "warm": {
+        "indexCalls": 1,
+        "indexBuilds": 0
+      },
+      "translated": {
+        "indexCalls": 1,
+        "indexBuilds": 0
+      },
+      "rotated": {
+        "indexCalls": 1,
+        "indexBuilds": 0
+      },
+      "retainedStructure": {
+        "cacheObjects": 1,
+        "bvhNodes": 255,
+        "internalNodes": 127,
+        "leafNodes": 128,
+        "leafArrays": 128,
+        "partEntries": 1000,
+        "boundsVectors": 2510,
+        "ownedObjectsTotal": 3894,
+        "ownedReferenceSlots": 3893,
+        "externalReferenceSlots": 1001,
+        "externalObjectsReferenced": 1001,
+        "numericValueSlots": 8530,
+        "arrayLengthSlots": 128
+      },
+      "removal": {
+        "groupReferenceDeliberatelyRetained": true,
+        "cachePropertyCleared": true,
+        "objectsReachableThroughCacheProperty": 0,
+        "targetScopeCleared": true
+      }
+    },
+    {
+      "pieces": 2000,
+      "cold": {
+        "indexCalls": 1,
+        "indexBuilds": 1
+      },
+      "warm": {
+        "indexCalls": 1,
+        "indexBuilds": 0
+      },
+      "translated": {
+        "indexCalls": 1,
+        "indexBuilds": 0
+      },
+      "rotated": {
+        "indexCalls": 1,
+        "indexBuilds": 0
+      },
+      "retainedStructure": {
+        "cacheObjects": 1,
+        "bvhNodes": 511,
+        "internalNodes": 255,
+        "leafNodes": 256,
+        "leafArrays": 256,
+        "partEntries": 2000,
+        "boundsVectors": 5022,
+        "ownedObjectsTotal": 7790,
+        "ownedReferenceSlots": 7789,
+        "externalReferenceSlots": 2001,
+        "externalObjectsReferenced": 2001,
+        "numericValueSlots": 17066,
+        "arrayLengthSlots": 256
+      },
+      "removal": {
+        "groupReferenceDeliberatelyRetained": true,
+        "cachePropertyCleared": true,
+        "objectsReachableThroughCacheProperty": 0,
+        "targetScopeCleared": true
+      }
+    }
+  ]
+}

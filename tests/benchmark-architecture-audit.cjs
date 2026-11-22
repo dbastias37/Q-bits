@@ -3,13 +3,22 @@
 // Usage: node tests/benchmark-architecture-audit.cjs
 // Optional: QBITS_GAME_SOURCE=/path/to/game.js node tests/benchmark-architecture-audit.cjs
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
-const createGame=require('./game-harness.cjs');
-const sourceFile=process.env.QBITS_GAME_SOURCE?path.resolve(process.env.QBITS_GAME_SOURCE):path.join(__dirname,'../assets/js/game.js');
+const referenceRoot=process.env.QBITS_REFERENCE_ROOT?path.resolve(process.env.QBITS_REFERENCE_ROOT):path.resolve(__dirname,'..');
+const createGame=require(path.join(referenceRoot,'tests/game-harness.cjs'));
+const sourceFile=process.env.QBITS_GAME_SOURCE?path.resolve(process.env.QBITS_GAME_SOURCE):path.join(referenceRoot,'assets/js/game.js');
 const originalSource=fs.readFileSync(sourceFile,'utf8');
-const names=['rayPart','poses','partPose','corners','bounds','touchingUnitFaces','batteryVisualPacks','externalBatteryPackComponents','sensorReading','sensorContactActive','sensorMotion','sensorWeight','refreshRotors','virtualConveyorCandidates','propellerLayout','worldParts','copyMood','submitDraw','drawSharpShadow'];
+const names=['rayPart','poses','partPose','corners','bounds','touchingUnitFaces','batteryVisualPacks','externalBatteryPackComponents','sensorReading','sensorContactActive','sensorMotion','sensorWeight','refreshRotors','virtualConveyorCandidates','propellerLayout','worldParts','copyMood','submitDraw','drawSharpShadow','rayGroupCandidates','rayBoundsOverlap','partQueryIndex','externalBatteryGeometry','buildExternalBatteryComponents','buildBatteryVisualGeometry','sensorContactsForBody'];
 const hooks=`window.__arch={counts:{},reset(){this.counts={};},api:{coolers,sensorMotion:(...a)=>sensorMotion(...a),sensorContactActive:(...a)=>sensorContactActive(...a),updateFlights,drawWorkshop,drawBatteriesTransparent}};\n`+
- names.map(name=>`{const original=${name};${name}=function(...args){const c=window.__arch.counts;c['${name}']=(c['${name}']||0)+1;${name==='sensorWeight'||name==='sensorContactActive'?`c['${name}.contactCandidates']=(c['${name}.contactCandidates']||0)+world.contacts.length;`:''}${name==='sensorMotion'?`c['${name}.bodyCandidates']=(c['${name}.bodyCandidates']||0)+world.bodies.length;`:''}return original.apply(this,args);};}`).join('\n');
+ names.map(name=>`if(typeof ${name}==='function'){const original=${name};${name}=function(...args){const c=window.__arch.counts;c['${name}']=(c['${name}']||0)+1;${name==='partQueryIndex'?`if(args[0].partQueryCache?.parts!==args[0].parts)c['partQueryIndex.builds']=(c['partQueryIndex.builds']||0)+1;`:''}${name==='sensorMotion'?`c['${name}.bodyCandidates']=(c['${name}.bodyCandidates']||0)+world.bodies.length;`:''}return original.apply(this,args);};}`).join('\n');
 let source=originalSource.replaceAll('QBitsWorkshop.partState(part)','(window.__arch&&(window.__arch.counts["partState.scan"]=(window.__arch.counts["partState.scan"]||0)+1),QBitsWorkshop.partState(part))');
+// Count executed loop iterations, not the global list size. The optimized
+// query reads per-body lists; index construction is a separate charged cost.
+for(const [name,next]of [['sensorWeight','sensorMotion'],['sensorContactActive','sensorConfig']]){
+ const start=source.indexOf('function '+name+'('),end=source.indexOf('function '+next+'(',start);
+ const section=source.slice(start,end).replace(/for\(const (c|contact) of (world\.contacts|sensorContactsForBody\([^)]*\))\)\{/g,match=>match+`{const c=window.__arch.counts;c['${name}.contactCandidates']=(c['${name}.contactCandidates']||0)+1;}`);
+ source=source.slice(0,start)+section+source.slice(end);
+}
+source=source.replace('const byBody=new Map();for(const contact of physicsWorld.contacts){','const byBody=new Map();for(const contact of physicsWorld.contacts){if(window.__arch){const c=window.__arch.counts;c["contactIndex.buildCandidates"]=(c["contactIndex.buildCandidates"]||0)+1;}');
 const end=source.lastIndexOf('})();');if(end<0)throw new Error('Game closure not found');
 source=source.slice(0,end)+hooks+source.slice(end);
 function lab(){
@@ -59,6 +68,7 @@ const reports=[];
  reports.push(measure(game,'battery-liquid-frame',()=>t.updateBatteryLiquids(1/60),{packs:32,cells:96}));
  reports.push(measure(game,'battery-opaque-render',()=>{for(const g of t.groups)t.drawGroupSolid(g);},{packs:32,cells:96}));
  reports.push(measure(game,'battery-transparent-render',()=>game.arch.api.drawBatteriesTransparent(),{packs:32,cells:96}));
+ reports.push(measure(game,'battery-warm-complete-frame',()=>{t.updateBatteryLiquids(1/60);for(const g of t.groups)t.drawGroupSolid(g);game.arch.api.drawBatteriesTransparent();},{packs:32,cells:96}));
 }
 {
  const game=lab(),{t}=game;
@@ -91,4 +101,4 @@ const reports=[];
  reports.push(measure(game,'save-identical-state-again',()=>t.saveCurrentGame().ok,{pieces:1000}));
  reports.push({label:'save-storage',secondWriteCount:writes.length-initial,latest:writes.at(-1)});
 }
-console.log(JSON.stringify({sourceSha256:crypto.createHash('sha256').update(originalSource).digest('hex'),node:process.version,method:'Production functions and real Cannon with injected work counters. DOM/GPU stubs; not browser FPS or timing. Contact/body candidate counters report list sizes per query.',reports},null,2));
+console.log(JSON.stringify({sourceSha256:crypto.createHash('sha256').update(originalSource).digest('hex'),node:process.version,method:'Production functions and real Cannon with injected work counters. DOM/GPU stubs; not browser FPS or timing. Contact counters record executed iterations and charge index builds separately; motion bodyCandidates retains global list-size count.',reports},null,2));

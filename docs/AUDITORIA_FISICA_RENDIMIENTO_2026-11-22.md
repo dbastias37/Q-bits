@@ -1,5 +1,9 @@
 # Auditoría de física y rendimiento de Q-bits — 22 de noviembre de 2026
 
+## Seguimiento posterior del mismo día
+
+La [auditoría CPU](AUDITORIA_CPU_2026-11-22.md), sobre `1a0425a`, implementa y mide los hallazgos **3, 5, 6, 7 y 9** de la tabla histórica siguiente. Apuntado y Ctrl conservan rayos exactos tras descarte espacial; sensores y baterías comparten sólo datos válidos. Incluye 1207 pruebas aprobadas, tiempos antes/después, memoria, invalidación y límites de navegador. Los hallazgos **4, 8 y 10** siguen pendientes. Las cifras y decisiones del resto de este documento describen la entrega física original y se conservan como referencia, no como pendientes vigentes ya resueltos.
+
 ## Decisiones y estado de esta entrega
 
 Se corrigieron dos problemas nuevos de arquitectura: las cajas espaciales AABB

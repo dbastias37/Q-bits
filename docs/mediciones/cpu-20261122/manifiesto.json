@@ -1,0 +1,494 @@
+{
+  "date": "2026-11-22",
+  "referenceCommit": "1a0425a250b7911a8c230eb5d8534c54e3a03953",
+  "remoteMainVerifiedAtStartAndEnd": "1a0425a250b7911a8c230eb5d8534c54e3a03953",
+  "branch": "perf/cpu-architecture-20261122",
+  "functionalSourceCommit": "ff23c3d5150fdbc8f08c4b0157ddd6722912e380",
+  "bootstrapVersionCommit": "a27815c4fd7ee5cb0b9dda58a3fd2210472797ff",
+  "toolingCommit": "0a522d7021608a5003aefe667ee16753ff797ac6",
+  "shippedScriptVersion": "20261122-cpu-queries-1",
+  "measurements": {
+    "mainTiming": "Node process CPU and elapsed wall time; no detailed counters or profiler enabled",
+    "operations": {
+      "repetitions": 3,
+      "order": "AB/BA/AB",
+      "warmup": 8,
+      "samples": 24,
+      "coldFirstOperationSeparate": true,
+      "comparisons": 54
+    },
+    "matrix": {
+      "hz": 120,
+      "repetitions": 3,
+      "warmupFrames": 12,
+      "measuredFrames": 18,
+      "caseBudgetMs": 8000,
+      "scales": [
+        16,
+        100,
+        500,
+        1000,
+        1500,
+        2000
+      ],
+      "completedCases": 28,
+      "lastIndependentScaleCompleted": 1500
+    },
+    "equivalence": {
+      "functionalPairs": 13,
+      "hz": [
+        60,
+        120,
+        240
+      ],
+      "onePairPerScenario": true,
+      "notATimingBenchmark": true
+    },
+    "interactions": {
+      "repetitions": 3,
+      "pairs": 9,
+      "checkpoints": 30,
+      "hz": 120,
+      "caseBudgetMs": 8000
+    },
+    "profiles": "One warmed Node V8 CPU/heap diagnostic per variant; three alternating pairs to observe instrumentation effects",
+    "browserFpsMeasured": false,
+    "gpuTimingMeasured": false,
+    "graphics": "25 byte-identical PNG pairs via EGL/Mesa, not Chrome",
+    "tests": {
+      "baselinePassed": 1176,
+      "finalPassed": 1207,
+      "baselineDurationMs": 49388.409082,
+      "finalDurationMs": 50393.966862,
+      "postBootstrapTestsPassed": 48
+    },
+    "metadataCorrection": "Published matrix/equivalence configuration corrected to executed mode. Raw samples and states untouched."
+  },
+  "primaryCommands": [
+    "node --test tests/*.test.cjs",
+    "node tests/benchmark-architecture-audit.cjs",
+    "QBITS_REFERENCE_ROOT=../qbits-baseline node tests/benchmark-architecture-audit.cjs",
+    "node tests/benchmark-ground-contacts.cjs",
+    "node --expose-gc tests/benchmark-cpu-architecture.cjs --mode=operations --output=/tmp/qbits-operaciones.json",
+    "node tests/benchmark-cpu-architecture.cjs --mode=matrix --output=/tmp/qbits-escalas.json",
+    "node tests/benchmark-cpu-architecture.cjs --mode=equivalence --output=/tmp/qbits-equivalencia.json",
+    "node tests/benchmark-cpu-interactions.cjs --output=/tmp/qbits-interacciones.json",
+    "node --expose-gc tests/profile-cpu-architecture.cjs --output=/tmp/qbits-perfil-node.json",
+    "node tests/benchmark-query-memory.cjs",
+    "node tests/benchmark-battery-geometry.cjs",
+    "python3 tests/validate-battery-gles.py /tmp/qbits-baterias-despues"
+  ],
+  "sourceSha256": {
+    "assets/js/game.js": "19efe4aa93ceac0791968c5d4e85ea6f5a980cf65b0b3302f20a70933ffe6da0",
+    "assets/js/workshop.js": "cc992783a31bb46b780603457f5b33e3c32c18a015924ebbbc01435f622efe24",
+    "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+    "assets/js/boot.js": "ced8c92be41bd469128081ea247be793fe9296aa1d770f42335cbcade547f7ad",
+    "index.html": "ac1b21060dc6eb40136f4e2972c0ac266bf010395b2d12a05feaea21ba0523fe",
+    "tests/game-harness.cjs": "cf06cc1b315e830366c03798a8ffa778112692829b9a319b52b88ab07e8c6b0e",
+    "tests/cpu-audit-fixtures.cjs": "36b6aa95a16445a9ef2af8015f6f19432c0c814340d6b6aa06abd234dda8b051",
+    "tests/benchmark-architecture-audit.cjs": "825f3c34b42395d455ed293bc56424aac5489f90cf4af1e5af190bbffcaba9d3",
+    "tests/benchmark-cpu-architecture.cjs": "4b8031302f34e21c0086f199f781c71309b9bc1fe834a70aae6d92b544b778ec",
+    "tests/benchmark-cpu-interactions.cjs": "d263b299099bd005376de0753759f8acd66d42ab8d52f67e0ac470827300fa9c",
+    "tests/profile-cpu-architecture.cjs": "6325a6c89f7cb0f3142e1b8b382c86d1de65a194884fd963b581196778303958",
+    "tests/benchmark-query-memory.cjs": "91e81f2c4a8c64d0201285254890bb1bda68d60bca3e88a115cb2a200c92bea3",
+    "tests/benchmark-battery-geometry.cjs": "9d4943cfc8d98b95f615c8970189fc8b659dbb37ea1a1853918ebd2d5558d940",
+    "tests/benchmark-mood-defaults.cjs": "986033b4b92d98733f61b2faef3111ebcf1d1a7cdfff9d964cb48815c448baa0",
+    "tests/benchmark-cpu-browser.cjs": "6e8ad82688f46fad73bae01f379ca4e56265c3d05fd69fb38c472aca2dbf613f"
+  },
+  "artifacts": [
+    {
+      "path": "baterias-antes.json",
+      "bytes": 1575,
+      "sha256": "0225e96a34af7fbf166ae3fc9fb28c9d2cbcc26991f6b952186da3eaf9fc9481"
+    },
+    {
+      "path": "baterias-despues.json",
+      "bytes": 1653,
+      "sha256": "e81fd628a09e1b66170687c345319282ba5b92a40ec8331f9c13265711027aa2"
+    },
+    {
+      "path": "battery-slosh-impulse-antes.png",
+      "bytes": 14414,
+      "sha256": "ddb3d6635fb50110ea0ff792a4334a6b6d9ebcbf4cd3361de803c1e1a976e930"
+    },
+    {
+      "path": "battery-slosh-impulse-despues.png",
+      "bytes": 14414,
+      "sha256": "ddb3d6635fb50110ea0ff792a4334a6b6d9ebcbf4cd3361de803c1e1a976e930"
+    },
+    {
+      "path": "battery-tilted-45-half-antes.png",
+      "bytes": 10164,
+      "sha256": "1add8aa28e4365c2163336892e76f84f631aeb9dc324251465af99607be3f900"
+    },
+    {
+      "path": "battery-tilted-45-half-despues.png",
+      "bytes": 10164,
+      "sha256": "1add8aa28e4365c2163336892e76f84f631aeb9dc324251465af99607be3f900"
+    },
+    {
+      "path": "comparacion-grafica.json",
+      "bytes": 4479,
+      "sha256": "53cf5089c05f3d74ff81f7fda0eb53e224ddbcc4c66098eb069ebc5a4e231cae"
+    },
+    {
+      "path": "contactos-suelo.json",
+      "bytes": 29731,
+      "sha256": "5724f3cf70c8df013ab327649fea461f5aa29e0233db635091f86a87be70d61a"
+    },
+    {
+      "path": "contadores-antes.json",
+      "bytes": 6240,
+      "sha256": "027fd192d764f2556b2506d09662db4233663cb39e7facbeda53a64dee6f0835"
+    },
+    {
+      "path": "contadores-despues.json",
+      "bytes": 6233,
+      "sha256": "10305593661ee51da34a487359e747e43d64bb4d4c7485d09e5d2ad5bc50c345"
+    },
+    {
+      "path": "equivalencia.json",
+      "bytes": 28924,
+      "sha256": "ab4711db45799dce29bbaa1421481c6bec45df4d88e91a566435402e4ed3776e"
+    },
+    {
+      "path": "escalas.json",
+      "bytes": 538966,
+      "sha256": "bbad9733d17cd5ea85b04b964c5d3cc72dd8703b8518ca1b9386349b2b04d13c"
+    },
+    {
+      "path": "experimento-capacidad-retirado.json",
+      "bytes": 243253,
+      "sha256": "b76aeece7a510a90e00d2db32435199b9cde42c8fd4e622cfe0f3dc3cc210f3c"
+    },
+    {
+      "path": "experimento-contactos-retirado.json",
+      "bytes": 243082,
+      "sha256": "5b67fee24b10d18f0d09b329d43463f36e4f440871611c6d60ef0bb11478c80b"
+    },
+    {
+      "path": "gles-antes/battery-1-0-behind.png",
+      "bytes": 9577,
+      "sha256": "949cc4e013dca14e63ea94700696f5556f8d6c1fe7b67383eb16616b3136728d"
+    },
+    {
+      "path": "gles-antes/battery-1-0.png",
+      "bytes": 8527,
+      "sha256": "9d3f44fb79cb3251822eb4cd3b04d3c0b62ceef7aa57f1def5370bdf06ce333d"
+    },
+    {
+      "path": "gles-antes/battery-1-100-behind.png",
+      "bytes": 8839,
+      "sha256": "6a62e78e65ec96a7d1809a574d46f5e33cd65f3e629e5a3eced2526dc1d137a3"
+    },
+    {
+      "path": "gles-antes/battery-1-100.png",
+      "bytes": 8839,
+      "sha256": "6a62e78e65ec96a7d1809a574d46f5e33cd65f3e629e5a3eced2526dc1d137a3"
+    },
+    {
+      "path": "gles-antes/battery-1-25.png",
+      "bytes": 9644,
+      "sha256": "f6ab9347b242934dff08012303b83e6895dd34a851e014af7cebc1e474ef1b03"
+    },
+    {
+      "path": "gles-antes/battery-1-50.png",
+      "bytes": 9561,
+      "sha256": "7ba60fbddf51f38e4ad0d459ebd1bc0a26f0e40c9d5ac0008d5e2afab4bfd9e3"
+    },
+    {
+      "path": "gles-antes/battery-2-0.png",
+      "bytes": 11939,
+      "sha256": "e2adc35f40ca9f2a275ca04078b32bf48a70bb6a437996c4551c97848de9601c"
+    },
+    {
+      "path": "gles-antes/battery-2-100.png",
+      "bytes": 12285,
+      "sha256": "c66532b14792e3d8f80884dabcccabe2e365a3c22f1a60784e1a128615cf1123"
+    },
+    {
+      "path": "gles-antes/battery-2-25.png",
+      "bytes": 13452,
+      "sha256": "6005e467748c8fc00b343a3f1077ef821a9c0c7c7b7841c02c3a44be56b968f2"
+    },
+    {
+      "path": "gles-antes/battery-2-50.png",
+      "bytes": 13260,
+      "sha256": "d42e810e82f397f73d7518406998bc6c40f4c8360b3a9e901aca5bc740e58bbf"
+    },
+    {
+      "path": "gles-antes/battery-3-0.png",
+      "bytes": 13210,
+      "sha256": "0b7a0919d9eb3c75d1f81296fd74bca662ce1e7d2e8b7e4974205fd5afecee88"
+    },
+    {
+      "path": "gles-antes/battery-3-100-occluded.png",
+      "bytes": 12291,
+      "sha256": "dbab14b3a6ca207e53dcdc574be12f4170f3b11f4a3b70dd7bd038e88b07344a"
+    },
+    {
+      "path": "gles-antes/battery-3-100.png",
+      "bytes": 13353,
+      "sha256": "cd3a013ec58019a44895ec6ee272991cf0a7606eda55fadd084f855fec86d590"
+    },
+    {
+      "path": "gles-antes/battery-3-25.png",
+      "bytes": 15086,
+      "sha256": "2b596354eb6456c7946128cdb915c571fbf95facf3f7e83e28281369e15d7b1b"
+    },
+    {
+      "path": "gles-antes/battery-3-50.png",
+      "bytes": 14724,
+      "sha256": "69749532c80606de43bc0f8df6f648e36593adb3f6f4c1925d218f71f4897913"
+    },
+    {
+      "path": "gles-antes/battery-bar-90-half.png",
+      "bytes": 13543,
+      "sha256": "2bc84141afda2d894c8c87010974da3252370da6f5a13952f2cfc30c8e36050b"
+    },
+    {
+      "path": "gles-antes/battery-depth-oblique-half.png",
+      "bytes": 10709,
+      "sha256": "9b97ca90bd7c2c8a9749a9e6e1f12e27c148060b4c04b181c782765f7920fab6"
+    },
+    {
+      "path": "gles-antes/battery-side-90-quarter.png",
+      "bytes": 11092,
+      "sha256": "473b9c27601c2bb42862cfe3a1311e7364cd3d3b5d8e2420a7e65f9b83f6cd59"
+    },
+    {
+      "path": "gles-antes/battery-slosh-impulse.png",
+      "bytes": 14414,
+      "sha256": "ddb3d6635fb50110ea0ff792a4334a6b6d9ebcbf4cd3361de803c1e1a976e930"
+    },
+    {
+      "path": "gles-antes/battery-slosh-settled.png",
+      "bytes": 14724,
+      "sha256": "69749532c80606de43bc0f8df6f648e36593adb3f6f4c1925d218f71f4897913"
+    },
+    {
+      "path": "gles-antes/battery-stacked-oblique-half.png",
+      "bytes": 15897,
+      "sha256": "36d0a3c3907ced7d3fc0876a70a5736e2325db4ae39145ee63b283f966b3bdb2"
+    },
+    {
+      "path": "gles-antes/battery-tilted-45-half.png",
+      "bytes": 10164,
+      "sha256": "1add8aa28e4365c2163336892e76f84f631aeb9dc324251465af99607be3f900"
+    },
+    {
+      "path": "gles-antes/battery-tilted-empty-behind.png",
+      "bytes": 11580,
+      "sha256": "ba2c23793d463b1a587112113b0781232b4f7bbb6654da146fbbf1edbfd0d3b0"
+    },
+    {
+      "path": "gles-antes/battery-tilted-full-behind.png",
+      "bytes": 9467,
+      "sha256": "e1a6aa562d5d9d3b9beb0f405b2fd96b57a735d6e3fc9cc971731b415ea3b6df"
+    },
+    {
+      "path": "gles-antes/battery-upside-down-quarter.png",
+      "bytes": 15076,
+      "sha256": "e34a4d820240b514c98f35a29f32ad0202682d969e193d906887d69b2d3d11af"
+    },
+    {
+      "path": "gles-despues/battery-1-0-behind.png",
+      "bytes": 9577,
+      "sha256": "949cc4e013dca14e63ea94700696f5556f8d6c1fe7b67383eb16616b3136728d"
+    },
+    {
+      "path": "gles-despues/battery-1-0.png",
+      "bytes": 8527,
+      "sha256": "9d3f44fb79cb3251822eb4cd3b04d3c0b62ceef7aa57f1def5370bdf06ce333d"
+    },
+    {
+      "path": "gles-despues/battery-1-100-behind.png",
+      "bytes": 8839,
+      "sha256": "6a62e78e65ec96a7d1809a574d46f5e33cd65f3e629e5a3eced2526dc1d137a3"
+    },
+    {
+      "path": "gles-despues/battery-1-100.png",
+      "bytes": 8839,
+      "sha256": "6a62e78e65ec96a7d1809a574d46f5e33cd65f3e629e5a3eced2526dc1d137a3"
+    },
+    {
+      "path": "gles-despues/battery-1-25.png",
+      "bytes": 9644,
+      "sha256": "f6ab9347b242934dff08012303b83e6895dd34a851e014af7cebc1e474ef1b03"
+    },
+    {
+      "path": "gles-despues/battery-1-50.png",
+      "bytes": 9561,
+      "sha256": "7ba60fbddf51f38e4ad0d459ebd1bc0a26f0e40c9d5ac0008d5e2afab4bfd9e3"
+    },
+    {
+      "path": "gles-despues/battery-2-0.png",
+      "bytes": 11939,
+      "sha256": "e2adc35f40ca9f2a275ca04078b32bf48a70bb6a437996c4551c97848de9601c"
+    },
+    {
+      "path": "gles-despues/battery-2-100.png",
+      "bytes": 12285,
+      "sha256": "c66532b14792e3d8f80884dabcccabe2e365a3c22f1a60784e1a128615cf1123"
+    },
+    {
+      "path": "gles-despues/battery-2-25.png",
+      "bytes": 13452,
+      "sha256": "6005e467748c8fc00b343a3f1077ef821a9c0c7c7b7841c02c3a44be56b968f2"
+    },
+    {
+      "path": "gles-despues/battery-2-50.png",
+      "bytes": 13260,
+      "sha256": "d42e810e82f397f73d7518406998bc6c40f4c8360b3a9e901aca5bc740e58bbf"
+    },
+    {
+      "path": "gles-despues/battery-3-0.png",
+      "bytes": 13210,
+      "sha256": "0b7a0919d9eb3c75d1f81296fd74bca662ce1e7d2e8b7e4974205fd5afecee88"
+    },
+    {
+      "path": "gles-despues/battery-3-100-occluded.png",
+      "bytes": 12291,
+      "sha256": "dbab14b3a6ca207e53dcdc574be12f4170f3b11f4a3b70dd7bd038e88b07344a"
+    },
+    {
+      "path": "gles-despues/battery-3-100.png",
+      "bytes": 13353,
+      "sha256": "cd3a013ec58019a44895ec6ee272991cf0a7606eda55fadd084f855fec86d590"
+    },
+    {
+      "path": "gles-despues/battery-3-25.png",
+      "bytes": 15086,
+      "sha256": "2b596354eb6456c7946128cdb915c571fbf95facf3f7e83e28281369e15d7b1b"
+    },
+    {
+      "path": "gles-despues/battery-3-50.png",
+      "bytes": 14724,
+      "sha256": "69749532c80606de43bc0f8df6f648e36593adb3f6f4c1925d218f71f4897913"
+    },
+    {
+      "path": "gles-despues/battery-bar-90-half.png",
+      "bytes": 13543,
+      "sha256": "2bc84141afda2d894c8c87010974da3252370da6f5a13952f2cfc30c8e36050b"
+    },
+    {
+      "path": "gles-despues/battery-depth-oblique-half.png",
+      "bytes": 10709,
+      "sha256": "9b97ca90bd7c2c8a9749a9e6e1f12e27c148060b4c04b181c782765f7920fab6"
+    },
+    {
+      "path": "gles-despues/battery-side-90-quarter.png",
+      "bytes": 11092,
+      "sha256": "473b9c27601c2bb42862cfe3a1311e7364cd3d3b5d8e2420a7e65f9b83f6cd59"
+    },
+    {
+      "path": "gles-despues/battery-slosh-impulse.png",
+      "bytes": 14414,
+      "sha256": "ddb3d6635fb50110ea0ff792a4334a6b6d9ebcbf4cd3361de803c1e1a976e930"
+    },
+    {
+      "path": "gles-despues/battery-slosh-settled.png",
+      "bytes": 14724,
+      "sha256": "69749532c80606de43bc0f8df6f648e36593adb3f6f4c1925d218f71f4897913"
+    },
+    {
+      "path": "gles-despues/battery-stacked-oblique-half.png",
+      "bytes": 15897,
+      "sha256": "36d0a3c3907ced7d3fc0876a70a5736e2325db4ae39145ee63b283f966b3bdb2"
+    },
+    {
+      "path": "gles-despues/battery-tilted-45-half.png",
+      "bytes": 10164,
+      "sha256": "1add8aa28e4365c2163336892e76f84f631aeb9dc324251465af99607be3f900"
+    },
+    {
+      "path": "gles-despues/battery-tilted-empty-behind.png",
+      "bytes": 11580,
+      "sha256": "ba2c23793d463b1a587112113b0781232b4f7bbb6654da146fbbf1edbfd0d3b0"
+    },
+    {
+      "path": "gles-despues/battery-tilted-full-behind.png",
+      "bytes": 9467,
+      "sha256": "e1a6aa562d5d9d3b9beb0f405b2fd96b57a735d6e3fc9cc971731b415ea3b6df"
+    },
+    {
+      "path": "gles-despues/battery-upside-down-quarter.png",
+      "bytes": 15076,
+      "sha256": "e34a4d820240b514c98f35a29f32ad0202682d969e193d906887d69b2d3d11af"
+    },
+    {
+      "path": "interacciones.json",
+      "bytes": 592624,
+      "sha256": "cf85d30a20ef3015211df56b2234e64c42914a265d9fd40efb9693de67e6b7e1"
+    },
+    {
+      "path": "limite-navegador.json",
+      "bytes": 613,
+      "sha256": "86753168012cb398c6fa23ea9375b9d9a6dd4207be911fae9f7eb2bc7683c06b"
+    },
+    {
+      "path": "memoria-consultas.json",
+      "bytes": 4387,
+      "sha256": "86bafb7623b977fdba76b8afe274829fb8f58c948b8529c80559c124575990ea"
+    },
+    {
+      "path": "node-baseline.cpuprofile",
+      "bytes": 23421,
+      "sha256": "777ba0d945a1fa3834c4d4a223a78300afef830f6c780fdd48d217eefc6c608a"
+    },
+    {
+      "path": "node-baseline.heapprofile",
+      "bytes": 2292503,
+      "sha256": "0855936e7e2aeb1b3087b18956a9ad47d50fcbf1c0f039c76fd5c77d2cd59987"
+    },
+    {
+      "path": "node-optimized.cpuprofile",
+      "bytes": 16123,
+      "sha256": "dd12a4002b1de60f79d563905d44bb13d72481ff7eb91655a4e0d4c7597eea08"
+    },
+    {
+      "path": "node-optimized.heapprofile",
+      "bytes": 393020,
+      "sha256": "8ba5104c24dc5cdfd0aeea154e7fa467fe915c3b726aea81a8b7e9111eec8c4b"
+    },
+    {
+      "path": "operaciones.json",
+      "bytes": 311497,
+      "sha256": "699010116f3ffeaed94d9653f6476e41f3b9b77d09bb608de5b14060c0285c43"
+    },
+    {
+      "path": "perfil-node.json",
+      "bytes": 50343,
+      "sha256": "da2141746c27c456f76adc7d4face3f89fc8643cdf2c96a93c1e9515fa68935b"
+    },
+    {
+      "path": "pruebas-antes.txt",
+      "bytes": 121538,
+      "sha256": "5cdb5e8da71eb4ef722d2210884018d30b21de8754dfdf09fd0cd2d5448fcf79"
+    },
+    {
+      "path": "pruebas-arranque.txt",
+      "bytes": 5084,
+      "sha256": "a47efe1571c4c8806869b6942102f0028bfa8bf28aff7eccd01ff8ff4d0ee08d"
+    },
+    {
+      "path": "pruebas-despues.txt",
+      "bytes": 124793,
+      "sha256": "fe9684015d26e015dd8eb8c12d2f9807fd5cb0dc7b4fc04c855abb3af95ff016"
+    },
+    {
+      "path": "validacion-grafica.json",
+      "bytes": 7628,
+      "sha256": "f30b40aacd7ab6338ae02672ac90d297681c02a9c11cd31c1186231da8fa7ac8"
+    }
+  ],
+  "localHistoryBundle": {
+    "path": "../qbits-cpu-history-20261122.bundle",
+    "head": "1aff3db3a9f36d810acbef3776858e0d3d27e94a",
+    "branch": "perf/cpu-architecture-20261122",
+    "prerequisite": "1a0425a250b7911a8c230eb5d8534c54e3a03953",
+    "bytes": 959362,
+    "sha256": "07c2ddb85c26e8ef119fa5e43138777c42e85d747e06b531032a8458d22b192a",
+    "purpose": "Preserve the original local commit IDs referenced by experiments when publishing through GitHub Git-data APIs."
+  }
+}

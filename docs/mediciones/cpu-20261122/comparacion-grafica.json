@@ -1,0 +1,133 @@
+{
+  "method": "Production GPU command captures executed through EGL/Mesa, not Chrome. Exact PNG comparison, not only a threshold.",
+  "beforeGameSha256": "d5b6af65ab6a413634e6cf70bc3ea88a16a0ab9cc81b4d5af2364045caf16159",
+  "afterGameSha256": "19efe4aa93ceac0791968c5d4e85ea6f5a980cf65b0b3302f20a70933ffe6da0",
+  "identicalSnapshots": 25,
+  "snapshots": [
+    {
+      "file": "battery-1-0-behind.png",
+      "byteIdentical": true,
+      "sha256": "949cc4e013dca14e63ea94700696f5556f8d6c1fe7b67383eb16616b3136728d"
+    },
+    {
+      "file": "battery-1-0.png",
+      "byteIdentical": true,
+      "sha256": "9d3f44fb79cb3251822eb4cd3b04d3c0b62ceef7aa57f1def5370bdf06ce333d"
+    },
+    {
+      "file": "battery-1-100-behind.png",
+      "byteIdentical": true,
+      "sha256": "6a62e78e65ec96a7d1809a574d46f5e33cd65f3e629e5a3eced2526dc1d137a3"
+    },
+    {
+      "file": "battery-1-100.png",
+      "byteIdentical": true,
+      "sha256": "6a62e78e65ec96a7d1809a574d46f5e33cd65f3e629e5a3eced2526dc1d137a3"
+    },
+    {
+      "file": "battery-1-25.png",
+      "byteIdentical": true,
+      "sha256": "f6ab9347b242934dff08012303b83e6895dd34a851e014af7cebc1e474ef1b03"
+    },
+    {
+      "file": "battery-1-50.png",
+      "byteIdentical": true,
+      "sha256": "7ba60fbddf51f38e4ad0d459ebd1bc0a26f0e40c9d5ac0008d5e2afab4bfd9e3"
+    },
+    {
+      "file": "battery-2-0.png",
+      "byteIdentical": true,
+      "sha256": "e2adc35f40ca9f2a275ca04078b32bf48a70bb6a437996c4551c97848de9601c"
+    },
+    {
+      "file": "battery-2-100.png",
+      "byteIdentical": true,
+      "sha256": "c66532b14792e3d8f80884dabcccabe2e365a3c22f1a60784e1a128615cf1123"
+    },
+    {
+      "file": "battery-2-25.png",
+      "byteIdentical": true,
+      "sha256": "6005e467748c8fc00b343a3f1077ef821a9c0c7c7b7841c02c3a44be56b968f2"
+    },
+    {
+      "file": "battery-2-50.png",
+      "byteIdentical": true,
+      "sha256": "d42e810e82f397f73d7518406998bc6c40f4c8360b3a9e901aca5bc740e58bbf"
+    },
+    {
+      "file": "battery-3-0.png",
+      "byteIdentical": true,
+      "sha256": "0b7a0919d9eb3c75d1f81296fd74bca662ce1e7d2e8b7e4974205fd5afecee88"
+    },
+    {
+      "file": "battery-3-100-occluded.png",
+      "byteIdentical": true,
+      "sha256": "dbab14b3a6ca207e53dcdc574be12f4170f3b11f4a3b70dd7bd038e88b07344a"
+    },
+    {
+      "file": "battery-3-100.png",
+      "byteIdentical": true,
+      "sha256": "cd3a013ec58019a44895ec6ee272991cf0a7606eda55fadd084f855fec86d590"
+    },
+    {
+      "file": "battery-3-25.png",
+      "byteIdentical": true,
+      "sha256": "2b596354eb6456c7946128cdb915c571fbf95facf3f7e83e28281369e15d7b1b"
+    },
+    {
+      "file": "battery-3-50.png",
+      "byteIdentical": true,
+      "sha256": "69749532c80606de43bc0f8df6f648e36593adb3f6f4c1925d218f71f4897913"
+    },
+    {
+      "file": "battery-bar-90-half.png",
+      "byteIdentical": true,
+      "sha256": "2bc84141afda2d894c8c87010974da3252370da6f5a13952f2cfc30c8e36050b"
+    },
+    {
+      "file": "battery-depth-oblique-half.png",
+      "byteIdentical": true,
+      "sha256": "9b97ca90bd7c2c8a9749a9e6e1f12e27c148060b4c04b181c782765f7920fab6"
+    },
+    {
+      "file": "battery-side-90-quarter.png",
+      "byteIdentical": true,
+      "sha256": "473b9c27601c2bb42862cfe3a1311e7364cd3d3b5d8e2420a7e65f9b83f6cd59"
+    },
+    {
+      "file": "battery-slosh-impulse.png",
+      "byteIdentical": true,
+      "sha256": "ddb3d6635fb50110ea0ff792a4334a6b6d9ebcbf4cd3361de803c1e1a976e930"
+    },
+    {
+      "file": "battery-slosh-settled.png",
+      "byteIdentical": true,
+      "sha256": "69749532c80606de43bc0f8df6f648e36593adb3f6f4c1925d218f71f4897913"
+    },
+    {
+      "file": "battery-stacked-oblique-half.png",
+      "byteIdentical": true,
+      "sha256": "36d0a3c3907ced7d3fc0876a70a5736e2325db4ae39145ee63b283f966b3bdb2"
+    },
+    {
+      "file": "battery-tilted-45-half.png",
+      "byteIdentical": true,
+      "sha256": "1add8aa28e4365c2163336892e76f84f631aeb9dc324251465af99607be3f900"
+    },
+    {
+      "file": "battery-tilted-empty-behind.png",
+      "byteIdentical": true,
+      "sha256": "ba2c23793d463b1a587112113b0781232b4f7bbb6654da146fbbf1edbfd0d3b0"
+    },
+    {
+      "file": "battery-tilted-full-behind.png",
+      "byteIdentical": true,
+      "sha256": "e1a6aa562d5d9d3b9beb0f405b2fd96b57a735d6e3fc9cc971731b415ea3b6df"
+    },
+    {
+      "file": "battery-upside-down-quarter.png",
+      "byteIdentical": true,
+      "sha256": "e34a4d820240b514c98f35a29f32ad0202682d969e193d906887d69b2d3d11af"
+    }
+  ]
+}

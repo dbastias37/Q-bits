@@ -2,7 +2,35 @@
 
 Actualizado: 22 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega · contactos de suelo, caminantes y auditoría de coste
+## Última entrega · cinco optimizaciones CPU medidas
+
+Se completaron los cinco candidatos prioritarios de la auditoría: apuntado compartido con descarte espacial, proyección Ctrl por columna de caída, ruta rápida de piezas sin sensor, pertenencia de contactos compartida para peso/contacto y geometría local persistente de baterías. Se conserva JavaScript estático, Cannon 0.6.2, límite de 2000 piezas, WebGL 2/1, guardados, reglas físicas/energéticas, frecuencias y actividad fuera de cámara. Métodos, variación, contratos de caché, hashes, fuentes y comandos: [AUDITORIA_CPU_2026-11-22.md](AUDITORIA_CPU_2026-11-22.md).
+
+La referencia remota vigente se comprobó como `1a0425a250b7911a8c230eb5d8534c54e3a03953`, y se ejecutó de nuevo su suite: 1176/1176. La fuente funcional final pasó **1207/1207 pruebas**, cero fallos/cancelaciones/omisiones (50,39 s). Se añadieron 31 regresiones sobre geometría, invalidación, sensores y baterías. SHA-256 final de `game.js`: `19efe4aa93ceac0791968c5d4e85ea6f5a980cf65b0b3302f20a70933ffe6da0`; `workshop.js`: `cc992783a31bb46b780603457f5b33e3c32c18a015924ebbbc01435f622efe24`. Versión de scripts: `20261122-cpu-queries-1`.
+
+| Escenario | Trabajo antes → después | CPU de proceso antes → después |
+| --- | --- | ---: |
+| Objetivo con 1000 piezas lejanas | 3000 → 0 rayos exactos; quedan 100 descartes de cuerpo | 3,348 → 0,344 ms/actualización |
+| Ctrl: 64 tomadas y 940 lejanas | 541440 → 0 rayos exactos | 177,229 → 0,497 ms/proyección |
+| Sin sensores: 1000 piezas, tick/dibujo | 1000 + 1000 → 0 + 0 estados de taller | 0,295 → 0,123 / 0,197 → 0,125 ms |
+| 16 lecturas de peso, 512 contactos | 8192 → 512 de construcción + 64 consultas | 1,411 → 0,221 ms/lote |
+| 32 packs llenos / tres pases calientes | 64 adyacencias + 32 corners → 0; 288 corners gráficos → 0 | 2,010 → 0,214 / 3,132 → 1,721 ms |
+
+Son medianas de tres medias de proceso Node, con calentamiento y orden AB/BA/AB; no son FPS ni porcentajes de uso. Los JSON separan pared, CPU, percentiles, reconstrucciones y muestras. Los tiempos principales no contienen los contadores ni el perfilador. La primera selección sobre un bloque cercano de 1000 es más cara por construir el BVH: 1,616 → 11,514 ms de pared; las consultas posteriores y los movimientos reutilizan la geometría. La primera proyección sobre un soporte de 1000 aún tarda 19,963 ms de pared. Estos picos quedan explícitos, sin ocultarlos bajo medias calientes.
+
+La caché espacial pertenece al grupo; se libera al retirarlo. El resultado de apuntado sólo vive durante una actualización síncrona. Los contactos se invalidan en la frontera narrowphase/solver, al retornar de `world.step`, por topología y por limpieza de escena; peso, shapes y poses permanecen vivos. Los sensores sólo de contacto no construyen un índice por su cuenta porque esa variante empeoró la medición. Se mantiene un barrido barato de metadata en lugar de un registro que pueda omitir adaptaciones realizadas en vivo. La geometría de baterías valida pertenencia y coordenadas locales, mientras carga, activación y suministro siguen leyéndose en cada uso.
+
+La matriz completa escaló 100, 500, 1000, 1500 y 2000 piezas, con control de 16, distinguiendo cuerpos soldados, independientes, cuatro brazos, hasta 64 rotores pequeños y fábrica con cintas/cargas. El trabajo parcial medido supera 16,67 ms desde 500 independientes o 500 piezas con 64 motores físicos; la fábrica de 2000 llega a p50 15,434 y p95/p99 18,807 ms. Cuatro cuerpos soldados de 2000 quedan en p50 4,029 ms, sin certificar FPS. Se interrumpió la escala de 2000 independientes al exceder ocho segundos; última comparación completa: 1500. No se aumentó el límite ni se omitieron pasos para mejorar cifras.
+
+Las 13 comparaciones a 60/120/240 Hz aplican preferencias antes de construir articulaciones y conservan exactamente los snapshots físicos/guardables, energía, producción y relojes al girar cámara. El nivel 20 inicial a 60 Hz/30 rpm ya supera su presupuesto en baseline: dos entregas y 30,004371 J; no se introdujo ese fallo. Un caso adicional a 60 Hz/29 rpm completa las seis entregas, y los casos iniciales de 120/240 Hz también completan. Los fotogramas lentos sintéticos descartan los mismos 0,25 s en ambas variantes; los avances regulares no descartan tiempo.
+
+Las nueve parejas de interacción verifican agarre real, movimiento, unión, separación y dos brazos tocándose, con 30 checkpoints exactamente iguales. Se repitieron las 36 caídas: impacto conservado, reposo antes de 2,717 s, penetración máxima 1 mm y deriva/velocidad final cero. Las 25 capturas GLES de baterías son idénticas byte por byte a la referencia, con cero errores gráficos. Chromium local quedó bloqueado al crear sockets y el navegador remoto no pudo iniciar WebGL; **FPS, tiempos GPU y perfiles Main de Chrome no medidos**. Los perfiles entregados son V8/Node y la comparación gráfica usa Mesa/llvmpipe.
+
+Se ensayó una sexta hipótesis, evitar defaults de capacidad durante `updateMoods`; no mostró ganancia temporal consistente y fue revertida. No se cuenta como mejora. El perfil separado sí registra menos asignaciones estimadas y GC en la ruta de apuntado/sensores lejanos; los costes de memoria añadidos se documentan como objetos y referencias retenidas, sin inventar bytes V8. No hay mapas históricos sin límite.
+
+**Punto de continuación vigente:** perfilar en un navegador con WebGL el montaje real. Priorizar la sensibilidad de producción 20 a 60 Hz, el guardado repetido (aproximadamente 81 ms CPU en Node con Map persistente), los cuerpos/articulaciones numerosos y el pico frío del BVH. Después, medir agrupación de sombras (1002 frente a 2 envíos en el fixture de 1000 cubos) e índice de sensores de movimiento (2144 candidatos por 16 lecturas). Las asignaciones por articulación y las actualizaciones idénticas de UI siguen como hipótesis, sin una ganancia declarada. No migrar motor ni introducir workers sin medir coste total y equivalencia.
+
+## Entrega anterior · contactos de suelo, caminantes y auditoría de coste
 
 Se corrigieron causas reproducidas de contacto y rebote perdido, el reconocimiento de cuatro patas con auxiliares superiores y el trabajo geométrico de enfriadores lejanos. La auditoría documenta diez hallazgos adicionales, con ocho optimizaciones todavía pendientes. Métodos, fuentes, comandos y límites: [AUDITORIA_FISICA_RENDIMIENTO_2026-11-22.md](AUDITORIA_FISICA_RENDIMIENTO_2026-11-22.md).
 
@@ -22,7 +50,7 @@ Los enfriadores descartan cajas XZ lejanas antes de transformar cada vértice. C
 
 Verificación integrada: **1176/1176 pruebas Node aprobadas**, cero fallos, cancelaciones u omisiones (47,19 s). Las 45 nuevas cubren AABB, impacto/material/apoyo, enfriadores, reconocimiento y seguimiento de marcha. `tests/benchmark-ground-contacts.cjs` y `tests/benchmark-architecture-audit.cjs` permiten reproducir escenarios desde el repositorio y emiten JSON. Fuente final `game.js`: SHA-256 `d5b6af65ab6a413634e6cf70bc3ea88a16a0ab9cc81b4d5af2364045caf16159`. Se mantiene JavaScript estático, Cannon 0.6.2 y el formato de guardado; la versión de carga de scripts pasa a `20261122-ground-geometry-1`.
 
-Punto de continuación: priorizar las consultas espaciales de la guía con Ctrl y del apuntado. En casos controlados todavía realizan 541440 y 3000 pruebas de rayo, respectivamente; conservar la geometría exacta para huecos, mesas y oclusión. Después, agrupar sombras y compartir descubrimiento/contactos de sensores. La topología geométrica de packs de batería y el guardado síncrono repetido quedan pendientes. No se migra el motor ni se reduce la frecuencia de simulación en este bloque.
+Seguimiento: las consultas de Ctrl/apuntado, el descubrimiento/contactos de sensores y la topología de baterías se resolvieron en la entrega CPU registrada arriba. Sombras, movimiento y guardado mantienen evidencia pendiente; consultar el punto de continuación vigente.
 
 ## Entrega anterior · colisiones grandes, reposo y WebGL 2
 

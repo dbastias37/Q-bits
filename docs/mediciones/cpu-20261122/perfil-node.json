@@ -1,0 +1,1820 @@
+{
+  "method": "Node V8 Inspector sampling; not Chrome. Allocation samples include collected objects if supported by V8. GC durations and forced-GC heap readings are diagnostic and separate from main timings. Block times are inclusive and nested; DO NOT SUM them. Cannon phase timers are reported verbatim. Instrumentation A/B uses three warmed alternating pairs; report variation rather than a universal overhead percentage.",
+  "sources": {
+    "baseline": {
+      "gameSha256": "d5b6af65ab6a413634e6cf70bc3ea88a16a0ab9cc81b4d5af2364045caf16159",
+      "workshopSha256": "9d6985690f4a2ea47efb13978f4300edfc2546e03f8a173870b93f0c4e52481d"
+    },
+    "optimized": {
+      "gameSha256": "19efe4aa93ceac0791968c5d4e85ea6f5a980cf65b0b3302f20a70933ffe6da0",
+      "workshopSha256": "cc992783a31bb46b780603457f5b33e3c32c18a015924ebbbc01435f622efe24"
+    }
+  },
+  "node": "v24.22.3",
+  "reports": [
+    {
+      "variant": "baseline",
+      "scenario": "1000 distant pieces; 80 target + empty-sensor tick/draw + mood updates, warmed",
+      "inventory": {
+        "pieces": 1000,
+        "groups": 100,
+        "physicalBodies": 106,
+        "dynamicBodies": 100,
+        "virtualGroups": 0,
+        "shapes": 106,
+        "constraints": 0,
+        "awakeBodies": 100,
+        "contacts": 0,
+        "contactEquations": 0,
+        "frictionEquations": 0,
+        "constraintEquations": 0,
+        "sensors": 0,
+        "motors": 0,
+        "activeMotors": 0,
+        "physicsDt": 0.008333333333333333
+      },
+      "cpuTop": [
+        {
+          "name": "updateMoods",
+          "url": "evalmachine.<anonymous>",
+          "line": 7634,
+          "selfMs": 36.979
+        },
+        {
+          "name": "clamp",
+          "url": "evalmachine.<anonymous>",
+          "line": 696,
+          "selfMs": 27.782
+        },
+        {
+          "name": "post",
+          "url": "node:inspector",
+          "line": 115,
+          "selfMs": 26.788
+        },
+        {
+          "name": "rayPart",
+          "url": "evalmachine.<anonymous>",
+          "line": 1726,
+          "selfMs": 18.895
+        },
+        {
+          "name": "rayPart",
+          "url": "evalmachine.<anonymous>",
+          "line": 1726,
+          "selfMs": 17.967
+        },
+        {
+          "name": "rayPart",
+          "url": "evalmachine.<anonymous>",
+          "line": 1726,
+          "selfMs": 16.941
+        },
+        {
+          "name": "V",
+          "url": "evalmachine.<anonymous>",
+          "line": 694,
+          "selfMs": 7.944
+        },
+        {
+          "name": "drawWorkshop",
+          "url": "evalmachine.<anonymous>",
+          "line": 10221,
+          "selfMs": 7.792
+        },
+        {
+          "name": "tickContactSensors",
+          "url": "evalmachine.<anonymous>",
+          "line": 10202,
+          "selfMs": 7.403
+        },
+        {
+          "name": "V",
+          "url": "evalmachine.<anonymous>",
+          "line": 694,
+          "selfMs": 6.492
+        },
+        {
+          "name": "V",
+          "url": "evalmachine.<anonymous>",
+          "line": 694,
+          "selfMs": 6.166
+        },
+        {
+          "name": "gameBatteryCapacity",
+          "url": "evalmachine.<anonymous>",
+          "line": 5392,
+          "selfMs": 5.625
+        },
+        {
+          "name": "n.vmult",
+          "url": "evalmachine.<anonymous>",
+          "line": 25,
+          "selfMs": 2.798
+        },
+        {
+          "name": "n.vmult",
+          "url": "evalmachine.<anonymous>",
+          "line": 25,
+          "selfMs": 2.692
+        },
+        {
+          "name": "(anonymous)",
+          "url": "evalmachine.<anonymous>",
+          "line": 1234,
+          "selfMs": 2.464
+        },
+        {
+          "name": "(garbage collector)",
+          "url": "",
+          "line": 0,
+          "selfMs": 2.348
+        },
+        {
+          "name": "n.mult",
+          "url": "evalmachine.<anonymous>",
+          "line": 25,
+          "selfMs": 2.325
+        },
+        {
+          "name": "work",
+          "url": "file:///workspace/scratch/d35588e45a49/qbits/tests/profile-cpu-architecture.cjs",
+          "line": 23,
+          "selfMs": 2.219
+        },
+        {
+          "name": "n.vmult",
+          "url": "evalmachine.<anonymous>",
+          "line": 25,
+          "selfMs": 2.209
+        },
+        {
+          "name": "(anonymous)",
+          "url": "evalmachine.<anonymous>",
+          "line": 1234,
+          "selfMs": 1.981
+        },
+        {
+          "name": "updateAlphaHUD",
+          "url": "evalmachine.<anonymous>",
+          "line": 8384,
+          "selfMs": 1.824
+        },
+        {
+          "name": "(anonymous)",
+          "url": "evalmachine.<anonymous>",
+          "line": 1234,
+          "selfMs": 1.658
+        },
+        {
+          "name": "aimQubit",
+          "url": "evalmachine.<anonymous>",
+          "line": 1743,
+          "selfMs": 1.407
+        },
+        {
+          "name": "aimQubit",
+          "url": "evalmachine.<anonymous>",
+          "line": 1743,
+          "selfMs": 1.32
+        },
+        {
+          "name": "externallyPoweredInternalIds",
+          "url": "evalmachine.<anonymous>",
+          "line": 5382,
+          "selfMs": 1.313
+        },
+        {
+          "name": "(anonymous)",
+          "url": "evalmachine.<anonymous>",
+          "line": 7618,
+          "selfMs": 1.141
+        },
+        {
+          "name": "poses",
+          "url": "evalmachine.<anonymous>",
+          "line": 1234,
+          "selfMs": 1.028
+        },
+        {
+          "name": "n.mult",
+          "url": "evalmachine.<anonymous>",
+          "line": 25,
+          "selfMs": 0.985
+        },
+        {
+          "name": "poses",
+          "url": "evalmachine.<anonymous>",
+          "line": 1234,
+          "selfMs": 0.826
+        },
+        {
+          "name": "aimQubit",
+          "url": "evalmachine.<anonymous>",
+          "line": 1743,
+          "selfMs": 0.694
+        }
+      ],
+      "allocationTop": [
+        {
+          "name": "rayPart",
+          "line": 1726,
+          "sampledBytes": 18587304
+        },
+        {
+          "name": "rayPart",
+          "line": 1726,
+          "sampledBytes": 18461496
+        },
+        {
+          "name": "rayPart",
+          "line": 1726,
+          "sampledBytes": 17989416
+        },
+        {
+          "name": "n.vmult",
+          "line": 25,
+          "sampledBytes": 15383232
+        },
+        {
+          "name": "n.vmult",
+          "line": 25,
+          "sampledBytes": 15238176
+        },
+        {
+          "name": "n.vmult",
+          "line": 25,
+          "sampledBytes": 15171840
+        },
+        {
+          "name": "(anonymous)",
+          "line": 1234,
+          "sampledBytes": 11591560
+        },
+        {
+          "name": "(anonymous)",
+          "line": 1234,
+          "sampledBytes": 11045968
+        },
+        {
+          "name": "(anonymous)",
+          "line": 1234,
+          "sampledBytes": 10974776
+        },
+        {
+          "name": "updateMoods",
+          "line": 7634,
+          "sampledBytes": 9656072
+        },
+        {
+          "name": "n.mult",
+          "line": 25,
+          "sampledBytes": 8890320
+        },
+        {
+          "name": "n.mult",
+          "line": 25,
+          "sampledBytes": 8798880
+        },
+        {
+          "name": "n.mult",
+          "line": 25,
+          "sampledBytes": 8586960
+        },
+        {
+          "name": "next",
+          "line": 0,
+          "sampledBytes": 3687960
+        },
+        {
+          "name": "next",
+          "line": 0,
+          "sampledBytes": 3605640
+        },
+        {
+          "name": "translatedBounds",
+          "line": 1331,
+          "sampledBytes": 3602720
+        },
+        {
+          "name": "next",
+          "line": 0,
+          "sampledBytes": 3601520
+        },
+        {
+          "name": "next",
+          "line": 0,
+          "sampledBytes": 3539800
+        },
+        {
+          "name": "next",
+          "line": 0,
+          "sampledBytes": 3486280
+        },
+        {
+          "name": "next",
+          "line": 0,
+          "sampledBytes": 3342200
+        },
+        {
+          "name": "next",
+          "line": 0,
+          "sampledBytes": 3313400
+        },
+        {
+          "name": "min",
+          "line": 0,
+          "sampledBytes": 2458240
+        },
+        {
+          "name": "max",
+          "line": 0,
+          "sampledBytes": 1436592
+        },
+        {
+          "name": "exp",
+          "line": 0,
+          "sampledBytes": 1383056
+        },
+        {
+          "name": "abs",
+          "line": 0,
+          "sampledBytes": 1342016
+        },
+        {
+          "name": "abs",
+          "line": 0,
+          "sampledBytes": 1247616
+        },
+        {
+          "name": "abs",
+          "line": 0,
+          "sampledBytes": 1204928
+        },
+        {
+          "name": "partPose",
+          "line": 1233,
+          "sampledBytes": 1187200
+        },
+        {
+          "name": "partPose",
+          "line": 1233,
+          "sampledBytes": 1166664
+        },
+        {
+          "name": "partPose",
+          "line": 1233,
+          "sampledBytes": 1092352
+        }
+      ],
+      "gcDuringCpuProfile": {
+        "events": 13,
+        "totalMs": 2.516758001409471,
+        "maxMs": 0.26886099949479103,
+        "byKind": {
+          "1": 13
+        }
+      },
+      "heapBefore": {
+        "rss": 66859008,
+        "heapTotal": 19558400,
+        "heapUsed": 17830080,
+        "external": 3960136,
+        "arrayBuffers": 146771
+      },
+      "heapAfter": {
+        "rss": 79327232,
+        "heapTotal": 22355968,
+        "heapUsed": 20931280,
+        "external": 3960176,
+        "arrayBuffers": 146771
+      },
+      "profiles": [
+        "node-baseline.cpuprofile",
+        "node-baseline.heapprofile"
+      ]
+    },
+    {
+      "variant": "optimized",
+      "scenario": "1000 distant pieces; 80 target + empty-sensor tick/draw + mood updates, warmed",
+      "inventory": {
+        "pieces": 1000,
+        "groups": 100,
+        "physicalBodies": 106,
+        "dynamicBodies": 100,
+        "virtualGroups": 0,
+        "shapes": 106,
+        "constraints": 0,
+        "awakeBodies": 100,
+        "contacts": 0,
+        "contactEquations": 0,
+        "frictionEquations": 0,
+        "constraintEquations": 0,
+        "sensors": 0,
+        "motors": 0,
+        "activeMotors": 0,
+        "physicsDt": 0.008333333333333333
+      },
+      "cpuTop": [
+        {
+          "name": "updateMoods",
+          "url": "evalmachine.<anonymous>",
+          "line": 7736,
+          "selfMs": 31.068
+        },
+        {
+          "name": "post",
+          "url": "node:inspector",
+          "line": 115,
+          "selfMs": 29.658
+        },
+        {
+          "name": "clamp",
+          "url": "evalmachine.<anonymous>",
+          "line": 696,
+          "selfMs": 29.13
+        },
+        {
+          "name": "gameBatteryCapacity",
+          "url": "evalmachine.<anonymous>",
+          "line": 5461,
+          "selfMs": 7.132
+        },
+        {
+          "name": "updateAlphaHUD",
+          "url": "evalmachine.<anonymous>",
+          "line": 8486,
+          "selfMs": 2.489
+        },
+        {
+          "name": "work",
+          "url": "file:///workspace/scratch/d35588e45a49/qbits/tests/profile-cpu-architecture.cjs",
+          "line": 23,
+          "selfMs": 1.994
+        },
+        {
+          "name": "updateTarget",
+          "url": "evalmachine.<anonymous>",
+          "line": 5845,
+          "selfMs": 1.198
+        },
+        {
+          "name": "rotorForPart",
+          "url": "evalmachine.<anonymous>",
+          "line": 4001,
+          "selfMs": 1.168
+        },
+        {
+          "name": "clamp",
+          "url": "evalmachine.<anonymous>",
+          "line": 696,
+          "selfMs": 1.156
+        },
+        {
+          "name": "(anonymous)",
+          "url": "evalmachine.<anonymous>",
+          "line": 7720,
+          "selfMs": 1.146
+        },
+        {
+          "name": "tickContactSensors",
+          "url": "evalmachine.<anonymous>",
+          "line": 10324,
+          "selfMs": 1.019
+        },
+        {
+          "name": "externallyPoweredInternalIds",
+          "url": "evalmachine.<anonymous>",
+          "line": 5451,
+          "selfMs": 1.012
+        },
+        {
+          "name": "(anonymous)",
+          "url": "evalmachine.<anonymous>",
+          "line": 1307,
+          "selfMs": 0.66
+        },
+        {
+          "name": "rotatedGroupBounds",
+          "url": "evalmachine.<anonymous>",
+          "line": 1304,
+          "selfMs": 0.653
+        },
+        {
+          "name": "mechanicalTopologyIndex",
+          "url": "evalmachine.<anonymous>",
+          "line": 741,
+          "selfMs": 0.591
+        },
+        {
+          "name": "groupWilling",
+          "url": "evalmachine.<anonymous>",
+          "line": 7720,
+          "selfMs": 0.504
+        },
+        {
+          "name": "drawWorkshop",
+          "url": "evalmachine.<anonymous>",
+          "line": 10343,
+          "selfMs": 0.503
+        },
+        {
+          "name": "(anonymous)",
+          "url": "evalmachine.<anonymous>",
+          "line": 5458,
+          "selfMs": 0.501
+        },
+        {
+          "name": "rayGroupCandidates",
+          "url": "evalmachine.<anonymous>",
+          "line": 1762,
+          "selfMs": 0.5
+        },
+        {
+          "name": "(anonymous)",
+          "url": "evalmachine.<anonymous>",
+          "line": 7741,
+          "selfMs": 0.5
+        },
+        {
+          "name": "(garbage collector)",
+          "url": "",
+          "line": 0,
+          "selfMs": 0.499
+        },
+        {
+          "name": "bounds",
+          "url": "evalmachine.<anonymous>",
+          "line": 1333,
+          "selfMs": 0.375
+        },
+        {
+          "name": "element",
+          "url": "file:///workspace/scratch/d35588e45a49/qbits/tests/game-harness.cjs",
+          "line": 39,
+          "selfMs": 0.337
+        },
+        {
+          "name": "updateMenuConnector",
+          "url": "evalmachine.<anonymous>",
+          "line": 6678,
+          "selfMs": 0.333
+        },
+        {
+          "name": "updateMoodCallout",
+          "url": "evalmachine.<anonymous>",
+          "line": 7829,
+          "selfMs": 0.332
+        },
+        {
+          "name": "wallAim",
+          "url": "evalmachine.<anonymous>",
+          "line": 6773,
+          "selfMs": 0.331
+        },
+        {
+          "name": "(program)",
+          "url": "",
+          "line": 0,
+          "selfMs": 0.326
+        },
+        {
+          "name": "aimQubit",
+          "url": "evalmachine.<anonymous>",
+          "line": 1783,
+          "selfMs": 0.183
+        },
+        {
+          "name": "externalBatteryState",
+          "url": "evalmachine.<anonymous>",
+          "line": 5419,
+          "selfMs": 0.173
+        },
+        {
+          "name": "n.vadd",
+          "url": "evalmachine.<anonymous>",
+          "line": 25,
+          "selfMs": 0.171
+        }
+      ],
+      "allocationTop": [
+        {
+          "name": "updateMoods",
+          "line": 7736,
+          "sampledBytes": 9507304
+        },
+        {
+          "name": "next",
+          "line": 0,
+          "sampledBytes": 3601520
+        },
+        {
+          "name": "next",
+          "line": 0,
+          "sampledBytes": 3580960
+        },
+        {
+          "name": "translatedBounds",
+          "line": 1332,
+          "sampledBytes": 3555200
+        },
+        {
+          "name": "next",
+          "line": 0,
+          "sampledBytes": 3441000
+        },
+        {
+          "name": "next",
+          "line": 0,
+          "sampledBytes": 3420440
+        },
+        {
+          "name": "min",
+          "line": 0,
+          "sampledBytes": 2565056
+        },
+        {
+          "name": "exp",
+          "line": 0,
+          "sampledBytes": 1424096
+        },
+        {
+          "name": "max",
+          "line": 0,
+          "sampledBytes": 1198368
+        },
+        {
+          "name": "rotatedGroupBounds",
+          "line": 1304,
+          "sampledBytes": 758224
+        },
+        {
+          "name": "(anonymous)",
+          "line": 1307,
+          "sampledBytes": 537632
+        },
+        {
+          "name": "externallyPoweredInternalIds",
+          "line": 5451,
+          "sampledBytes": 498960
+        },
+        {
+          "name": "updateAlphaHUD",
+          "line": 8486,
+          "sampledBytes": 481872
+        },
+        {
+          "name": "filter",
+          "line": 0,
+          "sampledBytes": 395520
+        },
+        {
+          "name": "values",
+          "line": 0,
+          "sampledBytes": 395520
+        },
+        {
+          "name": "values",
+          "line": 0,
+          "sampledBytes": 383184
+        },
+        {
+          "name": "next",
+          "line": 0,
+          "sampledBytes": 329280
+        },
+        {
+          "name": "values",
+          "line": 0,
+          "sampledBytes": 325488
+        },
+        {
+          "name": "next",
+          "line": 0,
+          "sampledBytes": 201680
+        },
+        {
+          "name": "wallAim",
+          "line": 6773,
+          "sampledBytes": 176936
+        },
+        {
+          "name": "values",
+          "line": 0,
+          "sampledBytes": 164784
+        },
+        {
+          "name": "min",
+          "line": 0,
+          "sampledBytes": 114912
+        },
+        {
+          "name": "rayGroupCandidates",
+          "line": 1762,
+          "sampledBytes": 106704
+        },
+        {
+          "name": "max",
+          "line": 0,
+          "sampledBytes": 82080
+        },
+        {
+          "name": "aimQubit",
+          "line": 1783,
+          "sampledBytes": 70096
+        },
+        {
+          "name": "element",
+          "line": 39,
+          "sampledBytes": 37064
+        },
+        {
+          "name": "Set",
+          "line": 0,
+          "sampledBytes": 28984
+        },
+        {
+          "name": "Set",
+          "line": 0,
+          "sampledBytes": 24888
+        },
+        {
+          "name": "puzzleRayLimit",
+          "line": 7652,
+          "sampledBytes": 24736
+        },
+        {
+          "name": "next",
+          "line": 0,
+          "sampledBytes": 24680
+        }
+      ],
+      "gcDuringCpuProfile": {
+        "events": 2,
+        "totalMs": 0.5221969997510314,
+        "maxMs": 0.2691099997609854,
+        "byKind": {
+          "1": 2
+        }
+      },
+      "heapBefore": {
+        "rss": 84377600,
+        "heapTotal": 23437312,
+        "heapUsed": 21026488,
+        "external": 3960176,
+        "arrayBuffers": 146771
+      },
+      "heapAfter": {
+        "rss": 82108416,
+        "heapTotal": 20115456,
+        "heapUsed": 18503760,
+        "external": 3960176,
+        "arrayBuffers": 146771
+      },
+      "profiles": [
+        "node-optimized.cpuprofile",
+        "node-optimized.heapprofile"
+      ]
+    }
+  ],
+  "diagnostics": [
+    {
+      "variant": "baseline",
+      "identicalStateWithInstrumentation": true,
+      "runs": [
+        {
+          "repetition": 1,
+          "instrumented": false,
+          "wallMs": 143.23791200000005,
+          "processCpuMs": 251.378,
+          "inventory": {
+            "pieces": 500,
+            "groups": 39,
+            "physicalBodies": 33,
+            "dynamicBodies": 23,
+            "virtualGroups": 12,
+            "shapes": 105,
+            "constraints": 0,
+            "awakeBodies": 23,
+            "contacts": 72,
+            "contactEquations": 72,
+            "frictionEquations": 144,
+            "constraintEquations": 0,
+            "sensors": 0,
+            "motors": 12,
+            "activeMotors": 12,
+            "physicsDt": 0.008333333333333333
+          },
+          "blocks": null,
+          "cannonPhaseSumMs": null
+        },
+        {
+          "repetition": 1,
+          "instrumented": true,
+          "wallMs": 133.27169400000002,
+          "processCpuMs": 236.95,
+          "inventory": {
+            "pieces": 500,
+            "groups": 39,
+            "physicalBodies": 33,
+            "dynamicBodies": 23,
+            "virtualGroups": 12,
+            "shapes": 105,
+            "constraints": 0,
+            "awakeBodies": 23,
+            "contacts": 72,
+            "contactEquations": 72,
+            "frictionEquations": 144,
+            "constraintEquations": 0,
+            "sensors": 0,
+            "motors": 12,
+            "activeMotors": 12,
+            "physicsDt": 0.008333333333333333
+          },
+          "blocks": {
+            "refreshRotors": {
+              "calls": 24,
+              "inclusiveMs": 1.861841999999342
+            },
+            "updatePowerNetwork": {
+              "calls": 24,
+              "inclusiveMs": 0.05291699999816046
+            },
+            "updateConveyors": {
+              "calls": 24,
+              "inclusiveMs": 2.4488440000009177
+            },
+            "updateRobotGrips": {
+              "calls": 24,
+              "inclusiveMs": 0.04735800000071322
+            },
+            "updateRobotArms": {
+              "calls": 24,
+              "inclusiveMs": 0.025767000000541884
+            },
+            "updateGrab": {
+              "calls": 24,
+              "inclusiveMs": 0.019477999999708118
+            },
+            "updateRoutes": {
+              "calls": 24,
+              "inclusiveMs": 0.04406499999868174
+            },
+            "updateHauling": {
+              "calls": 24,
+              "inclusiveMs": 0.024935000000368746
+            },
+            "prepareRotorPower": {
+              "calls": 24,
+              "inclusiveMs": 4.232931999998982
+            },
+            "updateRotorMotors": {
+              "calls": 24,
+              "inclusiveMs": 0.825256000000536
+            },
+            "driveRobotArms": {
+              "calls": 24,
+              "inclusiveMs": 0.023247000000992557
+            },
+            "driveConveyors": {
+              "calls": 24,
+              "inclusiveMs": 1.657144999999673
+            },
+            "driveServos": {
+              "calls": 24,
+              "inclusiveMs": 0.10812099999975544
+            },
+            "updateFlights": {
+              "calls": 24,
+              "inclusiveMs": 0.1841019999992568
+            },
+            "stabilizeRotors": {
+              "calls": 24,
+              "inclusiveMs": 0.22488500000054046
+            },
+            "finishMechanicalRest": {
+              "calls": 24,
+              "inclusiveMs": 0.026898999999957596
+            },
+            "updateRotorPower": {
+              "calls": 24,
+              "inclusiveMs": 5.41680100000076
+            },
+            "tickContactSensors": {
+              "calls": 24,
+              "inclusiveMs": 1.2834219999999732
+            },
+            "tickFlightSensors": {
+              "calls": 24,
+              "inclusiveMs": 0.029164999999920838
+            },
+            "updateCooling": {
+              "calls": 24,
+              "inclusiveMs": 0.9657980000010866
+            },
+            "updateMoods": {
+              "calls": 24,
+              "inclusiveMs": 17.598159000001033
+            },
+            "updateBlueprints": {
+              "calls": 24,
+              "inclusiveMs": 0.03227800000058778
+            },
+            "tickProduction": {
+              "calls": 24,
+              "inclusiveMs": 0.030964000000949454
+            },
+            "updateBatteryLiquids": {
+              "calls": 12,
+              "inclusiveMs": 2.7868109999994886
+            },
+            "updateTarget": {
+              "calls": 12,
+              "inclusiveMs": 18.4950130000002
+            },
+            "drawWorkshop": {
+              "calls": 12,
+              "inclusiveMs": 0.930105000000367
+            },
+            "drawQubits": {
+              "calls": 12,
+              "inclusiveMs": 43.644195000000764
+            },
+            "renderScene": {
+              "calls": 12,
+              "inclusiveMs": 45.03352199999972
+            }
+          },
+          "cannonPhaseSumMs": {
+            "solve": 12.638354000000163,
+            "makeContactConstraints": 0.45197099999950296,
+            "broadphase": 5.045659999999316,
+            "integrate": 0.4054529999980332,
+            "narrowphase": 7.80788400000074
+          }
+        },
+        {
+          "repetition": 2,
+          "instrumented": true,
+          "wallMs": 118.02729,
+          "processCpuMs": 212.868,
+          "inventory": {
+            "pieces": 500,
+            "groups": 39,
+            "physicalBodies": 33,
+            "dynamicBodies": 23,
+            "virtualGroups": 12,
+            "shapes": 105,
+            "constraints": 0,
+            "awakeBodies": 23,
+            "contacts": 72,
+            "contactEquations": 72,
+            "frictionEquations": 144,
+            "constraintEquations": 0,
+            "sensors": 0,
+            "motors": 12,
+            "activeMotors": 12,
+            "physicsDt": 0.008333333333333333
+          },
+          "blocks": {
+            "refreshRotors": {
+              "calls": 24,
+              "inclusiveMs": 1.724735999999666
+            },
+            "updatePowerNetwork": {
+              "calls": 24,
+              "inclusiveMs": 0.05066399999850546
+            },
+            "updateConveyors": {
+              "calls": 24,
+              "inclusiveMs": 2.4136639999996987
+            },
+            "updateRobotGrips": {
+              "calls": 24,
+              "inclusiveMs": 0.08183199999984936
+            },
+            "updateRobotArms": {
+              "calls": 24,
+              "inclusiveMs": 0.0258889999981875
+            },
+            "updateGrab": {
+              "calls": 24,
+              "inclusiveMs": 0.01967800000056741
+            },
+            "updateRoutes": {
+              "calls": 24,
+              "inclusiveMs": 0.04418600000008155
+            },
+            "updateHauling": {
+              "calls": 24,
+              "inclusiveMs": 0.024753000000600878
+            },
+            "prepareRotorPower": {
+              "calls": 24,
+              "inclusiveMs": 3.8945590000002994
+            },
+            "updateRotorMotors": {
+              "calls": 24,
+              "inclusiveMs": 0.8061309999989135
+            },
+            "driveRobotArms": {
+              "calls": 24,
+              "inclusiveMs": 0.022314999999252905
+            },
+            "driveConveyors": {
+              "calls": 24,
+              "inclusiveMs": 1.737216999998509
+            },
+            "driveServos": {
+              "calls": 24,
+              "inclusiveMs": 0.08677000000079715
+            },
+            "updateFlights": {
+              "calls": 24,
+              "inclusiveMs": 0.16569599999911588
+            },
+            "stabilizeRotors": {
+              "calls": 24,
+              "inclusiveMs": 0.2288990000006379
+            },
+            "finishMechanicalRest": {
+              "calls": 24,
+              "inclusiveMs": 0.05090500000051179
+            },
+            "updateRotorPower": {
+              "calls": 24,
+              "inclusiveMs": 5.411955999999918
+            },
+            "tickContactSensors": {
+              "calls": 24,
+              "inclusiveMs": 1.4257939999984046
+            },
+            "tickFlightSensors": {
+              "calls": 24,
+              "inclusiveMs": 0.027399999999033753
+            },
+            "updateCooling": {
+              "calls": 24,
+              "inclusiveMs": 0.8932909999994081
+            },
+            "updateMoods": {
+              "calls": 24,
+              "inclusiveMs": 18.144331000000875
+            },
+            "updateBlueprints": {
+              "calls": 24,
+              "inclusiveMs": 0.03206999999974869
+            },
+            "tickProduction": {
+              "calls": 24,
+              "inclusiveMs": 0.029843999997865467
+            },
+            "updateBatteryLiquids": {
+              "calls": 12,
+              "inclusiveMs": 2.3196639999987383
+            },
+            "updateTarget": {
+              "calls": 12,
+              "inclusiveMs": 13.769649999999274
+            },
+            "drawWorkshop": {
+              "calls": 12,
+              "inclusiveMs": 0.717768000000433
+            },
+            "drawQubits": {
+              "calls": 12,
+              "inclusiveMs": 35.47832900000003
+            },
+            "renderScene": {
+              "calls": 12,
+              "inclusiveMs": 36.07628199999954
+            }
+          },
+          "cannonPhaseSumMs": {
+            "solve": 12.351799000000483,
+            "makeContactConstraints": 1.0198070000010375,
+            "broadphase": 4.774129000000357,
+            "integrate": 0.3683389999996507,
+            "narrowphase": 7.444329999999809
+          }
+        },
+        {
+          "repetition": 2,
+          "instrumented": false,
+          "wallMs": 127.07892300000003,
+          "processCpuMs": 220.102,
+          "inventory": {
+            "pieces": 500,
+            "groups": 39,
+            "physicalBodies": 33,
+            "dynamicBodies": 23,
+            "virtualGroups": 12,
+            "shapes": 105,
+            "constraints": 0,
+            "awakeBodies": 23,
+            "contacts": 72,
+            "contactEquations": 72,
+            "frictionEquations": 144,
+            "constraintEquations": 0,
+            "sensors": 0,
+            "motors": 12,
+            "activeMotors": 12,
+            "physicsDt": 0.008333333333333333
+          },
+          "blocks": null,
+          "cannonPhaseSumMs": null
+        },
+        {
+          "repetition": 3,
+          "instrumented": false,
+          "wallMs": 139.5788660000003,
+          "processCpuMs": 249.845,
+          "inventory": {
+            "pieces": 500,
+            "groups": 39,
+            "physicalBodies": 33,
+            "dynamicBodies": 23,
+            "virtualGroups": 12,
+            "shapes": 105,
+            "constraints": 0,
+            "awakeBodies": 23,
+            "contacts": 72,
+            "contactEquations": 72,
+            "frictionEquations": 144,
+            "constraintEquations": 0,
+            "sensors": 0,
+            "motors": 12,
+            "activeMotors": 12,
+            "physicsDt": 0.008333333333333333
+          },
+          "blocks": null,
+          "cannonPhaseSumMs": null
+        },
+        {
+          "repetition": 3,
+          "instrumented": true,
+          "wallMs": 140.78553199999988,
+          "processCpuMs": 261.971,
+          "inventory": {
+            "pieces": 500,
+            "groups": 39,
+            "physicalBodies": 33,
+            "dynamicBodies": 23,
+            "virtualGroups": 12,
+            "shapes": 105,
+            "constraints": 0,
+            "awakeBodies": 23,
+            "contacts": 72,
+            "contactEquations": 72,
+            "frictionEquations": 144,
+            "constraintEquations": 0,
+            "sensors": 0,
+            "motors": 12,
+            "activeMotors": 12,
+            "physicsDt": 0.008333333333333333
+          },
+          "blocks": {
+            "refreshRotors": {
+              "calls": 24,
+              "inclusiveMs": 1.9620230000000447
+            },
+            "updatePowerNetwork": {
+              "calls": 24,
+              "inclusiveMs": 0.0554310000006808
+            },
+            "updateConveyors": {
+              "calls": 24,
+              "inclusiveMs": 2.865427000001546
+            },
+            "updateRobotGrips": {
+              "calls": 24,
+              "inclusiveMs": 0.06364600000051723
+            },
+            "updateRobotArms": {
+              "calls": 24,
+              "inclusiveMs": 0.030836999998427927
+            },
+            "updateGrab": {
+              "calls": 24,
+              "inclusiveMs": 0.022794999998950516
+            },
+            "updateRoutes": {
+              "calls": 24,
+              "inclusiveMs": 0.04727300000104151
+            },
+            "updateHauling": {
+              "calls": 24,
+              "inclusiveMs": 0.028785000000425498
+            },
+            "prepareRotorPower": {
+              "calls": 24,
+              "inclusiveMs": 4.695232000000033
+            },
+            "updateRotorMotors": {
+              "calls": 24,
+              "inclusiveMs": 0.9489009999997506
+            },
+            "driveRobotArms": {
+              "calls": 24,
+              "inclusiveMs": 0.026340000001255248
+            },
+            "driveConveyors": {
+              "calls": 24,
+              "inclusiveMs": 1.8232249999973646
+            },
+            "driveServos": {
+              "calls": 24,
+              "inclusiveMs": 0.08394299999872601
+            },
+            "updateFlights": {
+              "calls": 24,
+              "inclusiveMs": 0.2496740000015052
+            },
+            "stabilizeRotors": {
+              "calls": 24,
+              "inclusiveMs": 0.2753160000029311
+            },
+            "finishMechanicalRest": {
+              "calls": 24,
+              "inclusiveMs": 0.034451000000444765
+            },
+            "updateRotorPower": {
+              "calls": 24,
+              "inclusiveMs": 6.359711000000971
+            },
+            "tickContactSensors": {
+              "calls": 24,
+              "inclusiveMs": 1.609549000001607
+            },
+            "tickFlightSensors": {
+              "calls": 24,
+              "inclusiveMs": 0.033869000002596295
+            },
+            "updateCooling": {
+              "calls": 24,
+              "inclusiveMs": 1.0890199999994365
+            },
+            "updateMoods": {
+              "calls": 24,
+              "inclusiveMs": 20.827940999998646
+            },
+            "updateBlueprints": {
+              "calls": 24,
+              "inclusiveMs": 0.04240299999855779
+            },
+            "tickProduction": {
+              "calls": 24,
+              "inclusiveMs": 0.036232999998901505
+            },
+            "updateBatteryLiquids": {
+              "calls": 12,
+              "inclusiveMs": 2.778888000000734
+            },
+            "updateTarget": {
+              "calls": 12,
+              "inclusiveMs": 15.458378999998786
+            },
+            "drawWorkshop": {
+              "calls": 12,
+              "inclusiveMs": 0.9470590000000811
+            },
+            "drawQubits": {
+              "calls": 12,
+              "inclusiveMs": 45.1697669999985
+            },
+            "renderScene": {
+              "calls": 12,
+              "inclusiveMs": 45.76098000000002
+            }
+          },
+          "cannonPhaseSumMs": {
+            "solve": 14.456056000000899,
+            "makeContactConstraints": 0.48004499999842665,
+            "broadphase": 5.644221999997171,
+            "integrate": 0.49045200000091427,
+            "narrowphase": 8.962264999999206
+          }
+        }
+      ]
+    },
+    {
+      "variant": "optimized",
+      "identicalStateWithInstrumentation": true,
+      "runs": [
+        {
+          "repetition": 1,
+          "instrumented": false,
+          "wallMs": 119.59068299999944,
+          "processCpuMs": 198.463,
+          "inventory": {
+            "pieces": 500,
+            "groups": 39,
+            "physicalBodies": 33,
+            "dynamicBodies": 23,
+            "virtualGroups": 12,
+            "shapes": 105,
+            "constraints": 0,
+            "awakeBodies": 23,
+            "contacts": 72,
+            "contactEquations": 72,
+            "frictionEquations": 144,
+            "constraintEquations": 0,
+            "sensors": 0,
+            "motors": 12,
+            "activeMotors": 12,
+            "physicsDt": 0.008333333333333333
+          },
+          "blocks": null,
+          "cannonPhaseSumMs": null
+        },
+        {
+          "repetition": 1,
+          "instrumented": true,
+          "wallMs": 137.73522000000048,
+          "processCpuMs": 233.972,
+          "inventory": {
+            "pieces": 500,
+            "groups": 39,
+            "physicalBodies": 33,
+            "dynamicBodies": 23,
+            "virtualGroups": 12,
+            "shapes": 105,
+            "constraints": 0,
+            "awakeBodies": 23,
+            "contacts": 72,
+            "contactEquations": 72,
+            "frictionEquations": 144,
+            "constraintEquations": 0,
+            "sensors": 0,
+            "motors": 12,
+            "activeMotors": 12,
+            "physicsDt": 0.008333333333333333
+          },
+          "blocks": {
+            "refreshRotors": {
+              "calls": 24,
+              "inclusiveMs": 2.140989000002264
+            },
+            "updatePowerNetwork": {
+              "calls": 24,
+              "inclusiveMs": 0.14009700000042358
+            },
+            "updateConveyors": {
+              "calls": 24,
+              "inclusiveMs": 3.0113760000012917
+            },
+            "updateRobotGrips": {
+              "calls": 24,
+              "inclusiveMs": 0.05904799999825627
+            },
+            "updateRobotArms": {
+              "calls": 24,
+              "inclusiveMs": 0.030396999996810337
+            },
+            "updateGrab": {
+              "calls": 24,
+              "inclusiveMs": 0.06186300000081246
+            },
+            "updateRoutes": {
+              "calls": 24,
+              "inclusiveMs": 0.054320999997798936
+            },
+            "updateHauling": {
+              "calls": 24,
+              "inclusiveMs": 0.029787000001306296
+            },
+            "prepareRotorPower": {
+              "calls": 24,
+              "inclusiveMs": 5.116737000000285
+            },
+            "updateRotorMotors": {
+              "calls": 24,
+              "inclusiveMs": 1.1111770000015895
+            },
+            "driveRobotArms": {
+              "calls": 24,
+              "inclusiveMs": 0.031708000002254266
+            },
+            "driveConveyors": {
+              "calls": 24,
+              "inclusiveMs": 2.0587060000007114
+            },
+            "driveServos": {
+              "calls": 24,
+              "inclusiveMs": 0.10253300000294985
+            },
+            "updateFlights": {
+              "calls": 24,
+              "inclusiveMs": 0.22932400000081543
+            },
+            "stabilizeRotors": {
+              "calls": 24,
+              "inclusiveMs": 0.281436000001122
+            },
+            "finishMechanicalRest": {
+              "calls": 24,
+              "inclusiveMs": 0.030744000000595406
+            },
+            "updateRotorPower": {
+              "calls": 24,
+              "inclusiveMs": 6.063882000002195
+            },
+            "tickContactSensors": {
+              "calls": 24,
+              "inclusiveMs": 0.3653440000025512
+            },
+            "tickFlightSensors": {
+              "calls": 24,
+              "inclusiveMs": 0.030400000002373417
+            },
+            "updateCooling": {
+              "calls": 24,
+              "inclusiveMs": 1.2131929999986824
+            },
+            "updateMoods": {
+              "calls": 24,
+              "inclusiveMs": 21.879926000001433
+            },
+            "updateBlueprints": {
+              "calls": 24,
+              "inclusiveMs": 0.06596099999933358
+            },
+            "tickProduction": {
+              "calls": 24,
+              "inclusiveMs": 0.03712500000256114
+            },
+            "updateBatteryLiquids": {
+              "calls": 12,
+              "inclusiveMs": 2.5189119999995455
+            },
+            "updateTarget": {
+              "calls": 12,
+              "inclusiveMs": 4.899115000000165
+            },
+            "drawWorkshop": {
+              "calls": 12,
+              "inclusiveMs": 0.4042140000019572
+            },
+            "drawQubits": {
+              "calls": 12,
+              "inclusiveMs": 49.69296400000076
+            },
+            "renderScene": {
+              "calls": 12,
+              "inclusiveMs": 51.19188600000143
+            }
+          },
+          "cannonPhaseSumMs": {
+            "solve": 15.372955000003458,
+            "makeContactConstraints": 0.4888770000043223,
+            "broadphase": 5.574153999999908,
+            "integrate": 0.4852999999984604,
+            "narrowphase": 9.017493999998806
+          }
+        },
+        {
+          "repetition": 2,
+          "instrumented": true,
+          "wallMs": 114.48979700000018,
+          "processCpuMs": 192.968,
+          "inventory": {
+            "pieces": 500,
+            "groups": 39,
+            "physicalBodies": 33,
+            "dynamicBodies": 23,
+            "virtualGroups": 12,
+            "shapes": 105,
+            "constraints": 0,
+            "awakeBodies": 23,
+            "contacts": 72,
+            "contactEquations": 72,
+            "frictionEquations": 144,
+            "constraintEquations": 0,
+            "sensors": 0,
+            "motors": 12,
+            "activeMotors": 12,
+            "physicsDt": 0.008333333333333333
+          },
+          "blocks": {
+            "refreshRotors": {
+              "calls": 24,
+              "inclusiveMs": 1.9128189999973984
+            },
+            "updatePowerNetwork": {
+              "calls": 24,
+              "inclusiveMs": 0.04886399999850255
+            },
+            "updateConveyors": {
+              "calls": 24,
+              "inclusiveMs": 4.711702999999034
+            },
+            "updateRobotGrips": {
+              "calls": 24,
+              "inclusiveMs": 0.06443600000056904
+            },
+            "updateRobotArms": {
+              "calls": 24,
+              "inclusiveMs": 0.026297999999769672
+            },
+            "updateGrab": {
+              "calls": 24,
+              "inclusiveMs": 0.025727999999617168
+            },
+            "updateRoutes": {
+              "calls": 24,
+              "inclusiveMs": 0.049741000000722124
+            },
+            "updateHauling": {
+              "calls": 24,
+              "inclusiveMs": 0.0284639999981664
+            },
+            "prepareRotorPower": {
+              "calls": 24,
+              "inclusiveMs": 4.323584999999184
+            },
+            "updateRotorMotors": {
+              "calls": 24,
+              "inclusiveMs": 0.9570939999994152
+            },
+            "driveRobotArms": {
+              "calls": 24,
+              "inclusiveMs": 0.026787000002514105
+            },
+            "driveConveyors": {
+              "calls": 24,
+              "inclusiveMs": 1.6633560000036596
+            },
+            "driveServos": {
+              "calls": 24,
+              "inclusiveMs": 0.10302400000091438
+            },
+            "updateFlights": {
+              "calls": 24,
+              "inclusiveMs": 0.215383999999176
+            },
+            "stabilizeRotors": {
+              "calls": 24,
+              "inclusiveMs": 0.25203700000201934
+            },
+            "finishMechanicalRest": {
+              "calls": 24,
+              "inclusiveMs": 0.03151899999920715
+            },
+            "updateRotorPower": {
+              "calls": 24,
+              "inclusiveMs": 5.853657999999086
+            },
+            "tickContactSensors": {
+              "calls": 24,
+              "inclusiveMs": 0.28597500000159926
+            },
+            "tickFlightSensors": {
+              "calls": 24,
+              "inclusiveMs": 0.030617000003985595
+            },
+            "updateCooling": {
+              "calls": 24,
+              "inclusiveMs": 1.1198370000029172
+            },
+            "updateMoods": {
+              "calls": 24,
+              "inclusiveMs": 18.975164999995286
+            },
+            "updateBlueprints": {
+              "calls": 24,
+              "inclusiveMs": 0.06729900000027556
+            },
+            "tickProduction": {
+              "calls": 24,
+              "inclusiveMs": 0.05824899999970512
+            },
+            "updateBatteryLiquids": {
+              "calls": 12,
+              "inclusiveMs": 1.8414140000022599
+            },
+            "updateTarget": {
+              "calls": 12,
+              "inclusiveMs": 2.616136000001461
+            },
+            "drawWorkshop": {
+              "calls": 12,
+              "inclusiveMs": 0.2971109999989494
+            },
+            "drawQubits": {
+              "calls": 12,
+              "inclusiveMs": 38.01424300000144
+            },
+            "renderScene": {
+              "calls": 12,
+              "inclusiveMs": 38.55613000000085
+            }
+          },
+          "cannonPhaseSumMs": {
+            "solve": 13.121323000001212,
+            "makeContactConstraints": 0.4525969999976951,
+            "broadphase": 5.36761299999489,
+            "integrate": 0.4395959999974366,
+            "narrowphase": 8.411957000001166
+          }
+        },
+        {
+          "repetition": 2,
+          "instrumented": false,
+          "wallMs": 111.44466300000022,
+          "processCpuMs": 204.744,
+          "inventory": {
+            "pieces": 500,
+            "groups": 39,
+            "physicalBodies": 33,
+            "dynamicBodies": 23,
+            "virtualGroups": 12,
+            "shapes": 105,
+            "constraints": 0,
+            "awakeBodies": 23,
+            "contacts": 72,
+            "contactEquations": 72,
+            "frictionEquations": 144,
+            "constraintEquations": 0,
+            "sensors": 0,
+            "motors": 12,
+            "activeMotors": 12,
+            "physicsDt": 0.008333333333333333
+          },
+          "blocks": null,
+          "cannonPhaseSumMs": null
+        },
+        {
+          "repetition": 3,
+          "instrumented": false,
+          "wallMs": 111.38843899999938,
+          "processCpuMs": 183.4,
+          "inventory": {
+            "pieces": 500,
+            "groups": 39,
+            "physicalBodies": 33,
+            "dynamicBodies": 23,
+            "virtualGroups": 12,
+            "shapes": 105,
+            "constraints": 0,
+            "awakeBodies": 23,
+            "contacts": 72,
+            "contactEquations": 72,
+            "frictionEquations": 144,
+            "constraintEquations": 0,
+            "sensors": 0,
+            "motors": 12,
+            "activeMotors": 12,
+            "physicsDt": 0.008333333333333333
+          },
+          "blocks": null,
+          "cannonPhaseSumMs": null
+        },
+        {
+          "repetition": 3,
+          "instrumented": true,
+          "wallMs": 126.21904200000063,
+          "processCpuMs": 176.441,
+          "inventory": {
+            "pieces": 500,
+            "groups": 39,
+            "physicalBodies": 33,
+            "dynamicBodies": 23,
+            "virtualGroups": 12,
+            "shapes": 105,
+            "constraints": 0,
+            "awakeBodies": 23,
+            "contacts": 72,
+            "contactEquations": 72,
+            "frictionEquations": 144,
+            "constraintEquations": 0,
+            "sensors": 0,
+            "motors": 12,
+            "activeMotors": 12,
+            "physicsDt": 0.008333333333333333
+          },
+          "blocks": {
+            "refreshRotors": {
+              "calls": 24,
+              "inclusiveMs": 1.8267279999972743
+            },
+            "updatePowerNetwork": {
+              "calls": 24,
+              "inclusiveMs": 0.07577300000230025
+            },
+            "updateConveyors": {
+              "calls": 24,
+              "inclusiveMs": 2.6677749999980733
+            },
+            "updateRobotGrips": {
+              "calls": 24,
+              "inclusiveMs": 0.06459499999982654
+            },
+            "updateRobotArms": {
+              "calls": 24,
+              "inclusiveMs": 0.030646999999589752
+            },
+            "updateGrab": {
+              "calls": 24,
+              "inclusiveMs": 0.026199999999334977
+            },
+            "updateRoutes": {
+              "calls": 24,
+              "inclusiveMs": 0.044966999999815016
+            },
+            "updateHauling": {
+              "calls": 24,
+              "inclusiveMs": 0.029694999998355343
+            },
+            "prepareRotorPower": {
+              "calls": 24,
+              "inclusiveMs": 4.4344650000011825
+            },
+            "updateRotorMotors": {
+              "calls": 24,
+              "inclusiveMs": 0.9258089999993899
+            },
+            "driveRobotArms": {
+              "calls": 24,
+              "inclusiveMs": 0.024585999999544583
+            },
+            "driveConveyors": {
+              "calls": 24,
+              "inclusiveMs": 1.71628800000326
+            },
+            "driveServos": {
+              "calls": 24,
+              "inclusiveMs": 0.07799799999884272
+            },
+            "updateFlights": {
+              "calls": 24,
+              "inclusiveMs": 0.226980000000367
+            },
+            "stabilizeRotors": {
+              "calls": 24,
+              "inclusiveMs": 4.351936999998543
+            },
+            "finishMechanicalRest": {
+              "calls": 24,
+              "inclusiveMs": 0.032889000000068336
+            },
+            "updateRotorPower": {
+              "calls": 24,
+              "inclusiveMs": 5.6296239999992395
+            },
+            "tickContactSensors": {
+              "calls": 24,
+              "inclusiveMs": 0.22691799999938667
+            },
+            "tickFlightSensors": {
+              "calls": 24,
+              "inclusiveMs": 0.05038499999955093
+            },
+            "updateCooling": {
+              "calls": 24,
+              "inclusiveMs": 0.9220219999979236
+            },
+            "updateMoods": {
+              "calls": 24,
+              "inclusiveMs": 20.24742100000003
+            },
+            "updateBlueprints": {
+              "calls": 24,
+              "inclusiveMs": 0.04321399999935238
+            },
+            "tickProduction": {
+              "calls": 24,
+              "inclusiveMs": 0.03270799999972951
+            },
+            "updateBatteryLiquids": {
+              "calls": 12,
+              "inclusiveMs": 10.159586999999192
+            },
+            "updateTarget": {
+              "calls": 12,
+              "inclusiveMs": 2.690217000001212
+            },
+            "drawWorkshop": {
+              "calls": 12,
+              "inclusiveMs": 0.25041399999736313
+            },
+            "drawQubits": {
+              "calls": 12,
+              "inclusiveMs": 37.35378100000253
+            },
+            "renderScene": {
+              "calls": 12,
+              "inclusiveMs": 37.93365300000005
+            }
+          },
+          "cannonPhaseSumMs": {
+            "solve": 13.767360999999255,
+            "makeContactConstraints": 0.41778100000192353,
+            "broadphase": 5.495723000000908,
+            "integrate": 0.5721419999990758,
+            "narrowphase": 8.417677000002186
+          }
+        }
+      ]
+    }
+  ]
+}
