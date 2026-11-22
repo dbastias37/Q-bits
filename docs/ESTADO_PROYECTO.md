@@ -4,6 +4,8 @@ Actualizado: 22 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
 ## Última entrega · consultas geométricas sólo cuando existen botones de presión
 
+Entrega en el [PR #33](https://github.com/dbastias37/Q-bits/pull/33); el enlace conserva el commit y la fecha exactos de integración.
+
 Referencia incremental: `274a389b77d0f57c9f4c13d56c5caf86070b1b0d`, integración del [PR #32](https://github.com/dbastias37/Q-bits/pull/32). El remoto seguía en ese commit al cerrar las verificaciones. Se conserva el arreglo del crecimiento de matrices y se trabaja sobre el coste residual medido, sin cambiar Cannon ni el solver.
 
 El perfil frío localizó llamadas de `updateMoods → onCampaignPad → bounds` aun con una lista vacía de botones. Ahora `onCampaignPad` lee la colección viva y devuelve el mismo `false` antes de calcular geometría si no contiene botones. Con botones conserva el predicado original, su orden, altura estricta y márgenes inclusivos. La prioridad de puzzle sobre campaña y los cambios de lista se consultan en cada llamada. No añade caché ni estructura persistente, ni omite actualizaciones de ánimo, energía o física.

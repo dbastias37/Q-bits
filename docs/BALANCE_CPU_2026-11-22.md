@@ -35,7 +35,9 @@ El [PR #28](https://github.com/dbastias37/Q-bits/pull/28) corrigió el apoyo de 
 
 Este arreglo añade CPU: **0,1460 / 0,1312 / 0,3004 ms por frame sintético** en la ventana común medida a 60/120/240 Hz. A 120 y 240 Hz también aumenta el consumo del lote, que se debita íntegro y sigue dentro del límite. Se presenta como una corrección física, sin convertirla en una supuesta mejora de rendimiento o ahorro universal de energía.
 
-## Último bloque: comprobar apoyos sólo cuando existen
+## Último bloque · PR #33: comprobar apoyos sólo cuando existen
+
+Este cambio se publica en el [PR #33](https://github.com/dbastias37/Q-bits/pull/33). La serie completa abarca **ocho PR: siete de rendimiento y una corrección física**. El PR enlazado registra el commit y la hora exactos de integración; los datos siguientes corresponden al código validado de esa entrega.
 
 Este último cambio se concentra en `onCampaignPad`: cuando la lista seleccionada de botones de presión está vacía, devuelve el mismo resultado falso sin calcular los límites geométricos de cada grupo. Cuando sí existen, conserva la consulta de apoyo y sus límites. No guarda una respuesta entre frames. El coste de la primera consulta posterior que sí necesita geometría se mide aparte, para distinguir trabajo eliminado de preparación diferida. [Código publicado](https://github.com/dbastias37/Q-bits/commit/7a851724ce17a05f0315cd0e0d17b2892566859b).
 

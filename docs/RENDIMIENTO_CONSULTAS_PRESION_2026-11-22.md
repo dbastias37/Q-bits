@@ -6,7 +6,7 @@ El perfil del arranque que quedó después del [PR #32](https://github.com/dbast
 
 En la escena final de 2.000 cuerpos independientes/120 Hz, cuatro frames ejecutan las mismas 16.000 consultas de presión, pero **16.000 llamadas a `bounds` pasan a cero en esa ruta**. En tres parejas sin instrumentación interna, la mediana de la ventana fría baja de **1.237,302 a 1.125,271 ms**. La ventana de 60 frames baja de **5.612,005 a 5.043,864 ms**, con los mismos 120 pasos, un segundo simulado y llegada a reposo. No es una mejora uniforme: se conservan controles pequeños y escenas de mecanismos desfavorables.
 
-Preparado para publicación: mediciones finales, conservación y verificaciones integradas completadas; **1.269/1.269 pruebas aprobadas**. Este informe identifica el código probado y no atribuye todavía un merge.
+Entrega: [PR #33](https://github.com/dbastias37/Q-bits/pull/33), con mediciones finales, conservación y verificaciones integradas completadas; **1.269/1.269 pruebas aprobadas**. El PR registra el commit de integración; este informe fija el código medido y su objeto Git publicado.
 
 ## Referencia y fuentes medidas
 
