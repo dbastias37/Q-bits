@@ -1,0 +1,969 @@
+{
+  "source": "tiempos.json",
+  "sourceSha256": "16d6d56298f4662a66c8d1bc5d07d054e5cfe953374c93afdffa11eb58c1da84",
+  "method": "Median across three per-run CPU means and wall percentiles; ranges across the three CPU means. No browser FPS or storage I/O.",
+  "completeConfigurations": 24,
+  "exactPairs": 72,
+  "rows": [
+    {
+      "scenario": "repeated-save",
+      "pieces": 16,
+      "status": "complete",
+      "comparisons": 3,
+      "baseline": {
+        "cpuMeanMedianMs": 1.971791666666667,
+        "cpuMeanRangeMs": [
+          1.8814166666666672,
+          3.0107500000000003
+        ],
+        "wallP50MedianMs": 1.5344949999999926,
+        "wallP95MedianMs": 1.8889139999999998,
+        "wallP99MedianMs": 2.333186000000069,
+        "coldWallMedianMs": 1.7975679999999556,
+        "coldWallRangeMs": [
+          1.7934119999999893,
+          3.6051610000000096
+        ],
+        "coldCpuMedianMs": 6.098,
+        "coldRawUtf8Bytes": 7264
+      },
+      "optimized": {
+        "cpuMeanMedianMs": 1.18,
+        "cpuMeanRangeMs": [
+          1.1412083333333332,
+          1.633416666666667
+        ],
+        "wallP50MedianMs": 1.0204299999999193,
+        "wallP95MedianMs": 1.1026319999999714,
+        "wallP99MedianMs": 1.1498330000000578,
+        "coldWallMedianMs": 2.160257999999999,
+        "coldWallRangeMs": [
+          1.978497999999945,
+          4.547068000000024
+        ],
+        "coldCpuMedianMs": 6.563,
+        "coldRawUtf8Bytes": 7264
+      }
+    },
+    {
+      "scenario": "repeated-save",
+      "pieces": 100,
+      "status": "complete",
+      "comparisons": 3,
+      "baseline": {
+        "cpuMeanMedianMs": 9.415958333333332,
+        "cpuMeanRangeMs": [
+          7.923333333333332,
+          10.891333333333334
+        ],
+        "wallP50MedianMs": 7.607382000000143,
+        "wallP95MedianMs": 14.549933999999894,
+        "wallP99MedianMs": 14.777953000000025,
+        "coldWallMedianMs": 6.264852000000019,
+        "coldWallRangeMs": [
+          6.2011360000000195,
+          6.533141000000342
+        ],
+        "coldCpuMedianMs": 14.805,
+        "coldRawUtf8Bytes": 38788
+      },
+      "optimized": {
+        "cpuMeanMedianMs": 5.308125000000001,
+        "cpuMeanRangeMs": [
+          5.299791666666667,
+          5.323833333333334
+        ],
+        "wallP50MedianMs": 5.007610000000113,
+        "wallP95MedianMs": 5.3294889999997395,
+        "wallP99MedianMs": 5.670838000000003,
+        "coldWallMedianMs": 7.150701000000026,
+        "coldWallRangeMs": [
+          7.012486000000081,
+          7.918355000000247
+        ],
+        "coldCpuMedianMs": 15.452,
+        "coldRawUtf8Bytes": 38788
+      }
+    },
+    {
+      "scenario": "repeated-save",
+      "pieces": 500,
+      "status": "complete",
+      "comparisons": 3,
+      "baseline": {
+        "cpuMeanMedianMs": 41.65920833333334,
+        "cpuMeanRangeMs": [
+          40.22725000000001,
+          42.41025000000001
+        ],
+        "wallP50MedianMs": 37.62547600000016,
+        "wallP95MedianMs": 44.064227000000756,
+        "wallP99MedianMs": 59.00207899999987,
+        "coldWallMedianMs": 25.978908000000047,
+        "coldWallRangeMs": [
+          24.9183579999999,
+          26.760833000000275
+        ],
+        "coldCpuMedianMs": 39.15,
+        "coldRawUtf8Bytes": 193203
+      },
+      "optimized": {
+        "cpuMeanMedianMs": 26.917083333333327,
+        "cpuMeanRangeMs": [
+          26.421666666666663,
+          27.03679166666667
+        ],
+        "wallP50MedianMs": 24.716287000000193,
+        "wallP95MedianMs": 27.242018999999345,
+        "wallP99MedianMs": 30.444328999999925,
+        "coldWallMedianMs": 29.94735899999978,
+        "coldWallRangeMs": [
+          29.888350999999602,
+          31.12358200000017
+        ],
+        "coldCpuMedianMs": 44.673,
+        "coldRawUtf8Bytes": 193203
+      }
+    },
+    {
+      "scenario": "repeated-save",
+      "pieces": 1000,
+      "status": "complete",
+      "comparisons": 3,
+      "baseline": {
+        "cpuMeanMedianMs": 78.01833333333332,
+        "cpuMeanRangeMs": [
+          76.60320833333334,
+          78.837
+        ],
+        "wallP50MedianMs": 74.58906600000046,
+        "wallP95MedianMs": 77.47202099999959,
+        "wallP99MedianMs": 84.94340899999952,
+        "coldWallMedianMs": 48.983956000000035,
+        "coldWallRangeMs": [
+          47.61602900000071,
+          51.27204399999937
+        ],
+        "coldCpuMedianMs": 70.016,
+        "coldRawUtf8Bytes": 387175
+      },
+      "optimized": {
+        "cpuMeanMedianMs": 51.197875,
+        "cpuMeanRangeMs": [
+          50.87454166666666,
+          52.31741666666667
+        ],
+        "wallP50MedianMs": 48.70319700000073,
+        "wallP95MedianMs": 54.165413000000626,
+        "wallP99MedianMs": 60.162075000000186,
+        "coldWallMedianMs": 57.78471499999978,
+        "coldWallRangeMs": [
+          53.108147999999346,
+          58.23642699999982
+        ],
+        "coldCpuMedianMs": 81.55,
+        "coldRawUtf8Bytes": 387175
+      }
+    },
+    {
+      "scenario": "repeated-save",
+      "pieces": 1500,
+      "status": "complete",
+      "comparisons": 3,
+      "baseline": {
+        "cpuMeanMedianMs": 118.51416666666667,
+        "cpuMeanRangeMs": [
+          118.06966666666666,
+          124.58245833333332
+        ],
+        "wallP50MedianMs": 114.91817900000024,
+        "wallP95MedianMs": 134.075205000001,
+        "wallP99MedianMs": 135.26686999999947,
+        "coldWallMedianMs": 69.40202900000077,
+        "coldWallRangeMs": [
+          69.03896099999838,
+          79.43534499999805
+        ],
+        "coldCpuMedianMs": 93.379,
+        "coldRawUtf8Bytes": 581084
+      },
+      "optimized": {
+        "cpuMeanMedianMs": 76.78008333333334,
+        "cpuMeanRangeMs": [
+          73.68908333333333,
+          77.34916666666668
+        ],
+        "wallP50MedianMs": 74.2830879999965,
+        "wallP95MedianMs": 80.08440899999914,
+        "wallP99MedianMs": 81.52844000000186,
+        "coldWallMedianMs": 83.65102599999955,
+        "coldWallRangeMs": [
+          80.30837600000086,
+          86.06929499999751
+        ],
+        "coldCpuMedianMs": 110.883,
+        "coldRawUtf8Bytes": 581084
+      }
+    },
+    {
+      "scenario": "repeated-save",
+      "pieces": 2000,
+      "status": "complete",
+      "comparisons": 3,
+      "baseline": {
+        "cpuMeanMedianMs": 158.46737500000003,
+        "cpuMeanRangeMs": [
+          157.28925,
+          165.0320833333333
+        ],
+        "wallP50MedianMs": 153.48368100000516,
+        "wallP95MedianMs": 163.4923720000006,
+        "wallP99MedianMs": 171.6070780000009,
+        "coldWallMedianMs": 97.39348999999493,
+        "coldWallRangeMs": [
+          94.43962599999941,
+          98.07361200000014
+        ],
+        "coldCpuMedianMs": 118.694,
+        "coldRawUtf8Bytes": 773840
+      },
+      "optimized": {
+        "cpuMeanMedianMs": 103.91454166666666,
+        "cpuMeanRangeMs": [
+          103.512625,
+          104.18299999999999
+        ],
+        "wallP50MedianMs": 99.84533700000611,
+        "wallP95MedianMs": 110.39905600000202,
+        "wallP99MedianMs": 120.7543680000017,
+        "coldWallMedianMs": 116.6504849999983,
+        "coldWallRangeMs": [
+          110.59422700000141,
+          145.17608399999153
+        ],
+        "coldCpuMedianMs": 142.436,
+        "coldRawUtf8Bytes": 773840
+      }
+    },
+    {
+      "scenario": "mutated-save",
+      "pieces": 16,
+      "status": "complete",
+      "comparisons": 3,
+      "baseline": {
+        "cpuMeanMedianMs": 1.976708333333333,
+        "cpuMeanRangeMs": [
+          1.9550833333333328,
+          2.099708333333333
+        ],
+        "wallP50MedianMs": 1.656156999990344,
+        "wallP95MedianMs": 1.810005999999703,
+        "wallP99MedianMs": 1.8683730000047944,
+        "coldWallMedianMs": 1.787823999999091,
+        "coldWallRangeMs": [
+          1.6775290000077803,
+          1.933099999994738
+        ],
+        "coldCpuMedianMs": 5.386,
+        "coldRawUtf8Bytes": 7264
+      },
+      "optimized": {
+        "cpuMeanMedianMs": 1.6382916666666665,
+        "cpuMeanRangeMs": [
+          1.5932500000000003,
+          1.6428333333333331
+        ],
+        "wallP50MedianMs": 1.1355719999992289,
+        "wallP95MedianMs": 1.2802870000014082,
+        "wallP99MedianMs": 1.2876880000112578,
+        "coldWallMedianMs": 1.8149129999947036,
+        "coldWallRangeMs": [
+          1.8108470000006491,
+          2.216912999996566
+        ],
+        "coldCpuMedianMs": 2.234,
+        "coldRawUtf8Bytes": 7264
+      }
+    },
+    {
+      "scenario": "mutated-save",
+      "pieces": 100,
+      "status": "complete",
+      "comparisons": 3,
+      "baseline": {
+        "cpuMeanMedianMs": 9.152500000000002,
+        "cpuMeanRangeMs": [
+          8.996625,
+          10.322250000000002
+        ],
+        "wallP50MedianMs": 7.9804779999976745,
+        "wallP95MedianMs": 8.374754999997094,
+        "wallP99MedianMs": 8.510198000003584,
+        "coldWallMedianMs": 6.555175000001327,
+        "coldWallRangeMs": [
+          6.386494999998831,
+          6.962252000012086
+        ],
+        "coldCpuMedianMs": 18.443,
+        "coldRawUtf8Bytes": 38788
+      },
+      "optimized": {
+        "cpuMeanMedianMs": 6.336666666666669,
+        "cpuMeanRangeMs": [
+          6.290249999999998,
+          6.436541666666668
+        ],
+        "wallP50MedianMs": 5.378443000008701,
+        "wallP95MedianMs": 5.751378000000841,
+        "wallP99MedianMs": 6.184402999992017,
+        "coldWallMedianMs": 7.3467750000127126,
+        "coldWallRangeMs": [
+          7.237422000005608,
+          7.485250999990967
+        ],
+        "coldCpuMedianMs": 19.923,
+        "coldRawUtf8Bytes": 38788
+      }
+    },
+    {
+      "scenario": "mutated-save",
+      "pieces": 500,
+      "status": "complete",
+      "comparisons": 3,
+      "baseline": {
+        "cpuMeanMedianMs": 42.015791666666665,
+        "cpuMeanRangeMs": [
+          40.644875,
+          45.242916666666666
+        ],
+        "wallP50MedianMs": 39.236538999990444,
+        "wallP95MedianMs": 41.572360000005574,
+        "wallP99MedianMs": 46.709410999988904,
+        "coldWallMedianMs": 25.274539999998524,
+        "coldWallRangeMs": [
+          25.037469000002602,
+          25.816558000005898
+        ],
+        "coldCpuMedianMs": 37.627,
+        "coldRawUtf8Bytes": 193203
+      },
+      "optimized": {
+        "cpuMeanMedianMs": 28.30066666666666,
+        "cpuMeanRangeMs": [
+          28.178875000000005,
+          28.933416666666663
+        ],
+        "wallP50MedianMs": 25.728948000003584,
+        "wallP95MedianMs": 27.842356999986805,
+        "wallP99MedianMs": 32.316351000001305,
+        "coldWallMedianMs": 30.990757999999914,
+        "coldWallRangeMs": [
+          27.78266799999983,
+          31.334283999996842
+        ],
+        "coldCpuMedianMs": 42.677,
+        "coldRawUtf8Bytes": 193203
+      }
+    },
+    {
+      "scenario": "mutated-save",
+      "pieces": 1000,
+      "status": "complete",
+      "comparisons": 3,
+      "baseline": {
+        "cpuMeanMedianMs": 83.13054166666667,
+        "cpuMeanRangeMs": [
+          81.63833333333334,
+          83.97233333333334
+        ],
+        "wallP50MedianMs": 78.23989100000472,
+        "wallP95MedianMs": 85.44244199999957,
+        "wallP99MedianMs": 93.94704100000672,
+        "coldWallMedianMs": 49.379086000000825,
+        "coldWallRangeMs": [
+          47.42114200000651,
+          52.277916999999434
+        ],
+        "coldCpuMedianMs": 67.074,
+        "coldRawUtf8Bytes": 387175
+      },
+      "optimized": {
+        "cpuMeanMedianMs": 56.711625000000005,
+        "cpuMeanRangeMs": [
+          55.677583333333324,
+          56.909416666666665
+        ],
+        "wallP50MedianMs": 52.86024300000281,
+        "wallP95MedianMs": 59.00854199999594,
+        "wallP99MedianMs": 62.853518999996595,
+        "coldWallMedianMs": 57.28610499999195,
+        "coldWallRangeMs": [
+          54.422120000002906,
+          58.847781999997096
+        ],
+        "coldCpuMedianMs": 80.657,
+        "coldRawUtf8Bytes": 387175
+      }
+    },
+    {
+      "scenario": "mutated-save",
+      "pieces": 1500,
+      "status": "complete",
+      "comparisons": 3,
+      "baseline": {
+        "cpuMeanMedianMs": 123.44366666666672,
+        "cpuMeanRangeMs": [
+          121.702,
+          125.13991666666665
+        ],
+        "wallP50MedianMs": 117.87412000000768,
+        "wallP95MedianMs": 125.9206370000029,
+        "wallP99MedianMs": 136.13045699999202,
+        "coldWallMedianMs": 74.52848000000813,
+        "coldWallRangeMs": [
+          70.15146999999706,
+          107.49402399999963
+        ],
+        "coldCpuMedianMs": 94.153,
+        "coldRawUtf8Bytes": 581084
+      },
+      "optimized": {
+        "cpuMeanMedianMs": 81.09920833333334,
+        "cpuMeanRangeMs": [
+          80.19362500000001,
+          81.20899999999999
+        ],
+        "wallP50MedianMs": 77.5816610000038,
+        "wallP95MedianMs": 83.4956600000005,
+        "wallP99MedianMs": 87.65037000000302,
+        "coldWallMedianMs": 81.57738800000516,
+        "coldWallRangeMs": [
+          78.8585299999977,
+          84.0946879999974
+        ],
+        "coldCpuMedianMs": 103.125,
+        "coldRawUtf8Bytes": 581084
+      }
+    },
+    {
+      "scenario": "mutated-save",
+      "pieces": 2000,
+      "status": "complete",
+      "comparisons": 3,
+      "baseline": {
+        "cpuMeanMedianMs": 162.43949999999998,
+        "cpuMeanRangeMs": [
+          161.20904166666662,
+          169.97504166666667
+        ],
+        "wallP50MedianMs": 156.35513300000457,
+        "wallP95MedianMs": 165.4642739999981,
+        "wallP99MedianMs": 181.76742400001967,
+        "coldWallMedianMs": 93.03510300000198,
+        "coldWallRangeMs": [
+          91.12634799999068,
+          94.60864500000025
+        ],
+        "coldCpuMedianMs": 113.053,
+        "coldRawUtf8Bytes": 773840
+      },
+      "optimized": {
+        "cpuMeanMedianMs": 106.76400000000001,
+        "cpuMeanRangeMs": [
+          104.56854166666666,
+          108.21891666666664
+        ],
+        "wallP50MedianMs": 102.03527799999574,
+        "wallP95MedianMs": 111.25329300001613,
+        "wallP99MedianMs": 111.30541100000846,
+        "coldWallMedianMs": 102.52806500000588,
+        "coldWallRangeMs": [
+          102.22619100002339,
+          106.88792999999714
+        ],
+        "coldCpuMedianMs": 124.335,
+        "coldRawUtf8Bytes": 773840
+      }
+    },
+    {
+      "scenario": "repeated-read",
+      "pieces": 16,
+      "status": "complete",
+      "comparisons": 3,
+      "baseline": {
+        "cpuMeanMedianMs": 0.9321250000000001,
+        "cpuMeanRangeMs": [
+          0.8114583333333333,
+          1.0132500000000002
+        ],
+        "wallP50MedianMs": 0.6425370000069961,
+        "wallP95MedianMs": 1.0767530000011902,
+        "wallP99MedianMs": 1.0968630000133999,
+        "coldWallMedianMs": 1.5088469999900553,
+        "coldWallRangeMs": [
+          1.3128950000100303,
+          1.6098369999963325
+        ],
+        "coldCpuMedianMs": 5.469,
+        "coldRawUtf8Bytes": 7264
+      },
+      "optimized": {
+        "cpuMeanMedianMs": 0.038458333333333344,
+        "cpuMeanRangeMs": [
+          0.037541666666666675,
+          0.05133333333333335
+        ],
+        "wallP50MedianMs": 0.036164000019198284,
+        "wallP95MedianMs": 0.04231300001265481,
+        "wallP99MedianMs": 0.057215999986510724,
+        "coldWallMedianMs": 0.5623170000035316,
+        "coldWallRangeMs": [
+          0.42113699999754317,
+          0.611719999986235
+        ],
+        "coldCpuMedianMs": 2.598,
+        "coldRawUtf8Bytes": 7264
+      }
+    },
+    {
+      "scenario": "repeated-read",
+      "pieces": 100,
+      "status": "complete",
+      "comparisons": 3,
+      "baseline": {
+        "cpuMeanMedianMs": 3.2883333333333336,
+        "cpuMeanRangeMs": [
+          3.180708333333333,
+          3.3249583333333335
+        ],
+        "wallP50MedianMs": 3.180114999995567,
+        "wallP95MedianMs": 3.4096359999966808,
+        "wallP99MedianMs": 3.8209889999998268,
+        "coldWallMedianMs": 4.469103999988874,
+        "coldWallRangeMs": [
+          4.232641999988118,
+          4.623223000002326
+        ],
+        "coldCpuMedianMs": 9.502,
+        "coldRawUtf8Bytes": 38788
+      },
+      "optimized": {
+        "cpuMeanMedianMs": 0.1850833333333333,
+        "cpuMeanRangeMs": [
+          0.18254166666666669,
+          0.1894583333333333
+        ],
+        "wallP50MedianMs": 0.1770939999842085,
+        "wallP95MedianMs": 0.21466900000814348,
+        "wallP99MedianMs": 0.22775900000124238,
+        "coldWallMedianMs": 1.097704000014346,
+        "coldWallRangeMs": [
+          1.0904929999960586,
+          1.1218300000182353
+        ],
+        "coldCpuMedianMs": 3.904,
+        "coldRawUtf8Bytes": 38788
+      }
+    },
+    {
+      "scenario": "repeated-read",
+      "pieces": 500,
+      "status": "complete",
+      "comparisons": 3,
+      "baseline": {
+        "cpuMeanMedianMs": 16.12604166666667,
+        "cpuMeanRangeMs": [
+          15.726374999999997,
+          16.512875
+        ],
+        "wallP50MedianMs": 15.385575000022072,
+        "wallP95MedianMs": 17.072967999993125,
+        "wallP99MedianMs": 18.171414000011282,
+        "coldWallMedianMs": 16.83024700000533,
+        "coldWallRangeMs": [
+          16.690508999978192,
+          17.21002200001385
+        ],
+        "coldCpuMedianMs": 21.803,
+        "coldRawUtf8Bytes": 193203
+      },
+      "optimized": {
+        "cpuMeanMedianMs": 0.902,
+        "cpuMeanRangeMs": [
+          0.8871249999999998,
+          0.9447083333333336
+        ],
+        "wallP50MedianMs": 0.8836259999952745,
+        "wallP95MedianMs": 0.9456179999979213,
+        "wallP99MedianMs": 0.9715169999981299,
+        "coldWallMedianMs": 4.9264169999805745,
+        "coldWallRangeMs": [
+          4.845246000011684,
+          4.965515000018058
+        ],
+        "coldCpuMedianMs": 9.44,
+        "coldRawUtf8Bytes": 193203
+      }
+    },
+    {
+      "scenario": "repeated-read",
+      "pieces": 1000,
+      "status": "complete",
+      "comparisons": 3,
+      "baseline": {
+        "cpuMeanMedianMs": 32.092416666666665,
+        "cpuMeanRangeMs": [
+          31.28091666666666,
+          32.475666666666676
+        ],
+        "wallP50MedianMs": 30.796655999991344,
+        "wallP95MedianMs": 33.069902000017464,
+        "wallP99MedianMs": 34.237592000019504,
+        "coldWallMedianMs": 34.69281700000283,
+        "coldWallRangeMs": [
+          32.0711650000012,
+          35.96182600001339
+        ],
+        "coldCpuMedianMs": 50.88,
+        "coldRawUtf8Bytes": 387175
+      },
+      "optimized": {
+        "cpuMeanMedianMs": 1.764833333333333,
+        "cpuMeanRangeMs": [
+          1.7595,
+          1.7826666666666666
+        ],
+        "wallP50MedianMs": 1.7549230000004172,
+        "wallP95MedianMs": 1.8501350000151433,
+        "wallP99MedianMs": 1.9027929999865592,
+        "coldWallMedianMs": 7.768958000000566,
+        "coldWallRangeMs": [
+          7.653996999986703,
+          7.820555000012973
+        ],
+        "coldCpuMedianMs": 11.923,
+        "coldRawUtf8Bytes": 387175
+      }
+    },
+    {
+      "scenario": "repeated-read",
+      "pieces": 1500,
+      "status": "complete",
+      "comparisons": 3,
+      "baseline": {
+        "cpuMeanMedianMs": 48.52058333333333,
+        "cpuMeanRangeMs": [
+          46.678875,
+          49.337958333333326
+        ],
+        "wallP50MedianMs": 45.63886799997999,
+        "wallP95MedianMs": 52.4959899999958,
+        "wallP99MedianMs": 67.08499000000302,
+        "coldWallMedianMs": 48.70807799999602,
+        "coldWallRangeMs": [
+          48.17393300001277,
+          51.04164999999921
+        ],
+        "coldCpuMedianMs": 62.301,
+        "coldRawUtf8Bytes": 581084
+      },
+      "optimized": {
+        "cpuMeanMedianMs": 2.6189583333333335,
+        "cpuMeanRangeMs": [
+          2.599999999999999,
+          2.6602083333333333
+        ],
+        "wallP50MedianMs": 2.6109189999988303,
+        "wallP95MedianMs": 2.6828460000106134,
+        "wallP99MedianMs": 2.6872310000180732,
+        "coldWallMedianMs": 11.30609800000093,
+        "coldWallRangeMs": [
+          11.232938999979524,
+          11.31177599998773
+        ],
+        "coldCpuMedianMs": 15.892,
+        "coldRawUtf8Bytes": 581084
+      }
+    },
+    {
+      "scenario": "repeated-read",
+      "pieces": 2000,
+      "status": "complete",
+      "comparisons": 3,
+      "baseline": {
+        "cpuMeanMedianMs": 66.82129166666668,
+        "cpuMeanRangeMs": [
+          66.40470833333333,
+          66.87220833333335
+        ],
+        "wallP50MedianMs": 62.80969900000491,
+        "wallP95MedianMs": 83.67232800001511,
+        "wallP99MedianMs": 85.29443899999023,
+        "coldWallMedianMs": 71.10481200000504,
+        "coldWallRangeMs": [
+          64.00803399999859,
+          97.55912900000112
+        ],
+        "coldCpuMedianMs": 88.083,
+        "coldRawUtf8Bytes": 773840
+      },
+      "optimized": {
+        "cpuMeanMedianMs": 3.8960416666666666,
+        "cpuMeanRangeMs": [
+          3.8655416666666667,
+          4.8595
+        ],
+        "wallP50MedianMs": 3.7174470000027213,
+        "wallP95MedianMs": 5.591718000010587,
+        "wallP99MedianMs": 6.316545999987284,
+        "coldWallMedianMs": 16.68106900001294,
+        "coldWallRangeMs": [
+          16.199986000021454,
+          16.694992999982787
+        ],
+        "coldCpuMedianMs": 21.198,
+        "coldRawUtf8Bytes": 773840
+      }
+    },
+    {
+      "scenario": "store-prepopulated-first-write",
+      "pieces": 16,
+      "status": "complete",
+      "comparisons": 3,
+      "baseline": {
+        "cpuMeanMedianMs": 1.7904999999999998,
+        "cpuMeanRangeMs": [
+          1.5435,
+          1.9881249999999995
+        ],
+        "wallP50MedianMs": 1.285464000015054,
+        "wallP95MedianMs": 1.5673140000144485,
+        "wallP99MedianMs": 4.9793899999931455,
+        "coldWallMedianMs": 2.292833999992581,
+        "coldWallRangeMs": [
+          1.8549519999942277,
+          4.668210999981966
+        ],
+        "coldCpuMedianMs": 8.025,
+        "coldRawUtf8Bytes": 7264
+      },
+      "optimized": {
+        "cpuMeanMedianMs": 1.1740833333333331,
+        "cpuMeanRangeMs": [
+          1.06575,
+          1.3175416666666664
+        ],
+        "wallP50MedianMs": 0.9787580000120215,
+        "wallP95MedianMs": 1.1253260000084992,
+        "wallP99MedianMs": 1.186256000015419,
+        "coldWallMedianMs": 1.5825670000049286,
+        "coldWallRangeMs": [
+          1.410740999999689,
+          1.6643479999911506
+        ],
+        "coldCpuMedianMs": 6.732,
+        "coldRawUtf8Bytes": 7264
+      }
+    },
+    {
+      "scenario": "store-prepopulated-first-write",
+      "pieces": 100,
+      "status": "complete",
+      "comparisons": 3,
+      "baseline": {
+        "cpuMeanMedianMs": 7.234208333333332,
+        "cpuMeanRangeMs": [
+          6.6301666666666685,
+          7.438458333333332
+        ],
+        "wallP50MedianMs": 6.488340999989305,
+        "wallP95MedianMs": 7.263965999998618,
+        "wallP99MedianMs": 14.825745999987703,
+        "coldWallMedianMs": 8.082786000013584,
+        "coldWallRangeMs": [
+          7.629410999972606,
+          8.415330999996513
+        ],
+        "coldCpuMedianMs": 14.061,
+        "coldRawUtf8Bytes": 38788
+      },
+      "optimized": {
+        "cpuMeanMedianMs": 5.392541666666666,
+        "cpuMeanRangeMs": [
+          4.871833333333334,
+          5.800583333333335
+        ],
+        "wallP50MedianMs": 4.916571000008844,
+        "wallP95MedianMs": 6.852103000011994,
+        "wallP99MedianMs": 10.94494700001087,
+        "coldWallMedianMs": 6.286171000014292,
+        "coldWallRangeMs": [
+          5.813166000007186,
+          6.418196999991778
+        ],
+        "coldCpuMedianMs": 11.923,
+        "coldRawUtf8Bytes": 38788
+      }
+    },
+    {
+      "scenario": "store-prepopulated-first-write",
+      "pieces": 500,
+      "status": "complete",
+      "comparisons": 3,
+      "baseline": {
+        "cpuMeanMedianMs": 32.391625,
+        "cpuMeanRangeMs": [
+          32.04183333333334,
+          33.26412499999999
+        ],
+        "wallP50MedianMs": 31.52609400000074,
+        "wallP95MedianMs": 33.74859299999662,
+        "wallP99MedianMs": 36.20363699999871,
+        "coldWallMedianMs": 34.512209000007715,
+        "coldWallRangeMs": [
+          34.34143599998788,
+          35.82400199997937
+        ],
+        "coldCpuMedianMs": 48.446,
+        "coldRawUtf8Bytes": 193203
+      },
+      "optimized": {
+        "cpuMeanMedianMs": 24.362166666666667,
+        "cpuMeanRangeMs": [
+          23.1995,
+          25.485958333333333
+        ],
+        "wallP50MedianMs": 23.36627800000133,
+        "wallP95MedianMs": 26.683896000002278,
+        "wallP99MedianMs": 35.119564000022365,
+        "coldWallMedianMs": 25.73746399997617,
+        "coldWallRangeMs": [
+          24.67026499999338,
+          26.978254000016022
+        ],
+        "coldCpuMedianMs": 37.02,
+        "coldRawUtf8Bytes": 193203
+      }
+    },
+    {
+      "scenario": "store-prepopulated-first-write",
+      "pieces": 1000,
+      "status": "complete",
+      "comparisons": 3,
+      "baseline": {
+        "cpuMeanMedianMs": 64.03283333333334,
+        "cpuMeanRangeMs": [
+          63.806916666666666,
+          64.45520833333335
+        ],
+        "wallP50MedianMs": 62.97526800000924,
+        "wallP95MedianMs": 66.63026000000536,
+        "wallP99MedianMs": 72.36663799997768,
+        "coldWallMedianMs": 65.14415800001007,
+        "coldWallRangeMs": [
+          64.63768399998662,
+          66.09374599999865
+        ],
+        "coldCpuMedianMs": 78.786,
+        "coldRawUtf8Bytes": 387175
+      },
+      "optimized": {
+        "cpuMeanMedianMs": 46.53495833333332,
+        "cpuMeanRangeMs": [
+          45.38270833333333,
+          46.86625
+        ],
+        "wallP50MedianMs": 45.74565299999085,
+        "wallP95MedianMs": 48.59443800000008,
+        "wallP99MedianMs": 54.03130999999121,
+        "coldWallMedianMs": 47.30536399999983,
+        "coldWallRangeMs": [
+          46.96604999998817,
+          48.71569400001317
+        ],
+        "coldCpuMedianMs": 59.99,
+        "coldRawUtf8Bytes": 387175
+      }
+    },
+    {
+      "scenario": "store-prepopulated-first-write",
+      "pieces": 1500,
+      "status": "complete",
+      "comparisons": 3,
+      "baseline": {
+        "cpuMeanMedianMs": 95.57829166666669,
+        "cpuMeanRangeMs": [
+          95.34587499999999,
+          95.60870833333335
+        ],
+        "wallP50MedianMs": 94.12292699998943,
+        "wallP95MedianMs": 99.56517199997324,
+        "wallP99MedianMs": 109.22986599997967,
+        "coldWallMedianMs": 97.45990300000994,
+        "coldWallRangeMs": [
+          97.40009700000519,
+          98.95113199998741
+        ],
+        "coldCpuMedianMs": 110.024,
+        "coldRawUtf8Bytes": 581084
+      },
+      "optimized": {
+        "cpuMeanMedianMs": 68.99779166666667,
+        "cpuMeanRangeMs": [
+          66.481625,
+          71.21370833333332
+        ],
+        "wallP50MedianMs": 68.19158899999456,
+        "wallP95MedianMs": 69.98292599999695,
+        "wallP99MedianMs": 70.18158400000539,
+        "coldWallMedianMs": 71.1098570000031,
+        "coldWallRangeMs": [
+          69.26020600000629,
+          72.84507999999914
+        ],
+        "coldCpuMedianMs": 86.156,
+        "coldRawUtf8Bytes": 581084
+      }
+    },
+    {
+      "scenario": "store-prepopulated-first-write",
+      "pieces": 2000,
+      "status": "complete",
+      "comparisons": 3,
+      "baseline": {
+        "cpuMeanMedianMs": 135.9851666666667,
+        "cpuMeanRangeMs": [
+          131.1425416666667,
+          136.22262500000002
+        ],
+        "wallP50MedianMs": 131.42702199998894,
+        "wallP95MedianMs": 139.43493399998988,
+        "wallP99MedianMs": 170.89660400000867,
+        "coldWallMedianMs": 130.55302299998584,
+        "coldWallRangeMs": [
+          129.03972699999576,
+          140.0227780000132
+        ],
+        "coldCpuMedianMs": 143.275,
+        "coldRawUtf8Bytes": 773840
+      },
+      "optimized": {
+        "cpuMeanMedianMs": 92.46204166666668,
+        "cpuMeanRangeMs": [
+          92.13020833333331,
+          97.36824999999999
+        ],
+        "wallP50MedianMs": 90.36494299999322,
+        "wallP95MedianMs": 96.45330799999647,
+        "wallP99MedianMs": 108.5303830000048,
+        "coldWallMedianMs": 94.24972100000014,
+        "coldWallRangeMs": [
+          92.93280599999707,
+          100.69249200000195
+        ],
+        "coldCpuMedianMs": 106.199,
+        "coldRawUtf8Bytes": 773840
+      }
+    }
+  ]
+}

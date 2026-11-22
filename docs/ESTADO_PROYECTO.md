@@ -2,7 +2,19 @@
 
 Actualizado: 22 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega · cinco optimizaciones CPU medidas
+## Última entrega · guardado repetido y lecturas de partidas
+
+El PR #26 se integró en `main` mediante `0cb078038d43c15be34fc52ad4ec259494b3ac22`. El siguiente bloque aborda sólo el guardado: `save-games.js` conserva los metadatos de los bytes previamente validados, siempre vuelve a consultar `getItem`, valida de forma específica el árbol producido por JSON y evita una llamada recursiva por cada hoja primitiva. La entrada viva conserva la comprobación de descriptores, tipos y ciclos. Los bytes finales se comprueban antes de `setItem`; la caché se actualiza sólo después del éxito. No se omiten capturas ni escrituras, ni se cambia el autoguardado, el formato v1 o la hidratación de `game.js`.
+
+Referencia: el merge `0cb0780`, con sus cinco optimizaciones anteriores. En 1000 piezas, tres repeticiones AB/BA/AB: guardado repetido **78,018 → 51,198 ms de CPU de proceso**, guardado con estado cambiante **83,131 → 56,712 ms**, lectura repetida **32,092 → 1,765 ms**. La primera escritura sobre un slot vacío cuesta más por la validación final: **48,984 → 57,785 ms de pared** en 1000 y **97,393 → 116,650 ms** en 2000. El guardado caliente de 2000 todavía tarda p50 **99,845 ms de pared**. Son tiempos Node con Map persistente, no FPS ni latencia real de Web Storage.
+
+Las 24 configuraciones de 16/100/500/1000/1500/2000 piezas, tres repeticiones cada una, completaron las **72 parejas** con bytes, fechas, estado físico y relojes iguales. Guardar no añade pasos ni descarta tiempo. El guardado repetido conserva dos stringify, una captura y una hidratación; elimina uno de los tres parseos. La caché conserva como máximo dos strings actuales y registros de metadatos, sin snapshots ni historial. Cambios de otra pestaña, corrupción, eliminación, versiones futuras, cuota y permisos siguen detectándose.
+
+Suite integrada: **1213/1213**, cero fallos/cancelaciones/omisiones, incluidas seis regresiones nuevas de guardado; comprobación dirigida **56/56**. Versión de scripts: `20261122-save-cpu-1`. Informe, costes fríos, memoria, comandos y evidencia: [AUDITORIA_GUARDADO_2026-11-22.md](AUDITORIA_GUARDADO_2026-11-22.md). No hay modificación gráfica ni nuevos FPS medidos.
+
+**Punto de continuación vigente:** trabajar un bloque por vez. El siguiente es la sensibilidad de producción 20 a 60 Hz/30 rpm, conservando entregas, energía y reglas. Después, cuerpos/articulaciones numerosos y pico frío del BVH. En guardado ya se resolvió la validación repetida del registro anterior; queda reducir el coste síncrono de capturar/validar datos nuevos e hidratar el banco, incluyendo el coste frío añadido. Sombras, sensores de movimiento y perfil real de navegador/WebGL mantienen los pendientes documentados. No migrar motor ni introducir workers sin equivalencia y coste total medidos.
+
+## Entrega anterior · cinco optimizaciones CPU medidas
 
 Se completaron los cinco candidatos prioritarios de la auditoría: apuntado compartido con descarte espacial, proyección Ctrl por columna de caída, ruta rápida de piezas sin sensor, pertenencia de contactos compartida para peso/contacto y geometría local persistente de baterías. Se conserva JavaScript estático, Cannon 0.6.2, límite de 2000 piezas, WebGL 2/1, guardados, reglas físicas/energéticas, frecuencias y actividad fuera de cámara. Métodos, variación, contratos de caché, hashes, fuentes y comandos: [AUDITORIA_CPU_2026-11-22.md](AUDITORIA_CPU_2026-11-22.md).
 
@@ -28,7 +40,7 @@ Las nueve parejas de interacción verifican agarre real, movimiento, unión, sep
 
 Se ensayó una sexta hipótesis, evitar defaults de capacidad durante `updateMoods`; no mostró ganancia temporal consistente y fue revertida. No se cuenta como mejora. El perfil separado sí registra menos asignaciones estimadas y GC en la ruta de apuntado/sensores lejanos; los costes de memoria añadidos se documentan como objetos y referencias retenidas, sin inventar bytes V8. No hay mapas históricos sin límite.
 
-**Punto de continuación vigente:** perfilar en un navegador con WebGL el montaje real. Priorizar la sensibilidad de producción 20 a 60 Hz, el guardado repetido (aproximadamente 81 ms CPU en Node con Map persistente), los cuerpos/articulaciones numerosos y el pico frío del BVH. Después, medir agrupación de sombras (1002 frente a 2 envíos en el fixture de 1000 cubos) e índice de sensores de movimiento (2144 candidatos por 16 lecturas). Las asignaciones por articulación y las actualizaciones idénticas de UI siguen como hipótesis, sin una ganancia declarada. No migrar motor ni introducir workers sin medir coste total y equivalencia.
+Seguimiento: la validación repetida del guardado se abordó en el bloque posterior registrado arriba. Permanecen el perfil de navegador con WebGL, producción 20 a 60 Hz, cuerpos/articulaciones numerosos, pico frío del BVH, sombras (1002 frente a 2 envíos en el fixture de 1000 cubos) e índice de sensores de movimiento (2144 candidatos por 16 lecturas). Las asignaciones por articulación y las actualizaciones idénticas de UI siguen como hipótesis sin ganancia demostrada. Consultar el punto de continuación vigente de la última entrega.
 
 ## Entrega anterior · contactos de suelo, caminantes y auditoría de coste
 
