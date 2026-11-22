@@ -1,0 +1,98 @@
+[
+  {
+    "name": "reference-diagnostic-2000-60",
+    "reconstructed": true,
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "argv": [
+      "node",
+      "tests/profile-sap-matrix-diagnostic.cjs",
+      "--baseline-root=/workspace/scratch/8eeca5205951/qbits-matrix-baseline",
+      "--optimized-root=/workspace/scratch/8eeca5205951/qbits-matrix-baseline",
+      "--pieces=2000",
+      "--hz=60",
+      "--warmup=60",
+      "--frames=30",
+      "--repetitions=3",
+      "--phase-budget-ms=30000",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/contact-matrix-20261122/reference-diagnostic-2000-60.json"
+    ],
+    "result": "complete: 3 identical pairs, same reference both labels"
+  },
+  {
+    "name": "baseline-validation",
+    "reconstructed": true,
+    "cwd": "/workspace/scratch/8eeca5205951/qbits-matrix-baseline",
+    "commands": [
+      "node --test tests/*.test.cjs",
+      "node tests/benchmark-architecture-audit.cjs",
+      "node tests/benchmark-ground-contacts.cjs"
+    ],
+    "outputs": [
+      "tests-baseline.txt",
+      "architecture-baseline.json",
+      "ground-baseline.json"
+    ],
+    "exitCode": 0
+  },
+  {
+    "name": "browser-probe",
+    "reconstructed": true,
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "argv": [
+      "timeout",
+      "55s",
+      "node",
+      "tests/benchmark-cpu-browser.cjs",
+      "--baseline-root=/workspace/scratch/8eeca5205951/qbits-matrix-baseline",
+      "--scales=16",
+      "--kinds=independent",
+      "--hz=120",
+      "--repetitions=1",
+      "--warmup=2",
+      "--frames=3",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/contact-matrix-20261122/browser-probe.json"
+    ],
+    "exitCode": 1,
+    "log": "browser-probe.log"
+  },
+  {
+    "name": "exploratory-set-only",
+    "reconstructed": true,
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "argv": [
+      "node",
+      "tests/benchmark-contact-matrix.cjs",
+      "--baseline-root=/workspace/scratch/8eeca5205951/qbits-matrix-baseline",
+      "--baseline-commit=1465a6c12160432c5df52b35d782c2f2527720cf",
+      "--cases=dense,sparse,repeated,toggling",
+      "--scales=506,2006",
+      "--warmup=4",
+      "--samples=10",
+      "--repetitions=3",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/contact-matrix-20261122/exploratory-set-only.json"
+    ],
+    "gamePatchAgainstReference": "exploratory-set-only.patch",
+    "exitCode": 0,
+    "instrumentNote": "Exploration preceded final dormant priming and oracle budget guards; paths used by these complete non-dormant cases have the same measured operations. Raw data retains original runner hash."
+  },
+  {
+    "name": "exploratory-bounded-set",
+    "reconstructed": true,
+    "cwd": "/workspace/scratch/8eeca5205951/qbits",
+    "argv": [
+      "node",
+      "tests/benchmark-contact-matrix.cjs",
+      "--baseline-root=/workspace/scratch/8eeca5205951/qbits-matrix-baseline",
+      "--baseline-commit=1465a6c12160432c5df52b35d782c2f2527720cf",
+      "--cases=dense,sparse",
+      "--scales=106,506,2006",
+      "--warmup=4",
+      "--samples=10",
+      "--repetitions=3",
+      "--output=/workspace/scratch/8eeca5205951/qbits/docs/mediciones/contact-matrix-20261122/exploratory-bounded-set.json"
+    ],
+    "gamePatchAgainstReference": "exploratory-bounded-set.patch",
+    "exitCode": 0,
+    "instrumentNote": "Exploration preceded final dormant priming and oracle budget guards; paths used by these complete non-dormant cases have the same measured operations. Raw data retains original runner hash."
+  }
+]

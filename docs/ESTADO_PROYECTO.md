@@ -2,7 +2,23 @@
 
 Actualizado: 22 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega · SAP sin visitas entre cuerpos pasivos
+## Última entrega · mantenimiento proporcional de matrices de contactos
+
+Referencia: `1465a6c12160432c5df52b35d782c2f2527720cf`, merge del PR #30. Se confirmó de nuevo que `collisionMatrixTick` limpia arrays triangulares completos aun sin contactos. El cambio conserva las dos matrices nativas, lecturas, fórmula de índices, huecos, crecimiento, intercambio actual/anterior y eventos. Cada instancia registra posiciones escritas y limpia sólo esas posiciones después de inicializar sus entradas; escenas pequeñas y lotes densos conservan el barrido nativo. No cambia SAP, orden de pares, resolución física ni frecuencia.
+
+A 1.500 piezas/240 Hz, cuatro pasos por frame sintético, la mediana de las medias del bloque matriz pasa de **5,007190 a 0,009595 ms**; a 2.000/60, de **2,193505 a 0,003358 ms**. El trabajo parcial integrado Node pasa de **26,529303 a 17,280597 ms p50** a 1.500/240 y de **27,147965 a 9,808575 ms p50** a 2.000/60. Son mediciones separadas con tres pares AB/BA/AB; no se suman ni certifican FPS. La variación completa, incluida una repetición de referencia con matriz de 8,066 ms y un máximo optimizado de frame de 62,020 ms, permanece en la evidencia.
+
+No hay mejora uniforme: el control de 16 piezas/120 Hz, repetido con 180 frames de calentamiento y 180 medidos, conserva un p50 peor (**0,221670→0,277042 ms**), aunque mejora p95/p99 y la CPU media queda casi igual. Hay costes en algunos controles soldados/articulados, contacto denso y cambios de cuerpos. La inicialización fría de ambas matrices sigue siendo O(N²), y su priming sintético a 2.006 cuerpos empeora (**142,412→165,561 ms** de pared mediana). No se presenta este PR como solución del congelamiento de arranque. El caso 2.000/240 rebasa 20 s durante calentamiento de la referencia; la última escala integrada completa allí es 1.500.
+
+Memoria: los arrays O(N²) se conservan. Se añaden dos Sets de índices numéricos, con hasta 4.096 entradas retenidas por matriz y 4.097 transitorias antes de volver a limpieza completa. Se vacían al limpiar o abandonar el registro, sin referencias a cuerpos ni historial creciente. Primera inicialización, crecimiento, registro de escrituras, consultas, retirada y reindexado se miden por separado y dentro del coste total correspondiente.
+
+Validación: **1.258/1.258 pruebas** frente a 1.242 de referencia; 16 regresiones nuevas sobre operaciones, huecos, repetición, densidad, índices, eventos, despertares, sensores, agarre, unión/separación y restauración. Los 21 informes de arquitectura y 36 caídas coinciden exactamente salvo SHA. Las 13 comparaciones integradas conservan estados completos, Producción 19/20, entregas, energía y relojes a 60/120/240 Hz; las ventanas normales no descartan tiempo y los atrasos deliberados conservan los mismos 0,25 s. Chromium sigue bloqueado al crear sockets: **sin FPS, GPU ni perfil Main de navegador**.
+
+Código local medido `5405c35c764ade4d6bea6788b8daa85d61a78962`, publicado `b4b49949cef2e455e92949e1ad65d5d7b85656d9`, árbol idéntico `def1dc62430b726c9c522be2421739551f6c94a3`; `game.js` SHA-256 `c77f65c197f80f340f7f390a8d72155601589fb500bbb1014c0cbee3a3b97b4c`. Versión de carga `20261122-contact-matrix-1`. Informe, comandos, datos y resultados desfavorables: [RENDIMIENTO_MATRIZ_CONTACTOS_2026-11-22.md](RENDIMIENTO_MATRIZ_CONTACTOS_2026-11-22.md).
+
+**Punto de continuación vigente:** reproducir y atribuir por fases el congelamiento frío de escenas grandes sobre el `main` que integre este cambio; separar creación, formas, AABB/índices, primeros pasos, contactos/solver, consultas y preparación gráfica. El pico histórico de selección/BVH no demuestra la causa de los aproximadamente 6,5 s de arranque. Después quedan numerosos mecanismos activos, sombras, sensores de movimiento y captura/validación/hidratación de guardados grandes, cada uno con medición propia. Mantener tiempo simulado, energía, producción y estados completos como criterios de aceptación.
+
+## Entrega anterior · SAP sin visitas entre cuerpos pasivos
 
 Sobre `a988610`, merge del PR #29, se confirmó un coste distinto de los contornos: SAP de Cannon 0.6.2 recorre parejas pasivas que nunca superan `needBroadphaseCollision`. El predicado precede al corte espacial, por lo que una escena dormida conserva un recorrido cuadrático. `installSapPassivePairFilter` mantiene la lista completa, la ordenación, las AABB, el filtro, el corte y las intersecciones nativas; sólo omite las parejas que el predicado siempre rechazaría. El orden y orientación de las parejas de salida no cambian.
 
@@ -18,7 +34,7 @@ En este equipo, el primer p95 parcial que supera 16,67 ms sigue en 1.500 piezas/
 
 Código local medido `bba9f8f02d81e47a21921ff4cc4ceb8e05629787`, publicado `c54980ab29e2547f00c311806a3ece6c397e2902`, árbol idéntico `255c317281a0a1ad17d7d347bc11cf57042882a4`; `game.js` SHA-256 `84bfc37c0661329ffa2cba69f22e50d2256e35944fad556778926a1fa632be0c`. Versión de carga `20261122-sap-passive-1`. Informe, variación, controles, memoria, fuentes y evidencia: [RENDIMIENTO_SAP_2026-11-22.md](RENDIMIENTO_SAP_2026-11-22.md).
 
-**Punto de continuación vigente:** optimizar la matriz triangular de contactos de Cannon en un PR separado, conservando matriz actual/anterior, eventos, índices y despertares. Es trabajo continuo demostrado aun sin contactos: unos 4,93 ms/frame a 1.500/240 en el perfil y regímenes mayores en 2.000/60. Después, perfilar el pico frío de 6,5 s y los numerosos mecanismos activos. Sombras, sensores de movimiento y capturar/validar/hidratar guardados grandes siguen como hipótesis que necesitan medición propia. Mantener tiempo simulado, energía, producción y estados completos como criterios de aceptación.
+**Continuación registrada en aquella entrega (histórica):** optimizar la matriz triangular de contactos de Cannon en un PR separado, conservando matriz actual/anterior, eventos, índices y despertares. Es trabajo continuo demostrado aun sin contactos: unos 4,93 ms/frame a 1.500/240 en el perfil y regímenes mayores en 2.000/60. Después, perfilar el pico frío de 6,5 s y los numerosos mecanismos activos. Sombras, sensores de movimiento y capturar/validar/hidratar guardados grandes siguen como hipótesis que necesitan medición propia. Mantener tiempo simulado, energía, producción y estados completos como criterios de aceptación.
 
 ## Entrega anterior · contornos de cajas en escenas con muchos cuerpos
 
