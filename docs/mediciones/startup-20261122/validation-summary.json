@@ -1,0 +1,72 @@
+{
+  "referenceCommit": "4fc563cc8d27e653129fc11a14524a7cfc626a5e",
+  "referenceTree": "09e6452b9524537ea0099fc30f4153cfc95c8c15",
+  "optimizedCodeCommitLocal": "e362708c4c9472133771394fd048541992ac29ae",
+  "optimizedCodeCommitPublished": "4d7c128517e4951ba7acb56562e378a7ecaff904",
+  "optimizedInstrumentCommitLocal": "92192345317b06bca0c31f1a5860ecc1783c31a1",
+  "optimizedInstrumentCommitPublished": "6dfc50c62dcf83a0cb20fa586f11e82d94a89ee6",
+  "optimizedInstrumentTree": "46fcc530109139d871dfba962e21984e56f60923",
+  "referenceGameSha256": "c77f65c197f80f340f7f390a8d72155601589fb500bbb1014c0cbee3a3b97b4c",
+  "optimizedGameSha256": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+  "runtime": "v24.22.3",
+  "scope": "Serial full suites on the corresponding sources; functional counters are compared exactly. Suite wall times are not gameplay performance. No additional physical tolerance was introduced.",
+  "tests": {
+    "baseline": {
+      "tests": 1258,
+      "pass": 1258,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 57790.475177,
+      "log": "tests-baseline.txt.gz",
+      "decodedSha256": "aed214ab1ae20251f1b757a92253f9166b1efd12c06a01f4686773415d300e3a"
+    },
+    "final": {
+      "tests": 1261,
+      "pass": 1261,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 59006.799208,
+      "log": "tests-final.txt.gz",
+      "decodedSha256": "0add216d5b223785c97563a3478aa617b7ce7b49381165d3fe21ae1abd86c848"
+    }
+  },
+  "comparisons": {
+    "architecture": {
+      "cases": 21,
+      "exactEqualityAfterExcluding": [
+        "sourceSha256"
+      ],
+      "identical": true,
+      "referenceSourceSha256": "c77f65c197f80f340f7f390a8d72155601589fb500bbb1014c0cbee3a3b97b4c",
+      "optimizedSourceSha256": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+      "referenceFile": "architecture-baseline.json.gz",
+      "optimizedFile": "architecture-final.json.gz"
+    },
+    "ground": {
+      "cases": 36,
+      "exactEqualityAfterExcluding": [
+        "sourceSha256"
+      ],
+      "identical": true,
+      "referenceSourceSha256": "c77f65c197f80f340f7f390a8d72155601589fb500bbb1014c0cbee3a3b97b4c",
+      "optimizedSourceSha256": "847e7b1f99778315678478b01b7a781ecd3c2e1f0deab595e16446ecb9c52fed",
+      "referenceFile": "ground-baseline.json.gz",
+      "optimizedFile": "ground-final.json.gz",
+      "summary": {
+        "cases": 36,
+        "contactsObserved": 36,
+        "nearZeroFirstImpactCases": [],
+        "notRestingAtEnd": [],
+        "maxFirstRestSeconds": 2.716666666666662,
+        "maxPenetrationM": 0.0010000000000000286,
+        "maxFinalPositionDriftM": 0,
+        "allFinalVelocitiesZero": true,
+        "allMatterAndMassPreserved": true
+      }
+    }
+  }
+}

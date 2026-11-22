@@ -1180,6 +1180,10 @@ function installTrackedCollisionMatrices(physicsWorld){
    let i=bodyA.index,j=bodyB.index;
    if(j>i){const swap=j;j=i;i=swap;}
    const index=(i*(i+1)>>1)+j-1,entries=this.matrix;
+   // Grow to exactly the length this write would produce, preserving holes.
+   // Direct distant writes caused repeated expensive growth in the measured
+   // cold contact batch. Extending first avoids that work in the same Array.
+   if(index>=entries.length&&Number.isInteger(index)&&index<4294967295)entries.length=index+1;
    // Repeated contact equations share one entry. The Set also deduplicates a
    // true/false/true sequence. Negative properties are not cleared by Cannon.
    if(!fullReset&&value&&index>=0&&Number.isInteger(index)&&index<4294967295&&entries[index]!==1){

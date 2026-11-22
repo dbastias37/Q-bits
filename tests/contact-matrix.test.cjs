@@ -44,6 +44,74 @@ function applyBoth(pair,method,...args){
  assert.equal(actual,expected,method+' return value');
 }
 function random(seed){let s=seed;return ()=>((s=(s*1664525+1013904223)>>>0)/4294967296);}
+function compareLargeBacking(actual,expected,label){
+ // Compare the large cold arrays without allocating another multi-million-slot
+ // snapshot. Holes and explicit undefined still remain distinct observations.
+ const a=actual.matrix,b=expected.matrix;assert.equal(a.length,b.length,label+' length');
+ for(let i=0;i<a.length;i++)if(a[i]!==b[i]||Object.hasOwn(a,i)!==Object.hasOwn(b,i)){
+  assert.fail(`${label}: index ${i}, ${a[i]}/${Object.hasOwn(a,i)} != ${b[i]}/${Object.hasOwn(b,i)}`);
+ }
+}
+
+test('cold distant writes preserve native holes, truth conversion, extension and backing-array identity',()=>{
+ const pair=matrices(),arrays={native:pair.native.matrix,tracked:pair.tracked.matrix};
+ for(const [i,j,value] of [[256,0,true],[3,1,false],[0,400,false],[511,17,true],[511,17,true],[256,0,false],[256,0,true],[599,598,false]]){
+  const a={index:i},b={index:j};applyBoth(pair,'set',a,b,value);
+  assert.equal(pair.tracked.matrix,arrays.tracked);assert.equal(pair.native.matrix,arrays.native);
+  assert.equal(pair.tracked.matrix.length,pair.native.matrix.length);
+  assert.equal(pair.tracked.get(a,b),pair.native.get(a,b));assert.equal(pair.tracked.get(b,a),pair.native.get(b,a));
+ }
+ assert.equal(pair.tracked.get({index:1},{index:0}),undefined,'extending length must not initialize unrelated holes');
+ assert.equal(pair.tracked.get({index:599},{index:598}),0,'a false distant write is still an own zero entry');
+ compareLargeBacking(pair.tracked,pair.native,'cold writes');
+ applyBoth(pair,'reset');compareLargeBacking(pair.tracked,pair.native,'first cold reset');
+ assert.equal(pair.tracked.matrix,arrays.tracked,'reset keeps the same backing array too');
+});
+
+test('cold extension after a partial reset preserves the initialized prefix, suffix holes and previous contacts',()=>{
+ const worlds=rawWorlds(),lower={index:1040},last={index:2005},first={index:0};
+ for(const {world} of worlds){
+  world.collisionMatrix.setNumObjects(2006);world.collisionMatrixTick();
+  world.collisionMatrix.set(lower,first,true);
+  assert.equal(world.collisionMatrix.matrix.length,541320);
+  world.collisionMatrixTick();world.collisionMatrix.set(last,first,true);
+  world.collisionMatrixTick();
+  assert.equal(world.collisionMatrix.matrix.length,541320);
+ }
+ const previous=worlds.map(({world})=>world.collisionMatrixPrevious),current=worlds.map(({world})=>world.collisionMatrix);
+ for(const [i,value] of [[1041,true],[1100,false],[1500,true],[1800,true],[2005,true]]){
+  for(const {world} of worlds)for(let equation=0;equation<4;equation++)world.collisionMatrix.set({index:i},first,value);
+  assert.equal(current[1].matrix.length,current[0].matrix.length);
+  assert.equal(current[1].get({index:i},first),current[0].get({index:i},first));
+ }
+ assert.equal(current[1].matrix.length,2011015);
+ assert.equal(current[1].get(lower,first),0,'the earlier partial reset remains observable');
+ assert.equal(current[1].get({index:1700},{index:1}),undefined,'new suffix gaps remain holes until their reset');
+ assert.equal(previous[1].get(last,first),1,'extending current storage cannot clear the preceding contact');
+ for(const slot of ['collisionMatrix','collisionMatrixPrevious'])compareLargeBacking(worlds[1].world[slot],worlds[0].world[slot],'partial growth '+slot);
+ for(let tick=0;tick<2;tick++){
+  for(const {world} of worlds)world.collisionMatrixTick();
+  for(const slot of ['collisionMatrix','collisionMatrixPrevious'])compareLargeBacking(worlds[1].world[slot],worlds[0].world[slot],'subsequent tick '+tick+' '+slot);
+ }
+ for(let i=0;i<worlds.length;i++){
+  assert.equal(worlds[i].world.collisionMatrix,current[i]);assert.equal(worlds[i].world.collisionMatrixPrevious,previous[i]);
+ }
+});
+
+test('noncanonical distant properties do not resize the native array during cold writes',()=>{
+ const pair=matrices(),cases=[{a:{index:400},b:{index:.5},key:'80199.5'},{a:{index:4294967296},b:{index:4294967296},key:'4294967295'}];
+ applyBoth(pair,'setNumObjects',8);
+ const length=pair.native.matrix.length;
+ for(const {a,b,key} of cases)for(const value of [true,false,true]){
+  applyBoth(pair,'set',a,b,value);
+  assert.equal(pair.native.matrix.length,length);assert.equal(pair.tracked.matrix.length,length);
+  assert(Object.hasOwn(pair.native.matrix,key));assert(Object.hasOwn(pair.tracked.matrix,key));
+  assert.equal(pair.tracked.get(a,b),pair.native.get(a,b));
+ }
+ applyBoth(pair,'reset');applyBoth(pair,'setNumObjects',0);applyBoth(pair,'reset');
+ assert.equal(pair.tracked.matrix.length,0);
+ for(const {a,b,key} of cases){assert.equal(pair.tracked.get(a,b),1);assert.equal(pair.tracked.matrix[key],pair.native.matrix[key]);}
+});
 
 test('tracked matrices preserve native holes, truth conversion, repeated writes and reset results',()=>{
  const pair=matrices(),a={index:1},b={index:0};
