@@ -4341,7 +4341,7 @@ world.solver.solve=function(dt,physicsWorld){
  const articulated=new Set();for(const rotor of rotors){const pair=rotorGroups(rotor);if(pair.some(g=>!articulated.has(g.body)))for(const g of rotorConnectedGroups(pair))articulated.add(g.body);}
  for(const g of groups)if(!(held?.items||[]).some(item=>item.g===g))g.body.angularDamping=articulated.has(g.body)||g.route||g.haulJob||g.blueprintJob||g.parts.some(p=>p.mood.flight?.enabled)?settings.damping:groupAngularDamping(g.parts.length);
  if(story.scene==='lab')settleSupportedGroups(dt,physicsWorld.contacts,driven,articulated);
- const footLimits=walkingFootFriction(physicsWorld,dt),skinPairs=conveyorFrictionPairs(physicsWorld),changed=[];for(const eq of physicsWorld.frictionEquations){if(skinPairs.get(eq.bi)?.has(eq.bj)||skinPairs.get(eq.bj)?.has(eq.bi)){changed.push([eq,eq.minForce,eq.maxForce]);eq.minForce=0;eq.maxForce=0;}else if(footLimits?.has(eq)){changed.push([eq,eq.minForce,eq.maxForce]);eq.maxForce=footLimits.get(eq);eq.minForce=-eq.maxForce;}else if(driven.has(eq.bi)||driven.has(eq.bj)){changed.push([eq,eq.minForce,eq.maxForce]);eq.minForce*=dt;eq.maxForce*=dt;}}
+ const footLimits=walkingFootFriction(physicsWorld,dt),productionLimits=productionContactFriction(physicsWorld,dt),skinPairs=conveyorFrictionPairs(physicsWorld),changed=[];for(const eq of physicsWorld.frictionEquations){if(skinPairs.get(eq.bi)?.has(eq.bj)||skinPairs.get(eq.bj)?.has(eq.bi)){changed.push([eq,eq.minForce,eq.maxForce]);eq.minForce=0;eq.maxForce=0;}else if(footLimits?.has(eq)||productionLimits?.has(eq)){changed.push([eq,eq.minForce,eq.maxForce]);eq.maxForce=footLimits?.get(eq)??productionLimits.get(eq);eq.minForce=-eq.maxForce;}else if(driven.has(eq.bi)||driven.has(eq.bj)){changed.push([eq,eq.minForce,eq.maxForce]);eq.minForce*=dt;eq.maxForce*=dt;}}
  conveyorImpactConstraints(dt,physicsWorld,this);
  // A brief 60 Hz settling pass may converge a quiet small assembly. Recheck
  // the total after predictive belt contacts; large contact scenes keep 24.
@@ -10419,12 +10419,12 @@ function setupProduction(c){
  Object.assign(settings,{bounce:.02,friction:.38,damping:.12});world.defaultContactMaterial.friction=.38;world.defaultContactMaterial.restitution=.02;
  storyGuide().body.position.set(.6,HALF+.004,1);
  const z=-.7,surface=.3;
- storyWall(V(0,surface/2,z),V(1.85,surface/2,.22),{color:[.76,.80,.78]});
+ const surfaceBody=storyWall(V(0,surface/2,z),V(1.85,surface/2,.22),{color:[.76,.80,.78]}).body;
  for(const side of [-1,1])storyWall(V(0,surface+.045,z+side*.23),V(1.85,.045,.015),{color:[.68,.74,.72]});
  storyWall(V(-1.8,surface+.07,z),V(.015,.07,.23),{color:[.68,.74,.72]});
  storyWall(V(-1.45,.08,.08),V(.09,.08,.09),{color:[.75,.8,.77]});
  const rotor=spawnRotor(V(-1.45,.16,.08),{mount:'fixed',moving:'b',rpm:30,maxTorque:.4,capacity:16});if(!rotor)return;
- c.production={goal,rotor,z,surface,control:V(-1.45,.6,.1),pivot:couplerTip(rotorPart(rotor.aId)).point.clone(),bench:rotorGroups(rotor).map(g=>({id:g.parts[0].id,p:g.body.position.clone(),q:g.body.quaternion.clone()})),attempt:0,interval:goal.interval,internal:true};resetProduction();
+ c.production={goal,rotor,z,surface,surfaceBody,control:V(-1.45,.6,.1),pivot:couplerTip(rotorPart(rotor.aId)).point.clone(),bench:rotorGroups(rotor).map(g=>({id:g.parts[0].id,p:g.body.position.clone(),q:g.body.quaternion.clone()})),attempt:0,interval:goal.interval,internal:true};resetProduction();
 }
 function resetProduction(){
  const s=story.campaign?.production;if(!s)return false;
@@ -10446,6 +10446,23 @@ function startProduction(){
 }
 function productionDrive(s){
  const r=s.rotor,pair=rotorGroups(r);return rotors.includes(r)&&pair.every(Boolean)&&pair.every(g=>g.parts.length===1&&g.parts[0].weight===1)&&couplerTip(rotorPart(r.aId)).point.distanceTo(s.pivot)<.035&&r.enabled&&!r.stalled&&r.mount==='fixed'&&r.moving==='b'&&r.direction===1&&r.powerActive&&Math.abs(r.actualRpm||0)>3;
+}
+// Valid only after this step's narrowphase. Cannon 0.6.2 gives every contact
+// the whole body's mu*m*g force budget, then clamps an impulse against it.
+// Share one mu*m*g*dt budget across the real upper supports of the packing line.
+// Side contacts, obstacles, other batches and passive material keep their
+// existing friction. The solver wrapper restores pooled equations in finally.
+function productionContactFriction(physicsWorld,dt){
+ const s=story.scene==='campaign'&&story.campaign?.production;
+ if(!s||!s.goal.packages||!s.started||s.failed||s.complete||!productionDrive(s))return null;
+ const counts=new Map();for(const g of productionGroups(s))if(!held?.items?.some(item=>item.g===g))counts.set(g.body,0);
+ if(!counts.size)return null;
+ const other=eq=>eq.bi===s.surfaceBody?eq.bj:eq.bj===s.surfaceBody?eq.bi:null;
+ for(const contact of physicsWorld.contacts){const body=other(contact);if(contact.enabled&&counts.has(body)&&(contact.bi===s.surfaceBody?contact.ni.y:-contact.ni.y)<.99)counts.set(body,-1);}
+ for(const eq of physicsWorld.frictionEquations){const body=other(eq),count=counts.get(body);if(eq.enabled&&count>=0)counts.set(body,count+1);}
+ let limits=null;
+ for(const eq of physicsWorld.frictionEquations){const count=counts.get(other(eq));if(eq.enabled&&count>0){limits??=new Map();limits.set(eq,eq.maxForce*2*dt/count);}}
+ return limits;
 }
 function productionForces(dt){
  const s=story.scene==='campaign'&&story.campaign?.production;if(!s||!s.started||s.failed||s.complete||!productionDrive(s))return;s.forceJoules=0;

@@ -1,0 +1,27 @@
+✖ production 20 delivers its original 30 rpm batch at the selected 60 Hz, including off-camera work (2051.281716ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2171.668618
+
+✖ failing tests:
+
+test at ../production-frequency-baseline.test.cjs:102:3
+✖ production 20 delivers its original 30 rpm batch at the selected 60 Hz, including off-camera work (2051.281716ms)
+  AssertionError [ERR_ASSERTION]: Presupuesto superado. Reinicia el lote con una velocidad menor.
+      at TestContext.<anonymous> (/workspace/scratch/d35588e45a49/production-frequency-baseline.test.cjs:123:5)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
