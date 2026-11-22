@@ -1,0 +1,65 @@
+[
+  {
+    "name": "tests-final",
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "command": [
+      "bash",
+      "-c",
+      "node --test tests/*.test.cjs"
+    ],
+    "exitCode": 0,
+    "elapsedSeconds": 54.65101348200187
+  },
+  {
+    "name": "architecture-baseline",
+    "cwd": "/workspace/scratch/d35588e45a49/qbits-sap-baseline",
+    "command": [
+      "node",
+      "tests/benchmark-architecture-audit.cjs"
+    ],
+    "exitCode": 0,
+    "elapsedSeconds": 0.8178503199997067
+  },
+  {
+    "name": "architecture-final",
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "command": [
+      "node",
+      "tests/benchmark-architecture-audit.cjs"
+    ],
+    "exitCode": 0,
+    "elapsedSeconds": 0.7157819550011482
+  },
+  {
+    "name": "ground-baseline",
+    "cwd": "/workspace/scratch/d35588e45a49/qbits-sap-baseline",
+    "command": [
+      "node",
+      "tests/benchmark-ground-contacts.cjs"
+    ],
+    "exitCode": 0,
+    "elapsedSeconds": 6.207409169001039
+  },
+  {
+    "name": "ground-final",
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "command": [
+      "node",
+      "tests/benchmark-ground-contacts.cjs"
+    ],
+    "exitCode": 0,
+    "elapsedSeconds": 5.639880008002365
+  },
+  {
+    "name": "benchmark-retention",
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/diagnose-benchmark-retention.cjs",
+      "--mode=all"
+    ],
+    "exitCode": 0,
+    "elapsedSeconds": 2.022609707000811
+  }
+]

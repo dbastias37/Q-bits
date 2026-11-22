@@ -1,0 +1,324 @@
+[
+  {
+    "phase": "micro",
+    "name": "sap-counts",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/benchmark-sap-broadphase.cjs",
+      "--baseline-root=../qbits-sap-baseline",
+      "--mode=counts",
+      "--families=independent,welded",
+      "--output=/workspace/scratch/d35588e45a49/sap-results/sap-counts.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 15.606793079001363
+  },
+  {
+    "phase": "micro",
+    "name": "sap-timings",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/benchmark-sap-broadphase.cjs",
+      "--baseline-root=../qbits-sap-baseline",
+      "--mode=timings",
+      "--output=/workspace/scratch/d35588e45a49/sap-results/sap-timings.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 38.23170682599812
+  },
+  {
+    "phase": "micro",
+    "name": "sap-welded-timings",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/benchmark-sap-broadphase.cjs",
+      "--baseline-root=../qbits-sap-baseline",
+      "--mode=timings",
+      "--families=welded",
+      "--scales=16,500,2000",
+      "--states=sleeping,all-active",
+      "--output=/workspace/scratch/d35588e45a49/sap-results/sap-welded-timings.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 3.8250572760007344
+  },
+  {
+    "phase": "matrix",
+    "name": "matrix-settled-120",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=../qbits-sap-baseline",
+      "--mode=matrix",
+      "--families=independent",
+      "--phase=settled",
+      "--warmup=60",
+      "--samples=30",
+      "--repetitions=3",
+      "--case-budget-ms=20000",
+      "--hz=120",
+      "--output=/workspace/scratch/d35588e45a49/sap-results/matrix-settled-120.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 167.66875403400263
+  },
+  {
+    "phase": "matrix",
+    "name": "matrix-settled-60",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=../qbits-sap-baseline",
+      "--mode=matrix",
+      "--families=independent",
+      "--phase=settled",
+      "--warmup=60",
+      "--samples=30",
+      "--repetitions=3",
+      "--case-budget-ms=20000",
+      "--hz=60",
+      "--output=/workspace/scratch/d35588e45a49/sap-results/matrix-settled-60.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 120.88009037999655
+  },
+  {
+    "phase": "matrix",
+    "name": "matrix-settled-240",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=../qbits-sap-baseline",
+      "--mode=matrix",
+      "--families=independent",
+      "--phase=settled",
+      "--warmup=60",
+      "--samples=30",
+      "--repetitions=3",
+      "--case-budget-ms=20000",
+      "--hz=240",
+      "--output=/workspace/scratch/d35588e45a49/sap-results/matrix-settled-240.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 162.10870854400127
+  },
+  {
+    "phase": "matrix",
+    "name": "matrix-settling-120",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=../qbits-sap-baseline",
+      "--mode=matrix",
+      "--families=independent",
+      "--phase=settling",
+      "--warmup=0",
+      "--samples=30",
+      "--repetitions=3",
+      "--case-budget-ms=20000",
+      "--scales=16,500,1500,2000",
+      "--output=/workspace/scratch/d35588e45a49/sap-results/matrix-settling-120.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 118.04585778999899
+  },
+  {
+    "phase": "matrix",
+    "name": "matrix-controls-120",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=../qbits-sap-baseline",
+      "--mode=matrix",
+      "--families=welded,few-articulated,many-mechanisms,factory",
+      "--phase=mixed",
+      "--warmup=12",
+      "--samples=30",
+      "--repetitions=3",
+      "--case-budget-ms=20000",
+      "--scales=100,500,2000",
+      "--output=/workspace/scratch/d35588e45a49/sap-results/matrix-controls-120.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 36.11031332299899
+  },
+  {
+    "phase": "matrix",
+    "name": "control-long-120",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=../qbits-sap-baseline",
+      "--mode=matrix",
+      "--families=independent",
+      "--phase=settled",
+      "--warmup=180",
+      "--samples=180",
+      "--repetitions=3",
+      "--case-budget-ms=20000",
+      "--scales=16",
+      "--output=/workspace/scratch/d35588e45a49/sap-results/control-long-120.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 1.3181002769997576
+  },
+  {
+    "phase": "followup",
+    "name": "sap-control16-long",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/benchmark-sap-broadphase.cjs",
+      "--baseline-root=../qbits-sap-baseline",
+      "--mode=timings",
+      "--scales=16",
+      "--states=few-active",
+      "--phases=dirty",
+      "--warmup=180",
+      "--samples=180",
+      "--repetitions=3",
+      "--output=/workspace/scratch/d35588e45a49/sap-results/sap-control16-long.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 0.8160727809990931
+  },
+  {
+    "phase": "followup",
+    "name": "sap-active500-long",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/benchmark-sap-broadphase.cjs",
+      "--baseline-root=../qbits-sap-baseline",
+      "--mode=timings",
+      "--scales=500",
+      "--states=all-active",
+      "--phases=dirty",
+      "--warmup=180",
+      "--samples=180",
+      "--repetitions=3",
+      "--output=/workspace/scratch/d35588e45a49/sap-results/sap-active500-long.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 2.521005504000641
+  },
+  {
+    "phase": "followup",
+    "name": "sap-sleep2000-long",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/benchmark-sap-broadphase.cjs",
+      "--baseline-root=../qbits-sap-baseline",
+      "--mode=timings",
+      "--scales=2000",
+      "--states=sleeping",
+      "--phases=clean",
+      "--warmup=180",
+      "--samples=180",
+      "--repetitions=3",
+      "--output=/workspace/scratch/d35588e45a49/sap-results/sap-sleep2000-long.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 10.240437835997
+  },
+  {
+    "phase": "verify",
+    "name": "equivalence",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=../qbits-sap-baseline",
+      "--mode=equivalence",
+      "--output=/workspace/scratch/d35588e45a49/sap-results/equivalence.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 29.692401981999865
+  },
+  {
+    "phase": "profile",
+    "name": "profile-500-120",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/profile-cpu-architecture.cjs",
+      "--baseline-root=../qbits-sap-baseline",
+      "--scenario=independent",
+      "--pieces=500",
+      "--hz=120",
+      "--warmup=60",
+      "--frames=30",
+      "--case-budget-ms=20000",
+      "--output=/workspace/scratch/d35588e45a49/sap-results/profile-500-120.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 27.04494778300068
+  },
+  {
+    "phase": "profile",
+    "name": "profile-1500-240",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/profile-cpu-architecture.cjs",
+      "--baseline-root=../qbits-sap-baseline",
+      "--scenario=independent",
+      "--pieces=1500",
+      "--hz=240",
+      "--warmup=60",
+      "--frames=30",
+      "--case-budget-ms=20000",
+      "--output=/workspace/scratch/d35588e45a49/sap-results/profile-1500-240.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 202.01583939100237
+  },
+  {
+    "phase": "isolated",
+    "name": "isolated-large-60",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=../qbits-sap-baseline",
+      "--mode=matrix",
+      "--families=independent",
+      "--phase=settled",
+      "--warmup=60",
+      "--samples=30",
+      "--repetitions=3",
+      "--case-budget-ms=20000",
+      "--hz=60",
+      "--scales=1500,2000",
+      "--output=/workspace/scratch/d35588e45a49/sap-results/isolated-large-60.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 103.19094223100183
+  }
+]
