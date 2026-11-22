@@ -55,11 +55,51 @@
         if (array) check(/^(0|[1-9]\d*)$/.test(key) && Number(key) < value.length, 'El guardado contiene una propiedad de lista no permitida.');
         const descriptor = Object.getOwnPropertyDescriptor(value, key);
         check(descriptor && own(descriptor, 'value') && descriptor.enumerable, 'El guardado no admite propiedades calculadas u ocultas.');
-        if (!array && descriptor.value === undefined) continue;
-        if (!array && !plain) check(finite(descriptor.value), 'El guardado contiene una coordenada no finita.');
-        checkJson(descriptor.value, ancestors, depth + 1);
+        const entry = descriptor.value;
+        if (!array && entry === undefined) continue;
+        if (!array && !plain) check(finite(entry), 'El guardado contiene una coordenada no finita.');
+        // Validate primitive leaves here; only nested objects need another
+        // traversal frame. Descriptor, depth and finite-number checks remain.
+        if (entry === null || typeof entry === 'string' || typeof entry === 'boolean') {
+          check(depth < 128, 'El guardado está anidado en exceso.');
+        } else if (typeof entry === 'number') {
+          check(depth < 128, 'El guardado está anidado en exceso.');
+          check(finite(entry), 'El guardado contiene un número no finito.');
+        } else checkJson(entry, ancestors, depth + 1);
       }
     } finally { ancestors.delete(value); }
+  }
+
+  // JSON.parse without a reviver produces dense arrays and ordinary own data
+  // properties. It cannot produce cycles, accessors, symbols or Cannon objects.
+  // Keep the checks JSON does not guarantee, including overflow (1e999), depth
+  // and forbidden keys. Live input still goes through the full checkJson above.
+  function checkParsedJson(value, depth = 0) {
+    check(depth <= 128, 'El guardado está anidado en exceso.');
+    const keys = Object.keys(value);
+    // Leaves also count toward the depth limit, without a recursive call and
+    // repeated type dispatch for every number, string and boolean in a save.
+    check(depth < 128 || keys.length === 0, 'El guardado está anidado en exceso.');
+    let arrays = Array.isArray(value);
+    for (const key of keys) {
+      if (UNSAFE_KEYS.has(key)) throw new Error('El guardado contiene una clave no permitida.');
+      if (key === 'toJSON') throw new Error('El guardado no admite conversiones toJSON.');
+      const entry = value[key];
+      if (typeof entry === 'number' && !finite(entry)) throw new Error('El guardado contiene un número no finito.');
+      if (entry !== null && typeof entry === 'object') arrays = checkParsedJson(entry, depth + 1) || arrays;
+    }
+    return arrays;
+  }
+
+  function checkParsedPrototypes(arrays) {
+    // Check again even on a cache hit: adding/removing a prototype JSON hook
+    // must not turn an old validation result into permission to overwrite it.
+    for (let parent = Object.prototype; parent !== null; parent = Object.getPrototypeOf(parent)) {
+      check(!Object.getOwnPropertyDescriptor(parent, 'toJSON'), 'El guardado no admite conversiones toJSON.');
+    }
+    if (arrays) for (let parent = Array.prototype; parent !== null; parent = Object.getPrototypeOf(parent)) {
+      check(!Object.getOwnPropertyDescriptor(parent, 'toJSON'), 'El guardado no admite conversiones toJSON.');
+    }
   }
 
   function checkLab(data) {
@@ -124,30 +164,57 @@
     } catch (error) { return {ok:false, error:message(error, 'El guardado no es válido.')}; }
   }
 
+  function inspectParsed(mode, save) {
+    try {
+      check(record(save) && save.format === FORMAT && save.mode === mode, 'El guardado no corresponde a este modo.');
+      check(Number.isSafeInteger(save.version) && save.version >= 1, 'La versión del guardado no es válida.');
+      if (save.version !== VERSION) return {status:'unsupported', error:'Este guardado requiere otra versión del juego.'};
+      const arrays = checkParsedJson(save);
+      checkParsedPrototypes(arrays);
+      check(finite(save.savedAt) && finite(save.createdAt) && save.createdAt >= 0 && save.savedAt >= save.createdAt, 'Las fechas del guardado no son válidas.');
+      if (mode === 'lab') checkLab(save.data); else checkCampaign(save.data);
+      return {status:'ready', save, arrays};
+    } catch (error) { return {status:'invalid', error:message(error, 'No se pudo leer el guardado.')}; }
+  }
+
   function inspect(mode, raw) {
     if (raw === null || raw === undefined) return {status:'empty'};
     try {
       check(typeof raw === 'string', 'El guardado no contiene texto JSON.');
-      const save = JSON.parse(raw);
-      check(record(save) && save.format === FORMAT && save.mode === mode, 'El guardado no corresponde a este modo.');
-      check(Number.isSafeInteger(save.version) && save.version >= 1, 'La versión del guardado no es válida.');
-      if (save.version !== VERSION) return {status:'unsupported', error:'Este guardado requiere otra versión del juego.'};
-      checkJson(save);
-      check(finite(save.savedAt) && finite(save.createdAt) && save.createdAt >= 0 && save.savedAt >= save.createdAt, 'Las fechas del guardado no son válidas.');
-      if (mode === 'lab') checkLab(save.data); else checkCampaign(save.data);
-      return {status:'ready', save};
+      return inspectParsed(mode, JSON.parse(raw));
     } catch (error) { return {status:'invalid', error:message(error, 'No se pudo leer el guardado.')}; }
   }
 
   function createStore({storage = () => globalThis.localStorage, now = () => Date.now()} = {}) {
+    // At most one immutable raw string and primitive metadata per slot. Never
+    // retain a decoded graph or a caller-visible object. Every access still
+    // reads storage, so another tab, deletion and denied access remain visible.
+    const checked = {lab:null, campaign:null};
+    function remember(mode, raw, result) {
+      checked[mode] = result.status === 'ready' ? {
+        raw, arrays:result.arrays,
+        createdAt:result.save.createdAt, savedAt:result.save.savedAt
+      } : null;
+    }
     function access() {
       const target = typeof storage === 'function' ? storage() : null;
       check(target && typeof target.getItem === 'function', 'El almacenamiento local no está disponible.');
       return target;
     }
-    function readFrom(target, mode) {
-      try { return inspect(mode, target.getItem(KEYS[mode])); }
+    function readFrom(target, mode, metadataOnly = false) {
+      let raw;
+      try { raw = target.getItem(KEYS[mode]); }
       catch (error) { return {status:'unavailable', error:message(error, 'No se pudo acceder al almacenamiento local.')}; }
+      const cached = checked[mode];
+      if (cached && raw === cached.raw) {
+        try {
+          checkParsedPrototypes(cached.arrays);
+          return {status:'ready', save:metadataOnly ? cached : JSON.parse(raw)};
+        } catch (error) { return {status:'invalid', error:message(error, 'No se pudo leer el guardado.')}; }
+      }
+      const result = inspect(mode, raw);
+      remember(mode, raw, result);
+      return result.status === 'ready' ? {status:'ready', save:metadataOnly ? checked[mode] : result.save} : result;
     }
     function read(mode) {
       if (!modeValid(mode)) return {status:'invalid', error:'El modo de guardado no es válido.'};
@@ -159,7 +226,7 @@
       try {
         const target = access();
         check(typeof target.setItem === 'function', 'No se puede escribir en el almacenamiento local.');
-        const previous = readFrom(target, mode);
+        const previous = readFrom(target, mode, true);
         check(previous.status !== 'unavailable', previous.error || 'No se pudo leer el guardado anterior.');
         check(replace === true || previous.status === 'empty' || previous.status === 'ready', 'El guardado anterior se conserva: '+previous.error);
         const result = validate(mode, data);
@@ -171,9 +238,14 @@
         const savedAt = Math.max(time, retained ? retained.savedAt : createdAt);
         const serialized = JSON.stringify({format:FORMAT, version:VERSION, mode, savedAt, createdAt, data});
         const save = JSON.parse(serialized);
+        // Validate the final bytes before trusting them on a later cache hit.
+        // The injected clock or JSON hooks must not promote an invalid record.
+        const inspected = inspectParsed(mode, save);
+        check(inspected.status === 'ready', inspected.error);
         // Web Storage setItem is atomic on failure. Do not remove the old key,
         // create a second multi-megabyte backup slot, or expose live references.
         target.setItem(KEYS[mode], serialized);
+        remember(mode, serialized, inspected);
         return {ok:true, save};
       } catch (error) { return {ok:false, error:message(error, 'No se pudo guardar la partida.')}; }
     }
