@@ -703,7 +703,8 @@ const flightStates=new Map();
 let mechanicalStepCache=null,mechanicalTopology=null;
 function invalidateMechanicalIndex(){
  mechanicalTopology=null;
- if(mechanicalStepCache){mechanicalStepCache.parts=null;mechanicalStepCache.components.clear();mechanicalStepCache.electricalGraph=null;}
+ if(mechanicalStepCache){mechanicalStepCache.parts=null;mechanicalStepCache.components.clear();mechanicalStepCache.groupWeights=null;}
+ invalidatePowerSupplyCache();
 }
 function mechanicalTopologyIndex(){
  if(mechanicalTopology)return mechanicalTopology;
@@ -717,6 +718,17 @@ function mechanicalTopologyIndex(){
  return mechanicalTopology={parts,byPart,byGroup,byPair,edges,components:new Map()};
 }
 function mechanicalPartIndex(){return mechanicalTopologyIndex().parts;}
+// Shared membership is read-only. Public traversal queries still return their
+// own seed-first arrays, preserving the order of physics and energy sums.
+function mechanicalComponentGroups(group){
+ const topology=mechanicalTopologyIndex();if(!topology.edges.has(group))return null;
+ const components=topology.components;
+ if(!components.size)for(const seed of groups)if(!components.has(seed)){
+  const component=[seed],seen=new Set(component);for(let i=0;i<component.length;i++)for(const next of topology.edges.get(component[i]))if(!seen.has(next)){seen.add(next);component.push(next);}
+  for(const g of component)components.set(g,component);
+ }
+ return components.get(group);
+}
 function rotorForPair(pair){return mechanicalTopologyIndex().byPair.get(pair.aId+':'+pair.bId)||null;}
 const rotorSets=[];let rotorSetSerial=0,selectedRotorIds=[];
 const alphaSettings={maxRest:180,coolSeconds:35,capacity:4,blueprintRange:1.5,exitEnergy:.5,glow:.6,coolingOn:true,allowPuzzleSpawn:false};
@@ -3721,16 +3733,11 @@ function rotorConnectedGroups(initial){
  const topology=mechanicalTopologyIndex(),seeds=[...new Set(initial.filter(g=>topology.edges.has(g)))];
  // Preserve the existing physics traversal order, including energy allocation.
  if(mechanicalStepCache){
-  const components=topology.components;
-  if(!components.size)for(const seed of groups)if(!components.has(seed)){
-   const component=[seed],seen=new Set(component);for(let i=0;i<component.length;i++)for(const next of topology.edges.get(component[i]))if(!seen.has(next)){seen.add(next);component.push(next);}
-   for(const g of component)components.set(g,component);
-  }
   // Power queries can pass every member of an already connected network.
   // Expand each shared component once, preserving seed and traversal order.
   const result=seeds.slice(),seen=new Set(result),expanded=new Set();
   for(const seed of seeds){
-   const component=components.get(seed);if(!component||expanded.has(component))continue;
+   const component=mechanicalComponentGroups(seed);if(!component||expanded.has(component))continue;
    expanded.add(component);
    for(const g of component)if(!seen.has(g)){seen.add(g);result.push(g);}
   }
@@ -4614,7 +4621,7 @@ function createPowerReservoir(p,options={}){
  const id=options.id===undefined?powerReservoirSerial+1:options.id;if(!Number.isSafeInteger(id)||id<1||powerReservoirs.some(r=>r.id===id))return null;
  const wall=storyWall(placement.center,placement.half,{color:[.24,.31,.32]});wall.furniture='power-reservoir';wall.powerReservoirId=id;
  const r={id,p:placement.point,wall,capacity:POWER_RESERVOIR_CAPACITY,enabled:!!options.enabled,cell:{id:-id,powerReservoir:true,mood:{energy,idle:0,boredOnce:false}}};
- powerReservoirSerial=Math.max(powerReservoirSerial,id);powerReservoirs.push(r);redraw=true;return r;
+ powerReservoirSerial=Math.max(powerReservoirSerial,id);powerReservoirs.push(r);invalidatePowerSupplyCache();redraw=true;return r;
 }
 function removePowerReservoir(subject){
  const r=typeof subject==='number'?powerReservoirs.find(r=>r.id===subject):subject,index=powerReservoirs.indexOf(r);if(index<0)return false;
@@ -4650,12 +4657,12 @@ function powerCableBlocked(cable,path){
  return false;
 }
 function refreshPowerCable(cable){
- const path=powerCablePath(cable);cable.length=powerCableLength(path);cable.maxLength=powerCableLimit(cable.materials);
- if(!path){cable.active=false;cable.status='Extremo desconectado';return false;}
- if(cable.length>cable.maxLength+1e-5){cable.active=false;cable.status='Cable corto · añade cubos o acerca la máquina';return false;}
+ const path=powerCablePath(cable),wasActive=cable.active;cable.length=powerCableLength(path);cable.maxLength=powerCableLimit(cable.materials);
+ if(!path){cable.active=false;cable.status='Extremo desconectado';if(wasActive)invalidatePowerSupplyCache();return false;}
+ if(cable.length>cable.maxLength+1e-5){cable.active=false;cable.status='Cable corto · añade cubos o acerca la máquina';if(wasActive)invalidatePowerSupplyCache();return false;}
  const signature=path.map(p=>[p.x,p.y,p.z].map(v=>Math.round(v*10000)).join(',')).join(';')+'|'+storyWorld.walls.length;
  if(cable._pathSignature!==signature){cable._pathSignature=signature;cable._blocked=powerCableBlocked(cable,path);}
- cable.active=!cable._blocked;cable.status=cable._blocked?'Trayecto obstruido · vuelve a tender el cable':'Conectado';return cable.active;
+ cable.active=!cable._blocked;cable.status=cable._blocked?'Trayecto obstruido · vuelve a tender el cable':'Conectado';if(wasActive!==cable.active)invalidatePowerSupplyCache();return cable.active;
 }
 function powerCableMaterials(materials,exclude=null){
  if(!Array.isArray(materials)||!materials.length||materials.length>8)return null;
@@ -4674,13 +4681,13 @@ function connectPowerCable(from,to,points=[],materials=[]){
  const copies=powerCableMaterials(materials);if(!copies)return fail('Usa de 1 a 8 cubos normales, sin repetir material.');
  const cable={id:powerCableSerial+1,from:a,to:b,points:route,materials:copies,maxLength:powerCableLimit(copies),length:0,active:false,status:'',progress:0};
  if(!refreshPowerCable(cable))return fail(cable.status);
- powerCableSerial++;powerCables.push(cable);redraw=true;return {ok:true,cable};
+ powerCableSerial++;powerCables.push(cable);invalidatePowerSupplyCache();redraw=true;return {ok:true,cable};
 }
 function extendPowerCable(subject,materials){
  const cable=typeof subject==='number'?powerCables.find(c=>c.id===subject):subject;if(!powerCables.includes(cable))return {ok:false,error:'Cable no encontrado.'};
  const copies=powerCableMaterials([...cable.materials,...(Array.isArray(materials)?materials:[])],cable);
  if(!copies||!materials?.length)return {ok:false,error:'El cable admite hasta 8 cubos normales, sin material repetido.'};
- cable.materials=copies;cable._pathSignature=null;refreshPowerCable(cable);redraw=true;return {ok:true,cable};
+ cable.materials=copies;cable._pathSignature=null;refreshPowerCable(cable);invalidatePowerSupplyCache();redraw=true;return {ok:true,cable};
 }
 function reroutePowerCable(subject,to,points=[]){
  const cable=typeof subject==='number'?powerCables.find(c=>c.id===subject):subject,b=powerEndpoint(to);
@@ -4690,14 +4697,20 @@ function reroutePowerCable(subject,to,points=[]){
  const route=Array.isArray(points)&&points.length<=64?points.map(powerVector):null;
  if(!route||route.some(p=>!p||p.y<-.01||p.y>ROOM_HEIGHT||Math.abs(p.x)>.5*ROOM_SIZE||Math.abs(p.z)>.5*ROOM_SIZE))return {ok:false,error:'El trayecto queda fuera de la sala.'};
  const draft={...cable,to:b,points:route,_pathSignature:null};if(!refreshPowerCable(draft))return {ok:false,error:draft.status};
- Object.assign(cable,draft,{progress:0});redraw=true;return {ok:true,cable};
+ Object.assign(cable,draft,{progress:0});invalidatePowerSupplyCache();redraw=true;return {ok:true,cable};
 }
 function removePowerCable(subject){
  const cable=typeof subject==='number'?powerCables.find(c=>c.id===subject):subject,index=powerCables.indexOf(cable);if(index<0)return [];
- powerCables.splice(index,1);clearPowerRibbonCache(cable);redraw=true;return cable.materials.map(powerCopyMaterial);
+ powerCables.splice(index,1);clearPowerRibbonCache(cable);invalidatePowerSupplyCache();redraw=true;return cable.materials.map(powerCopyMaterial);
+}
+function invalidatePowerSupplyCache(){
+ if(mechanicalStepCache){mechanicalStepCache.electricalGraph=null;mechanicalStepCache.batteryCandidates=null;}
+}
+function powerSubjectGroups(subject){
+ return Array.isArray(subject)?subject:subject?.parts?[subject]:subject&&Number.isSafeInteger(subject.aId)&&Number.isSafeInteger(subject.bId)?rotorGroups(subject):[];
 }
 function updatePowerNetwork(dt){
- if(mechanicalStepCache)mechanicalStepCache.electricalGraph=null;
+ invalidatePowerSupplyCache();
  const seconds=Number.isFinite(dt)?Math.max(0,dt):0;
  for(const c of powerCables){if(!seconds)c._pathSignature=null;refreshPowerCable(c);c.progress=Math.min(1,c.progress+seconds*1.8);}
 }
@@ -4706,10 +4719,10 @@ function powerElectricalGraph(){
  const graph={groups:new Map(),members:new Map(),edges:new Map(),supplies:new Map()};
  graph.groupNode=g=>{
   if(graph.groups.has(g))return graph.groups.get(g);
-  const component=rotorConnectedGroups([g]);if(!component.length)return null;
+  const component=mechanicalComponentGroups(g);if(!component)return null;
   const node=component[0];graph.members.set(node,component);for(const member of component)graph.groups.set(member,node);return node;
  };
- graph.endpointNode=e=>e.kind==='reservoir'?powerReservoirs.find(r=>r.id===e.id)||null:graph.groupNode(rotorPart(e.id)?.g);
+ graph.endpointNode=e=>e.kind==='reservoir'?powerReservoirs.find(r=>r.id===e.id)||null:graph.groupNode(mechanicalPartIndex().get(e.id)?.g);
  for(const cable of powerCables){
   if(!refreshPowerCable(cable))continue;const a=graph.endpointNode(cable.from),b=graph.endpointNode(cable.to);if(!a||!b||a===b)continue;
   if(!graph.edges.has(a))graph.edges.set(a,new Set());if(!graph.edges.has(b))graph.edges.set(b,new Set());graph.edges.get(a).add(b);graph.edges.get(b).add(a);
@@ -4717,18 +4730,18 @@ function powerElectricalGraph(){
  if(mechanicalStepCache)mechanicalStepCache.electricalGraph=graph;return graph;
 }
 function getCableSupply(subject){
- const graph=powerElectricalGraph(),seeds=externalBatteryComponent(subject),result=new Map();
+ const graph=powerElectricalGraph(),seeds=powerSubjectGroups(subject),result=new Map(),visited=new Set();
  for(const seed of seeds){
-  const first=graph.groupNode(seed);let cells=graph.supplies.get(first);
+  const first=graph.groupNode(seed);if(!first||visited.has(first))continue;visited.add(first);let cells=graph.supplies.get(first);
   if(!cells){
    const reached=new Set([first]),queue=[first];for(let i=0;i<queue.length;i++)for(const next of graph.edges.get(queue[i])||[])if(!reached.has(next)){reached.add(next);queue.push(next);}
    const found=new Map();for(const node of reached){
-    if(graph.members.has(node)){for(const g of graph.members.get(node))for(const part of g.parts)if(externalBatteryState(part)?.enabled)found.set(part.id,part);}
-    else if(powerReservoirs.includes(node)&&node.enabled)found.set(node.cell.id,node.cell);
+    if(graph.members.has(node)){for(const part of externalBatteryCandidates(graph.members.get(node)))found.set(part.id,part);}
+    else if(powerReservoirs.includes(node))found.set(node.cell.id,node.cell);
    }
    cells=[...found.values()].sort((a,b)=>a.id-b.id);for(const node of reached)graph.supplies.set(node,cells);
   }
-  for(const cell of cells)result.set(cell.id,cell);
+  for(const cell of cells)if(powerReservoirCell(cell)?.enabled||externalBatteryState(cell)?.enabled)result.set(cell.id,cell);
  }
  return [...result.values()].sort((a,b)=>a.id-b.id);
 }
@@ -4739,7 +4752,7 @@ function serializePowerNetwork(){
  return {version:1,reservoirs:powerReservoirs.map(r=>({id:r.id,p:[r.p.x,r.p.y,r.p.z],energy:r.cell.mood.energy,enabled:r.enabled})),cables:powerCables.map(c=>({id:c.id,from:{...c.from},to:{...c.to},points:c.points.map(p=>[p.x,p.y,p.z]),materials:c.materials.map(p=>({...powerCopyMaterial(p),p:[p.p.x,p.p.y,p.p.z],q:[p.q.x,p.q.y,p.q.z,p.q.w]}))}))};
 }
 function clearPowerNetwork(){
- clearPowerRibbonCache();powerCables.length=0;for(const r of [...powerReservoirs])removePowerReservoir(r);powerReservoirSerial=0;powerCableSerial=0;
+ clearPowerRibbonCache();powerCables.length=0;for(const r of [...powerReservoirs])removePowerReservoir(r);powerReservoirSerial=0;powerCableSerial=0;invalidatePowerSupplyCache();
 }
 function restorePowerNetwork(saved){
  clearPowerNetwork();if(!saved||saved.version!==1||!Array.isArray(saved.reservoirs)||!Array.isArray(saved.cables)||saved.reservoirs.length>12||saved.cables.length>128)return false;
@@ -4755,7 +4768,7 @@ function restorePowerNetwork(saved){
   const cable={id:record.id,from:a,to:b,points,materials,maxLength:powerCableLimit(materials),length:0,active:false,status:'',progress:1};powerCables.push(cable);refreshPowerCable(cable);powerCableSerial=Math.max(powerCableSerial,cable.id);
   for(const p of materials){used.add(p.id);serial=Math.max(serial,p.id);}
  }
- return true;
+ invalidatePowerSupplyCache();return true;
 }
 
 // A wire is made from real cubes; drafting is reversible until the last click.
@@ -4952,8 +4965,24 @@ function externalBatteryState(part){
 function isExternalBattery(part){return !!externalBatteryState(part);}
 function batterySceneScale(){return story.scene==='lab'?30:15;}
 function externalBatteryCapacity(part){const reservoir=powerReservoirCell(part);return reservoir?reservoir.capacity:isExternalBattery(part)?60*batterySceneScale():0;}
-function externalBatteryComponent(subject){return rotorConnectedGroups(Array.isArray(subject)?subject:subject?.parts?[subject]:subject&&Number.isSafeInteger(subject.aId)&&Number.isSafeInteger(subject.bId)?rotorGroups(subject):[]);}
-function externalBatteryCells(subject){return powerCables.length?getCableSupply(subject):externalBatteryComponent(subject).flatMap(g=>g.parts).filter(part=>externalBatteryState(part)?.enabled).sort((a,b)=>a.id-b.id);}
+function externalBatteryComponent(subject){return rotorConnectedGroups(powerSubjectGroups(subject));}
+// Cache candidates, never charge or activation. Pinzas, belts, drones and
+// motors can consume the same cells at different points of this substep.
+function externalBatteryCandidates(component){
+ const cache=mechanicalStepCache?(mechanicalStepCache.batteryCandidates??=new Map()):null;
+ if(cache?.has(component))return cache.get(component);
+ const cells=[];for(const g of component)for(const part of g.parts)if(part.mood.externalBattery)cells.push(part);
+ cells.sort((a,b)=>a.id-b.id);if(cache)cache.set(component,cells);return cells;
+}
+function externalBatteryCells(subject){
+ if(powerCables.length)return getCableSupply(subject);
+ const seen=new Set(),cells=new Map();
+ for(const seed of powerSubjectGroups(subject)){
+  const component=mechanicalComponentGroups(seed);if(!component||seen.has(component))continue;seen.add(component);
+  for(const part of externalBatteryCandidates(component))if(externalBatteryState(part)?.enabled)cells.set(part.id,part);
+ }
+ return [...cells.values()].sort((a,b)=>a.id-b.id);
+}
 function externalBatterySummary(subject){
  const cells=externalBatteryCells(subject),capacity=cells.reduce((sum,part)=>sum+externalBatteryCapacity(part),0),storedJ=cells.reduce((sum,part)=>sum+part.mood.energy*externalBatteryCapacity(part),0);
  const powerCells=cells.reduce((sum,cell)=>sum+(powerReservoirCell(cell)?POWER_RESERVOIR_CAPACITY/1800:1),0);
@@ -4970,18 +4999,23 @@ function externallyPoweredInternalIds(){
  return ids;
 }
 function gameBatteryCapacity(part){return isExternalBattery(part)?externalBatteryCapacity(part):QBitsWorkshop.batteryCapacity(part)*batterySceneScale();}
+function powerGroupWeight(group){
+ if(!mechanicalStepCache)return totalWeight(group);
+ const weights=mechanicalStepCache.groupWeights??=new Map();
+ if(!weights.has(group))weights.set(group,totalWeight(group));return weights.get(group);
+}
 function rotorDrivenLoad(component,arm){
  // An arm's rated load is the payload on its own gripper. The mass of its
  // links still contributes to measured torque through the physical constraints.
- return arm?robotGrips.get(arm.gripperId)?.weight||0:component.reduce((sum,g)=>sum+totalWeight(g),0)+robotGripLoad(component);
+ return arm?robotGrips.get(arm.gripperId)?.weight||0:component.reduce((sum,g)=>sum+powerGroupWeight(g),0)+robotGripLoad(component);
 }
-function rotorPowerState(rotor,dt=0){
- const a=rotorPart(rotor.aId),b=rotorPart(rotor.bId),component=rotorConnectedGroups(rotorGroups(rotor)),arm=robotArmForRotor(rotor);
+function rotorPowerState(rotor,dt=0,supply=null){
+ const parts=mechanicalPartIndex(),a=parts.get(rotor.aId),b=parts.get(rotor.bId),component=rotorConnectedGroups(rotorGroups(rotor)),arm=robotArmForRotor(rotor);
  const load=rotorDrivenLoad(component,arm);
  // Evaluate the motor shaft: torque falls and RPM rises by the same ratio.
  // Mechanical power is conserved; the existing efficiency/loss model applies.
  const reduction=robotJointReduction(rotor,arm);
- const state={enabled:rotor.enabled,rpm:rotor.rpm,actualRpm:(rotor.actualRpm||0)*reduction,actualTorque:(rotor.actualTorque||0)/reduction,stalled:rotor.stalled,maxTorque:rotor.maxTorque,load,capacity:rotor.capacity,energyA:a?.part.mood.energy??0,energyB:b?.part.mood.energy??0,capacityJoulesA:gameBatteryCapacity(a?.part),capacityJoulesB:gameBatteryCapacity(b?.part)},external=externalBatterySummary(component);
+ const state={enabled:rotor.enabled,rpm:rotor.rpm,actualRpm:(rotor.actualRpm||0)*reduction,actualTorque:(rotor.actualTorque||0)/reduction,stalled:rotor.stalled,maxTorque:rotor.maxTorque,load,capacity:rotor.capacity,energyA:a?.part.mood.energy??0,energyB:b?.part.mood.energy??0,capacityJoulesA:gameBatteryCapacity(a?.part),capacityJoulesB:gameBatteryCapacity(b?.part)},external=supply||externalBatterySummary(rotor);
  return external.active?QBitsRotorPower.evaluateExternal(state,external,dt):QBitsRotorPower.evaluate(state,dt);
 }
 function rotorPowerDescription(rotor,compact=false){
@@ -5016,11 +5050,11 @@ function updateRotorPower(dt){
  for(const rotor of rotors){
   if(!rotor.powerActive||!rotor.enabled)continue;
   const external=externalBatterySummary(rotor);
-  if(external.active){const power=rotorPowerState(rotor);rotor.power=power;if(power.stopReason){stopRotorForPower(rotor,power.stopReason);continue;}
+  if(external.active){const power=rotorPowerState(rotor,0,external);rotor.power=power;if(power.stopReason){stopRotorForPower(rotor,power.stopReason);continue;}
    const key=external.cells.map(part=>part.id).join(','),pool=pools.get(key)||{...external,motors:[]};pool.motors.push({rotor,power});pools.set(key,pool);continue;
   }
-  const power=rotorPowerState(rotor,seconds);rotor.power=power;
-  for(const [id,drain]of [[rotor.aId,power.drainA],[rotor.bId,power.drainB]]){const part=rotorPart(id)?.part;if(part){part.mood.energy=clamp(part.mood.energy-drain,0,1);part.mood.idle=0;part.mood.boredOnce=false;}}
+  const power=rotorPowerState(rotor,seconds,external);rotor.power=power;
+  for(const [id,drain]of [[rotor.aId,power.drainA],[rotor.bId,power.drainB]]){const part=mechanicalPartIndex().get(id)?.part;if(part){part.mood.energy=clamp(part.mood.energy-drain,0,1);part.mood.idle=0;part.mood.boredOnce=false;}}
   if(power.stopReason)stopRotorForPower(rotor,power.stopReason);
  }
  for(const pool of pools.values()){
@@ -9374,6 +9408,7 @@ function createExternalBattery(id,count){
  const error=batteryWorkshopCheck(id,count);if(error){announce(error);return false;}
  const hit=rotorPart(id),parts=hit.g.parts,packId=Math.min(...parts.map(p=>p.id));
  for(const part of parts){const storedJ=part.mood.energy*gameBatteryCapacity(part);part.mood.externalBattery={version:1,ownerId:part.id,packId,enabled:false};delete part.mood.workshop;delete part.mood.sensorLink;part.mood.energy=clamp(storedJ/externalBatteryCapacity(part),0,1);Object.assign(part.mood,{state:'neutral',blend:[1,0,0],agitation:0,restLeft:0,reason:'',idle:0});}
+ invalidatePowerSupplyCache();
  automationIntervention();clearRotorSelection();multiSelection=[];selected={g:hit.g,part:hit.part};redraw=true;
  announce('Batería '+['','I','II','III'][count]+' creada · conserva su carga · actívala después de acoplarla');return true;
 }
@@ -9382,6 +9417,7 @@ function toggleExternalBattery(id,enabled){
  // Source changes are deliberate and stop the connected motors first.
  const component=rotorConnectedGroups([pack.g]);for(const r of rotors)if(rotorGroups(r).some(g=>component.includes(g)))configureRotor(r,{enabled:false});
  for(const part of pack.parts)part.mood.externalBattery={...externalBatteryState(part),enabled};
+ invalidatePowerSupplyCache();
  automationIntervention();redraw=true;announce(enabled?'Batería activa · inicia los rotores para usar la reserva externa':'Batería apagada · los rotores usarán su reserva interna');return true;
 }
 function restoreExternalBattery(id){
@@ -9391,6 +9427,7 @@ function restoreExternalBattery(id){
  const scale=batterySceneScale(),charges=pack.parts.map(p=>({part:p,joules:p.mood.energy*externalBatteryCapacity(p),capacity:QBitsWorkshop.batteryCapacity(p)*scale}));
  if(charges.some(x=>x.joules>x.capacity+1e-8)){announce('La carga supera la reserva de los cubos normales. Usa energía antes de restaurarlos.');return false;}
  for(const {part,joules,capacity}of charges){delete part.mood.externalBattery;part.mood.energy=clamp(joules/capacity,0,1);}
+ invalidatePowerSupplyCache();
  automationIntervention();redraw=true;announce('Cubos restaurados · materia y energía conservadas');return true;
 }
 function showExternalBatteryGuide(id=null){

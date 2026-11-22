@@ -2,7 +2,28 @@
 
 Actualizado: 21 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega · inspección de cables simplificada
+## Última entrega · consultas compartidas de suministro y masa
+
+Los consumidores reutilizan la pertenencia mecánica y las referencias a fuentes de energía. `mechanicalComponentGroups` entrega una lista interna compartida; `rotorConnectedGroups` conserva sus arrays propios y el orden de semillas anterior. `getCableSupply` parte de los grupos directos del consumidor, deduplica nodos eléctricos y evita expandir el mecanismo completo antes de consultar la misma red. Sin cables, el descubrimiento de baterías se comparte por componente durante el subpaso.
+
+Se cachean candidatas, nunca el saldo energético ni la activación. Cada consulta vuelve a validar las pocas celdas encontradas y lee sus julios actuales, de modo que pinzas, tracción, vuelo y motores ven los consumos anteriores del mismo paso. Una fuente activa agotada sigue bloqueando el uso de reservas internas. Los cambios de grupos, articulaciones, cables, depósitos y conversiones de baterías invalidan las listas afectadas, también durante un subpaso ya iniciado. Los arrays públicos de fuentes siguen siendo independientes.
+
+El peso estático se calcula una vez por grupo y subpaso; la suma exterior conserva el orden previo, y la carga dinámica de la pinza se consulta en cada evaluación. `rotorPowerState` lee piezas por su índice cuando no necesita una pose y reutiliza el resumen inmediato que acaba de obtener `updateRotorPower`. La frecuencia, la secuencia física, los pools de débito y su orden de suma se conservan.
+
+Verificación: **1070/1070 pruebas Node aprobadas**, cero fallos, cancelaciones u omisiones (42,10 s en esta ejecución). Las ocho nuevas de `tests/power-network-cache.test.cjs` comprueban consumos sucesivos, agotamiento y cambios de activación, desconexión/reconexión de rotores, creación/eliminación/redirección de cables, eliminación de fuentes, deduplicación y arrays independientes, cargas de brazo/cinta al agarrar y soltar, orden de masas fraccionarias y trabajo lineal de lectura. La regresión de coste falla contra la fuente anterior: para 66 piezas y 32 motores, dos rondas de consulta pasan de 5120 a 962 lecturas de peso.
+
+Comparación A/B contra `d44a555`, con fuentes congeladas, dos ejecuciones independientes de 90 pasos en marcha por variante y escenario, después del calentamiento y sin instrumentación en los tiempos principales:
+
+| Fuente de energía | Media anterior por paso | Media nueva por paso | Reducción |
+| --- | ---: | ---: | ---: |
+| Depósito conectado por cable | 21,75 ms | 11,95 ms | 45,1 % |
+| Batería portátil incorporada al chasis | 39,53 ms | 13,11 ms | 66,8 % |
+
+Escenario sintético: 42 cintas soldadas (34 rectas y 8 curvas), 6 brazos separados en reposo, 2 cubos sueltos y 1506 piezas; 126 motores de cinta activos y física a 120 Hz. En las ocho ejecuciones principales coincidió exactamente el estado final de cada escenario: poses, velocidades, identidades, pesos, energía, rotores/cintas, red eléctrica, moods completos, telemetría de potencia y tiempo simulado. Las cuatro ejecuciones instrumentadas separadas también coinciden. En cable, las consultas de expansión mecánica bajan de 1014 a 561 por paso y las de suministro de 446 a 320; el coste inclusivo instrumentado de `getCableSupply` pasa de unos 9,41 a 0,50 ms. En portátil, `externalBatteryCells` pasa de unos 26,75 a 0,72 ms inclusivos. Los tiempos anidados no se suman.
+
+Las pruebas y mediciones ejecutan lógica real y Cannon con DOM/GPU simulados. No son FPS de navegador ni una reconstrucción exacta de la partida del jugador; la comparación conserva la misma cantidad de pasos y tiempo simulado. Siguiente paso: medir el montaje real con esta versión y separar el coste restante de recorridos mecánicos, controladores y moods. Las listas de sistemas activos, más extracción al tick lento, transporte por carriles, Workers y cambio de motor siguen siendo propuestas posteriores.
+
+## Entrega anterior · inspección de cables simplificada
 
 Alt resalta únicamente los recorridos de los cables tendidos; conserva sus extremos, colores, progreso de despliegue y edición. Se elimina el dibujo de conexiones internas desde el centro del cuerpo hacia cada enganche, batería o pinza, además de los segmentos implícitos entre rotores. En un chasis soldado grande ese centro puede quedar en un hueco y producir un abanico que no representa cables construidos. El inspector deja de expandir componentes mecánicos y recorrer sus piezas/rotores para generar esos trazos. La topología eléctrica, el suministro, las reservas y la física conservan su comportamiento.
 
@@ -10,7 +31,7 @@ Verificación: **1062/1062 pruebas Node aprobadas**, cero fallos, cancelaciones 
 
 `python3 tests/validate-power-gles.py` también pasa sin modificar sus comprobaciones: seis capturas, dos shaders compilados, un programa enlazado y cero errores GLES o de comandos. En Mesa/llvmpipe, la escena pequeña de depósito y rotor conserva el cable visible y su resaltado con Alt; esta validación no es una partida en navegador ni una medición de FPS. La regresión geométrica cubre el chasis grande.
 
-Siguiente paso de rendimiento: compartir la pertenencia, masa y fuentes de cada red entre consumidores, conservando lecturas actuales de energía y cortes atómicos. En el perfil exploratorio instrumentado de la versión `52ebc128`, el escenario de 42 cintas soldadas, 6 brazos en reposo y 2 cubos sueltos (1506 piezas) aún realizó 1014 consultas de `rotorConnectedGroups` y 446 de `getCableSupply` por paso en marcha. El paso completo rondó 24,9 ms y `world.step`, incluidos los ajustes del juego al solver, 2,4 ms. Son 18 pasos medidos con instrumentación y DOM/GPU simulados, no FPS del equipo del jugador; los tiempos de funciones anidadas no se suman. La simplificación visual de Alt elimina su coste adicional, pero no resuelve por sí sola estas consultas durante la simulación.
+Diagnóstico previo: en el perfil exploratorio instrumentado de la versión `52ebc128`, el escenario de 42 cintas soldadas, 6 brazos en reposo y 2 cubos sueltos (1506 piezas) aún realizó 1014 consultas de `rotorConnectedGroups` y 446 de `getCableSupply` por paso en marcha. El paso completo rondó 24,9 ms y `world.step`, incluidos los ajustes del juego al solver, 2,4 ms. Son 18 pasos medidos con instrumentación y DOM/GPU simulados, no FPS del equipo del jugador; los tiempos de funciones anidadas no se suman. La simplificación visual de Alt elimina su coste adicional; las consultas durante la simulación se optimizan en la entrega siguiente, registrada arriba.
 
 ## Entrega anterior · coste de redes mecánicas grandes en marcha
 
@@ -20,7 +41,7 @@ Verificación: **1061/1061 pruebas Node aprobadas**, cero fallos, cancelaciones 
 
 El diagnóstico comparó escenarios sintéticos de 42 cintas soldadas (34 rectas y 8 curvas), 6 brazos separados en reposo y 2 cubos sueltos: 1506 piezas, con Cannon y lógica reales, DOM/GPU simulados. A 120 Hz, promediando 18 pasos tras calentamiento, el tiempo por paso pasó de 75,6 a 22,0 ms con depósito cableado y de 89,6 a 41,8 ms con una celda externa incorporada al chasis. Coincidieron exactamente los estados finales comparados: poses, velocidades, energía, motores y cintas. Son mediciones exploratorias de este entorno, no FPS del navegador ni una reconstrucción exacta de la partida del jugador; aún queda coste por reducir.
 
-Siguiente paso: contrastar el mismo montaje del jugador con esta versión y separar en el perfil redes/energía, cintas y Cannon. Revisar después consultas repetidas de masa y suministro por red, manteniendo los saldos de energía actualizados y los cortes atómicos. No se ha cambiado el selector de frecuencia ni extraído más sistemas al tick lento.
+Seguimiento: el perfil de redes/energía y las consultas repetidas de masa y suministro se abordaron en las entregas posteriores registradas arriba. Se conserva el selector de frecuencia y la extracción pendiente de otros sistemas al tick lento.
 
 ## Entrega anterior · partidas persistentes de campaña y banco
 
