@@ -4924,6 +4924,8 @@ function drawCachedPowerRibbon(cable,points,color){
  if(mesh.count){gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);gl.uniform1f(uniforms.uShadow,alphaSettings.glow);drawAsset(mesh,V(),Q(),V(1,1,1),color,17);gl.depthMask(true);gl.disable(gl.BLEND);}
 }
 function drawPowerCables(){
+ // Inspect only laid cable routes. A welded body's centre is not an electrical
+ // junction; drawing every internal coupler from it creates misleading spokes.
  const inspect=altDown()&&powerInspectionAvailable();
  for(const c of powerCables){const path=powerCablePath(c)||c.points;if(path.length<2)continue;
   const color=[...visualRGB('cableColor'),c.active?1:.4];if(c.progress>=1)drawCachedPowerRibbon(c,path,color);else drawPowerRibbon(path,color,c.progress);
@@ -4931,7 +4933,6 @@ function drawPowerCables(){
   if(c.progress<1){const size=CUBE_SIZE*(1-c.progress);drawBox(add(a,V(0,size/2,0)),Q(),V(CUBE_SIZE,Math.max(.004,size),CUBE_SIZE),[.25,.28,.28,1]);}
   if(inspect){drawWideLines(path.flatMap((p,i)=>i?[path[i-1],p]:[]),[...visualRGB('cableColor'),.95],visuals.pathWidth);}
  }
- if(inspect){gl.disable(gl.DEPTH_TEST);const visited=new Set();for(const c of powerCables)for(const e of [c.from,c.to])if(e.kind==='part'){const hit=rotorPart(e.id);if(!hit)continue;const component=rotorConnectedGroups([hit.g]);for(const g of component){if(visited.has(g))continue;visited.add(g);const center=g.body.position;for(const part of g.parts)if(unitShape(part)==='coupler'||isExternalBattery(part)||part.mood.gripper)drawWideLines([center,partPose(g,part).p],[...visualRGB('cableColor'),.85],1.5);}for(const rotor of rotors)if(component.includes(rotorPart(rotor.aId)?.g)){const a=rotorPart(rotor.aId),b=rotorPart(rotor.bId);if(a&&b)drawWideLines([a.p,b.p],[...visualRGB('cableColor'),1],2);}}gl.enable(gl.DEPTH_TEST);}
  if(powerDraft?.from){const start=powerPort(powerDraft.from),target=powerAimPort(),point=target?.point||powerSurfaceAim();if(start&&point){let path;if(target)path=[start,...powerSurfaceRoute(powerDraft.from,target.endpoint,powerDraft.bends),point];else path=[start,...powerCircuitRoute(start,point,powerDraft.bends,true)];const length=powerCableLength(path),valid=length<=powerCableLimit(powerDraftMaterials()||[]);drawPowerRibbon(path,valid?[...visualRGB('cableColor'),.85]:[.85,.18,.16,.85]);}}
 }
 

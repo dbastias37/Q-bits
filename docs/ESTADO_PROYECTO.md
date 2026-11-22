@@ -2,7 +2,17 @@
 
 Actualizado: 21 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega · coste de redes mecánicas grandes en marcha
+## Última entrega · inspección de cables simplificada
+
+Alt resalta únicamente los recorridos de los cables tendidos; conserva sus extremos, colores, progreso de despliegue y edición. Se elimina el dibujo de conexiones internas desde el centro del cuerpo hacia cada enganche, batería o pinza, además de los segmentos implícitos entre rotores. En un chasis soldado grande ese centro puede quedar en un hueco y producir un abanico que no representa cables construidos. El inspector deja de expandir componentes mecánicos y recorrer sus piezas/rotores para generar esos trazos. La topología eléctrica, el suministro, las reservas y la física conservan su comportamiento.
+
+Verificación: **1062/1062 pruebas Node aprobadas**, cero fallos, cancelaciones u omisiones (42,99 s en esta ejecución). La nueva regresión `tests/power-cable-inspection.test.cjs` compara chasis huecos de 4 y 128 enganches, ambos articulados y conectados por un cable real. Comprueba que Alt emite exclusivamente los segmentos de ese cable, sin consultas de expansión mecánica; sigue el puerto al moverlo y conserva energía, materia, identidades, poses, cuerpos y restricciones al dibujar. El caso fallaba con el código anterior por las líneas hacia el centro vacío. Las pruebas usan lógica real y Cannon con DOM/GPU simulados.
+
+`python3 tests/validate-power-gles.py` también pasa sin modificar sus comprobaciones: seis capturas, dos shaders compilados, un programa enlazado y cero errores GLES o de comandos. En Mesa/llvmpipe, la escena pequeña de depósito y rotor conserva el cable visible y su resaltado con Alt; esta validación no es una partida en navegador ni una medición de FPS. La regresión geométrica cubre el chasis grande.
+
+Siguiente paso de rendimiento: compartir la pertenencia, masa y fuentes de cada red entre consumidores, conservando lecturas actuales de energía y cortes atómicos. En el perfil exploratorio instrumentado de la versión `52ebc128`, el escenario de 42 cintas soldadas, 6 brazos en reposo y 2 cubos sueltos (1506 piezas) aún realizó 1014 consultas de `rotorConnectedGroups` y 446 de `getCableSupply` por paso en marcha. El paso completo rondó 24,9 ms y `world.step`, incluidos los ajustes del juego al solver, 2,4 ms. Son 18 pasos medidos con instrumentación y DOM/GPU simulados, no FPS del equipo del jugador; los tiempos de funciones anidadas no se suman. La simplificación visual de Alt elimina su coste adicional, pero no resuelve por sí sola estas consultas durante la simulación.
+
+## Entrega anterior · coste de redes mecánicas grandes en marcha
 
 `rotorConnectedGroups` expande cada componente cacheado una sola vez por consulta. Antes, si energía recibía todos los grupos de una misma red, volvía a recorrer la lista completa por cada grupo: trabajo cuadrático que se repetía por motor activo y subpaso, también con depósitos conectados por cable. Un `Set` local de referencias a componentes elimina únicamente esas expansiones redundantes. Conserva el orden de semillas y de miembros, las invalidaciones de topología, las lecturas actuales de energía, los controladores y la frecuencia física elegida.
 
