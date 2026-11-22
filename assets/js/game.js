@@ -9628,7 +9628,12 @@ function sendMaterial(cargo,chosen=null){
  const success=beginHaul(cargo,team,cargo.source.intake);if(success){hideStoryDialogue();storyObjective('Equipo en camino · '+cargo.required+' Q-bits\nPuedes acompañarlos o preparar el siguiente mecanismo.');}return success;
 }
 function interactMaterial(){if(openWorkshopMenu())return;if(story.scene!=='campaign'||story.encounter)return;if(openReconfigurationMenu()||openProductionMenu())return;const hit=aimCargo(4);if(hit?.cargo.source){if(hit.cargo.job)announce('El equipo ya está trabajando. Clic derecho para cambiar o detener la orden.');else sendMaterial(hit.cargo);}}
-function onCampaignPad(g){const bb=bounds(g);return activePressureButtons().some(b=>bb.min.y<(b.surface||0)+.025&&bb.min.x>=b.p.x-b.half-.006&&bb.max.x<=b.p.x+b.half+.006&&bb.min.z>=b.p.z-b.half-.006&&bb.max.z<=b.p.z+b.half+.006);}
+function onCampaignPad(g){
+ const buttons=activePressureButtons();
+ // Most lab scenes have no pressure pads; they need no group geometry here.
+ if(!buttons.length)return false;
+ const bb=bounds(g);return buttons.some(b=>bb.min.y<(b.surface||0)+.025&&bb.min.x>=b.p.x-b.half-.006&&bb.max.x<=b.p.x+b.half+.006&&bb.min.z>=b.p.z-b.half-.006&&bb.max.z<=b.p.z+b.half+.006);
+}
 function drawMatter(c){
  const t=c.intake||0,scale=1-t*.94,dims=c.dimensions,step=.18,origin=c.body.position,rgb=[1,3,5].map(i=>parseInt(c.color.slice(i,i+2),16)/255);
  for(let x=0;x<c.grid[0];x++)for(let y=0;y<c.grid[1];y++)for(let z=0;z<c.grid[2];z++){
