@@ -1158,12 +1158,60 @@ function installCannonGeometryCompatibility(){
 installCannonGeometryCompatibility();
 
 const world=new CANNON.World();world.gravity.set(0,-settings.gravity,0);world.allowSleep=true;
+installTrackedCollisionMatrices(world);
 world.broadphase=new CANNON.SAPBroadphase(world);
 // Long belts have a very large bounding sphere. Use their actual conservative
 // AABB to reject distant bodies before Cannon visits every compound shape.
 world.broadphase.useBoundingBoxes=true;
 installSapPassivePairFilter(world);
 installCompoundNarrowphase(world);
+// Keep Cannon's arrays, get(), index formula and current/previous swap intact.
+// Only these two world-owned instances track writes; the native prototype is
+// still available as an oracle. Install before adding any bodies.
+function installTrackedCollisionMatrices(physicsWorld){
+ for(const matrix of [physicsWorld.collisionMatrix,physicsWorld.collisionMatrixPrevious]){
+  const dirty=new Set(),nativeResize=matrix.setNumObjects,nativeReset=matrix.reset;
+  // A native resize creates holes, not zeroes. The prefix already initialized
+  // by reset can be skipped; a newly grown suffix must still be cleared once.
+  // Stop tracking dense batches before the Set grows with every possible pair.
+  // Thresholds bound tracking overhead, not collision results.
+  let initializedLength=0,dirtyLimit=32,fullReset=true;
+  matrix.set=function(bodyA,bodyB,value){
+   let i=bodyA.index,j=bodyB.index;
+   if(j>i){const swap=j;j=i;i=swap;}
+   const index=(i*(i+1)>>1)+j-1,entries=this.matrix;
+   // Repeated contact equations share one entry. The Set also deduplicates a
+   // true/false/true sequence. Negative properties are not cleared by Cannon.
+   if(!fullReset&&value&&index>=0&&Number.isInteger(index)&&index<4294967295&&entries[index]!==1){
+    dirty.add(index);
+    if(dirty.size>dirtyLimit){dirty.clear();fullReset=true;}
+   }
+   entries[index]=value?1:0;
+  };
+  matrix.reset=function(){
+   const entries=this.matrix,length=entries.length;
+   if(fullReset)nativeReset.call(this);
+   else{
+    for(const index of dirty)if(index<length)entries[index]=0;
+    for(let i=initializedLength;i<length;i++)entries[i]=0;
+   }
+   dirty.clear();
+   initializedLength=length;
+   // Small native clears are cheaper than recording their sparse contacts in
+   // the measured control. The large-array path starts after this bounded scan.
+   fullReset=length<32768;
+   dirtyLimit=Math.max(32,Math.min(4096,length>>>7));
+  };
+  matrix.setNumObjects=function(count){
+   nativeResize.call(this,count);
+   initializedLength=Math.min(initializedLength,this.matrix.length);
+   dirtyLimit=Math.max(32,Math.min(4096,this.matrix.length>>>7));
+   // Shrinking must not resurrect removed entries on the next reset. Other
+   // stale indices are bounded by this interval's writes and filtered above.
+   if(this.matrix.length<32768){dirty.clear();fullReset=true;}
+  };
+ }
+}
 // Cannon 0.6.2 checks sleep/type before its spatial break. Two passive bodies
 // therefore keep its inner loop running even though they can never add a pair.
 // Keep the complete, natively sorted list and the original pair/break order;
