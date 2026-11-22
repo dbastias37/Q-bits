@@ -1,0 +1,131 @@
+{
+  "schema": 1,
+  "baselineCommit": "41bc729c90dde1d1a205ebd1d4c2463b069d688c",
+  "localMeasuredCodeCommit": "777fa7d139015161deb56491b14848932814df73",
+  "publishedCodeCommit": "f48cb4cb28c9be4a1404adeead44ef2b274f4d28",
+  "identicalCodeTree": "0e92e7dc818940364de4bc6ed897593b753c9f26",
+  "scriptVersion": "20261122-production-contact-1",
+  "validation": {
+    "integratedTests": {
+      "total": 1223,
+      "pass": 1223,
+      "fail": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "wallDurationMs": 54283.324927
+    },
+    "groundCases": 36,
+    "groundResultsExactlyMatch": "docs/mediciones/cpu-20261122/contactos-suelo.json",
+    "architectureReports": 21,
+    "architectureReportsExactlyMatch": true,
+    "regularFramesDiscardedSeconds": 0,
+    "production19FullStateEqualAllPairs": true,
+    "production20CompletedAtAllRealRates": true,
+    "architectureReference": "arquitectura-baseline.json at 41bc729c90dde1d1a205ebd1d4c2463b069d688c",
+    "olderCpuAuditDifference": "Only the already-merged PR27 save change: repeated save uses two JSON.parse calls instead of three."
+  },
+  "commands": [
+    "node --test tests/*.test.cjs",
+    "node tests/benchmark-production-frequency.cjs --baseline-root=../qbits-production-baseline --mode=trace --output=docs/mediciones/produccion20-20261122/traza.json",
+    "node tests/benchmark-production-frequency.cjs --baseline-root=../qbits-production-baseline --mode=timing --repetitions=3 --output=docs/mediciones/produccion20-20261122/tiempos.json",
+    "node tests/benchmark-architecture-audit.cjs",
+    "node tests/benchmark-ground-contacts.cjs",
+    "QBITS_REFERENCE_ROOT=../qbits-production-baseline node tests/benchmark-architecture-audit.cjs"
+  ],
+  "files": {
+    "README.md": {
+      "bytes": 2204,
+      "sha256": "05bd31f9c1ac7806fd751e8ca92823cc4cfb8576dc7a5ddaddfb2bfbfd2755d9"
+    },
+    "arquitectura.json": {
+      "bytes": 6232,
+      "sha256": "ebb6f1fd0e059000a50cf3d4c74c00af10962d05c2c2b6cfb532ee49ee4f3161"
+    },
+    "contactos-suelo.json": {
+      "bytes": 29731,
+      "sha256": "98af10106bb4eb1df02b24f35a6ae76c2b9ee8bf49121907379042c3143bc7ea"
+    },
+    "regresion-baseline.txt": {
+      "bytes": 1034,
+      "sha256": "095a9997ece0ec918374677897f7ce7d45079ebd3cd24801c979d622ae89f449"
+    },
+    "resumen.json": {
+      "bytes": 299988,
+      "sha256": "b694b4859cf2a3b5028f79b1a86223aba2c49670b7d6368b4f0e2a4debe3ba3b"
+    },
+    "tests-integrados.txt": {
+      "bytes": 126659,
+      "sha256": "6286727ffe282efaadd0a103ba275d013e489a7e45e4873c306f87b03837dc67"
+    },
+    "tiempos.json.gz": {
+      "bytes": 604106,
+      "sha256": "aba8a1ddd9436fea1d5f1ca79994f80b6504b31452e8d9d299d621e8dc9c34bd",
+      "uncompressedBytes": 3439287,
+      "uncompressedSha256": "fb7c7fb1ebed4843853c5e5a6ab28b729f2e049b1792a31073646507993fb7e8"
+    },
+    "tiempos.log": {
+      "bytes": 2022,
+      "sha256": "4822665ba61cb0682a11de98d0e01d84c62ebf76aff456313a448c0eaa066162"
+    },
+    "traza.json.gz": {
+      "bytes": 529617,
+      "sha256": "d6c3d8a8cce228532c31a390940f10f46eb33f19b5d2d047869cca717d29a451",
+      "uncompressedBytes": 11793432,
+      "uncompressedSha256": "481e244c475ae1a03c72521842bf79ac9ede31ab2b69fad5bbb38b9691406838"
+    },
+    "traza.log": {
+      "bytes": 674,
+      "sha256": "335cf1acfe8a8cc595e68cdbc6d77349a33d42c26eba401beabe561d6ef3ca0c"
+    },
+    "arquitectura-baseline.json": {
+      "bytes": 6232,
+      "sha256": "1409ccb25b67b5f8b90916a8b0ff4c8e1448d992b13cf49ae4e8c10dcae370f6"
+    }
+  },
+  "sources": {
+    "assets/js/game.js": {
+      "bytes": 975741,
+      "sha256": "723a4b6c35369ec900744b17826c39aa7eb24bc678cb217568ae98594548e938"
+    },
+    "assets/js/boot.js": {
+      "bytes": 10137,
+      "sha256": "6ff72d59a715fb9b02996a4968d0c0e9ebd6470c692b826a73c1f8dccaec627f"
+    },
+    "index.html": {
+      "bytes": 115393,
+      "sha256": "169e081917993b11f54bbac2d4514bc201f71b2826a63cdbc5bcc42e6827c6be"
+    },
+    "assets/js/cannon.min.js": {
+      "bytes": 132200,
+      "sha256": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab"
+    },
+    "assets/js/campaign-production.js": {
+      "bytes": 6867,
+      "sha256": "bd22aefd732f2869a43251e44351f3133cf54696818a5ed030dbf9683dc793dd"
+    },
+    "assets/js/rotor-power.js": {
+      "bytes": 7738,
+      "sha256": "29ea7519beba93a0f31656069dd0356d2dafa76bd008f6a6c5b274c048867adc"
+    },
+    "tests/game-harness.cjs": {
+      "bytes": 21184,
+      "sha256": "cf06cc1b315e830366c03798a8ffa778112692829b9a319b52b88ab07e8c6b0e"
+    },
+    "tests/cpu-audit-fixtures.cjs": {
+      "bytes": 7052,
+      "sha256": "36b6aa95a16445a9ef2af8015f6f19432c0c814340d6b6aa06abd234dda8b051"
+    },
+    "tests/benchmark-production-frequency.cjs": {
+      "bytes": 19672,
+      "sha256": "22ed3e20d89a099a9109d262e15fd9318a255ffca9d68cf67ea663d49e7c3825"
+    },
+    "tests/production-frequency.test.cjs": {
+      "bytes": 9138,
+      "sha256": "36195d324200b527ac5a0421301dfe21b0f2e3af99245c523b86626dde36d3e8"
+    },
+    "tests/production-friction.test.cjs": {
+      "bytes": 8667,
+      "sha256": "81a743f4417c222db306a128782db53997e4842ff8f02fd818ac2e1580d8ddad"
+    }
+  }
+}

@@ -93,6 +93,8 @@ Los tres bancos fijan Torque I para que los certificados del perfil no cambien l
 
 La materia inerte no es un compañero Q-bit y no recibe estados de ánimo ni órdenes de recorrido. Reiniciar el ensayo restaura un único lote de prueba explícito; no concede recursos acumulables. La cinta usa tracción aplicada a cuerpos físicos y la estación cobra energía adicional de las baterías. Esta es una instalación guiada y configurable, no todavía un editor abierto de líneas.
 
+**Validación física del 22 de noviembre de 2026:** la estación de seis paquetes distribuye un único presupuesto de fricción entre los apoyos de cada cuerpo sobre su mesa, válido por paso físico. La configuración original de 30 rpm completa el lote a 60, 120 y 240 Hz, conservando las doce identidades, la masa, el torque y el presupuesto de 30 J; el consumo se debita de las baterías. El ajuste queda limitado a esa estación y mantiene el comportamiento de Producción 19. Métodos, resultados y limitaciones de la validación en Node: [CORRECCION_PRODUCCION20_2026-11-22.md](CORRECCION_PRODUCCION20_2026-11-22.md). La calibración jugable con navegador y jugador sigue pendiente.
+
 ### Misiones grandes en galpones
 
 **Registro del 14 de noviembre de 2026. Solo diseño futuro; no implementar ahora las etapas.** El usuario aún no ha podido probar los bloques existentes y cierra por ahora el desarrollo jugable con el taller y el sensor.

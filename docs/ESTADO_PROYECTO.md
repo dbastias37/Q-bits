@@ -2,7 +2,27 @@
 
 Actualizado: 22 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega · guardado repetido y lecturas de partidas
+## Última entrega · Producción 20 a 60, 120 y 240 Hz
+
+El PR #27 se integró en `main` mediante `41bc729c90dde1d1a205ebd1d4c2463b069d688c`. Sobre esa referencia se reprodujo el fallo inicial de Producción 20: a 60 Hz y 30 rpm entregaba dos paquetes y agotaba los 30 J. La traza del solver confirmó que cada uno de cuatro puntos de apoyo recibía el presupuesto de fricción del paquete completo y que Cannon comparaba límites de fuerza contra impulsos. Al quedar plano, el paquete se pegaba a la mesa y bloqueaba la salida.
+
+`productionContactFriction` reparte un único presupuesto `μmg·dt` entre los apoyos reales del cuerpo. Sólo actúa en el lote activo de la estación empaquetadora, sobre su mesa actual y con contactos superiores habilitados. Conserva obstáculos, caras laterales, material agarrado y cuerpos ajenos. El wrapper restaura los límites de las ecuaciones recicladas en `finally`. Se mantienen motor, torque, fuerzas de transporte, geometría, masas, recetas, consumo y presupuesto. Producción 19 queda fuera del ajuste.
+
+| Frecuencia real | Entregas antes → después | Tiempo del lote antes → después | Joules antes → después |
+| --- | --- | ---: | ---: |
+| 60 Hz | 2/6, falla → 6/6 | 59,333333 → 40,066667 s | 30,004371 → 26,802111 |
+| 120 Hz | 6/6 → 6/6 | 40,816667 → 39,975000 s | 24,565440 → 26,857198 |
+| 240 Hz | 6/6 → 6/6 | 41,291667 → 39,933333 s | 25,910872 → 26,890718 |
+
+Tres repeticiones AB/BA/AB conservan esos resultados exactos, las doce identidades y la masa total; todas ejecutan el tiempo solicitado sin descartes, con las preferencias seleccionadas antes de crear articulaciones. La traza comprueba el débito de batería en el paso terminal. A 120/240 Hz el gasto es mayor que antes, sigue dentro de 30 J y se cobra íntegramente. Producción 19 conserva exactamente estados completos, consumo y relojes en las tres frecuencias.
+
+La corrección tiene coste: en la ventana común de 5–15 s la CPU de proceso Node pasa de 0,6163 a 0,7623 ms/fotograma simulado a 60 Hz, de 1,0034 a 1,1346 a 120 y de 1,8171 a 2,1175 a 240. No se cuenta este arreglo físico como una nueva optimización CPU ni se presenta como FPS. Memoria añadida: una referencia de mesa y estructuras transitorias por paso; máximo observado de cuatro entradas de cuerpo, 32 límites y 32 tuplas de restauración, sin historial retenido.
+
+Suite final: **1223/1223**, diez regresiones nuevas y cero fallos, cancelaciones u omisiones. Las 36 caídas conservan exactamente los resultados físicos anteriores. Los benchmarks de arquitectura y suelo se ejecutaron sobre la fuente final. Código publicado `f48cb4cb28c9be4a1404adeead44ef2b274f4d28`, árbol idéntico al commit local medido `777fa7d`; `game.js` SHA-256 `723a4b6c35369ec900744b17826c39aa7eb24bc678cb217568ae98594548e938`. Versión de scripts: `20261122-production-contact-1`. Informe, fuentes, variación, límites, comandos y evidencia: [CORRECCION_PRODUCCION20_2026-11-22.md](CORRECCION_PRODUCCION20_2026-11-22.md). No hay nuevos FPS ni perfiles Chrome/WebGL medidos.
+
+**Punto de continuación vigente:** seguir un bloque por vez con el coste de muchos cuerpos independientes y numerosas articulaciones, separando contactos, solver y controladores. Después: pico frío del BVH, sombras, sensores de movimiento y coste síncrono de capturar/validar/hidratar guardados grandes. La comprobación en navegador con WebGL continúa pendiente. Mantener tiempo simulado, producción y energía como criterios de aceptación.
+
+## Entrega anterior · guardado repetido y lecturas de partidas
 
 El PR #26 se integró en `main` mediante `0cb078038d43c15be34fc52ad4ec259494b3ac22`. El siguiente bloque aborda sólo el guardado: `save-games.js` conserva los metadatos de los bytes previamente validados, siempre vuelve a consultar `getItem`, valida de forma específica el árbol producido por JSON y evita una llamada recursiva por cada hoja primitiva. La entrada viva conserva la comprobación de descriptores, tipos y ciclos. Los bytes finales se comprueban antes de `setItem`; la caché se actualiza sólo después del éxito. No se omiten capturas ni escrituras, ni se cambia el autoguardado, el formato v1 o la hidratación de `game.js`.
 
@@ -12,7 +32,7 @@ Las 24 configuraciones de 16/100/500/1000/1500/2000 piezas, tres repeticiones ca
 
 Suite integrada: **1213/1213**, cero fallos/cancelaciones/omisiones, incluidas seis regresiones nuevas de guardado; comprobación dirigida **56/56**. Versión de scripts: `20261122-save-cpu-1`. Informe, costes fríos, memoria, comandos y evidencia: [AUDITORIA_GUARDADO_2026-11-22.md](AUDITORIA_GUARDADO_2026-11-22.md). No hay modificación gráfica ni nuevos FPS medidos.
 
-**Punto de continuación vigente:** trabajar un bloque por vez. El siguiente es la sensibilidad de producción 20 a 60 Hz/30 rpm, conservando entregas, energía y reglas. Después, cuerpos/articulaciones numerosos y pico frío del BVH. En guardado ya se resolvió la validación repetida del registro anterior; queda reducir el coste síncrono de capturar/validar datos nuevos e hidratar el banco, incluyendo el coste frío añadido. Sombras, sensores de movimiento y perfil real de navegador/WebGL mantienen los pendientes documentados. No migrar motor ni introducir workers sin equivalencia y coste total medidos.
+Seguimiento: la sensibilidad de Producción 20 a 60 Hz/30 rpm se resolvió en la entrega registrada arriba. En guardado queda reducir el coste síncrono de capturar/validar datos nuevos e hidratar el banco, incluyendo el coste frío añadido. Consultar el punto de continuación vigente; no migrar motor ni introducir workers sin equivalencia y coste total medidos.
 
 ## Entrega anterior · cinco optimizaciones CPU medidas
 
@@ -40,7 +60,7 @@ Las nueve parejas de interacción verifican agarre real, movimiento, unión, sep
 
 Se ensayó una sexta hipótesis, evitar defaults de capacidad durante `updateMoods`; no mostró ganancia temporal consistente y fue revertida. No se cuenta como mejora. El perfil separado sí registra menos asignaciones estimadas y GC en la ruta de apuntado/sensores lejanos; los costes de memoria añadidos se documentan como objetos y referencias retenidas, sin inventar bytes V8. No hay mapas históricos sin límite.
 
-Seguimiento: la validación repetida del guardado se abordó en el bloque posterior registrado arriba. Permanecen el perfil de navegador con WebGL, producción 20 a 60 Hz, cuerpos/articulaciones numerosos, pico frío del BVH, sombras (1002 frente a 2 envíos en el fixture de 1000 cubos) e índice de sensores de movimiento (2144 candidatos por 16 lecturas). Las asignaciones por articulación y las actualizaciones idénticas de UI siguen como hipótesis sin ganancia demostrada. Consultar el punto de continuación vigente de la última entrega.
+Seguimiento: la validación repetida del guardado y Producción 20 a 60 Hz se abordaron en los bloques posteriores registrados arriba. Permanecen el perfil de navegador con WebGL, cuerpos/articulaciones numerosos, pico frío del BVH, sombras (1002 frente a 2 envíos en el fixture de 1000 cubos) e índice de sensores de movimiento (2144 candidatos por 16 lecturas). Las asignaciones por articulación y las actualizaciones idénticas de UI siguen como hipótesis sin ganancia demostrada. Consultar el punto de continuación vigente de la última entrega.
 
 ## Entrega anterior · contactos de suelo, caminantes y auditoría de coste
 
