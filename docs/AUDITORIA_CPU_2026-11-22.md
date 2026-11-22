@@ -1,5 +1,7 @@
 # Auditoría CPU de Q-bits: consultas, sensores y baterías — 22 de noviembre de 2026
 
+Seguimiento: esta entrega se integró en `main` con el PR #26 (`0cb0780`). El bloque posterior de [guardado](AUDITORIA_GUARDADO_2026-11-22.md) reduce la validación repetida del registro anterior y las lecturas. Sus nuevas mediciones, coste frío y límites no sustituyen las cifras históricas de esta auditoría.
+
 ## Resultado y alcance
 
 Se implementaron y midieron **cinco problemas distintos**, A–E del encargo: apuntado repetido, proyección Ctrl, descubrimiento de sensores inexistentes, recorridos de contactos por sensor y reconstrucción de geometría de baterías. A y B comparten una jerarquía local, pero tienen escenarios, conteos, tiempos y regresiones propios. No se vuelven a contabilizar las optimizaciones anteriores.

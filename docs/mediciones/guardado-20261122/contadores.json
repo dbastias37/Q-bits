@@ -1,0 +1,3457 @@
+{
+  "schema": 1,
+  "mode": "counters",
+  "sources": {
+    "baseline": {
+      "commit": "0cb078038d43c15be34fc52ad4ec259494b3ac22",
+      "files": {
+        "assets/js/battery-liquid.js": "d20a0a4ac790abe6b18922274dc087530c25b4484407c263f1e173fefe042b64",
+        "assets/js/boot.js": "ced8c92be41bd469128081ea247be793fe9296aa1d770f42335cbcade547f7ad",
+        "assets/js/campaign-automation.js": "dd16b1bc278dd10fd43725fd766e58053eb689a7a6a572c029f1625116159e93",
+        "assets/js/campaign-production.js": "bd22aefd732f2869a43251e44351f3133cf54696818a5ed030dbf9683dc793dd",
+        "assets/js/campaign-reconfiguration.js": "4a8579f266c8c79142a7da848f29227bc40a57a1cf785ed0a60d72cc5b0e6cd0",
+        "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+        "assets/js/contact-sensors.js": "0e887f4cb53298e52e1e554c6422aea135d84f0d0d4c3b9ffaa4e1579589b5ae",
+        "assets/js/controls.js": "d2b95a24aba9efb71bfb6b2e8183fc3d06a87721ea6441c64acfdecd95907a50",
+        "assets/js/conveyor-panel.js": "b2789d469d9e24f02c01acc038b2b6b817380366bcd759bfc0ba58a6d69c16d7",
+        "assets/js/culling.js": "8fc8ef54add1e1a267881c643ea4a3d92ff2124b2c8cedbcd13781aee4fad5dc",
+        "assets/js/dialogue-timing.js": "b5b880f4938535673ae179b46fe5156914a55c48902697093bde203dbea4bbae",
+        "assets/js/footsteps.js": "7f3898a2dba1c0f6560ce7e7005e1e50155acd4a0ab62bbd382fdfae8357cb98",
+        "assets/js/furniture-models.js": "93c2a7b2672644a0bc83dec89fac290cf29f67e08345d6ade7d844201c48ad1d",
+        "assets/js/game.js": "19efe4aa93ceac0791968c5d4e85ea6f5a980cf65b0b3302f20a70933ffe6da0",
+        "assets/js/glass.js": "b893b3acd02f4f96e7d5f86c5a3d2f192d346070e34debeff3f0ac9655924a92",
+        "assets/js/graphics.js": "e2f54b7c93b443fd1a1b194394b65e3b79bdf837f5f11e76d9331300a120ddad",
+        "assets/js/guide-audio.js": "b878e847cdff39fc547669292d6543321e3ae625844c14d779de13262dd69cb1",
+        "assets/js/join-audio.js": "46b29e3dc2519dc254272843a713a837d966fc33e52d0d2748b24f08d1970e41",
+        "assets/js/music.js": "65cf4f18eb6f54ed39fcce656515fbfa93f40bd15b4a88f8026d8c0cbd6a70ae",
+        "assets/js/opening.js": "23fee7408da6b19845371fec6aad4b6b5e98aa43569c45af07e4614b29b5695f",
+        "assets/js/organizers.js": "fdfadd3f0878361a2d38964b1fb8094fef9995ab7e4c7feef6a16df7f7623395",
+        "assets/js/preferences.js": "78300e5d92f9766ce7b823153a69cd39f9b96d4526b03143fa4cb4f99f8c40a7",
+        "assets/js/progression.js": "5f860eac085ff6de445cb19393e1c0ee78db6ad4cd67ba89639265756d2506a6",
+        "assets/js/propeller-power.js": "d29b1239fc0b143c119d2f816c4bc90192f4a50e23de73c7227c02303d34cf62",
+        "assets/js/radial-menu.js": "4250630f3d73b463fa2914eee4068b1afe25ba93791753c775e64c4894c617dd",
+        "assets/js/reservoir-model.js": "dd876f6fd9e54f6245b36925d3f4ce48342c15773b8cc218869192ad9b26ef63",
+        "assets/js/robot-arm-panel.js": "4d8e018fd9a9700dac4b92e6cf2a10ba54fe7580ef67672da5c4217aa60dfd2c",
+        "assets/js/rotor-power.js": "29ea7519beba93a0f31656069dd0356d2dafa76bd008f6a6c5b274c048867adc",
+        "assets/js/save-games.js": "ad2d8341295ff09a01241c55cc87e653736af26d1f5213105ff3c0dee67f8095",
+        "assets/js/selection-hud.js": "53f40eaa0ae755d693a5c93f0604e680f00d0b5395705f82acdd04a976fcc331",
+        "assets/js/servo-panel.js": "6270c7e9d4eb2657246082d2b4c9225fc357c4031c345412395d1321c4f26cb7",
+        "assets/js/settings.js": "986dc1bdb7569dcb519a0de744d70dd4665e4577f4271a1d55a1722a7134dfbe",
+        "assets/js/subtitles.js": "dfb7d22140dc7219518bc92b5334fcb09bcf4af40e13a4e502a799a077853f10",
+        "assets/js/tablet-model.js": "efe7ee587300115fbe6215d0de58a43df2dcfb786b39bffd7436d85dc8a8b40b",
+        "assets/js/tablet-view.js": "2d6766ea461b8b15df237abb68b8b53e8069ffd1335ae8cfc66a8a27bf4ca0ac",
+        "assets/js/workshop-panel.js": "9e3a0a0659e884971f03c77c26f18a12c75199e4be11b38387436e5e161ac597",
+        "assets/js/workshop.js": "cc992783a31bb46b780603457f5b33e3c32c18a015924ebbbc01435f622efe24",
+        "tests/game-harness.cjs": "cf06cc1b315e830366c03798a8ffa778112692829b9a319b52b88ab07e8c6b0e",
+        "tests/cpu-audit-fixtures.cjs": "36b6aa95a16445a9ef2af8015f6f19432c0c814340d6b6aa06abd234dda8b051"
+      }
+    },
+    "optimized": {
+      "commit": "8cfec4a222df236a333290334d9eaa688ba56bb7",
+      "files": {
+        "assets/js/battery-liquid.js": "d20a0a4ac790abe6b18922274dc087530c25b4484407c263f1e173fefe042b64",
+        "assets/js/boot.js": "817dfcf8d43fcb18d8581a23198a97048566c3758b70911bb6e71de88a111fce",
+        "assets/js/campaign-automation.js": "dd16b1bc278dd10fd43725fd766e58053eb689a7a6a572c029f1625116159e93",
+        "assets/js/campaign-production.js": "bd22aefd732f2869a43251e44351f3133cf54696818a5ed030dbf9683dc793dd",
+        "assets/js/campaign-reconfiguration.js": "4a8579f266c8c79142a7da848f29227bc40a57a1cf785ed0a60d72cc5b0e6cd0",
+        "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+        "assets/js/contact-sensors.js": "0e887f4cb53298e52e1e554c6422aea135d84f0d0d4c3b9ffaa4e1579589b5ae",
+        "assets/js/controls.js": "d2b95a24aba9efb71bfb6b2e8183fc3d06a87721ea6441c64acfdecd95907a50",
+        "assets/js/conveyor-panel.js": "b2789d469d9e24f02c01acc038b2b6b817380366bcd759bfc0ba58a6d69c16d7",
+        "assets/js/culling.js": "8fc8ef54add1e1a267881c643ea4a3d92ff2124b2c8cedbcd13781aee4fad5dc",
+        "assets/js/dialogue-timing.js": "b5b880f4938535673ae179b46fe5156914a55c48902697093bde203dbea4bbae",
+        "assets/js/footsteps.js": "7f3898a2dba1c0f6560ce7e7005e1e50155acd4a0ab62bbd382fdfae8357cb98",
+        "assets/js/furniture-models.js": "93c2a7b2672644a0bc83dec89fac290cf29f67e08345d6ade7d844201c48ad1d",
+        "assets/js/game.js": "19efe4aa93ceac0791968c5d4e85ea6f5a980cf65b0b3302f20a70933ffe6da0",
+        "assets/js/glass.js": "b893b3acd02f4f96e7d5f86c5a3d2f192d346070e34debeff3f0ac9655924a92",
+        "assets/js/graphics.js": "e2f54b7c93b443fd1a1b194394b65e3b79bdf837f5f11e76d9331300a120ddad",
+        "assets/js/guide-audio.js": "b878e847cdff39fc547669292d6543321e3ae625844c14d779de13262dd69cb1",
+        "assets/js/join-audio.js": "46b29e3dc2519dc254272843a713a837d966fc33e52d0d2748b24f08d1970e41",
+        "assets/js/music.js": "65cf4f18eb6f54ed39fcce656515fbfa93f40bd15b4a88f8026d8c0cbd6a70ae",
+        "assets/js/opening.js": "23fee7408da6b19845371fec6aad4b6b5e98aa43569c45af07e4614b29b5695f",
+        "assets/js/organizers.js": "fdfadd3f0878361a2d38964b1fb8094fef9995ab7e4c7feef6a16df7f7623395",
+        "assets/js/preferences.js": "78300e5d92f9766ce7b823153a69cd39f9b96d4526b03143fa4cb4f99f8c40a7",
+        "assets/js/progression.js": "5f860eac085ff6de445cb19393e1c0ee78db6ad4cd67ba89639265756d2506a6",
+        "assets/js/propeller-power.js": "d29b1239fc0b143c119d2f816c4bc90192f4a50e23de73c7227c02303d34cf62",
+        "assets/js/radial-menu.js": "4250630f3d73b463fa2914eee4068b1afe25ba93791753c775e64c4894c617dd",
+        "assets/js/reservoir-model.js": "dd876f6fd9e54f6245b36925d3f4ce48342c15773b8cc218869192ad9b26ef63",
+        "assets/js/robot-arm-panel.js": "4d8e018fd9a9700dac4b92e6cf2a10ba54fe7580ef67672da5c4217aa60dfd2c",
+        "assets/js/rotor-power.js": "29ea7519beba93a0f31656069dd0356d2dafa76bd008f6a6c5b274c048867adc",
+        "assets/js/save-games.js": "92d815253e97b75c8e7357d01f6fcb244911279ac778db4025780a71efdfb92b",
+        "assets/js/selection-hud.js": "53f40eaa0ae755d693a5c93f0604e680f00d0b5395705f82acdd04a976fcc331",
+        "assets/js/servo-panel.js": "6270c7e9d4eb2657246082d2b4c9225fc357c4031c345412395d1321c4f26cb7",
+        "assets/js/settings.js": "986dc1bdb7569dcb519a0de744d70dd4665e4577f4271a1d55a1722a7134dfbe",
+        "assets/js/subtitles.js": "dfb7d22140dc7219518bc92b5334fcb09bcf4af40e13a4e502a799a077853f10",
+        "assets/js/tablet-model.js": "efe7ee587300115fbe6215d0de58a43df2dcfb786b39bffd7436d85dc8a8b40b",
+        "assets/js/tablet-view.js": "2d6766ea461b8b15df237abb68b8b53e8069ffd1335ae8cfc66a8a27bf4ca0ac",
+        "assets/js/workshop-panel.js": "9e3a0a0659e884971f03c77c26f18a12c75199e4be11b38387436e5e161ac597",
+        "assets/js/workshop.js": "cc992783a31bb46b780603457f5b33e3c32c18a015924ebbbc01435f622efe24",
+        "tests/game-harness.cjs": "cf06cc1b315e830366c03798a8ffa778112692829b9a319b52b88ab07e8c6b0e",
+        "tests/cpu-audit-fixtures.cjs": "36b6aa95a16445a9ef2af8015f6f19432c0c814340d6b6aa06abd234dda8b051"
+      }
+    }
+  },
+  "benchmarkSha256": "7393f2ffe3a0c4fbc6f6ecf36755c3104cc3e10114b52d33dfd24377a20290d8",
+  "runtime": {
+    "node": "v24.22.3",
+    "platform": "linux",
+    "arch": "x64",
+    "cpuModel": "AMD EPYC 9V74 80-Core Processor",
+    "availableParallelism": 9
+  },
+  "configuration": {
+    "scales": [
+      16,
+      1000,
+      2000
+    ],
+    "scenarios": [
+      "repeated-save",
+      "mutated-save",
+      "repeated-read",
+      "store-prepopulated-first-write"
+    ],
+    "repetitions": 1,
+    "warmup": 1,
+    "samples": 1,
+    "caseBudgetMs": 8000,
+    "physicsHz": 120,
+    "viewport": "1280x720 DOM/GPU stubs",
+    "storage": "persistent Map, no Web Storage or disk I/O",
+    "clock": "deterministic wall and monotonic clocks; timestamps compared in full",
+    "order": "AB / BA / AB",
+    "forcedGc": false
+  },
+  "method": {
+    "timing": "Elapsed wall time and process CPU user+system. No browser FPS, GPU time or main-thread-only measurement. Only constant-size storage read/write tallies remain in timing mode; traversal counters, byte scans and phase wrappers are diagnostic-only.",
+    "cold": "First invocation in a fresh game VM, before warmup. repeated/mutated-save: initially empty slot; repeated-read: fresh reader over a prepopulated slot; store-prepopulated-first-write: fresh store before every write.",
+    "verification": "Full raw strings and parsed records compared exactly at cold/final checkpoints; full payload/result hashes and timestamps compared for every measured sample. Full guardable snapshot, physical bodies and clocks compared after each pair. Verification and preparation are outside each timed operation.",
+    "diagnostics": "Counters/profile separately wrap production functions in memory only. JSON traversal counts include recursive nodes; profile timings are inclusive/nested and must not be summed. Timing mode uses unchanged production source, apart from test harness exports.",
+    "retention": "Sample output retains bounded hashes, not every serialized scene. Two full raw/parsed checkpoints per variant are retained until pair comparison; no heap-byte or GC claim is made.",
+    "percentiles": "Nearest rank per repetition. With 24 samples p95 is rank23 and p99 is rank24; short runs do not establish long-tail behavior.",
+    "budget": "Eight seconds by default per variant/case, including setup, warmup, measurement and checks between atomic operations. Never interrupts Cannon or a storage operation midway."
+  },
+  "reports": [
+    {
+      "scenario": "repeated-save",
+      "pieces": 16,
+      "status": "complete",
+      "runs": {
+        "baseline": [
+          {
+            "repetition": 1,
+            "inventory": {
+              "pieces": 16,
+              "groups": 2,
+              "physicalBodies": 8,
+              "dynamicBodies": 2,
+              "virtualGroups": 0,
+              "shapes": 8,
+              "constraints": 0,
+              "awakeBodies": 2,
+              "contacts": 0,
+              "contactEquations": 0,
+              "frictionEquations": 0,
+              "constraintEquations": 0,
+              "sensors": 0,
+              "motors": 0,
+              "activeMotors": 0,
+              "physicsDt": 0.008333333333333333
+            },
+            "operationsCompleted": 3,
+            "caseWallMs": 164.885944,
+            "cold": {
+              "wallMs": 5.807435999999996,
+              "processCpuMs": 6.636,
+              "digest": {
+                "rawSha256": "dca0d30c8dc4bbf88df1741e64eea6ec63b2b626940e9c2d9a36e64e03870c5f",
+                "rawCharacters": 7264,
+                "rawUtf8Bytes": 7264,
+                "returnSha256": "be3c526c2046ea05750ec5a3182adeb68b8fc7e15aeb042304991fc0fbd53c91",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              "diagnostic": {
+                "calls": {
+                  "saveLab": 1,
+                  "worldParts": 2,
+                  "copyMood": 16,
+                  "captureLabRuntime": 1,
+                  "hydrateLabSnapshot": 1,
+                  "JSON.stringify": 2,
+                  "JSON.parse": 2,
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "validate": 1,
+                  "checkJson": 677,
+                  "checkLab": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 7264,
+                  "utf8BytesWritten": 7264
+                }
+              }
+            },
+            "wallMsPerOperation": {
+              "count": 1,
+              "mean": 2.879325999999992,
+              "p50": 2.879325999999992,
+              "p95": 2.879325999999992,
+              "p99": 2.879325999999992,
+              "min": 2.879325999999992,
+              "max": 2.879325999999992
+            },
+            "processCpuMsPerOperation": {
+              "count": 1,
+              "mean": 5.248,
+              "p50": 5.248,
+              "p95": 5.248,
+              "p99": 5.248,
+              "min": 5.248,
+              "max": 5.248
+            },
+            "wallSamples": [
+              2.879325999999992
+            ],
+            "cpuSamples": [
+              5.248
+            ],
+            "digests": [
+              {
+                "rawSha256": "0fcc96dc45d4c45d09bc5b70c8f81958f8cafe4a73cbae7710a46dea2ab7ef43",
+                "rawCharacters": 7264,
+                "rawUtf8Bytes": 7264,
+                "returnSha256": "1849e131d48413ddf5406c75181abdfad9d24347727703a8dd90085d274bbca4",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000002000
+              }
+            ],
+            "simulation": {
+              "physicsAccumulator": 0,
+              "logicAccumulator": 0,
+              "simTime": 0,
+              "physicsDt": 0.008333333333333333,
+              "logicDt": 0.06666666666666667,
+              "physics": 0,
+              "logic": 0,
+              "droppedSeconds": 0
+            },
+            "worldTime": 0,
+            "finalStateSha256": "89abf038ba60c133c8e562c19e14cb04f912a9b233c8e3ccfc25cf591f42d439",
+            "diagnostics": [
+              {
+                "calls": {
+                  "saveLab": 1,
+                  "worldParts": 2,
+                  "copyMood": 16,
+                  "captureLabRuntime": 1,
+                  "hydrateLabSnapshot": 1,
+                  "JSON.stringify": 2,
+                  "JSON.parse": 3,
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "checkJson": 1360,
+                  "checkLab": 2,
+                  "validate": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 7264,
+                  "utf8BytesWritten": 7264
+                }
+              }
+            ]
+          }
+        ],
+        "optimized": [
+          {
+            "repetition": 1,
+            "inventory": {
+              "pieces": 16,
+              "groups": 2,
+              "physicalBodies": 8,
+              "dynamicBodies": 2,
+              "virtualGroups": 0,
+              "shapes": 8,
+              "constraints": 0,
+              "awakeBodies": 2,
+              "contacts": 0,
+              "contactEquations": 0,
+              "frictionEquations": 0,
+              "constraintEquations": 0,
+              "sensors": 0,
+              "motors": 0,
+              "activeMotors": 0,
+              "physicsDt": 0.008333333333333333
+            },
+            "operationsCompleted": 3,
+            "caseWallMs": 112.74667800000003,
+            "cold": {
+              "wallMs": 3.148097000000007,
+              "processCpuMs": 4.892,
+              "digest": {
+                "rawSha256": "dca0d30c8dc4bbf88df1741e64eea6ec63b2b626940e9c2d9a36e64e03870c5f",
+                "rawCharacters": 7264,
+                "rawUtf8Bytes": 7264,
+                "returnSha256": "be3c526c2046ea05750ec5a3182adeb68b8fc7e15aeb042304991fc0fbd53c91",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              "diagnostic": {
+                "calls": {
+                  "saveLab": 1,
+                  "worldParts": 2,
+                  "copyMood": 16,
+                  "captureLabRuntime": 1,
+                  "hydrateLabSnapshot": 1,
+                  "JSON.stringify": 2,
+                  "JSON.parse": 2,
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "remember": 2,
+                  "validate": 1,
+                  "checkJson": 130,
+                  "checkLab": 2,
+                  "inspectParsed": 1,
+                  "checkParsedJson": 131,
+                  "checkParsedPrototypes": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 7264,
+                  "utf8BytesWritten": 7264
+                }
+              }
+            },
+            "wallMsPerOperation": {
+              "count": 1,
+              "mean": 1.7431050000000141,
+              "p50": 1.7431050000000141,
+              "p95": 1.7431050000000141,
+              "p99": 1.7431050000000141,
+              "min": 1.7431050000000141,
+              "max": 1.7431050000000141
+            },
+            "processCpuMsPerOperation": {
+              "count": 1,
+              "mean": 3.513,
+              "p50": 3.513,
+              "p95": 3.513,
+              "p99": 3.513,
+              "min": 3.513,
+              "max": 3.513
+            },
+            "wallSamples": [
+              1.7431050000000141
+            ],
+            "cpuSamples": [
+              3.513
+            ],
+            "digests": [
+              {
+                "rawSha256": "0fcc96dc45d4c45d09bc5b70c8f81958f8cafe4a73cbae7710a46dea2ab7ef43",
+                "rawCharacters": 7264,
+                "rawUtf8Bytes": 7264,
+                "returnSha256": "1849e131d48413ddf5406c75181abdfad9d24347727703a8dd90085d274bbca4",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000002000
+              }
+            ],
+            "simulation": {
+              "physicsAccumulator": 0,
+              "logicAccumulator": 0,
+              "simTime": 0,
+              "physicsDt": 0.008333333333333333,
+              "logicDt": 0.06666666666666667,
+              "physics": 0,
+              "logic": 0,
+              "droppedSeconds": 0
+            },
+            "worldTime": 0,
+            "finalStateSha256": "89abf038ba60c133c8e562c19e14cb04f912a9b233c8e3ccfc25cf591f42d439",
+            "diagnostics": [
+              {
+                "calls": {
+                  "saveLab": 1,
+                  "worldParts": 2,
+                  "copyMood": 16,
+                  "captureLabRuntime": 1,
+                  "hydrateLabSnapshot": 1,
+                  "JSON.stringify": 2,
+                  "JSON.parse": 2,
+                  "write": 1,
+                  "readFrom": 1,
+                  "checkParsedPrototypes": 2,
+                  "validate": 1,
+                  "checkJson": 130,
+                  "checkLab": 2,
+                  "inspectParsed": 1,
+                  "checkParsedJson": 131,
+                  "remember": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 7264,
+                  "utf8BytesWritten": 7264
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "comparisons": [
+        {
+          "repetition": 1,
+          "exactColdAndFinalBytes": true,
+          "exactCompleteParsedRecords": true,
+          "exactPhysicalState": true,
+          "equalEverySamplePayloadHashes": true
+        }
+      ],
+      "stopped": null
+    },
+    {
+      "scenario": "repeated-save",
+      "pieces": 1000,
+      "status": "complete",
+      "runs": {
+        "baseline": [
+          {
+            "repetition": 1,
+            "inventory": {
+              "pieces": 1000,
+              "groups": 100,
+              "physicalBodies": 106,
+              "dynamicBodies": 100,
+              "virtualGroups": 0,
+              "shapes": 106,
+              "constraints": 0,
+              "awakeBodies": 100,
+              "contacts": 0,
+              "contactEquations": 0,
+              "frictionEquations": 0,
+              "constraintEquations": 0,
+              "sensors": 0,
+              "motors": 0,
+              "activeMotors": 0,
+              "physicsDt": 0.008333333333333333
+            },
+            "operationsCompleted": 3,
+            "caseWallMs": 532.595302,
+            "cold": {
+              "wallMs": 110.1219000000001,
+              "processCpuMs": 133.74,
+              "digest": {
+                "rawSha256": "2618f1f4364b92c562183cca5e53805e9fad88007d25eb26f1711ac0388e4e14",
+                "rawCharacters": 387175,
+                "rawUtf8Bytes": 387175,
+                "returnSha256": "d153ca2a51f5f039359a9905c388d736d06188422cd63be8daf5588b49faa639",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              "diagnostic": {
+                "calls": {
+                  "saveLab": 1,
+                  "worldParts": 100,
+                  "copyMood": 1000,
+                  "captureLabRuntime": 1,
+                  "hydrateLabSnapshot": 1,
+                  "JSON.stringify": 2,
+                  "JSON.parse": 2,
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "validate": 1,
+                  "checkJson": 36583,
+                  "checkLab": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 387175,
+                  "utf8BytesWritten": 387175
+                }
+              }
+            },
+            "wallMsPerOperation": {
+              "count": 1,
+              "mean": 110.47592699999996,
+              "p50": 110.47592699999996,
+              "p95": 110.47592699999996,
+              "p99": 110.47592699999996,
+              "min": 110.47592699999996,
+              "max": 110.47592699999996
+            },
+            "processCpuMsPerOperation": {
+              "count": 1,
+              "mean": 126.38,
+              "p50": 126.38,
+              "p95": 126.38,
+              "p99": 126.38,
+              "min": 126.38,
+              "max": 126.38
+            },
+            "wallSamples": [
+              110.47592699999996
+            ],
+            "cpuSamples": [
+              126.38
+            ],
+            "digests": [
+              {
+                "rawSha256": "51a7c34af78d9cccc5bb3f37a5a76a3dbc4d5fc45ba19a10eebb5e6a3b89c938",
+                "rawCharacters": 387175,
+                "rawUtf8Bytes": 387175,
+                "returnSha256": "7605a5e9710781e7a5318ec6bd433fb8fdc389685a03b6c8e2bda140020a07fe",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000002000
+              }
+            ],
+            "simulation": {
+              "physicsAccumulator": 0,
+              "logicAccumulator": 0,
+              "simTime": 0,
+              "physicsDt": 0.008333333333333333,
+              "logicDt": 0.06666666666666667,
+              "physics": 0,
+              "logic": 0,
+              "droppedSeconds": 0
+            },
+            "worldTime": 0,
+            "finalStateSha256": "2bf7b670b1043625531418aa76a6329a613457281b5be2fe38092794bcda8895",
+            "diagnostics": [
+              {
+                "calls": {
+                  "saveLab": 1,
+                  "worldParts": 100,
+                  "copyMood": 1000,
+                  "captureLabRuntime": 1,
+                  "hydrateLabSnapshot": 1,
+                  "JSON.stringify": 2,
+                  "JSON.parse": 3,
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "checkJson": 73172,
+                  "checkLab": 2,
+                  "validate": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 387175,
+                  "utf8BytesWritten": 387175
+                }
+              }
+            ]
+          }
+        ],
+        "optimized": [
+          {
+            "repetition": 1,
+            "inventory": {
+              "pieces": 1000,
+              "groups": 100,
+              "physicalBodies": 106,
+              "dynamicBodies": 100,
+              "virtualGroups": 0,
+              "shapes": 106,
+              "constraints": 0,
+              "awakeBodies": 100,
+              "contacts": 0,
+              "contactEquations": 0,
+              "frictionEquations": 0,
+              "constraintEquations": 0,
+              "sensors": 0,
+              "motors": 0,
+              "activeMotors": 0,
+              "physicsDt": 0.008333333333333333
+            },
+            "operationsCompleted": 3,
+            "caseWallMs": 419.39033300000006,
+            "cold": {
+              "wallMs": 95.98915999999986,
+              "processCpuMs": 116.987,
+              "digest": {
+                "rawSha256": "2618f1f4364b92c562183cca5e53805e9fad88007d25eb26f1711ac0388e4e14",
+                "rawCharacters": 387175,
+                "rawUtf8Bytes": 387175,
+                "returnSha256": "d153ca2a51f5f039359a9905c388d736d06188422cd63be8daf5588b49faa639",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              "diagnostic": {
+                "calls": {
+                  "saveLab": 1,
+                  "worldParts": 100,
+                  "copyMood": 1000,
+                  "captureLabRuntime": 1,
+                  "hydrateLabSnapshot": 1,
+                  "JSON.stringify": 2,
+                  "JSON.parse": 2,
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "remember": 2,
+                  "validate": 1,
+                  "checkJson": 5834,
+                  "checkLab": 2,
+                  "inspectParsed": 1,
+                  "checkParsedJson": 5835,
+                  "checkParsedPrototypes": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 387175,
+                  "utf8BytesWritten": 387175
+                }
+              }
+            },
+            "wallMsPerOperation": {
+              "count": 1,
+              "mean": 67.25130399999989,
+              "p50": 67.25130399999989,
+              "p95": 67.25130399999989,
+              "p99": 67.25130399999989,
+              "min": 67.25130399999989,
+              "max": 67.25130399999989
+            },
+            "processCpuMsPerOperation": {
+              "count": 1,
+              "mean": 90.028,
+              "p50": 90.028,
+              "p95": 90.028,
+              "p99": 90.028,
+              "min": 90.028,
+              "max": 90.028
+            },
+            "wallSamples": [
+              67.25130399999989
+            ],
+            "cpuSamples": [
+              90.028
+            ],
+            "digests": [
+              {
+                "rawSha256": "51a7c34af78d9cccc5bb3f37a5a76a3dbc4d5fc45ba19a10eebb5e6a3b89c938",
+                "rawCharacters": 387175,
+                "rawUtf8Bytes": 387175,
+                "returnSha256": "7605a5e9710781e7a5318ec6bd433fb8fdc389685a03b6c8e2bda140020a07fe",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000002000
+              }
+            ],
+            "simulation": {
+              "physicsAccumulator": 0,
+              "logicAccumulator": 0,
+              "simTime": 0,
+              "physicsDt": 0.008333333333333333,
+              "logicDt": 0.06666666666666667,
+              "physics": 0,
+              "logic": 0,
+              "droppedSeconds": 0
+            },
+            "worldTime": 0,
+            "finalStateSha256": "2bf7b670b1043625531418aa76a6329a613457281b5be2fe38092794bcda8895",
+            "diagnostics": [
+              {
+                "calls": {
+                  "saveLab": 1,
+                  "worldParts": 100,
+                  "copyMood": 1000,
+                  "captureLabRuntime": 1,
+                  "hydrateLabSnapshot": 1,
+                  "JSON.stringify": 2,
+                  "JSON.parse": 2,
+                  "write": 1,
+                  "readFrom": 1,
+                  "checkParsedPrototypes": 2,
+                  "validate": 1,
+                  "checkJson": 5834,
+                  "checkLab": 2,
+                  "inspectParsed": 1,
+                  "checkParsedJson": 5835,
+                  "remember": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 387175,
+                  "utf8BytesWritten": 387175
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "comparisons": [
+        {
+          "repetition": 1,
+          "exactColdAndFinalBytes": true,
+          "exactCompleteParsedRecords": true,
+          "exactPhysicalState": true,
+          "equalEverySamplePayloadHashes": true
+        }
+      ],
+      "stopped": null
+    },
+    {
+      "scenario": "repeated-save",
+      "pieces": 2000,
+      "status": "complete",
+      "runs": {
+        "baseline": [
+          {
+            "repetition": 1,
+            "inventory": {
+              "pieces": 2000,
+              "groups": 200,
+              "physicalBodies": 206,
+              "dynamicBodies": 200,
+              "virtualGroups": 0,
+              "shapes": 206,
+              "constraints": 0,
+              "awakeBodies": 200,
+              "contacts": 0,
+              "contactEquations": 0,
+              "frictionEquations": 0,
+              "constraintEquations": 0,
+              "sensors": 0,
+              "motors": 0,
+              "activeMotors": 0,
+              "physicsDt": 0.008333333333333333
+            },
+            "operationsCompleted": 3,
+            "caseWallMs": 836.312023,
+            "cold": {
+              "wallMs": 129.35624499999994,
+              "processCpuMs": 149.41,
+              "digest": {
+                "rawSha256": "6fb78ad9eead2d25fe59cb2ee03f7586cd647d0fc1188e7deba119924ab60e89",
+                "rawCharacters": 773840,
+                "rawUtf8Bytes": 773840,
+                "returnSha256": "4a86b6dca547999883f65f1fbcc52cc4ed4ff9420b491d3bbe9c29cc586bb4f4",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              "diagnostic": {
+                "calls": {
+                  "saveLab": 1,
+                  "worldParts": 200,
+                  "copyMood": 2000,
+                  "captureLabRuntime": 1,
+                  "hydrateLabSnapshot": 1,
+                  "JSON.stringify": 2,
+                  "JSON.parse": 2,
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "validate": 1,
+                  "checkJson": 73083,
+                  "checkLab": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 773840,
+                  "utf8BytesWritten": 773840
+                }
+              }
+            },
+            "wallMsPerOperation": {
+              "count": 1,
+              "mean": 231.12594700000022,
+              "p50": 231.12594700000022,
+              "p95": 231.12594700000022,
+              "p99": 231.12594700000022,
+              "min": 231.12594700000022,
+              "max": 231.12594700000022
+            },
+            "processCpuMsPerOperation": {
+              "count": 1,
+              "mean": 259.164,
+              "p50": 259.164,
+              "p95": 259.164,
+              "p99": 259.164,
+              "min": 259.164,
+              "max": 259.164
+            },
+            "wallSamples": [
+              231.12594700000022
+            ],
+            "cpuSamples": [
+              259.164
+            ],
+            "digests": [
+              {
+                "rawSha256": "d8fb6401e84a50034e60b56d3a38b1885cb9d725b9553856c67fb77f6dc22abb",
+                "rawCharacters": 773840,
+                "rawUtf8Bytes": 773840,
+                "returnSha256": "8bb442731a0425b5da7ed2cf972eab1ec58f12d13caec71f9dec13c7edcca629",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000002000
+              }
+            ],
+            "simulation": {
+              "physicsAccumulator": 0,
+              "logicAccumulator": 0,
+              "simTime": 0,
+              "physicsDt": 0.008333333333333333,
+              "logicDt": 0.06666666666666667,
+              "physics": 0,
+              "logic": 0,
+              "droppedSeconds": 0
+            },
+            "worldTime": 0,
+            "finalStateSha256": "04422444fe0fad60f32782d419d3425397965047202923c37e5f8ff813cb7fd5",
+            "diagnostics": [
+              {
+                "calls": {
+                  "saveLab": 1,
+                  "worldParts": 200,
+                  "copyMood": 2000,
+                  "captureLabRuntime": 1,
+                  "hydrateLabSnapshot": 1,
+                  "JSON.stringify": 2,
+                  "JSON.parse": 3,
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "checkJson": 146172,
+                  "checkLab": 2,
+                  "validate": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 773840,
+                  "utf8BytesWritten": 773840
+                }
+              }
+            ]
+          }
+        ],
+        "optimized": [
+          {
+            "repetition": 1,
+            "inventory": {
+              "pieces": 2000,
+              "groups": 200,
+              "physicalBodies": 206,
+              "dynamicBodies": 200,
+              "virtualGroups": 0,
+              "shapes": 206,
+              "constraints": 0,
+              "awakeBodies": 200,
+              "contacts": 0,
+              "contactEquations": 0,
+              "frictionEquations": 0,
+              "constraintEquations": 0,
+              "sensors": 0,
+              "motors": 0,
+              "activeMotors": 0,
+              "physicsDt": 0.008333333333333333
+            },
+            "operationsCompleted": 3,
+            "caseWallMs": 514.4778929999998,
+            "cold": {
+              "wallMs": 134.59069200000022,
+              "processCpuMs": 180.568,
+              "digest": {
+                "rawSha256": "6fb78ad9eead2d25fe59cb2ee03f7586cd647d0fc1188e7deba119924ab60e89",
+                "rawCharacters": 773840,
+                "rawUtf8Bytes": 773840,
+                "returnSha256": "4a86b6dca547999883f65f1fbcc52cc4ed4ff9420b491d3bbe9c29cc586bb4f4",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              "diagnostic": {
+                "calls": {
+                  "saveLab": 1,
+                  "worldParts": 200,
+                  "copyMood": 2000,
+                  "captureLabRuntime": 1,
+                  "hydrateLabSnapshot": 1,
+                  "JSON.stringify": 2,
+                  "JSON.parse": 2,
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "remember": 2,
+                  "validate": 1,
+                  "checkJson": 11634,
+                  "checkLab": 2,
+                  "inspectParsed": 1,
+                  "checkParsedJson": 11635,
+                  "checkParsedPrototypes": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 773840,
+                  "utf8BytesWritten": 773840
+                }
+              }
+            },
+            "wallMsPerOperation": {
+              "count": 1,
+              "mean": 129.20939499999986,
+              "p50": 129.20939499999986,
+              "p95": 129.20939499999986,
+              "p99": 129.20939499999986,
+              "min": 129.20939499999986,
+              "max": 129.20939499999986
+            },
+            "processCpuMsPerOperation": {
+              "count": 1,
+              "mean": 159.12,
+              "p50": 159.12,
+              "p95": 159.12,
+              "p99": 159.12,
+              "min": 159.12,
+              "max": 159.12
+            },
+            "wallSamples": [
+              129.20939499999986
+            ],
+            "cpuSamples": [
+              159.12
+            ],
+            "digests": [
+              {
+                "rawSha256": "d8fb6401e84a50034e60b56d3a38b1885cb9d725b9553856c67fb77f6dc22abb",
+                "rawCharacters": 773840,
+                "rawUtf8Bytes": 773840,
+                "returnSha256": "8bb442731a0425b5da7ed2cf972eab1ec58f12d13caec71f9dec13c7edcca629",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000002000
+              }
+            ],
+            "simulation": {
+              "physicsAccumulator": 0,
+              "logicAccumulator": 0,
+              "simTime": 0,
+              "physicsDt": 0.008333333333333333,
+              "logicDt": 0.06666666666666667,
+              "physics": 0,
+              "logic": 0,
+              "droppedSeconds": 0
+            },
+            "worldTime": 0,
+            "finalStateSha256": "04422444fe0fad60f32782d419d3425397965047202923c37e5f8ff813cb7fd5",
+            "diagnostics": [
+              {
+                "calls": {
+                  "saveLab": 1,
+                  "worldParts": 200,
+                  "copyMood": 2000,
+                  "captureLabRuntime": 1,
+                  "hydrateLabSnapshot": 1,
+                  "JSON.stringify": 2,
+                  "JSON.parse": 2,
+                  "write": 1,
+                  "readFrom": 1,
+                  "checkParsedPrototypes": 2,
+                  "validate": 1,
+                  "checkJson": 11634,
+                  "checkLab": 2,
+                  "inspectParsed": 1,
+                  "checkParsedJson": 11635,
+                  "remember": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 773840,
+                  "utf8BytesWritten": 773840
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "comparisons": [
+        {
+          "repetition": 1,
+          "exactColdAndFinalBytes": true,
+          "exactCompleteParsedRecords": true,
+          "exactPhysicalState": true,
+          "equalEverySamplePayloadHashes": true
+        }
+      ],
+      "stopped": null
+    },
+    {
+      "scenario": "mutated-save",
+      "pieces": 16,
+      "status": "complete",
+      "runs": {
+        "baseline": [
+          {
+            "repetition": 1,
+            "inventory": {
+              "pieces": 16,
+              "groups": 2,
+              "physicalBodies": 8,
+              "dynamicBodies": 2,
+              "virtualGroups": 0,
+              "shapes": 8,
+              "constraints": 0,
+              "awakeBodies": 2,
+              "contacts": 8,
+              "contactEquations": 8,
+              "frictionEquations": 16,
+              "constraintEquations": 0,
+              "sensors": 0,
+              "motors": 0,
+              "activeMotors": 0,
+              "physicsDt": 0.008333333333333333
+            },
+            "operationsCompleted": 3,
+            "caseWallMs": 86.1598439999998,
+            "cold": {
+              "wallMs": 2.099235000000135,
+              "processCpuMs": 7.772,
+              "digest": {
+                "rawSha256": "dca0d30c8dc4bbf88df1741e64eea6ec63b2b626940e9c2d9a36e64e03870c5f",
+                "rawCharacters": 7264,
+                "rawUtf8Bytes": 7264,
+                "returnSha256": "be3c526c2046ea05750ec5a3182adeb68b8fc7e15aeb042304991fc0fbd53c91",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              "diagnostic": {
+                "calls": {
+                  "saveLab": 1,
+                  "worldParts": 2,
+                  "copyMood": 16,
+                  "captureLabRuntime": 1,
+                  "hydrateLabSnapshot": 1,
+                  "JSON.stringify": 2,
+                  "JSON.parse": 2,
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "validate": 1,
+                  "checkJson": 677,
+                  "checkLab": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 7264,
+                  "utf8BytesWritten": 7264
+                }
+              }
+            },
+            "wallMsPerOperation": {
+              "count": 1,
+              "mean": 2.641613000000234,
+              "p50": 2.641613000000234,
+              "p95": 2.641613000000234,
+              "p99": 2.641613000000234,
+              "min": 2.641613000000234,
+              "max": 2.641613000000234
+            },
+            "processCpuMsPerOperation": {
+              "count": 1,
+              "mean": 3.138,
+              "p50": 3.138,
+              "p95": 3.138,
+              "p99": 3.138,
+              "min": 3.138,
+              "max": 3.138
+            },
+            "wallSamples": [
+              2.641613000000234
+            ],
+            "cpuSamples": [
+              3.138
+            ],
+            "digests": [
+              {
+                "rawSha256": "1849ab3975aa711009881db41b06c392574f1f58726826fae14ca65e218c52f2",
+                "rawCharacters": 10070,
+                "rawUtf8Bytes": 10070,
+                "returnSha256": "38c9d39f047eae16a22440b760db7b6b356b8f676c6d1153d7aff44bd0cc44c8",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000002000
+              }
+            ],
+            "simulation": {
+              "physicsAccumulator": 0,
+              "logicAccumulator": 0.03333333333333333,
+              "simTime": 0.03333333333333333,
+              "physicsDt": 0.008333333333333333,
+              "logicDt": 0.06666666666666667,
+              "physics": 4,
+              "logic": 0,
+              "droppedSeconds": 0
+            },
+            "worldTime": 0.06666666666666667,
+            "finalStateSha256": "6f36bd1456dbbdea59b5fe372205c78310ef1a8a56c8a0b3583552c25aa08400",
+            "diagnostics": [
+              {
+                "calls": {
+                  "saveLab": 1,
+                  "worldParts": 2,
+                  "copyMood": 16,
+                  "captureLabRuntime": 1,
+                  "hydrateLabSnapshot": 1,
+                  "JSON.stringify": 2,
+                  "JSON.parse": 3,
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "checkJson": 1360,
+                  "checkLab": 2,
+                  "validate": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 10070,
+                  "utf8BytesWritten": 10070
+                }
+              }
+            ]
+          }
+        ],
+        "optimized": [
+          {
+            "repetition": 1,
+            "inventory": {
+              "pieces": 16,
+              "groups": 2,
+              "physicalBodies": 8,
+              "dynamicBodies": 2,
+              "virtualGroups": 0,
+              "shapes": 8,
+              "constraints": 0,
+              "awakeBodies": 2,
+              "contacts": 8,
+              "contactEquations": 8,
+              "frictionEquations": 16,
+              "constraintEquations": 0,
+              "sensors": 0,
+              "motors": 0,
+              "activeMotors": 0,
+              "physicsDt": 0.008333333333333333
+            },
+            "operationsCompleted": 3,
+            "caseWallMs": 43.1650639999998,
+            "cold": {
+              "wallMs": 2.730334999999741,
+              "processCpuMs": 6.737,
+              "digest": {
+                "rawSha256": "dca0d30c8dc4bbf88df1741e64eea6ec63b2b626940e9c2d9a36e64e03870c5f",
+                "rawCharacters": 7264,
+                "rawUtf8Bytes": 7264,
+                "returnSha256": "be3c526c2046ea05750ec5a3182adeb68b8fc7e15aeb042304991fc0fbd53c91",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              "diagnostic": {
+                "calls": {
+                  "saveLab": 1,
+                  "worldParts": 2,
+                  "copyMood": 16,
+                  "captureLabRuntime": 1,
+                  "hydrateLabSnapshot": 1,
+                  "JSON.stringify": 2,
+                  "JSON.parse": 2,
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "remember": 2,
+                  "validate": 1,
+                  "checkJson": 130,
+                  "checkLab": 2,
+                  "inspectParsed": 1,
+                  "checkParsedJson": 131,
+                  "checkParsedPrototypes": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 7264,
+                  "utf8BytesWritten": 7264
+                }
+              }
+            },
+            "wallMsPerOperation": {
+              "count": 1,
+              "mean": 2.0641829999999572,
+              "p50": 2.0641829999999572,
+              "p95": 2.0641829999999572,
+              "p99": 2.0641829999999572,
+              "min": 2.0641829999999572,
+              "max": 2.0641829999999572
+            },
+            "processCpuMsPerOperation": {
+              "count": 1,
+              "mean": 3.507,
+              "p50": 3.507,
+              "p95": 3.507,
+              "p99": 3.507,
+              "min": 3.507,
+              "max": 3.507
+            },
+            "wallSamples": [
+              2.0641829999999572
+            ],
+            "cpuSamples": [
+              3.507
+            ],
+            "digests": [
+              {
+                "rawSha256": "1849ab3975aa711009881db41b06c392574f1f58726826fae14ca65e218c52f2",
+                "rawCharacters": 10070,
+                "rawUtf8Bytes": 10070,
+                "returnSha256": "38c9d39f047eae16a22440b760db7b6b356b8f676c6d1153d7aff44bd0cc44c8",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000002000
+              }
+            ],
+            "simulation": {
+              "physicsAccumulator": 0,
+              "logicAccumulator": 0.03333333333333333,
+              "simTime": 0.03333333333333333,
+              "physicsDt": 0.008333333333333333,
+              "logicDt": 0.06666666666666667,
+              "physics": 4,
+              "logic": 0,
+              "droppedSeconds": 0
+            },
+            "worldTime": 0.06666666666666667,
+            "finalStateSha256": "6f36bd1456dbbdea59b5fe372205c78310ef1a8a56c8a0b3583552c25aa08400",
+            "diagnostics": [
+              {
+                "calls": {
+                  "saveLab": 1,
+                  "worldParts": 2,
+                  "copyMood": 16,
+                  "captureLabRuntime": 1,
+                  "hydrateLabSnapshot": 1,
+                  "JSON.stringify": 2,
+                  "JSON.parse": 2,
+                  "write": 1,
+                  "readFrom": 1,
+                  "checkParsedPrototypes": 2,
+                  "validate": 1,
+                  "checkJson": 130,
+                  "checkLab": 2,
+                  "inspectParsed": 1,
+                  "checkParsedJson": 131,
+                  "remember": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 10070,
+                  "utf8BytesWritten": 10070
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "comparisons": [
+        {
+          "repetition": 1,
+          "exactColdAndFinalBytes": true,
+          "exactCompleteParsedRecords": true,
+          "exactPhysicalState": true,
+          "equalEverySamplePayloadHashes": true
+        }
+      ],
+      "stopped": null
+    },
+    {
+      "scenario": "mutated-save",
+      "pieces": 1000,
+      "status": "complete",
+      "runs": {
+        "baseline": [
+          {
+            "repetition": 1,
+            "inventory": {
+              "pieces": 1000,
+              "groups": 100,
+              "physicalBodies": 106,
+              "dynamicBodies": 100,
+              "virtualGroups": 0,
+              "shapes": 106,
+              "constraints": 0,
+              "awakeBodies": 100,
+              "contacts": 390,
+              "contactEquations": 390,
+              "frictionEquations": 780,
+              "constraintEquations": 0,
+              "sensors": 0,
+              "motors": 0,
+              "activeMotors": 0,
+              "physicsDt": 0.008333333333333333
+            },
+            "operationsCompleted": 3,
+            "caseWallMs": 437.2151319999998,
+            "cold": {
+              "wallMs": 72.05099900000005,
+              "processCpuMs": 102.253,
+              "digest": {
+                "rawSha256": "2618f1f4364b92c562183cca5e53805e9fad88007d25eb26f1711ac0388e4e14",
+                "rawCharacters": 387175,
+                "rawUtf8Bytes": 387175,
+                "returnSha256": "d153ca2a51f5f039359a9905c388d736d06188422cd63be8daf5588b49faa639",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              "diagnostic": {
+                "calls": {
+                  "saveLab": 1,
+                  "worldParts": 100,
+                  "copyMood": 1000,
+                  "captureLabRuntime": 1,
+                  "hydrateLabSnapshot": 1,
+                  "JSON.stringify": 2,
+                  "JSON.parse": 2,
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "validate": 1,
+                  "checkJson": 36583,
+                  "checkLab": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 387175,
+                  "utf8BytesWritten": 387175
+                }
+              }
+            },
+            "wallMsPerOperation": {
+              "count": 1,
+              "mean": 111.97008000000005,
+              "p50": 111.97008000000005,
+              "p95": 111.97008000000005,
+              "p99": 111.97008000000005,
+              "min": 111.97008000000005,
+              "max": 111.97008000000005
+            },
+            "processCpuMsPerOperation": {
+              "count": 1,
+              "mean": 116.521,
+              "p50": 116.521,
+              "p95": 116.521,
+              "p99": 116.521,
+              "min": 116.521,
+              "max": 116.521
+            },
+            "wallSamples": [
+              111.97008000000005
+            ],
+            "cpuSamples": [
+              116.521
+            ],
+            "digests": [
+              {
+                "rawSha256": "e94891d321e58057991955b67f34ec989bad4d9b5fdfe98462a835f0287ac258",
+                "rawCharacters": 549068,
+                "rawUtf8Bytes": 549068,
+                "returnSha256": "bb88caf8026af1722f692475b514a8f6beea3d36e0622bffbf7c840637fe1ca6",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000002000
+              }
+            ],
+            "simulation": {
+              "physicsAccumulator": 0,
+              "logicAccumulator": 0.03333333333333333,
+              "simTime": 0.03333333333333333,
+              "physicsDt": 0.008333333333333333,
+              "logicDt": 0.06666666666666667,
+              "physics": 4,
+              "logic": 0,
+              "droppedSeconds": 0
+            },
+            "worldTime": 0.06666666666666667,
+            "finalStateSha256": "2a733ae405dc40dad98f4292e0944e724ad5ee6f59051c46add1c8ada999c4a3",
+            "diagnostics": [
+              {
+                "calls": {
+                  "saveLab": 1,
+                  "worldParts": 100,
+                  "copyMood": 1000,
+                  "captureLabRuntime": 1,
+                  "hydrateLabSnapshot": 1,
+                  "JSON.stringify": 2,
+                  "JSON.parse": 3,
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "checkJson": 73172,
+                  "checkLab": 2,
+                  "validate": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 549068,
+                  "utf8BytesWritten": 549068
+                }
+              }
+            ]
+          }
+        ],
+        "optimized": [
+          {
+            "repetition": 1,
+            "inventory": {
+              "pieces": 1000,
+              "groups": 100,
+              "physicalBodies": 106,
+              "dynamicBodies": 100,
+              "virtualGroups": 0,
+              "shapes": 106,
+              "constraints": 0,
+              "awakeBodies": 100,
+              "contacts": 390,
+              "contactEquations": 390,
+              "frictionEquations": 780,
+              "constraintEquations": 0,
+              "sensors": 0,
+              "motors": 0,
+              "activeMotors": 0,
+              "physicsDt": 0.008333333333333333
+            },
+            "operationsCompleted": 3,
+            "caseWallMs": 331.092713,
+            "cold": {
+              "wallMs": 68.10782800000015,
+              "processCpuMs": 92.338,
+              "digest": {
+                "rawSha256": "2618f1f4364b92c562183cca5e53805e9fad88007d25eb26f1711ac0388e4e14",
+                "rawCharacters": 387175,
+                "rawUtf8Bytes": 387175,
+                "returnSha256": "d153ca2a51f5f039359a9905c388d736d06188422cd63be8daf5588b49faa639",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              "diagnostic": {
+                "calls": {
+                  "saveLab": 1,
+                  "worldParts": 100,
+                  "copyMood": 1000,
+                  "captureLabRuntime": 1,
+                  "hydrateLabSnapshot": 1,
+                  "JSON.stringify": 2,
+                  "JSON.parse": 2,
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "remember": 2,
+                  "validate": 1,
+                  "checkJson": 5834,
+                  "checkLab": 2,
+                  "inspectParsed": 1,
+                  "checkParsedJson": 5835,
+                  "checkParsedPrototypes": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 387175,
+                  "utf8BytesWritten": 387175
+                }
+              }
+            },
+            "wallMsPerOperation": {
+              "count": 1,
+              "mean": 59.72585900000013,
+              "p50": 59.72585900000013,
+              "p95": 59.72585900000013,
+              "p99": 59.72585900000013,
+              "min": 59.72585900000013,
+              "max": 59.72585900000013
+            },
+            "processCpuMsPerOperation": {
+              "count": 1,
+              "mean": 63.874,
+              "p50": 63.874,
+              "p95": 63.874,
+              "p99": 63.874,
+              "min": 63.874,
+              "max": 63.874
+            },
+            "wallSamples": [
+              59.72585900000013
+            ],
+            "cpuSamples": [
+              63.874
+            ],
+            "digests": [
+              {
+                "rawSha256": "e94891d321e58057991955b67f34ec989bad4d9b5fdfe98462a835f0287ac258",
+                "rawCharacters": 549068,
+                "rawUtf8Bytes": 549068,
+                "returnSha256": "bb88caf8026af1722f692475b514a8f6beea3d36e0622bffbf7c840637fe1ca6",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000002000
+              }
+            ],
+            "simulation": {
+              "physicsAccumulator": 0,
+              "logicAccumulator": 0.03333333333333333,
+              "simTime": 0.03333333333333333,
+              "physicsDt": 0.008333333333333333,
+              "logicDt": 0.06666666666666667,
+              "physics": 4,
+              "logic": 0,
+              "droppedSeconds": 0
+            },
+            "worldTime": 0.06666666666666667,
+            "finalStateSha256": "2a733ae405dc40dad98f4292e0944e724ad5ee6f59051c46add1c8ada999c4a3",
+            "diagnostics": [
+              {
+                "calls": {
+                  "saveLab": 1,
+                  "worldParts": 100,
+                  "copyMood": 1000,
+                  "captureLabRuntime": 1,
+                  "hydrateLabSnapshot": 1,
+                  "JSON.stringify": 2,
+                  "JSON.parse": 2,
+                  "write": 1,
+                  "readFrom": 1,
+                  "checkParsedPrototypes": 2,
+                  "validate": 1,
+                  "checkJson": 5834,
+                  "checkLab": 2,
+                  "inspectParsed": 1,
+                  "checkParsedJson": 5835,
+                  "remember": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 549068,
+                  "utf8BytesWritten": 549068
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "comparisons": [
+        {
+          "repetition": 1,
+          "exactColdAndFinalBytes": true,
+          "exactCompleteParsedRecords": true,
+          "exactPhysicalState": true,
+          "equalEverySamplePayloadHashes": true
+        }
+      ],
+      "stopped": null
+    },
+    {
+      "scenario": "mutated-save",
+      "pieces": 2000,
+      "status": "complete",
+      "runs": {
+        "baseline": [
+          {
+            "repetition": 1,
+            "inventory": {
+              "pieces": 2000,
+              "groups": 200,
+              "physicalBodies": 206,
+              "dynamicBodies": 200,
+              "virtualGroups": 0,
+              "shapes": 206,
+              "constraints": 0,
+              "awakeBodies": 200,
+              "contacts": 790,
+              "contactEquations": 790,
+              "frictionEquations": 1580,
+              "constraintEquations": 0,
+              "sensors": 0,
+              "motors": 0,
+              "activeMotors": 0,
+              "physicsDt": 0.008333333333333333
+            },
+            "operationsCompleted": 3,
+            "caseWallMs": 775.3728470000001,
+            "cold": {
+              "wallMs": 129.92171599999983,
+              "processCpuMs": 163.151,
+              "digest": {
+                "rawSha256": "6fb78ad9eead2d25fe59cb2ee03f7586cd647d0fc1188e7deba119924ab60e89",
+                "rawCharacters": 773840,
+                "rawUtf8Bytes": 773840,
+                "returnSha256": "4a86b6dca547999883f65f1fbcc52cc4ed4ff9420b491d3bbe9c29cc586bb4f4",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              "diagnostic": {
+                "calls": {
+                  "saveLab": 1,
+                  "worldParts": 200,
+                  "copyMood": 2000,
+                  "captureLabRuntime": 1,
+                  "hydrateLabSnapshot": 1,
+                  "JSON.stringify": 2,
+                  "JSON.parse": 2,
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "validate": 1,
+                  "checkJson": 73083,
+                  "checkLab": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 773840,
+                  "utf8BytesWritten": 773840
+                }
+              }
+            },
+            "wallMsPerOperation": {
+              "count": 1,
+              "mean": 216.81625299999996,
+              "p50": 216.81625299999996,
+              "p95": 216.81625299999996,
+              "p99": 216.81625299999996,
+              "min": 216.81625299999996,
+              "max": 216.81625299999996
+            },
+            "processCpuMsPerOperation": {
+              "count": 1,
+              "mean": 230.825,
+              "p50": 230.825,
+              "p95": 230.825,
+              "p99": 230.825,
+              "min": 230.825,
+              "max": 230.825
+            },
+            "wallSamples": [
+              216.81625299999996
+            ],
+            "cpuSamples": [
+              230.825
+            ],
+            "digests": [
+              {
+                "rawSha256": "70a1a11e085559ed57c3542fea93d7ef85c9b75ae7012e53729cae7bab1c5e06",
+                "rawCharacters": 1097080,
+                "rawUtf8Bytes": 1097080,
+                "returnSha256": "386a1324da5d0e59ac95217872bbad799caa92abfe610bb4446c600cc6eb86c0",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000002000
+              }
+            ],
+            "simulation": {
+              "physicsAccumulator": 0,
+              "logicAccumulator": 0.03333333333333333,
+              "simTime": 0.03333333333333333,
+              "physicsDt": 0.008333333333333333,
+              "logicDt": 0.06666666666666667,
+              "physics": 4,
+              "logic": 0,
+              "droppedSeconds": 0
+            },
+            "worldTime": 0.06666666666666667,
+            "finalStateSha256": "e7804291e2523d746d1ea05fd69524accb1f2cc9072b6137bb524d567bcc99f2",
+            "diagnostics": [
+              {
+                "calls": {
+                  "saveLab": 1,
+                  "worldParts": 200,
+                  "copyMood": 2000,
+                  "captureLabRuntime": 1,
+                  "hydrateLabSnapshot": 1,
+                  "JSON.stringify": 2,
+                  "JSON.parse": 3,
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "checkJson": 146172,
+                  "checkLab": 2,
+                  "validate": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 1097080,
+                  "utf8BytesWritten": 1097080
+                }
+              }
+            ]
+          }
+        ],
+        "optimized": [
+          {
+            "repetition": 1,
+            "inventory": {
+              "pieces": 2000,
+              "groups": 200,
+              "physicalBodies": 206,
+              "dynamicBodies": 200,
+              "virtualGroups": 0,
+              "shapes": 206,
+              "constraints": 0,
+              "awakeBodies": 200,
+              "contacts": 790,
+              "contactEquations": 790,
+              "frictionEquations": 1580,
+              "constraintEquations": 0,
+              "sensors": 0,
+              "motors": 0,
+              "activeMotors": 0,
+              "physicsDt": 0.008333333333333333
+            },
+            "operationsCompleted": 3,
+            "caseWallMs": 601.0957950000002,
+            "cold": {
+              "wallMs": 121.33654500000011,
+              "processCpuMs": 148.711,
+              "digest": {
+                "rawSha256": "6fb78ad9eead2d25fe59cb2ee03f7586cd647d0fc1188e7deba119924ab60e89",
+                "rawCharacters": 773840,
+                "rawUtf8Bytes": 773840,
+                "returnSha256": "4a86b6dca547999883f65f1fbcc52cc4ed4ff9420b491d3bbe9c29cc586bb4f4",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              "diagnostic": {
+                "calls": {
+                  "saveLab": 1,
+                  "worldParts": 200,
+                  "copyMood": 2000,
+                  "captureLabRuntime": 1,
+                  "hydrateLabSnapshot": 1,
+                  "JSON.stringify": 2,
+                  "JSON.parse": 2,
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "remember": 2,
+                  "validate": 1,
+                  "checkJson": 11634,
+                  "checkLab": 2,
+                  "inspectParsed": 1,
+                  "checkParsedJson": 11635,
+                  "checkParsedPrototypes": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 773840,
+                  "utf8BytesWritten": 773840
+                }
+              }
+            },
+            "wallMsPerOperation": {
+              "count": 1,
+              "mean": 117.09573999999975,
+              "p50": 117.09573999999975,
+              "p95": 117.09573999999975,
+              "p99": 117.09573999999975,
+              "min": 117.09573999999975,
+              "max": 117.09573999999975
+            },
+            "processCpuMsPerOperation": {
+              "count": 1,
+              "mean": 120.707,
+              "p50": 120.707,
+              "p95": 120.707,
+              "p99": 120.707,
+              "min": 120.707,
+              "max": 120.707
+            },
+            "wallSamples": [
+              117.09573999999975
+            ],
+            "cpuSamples": [
+              120.707
+            ],
+            "digests": [
+              {
+                "rawSha256": "70a1a11e085559ed57c3542fea93d7ef85c9b75ae7012e53729cae7bab1c5e06",
+                "rawCharacters": 1097080,
+                "rawUtf8Bytes": 1097080,
+                "returnSha256": "386a1324da5d0e59ac95217872bbad799caa92abfe610bb4446c600cc6eb86c0",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000002000
+              }
+            ],
+            "simulation": {
+              "physicsAccumulator": 0,
+              "logicAccumulator": 0.03333333333333333,
+              "simTime": 0.03333333333333333,
+              "physicsDt": 0.008333333333333333,
+              "logicDt": 0.06666666666666667,
+              "physics": 4,
+              "logic": 0,
+              "droppedSeconds": 0
+            },
+            "worldTime": 0.06666666666666667,
+            "finalStateSha256": "e7804291e2523d746d1ea05fd69524accb1f2cc9072b6137bb524d567bcc99f2",
+            "diagnostics": [
+              {
+                "calls": {
+                  "saveLab": 1,
+                  "worldParts": 200,
+                  "copyMood": 2000,
+                  "captureLabRuntime": 1,
+                  "hydrateLabSnapshot": 1,
+                  "JSON.stringify": 2,
+                  "JSON.parse": 2,
+                  "write": 1,
+                  "readFrom": 1,
+                  "checkParsedPrototypes": 2,
+                  "validate": 1,
+                  "checkJson": 11634,
+                  "checkLab": 2,
+                  "inspectParsed": 1,
+                  "checkParsedJson": 11635,
+                  "remember": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 1097080,
+                  "utf8BytesWritten": 1097080
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "comparisons": [
+        {
+          "repetition": 1,
+          "exactColdAndFinalBytes": true,
+          "exactCompleteParsedRecords": true,
+          "exactPhysicalState": true,
+          "equalEverySamplePayloadHashes": true
+        }
+      ],
+      "stopped": null
+    },
+    {
+      "scenario": "repeated-read",
+      "pieces": 16,
+      "status": "complete",
+      "runs": {
+        "baseline": [
+          {
+            "repetition": 1,
+            "inventory": {
+              "pieces": 16,
+              "groups": 2,
+              "physicalBodies": 8,
+              "dynamicBodies": 2,
+              "virtualGroups": 0,
+              "shapes": 8,
+              "constraints": 0,
+              "awakeBodies": 2,
+              "contacts": 0,
+              "contactEquations": 0,
+              "frictionEquations": 0,
+              "constraintEquations": 0,
+              "sensors": 0,
+              "motors": 0,
+              "activeMotors": 0,
+              "physicsDt": 0.008333333333333333
+            },
+            "operationsCompleted": 3,
+            "caseWallMs": 65.35223599999972,
+            "cold": {
+              "wallMs": 1.4681650000002264,
+              "processCpuMs": 4.66,
+              "digest": {
+                "rawSha256": "dca0d30c8dc4bbf88df1741e64eea6ec63b2b626940e9c2d9a36e64e03870c5f",
+                "rawCharacters": 7264,
+                "rawUtf8Bytes": 7264,
+                "returnSha256": "57d6e68e162528eb83bf563d40512b45fbcde4b08ceef4280417326ad359c587",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              "diagnostic": {
+                "calls": {
+                  "read": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "JSON.parse": 1,
+                  "checkJson": 683,
+                  "checkLab": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 0,
+                  "charactersWritten": 0,
+                  "utf8BytesWritten": 0
+                }
+              }
+            },
+            "wallMsPerOperation": {
+              "count": 1,
+              "mean": 1.0222709999998187,
+              "p50": 1.0222709999998187,
+              "p95": 1.0222709999998187,
+              "p99": 1.0222709999998187,
+              "min": 1.0222709999998187,
+              "max": 1.0222709999998187
+            },
+            "processCpuMsPerOperation": {
+              "count": 1,
+              "mean": 2.374,
+              "p50": 2.374,
+              "p95": 2.374,
+              "p99": 2.374,
+              "min": 2.374,
+              "max": 2.374
+            },
+            "wallSamples": [
+              1.0222709999998187
+            ],
+            "cpuSamples": [
+              2.374
+            ],
+            "digests": [
+              {
+                "rawSha256": "dca0d30c8dc4bbf88df1741e64eea6ec63b2b626940e9c2d9a36e64e03870c5f",
+                "rawCharacters": 7264,
+                "rawUtf8Bytes": 7264,
+                "returnSha256": "57d6e68e162528eb83bf563d40512b45fbcde4b08ceef4280417326ad359c587",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              }
+            ],
+            "simulation": {
+              "physicsAccumulator": 0,
+              "logicAccumulator": 0,
+              "simTime": 0,
+              "physicsDt": 0.008333333333333333,
+              "logicDt": 0.06666666666666667,
+              "physics": 0,
+              "logic": 0,
+              "droppedSeconds": 0
+            },
+            "worldTime": 0,
+            "finalStateSha256": "89abf038ba60c133c8e562c19e14cb04f912a9b233c8e3ccfc25cf591f42d439",
+            "diagnostics": [
+              {
+                "calls": {
+                  "read": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "JSON.parse": 1,
+                  "checkJson": 683,
+                  "checkLab": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 0,
+                  "charactersWritten": 0,
+                  "utf8BytesWritten": 0
+                }
+              }
+            ]
+          }
+        ],
+        "optimized": [
+          {
+            "repetition": 1,
+            "inventory": {
+              "pieces": 16,
+              "groups": 2,
+              "physicalBodies": 8,
+              "dynamicBodies": 2,
+              "virtualGroups": 0,
+              "shapes": 8,
+              "constraints": 0,
+              "awakeBodies": 2,
+              "contacts": 0,
+              "contactEquations": 0,
+              "frictionEquations": 0,
+              "constraintEquations": 0,
+              "sensors": 0,
+              "motors": 0,
+              "activeMotors": 0,
+              "physicsDt": 0.008333333333333333
+            },
+            "operationsCompleted": 3,
+            "caseWallMs": 42.518511999999646,
+            "cold": {
+              "wallMs": 0.48039499999958934,
+              "processCpuMs": 1.142,
+              "digest": {
+                "rawSha256": "dca0d30c8dc4bbf88df1741e64eea6ec63b2b626940e9c2d9a36e64e03870c5f",
+                "rawCharacters": 7264,
+                "rawUtf8Bytes": 7264,
+                "returnSha256": "57d6e68e162528eb83bf563d40512b45fbcde4b08ceef4280417326ad359c587",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              "diagnostic": {
+                "calls": {
+                  "read": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "JSON.parse": 1,
+                  "inspectParsed": 1,
+                  "checkParsedJson": 131,
+                  "checkParsedPrototypes": 1,
+                  "checkLab": 1,
+                  "remember": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 0,
+                  "charactersWritten": 0,
+                  "utf8BytesWritten": 0
+                }
+              }
+            },
+            "wallMsPerOperation": {
+              "count": 1,
+              "mean": 0.049342999999680615,
+              "p50": 0.049342999999680615,
+              "p95": 0.049342999999680615,
+              "p99": 0.049342999999680615,
+              "min": 0.049342999999680615,
+              "max": 0.049342999999680615
+            },
+            "processCpuMsPerOperation": {
+              "count": 1,
+              "mean": 0.051,
+              "p50": 0.051,
+              "p95": 0.051,
+              "p99": 0.051,
+              "min": 0.051,
+              "max": 0.051
+            },
+            "wallSamples": [
+              0.049342999999680615
+            ],
+            "cpuSamples": [
+              0.051
+            ],
+            "digests": [
+              {
+                "rawSha256": "dca0d30c8dc4bbf88df1741e64eea6ec63b2b626940e9c2d9a36e64e03870c5f",
+                "rawCharacters": 7264,
+                "rawUtf8Bytes": 7264,
+                "returnSha256": "57d6e68e162528eb83bf563d40512b45fbcde4b08ceef4280417326ad359c587",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              }
+            ],
+            "simulation": {
+              "physicsAccumulator": 0,
+              "logicAccumulator": 0,
+              "simTime": 0,
+              "physicsDt": 0.008333333333333333,
+              "logicDt": 0.06666666666666667,
+              "physics": 0,
+              "logic": 0,
+              "droppedSeconds": 0
+            },
+            "worldTime": 0,
+            "finalStateSha256": "89abf038ba60c133c8e562c19e14cb04f912a9b233c8e3ccfc25cf591f42d439",
+            "diagnostics": [
+              {
+                "calls": {
+                  "read": 1,
+                  "readFrom": 1,
+                  "checkParsedPrototypes": 1,
+                  "JSON.parse": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 0,
+                  "charactersWritten": 0,
+                  "utf8BytesWritten": 0
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "comparisons": [
+        {
+          "repetition": 1,
+          "exactColdAndFinalBytes": true,
+          "exactCompleteParsedRecords": true,
+          "exactPhysicalState": true,
+          "equalEverySamplePayloadHashes": true
+        }
+      ],
+      "stopped": null
+    },
+    {
+      "scenario": "repeated-read",
+      "pieces": 1000,
+      "status": "complete",
+      "runs": {
+        "baseline": [
+          {
+            "repetition": 1,
+            "inventory": {
+              "pieces": 1000,
+              "groups": 100,
+              "physicalBodies": 106,
+              "dynamicBodies": 100,
+              "virtualGroups": 0,
+              "shapes": 106,
+              "constraints": 0,
+              "awakeBodies": 100,
+              "contacts": 0,
+              "contactEquations": 0,
+              "frictionEquations": 0,
+              "constraintEquations": 0,
+              "sensors": 0,
+              "motors": 0,
+              "activeMotors": 0,
+              "physicsDt": 0.008333333333333333
+            },
+            "operationsCompleted": 3,
+            "caseWallMs": 324.4526910000004,
+            "cold": {
+              "wallMs": 47.01325300000008,
+              "processCpuMs": 56.244,
+              "digest": {
+                "rawSha256": "2618f1f4364b92c562183cca5e53805e9fad88007d25eb26f1711ac0388e4e14",
+                "rawCharacters": 387175,
+                "rawUtf8Bytes": 387175,
+                "returnSha256": "1d967cdfd7224e334ea7a636739f5a18780b847da5af6473687436cb71d65300",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              "diagnostic": {
+                "calls": {
+                  "read": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "JSON.parse": 1,
+                  "checkJson": 36589,
+                  "checkLab": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 0,
+                  "charactersWritten": 0,
+                  "utf8BytesWritten": 0
+                }
+              }
+            },
+            "wallMsPerOperation": {
+              "count": 1,
+              "mean": 44.37563599999976,
+              "p50": 44.37563599999976,
+              "p95": 44.37563599999976,
+              "p99": 44.37563599999976,
+              "min": 44.37563599999976,
+              "max": 44.37563599999976
+            },
+            "processCpuMsPerOperation": {
+              "count": 1,
+              "mean": 44.383,
+              "p50": 44.383,
+              "p95": 44.383,
+              "p99": 44.383,
+              "min": 44.383,
+              "max": 44.383
+            },
+            "wallSamples": [
+              44.37563599999976
+            ],
+            "cpuSamples": [
+              44.383
+            ],
+            "digests": [
+              {
+                "rawSha256": "2618f1f4364b92c562183cca5e53805e9fad88007d25eb26f1711ac0388e4e14",
+                "rawCharacters": 387175,
+                "rawUtf8Bytes": 387175,
+                "returnSha256": "1d967cdfd7224e334ea7a636739f5a18780b847da5af6473687436cb71d65300",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              }
+            ],
+            "simulation": {
+              "physicsAccumulator": 0,
+              "logicAccumulator": 0,
+              "simTime": 0,
+              "physicsDt": 0.008333333333333333,
+              "logicDt": 0.06666666666666667,
+              "physics": 0,
+              "logic": 0,
+              "droppedSeconds": 0
+            },
+            "worldTime": 0,
+            "finalStateSha256": "2bf7b670b1043625531418aa76a6329a613457281b5be2fe38092794bcda8895",
+            "diagnostics": [
+              {
+                "calls": {
+                  "read": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "JSON.parse": 1,
+                  "checkJson": 36589,
+                  "checkLab": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 0,
+                  "charactersWritten": 0,
+                  "utf8BytesWritten": 0
+                }
+              }
+            ]
+          }
+        ],
+        "optimized": [
+          {
+            "repetition": 1,
+            "inventory": {
+              "pieces": 1000,
+              "groups": 100,
+              "physicalBodies": 106,
+              "dynamicBodies": 100,
+              "virtualGroups": 0,
+              "shapes": 106,
+              "constraints": 0,
+              "awakeBodies": 100,
+              "contacts": 0,
+              "contactEquations": 0,
+              "frictionEquations": 0,
+              "constraintEquations": 0,
+              "sensors": 0,
+              "motors": 0,
+              "activeMotors": 0,
+              "physicsDt": 0.008333333333333333
+            },
+            "operationsCompleted": 3,
+            "caseWallMs": 180.227621,
+            "cold": {
+              "wallMs": 9.745720000000802,
+              "processCpuMs": 10.085,
+              "digest": {
+                "rawSha256": "2618f1f4364b92c562183cca5e53805e9fad88007d25eb26f1711ac0388e4e14",
+                "rawCharacters": 387175,
+                "rawUtf8Bytes": 387175,
+                "returnSha256": "1d967cdfd7224e334ea7a636739f5a18780b847da5af6473687436cb71d65300",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              "diagnostic": {
+                "calls": {
+                  "read": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "JSON.parse": 1,
+                  "inspectParsed": 1,
+                  "checkParsedJson": 5835,
+                  "checkParsedPrototypes": 1,
+                  "checkLab": 1,
+                  "remember": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 0,
+                  "charactersWritten": 0,
+                  "utf8BytesWritten": 0
+                }
+              }
+            },
+            "wallMsPerOperation": {
+              "count": 1,
+              "mean": 1.8399400000007518,
+              "p50": 1.8399400000007518,
+              "p95": 1.8399400000007518,
+              "p99": 1.8399400000007518,
+              "min": 1.8399400000007518,
+              "max": 1.8399400000007518
+            },
+            "processCpuMsPerOperation": {
+              "count": 1,
+              "mean": 1.843,
+              "p50": 1.843,
+              "p95": 1.843,
+              "p99": 1.843,
+              "min": 1.843,
+              "max": 1.843
+            },
+            "wallSamples": [
+              1.8399400000007518
+            ],
+            "cpuSamples": [
+              1.843
+            ],
+            "digests": [
+              {
+                "rawSha256": "2618f1f4364b92c562183cca5e53805e9fad88007d25eb26f1711ac0388e4e14",
+                "rawCharacters": 387175,
+                "rawUtf8Bytes": 387175,
+                "returnSha256": "1d967cdfd7224e334ea7a636739f5a18780b847da5af6473687436cb71d65300",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              }
+            ],
+            "simulation": {
+              "physicsAccumulator": 0,
+              "logicAccumulator": 0,
+              "simTime": 0,
+              "physicsDt": 0.008333333333333333,
+              "logicDt": 0.06666666666666667,
+              "physics": 0,
+              "logic": 0,
+              "droppedSeconds": 0
+            },
+            "worldTime": 0,
+            "finalStateSha256": "2bf7b670b1043625531418aa76a6329a613457281b5be2fe38092794bcda8895",
+            "diagnostics": [
+              {
+                "calls": {
+                  "read": 1,
+                  "readFrom": 1,
+                  "checkParsedPrototypes": 1,
+                  "JSON.parse": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 0,
+                  "charactersWritten": 0,
+                  "utf8BytesWritten": 0
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "comparisons": [
+        {
+          "repetition": 1,
+          "exactColdAndFinalBytes": true,
+          "exactCompleteParsedRecords": true,
+          "exactPhysicalState": true,
+          "equalEverySamplePayloadHashes": true
+        }
+      ],
+      "stopped": null
+    },
+    {
+      "scenario": "repeated-read",
+      "pieces": 2000,
+      "status": "complete",
+      "runs": {
+        "baseline": [
+          {
+            "repetition": 1,
+            "inventory": {
+              "pieces": 2000,
+              "groups": 200,
+              "physicalBodies": 206,
+              "dynamicBodies": 200,
+              "virtualGroups": 0,
+              "shapes": 206,
+              "constraints": 0,
+              "awakeBodies": 200,
+              "contacts": 0,
+              "contactEquations": 0,
+              "frictionEquations": 0,
+              "constraintEquations": 0,
+              "sensors": 0,
+              "motors": 0,
+              "activeMotors": 0,
+              "physicsDt": 0.008333333333333333
+            },
+            "operationsCompleted": 3,
+            "caseWallMs": 555.6161150000007,
+            "cold": {
+              "wallMs": 93.8114459999997,
+              "processCpuMs": 106.038,
+              "digest": {
+                "rawSha256": "6fb78ad9eead2d25fe59cb2ee03f7586cd647d0fc1188e7deba119924ab60e89",
+                "rawCharacters": 773840,
+                "rawUtf8Bytes": 773840,
+                "returnSha256": "0c6b7154767ae628927e167dd853733152c2699917e872ce7e6655cb09c7a041",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              "diagnostic": {
+                "calls": {
+                  "read": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "JSON.parse": 1,
+                  "checkJson": 73089,
+                  "checkLab": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 0,
+                  "charactersWritten": 0,
+                  "utf8BytesWritten": 0
+                }
+              }
+            },
+            "wallMsPerOperation": {
+              "count": 1,
+              "mean": 89.95904000000064,
+              "p50": 89.95904000000064,
+              "p95": 89.95904000000064,
+              "p99": 89.95904000000064,
+              "min": 89.95904000000064,
+              "max": 89.95904000000064
+            },
+            "processCpuMsPerOperation": {
+              "count": 1,
+              "mean": 91.516,
+              "p50": 91.516,
+              "p95": 91.516,
+              "p99": 91.516,
+              "min": 91.516,
+              "max": 91.516
+            },
+            "wallSamples": [
+              89.95904000000064
+            ],
+            "cpuSamples": [
+              91.516
+            ],
+            "digests": [
+              {
+                "rawSha256": "6fb78ad9eead2d25fe59cb2ee03f7586cd647d0fc1188e7deba119924ab60e89",
+                "rawCharacters": 773840,
+                "rawUtf8Bytes": 773840,
+                "returnSha256": "0c6b7154767ae628927e167dd853733152c2699917e872ce7e6655cb09c7a041",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              }
+            ],
+            "simulation": {
+              "physicsAccumulator": 0,
+              "logicAccumulator": 0,
+              "simTime": 0,
+              "physicsDt": 0.008333333333333333,
+              "logicDt": 0.06666666666666667,
+              "physics": 0,
+              "logic": 0,
+              "droppedSeconds": 0
+            },
+            "worldTime": 0,
+            "finalStateSha256": "04422444fe0fad60f32782d419d3425397965047202923c37e5f8ff813cb7fd5",
+            "diagnostics": [
+              {
+                "calls": {
+                  "read": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "JSON.parse": 1,
+                  "checkJson": 73089,
+                  "checkLab": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 0,
+                  "charactersWritten": 0,
+                  "utf8BytesWritten": 0
+                }
+              }
+            ]
+          }
+        ],
+        "optimized": [
+          {
+            "repetition": 1,
+            "inventory": {
+              "pieces": 2000,
+              "groups": 200,
+              "physicalBodies": 206,
+              "dynamicBodies": 200,
+              "virtualGroups": 0,
+              "shapes": 206,
+              "constraints": 0,
+              "awakeBodies": 200,
+              "contacts": 0,
+              "contactEquations": 0,
+              "frictionEquations": 0,
+              "constraintEquations": 0,
+              "sensors": 0,
+              "motors": 0,
+              "activeMotors": 0,
+              "physicsDt": 0.008333333333333333
+            },
+            "operationsCompleted": 3,
+            "caseWallMs": 340.6066259999998,
+            "cold": {
+              "wallMs": 19.35008800000014,
+              "processCpuMs": 19.363,
+              "digest": {
+                "rawSha256": "6fb78ad9eead2d25fe59cb2ee03f7586cd647d0fc1188e7deba119924ab60e89",
+                "rawCharacters": 773840,
+                "rawUtf8Bytes": 773840,
+                "returnSha256": "0c6b7154767ae628927e167dd853733152c2699917e872ce7e6655cb09c7a041",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              "diagnostic": {
+                "calls": {
+                  "read": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "JSON.parse": 1,
+                  "inspectParsed": 1,
+                  "checkParsedJson": 11635,
+                  "checkParsedPrototypes": 1,
+                  "checkLab": 1,
+                  "remember": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 0,
+                  "charactersWritten": 0,
+                  "utf8BytesWritten": 0
+                }
+              }
+            },
+            "wallMsPerOperation": {
+              "count": 1,
+              "mean": 3.6416519999993398,
+              "p50": 3.6416519999993398,
+              "p95": 3.6416519999993398,
+              "p99": 3.6416519999993398,
+              "min": 3.6416519999993398,
+              "max": 3.6416519999993398
+            },
+            "processCpuMsPerOperation": {
+              "count": 1,
+              "mean": 3.646,
+              "p50": 3.646,
+              "p95": 3.646,
+              "p99": 3.646,
+              "min": 3.646,
+              "max": 3.646
+            },
+            "wallSamples": [
+              3.6416519999993398
+            ],
+            "cpuSamples": [
+              3.646
+            ],
+            "digests": [
+              {
+                "rawSha256": "6fb78ad9eead2d25fe59cb2ee03f7586cd647d0fc1188e7deba119924ab60e89",
+                "rawCharacters": 773840,
+                "rawUtf8Bytes": 773840,
+                "returnSha256": "0c6b7154767ae628927e167dd853733152c2699917e872ce7e6655cb09c7a041",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              }
+            ],
+            "simulation": {
+              "physicsAccumulator": 0,
+              "logicAccumulator": 0,
+              "simTime": 0,
+              "physicsDt": 0.008333333333333333,
+              "logicDt": 0.06666666666666667,
+              "physics": 0,
+              "logic": 0,
+              "droppedSeconds": 0
+            },
+            "worldTime": 0,
+            "finalStateSha256": "04422444fe0fad60f32782d419d3425397965047202923c37e5f8ff813cb7fd5",
+            "diagnostics": [
+              {
+                "calls": {
+                  "read": 1,
+                  "readFrom": 1,
+                  "checkParsedPrototypes": 1,
+                  "JSON.parse": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 0,
+                  "charactersWritten": 0,
+                  "utf8BytesWritten": 0
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "comparisons": [
+        {
+          "repetition": 1,
+          "exactColdAndFinalBytes": true,
+          "exactCompleteParsedRecords": true,
+          "exactPhysicalState": true,
+          "equalEverySamplePayloadHashes": true
+        }
+      ],
+      "stopped": null
+    },
+    {
+      "scenario": "store-prepopulated-first-write",
+      "pieces": 16,
+      "status": "complete",
+      "runs": {
+        "baseline": [
+          {
+            "repetition": 1,
+            "inventory": {
+              "pieces": 16,
+              "groups": 2,
+              "physicalBodies": 8,
+              "dynamicBodies": 2,
+              "virtualGroups": 0,
+              "shapes": 8,
+              "constraints": 0,
+              "awakeBodies": 2,
+              "contacts": 0,
+              "contactEquations": 0,
+              "frictionEquations": 0,
+              "constraintEquations": 0,
+              "sensors": 0,
+              "motors": 0,
+              "activeMotors": 0,
+              "physicsDt": 0.008333333333333333
+            },
+            "operationsCompleted": 3,
+            "caseWallMs": 92.03488099999959,
+            "cold": {
+              "wallMs": 3.1663939999998547,
+              "processCpuMs": 7.024,
+              "digest": {
+                "rawSha256": "dca0d30c8dc4bbf88df1741e64eea6ec63b2b626940e9c2d9a36e64e03870c5f",
+                "rawCharacters": 7264,
+                "rawUtf8Bytes": 7264,
+                "returnSha256": "be3c526c2046ea05750ec5a3182adeb68b8fc7e15aeb042304991fc0fbd53c91",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              "diagnostic": {
+                "calls": {
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "JSON.parse": 2,
+                  "checkJson": 1360,
+                  "checkLab": 2,
+                  "validate": 1,
+                  "JSON.stringify": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 7264,
+                  "utf8BytesWritten": 7264
+                }
+              }
+            },
+            "wallMsPerOperation": {
+              "count": 1,
+              "mean": 1.9847450000006575,
+              "p50": 1.9847450000006575,
+              "p95": 1.9847450000006575,
+              "p99": 1.9847450000006575,
+              "min": 1.9847450000006575,
+              "max": 1.9847450000006575
+            },
+            "processCpuMsPerOperation": {
+              "count": 1,
+              "mean": 1.988,
+              "p50": 1.988,
+              "p95": 1.988,
+              "p99": 1.988,
+              "min": 1.988,
+              "max": 1.988
+            },
+            "wallSamples": [
+              1.9847450000006575
+            ],
+            "cpuSamples": [
+              1.988
+            ],
+            "digests": [
+              {
+                "rawSha256": "0fcc96dc45d4c45d09bc5b70c8f81958f8cafe4a73cbae7710a46dea2ab7ef43",
+                "rawCharacters": 7264,
+                "rawUtf8Bytes": 7264,
+                "returnSha256": "1849e131d48413ddf5406c75181abdfad9d24347727703a8dd90085d274bbca4",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000002000
+              }
+            ],
+            "simulation": {
+              "physicsAccumulator": 0,
+              "logicAccumulator": 0,
+              "simTime": 0,
+              "physicsDt": 0.008333333333333333,
+              "logicDt": 0.06666666666666667,
+              "physics": 0,
+              "logic": 0,
+              "droppedSeconds": 0
+            },
+            "worldTime": 0,
+            "finalStateSha256": "89abf038ba60c133c8e562c19e14cb04f912a9b233c8e3ccfc25cf591f42d439",
+            "diagnostics": [
+              {
+                "calls": {
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "JSON.parse": 2,
+                  "checkJson": 1360,
+                  "checkLab": 2,
+                  "validate": 1,
+                  "JSON.stringify": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 7264,
+                  "utf8BytesWritten": 7264
+                }
+              }
+            ]
+          }
+        ],
+        "optimized": [
+          {
+            "repetition": 1,
+            "inventory": {
+              "pieces": 16,
+              "groups": 2,
+              "physicalBodies": 8,
+              "dynamicBodies": 2,
+              "virtualGroups": 0,
+              "shapes": 8,
+              "constraints": 0,
+              "awakeBodies": 2,
+              "contacts": 0,
+              "contactEquations": 0,
+              "frictionEquations": 0,
+              "constraintEquations": 0,
+              "sensors": 0,
+              "motors": 0,
+              "activeMotors": 0,
+              "physicsDt": 0.008333333333333333
+            },
+            "operationsCompleted": 3,
+            "caseWallMs": 40.16992399999981,
+            "cold": {
+              "wallMs": 2.1570520000004763,
+              "processCpuMs": 5.049,
+              "digest": {
+                "rawSha256": "dca0d30c8dc4bbf88df1741e64eea6ec63b2b626940e9c2d9a36e64e03870c5f",
+                "rawCharacters": 7264,
+                "rawUtf8Bytes": 7264,
+                "returnSha256": "be3c526c2046ea05750ec5a3182adeb68b8fc7e15aeb042304991fc0fbd53c91",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              "diagnostic": {
+                "calls": {
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "JSON.parse": 2,
+                  "inspectParsed": 2,
+                  "checkParsedJson": 262,
+                  "checkParsedPrototypes": 2,
+                  "checkLab": 3,
+                  "remember": 2,
+                  "validate": 1,
+                  "checkJson": 130,
+                  "JSON.stringify": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 7264,
+                  "utf8BytesWritten": 7264
+                }
+              }
+            },
+            "wallMsPerOperation": {
+              "count": 1,
+              "mean": 1.5349850000002334,
+              "p50": 1.5349850000002334,
+              "p95": 1.5349850000002334,
+              "p99": 1.5349850000002334,
+              "min": 1.5349850000002334,
+              "max": 1.5349850000002334
+            },
+            "processCpuMsPerOperation": {
+              "count": 1,
+              "mean": 4.481,
+              "p50": 4.481,
+              "p95": 4.481,
+              "p99": 4.481,
+              "min": 4.481,
+              "max": 4.481
+            },
+            "wallSamples": [
+              1.5349850000002334
+            ],
+            "cpuSamples": [
+              4.481
+            ],
+            "digests": [
+              {
+                "rawSha256": "0fcc96dc45d4c45d09bc5b70c8f81958f8cafe4a73cbae7710a46dea2ab7ef43",
+                "rawCharacters": 7264,
+                "rawUtf8Bytes": 7264,
+                "returnSha256": "1849e131d48413ddf5406c75181abdfad9d24347727703a8dd90085d274bbca4",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000002000
+              }
+            ],
+            "simulation": {
+              "physicsAccumulator": 0,
+              "logicAccumulator": 0,
+              "simTime": 0,
+              "physicsDt": 0.008333333333333333,
+              "logicDt": 0.06666666666666667,
+              "physics": 0,
+              "logic": 0,
+              "droppedSeconds": 0
+            },
+            "worldTime": 0,
+            "finalStateSha256": "89abf038ba60c133c8e562c19e14cb04f912a9b233c8e3ccfc25cf591f42d439",
+            "diagnostics": [
+              {
+                "calls": {
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "JSON.parse": 2,
+                  "inspectParsed": 2,
+                  "checkParsedJson": 262,
+                  "checkParsedPrototypes": 2,
+                  "checkLab": 3,
+                  "remember": 2,
+                  "validate": 1,
+                  "checkJson": 130,
+                  "JSON.stringify": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 7264,
+                  "utf8BytesWritten": 7264
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "comparisons": [
+        {
+          "repetition": 1,
+          "exactColdAndFinalBytes": true,
+          "exactCompleteParsedRecords": true,
+          "exactPhysicalState": true,
+          "equalEverySamplePayloadHashes": true
+        }
+      ],
+      "stopped": null
+    },
+    {
+      "scenario": "store-prepopulated-first-write",
+      "pieces": 1000,
+      "status": "complete",
+      "runs": {
+        "baseline": [
+          {
+            "repetition": 1,
+            "inventory": {
+              "pieces": 1000,
+              "groups": 100,
+              "physicalBodies": 106,
+              "dynamicBodies": 100,
+              "virtualGroups": 0,
+              "shapes": 106,
+              "constraints": 0,
+              "awakeBodies": 100,
+              "contacts": 0,
+              "contactEquations": 0,
+              "frictionEquations": 0,
+              "constraintEquations": 0,
+              "sensors": 0,
+              "motors": 0,
+              "activeMotors": 0,
+              "physicsDt": 0.008333333333333333
+            },
+            "operationsCompleted": 3,
+            "caseWallMs": 437.65614800000003,
+            "cold": {
+              "wallMs": 101.53408299999955,
+              "processCpuMs": 123.529,
+              "digest": {
+                "rawSha256": "2618f1f4364b92c562183cca5e53805e9fad88007d25eb26f1711ac0388e4e14",
+                "rawCharacters": 387175,
+                "rawUtf8Bytes": 387175,
+                "returnSha256": "d153ca2a51f5f039359a9905c388d736d06188422cd63be8daf5588b49faa639",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              "diagnostic": {
+                "calls": {
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "JSON.parse": 2,
+                  "checkJson": 73172,
+                  "checkLab": 2,
+                  "validate": 1,
+                  "JSON.stringify": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 387175,
+                  "utf8BytesWritten": 387175
+                }
+              }
+            },
+            "wallMsPerOperation": {
+              "count": 1,
+              "mean": 92.43224200000077,
+              "p50": 92.43224200000077,
+              "p95": 92.43224200000077,
+              "p99": 92.43224200000077,
+              "min": 92.43224200000077,
+              "max": 92.43224200000077
+            },
+            "processCpuMsPerOperation": {
+              "count": 1,
+              "mean": 95.222,
+              "p50": 95.222,
+              "p95": 95.222,
+              "p99": 95.222,
+              "min": 95.222,
+              "max": 95.222
+            },
+            "wallSamples": [
+              92.43224200000077
+            ],
+            "cpuSamples": [
+              95.222
+            ],
+            "digests": [
+              {
+                "rawSha256": "51a7c34af78d9cccc5bb3f37a5a76a3dbc4d5fc45ba19a10eebb5e6a3b89c938",
+                "rawCharacters": 387175,
+                "rawUtf8Bytes": 387175,
+                "returnSha256": "7605a5e9710781e7a5318ec6bd433fb8fdc389685a03b6c8e2bda140020a07fe",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000002000
+              }
+            ],
+            "simulation": {
+              "physicsAccumulator": 0,
+              "logicAccumulator": 0,
+              "simTime": 0,
+              "physicsDt": 0.008333333333333333,
+              "logicDt": 0.06666666666666667,
+              "physics": 0,
+              "logic": 0,
+              "droppedSeconds": 0
+            },
+            "worldTime": 0,
+            "finalStateSha256": "2bf7b670b1043625531418aa76a6329a613457281b5be2fe38092794bcda8895",
+            "diagnostics": [
+              {
+                "calls": {
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "JSON.parse": 2,
+                  "checkJson": 73172,
+                  "checkLab": 2,
+                  "validate": 1,
+                  "JSON.stringify": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 387175,
+                  "utf8BytesWritten": 387175
+                }
+              }
+            ]
+          }
+        ],
+        "optimized": [
+          {
+            "repetition": 1,
+            "inventory": {
+              "pieces": 1000,
+              "groups": 100,
+              "physicalBodies": 106,
+              "dynamicBodies": 100,
+              "virtualGroups": 0,
+              "shapes": 106,
+              "constraints": 0,
+              "awakeBodies": 100,
+              "contacts": 0,
+              "contactEquations": 0,
+              "frictionEquations": 0,
+              "constraintEquations": 0,
+              "sensors": 0,
+              "motors": 0,
+              "activeMotors": 0,
+              "physicsDt": 0.008333333333333333
+            },
+            "operationsCompleted": 3,
+            "caseWallMs": 316.62314100000003,
+            "cold": {
+              "wallMs": 62.3674630000005,
+              "processCpuMs": 80.258,
+              "digest": {
+                "rawSha256": "2618f1f4364b92c562183cca5e53805e9fad88007d25eb26f1711ac0388e4e14",
+                "rawCharacters": 387175,
+                "rawUtf8Bytes": 387175,
+                "returnSha256": "d153ca2a51f5f039359a9905c388d736d06188422cd63be8daf5588b49faa639",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              "diagnostic": {
+                "calls": {
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "JSON.parse": 2,
+                  "inspectParsed": 2,
+                  "checkParsedJson": 11670,
+                  "checkParsedPrototypes": 2,
+                  "checkLab": 3,
+                  "remember": 2,
+                  "validate": 1,
+                  "checkJson": 5834,
+                  "JSON.stringify": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 387175,
+                  "utf8BytesWritten": 387175
+                }
+              }
+            },
+            "wallMsPerOperation": {
+              "count": 1,
+              "mean": 55.51117400000021,
+              "p50": 55.51117400000021,
+              "p95": 55.51117400000021,
+              "p99": 55.51117400000021,
+              "min": 55.51117400000021,
+              "max": 55.51117400000021
+            },
+            "processCpuMsPerOperation": {
+              "count": 1,
+              "mean": 56.971,
+              "p50": 56.971,
+              "p95": 56.971,
+              "p99": 56.971,
+              "min": 56.971,
+              "max": 56.971
+            },
+            "wallSamples": [
+              55.51117400000021
+            ],
+            "cpuSamples": [
+              56.971
+            ],
+            "digests": [
+              {
+                "rawSha256": "51a7c34af78d9cccc5bb3f37a5a76a3dbc4d5fc45ba19a10eebb5e6a3b89c938",
+                "rawCharacters": 387175,
+                "rawUtf8Bytes": 387175,
+                "returnSha256": "7605a5e9710781e7a5318ec6bd433fb8fdc389685a03b6c8e2bda140020a07fe",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000002000
+              }
+            ],
+            "simulation": {
+              "physicsAccumulator": 0,
+              "logicAccumulator": 0,
+              "simTime": 0,
+              "physicsDt": 0.008333333333333333,
+              "logicDt": 0.06666666666666667,
+              "physics": 0,
+              "logic": 0,
+              "droppedSeconds": 0
+            },
+            "worldTime": 0,
+            "finalStateSha256": "2bf7b670b1043625531418aa76a6329a613457281b5be2fe38092794bcda8895",
+            "diagnostics": [
+              {
+                "calls": {
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "JSON.parse": 2,
+                  "inspectParsed": 2,
+                  "checkParsedJson": 11670,
+                  "checkParsedPrototypes": 2,
+                  "checkLab": 3,
+                  "remember": 2,
+                  "validate": 1,
+                  "checkJson": 5834,
+                  "JSON.stringify": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 387175,
+                  "utf8BytesWritten": 387175
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "comparisons": [
+        {
+          "repetition": 1,
+          "exactColdAndFinalBytes": true,
+          "exactCompleteParsedRecords": true,
+          "exactPhysicalState": true,
+          "equalEverySamplePayloadHashes": true
+        }
+      ],
+      "stopped": null
+    },
+    {
+      "scenario": "store-prepopulated-first-write",
+      "pieces": 2000,
+      "status": "complete",
+      "runs": {
+        "baseline": [
+          {
+            "repetition": 1,
+            "inventory": {
+              "pieces": 2000,
+              "groups": 200,
+              "physicalBodies": 206,
+              "dynamicBodies": 200,
+              "virtualGroups": 0,
+              "shapes": 206,
+              "constraints": 0,
+              "awakeBodies": 200,
+              "contacts": 0,
+              "contactEquations": 0,
+              "frictionEquations": 0,
+              "constraintEquations": 0,
+              "sensors": 0,
+              "motors": 0,
+              "activeMotors": 0,
+              "physicsDt": 0.008333333333333333
+            },
+            "operationsCompleted": 3,
+            "caseWallMs": 809.3859840000005,
+            "cold": {
+              "wallMs": 190.74715299999934,
+              "processCpuMs": 206.915,
+              "digest": {
+                "rawSha256": "6fb78ad9eead2d25fe59cb2ee03f7586cd647d0fc1188e7deba119924ab60e89",
+                "rawCharacters": 773840,
+                "rawUtf8Bytes": 773840,
+                "returnSha256": "4a86b6dca547999883f65f1fbcc52cc4ed4ff9420b491d3bbe9c29cc586bb4f4",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              "diagnostic": {
+                "calls": {
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "JSON.parse": 2,
+                  "checkJson": 146172,
+                  "checkLab": 2,
+                  "validate": 1,
+                  "JSON.stringify": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 773840,
+                  "utf8BytesWritten": 773840
+                }
+              }
+            },
+            "wallMsPerOperation": {
+              "count": 1,
+              "mean": 183.83179700000073,
+              "p50": 183.83179700000073,
+              "p95": 183.83179700000073,
+              "p99": 183.83179700000073,
+              "min": 183.83179700000073,
+              "max": 183.83179700000073
+            },
+            "processCpuMsPerOperation": {
+              "count": 1,
+              "mean": 191.015,
+              "p50": 191.015,
+              "p95": 191.015,
+              "p99": 191.015,
+              "min": 191.015,
+              "max": 191.015
+            },
+            "wallSamples": [
+              183.83179700000073
+            ],
+            "cpuSamples": [
+              191.015
+            ],
+            "digests": [
+              {
+                "rawSha256": "d8fb6401e84a50034e60b56d3a38b1885cb9d725b9553856c67fb77f6dc22abb",
+                "rawCharacters": 773840,
+                "rawUtf8Bytes": 773840,
+                "returnSha256": "8bb442731a0425b5da7ed2cf972eab1ec58f12d13caec71f9dec13c7edcca629",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000002000
+              }
+            ],
+            "simulation": {
+              "physicsAccumulator": 0,
+              "logicAccumulator": 0,
+              "simTime": 0,
+              "physicsDt": 0.008333333333333333,
+              "logicDt": 0.06666666666666667,
+              "physics": 0,
+              "logic": 0,
+              "droppedSeconds": 0
+            },
+            "worldTime": 0,
+            "finalStateSha256": "04422444fe0fad60f32782d419d3425397965047202923c37e5f8ff813cb7fd5",
+            "diagnostics": [
+              {
+                "calls": {
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "JSON.parse": 2,
+                  "checkJson": 146172,
+                  "checkLab": 2,
+                  "validate": 1,
+                  "JSON.stringify": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 773840,
+                  "utf8BytesWritten": 773840
+                }
+              }
+            ]
+          }
+        ],
+        "optimized": [
+          {
+            "repetition": 1,
+            "inventory": {
+              "pieces": 2000,
+              "groups": 200,
+              "physicalBodies": 206,
+              "dynamicBodies": 200,
+              "virtualGroups": 0,
+              "shapes": 206,
+              "constraints": 0,
+              "awakeBodies": 200,
+              "contacts": 0,
+              "contactEquations": 0,
+              "frictionEquations": 0,
+              "constraintEquations": 0,
+              "sensors": 0,
+              "motors": 0,
+              "activeMotors": 0,
+              "physicsDt": 0.008333333333333333
+            },
+            "operationsCompleted": 3,
+            "caseWallMs": 604.9226170000002,
+            "cold": {
+              "wallMs": 116.37138199999936,
+              "processCpuMs": 134.986,
+              "digest": {
+                "rawSha256": "6fb78ad9eead2d25fe59cb2ee03f7586cd647d0fc1188e7deba119924ab60e89",
+                "rawCharacters": 773840,
+                "rawUtf8Bytes": 773840,
+                "returnSha256": "4a86b6dca547999883f65f1fbcc52cc4ed4ff9420b491d3bbe9c29cc586bb4f4",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              "diagnostic": {
+                "calls": {
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "JSON.parse": 2,
+                  "inspectParsed": 2,
+                  "checkParsedJson": 23270,
+                  "checkParsedPrototypes": 2,
+                  "checkLab": 3,
+                  "remember": 2,
+                  "validate": 1,
+                  "checkJson": 11634,
+                  "JSON.stringify": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 773840,
+                  "utf8BytesWritten": 773840
+                }
+              }
+            },
+            "wallMsPerOperation": {
+              "count": 1,
+              "mean": 109.56911599999876,
+              "p50": 109.56911599999876,
+              "p95": 109.56911599999876,
+              "p99": 109.56911599999876,
+              "min": 109.56911599999876,
+              "max": 109.56911599999876
+            },
+            "processCpuMsPerOperation": {
+              "count": 1,
+              "mean": 113.659,
+              "p50": 113.659,
+              "p95": 113.659,
+              "p99": 113.659,
+              "min": 113.659,
+              "max": 113.659
+            },
+            "wallSamples": [
+              109.56911599999876
+            ],
+            "cpuSamples": [
+              113.659
+            ],
+            "digests": [
+              {
+                "rawSha256": "d8fb6401e84a50034e60b56d3a38b1885cb9d725b9553856c67fb77f6dc22abb",
+                "rawCharacters": 773840,
+                "rawUtf8Bytes": 773840,
+                "returnSha256": "8bb442731a0425b5da7ed2cf972eab1ec58f12d13caec71f9dec13c7edcca629",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000002000
+              }
+            ],
+            "simulation": {
+              "physicsAccumulator": 0,
+              "logicAccumulator": 0,
+              "simTime": 0,
+              "physicsDt": 0.008333333333333333,
+              "logicDt": 0.06666666666666667,
+              "physics": 0,
+              "logic": 0,
+              "droppedSeconds": 0
+            },
+            "worldTime": 0,
+            "finalStateSha256": "04422444fe0fad60f32782d419d3425397965047202923c37e5f8ff813cb7fd5",
+            "diagnostics": [
+              {
+                "calls": {
+                  "write": 1,
+                  "readFrom": 1,
+                  "inspect": 1,
+                  "JSON.parse": 2,
+                  "inspectParsed": 2,
+                  "checkParsedJson": 23270,
+                  "checkParsedPrototypes": 2,
+                  "checkLab": 3,
+                  "remember": 2,
+                  "validate": 1,
+                  "checkJson": 11634,
+                  "JSON.stringify": 1
+                },
+                "inclusiveWallMs": {},
+                "storage": {
+                  "reads": 1,
+                  "writes": 1,
+                  "charactersWritten": 773840,
+                  "utf8BytesWritten": 773840
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "comparisons": [
+        {
+          "repetition": 1,
+          "exactColdAndFinalBytes": true,
+          "exactCompleteParsedRecords": true,
+          "exactPhysicalState": true,
+          "equalEverySamplePayloadHashes": true
+        }
+      ],
+      "stopped": null
+    }
+  ]
+}

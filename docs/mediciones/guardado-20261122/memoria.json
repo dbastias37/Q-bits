@@ -1,0 +1,1808 @@
+{
+  "schema": 1,
+  "source": {
+    "commit": "8cfec4a222df236a333290334d9eaa688ba56bb7",
+    "files": {
+      "assets/js/battery-liquid.js": "d20a0a4ac790abe6b18922274dc087530c25b4484407c263f1e173fefe042b64",
+      "assets/js/boot.js": "817dfcf8d43fcb18d8581a23198a97048566c3758b70911bb6e71de88a111fce",
+      "assets/js/campaign-automation.js": "dd16b1bc278dd10fd43725fd766e58053eb689a7a6a572c029f1625116159e93",
+      "assets/js/campaign-production.js": "bd22aefd732f2869a43251e44351f3133cf54696818a5ed030dbf9683dc793dd",
+      "assets/js/campaign-reconfiguration.js": "4a8579f266c8c79142a7da848f29227bc40a57a1cf785ed0a60d72cc5b0e6cd0",
+      "assets/js/cannon.min.js": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+      "assets/js/contact-sensors.js": "0e887f4cb53298e52e1e554c6422aea135d84f0d0d4c3b9ffaa4e1579589b5ae",
+      "assets/js/controls.js": "d2b95a24aba9efb71bfb6b2e8183fc3d06a87721ea6441c64acfdecd95907a50",
+      "assets/js/conveyor-panel.js": "b2789d469d9e24f02c01acc038b2b6b817380366bcd759bfc0ba58a6d69c16d7",
+      "assets/js/culling.js": "8fc8ef54add1e1a267881c643ea4a3d92ff2124b2c8cedbcd13781aee4fad5dc",
+      "assets/js/dialogue-timing.js": "b5b880f4938535673ae179b46fe5156914a55c48902697093bde203dbea4bbae",
+      "assets/js/footsteps.js": "7f3898a2dba1c0f6560ce7e7005e1e50155acd4a0ab62bbd382fdfae8357cb98",
+      "assets/js/furniture-models.js": "93c2a7b2672644a0bc83dec89fac290cf29f67e08345d6ade7d844201c48ad1d",
+      "assets/js/game.js": "19efe4aa93ceac0791968c5d4e85ea6f5a980cf65b0b3302f20a70933ffe6da0",
+      "assets/js/glass.js": "b893b3acd02f4f96e7d5f86c5a3d2f192d346070e34debeff3f0ac9655924a92",
+      "assets/js/graphics.js": "e2f54b7c93b443fd1a1b194394b65e3b79bdf837f5f11e76d9331300a120ddad",
+      "assets/js/guide-audio.js": "b878e847cdff39fc547669292d6543321e3ae625844c14d779de13262dd69cb1",
+      "assets/js/join-audio.js": "46b29e3dc2519dc254272843a713a837d966fc33e52d0d2748b24f08d1970e41",
+      "assets/js/music.js": "65cf4f18eb6f54ed39fcce656515fbfa93f40bd15b4a88f8026d8c0cbd6a70ae",
+      "assets/js/opening.js": "23fee7408da6b19845371fec6aad4b6b5e98aa43569c45af07e4614b29b5695f",
+      "assets/js/organizers.js": "fdfadd3f0878361a2d38964b1fb8094fef9995ab7e4c7feef6a16df7f7623395",
+      "assets/js/preferences.js": "78300e5d92f9766ce7b823153a69cd39f9b96d4526b03143fa4cb4f99f8c40a7",
+      "assets/js/progression.js": "5f860eac085ff6de445cb19393e1c0ee78db6ad4cd67ba89639265756d2506a6",
+      "assets/js/propeller-power.js": "d29b1239fc0b143c119d2f816c4bc90192f4a50e23de73c7227c02303d34cf62",
+      "assets/js/radial-menu.js": "4250630f3d73b463fa2914eee4068b1afe25ba93791753c775e64c4894c617dd",
+      "assets/js/reservoir-model.js": "dd876f6fd9e54f6245b36925d3f4ce48342c15773b8cc218869192ad9b26ef63",
+      "assets/js/robot-arm-panel.js": "4d8e018fd9a9700dac4b92e6cf2a10ba54fe7580ef67672da5c4217aa60dfd2c",
+      "assets/js/rotor-power.js": "29ea7519beba93a0f31656069dd0356d2dafa76bd008f6a6c5b274c048867adc",
+      "assets/js/save-games.js": "92d815253e97b75c8e7357d01f6fcb244911279ac778db4025780a71efdfb92b",
+      "assets/js/selection-hud.js": "53f40eaa0ae755d693a5c93f0604e680f00d0b5395705f82acdd04a976fcc331",
+      "assets/js/servo-panel.js": "6270c7e9d4eb2657246082d2b4c9225fc357c4031c345412395d1321c4f26cb7",
+      "assets/js/settings.js": "986dc1bdb7569dcb519a0de744d70dd4665e4577f4271a1d55a1722a7134dfbe",
+      "assets/js/subtitles.js": "dfb7d22140dc7219518bc92b5334fcb09bcf4af40e13a4e502a799a077853f10",
+      "assets/js/tablet-model.js": "efe7ee587300115fbe6215d0de58a43df2dcfb786b39bffd7436d85dc8a8b40b",
+      "assets/js/tablet-view.js": "2d6766ea461b8b15df237abb68b8b53e8069ffd1335ae8cfc66a8a27bf4ca0ac",
+      "assets/js/workshop-panel.js": "9e3a0a0659e884971f03c77c26f18a12c75199e4be11b38387436e5e161ac597",
+      "assets/js/workshop.js": "cc992783a31bb46b780603457f5b33e3c32c18a015924ebbbc01435f622efe24",
+      "tests/game-harness.cjs": "cf06cc1b315e830366c03798a8ffa778112692829b9a319b52b88ab07e8c6b0e",
+      "tests/cpu-audit-fixtures.cjs": "36b6aa95a16445a9ef2af8015f6f19432c0c814340d6b6aa06abd234dda8b051"
+    }
+  },
+  "benchmarkSha256": "d45ec1d18f49f3fd4f97a3a0b616b772eda8f61fbc386b28d542f84fd9db6752",
+  "runtime": {
+    "node": "v24.22.3",
+    "platform": "linux",
+    "arch": "x64"
+  },
+  "configuration": {
+    "scales": [
+      16,
+      1000,
+      2000
+    ],
+    "iterations": 6,
+    "physicsHz": 120,
+    "storage": "Map implementing getItem/setItem; no Web Storage I/O"
+  },
+  "method": {
+    "scope": "Exact objects and own-property slots reachable from the private checked root. The store API object, function closures, existing scene, test hooks and temporary probe Sets are outside this cache inventory.",
+    "strings": "UTF-16 code units and UTF-8 encoded lengths describe retained raw values, not V8 heap bytes. Map and the cache can share the same immutable string; distinct physical string allocations or engine representation are not inferred.",
+    "instrumentation": "Only an in-memory copy of save-games.js exposes the private root. All game modules and the real snapshot fixture load from the selected checkout. No production getter, file mutation, timer, forced GC or heap delta.",
+    "boundedness": "Four to eight changed revisions per mode, then caller mutation, quota failure, external corruption, valid external replacement, deletion and empty-slot quota failure. After deletion the checked root remains, but zero records and zero raw values are retained."
+  },
+  "reports": [
+    {
+      "pieces": 16,
+      "inventory": {
+        "pieces": 16,
+        "groups": 2,
+        "physicalBodies": 8,
+        "dynamicBodies": 2,
+        "virtualGroups": 0,
+        "shapes": 8,
+        "constraints": 0,
+        "awakeBodies": 2,
+        "contacts": 0,
+        "contactEquations": 0,
+        "frictionEquations": 0,
+        "constraintEquations": 0,
+        "sensors": 0,
+        "motors": 0,
+        "activeMotors": 0,
+        "physicsDt": 0.008333333333333333
+      },
+      "iterations": 6,
+      "maximumCacheRecords": 2,
+      "maximumOwnedObjects": 3,
+      "versions": [
+        {
+          "update": 1,
+          "activeSlotOwners": 2,
+          "totalOwnedObjects": 3,
+          "labRawSha256": "1e69216adad89984eb1b457c4715e70f7ea9fc5af08bd2160e9190fb39cc8441",
+          "campaignRawSha256": "80e53cd6b2eb480bd05a00572433437d8d060267c6bfbbc425119d15884957ec"
+        },
+        {
+          "update": 2,
+          "activeSlotOwners": 2,
+          "totalOwnedObjects": 3,
+          "labRawSha256": "30fcc8bb470109f0d69a3a995ecadce20fd83833d3eecfe9c910e52c6b1d204c",
+          "campaignRawSha256": "8e763198cfcac0c38f5dd5f789ad0015ffdf0b27947c402400380d9c50ebcdff"
+        },
+        {
+          "update": 3,
+          "activeSlotOwners": 2,
+          "totalOwnedObjects": 3,
+          "labRawSha256": "7f7d18cd110103fd8b382c7a08d00c4df0ce975c2a897f588343112317a1e3f8",
+          "campaignRawSha256": "13633364a3f6cae152844b620c4d6705a6310a6e89451152939034c4c858363a"
+        },
+        {
+          "update": 4,
+          "activeSlotOwners": 2,
+          "totalOwnedObjects": 3,
+          "labRawSha256": "c423a60a8cff6a885b22eadeddb4364fe9b4e94aa2a8378b42a93fa7a85da5ca",
+          "campaignRawSha256": "93a8f99caf7f30e9367a4fadcdb940c3dbdfa000ddcc35da66a07aa27f3f7c37"
+        },
+        {
+          "update": 5,
+          "activeSlotOwners": 2,
+          "totalOwnedObjects": 3,
+          "labRawSha256": "971dcb2d4c18eb2d2af8d8039b0ee888ca6e618be7782437f5aecc4ae88764b2",
+          "campaignRawSha256": "34c930f9dcdd3cba88ecc0f613800b4314d87f653cc1806b0059768eb2ac25ea"
+        },
+        {
+          "update": 6,
+          "activeSlotOwners": 2,
+          "totalOwnedObjects": 3,
+          "labRawSha256": "84f6fd5ae58f2e400a900cf8e313795b5091df16caa66eb016d74542a2b49442",
+          "campaignRawSha256": "421c363f25240f8312121e7212a806b783738d83f658aba21fa8eaae10c4bbfc"
+        }
+      ],
+      "checkpoints": [
+        {
+          "stage": "empty",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 0,
+            "cacheRecords": 0,
+            "totalOwnedObjects": 1,
+            "ownedObjectReferenceSlots": 0,
+            "primitiveRecordSlots": 0,
+            "primitiveTypes": {
+              "string": 0,
+              "number": 0,
+              "boolean": 0,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 0,
+            "rawUtf8Bytes": 0,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": []
+          }
+        },
+        {
+          "stage": "both-populated",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 2,
+            "cacheRecords": 2,
+            "totalOwnedObjects": 3,
+            "ownedObjectReferenceSlots": 2,
+            "primitiveRecordSlots": 8,
+            "primitiveTypes": {
+              "string": 2,
+              "number": 4,
+              "boolean": 2,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 7514,
+            "rawUtf8Bytes": 7514,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": [
+              {
+                "mode": "lab",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 7285,
+                "rawUtf8Bytes": 7285,
+                "rawSha256": "c08761cde798072df14e0fcd6ce136f52955a11260694c03fdd080eb9d39ff73",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              {
+                "mode": "campaign",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 229,
+                "rawUtf8Bytes": 229,
+                "rawSha256": "1d24f57304094f00f30ad3729d5105ad5d868effe54071ebdbd852692aa8b5b6",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              }
+            ]
+          }
+        },
+        {
+          "stage": "after-bounded-updates",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 2,
+            "cacheRecords": 2,
+            "totalOwnedObjects": 3,
+            "ownedObjectReferenceSlots": 2,
+            "primitiveRecordSlots": 8,
+            "primitiveTypes": {
+              "string": 2,
+              "number": 4,
+              "boolean": 2,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 7515,
+            "rawUtf8Bytes": 7515,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": [
+              {
+                "mode": "lab",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 7286,
+                "rawUtf8Bytes": 7286,
+                "rawSha256": "84f6fd5ae58f2e400a900cf8e313795b5091df16caa66eb016d74542a2b49442",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              },
+              {
+                "mode": "campaign",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 229,
+                "rawUtf8Bytes": 229,
+                "rawSha256": "421c363f25240f8312121e7212a806b783738d83f658aba21fa8eaae10c4bbfc",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              }
+            ]
+          }
+        },
+        {
+          "stage": "after-caller-mutations",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 2,
+            "cacheRecords": 2,
+            "totalOwnedObjects": 3,
+            "ownedObjectReferenceSlots": 2,
+            "primitiveRecordSlots": 8,
+            "primitiveTypes": {
+              "string": 2,
+              "number": 4,
+              "boolean": 2,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 7515,
+            "rawUtf8Bytes": 7515,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": [
+              {
+                "mode": "lab",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 7286,
+                "rawUtf8Bytes": 7286,
+                "rawSha256": "84f6fd5ae58f2e400a900cf8e313795b5091df16caa66eb016d74542a2b49442",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              },
+              {
+                "mode": "campaign",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 229,
+                "rawUtf8Bytes": 229,
+                "rawSha256": "421c363f25240f8312121e7212a806b783738d83f658aba21fa8eaae10c4bbfc",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              }
+            ]
+          }
+        },
+        {
+          "stage": "after-quota-failure",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 2,
+            "cacheRecords": 2,
+            "totalOwnedObjects": 3,
+            "ownedObjectReferenceSlots": 2,
+            "primitiveRecordSlots": 8,
+            "primitiveTypes": {
+              "string": 2,
+              "number": 4,
+              "boolean": 2,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 7515,
+            "rawUtf8Bytes": 7515,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": [
+              {
+                "mode": "lab",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 7286,
+                "rawUtf8Bytes": 7286,
+                "rawSha256": "84f6fd5ae58f2e400a900cf8e313795b5091df16caa66eb016d74542a2b49442",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              },
+              {
+                "mode": "campaign",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 229,
+                "rawUtf8Bytes": 229,
+                "rawSha256": "421c363f25240f8312121e7212a806b783738d83f658aba21fa8eaae10c4bbfc",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              }
+            ]
+          }
+        },
+        {
+          "stage": "after-external-malformed-lab",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 1,
+            "cacheRecords": 1,
+            "totalOwnedObjects": 2,
+            "ownedObjectReferenceSlots": 1,
+            "primitiveRecordSlots": 4,
+            "primitiveTypes": {
+              "string": 1,
+              "number": 2,
+              "boolean": 1,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 229,
+            "rawUtf8Bytes": 229,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": [
+              {
+                "mode": "campaign",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 229,
+                "rawUtf8Bytes": 229,
+                "rawSha256": "421c363f25240f8312121e7212a806b783738d83f658aba21fa8eaae10c4bbfc",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              }
+            ]
+          }
+        },
+        {
+          "stage": "after-external-valid-lab",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 2,
+            "cacheRecords": 2,
+            "totalOwnedObjects": 3,
+            "ownedObjectReferenceSlots": 2,
+            "primitiveRecordSlots": 8,
+            "primitiveTypes": {
+              "string": 2,
+              "number": 4,
+              "boolean": 2,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 7515,
+            "rawUtf8Bytes": 7515,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": [
+              {
+                "mode": "lab",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 7286,
+                "rawUtf8Bytes": 7286,
+                "rawSha256": "84f6fd5ae58f2e400a900cf8e313795b5091df16caa66eb016d74542a2b49442",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              },
+              {
+                "mode": "campaign",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 229,
+                "rawUtf8Bytes": 229,
+                "rawSha256": "421c363f25240f8312121e7212a806b783738d83f658aba21fa8eaae10c4bbfc",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              }
+            ]
+          }
+        },
+        {
+          "stage": "after-external-delete-lab",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 1,
+            "cacheRecords": 1,
+            "totalOwnedObjects": 2,
+            "ownedObjectReferenceSlots": 1,
+            "primitiveRecordSlots": 4,
+            "primitiveTypes": {
+              "string": 1,
+              "number": 2,
+              "boolean": 1,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 229,
+            "rawUtf8Bytes": 229,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": [
+              {
+                "mode": "campaign",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 229,
+                "rawUtf8Bytes": 229,
+                "rawSha256": "421c363f25240f8312121e7212a806b783738d83f658aba21fa8eaae10c4bbfc",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              }
+            ]
+          }
+        },
+        {
+          "stage": "after-external-delete-campaign",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 0,
+            "cacheRecords": 0,
+            "totalOwnedObjects": 1,
+            "ownedObjectReferenceSlots": 0,
+            "primitiveRecordSlots": 0,
+            "primitiveTypes": {
+              "string": 0,
+              "number": 0,
+              "boolean": 0,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 0,
+            "rawUtf8Bytes": 0,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": []
+          }
+        },
+        {
+          "stage": "after-empty-slot-quota-failure",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 0,
+            "cacheRecords": 0,
+            "totalOwnedObjects": 1,
+            "ownedObjectReferenceSlots": 0,
+            "primitiveRecordSlots": 0,
+            "primitiveTypes": {
+              "string": 0,
+              "number": 0,
+              "boolean": 0,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 0,
+            "rawUtf8Bytes": 0,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": []
+          }
+        }
+      ],
+      "assertions": {
+        "boundedSlots": true,
+        "noHistoricalDecodedGraphs": true,
+        "noInputOrResultGraphOwnership": true,
+        "callerMutationIsolation": true,
+        "quotaPreservesPriorRecord": true,
+        "emptyQuotaCreatesNoRecord": true,
+        "malformedExternalBytesClearSlot": true,
+        "externalDeletionClearsBothSlots": true
+      }
+    },
+    {
+      "pieces": 1000,
+      "inventory": {
+        "pieces": 1000,
+        "groups": 100,
+        "physicalBodies": 106,
+        "dynamicBodies": 100,
+        "virtualGroups": 0,
+        "shapes": 106,
+        "constraints": 0,
+        "awakeBodies": 100,
+        "contacts": 0,
+        "contactEquations": 0,
+        "frictionEquations": 0,
+        "constraintEquations": 0,
+        "sensors": 0,
+        "motors": 0,
+        "activeMotors": 0,
+        "physicsDt": 0.008333333333333333
+      },
+      "iterations": 6,
+      "maximumCacheRecords": 2,
+      "maximumOwnedObjects": 3,
+      "versions": [
+        {
+          "update": 1,
+          "activeSlotOwners": 2,
+          "totalOwnedObjects": 3,
+          "labRawSha256": "3da2ea1a38a372156e74b352fb7528c9dfdf7d871ed52b43a079e0e38d68c571",
+          "campaignRawSha256": "80e53cd6b2eb480bd05a00572433437d8d060267c6bfbbc425119d15884957ec"
+        },
+        {
+          "update": 2,
+          "activeSlotOwners": 2,
+          "totalOwnedObjects": 3,
+          "labRawSha256": "47f5bb533b5a23708ac7c7c833fe89949fc700db0d7bd03ebc7816be1f0c7656",
+          "campaignRawSha256": "8e763198cfcac0c38f5dd5f789ad0015ffdf0b27947c402400380d9c50ebcdff"
+        },
+        {
+          "update": 3,
+          "activeSlotOwners": 2,
+          "totalOwnedObjects": 3,
+          "labRawSha256": "01c5efedf4d88fda01005d9718b23d502e7a4fb8dcdfd323cd221bc67012dc9f",
+          "campaignRawSha256": "13633364a3f6cae152844b620c4d6705a6310a6e89451152939034c4c858363a"
+        },
+        {
+          "update": 4,
+          "activeSlotOwners": 2,
+          "totalOwnedObjects": 3,
+          "labRawSha256": "1f632e6311d25c0eb1ef9773d3408ae780831ef7042ce0e15e1336770aaf1225",
+          "campaignRawSha256": "93a8f99caf7f30e9367a4fadcdb940c3dbdfa000ddcc35da66a07aa27f3f7c37"
+        },
+        {
+          "update": 5,
+          "activeSlotOwners": 2,
+          "totalOwnedObjects": 3,
+          "labRawSha256": "d2d5e249f53d772715cf87eaf3c4c6e41d3aadd7f2676dbdf5f3e6d72195f6ff",
+          "campaignRawSha256": "34c930f9dcdd3cba88ecc0f613800b4314d87f653cc1806b0059768eb2ac25ea"
+        },
+        {
+          "update": 6,
+          "activeSlotOwners": 2,
+          "totalOwnedObjects": 3,
+          "labRawSha256": "b76b702f1e094e2d789d54dae0ffa03106d715353cedaff56cb3bbf6ae615577",
+          "campaignRawSha256": "421c363f25240f8312121e7212a806b783738d83f658aba21fa8eaae10c4bbfc"
+        }
+      ],
+      "checkpoints": [
+        {
+          "stage": "empty",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 0,
+            "cacheRecords": 0,
+            "totalOwnedObjects": 1,
+            "ownedObjectReferenceSlots": 0,
+            "primitiveRecordSlots": 0,
+            "primitiveTypes": {
+              "string": 0,
+              "number": 0,
+              "boolean": 0,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 0,
+            "rawUtf8Bytes": 0,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": []
+          }
+        },
+        {
+          "stage": "both-populated",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 2,
+            "cacheRecords": 2,
+            "totalOwnedObjects": 3,
+            "ownedObjectReferenceSlots": 2,
+            "primitiveRecordSlots": 8,
+            "primitiveTypes": {
+              "string": 2,
+              "number": 4,
+              "boolean": 2,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 387425,
+            "rawUtf8Bytes": 387425,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": [
+              {
+                "mode": "lab",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 387196,
+                "rawUtf8Bytes": 387196,
+                "rawSha256": "8b4f65a2e8c7d748bd84f1c7f3e01c1129a25b92431a106b421d5bd10544be5b",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              {
+                "mode": "campaign",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 229,
+                "rawUtf8Bytes": 229,
+                "rawSha256": "1d24f57304094f00f30ad3729d5105ad5d868effe54071ebdbd852692aa8b5b6",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              }
+            ]
+          }
+        },
+        {
+          "stage": "after-bounded-updates",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 2,
+            "cacheRecords": 2,
+            "totalOwnedObjects": 3,
+            "ownedObjectReferenceSlots": 2,
+            "primitiveRecordSlots": 8,
+            "primitiveTypes": {
+              "string": 2,
+              "number": 4,
+              "boolean": 2,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 387426,
+            "rawUtf8Bytes": 387426,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": [
+              {
+                "mode": "lab",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 387197,
+                "rawUtf8Bytes": 387197,
+                "rawSha256": "b76b702f1e094e2d789d54dae0ffa03106d715353cedaff56cb3bbf6ae615577",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              },
+              {
+                "mode": "campaign",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 229,
+                "rawUtf8Bytes": 229,
+                "rawSha256": "421c363f25240f8312121e7212a806b783738d83f658aba21fa8eaae10c4bbfc",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              }
+            ]
+          }
+        },
+        {
+          "stage": "after-caller-mutations",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 2,
+            "cacheRecords": 2,
+            "totalOwnedObjects": 3,
+            "ownedObjectReferenceSlots": 2,
+            "primitiveRecordSlots": 8,
+            "primitiveTypes": {
+              "string": 2,
+              "number": 4,
+              "boolean": 2,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 387426,
+            "rawUtf8Bytes": 387426,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": [
+              {
+                "mode": "lab",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 387197,
+                "rawUtf8Bytes": 387197,
+                "rawSha256": "b76b702f1e094e2d789d54dae0ffa03106d715353cedaff56cb3bbf6ae615577",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              },
+              {
+                "mode": "campaign",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 229,
+                "rawUtf8Bytes": 229,
+                "rawSha256": "421c363f25240f8312121e7212a806b783738d83f658aba21fa8eaae10c4bbfc",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              }
+            ]
+          }
+        },
+        {
+          "stage": "after-quota-failure",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 2,
+            "cacheRecords": 2,
+            "totalOwnedObjects": 3,
+            "ownedObjectReferenceSlots": 2,
+            "primitiveRecordSlots": 8,
+            "primitiveTypes": {
+              "string": 2,
+              "number": 4,
+              "boolean": 2,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 387426,
+            "rawUtf8Bytes": 387426,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": [
+              {
+                "mode": "lab",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 387197,
+                "rawUtf8Bytes": 387197,
+                "rawSha256": "b76b702f1e094e2d789d54dae0ffa03106d715353cedaff56cb3bbf6ae615577",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              },
+              {
+                "mode": "campaign",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 229,
+                "rawUtf8Bytes": 229,
+                "rawSha256": "421c363f25240f8312121e7212a806b783738d83f658aba21fa8eaae10c4bbfc",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              }
+            ]
+          }
+        },
+        {
+          "stage": "after-external-malformed-lab",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 1,
+            "cacheRecords": 1,
+            "totalOwnedObjects": 2,
+            "ownedObjectReferenceSlots": 1,
+            "primitiveRecordSlots": 4,
+            "primitiveTypes": {
+              "string": 1,
+              "number": 2,
+              "boolean": 1,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 229,
+            "rawUtf8Bytes": 229,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": [
+              {
+                "mode": "campaign",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 229,
+                "rawUtf8Bytes": 229,
+                "rawSha256": "421c363f25240f8312121e7212a806b783738d83f658aba21fa8eaae10c4bbfc",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              }
+            ]
+          }
+        },
+        {
+          "stage": "after-external-valid-lab",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 2,
+            "cacheRecords": 2,
+            "totalOwnedObjects": 3,
+            "ownedObjectReferenceSlots": 2,
+            "primitiveRecordSlots": 8,
+            "primitiveTypes": {
+              "string": 2,
+              "number": 4,
+              "boolean": 2,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 387426,
+            "rawUtf8Bytes": 387426,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": [
+              {
+                "mode": "lab",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 387197,
+                "rawUtf8Bytes": 387197,
+                "rawSha256": "b76b702f1e094e2d789d54dae0ffa03106d715353cedaff56cb3bbf6ae615577",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              },
+              {
+                "mode": "campaign",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 229,
+                "rawUtf8Bytes": 229,
+                "rawSha256": "421c363f25240f8312121e7212a806b783738d83f658aba21fa8eaae10c4bbfc",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              }
+            ]
+          }
+        },
+        {
+          "stage": "after-external-delete-lab",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 1,
+            "cacheRecords": 1,
+            "totalOwnedObjects": 2,
+            "ownedObjectReferenceSlots": 1,
+            "primitiveRecordSlots": 4,
+            "primitiveTypes": {
+              "string": 1,
+              "number": 2,
+              "boolean": 1,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 229,
+            "rawUtf8Bytes": 229,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": [
+              {
+                "mode": "campaign",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 229,
+                "rawUtf8Bytes": 229,
+                "rawSha256": "421c363f25240f8312121e7212a806b783738d83f658aba21fa8eaae10c4bbfc",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              }
+            ]
+          }
+        },
+        {
+          "stage": "after-external-delete-campaign",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 0,
+            "cacheRecords": 0,
+            "totalOwnedObjects": 1,
+            "ownedObjectReferenceSlots": 0,
+            "primitiveRecordSlots": 0,
+            "primitiveTypes": {
+              "string": 0,
+              "number": 0,
+              "boolean": 0,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 0,
+            "rawUtf8Bytes": 0,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": []
+          }
+        },
+        {
+          "stage": "after-empty-slot-quota-failure",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 0,
+            "cacheRecords": 0,
+            "totalOwnedObjects": 1,
+            "ownedObjectReferenceSlots": 0,
+            "primitiveRecordSlots": 0,
+            "primitiveTypes": {
+              "string": 0,
+              "number": 0,
+              "boolean": 0,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 0,
+            "rawUtf8Bytes": 0,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": []
+          }
+        }
+      ],
+      "assertions": {
+        "boundedSlots": true,
+        "noHistoricalDecodedGraphs": true,
+        "noInputOrResultGraphOwnership": true,
+        "callerMutationIsolation": true,
+        "quotaPreservesPriorRecord": true,
+        "emptyQuotaCreatesNoRecord": true,
+        "malformedExternalBytesClearSlot": true,
+        "externalDeletionClearsBothSlots": true
+      }
+    },
+    {
+      "pieces": 2000,
+      "inventory": {
+        "pieces": 2000,
+        "groups": 200,
+        "physicalBodies": 206,
+        "dynamicBodies": 200,
+        "virtualGroups": 0,
+        "shapes": 206,
+        "constraints": 0,
+        "awakeBodies": 200,
+        "contacts": 0,
+        "contactEquations": 0,
+        "frictionEquations": 0,
+        "constraintEquations": 0,
+        "sensors": 0,
+        "motors": 0,
+        "activeMotors": 0,
+        "physicsDt": 0.008333333333333333
+      },
+      "iterations": 6,
+      "maximumCacheRecords": 2,
+      "maximumOwnedObjects": 3,
+      "versions": [
+        {
+          "update": 1,
+          "activeSlotOwners": 2,
+          "totalOwnedObjects": 3,
+          "labRawSha256": "7946046d530c3ff0ba88b57e5c6acdf431c651273b1c5a5f928126338cf596a9",
+          "campaignRawSha256": "80e53cd6b2eb480bd05a00572433437d8d060267c6bfbbc425119d15884957ec"
+        },
+        {
+          "update": 2,
+          "activeSlotOwners": 2,
+          "totalOwnedObjects": 3,
+          "labRawSha256": "b193fe30896c9e6248b266ee8aab7431c7c53b916682b45ddc1b2fa665c5c97b",
+          "campaignRawSha256": "8e763198cfcac0c38f5dd5f789ad0015ffdf0b27947c402400380d9c50ebcdff"
+        },
+        {
+          "update": 3,
+          "activeSlotOwners": 2,
+          "totalOwnedObjects": 3,
+          "labRawSha256": "2a9e18440c5996584ae21bc99802446f0500056c536de32ef397feda4f5cd0e8",
+          "campaignRawSha256": "13633364a3f6cae152844b620c4d6705a6310a6e89451152939034c4c858363a"
+        },
+        {
+          "update": 4,
+          "activeSlotOwners": 2,
+          "totalOwnedObjects": 3,
+          "labRawSha256": "1049e28328ebdbd322f749eb24ffd399998c1dbc0962f0a1c249588d07ac6efd",
+          "campaignRawSha256": "93a8f99caf7f30e9367a4fadcdb940c3dbdfa000ddcc35da66a07aa27f3f7c37"
+        },
+        {
+          "update": 5,
+          "activeSlotOwners": 2,
+          "totalOwnedObjects": 3,
+          "labRawSha256": "e8cc912152e4079535ce731b4e73b415b2c385d46f8901a5f03a1bafdeffad0e",
+          "campaignRawSha256": "34c930f9dcdd3cba88ecc0f613800b4314d87f653cc1806b0059768eb2ac25ea"
+        },
+        {
+          "update": 6,
+          "activeSlotOwners": 2,
+          "totalOwnedObjects": 3,
+          "labRawSha256": "2620de829a5aefd4c980eb8a2853211580c82155b418572f735e49882ae31cfa",
+          "campaignRawSha256": "421c363f25240f8312121e7212a806b783738d83f658aba21fa8eaae10c4bbfc"
+        }
+      ],
+      "checkpoints": [
+        {
+          "stage": "empty",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 0,
+            "cacheRecords": 0,
+            "totalOwnedObjects": 1,
+            "ownedObjectReferenceSlots": 0,
+            "primitiveRecordSlots": 0,
+            "primitiveTypes": {
+              "string": 0,
+              "number": 0,
+              "boolean": 0,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 0,
+            "rawUtf8Bytes": 0,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": []
+          }
+        },
+        {
+          "stage": "both-populated",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 2,
+            "cacheRecords": 2,
+            "totalOwnedObjects": 3,
+            "ownedObjectReferenceSlots": 2,
+            "primitiveRecordSlots": 8,
+            "primitiveTypes": {
+              "string": 2,
+              "number": 4,
+              "boolean": 2,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 774090,
+            "rawUtf8Bytes": 774090,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": [
+              {
+                "mode": "lab",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 773861,
+                "rawUtf8Bytes": 773861,
+                "rawSha256": "89072f55a6141937aa018dff22062f45f271d8587a7efe2908400cff59fb8801",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              },
+              {
+                "mode": "campaign",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 229,
+                "rawUtf8Bytes": 229,
+                "rawSha256": "1d24f57304094f00f30ad3729d5105ad5d868effe54071ebdbd852692aa8b5b6",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000000000
+              }
+            ]
+          }
+        },
+        {
+          "stage": "after-bounded-updates",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 2,
+            "cacheRecords": 2,
+            "totalOwnedObjects": 3,
+            "ownedObjectReferenceSlots": 2,
+            "primitiveRecordSlots": 8,
+            "primitiveTypes": {
+              "string": 2,
+              "number": 4,
+              "boolean": 2,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 774091,
+            "rawUtf8Bytes": 774091,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": [
+              {
+                "mode": "lab",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 773862,
+                "rawUtf8Bytes": 773862,
+                "rawSha256": "2620de829a5aefd4c980eb8a2853211580c82155b418572f735e49882ae31cfa",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              },
+              {
+                "mode": "campaign",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 229,
+                "rawUtf8Bytes": 229,
+                "rawSha256": "421c363f25240f8312121e7212a806b783738d83f658aba21fa8eaae10c4bbfc",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              }
+            ]
+          }
+        },
+        {
+          "stage": "after-caller-mutations",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 2,
+            "cacheRecords": 2,
+            "totalOwnedObjects": 3,
+            "ownedObjectReferenceSlots": 2,
+            "primitiveRecordSlots": 8,
+            "primitiveTypes": {
+              "string": 2,
+              "number": 4,
+              "boolean": 2,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 774091,
+            "rawUtf8Bytes": 774091,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": [
+              {
+                "mode": "lab",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 773862,
+                "rawUtf8Bytes": 773862,
+                "rawSha256": "2620de829a5aefd4c980eb8a2853211580c82155b418572f735e49882ae31cfa",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              },
+              {
+                "mode": "campaign",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 229,
+                "rawUtf8Bytes": 229,
+                "rawSha256": "421c363f25240f8312121e7212a806b783738d83f658aba21fa8eaae10c4bbfc",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              }
+            ]
+          }
+        },
+        {
+          "stage": "after-quota-failure",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 2,
+            "cacheRecords": 2,
+            "totalOwnedObjects": 3,
+            "ownedObjectReferenceSlots": 2,
+            "primitiveRecordSlots": 8,
+            "primitiveTypes": {
+              "string": 2,
+              "number": 4,
+              "boolean": 2,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 774091,
+            "rawUtf8Bytes": 774091,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": [
+              {
+                "mode": "lab",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 773862,
+                "rawUtf8Bytes": 773862,
+                "rawSha256": "2620de829a5aefd4c980eb8a2853211580c82155b418572f735e49882ae31cfa",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              },
+              {
+                "mode": "campaign",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 229,
+                "rawUtf8Bytes": 229,
+                "rawSha256": "421c363f25240f8312121e7212a806b783738d83f658aba21fa8eaae10c4bbfc",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              }
+            ]
+          }
+        },
+        {
+          "stage": "after-external-malformed-lab",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 1,
+            "cacheRecords": 1,
+            "totalOwnedObjects": 2,
+            "ownedObjectReferenceSlots": 1,
+            "primitiveRecordSlots": 4,
+            "primitiveTypes": {
+              "string": 1,
+              "number": 2,
+              "boolean": 1,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 229,
+            "rawUtf8Bytes": 229,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": [
+              {
+                "mode": "campaign",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 229,
+                "rawUtf8Bytes": 229,
+                "rawSha256": "421c363f25240f8312121e7212a806b783738d83f658aba21fa8eaae10c4bbfc",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              }
+            ]
+          }
+        },
+        {
+          "stage": "after-external-valid-lab",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 2,
+            "cacheRecords": 2,
+            "totalOwnedObjects": 3,
+            "ownedObjectReferenceSlots": 2,
+            "primitiveRecordSlots": 8,
+            "primitiveTypes": {
+              "string": 2,
+              "number": 4,
+              "boolean": 2,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 774091,
+            "rawUtf8Bytes": 774091,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": [
+              {
+                "mode": "lab",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 773862,
+                "rawUtf8Bytes": 773862,
+                "rawSha256": "2620de829a5aefd4c980eb8a2853211580c82155b418572f735e49882ae31cfa",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              },
+              {
+                "mode": "campaign",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 229,
+                "rawUtf8Bytes": 229,
+                "rawSha256": "421c363f25240f8312121e7212a806b783738d83f658aba21fa8eaae10c4bbfc",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              }
+            ]
+          }
+        },
+        {
+          "stage": "after-external-delete-lab",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 1,
+            "cacheRecords": 1,
+            "totalOwnedObjects": 2,
+            "ownedObjectReferenceSlots": 1,
+            "primitiveRecordSlots": 4,
+            "primitiveTypes": {
+              "string": 1,
+              "number": 2,
+              "boolean": 1,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 229,
+            "rawUtf8Bytes": 229,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": [
+              {
+                "mode": "campaign",
+                "fields": [
+                  "raw",
+                  "arrays",
+                  "createdAt",
+                  "savedAt"
+                ],
+                "fieldCount": 4,
+                "fieldTypes": {
+                  "raw": "string",
+                  "arrays": "boolean",
+                  "createdAt": "number",
+                  "savedAt": "number"
+                },
+                "rawCodeUnits": 229,
+                "rawUtf8Bytes": 229,
+                "rawSha256": "421c363f25240f8312121e7212a806b783738d83f658aba21fa8eaae10c4bbfc",
+                "createdAt": 1800000000000,
+                "savedAt": 1800000006000
+              }
+            ]
+          }
+        },
+        {
+          "stage": "after-external-delete-campaign",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 0,
+            "cacheRecords": 0,
+            "totalOwnedObjects": 1,
+            "ownedObjectReferenceSlots": 0,
+            "primitiveRecordSlots": 0,
+            "primitiveTypes": {
+              "string": 0,
+              "number": 0,
+              "boolean": 0,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 0,
+            "rawUtf8Bytes": 0,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": []
+          }
+        },
+        {
+          "stage": "after-empty-slot-quota-failure",
+          "inventory": {
+            "rootObjects": 1,
+            "rootSlotProperties": 2,
+            "activeSlotOwners": 0,
+            "cacheRecords": 0,
+            "totalOwnedObjects": 1,
+            "ownedObjectReferenceSlots": 0,
+            "primitiveRecordSlots": 0,
+            "primitiveTypes": {
+              "string": 0,
+              "number": 0,
+              "boolean": 0,
+              "null": 0,
+              "undefined": 0
+            },
+            "rawCodeUnits": 0,
+            "rawUtf8Bytes": 0,
+            "decodedGraphReferences": 0,
+            "borrowedInputOrResultObjects": 0,
+            "records": []
+          }
+        }
+      ],
+      "assertions": {
+        "boundedSlots": true,
+        "noHistoricalDecodedGraphs": true,
+        "noInputOrResultGraphOwnership": true,
+        "callerMutationIsolation": true,
+        "quotaPreservesPriorRecord": true,
+        "emptyQuotaCreatesNoRecord": true,
+        "malformedExternalBytesClearSlot": true,
+        "externalDeletionClearsBothSlots": true
+      }
+    }
+  ]
+}

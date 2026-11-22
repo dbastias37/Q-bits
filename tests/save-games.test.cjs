@@ -220,3 +220,98 @@ test('the real saveLab snapshot serializes Cannon coordinates and all current pi
   assert.equal(Object.getPrototypeOf(result.save.data.snapshot.groups[0].parts[0].p),Object.prototype);
   assert.deepEqual(store(mem).read('lab').save.data,copy(data));
 });
+
+test('warm slots observe external replacement, corruption, future versions and deletion immediately', () => {
+  const mem=memory(), saved=store(mem);assert(saved.write('lab',lab()).ok);
+  const original=mem.values.get(model.KEYS.lab), changed=original.replace('"energy":0.6','"energy":0.2');
+  assert.equal(changed.length,original.length,'same-sized external changes still matter');
+  mem.values.set(model.KEYS.lab,changed);
+  assert.equal(saved.read('lab').save.data.snapshot.groups[0].parts[0].mood.energy,.2);
+  for(const [raw,status] of [['{broken','invalid'],[original.replace('"version":1','"version":2'),'unsupported']]) {
+    mem.values.set(model.KEYS.lab,raw);
+    assert.equal(saved.read('lab').status,status);
+    assert.equal(saved.write('lab',lab()).ok,false);
+    assert.equal(mem.values.get(model.KEYS.lab),raw);
+  }
+  mem.values.set(model.KEYS.lab,original);assert.equal(saved.read('lab').status,'ready');
+  mem.values.delete(model.KEYS.lab);assert.equal(saved.read('lab').status,'empty');
+  assert(saved.write('lab',lab()).ok);assert.deepEqual(saved.read('lab').save.data,lab());
+});
+
+test('mutating returned timestamps cannot change later writes and a failed write cannot promote them', () => {
+  const mem=memory();let clock=100;
+  const saved=store(mem,()=>clock), first=saved.write('campaign',campaign());assert(first.ok);
+  first.save.createdAt=1;first.save.savedAt=99999;
+  const read=saved.read('campaign');read.save.createdAt=2;read.save.savedAt=88888;
+  clock=200;const next=saved.write('campaign',campaign(8));assert(next.ok);
+  assert.equal(next.save.createdAt,100);assert.equal(next.save.savedAt,200);
+  const retained=mem.values.get(model.KEYS.campaign), set=mem.storage.setItem;
+  mem.storage.setItem=()=>{throw new Error('QuotaExceededError');};clock=300;
+  assert.equal(saved.write('campaign',campaign(9)).ok,false);
+  assert.equal(mem.values.get(model.KEYS.campaign),retained);
+  mem.storage.setItem=set;clock=150;
+  const retry=saved.write('campaign',campaign(10));assert(retry.ok);
+  assert.equal(retry.save.createdAt,100);assert.equal(retry.save.savedAt,200);
+  assert.equal(saved.read('campaign').save.data.checkpoint.level,10);
+});
+
+test('warm slots still require a readable current storage target before writing or replacing', () => {
+  const one=memory(),two=memory();let target=one.storage,clock=100;
+  const saved=model.createStore({storage:()=>target,now:()=>clock});
+  assert(saved.write('campaign',campaign(7)).ok);const original=one.values.get(model.KEYS.campaign);
+  target=two.storage;clock=200;assert.equal(saved.read('campaign').status,'empty');
+  const second=saved.write('campaign',campaign(8));assert(second.ok);assert.equal(second.save.createdAt,200);
+  target=one.storage;assert.equal(saved.read('campaign').save.data.checkpoint.level,7);
+  const get=one.storage.getItem;one.storage.getItem=()=>{throw new Error('Read denied');};
+  assert.equal(saved.read('campaign').status,'unavailable');
+  assert.equal(saved.write('campaign',campaign(9)).ok,false);
+  assert.equal(saved.write('campaign',campaign(9),{replace:true}).ok,false);
+  assert.equal(one.values.get(model.KEYS.campaign),original);
+  one.storage.getItem=get;assert.equal(saved.read('campaign').save.createdAt,100);
+});
+
+test('parsed data retains finite-number, depth and own toJSON checks after a valid read', () => {
+  const mem=memory(),saved=store(mem);assert(saved.write('campaign',campaign()).ok);
+  const original=mem.values.get(model.KEYS.campaign);
+  let nested={};for(let i=0;i<129;i++)nested={child:nested};
+  const deep=JSON.parse(original);deep.data.progress.extra=nested;
+  for(const raw of [
+    original.replace('"savedAt":1000','"savedAt":1e999'),
+    original.replace('"progress":{','"progress":{"toJSON":null,'),
+    original.replace('"progress":{','"progress":{"__proto__":{},'),
+    JSON.stringify(deep)
+  ]) {
+    mem.values.set(model.KEYS.campaign,raw);assert.equal(saved.read('campaign').status,'invalid');
+    assert.equal(saved.write('campaign',campaign(8)).ok,false);assert.equal(mem.values.get(model.KEYS.campaign),raw);
+    mem.values.set(model.KEYS.campaign,original);assert.equal(saved.read('campaign').status,'ready');
+  }
+});
+
+test('adding and removing prototype JSON hooks cannot bypass a warm validation or invalidate unrelated arrays', () => {
+  const mem=memory(),writer=store(mem);
+  assert(writer.write('campaign',campaign()).ok);assert(writer.write('lab',lab()).ok);
+  const context=vm.createContext({storage:mem.storage});
+  vm.runInContext(fs.readFileSync(require.resolve('../assets/js/save-games.js'),'utf8'),context);
+  const saved=vm.runInContext('QBitsSavedGames.createStore({storage:()=>storage})',context);
+  assert.equal(saved.read('campaign').status,'ready');assert.equal(saved.read('lab').status,'ready');
+  vm.runInContext('Object.defineProperty(Array.prototype,"toJSON",{value:null,configurable:true})',context);
+  assert.equal(saved.read('campaign').status,'ready','this campaign contains no arrays');
+  assert.equal(saved.read('lab').status,'invalid');
+  vm.runInContext('delete Array.prototype.toJSON',context);
+  assert.equal(saved.read('lab').status,'ready');
+  vm.runInContext('Object.defineProperty(Object.prototype,"toJSON",{value:null,configurable:true})',context);
+  assert.equal(saved.read('campaign').status,'invalid');assert.equal(saved.read('lab').status,'invalid');
+  vm.runInContext('delete Object.prototype.toJSON',context);
+  assert.equal(saved.read('campaign').status,'ready');assert.equal(saved.read('lab').status,'ready');
+});
+
+test('mutation during an injected clock cannot replace the previous save with invalid serialized bytes', () => {
+  for(const mutate of [d=>{d.progress.extra=Infinity;d.checkpoint.level=NaN;},d=>{d.progress.toJSON=null;},d=>{d.progress.constructor='changed';}]) {
+    const mem=memory();assert(store(mem).write('campaign',campaign()).ok);
+    const previous=mem.values.get(model.KEYS.campaign),source=campaign(8);
+    const saved=store(mem,()=>{mutate(source);return 2000;});
+    assert.equal(saved.write('campaign',source).ok,false);
+    assert.equal(mem.values.get(model.KEYS.campaign),previous);
+    assert.equal(saved.read('campaign').save.data.checkpoint.level,7);
+  }
+});

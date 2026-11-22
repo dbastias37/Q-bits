@@ -1,0 +1,84 @@
+{
+  "schema": 1,
+  "baselineCommit": "0cb078038d43c15be34fc52ad4ec259494b3ac22",
+  "functionalLocalCommit": "8cfec4a222df236a333290334d9eaa688ba56bb7",
+  "mergedPrecedingPullRequest": "https://github.com/dbastias37/Q-bits/pull/26",
+  "note": "The GitHub publication may have different commit IDs. These content hashes identify the executed production sources; no functional source changed after the complete suite and timing runs.",
+  "sourceFiles": {
+    "assets/js/save-games.js": "92d815253e97b75c8e7357d01f6fcb244911279ac778db4025780a71efdfb92b",
+    "assets/js/game.js": "19efe4aa93ceac0791968c5d4e85ea6f5a980cf65b0b3302f20a70933ffe6da0",
+    "assets/js/boot.js": "817dfcf8d43fcb18d8581a23198a97048566c3758b70911bb6e71de88a111fce",
+    "index.html": "3bd18b3633f2a0e4200514b2a2307a61dabe06cc76c2de83eda917a80129440d",
+    "tests/save-games.test.cjs": "81e79e948d64fbc5e84caca8d59aa143d6d8fe9c27eb53a45429e914cfd7fd4f",
+    "tests/benchmark-save-games.cjs": "7393f2ffe3a0c4fbc6f6ecf36755c3104cc3e10114b52d33dfd24377a20290d8",
+    "tests/benchmark-save-memory.cjs": "d45ec1d18f49f3fd4f97a3a0b616b772eda8f61fbc386b28d542f84fd9db6752",
+    "docs/AUDITORIA_GUARDADO_2026-11-22.md": "ddd4ef9e19a0867ab77cf12dff1529f9fbfcaf5822d5d3f7c2d35fdf13770df4",
+    "docs/ESTADO_PROYECTO.md": "d398d62e98dea53fdfadee56d2b3073ee775a4a6f1281fa0652760e5980166dd"
+  },
+  "artifacts": [
+    {
+      "file": "contadores.json",
+      "bytes": 121178,
+      "sha256": "b138a05ca941ea89469e163088a967b09482a09d06236a3ae392116c0add6f26"
+    },
+    {
+      "file": "memoria.json",
+      "bytes": 61805,
+      "sha256": "fa0ff2e6246b16fc48f279ef7ab230e9d1735d6fd86c59660d4cd1b7b4066abb"
+    },
+    {
+      "file": "perfil.json",
+      "bytes": 442373,
+      "sha256": "f7433117a2526030048d6c3cd3dbe14941a2d4e494bba220e026c016df61764a"
+    },
+    {
+      "file": "pruebas-focalizadas.txt",
+      "bytes": 6044,
+      "sha256": "7235c484c93a638355fefe2dd52e4d3939f70018392170fc1a20fb68718c0704"
+    },
+    {
+      "file": "pruebas.txt",
+      "bytes": 125484,
+      "sha256": "3b4336aef77d834ad8842fb1b0dbb2dc7183a36d2cab52c19ebb4431dd7a9d5d"
+    },
+    {
+      "file": "resumen.json",
+      "bytes": 28416,
+      "sha256": "826b713fd9dd246d238e32d0dc4ee3cc3eb15857bd2e3a6df061f0687550bce1"
+    },
+    {
+      "file": "tiempos.json",
+      "bytes": 1936422,
+      "sha256": "16d6d56298f4662a66c8d1bc5d07d054e5cfe953374c93afdffa11eb58c1da84"
+    }
+  ],
+  "validation": {
+    "suitePassed": 1213,
+    "suiteFailed": 0,
+    "focusedPassed": 56,
+    "newRegressions": 6,
+    "timingConfigurations": 24,
+    "exactTimingPairs": 72,
+    "counterConfigurations": 12,
+    "profileConfigurations": 4,
+    "profileExactPairs": 12,
+    "memoryScales": [
+      16,
+      1000,
+      2000
+    ]
+  },
+  "limits": [
+    "Node process CPU and elapsed wall, not browser FPS or main-thread-only time.",
+    "Map storage; Web Storage I/O and disk latency not measured.",
+    "First empty-slot writes are slower due to final validation; reported separately.",
+    "Saving remains synchronous and still exceeds 16.67 ms for large scenes."
+  ],
+  "commands": [
+    "node --test tests/*.test.cjs",
+    "node --expose-gc tests/benchmark-save-games.cjs --output=docs/mediciones/guardado-20261122/tiempos.json",
+    "node tests/benchmark-save-games.cjs --mode=counters --scales=16,1000,2000 --repetitions=1 --warmup=1 --samples=1 --output=docs/mediciones/guardado-20261122/contadores.json",
+    "node tests/benchmark-save-games.cjs --mode=profile --scales=1000 --repetitions=3 --warmup=8 --samples=8 --output=docs/mediciones/guardado-20261122/perfil.json",
+    "node tests/benchmark-save-memory.cjs --output=docs/mediciones/guardado-20261122/memoria.json"
+  ]
+}
