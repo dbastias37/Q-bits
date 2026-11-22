@@ -9,6 +9,7 @@ Usage: python3 tests/validate-glass-gles.py [output_directory] [width] [height]
 import ctypes as C
 import json
 import math
+import os
 import struct
 import subprocess
 import sys
@@ -37,7 +38,7 @@ config=P();count=I()
 assert egl('eglChooseConfig',U,P,C.POINTER(I),C.POINTER(P),I,C.POINTER(I))(display,(I*13)(0x3033,1,0x3040,4,0x3024,8,0x3023,8,0x3022,8,0x3021,8,0x3038),C.byref(config),1,C.byref(count)) and count.value
 assert egl('eglBindAPI',U,U)(0x30A0)
 surface=egl('eglCreatePbufferSurface',P,P,P,C.POINTER(I))(display,config,(I*5)(0x3057,W,0x3056,H,0x3038))
-context=egl('eglCreateContext',P,P,P,P,C.POINTER(I))(display,config,None,(I*3)(0x3098,2,0x3038))
+context=egl('eglCreateContext',P,P,P,P,C.POINTER(I))(display,config,None,(I*3)(0x3098,3 if os.environ.get('QBITS_RENDER_BACKEND')=='webgl2' else 2,0x3038))
 assert surface and context and egl('eglMakeCurrent',U,P,P,P,P)(display,surface,surface,context)
 getString=gl('glGetString',C.c_char_p,U)
 print(json.dumps({'renderer':getString(0x1f01).decode(),'version':getString(0x1f02).decode()}))

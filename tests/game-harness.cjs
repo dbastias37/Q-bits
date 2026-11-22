@@ -47,7 +47,7 @@ module.exports = function createGame(options = {}) {
       id: key, style: { setProperty() {} }, dataset: {},
       classList: { add(...names){names.forEach(name=>classes.add(name));}, remove(...names){names.forEach(name=>classes.delete(name));}, contains:name=>classes.has(name), toggle(name,force){const enabled=force??!classes.has(name);if(enabled)classes.add(name);else classes.delete(name);return enabled;} }, value: 1, hidden: true,
       checked: false, clientWidth: 1280, clientHeight: 720, offsetWidth: 150, offsetHeight: 30,
-      get options(){return this.children;}, children: [], getContext: type => type==='2d'?canvas2d:gl,
+      get options(){return this.children;}, children: [], getContext: type => type==='2d'?canvas2d:type==='webgl2'&&!options.webgl2?null:gl,
       setAttribute(name,value) { attributes.set(name,String(value)); }, getAttribute:name=>attributes.get(name)??null,
       removeAttribute(name) { attributes.delete(name); },
       append(...items) { for(const item of items)this.appendChild(item); },
@@ -104,7 +104,7 @@ module.exports = function createGame(options = {}) {
     beginPowerCable,cancelPowerCable,powerDraftMaterials,finishPowerCable,addPowerCableMaterial,recoverPowerCable,powerSurfaceRoute,powerCircuitRoute,powerRibbonCaches,powerCableClick,powerTargetText,powerInspectionAvailable,powerAimPort,powerAimCable,powerSurfaceAim,powerMaterialGroups,openPowerCableMenu,openPowerReservoirMenu,powerSecondary,drawPowerReservoirs,drawPowerCables,getPowerDraft:()=>powerDraft,
     spendGripperEnergy,conveyorSpendTraction,powerReservoirs,powerCables,POWER_RESERVOIR_CAPACITY,powerReservoirPlacement,createPowerReservoir,removePowerReservoir,powerPort,powerCableLimit,powerCablePath,powerCableLength,powerCableBlocked,refreshPowerCable,connectPowerCable,extendPowerCable,reroutePowerCable,removePowerCable,updatePowerNetwork,getCableSupply,serializePowerNetwork,restorePowerNetwork,clearPowerNetwork,
     flightStates,propellerBladePose,propellerSocket,propellerBonds,propellerLayout,propellerModules,findPropellerSnap,propellerBlueprintTemplate,flightForGroup,flightConfig,configureFlight,flightSnapshot,startFlight,stopFlight,updateFlights,tickFlightSensors,propellerVisualPose,flightPanelAction,updateFlightPanel,
-    ...(typeof conveyorSurfacePoses==='function'?{conveyorSurfacePoses,conveyorPathPoses,conveyorEnsureSurfaces,conveyorRemoveSurfaces,conveyorPortGeometryValid}:{}),
+    ...(typeof conveyorSurfacePoses==='function'?{conveyorSurfacePoses,conveyorSurfaceContact,conveyorPathPoses,conveyorEnsureSurfaces,conveyorRemoveSurfaces,conveyorPortGeometryValid}:{}),
     ...(typeof drawConveyors==='function'?{drawConveyors}:{}),
     ...(typeof conveyorBlueprintTemplate==='function'?{conveyorBlueprintTemplate}:{}),
     ...(typeof detachConveyorModule==='function'?{detachConveyorModule,runningConveyorForGroups,conveyorForPart}:{}),
@@ -171,7 +171,7 @@ module.exports = function createGame(options = {}) {
   });
   if(options.glass)sandbox.QBitsGlass=options.glass;
   for (const source of scripts) {
-    if(options.graphics===false&&source.includes('function beginCampaignLevel('))sandbox.QBitsGraphics=null;
+    if(options.graphics===false&&source.includes('function beginCampaignLevel('))sandbox.QBitsGraphics={...sandbox.QBitsGraphics,create:()=>null,surface:()=>null};
     vm.runInContext(source, sandbox, { timeout: 10000 });
   }
   return {

@@ -76,34 +76,77 @@ test('statistics use median and nearest-rank p95 without mutating or fabricating
   assert.equal(api.summarize([0]).median,0);assert.equal(api.summarize([]).median,null);assert.equal(api.summarize([]).count,0);
 });
 
-function fakeGpu(){
+function fakeGpu(version=1){
   let next=0,active=null,disjoint=false,lost=false;const live=new Set(),calls=[];
-  const ext={TIME_ELAPSED_EXT:1,CURRENT_QUERY_EXT:2,QUERY_RESULT_AVAILABLE_EXT:3,QUERY_RESULT_EXT:4,GPU_DISJOINT_EXT:5,
+  const legacy={TIME_ELAPSED_EXT:1,CURRENT_QUERY_EXT:2,QUERY_RESULT_AVAILABLE_EXT:3,QUERY_RESULT_EXT:4,GPU_DISJOINT_EXT:5,
     createQueryEXT(){const q={id:++next,ready:false,ns:2500000};live.add(q);calls.push('create');return q;},
     deleteQueryEXT(q){live.delete(q);if(active===q)active=null;calls.push('delete');},
-    beginQueryEXT(_,q){assert.equal(active,null);active=q;q.ready=false;calls.push('begin');},
-    endQueryEXT(){assert(active);active=null;calls.push('end');},getQueryEXT(){return active;},
-    getQueryObjectEXT(q,key){calls.push(key===3?'available':'result');if(key===3)return q.ready;assert(q.ready,'must not read unavailable query');return q.ns;}};
-  const gl={getExtension:name=>{assert.equal(name,'EXT_disjoint_timer_query');return ext;},getParameter:()=>disjoint,isContextLost:()=>lost};
-  return {gl,ext,live,calls,ready(){for(const q of live)q.ready=true;},disjoint(v){disjoint=v;},lost(v){lost=v;},get created(){return next;}};
+    beginQueryEXT(target,q){assert.equal(target,1);assert.equal(active,null);active=q;q.ready=false;calls.push('begin');},
+    endQueryEXT(target){assert.equal(target,1);assert(active);active=null;calls.push('end');},
+    getQueryEXT(target,key){assert.equal(target,1);assert.equal(key,2);return active;},
+    getQueryObjectEXT(q,key){assert(key===3||key===4);calls.push(key===3?'available':'result');if(key===3)return q.ready;assert(q.ready,'must not read unavailable query');return q.ns;}};
+  // WebGL2 exposes neither query methods nor result enums on its extension.
+  // Use different core enum values to catch accidental WebGL1 API mixing.
+  const ext=version===2?{TIME_ELAPSED_EXT:1,GPU_DISJOINT_EXT:5}:legacy;
+  const gl={getExtension:name=>{assert.equal(name,version===2?'EXT_disjoint_timer_query_webgl2':'EXT_disjoint_timer_query');return ext;},
+    getParameter:key=>{assert.equal(key,5);return disjoint;},isContextLost:()=>lost};
+  if(version===2)Object.assign(gl,{CURRENT_QUERY:12,QUERY_RESULT_AVAILABLE:13,QUERY_RESULT:14,
+    createQuery(){assert.equal(this,gl);return legacy.createQueryEXT();},
+    deleteQuery(q){assert.equal(this,gl);legacy.deleteQueryEXT(q);},
+    beginQuery(target,q){assert.equal(this,gl);legacy.beginQueryEXT(target,q);},
+    endQuery(target){assert.equal(this,gl);legacy.endQueryEXT(target);},
+    getQuery(target,key){assert.equal(this,gl);assert.equal(key,12);return legacy.getQueryEXT(target,2);},
+    getQueryParameter(q,key){assert.equal(this,gl);assert(key===13||key===14);return legacy.getQueryObjectEXT(q,key===13?3:4);}});
+  return {gl,ext,live,calls,ready(ns=2500000){for(const q of live){q.ready=true;q.ns=ns;}},disjoint(v){disjoint=v;},lost(v){lost=v;},get created(){return next;},
+    beginOutside(){const q=legacy.createQueryEXT();legacy.beginQueryEXT(1,q);return q;},
+    endOutside(q){legacy.endQueryEXT(1);legacy.deleteQueryEXT(q);}};
 }
-test('GPU timer bounds pending queries, polls asynchronously, converts ns and reuses queries',()=>{
-  const gpu=fakeGpu(),timer=api.createGpuTimer(gpu.gl,2);assert(timer.supported);
+for(const version of [1,2]){
+test(`WebGL${version} GPU timer bounds pending queries, polls asynchronously, converts ns and reuses queries`,()=>{
+  const gpu=fakeGpu(version),timer=api.createGpuTimer(gpu.gl,2);assert(timer.supported);
   assert(timer.begin());assert(!timer.begin());assert(timer.end());assert.equal(timer.poll(),null);assert.equal(timer.latestMs,null);
+  assert(!gpu.calls.includes('result'),'polling must not read an unavailable result');
   assert(timer.begin());assert(timer.end());assert(!timer.begin());assert.equal(gpu.created,2);assert.equal(timer.pendingCount,2);
   gpu.ready();assert.equal(timer.poll(),2.5);assert.equal(timer.poll(),2.5);assert.equal(timer.poll(),null);assert.equal(timer.sampleCount,2);
   assert(timer.begin());assert(timer.end());assert.equal(gpu.created,2);assert.equal(timer.pendingCount,1);
+  gpu.ready(2**32+2500000);assert.equal(timer.poll(),(2**32+2500000)/1e6,'elapsed nanoseconds must not be truncated to 32 bits');
   timer.dispose();assert.equal(gpu.live.size,0);assert(!timer.supported);assert(!timer.begin());
 });
-test('GPU disjoint drops all outstanding readings, then clean sampling resumes',()=>{
-  const gpu=fakeGpu(),timer=api.createGpuTimer(gpu.gl,3);
+test(`WebGL${version} GPU disjoint drops all outstanding readings, then clean sampling resumes`,()=>{
+  const gpu=fakeGpu(version),timer=api.createGpuTimer(gpu.gl,3);
   timer.begin();timer.end();gpu.ready();assert.equal(timer.poll(),2.5);
   timer.begin();timer.end();timer.begin();timer.end();gpu.ready();gpu.disjoint(true);
   assert.equal(timer.poll(),null);assert.equal(timer.latestMs,null);assert.equal(timer.pendingCount,0);assert.equal(gpu.live.size,0);
   gpu.disjoint(false);assert(timer.begin());assert(timer.end());gpu.ready();assert.equal(timer.poll(),2.5);
+  assert(timer.begin());gpu.disjoint(true);assert.equal(timer.poll(),null);assert(!timer.end());assert.equal(gpu.live.size,0);
+  gpu.disjoint(false);assert(timer.begin());assert(timer.end());gpu.ready();assert.equal(timer.poll(),2.5);
+  timer.dispose();assert.equal(gpu.live.size,0);
 });
-test('GPU timer handles missing extensions, active outside queries, context loss and cleanup',()=>{
-  const unsupported=api.createGpuTimer({getExtension:()=>null});assert(!unsupported.supported);assert(!unsupported.begin());assert(!unsupported.end());assert.equal(unsupported.poll(),null);unsupported.dispose();
-  const gpu=fakeGpu(),timer=api.createGpuTimer(gpu.gl);const outside=gpu.ext.createQueryEXT();gpu.ext.beginQueryEXT(1,outside);assert(!timer.begin());gpu.ext.endQueryEXT();gpu.ext.deleteQueryEXT(outside);
+test(`WebGL${version} GPU timer preserves outside queries and disables on context loss`,()=>{
+  const gpu=fakeGpu(version),timer=api.createGpuTimer(gpu.gl),outside=gpu.beginOutside();
+  assert(!timer.begin());assert(gpu.live.has(outside));assert.equal(gpu.created,1);gpu.endOutside(outside);
   assert(timer.begin());gpu.lost(true);assert.equal(timer.poll(),null);assert(!timer.supported);assert.equal(gpu.live.size,0);
+  gpu.lost(false);assert(!timer.begin(),'lost-context queries must not be reused');
+});
+test(`WebGL${version} GPU timer rejects a query ended after context loss`,()=>{
+  const gpu=fakeGpu(version),timer=api.createGpuTimer(gpu.gl);assert(timer.begin());gpu.lost(true);
+  assert(!timer.end());assert.equal(timer.pendingCount,0);assert.equal(timer.latestMs,null);assert.equal(timer.sampleCount,0);
+  assert(!timer.supported);assert.equal(gpu.live.size,0);assert(!gpu.calls.includes('result'));
+});
+test(`WebGL${version} GPU query errors release all measurements without breaking rendering`,()=>{
+  const gpu=fakeGpu(version),timer=api.createGpuTimer(gpu.gl,2);
+  assert(timer.supported);assert(timer.begin());assert(timer.end());assert(timer.begin());assert(timer.end());gpu.ready();
+  if(version===2)gpu.gl.getQueryParameter=()=>{throw Error('query unavailable');};
+  else gpu.ext.getQueryObjectEXT=()=>{throw Error('query unavailable');};
+  assert.equal(timer.poll(),null);assert(!timer.supported);assert.equal(gpu.live.size,0);assert.equal(timer.pendingCount,0);
+  assert.equal(timer.latestMs,null);assert(!timer.begin());timer.dispose();
+});
+}
+test('GPU timing stays optional without its extension or the complete query API',()=>{
+  const gpu=fakeGpu(2);gpu.gl.getExtension=()=>null;
+  const partial=fakeGpu(2);delete partial.gl.getQueryParameter;
+  for(const gl of [{getExtension:()=>null},{getExtension:()=>{throw Error('unsupported');}},gpu.gl,partial.gl]){
+    const unsupported=api.createGpuTimer(gl);assert(!unsupported.supported);assert(!unsupported.begin());assert(!unsupported.end());assert.equal(unsupported.poll(),null);unsupported.dispose();
+  }
+  assert.equal(gpu.created,0);assert.equal(partial.created,0);
 });

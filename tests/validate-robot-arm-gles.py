@@ -4,7 +4,7 @@ Requires system libEGL.so.1 and Node. Outputs PNG snapshots in /tmp by default.
 This validates GLSL, draw commands and rendered pixels, not browser input or UI.
 """
 import ctypes as C
-import json, subprocess, sys, struct, zlib, math
+import json, subprocess, sys, struct, zlib, math, os
 from pathlib import Path
 OUT=Path(sys.argv[1]) if len(sys.argv)>1 else Path('/tmp/qbits-robot-arm')
 OUT.mkdir(parents=True,exist_ok=True)
@@ -26,7 +26,8 @@ config=C.c_void_p();count=C.c_int()
 assert egl('eglChooseConfig',C.c_uint,C.c_void_p,C.POINTER(C.c_int),C.POINTER(C.c_void_p),C.c_int,C.POINTER(C.c_int))(d,attrs,C.byref(config),1,C.byref(count)) and count.value
 assert egl('eglBindAPI',C.c_uint,C.c_uint)(0x30A0)
 surf=egl('eglCreatePbufferSurface',C.c_void_p,C.c_void_p,C.c_void_p,C.POINTER(C.c_int))(d,config,(C.c_int*5)(0x3057,W,0x3056,H,0x3038))
-ctx=egl('eglCreateContext',C.c_void_p,C.c_void_p,C.c_void_p,C.c_void_p,C.POINTER(C.c_int))(d,config,None,(C.c_int*3)(0x3098,2,0x3038))
+context_version=3 if os.environ.get('QBITS_RENDER_BACKEND')=='webgl2' else 2
+ctx=egl('eglCreateContext',C.c_void_p,C.c_void_p,C.c_void_p,C.c_void_p,C.POINTER(C.c_int))(d,config,None,(C.c_int*3)(0x3098,context_version,0x3038))
 assert surf and ctx and egl('eglMakeCurrent',C.c_uint,C.c_void_p,C.c_void_p,C.c_void_p,C.c_void_p)(d,surf,surf,ctx)
 getString=gl('glGetString',C.c_char_p,C.c_uint)
 print(json.dumps({'version':getString(0x1f02).decode(),'renderer':getString(0x1f01).decode()}))
@@ -35,7 +36,7 @@ functions={}
 signatures={
  'createShader':(U,U),'createProgram':(U,),
  'compileShader':(None,U),'attachShader':(None,U,U),'linkProgram':(None,U),
- 'bindBuffer':(None,U,U),'useProgram':(None,U),
+ 'bindBuffer':(None,U,U),'useProgram':(None,U),'bindVertexArray':(None,U),
  'getAttribLocation':(I,U,C.c_char_p),'getUniformLocation':(I,U,C.c_char_p),
  'enableVertexAttribArray':(None,U),'disableVertexAttribArray':(None,U),
  'vertexAttribPointer':(None,U,I,U,C.c_ubyte,I,P),
@@ -47,6 +48,8 @@ signatures={
 for name,(result,*args) in signatures.items():functions[name]=gl('gl'+name[0].upper()+name[1:],result,*args)
 shaderSource=gl('glShaderSource',None,U,I,C.POINTER(C.c_char_p),C.POINTER(I))
 genBuffers=gl('glGenBuffers',None,I,C.POINTER(U))
+genVertexArrays=gl('glGenVertexArrays',None,I,C.POINTER(U))
+deleteVertexArrays=gl('glDeleteVertexArrays',None,I,C.POINTER(U))
 bufferData=gl('glBufferData',None,U,C.c_ssize_t,P,U)
 bufferSubData=gl('glBufferSubData',None,U,C.c_ssize_t,C.c_ssize_t,P)
 matrix=gl('glUniformMatrix4fv',None,I,I,C.c_ubyte,C.POINTER(F))
@@ -63,6 +66,10 @@ def replay(command):
   key=args.pop(0);handles[key]=functions[name](*args)
  elif name=='createBuffer':
   b=U();genBuffers(1,C.byref(b));handles[args[0]]=b.value
+ elif name=='createVertexArray':
+  b=U();genVertexArrays(1,C.byref(b));handles[args[0]]=b.value
+ elif name=='deleteVertexArray':
+  b=U(handles.pop(args[0]));deleteVertexArrays(1,C.byref(b))
  elif name=='shaderSource':
   source=C.c_char_p(args[1].encode());shaderSource(handles[args[0]],1,C.byref(source),None)
  elif name=='bufferData':
@@ -81,6 +88,7 @@ def replay(command):
   if name in ('compileShader','linkProgram','useProgram'):args[0]=handles[args[0]]
   elif name=='attachShader':args=[handles[x] for x in args]
   elif name=='bindBuffer':args[1]=handles[args[1]]
+  elif name=='bindVertexArray':args[0]=handles[args[0]] if args[0] is not None else 0
   elif name.startswith('uniform'):args[0]=locations[args[0]]
   elif name in ('enableVertexAttribArray','disableVertexAttribArray','vertexAttribPointer'):
    args[0]=attributeLocations[args[0]]

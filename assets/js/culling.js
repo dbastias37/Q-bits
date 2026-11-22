@@ -78,39 +78,56 @@
       p95:sorted[Math.ceil(count*.95)-1],min:sorted[0],max:sorted[count-1]};
   }
 
-  // WebGL1 GPU elapsed time, never a performance.now() proxy for GPU work.
+  // GPU elapsed time, never a performance.now() proxy for GPU work.
   // Results must be polled in a later animation frame, without spin-waiting.
   // https://registry.khronos.org/webgl/extensions/EXT_disjoint_timer_query/
+  // https://registry.khronos.org/webgl/extensions/EXT_disjoint_timer_query_webgl2/
   function createGpuTimer(gl,maxPending=4){
     const capacity=Number.isFinite(maxPending)?Math.max(1,Math.min(16,Math.floor(maxPending))):4;
     const queries=new Array(capacity).fill(null);
-    let ext=null,head=0,pending=0,active=-1,latestMs=null,sampleCount=0,disposed=false;
-    try{ext=gl?.getExtension?.('EXT_disjoint_timer_query')||null;}catch(_){/* Optional capability. */}
-    if(ext&&['createQueryEXT','deleteQueryEXT','beginQueryEXT','endQueryEXT','getQueryObjectEXT'].some(k=>typeof ext[k]!=='function'))ext=null;
+    let ext=null,queryApi=null,head=0,pending=0,active=-1,latestMs=null,sampleCount=0,disposed=false;
+    const extension=name=>{try{return gl?.getExtension?.(name)||null;}catch(_){return null;}};
+    // WebGL2 puts query objects and result enums on the context. The timer
+    // extension still supplies TIME_ELAPSED_EXT and GPU_DISJOINT_EXT.
+    if(['createQuery','deleteQuery','beginQuery','endQuery','getQuery','getQueryParameter'].every(k=>typeof gl?.[k]==='function')){
+      ext=extension('EXT_disjoint_timer_query_webgl2');
+      if(ext)queryApi={create:()=>gl.createQuery(),remove:q=>gl.deleteQuery(q),
+        begin:q=>gl.beginQuery(ext.TIME_ELAPSED_EXT,q),end:()=>gl.endQuery(ext.TIME_ELAPSED_EXT),
+        current:()=>gl.getQuery(ext.TIME_ELAPSED_EXT,gl.CURRENT_QUERY),
+        available:q=>gl.getQueryParameter(q,gl.QUERY_RESULT_AVAILABLE),result:q=>gl.getQueryParameter(q,gl.QUERY_RESULT)};
+    }
+    if(!queryApi){
+      ext=extension('EXT_disjoint_timer_query');
+      if(ext&&['createQueryEXT','deleteQueryEXT','beginQueryEXT','endQueryEXT','getQueryObjectEXT'].some(k=>typeof ext[k]!=='function'))ext=null;
+      if(ext)queryApi={create:()=>ext.createQueryEXT(),remove:q=>ext.deleteQueryEXT(q),
+        begin:q=>ext.beginQueryEXT(ext.TIME_ELAPSED_EXT,q),end:()=>ext.endQueryEXT(ext.TIME_ELAPSED_EXT),
+        current:()=>ext.getQueryEXT?.(ext.TIME_ELAPSED_EXT,ext.CURRENT_QUERY_EXT),
+        available:q=>ext.getQueryObjectEXT(q,ext.QUERY_RESULT_AVAILABLE_EXT),result:q=>ext.getQueryObjectEXT(q,ext.QUERY_RESULT_EXT)};
+    }
     function clear(){
-      if(ext)for(let i=0;i<capacity;i++)if(queries[i]){
-        try{ext.deleteQueryEXT(queries[i]);}catch(_){/* Context may be lost. */}
+      if(queryApi)for(let i=0;i<capacity;i++)if(queries[i]){
+        try{queryApi.remove(queries[i]);}catch(_){/* Context may be lost. */}
         queries[i]=null;
       }
       head=0;pending=0;active=-1;latestMs=null;
     }
-    function fail(){clear();ext=null;}
+    function fail(){clear();ext=null;queryApi=null;}
     function begin(){
       if(!ext||disposed||active>=0||pending>=capacity)return false;
       try{
         if(gl.isContextLost?.()){fail();return false;}
         // Do not collide with an existing profiler's active elapsed-time query.
-        if(typeof ext.getQueryEXT==='function'&&ext.getQueryEXT(ext.TIME_ELAPSED_EXT,ext.CURRENT_QUERY_EXT))return false;
+        if(queryApi.current())return false;
         const index=(head+pending)%capacity;
-        if(!queries[index])queries[index]=ext.createQueryEXT();
+        if(!queries[index])queries[index]=queryApi.create();
         if(!queries[index]){fail();return false;}
-        ext.beginQueryEXT(ext.TIME_ELAPSED_EXT,queries[index]);active=index;
+        queryApi.begin(queries[index]);active=index;
         return true;
       }catch(_){fail();return false;}
     }
     function end(){
       if(!ext||active<0)return false;
-      try{ext.endQueryEXT(ext.TIME_ELAPSED_EXT);active=-1;pending++;return true;}
+      try{if(gl.isContextLost?.()){fail();return false;}queryApi.end();active=-1;pending++;return true;}
       catch(_){fail();return false;}
     }
     function poll(){
@@ -122,8 +139,8 @@
         if(gl.getParameter(ext.GPU_DISJOINT_EXT)){clear();return null;}
         if(!pending)return null;
         const query=queries[head];
-        if(!ext.getQueryObjectEXT(query,ext.QUERY_RESULT_AVAILABLE_EXT))return null;
-        const ns=ext.getQueryObjectEXT(query,ext.QUERY_RESULT_EXT);
+        if(!queryApi.available(query))return null;
+        const ns=queryApi.result(query);
         head=(head+1)%capacity;pending--;
         if(!Number.isFinite(ns)||ns<0)return null;
         latestMs=ns/1e6;sampleCount++;return latestMs;

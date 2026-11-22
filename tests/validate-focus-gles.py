@@ -16,6 +16,7 @@ not bleed into the room. This is not a browser or full-game visual test.
 """
 import ctypes as C
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -37,7 +38,7 @@ assert egl('eglChooseConfig',C.c_uint,C.c_void_p,C.POINTER(C.c_int),C.POINTER(C.
 assert egl('eglBindAPI',C.c_uint,C.c_uint)(0x30A0)
 pbufferAttrs=(C.c_int*5)(0x3057,16,0x3056,16,0x3038)
 surf=egl('eglCreatePbufferSurface',C.c_void_p,C.c_void_p,C.c_void_p,C.POINTER(C.c_int))(d,config,pbufferAttrs)
-ctxAttrs=(C.c_int*3)(0x3098,2,0x3038)
+ctxAttrs=(C.c_int*3)(0x3098,3 if os.environ.get('QBITS_RENDER_BACKEND')=='webgl2' else 2,0x3038)
 ctx=egl('eglCreateContext',C.c_void_p,C.c_void_p,C.c_void_p,C.c_void_p,C.POINTER(C.c_int))(d,config,None,ctxAttrs)
 assert ctx and surf
 assert egl('eglMakeCurrent',C.c_uint,C.c_void_p,C.c_void_p,C.c_void_p,C.c_void_p)(d,surf,surf,ctx)

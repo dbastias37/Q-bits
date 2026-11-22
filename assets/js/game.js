@@ -60,7 +60,8 @@ function movePlayer(position, yaw, forward, sideways, seconds, speedScale=1) {
 
 
 const canvas = document.querySelector('#room');
-const gl = canvas.getContext('webgl', { alpha: false, antialias: true, depth: true, powerPreference: 'high-performance' });
+const renderContext=window.QBitsGraphics?.context(canvas)||{gl:canvas.getContext('webgl',{alpha:false,antialias:true,depth:true,powerPreference:'high-performance'}),version:1};
+const gl=renderContext.gl;
 
 if (!gl) {
   document.querySelector('#boot-message').textContent='No se pudo iniciar WebGL. Abre este archivo directamente en Chrome, Edge o Firefox con aceleración gráfica disponible.';
@@ -79,11 +80,12 @@ const renderVisibility={active:false,enabled:false,serial:0,groups:0,culled:0,pi
 const cullingLab={observer:false,stats:false,renderView:null,benchmark:null,result:null,last:null,frameSamples:[],simulationMs:0,lastFrame:null,nextHud:0,gpu:null};
 const renderCounts={active:false,calls:0,triangles:0,lines:0};
 const geometryRadii=new Map();
+let sceneGeometryBindings=null;
 function submitDraw(mode,first,count){
  if(renderCounts.active){renderCounts.calls++;if(mode===gl.TRIANGLES)renderCounts.triangles+=count/3;else if(mode===gl.TRIANGLE_STRIP)renderCounts.triangles+=Math.max(0,count-2);else if(mode===gl.LINES)renderCounts.lines+=count/2;}
  gl.drawArrays(mode,first,count);
 }
-function deleteRenderBuffer(b){geometryRadii.delete(b);gl.deleteBuffer(b);}
+function deleteRenderBuffer(b){geometryRadii.delete(b);sceneGeometryBindings?.release(b);gl.deleteBuffer(b);}
 function renderSphereVisible(p,r){return !renderVisibility.active||!renderVisibility.enabled||visibilityFrustum.intersectsSphere(p.x,p.y,p.z,r+.025);}
 function renderPointsVisible(points,padding=.04){
  if(!renderVisibility.active||!renderVisibility.enabled||!points.length)return true;
@@ -1133,6 +1135,57 @@ world.broadphase=new CANNON.SAPBroadphase(world);
 // Long belts have a very large bounding sphere. Use their actual conservative
 // AABB to reject distant bodies before Cannon visits every compound shape.
 world.broadphase.useBoundingBoxes=true;
+installCompoundNarrowphase(world);
+// Cannon 0.6.2 visits every shape pair after the body broadphase. Preserve its
+// dispatch order, bounding-sphere test, materials and equation pools, but query
+// a conservative index for large compounds. This is only a candidate filter:
+// the original Cannon collision functions still create every contact/friction
+// equation. Small pairs, planes and unsupported shapes keep the native path.
+function installCompoundNarrowphase(physicsWorld){
+ const narrowphase=physicsWorld.narrowphase,nativeGetContacts=narrowphase.getContacts;
+ narrowphase.getContacts=function(pairsA,pairsB,world,result,oldContacts,frictionResult,frictionPool){
+  this.contactPointPool=oldContacts;this.frictionEquationPool=frictionPool;this.result=result;this.frictionResult=frictionResult;
+  const prepared=new Map(),oneA=[],oneB=[],candidates=[];
+  const prepare=body=>{
+   if(prepared.has(body))return prepared.get(body);
+   const entries=[];
+   for(let i=0;i<body.shapes.length;i++){
+    const shape=body.shapes[i],radius=shape.boundingSphereRadius;
+    if(![CANNON.Shape.types.BOX,CANNON.Shape.types.SPHERE,CANNON.Shape.types.CONVEXPOLYHEDRON].includes(shape.type)||!Number.isFinite(radius)){
+     prepared.set(body,null);return null;
+    }
+    const q=body.quaternion.mult(body.shapeOrientations[i]),p=body.quaternion.vmult(body.shapeOffsets[i]);p.vadd(body.position,p);
+    // Include roundoff at sphere tangencies; the native distance test below
+    // remains authoritative, so this padding cannot add physical contacts.
+    const extent=radius+1e-7*Math.max(1,radius,Math.abs(p.x),Math.abs(p.y),Math.abs(p.z));
+    entries.push({i,shape,p,q,min:V(p.x-extent,p.y-extent,p.z-extent),max:V(p.x+extent,p.y+extent,p.z+extent)});
+   }
+   prepared.set(body,entries);return entries;
+  };
+  try{
+   for(let pair=0;pair<pairsA.length;pair++){
+    const bodyA=pairsA[pair],bodyB=pairsB[pair];
+    let first,second;
+    if(bodyA.shapes.length*bodyB.shapes.length<1024||!(first=prepare(bodyA))||!(second=prepare(bodyB))){
+     oneA[0]=bodyA;oneB[0]=bodyB;nativeGetContacts.call(this,oneA,oneB,world,result,oldContacts,frictionResult,frictionPool);continue;
+    }
+    const tree=collisionIndex(second),bodyMaterial=bodyA.material&&bodyB.material?world.getContactMaterial(bodyA.material,bodyB.material)||null:null;
+    for(const a of first){
+     candidates.length=0;collisionIndexSome(tree,a,b=>{candidates.push(b);return false;});candidates.sort((a,b)=>a.i-b.i);
+     for(const b of candidates){
+      const shapeA=a.shape,shapeB=b.shape;
+      if(a.p.distanceTo(b.p)>shapeA.boundingSphereRadius+shapeB.boundingSphereRadius)continue;
+      const shapeMaterial=shapeA.material&&shapeB.material?world.getContactMaterial(shapeA.material,shapeB.material)||null:null;
+      this.currentContactMaterial=shapeMaterial||bodyMaterial||world.defaultContactMaterial;
+      const resolver=this[shapeA.type|shapeB.type];if(!resolver)continue;
+      if(shapeA.type<shapeB.type)resolver.call(this,shapeA,shapeB,a.p,b.p,a.q,b.q,bodyA,bodyB,shapeA,shapeB);
+      else resolver.call(this,shapeB,shapeA,b.p,a.p,b.q,a.q,bodyB,bodyA,shapeA,shapeB);
+     }
+    }
+   }
+  }finally{prepared.clear();oneA.length=oneB.length=candidates.length=0;}
+ };
+}
 world.solver.iterations=24;world.solver.tolerance=1e-8;
 world.defaultContactMaterial.friction=settings.friction;world.defaultContactMaterial.restitution=settings.bounce;
 world.defaultContactMaterial.contactEquationStiffness=1e8;world.defaultContactMaterial.contactEquationRelaxation=4;
@@ -3065,8 +3118,14 @@ function conveyorSurfacePoses(conveyor){return conveyorWorldGeometry(conveyor)?.
 function conveyorPathPoses(conveyor){return conveyorWorldGeometry(conveyor)?.path||[];}
 function conveyorSurfaceContact(conveyor,contact){
  const body=conveyor.surfaceBody;if(!body||contact.bi!==body&&contact.bj!==body)return null;
- const isA=contact.bi===body,point=add(body.position,isA?contact.ri:contact.rj),normal=mul(contact.ni,isA?1:-1),other=isA?contact.bj:contact.bi;
- for(const pose of conveyorSurfacePoses(conveyor)){const local=pose.inverse.vmult(sub(point,pose.p));if(normal.dot(pose.up)>.6&&Math.abs(local.x)<=pose.half.x+.006&&Math.abs(local.z)<=pose.half.z+.006&&Math.abs(local.y-pose.half.y)<.012)return {body:other,point,normal,surface:pose.surface};}
+ const isA=contact.bi===body,normal=mul(contact.ni,isA?1:-1),other=isA?contact.bj:contact.bi;let point=null;
+ for(const pose of conveyorSurfacePoses(conveyor)){
+  // Chassis collisions can produce many lateral contacts shared by every
+  // module. Reject their normal before transforming a point into each lane.
+  if(!(normal.dot(pose.up)>.6))continue;
+  point||=add(body.position,isA?contact.ri:contact.rj);const local=pose.inverse.vmult(sub(point,pose.p));
+  if(Math.abs(local.x)<=pose.half.x+.006&&Math.abs(local.z)<=pose.half.z+.006&&Math.abs(local.y-pose.half.y)<.012)return {body:other,point,normal,surface:pose.surface};
+ }
  return null;
 }
 function conveyorContactIndex(physicsWorld=world){
@@ -3993,6 +4052,130 @@ function rotorProjectedPose(rotor,moving,base,quaternion=moving.body.quaternion)
  const correction=Q();correction.setFromVectors(quaternion.vmult(frame.axis),mul(tip.axis,-1));correction.normalize();
  const q=correction.mult(quaternion);q.normalize();return {p:sub(tip.point,q.vmult(frame.pivot)),q,pivot:tip.point,axis:mul(tip.axis,-1)};
 }
+// A stopped articulated assembly sleeps as one cohort only after its real
+// floor contacts support its center of mass and every collider stays within
+// 2 mm for 0.6 s. Recent contact hulls bridge substep vertex changes; their
+// poses, shapes and floor signature expire before they can suspend a load.
+// Tables, moving supports and slopes keep Cannon's ordinary sleep behavior.
+const mechanicalRestRecords=new Map(),mechanicalFloorSupports=new Map();
+let mechanicalRestStep=[],mechanicalRestRefine=false;
+function restBodyPose(body){return [body.position.x,body.position.y,body.position.z,body.quaternion.x,body.quaternion.y,body.quaternion.z,body.quaternion.w];}
+function restPoseUnchanged(body,pose){const p=restBodyPose(body);return p.every((v,i)=>v===pose[i]);}
+function restPoseDistanceSquared(body,old){const p=restBodyPose(body),radius=Math.max(.045,body.boundingRadius),dot=Math.min(1,Math.abs(p[3]*old[3]+p[4]*old[4]+p[5]*old[5]+p[6]*old[6]));return (p[0]-old[0])**2+(p[1]-old[1])**2+(p[2]-old[2])**2+8*(1-dot)*radius*radius;}
+function restFloorStamp(){return [...restBodyPose(floor),floor.type,floor.mass,floor.collisionResponse,floor.collisionFilterGroup,floor.collisionFilterMask,floor.material,floor.material?.friction,world.gravity.x,world.gravity.y,world.gravity.z,world.defaultContactMaterial.friction,...floor.shapes.flatMap((s,i)=>[s,...floor.shapeOffsets[i].toArray(),...floor.shapeOrientations[i].toArray(),s.collisionResponse,s.material,s.material?.friction])];}
+function restSupportFriction(body){
+ let friction=world.defaultContactMaterial.friction;const materials=[body.material,...body.shapes.map(s=>s.material)].filter(Boolean),base=[floor.material,...floor.shapes.map(s=>s.material)].filter(Boolean);
+ if(materials.concat(base).some(m=>m.friction===0))return 0;
+ for(const a of materials)for(const b of base){const contact=world.getContactMaterial(a,b);if(contact)friction=Math.min(friction,contact.friction);}
+ return friction;
+}
+function restMemberStamp(g){const b=g.body;return {body:b,parts:g.parts,mass:b.mass,type:b.type,allowSleep:b.allowSleep,response:b.collisionResponse,mask:b.collisionFilterMask,group:b.collisionFilterGroup,material:b.material,friction:restSupportFriction(b),shapes:b.shapes.map((s,i)=>[s,...b.shapeOffsets[i].toArray(),...b.shapeOrientations[i].toArray(),s.collisionResponse,s.material,s.material?.friction])};}
+function restMemberUnchanged(g,s){
+ const b=g.body;if(b!==s.body||g.parts!==s.parts||b.mass!==s.mass||b.type!==s.type||b.allowSleep!==s.allowSleep||b.collisionResponse!==s.response||b.collisionFilterMask!==s.mask||b.collisionFilterGroup!==s.group||b.material!==s.material||restSupportFriction(b)!==s.friction||b.shapes.length!==s.shapes.length)return false;
+ return s.shapes.every((state,i)=>{const p=b.shapeOffsets[i],q=b.shapeOrientations[i],shape=b.shapes[i];return shape===state[0]&&p.x===state[1]&&p.y===state[2]&&p.z===state[3]&&q.x===state[4]&&q.y===state[5]&&q.z===state[6]&&q.w===state[7]&&shape.collisionResponse===state[8]&&shape.material===state[9]&&shape.material?.friction===state[10];});
+}
+function restTopologyUnchanged(record){
+ if(record.joints.some(j=>!rotors.includes(j.r)||j.r.constraint!==j.constraint||j.r.aId!==j.a||j.r.bId!==j.b||!world.constraints.includes(j.constraint)))return false;
+ const topology=mechanicalTopologyIndex();if(record.topology===topology)return true;
+ const members=(mechanicalComponentGroups(record.members[0])||[]).filter(g=>!g.virtualConveyor);
+ if(members.length!==record.members.length||members.some(g=>!record.members.includes(g)))return false;
+ const joints=rotors.filter(r=>!r.virtualConveyor?.virtual&&rotorGroups(r).some(g=>members.includes(g)));
+ if(joints.length!==record.joints.length||joints.some(r=>!record.joints.some(j=>j.r===r)))return false;
+ record.topology=topology;return true;
+}
+function discardMechanicalRest(key,record,wake=false){
+ for(const g of record.members){mechanicalFloorSupports.delete(g);if(wake&&groups.includes(g)&&g.body.type===CANNON.Body.DYNAMIC)g.body.wakeUp();}mechanicalRestRecords.delete(key);
+}
+function wakeMechanicalRest(){
+ const floorStamp=restFloorStamp();
+ for(const [key,record] of mechanicalRestRecords){
+  const floorChanged=!world.bodies.includes(floor)||floorStamp.length!==record.floorStamp.length||!floorStamp.every((v,i)=>v===record.floorStamp[i]);
+  if(floorChanged||!restTopologyUnchanged(record)||record.members.some((g,i)=>!groups.includes(g)||!restMemberUnchanged(g,record.stamps[i])||g.body.force.norm2()>1e-12||g.body.torque.norm2()>1e-12||g.body.sleepState===CANNON.Body.SLEEPING&&(g.body.velocity.norm2()+g.body.angularVelocity.norm2()>1e-12||record.sleepPose&&!restPoseUnchanged(g.body,record.sleepPose[i])))){
+   discardMechanicalRest(key,record,true);
+  }
+ }
+}
+function restSupportHull(points){
+ if(points.length<3)return points;const ps=points.slice().sort((a,b)=>a.x-b.x||a.z-b.z),cross=(a,b,c)=>(b.x-a.x)*(c.z-a.z)-(b.z-a.z)*(c.x-a.x),lower=[],upper=[];
+ for(const p of ps){while(lower.length>1&&cross(lower[lower.length-2],lower[lower.length-1],p)<=1e-12)lower.pop();lower.push(p);}
+ for(let i=ps.length-1;i>=0;i--){const p=ps[i];while(upper.length>1&&cross(upper[upper.length-2],upper[upper.length-1],p)<=1e-12)upper.pop();upper.push(p);}
+ lower.pop();upper.pop();return lower.concat(upper);
+}
+function restHullContains(points,x,z){
+ const hull=restSupportHull(points);if(hull.length<3)return false;
+ return hull.every((a,i)=>{const b=hull[(i+1)%hull.length];return (b.x-a.x)*(z-a.z)-(b.z-a.z)*(x-a.x)>.001*Math.hypot(b.x-a.x,b.z-a.z);});
+}
+function clearMechanicalRest(){
+ mechanicalRestRecords.clear();mechanicalFloorSupports.clear();mechanicalRestStep=[];mechanicalRestRefine=false;
+}
+function prepareMechanicalRest(dt,physicsWorld){
+ mechanicalRestStep=[];mechanicalRestRefine=false;
+ if(!rotors.some(r=>!r.virtualConveyor?.virtual)){for(const [key,record]of mechanicalRestRecords)discardMechanicalRest(key,record,true);return;}
+ const floorStamp=restFloorStamp(),normal=floor.quaternion.mult(floor.shapeOrientations[0]||Q()).vmult(V(0,0,1)),floorValid=physicsWorld.bodies.includes(floor)&&floor.collisionResponse&&floor.type===CANNON.Body.STATIC&&floor.shapes.length===1&&floor.shapes[0] instanceof CANNON.Plane&&floor.shapes[0].collisionResponse!==false&&Math.abs(normal.y-1)+Math.abs(normal.x)+Math.abs(normal.z)<1e-8&&world.gravity.y<0&&Math.abs(world.gravity.x)+Math.abs(world.gravity.z)<1e-8&&world.defaultContactMaterial.friction>0;
+ const seen=new Set(),visited=new Set(),heldGroups=new Set((held?.items||[]).map(i=>i.g)),active=new Set();
+ for(const r of rotors)if(r.enabled)for(const g of rotorGroups(r))active.add(g);
+ for(const rotor of rotors){
+  if(rotor.virtualConveyor?.virtual)continue;const pair=rotorGroups(rotor);if(pair.some(g=>!g)||pair.every(g=>visited.has(g)))continue;
+  const members=rotorConnectedGroups(pair).filter(g=>!g.virtualConveyor);for(const g of members)visited.add(g);
+  const key=members.reduce((a,g)=>g.body.id<a.body.id?g:a,members[0]);seen.add(key);
+  let record=mechanicalRestRecords.get(key);
+  if(record&&(record.members.length!==members.length||!record.members.every(g=>members.includes(g))||record.members.some((g,i)=>!restMemberUnchanged(g,record.stamps[i]))||floorStamp.length!==record.floorStamp.length||!floorStamp.every((v,i)=>v===record.floorStamp[i])||!floorValid)){
+   discardMechanicalRest(key,record,true);record=null;
+  }
+  if(!floorValid)continue;
+  const externalForce=g=>{const b=g.body;return Math.abs(b.force.x-b.mass*world.gravity.x)+Math.abs(b.force.y-b.mass*world.gravity.y)+Math.abs(b.force.z-b.mass*world.gravity.z)>1e-6||b.torque.norm2()>1e-12;};
+  const passive=members.every(g=>g.body.type===CANNON.Body.DYNAMIC&&g.body.allowSleep&&g.body.collisionResponse&&restSupportFriction(g.body)>0&&(g.body.collisionFilterGroup&floor.collisionFilterMask)&&(g.body.collisionFilterMask&floor.collisionFilterGroup)&&!active.has(g)&&!g.route&&!g.haulJob&&!g.blueprintJob&&!g.robotHeld&&!g.robotGrip&&!g.storySocket&&!g.storyFloat&&!g.storyEmerging&&!heldGroups.has(g)&&!g.parts.some(p=>p.mood.flight?.enabled)&&!externalForce(g));
+  if(!passive){if(record)discardMechanicalRest(key,record);continue;}
+  if(!record){const joints=rotors.filter(r=>!r.virtualConveyor?.virtual&&rotorGroups(r).some(g=>members.includes(g))).map(r=>({r,constraint:r.constraint,a:r.aId,b:r.bId}));record={members,stamps:members.map(restMemberStamp),joints,topology:mechanicalTopologyIndex(),floorStamp,elapsed:0,reference:null,refineUntil:0,refineUsed:false};mechanicalRestRecords.set(key,record);}
+  const sleeping=members.every(g=>g.body.sleepState===CANNON.Body.SLEEPING);
+  if(record.sleeping&&sleeping&&record.sleepPose.every((pose,i)=>restPoseUnchanged(members[i].body,pose)))continue;
+  if(record.sleeping){record.elapsed=0;record.reference=null;record.refineUsed=false;record.sleeping=false;}
+  const bodies=new Set(members.map(g=>g.body)),points=new Map(),touching=new Set();let foreign=false;
+  for(const c of physicsWorld.contacts){
+   if(c.enabled===false)continue;
+   const a=bodies.has(c.bi),b=bodies.has(c.bj);if(a===b)continue;const body=a?c.bi:c.bj,other=a?c.bj:c.bi;
+   if(other!==floor){if(other.type===CANNON.Body.DYNAMIC&&other.sleepState!==CANNON.Body.SLEEPING)foreign=true;continue;}
+   if(Math.abs(c.ni.y)<.9999)continue;const g=body.qubitGroup,offset=a?c.ri:c.rj;let list=points.get(g);if(!list)points.set(g,list=[]);list.push({x:body.position.x+offset.x,z:body.position.z+offset.z});touching.add(g);
+  }
+  const support=[];
+  for(const g of members){
+   let saved=mechanicalFloorSupports.get(g);if(!saved||saved.parts!==g.parts)saved={batches:[],parts:g.parts};
+   saved.batches=saved.batches.filter(batch=>(g.body.sleepState===CANNON.Body.SLEEPING||simTime-batch.at<.15)&&restPoseDistanceSquared(g.body,batch.pose)<.002*.002);
+   const current=points.get(g);if(current)saved.batches.push({points:restSupportHull(current),pose:restBodyPose(g.body),at:simTime});
+   if(saved.batches.length){mechanicalFloorSupports.set(g,saved);for(const batch of saved.batches)support.push(...batch.points);touching.add(g);}else mechanicalFloorSupports.delete(g);
+  }
+  let mass=0,x=0,z=0;for(const g of members){mass+=g.body.mass;x+=g.body.mass*g.body.position.x;z+=g.body.mass*g.body.position.z;}
+  const supported=!foreign&&restHullContains(support,x/mass,z/mass);
+  // A sleeping, grounded chassis can hold links whose hinge projection cancels
+  // gravity drift without clearing their residual solver velocity. Permit that
+  // bounded residual only while the support sleeps; the full 2 mm / 0.6 s pose
+  // window still has to prove equilibrium before any other member can sleep.
+  const linearLimit=supported&&members.some(g=>touching.has(g)&&g.body.sleepState===CANNON.Body.SLEEPING)?.25:.08;
+  const slow=members.every(g=>g.body.velocity.norm()<linearLimit&&g.body.angularVelocity.norm()*Math.max(.045,g.body.boundingRadius)<.06);
+  const refine=dt>1/100&&physicsWorld.contacts.length<=64&&physicsWorld.solver.equations.length<=256&&!foreign&&touching.size&&members.every(g=>g.body.velocity.norm()<.3&&g.body.angularVelocity.norm()*Math.max(.045,g.body.boundingRadius)<.4);
+  if(refine&&!record.refineUsed){record.refineUntil=simTime+3;record.refineUsed=true;}
+  if(refine&&simTime<record.refineUntil){mechanicalRestRefine=true;}
+  record.supported=supported;record.slow=slow;record.foreign=foreign;
+  if(!supported||!slow){record.elapsed=0;record.reference=null;}
+  mechanicalRestStep.push(record);
+ }
+ for(const [key,record]of mechanicalRestRecords)if(!seen.has(key))discardMechanicalRest(key,record,true);
+}
+function finishMechanicalRest(dt){
+ let slept=false;
+ for(const record of mechanicalRestStep){
+  const {members}=record;
+  if(!record.supported||!record.slow)continue;
+  const poses=members.map(g=>restBodyPose(g.body));
+  const fits=record.reference&&poses.every((p,i)=>{
+   const old=record.reference[i],radius=Math.max(.045,members[i].body.boundingRadius),dp=(p[0]-old[0])**2+(p[1]-old[1])**2+(p[2]-old[2])**2,dot=Math.min(1,Math.abs(p[3]*old[3]+p[4]*old[4]+p[5]*old[5]+p[6]*old[6]));return dp+8*(1-dot)*radius*radius<.002*.002;
+  });
+  if(!fits){record.reference=poses;record.elapsed=0;continue;}
+  record.elapsed+=dt;if(record.elapsed<.6)continue;
+  for(const g of members)g.body.sleep();record.sleeping=true;record.sleepPose=poses;slept=true;
+ }
+ if(slept)syncVirtualConveyors();
+}
 // This Cannon version compares friction force bounds directly to impulse.
 // Match the true torque cap for driven free bodies without changing legacy
 // walking, hauling or unpowered contact behavior elsewhere in the room.
@@ -4006,6 +4189,7 @@ world.solver.solve=function(dt,physicsWorld){
   for(const member of component)if(member.body.type===CANNON.Body.DYNAMIC&&member.body.sleepState===CANNON.Body.SLEEPING)member.body.wakeUp();
   for(const member of component)member.wakeMechanicalComponent=false;
  }
+ prepareMechanicalRest(dt,physicsWorld);
  const driven=new Set();for(const rotor of rotors)if(rotor.enabled&&rotor.mount==='wheel')for(const g of rotorConnectedGroups(rotorGroups(rotor)))driven.add(g.body);
  for(const grip of robotGrips.values())if(driven.has(robotGripperHit(grip.id)?.g.body))driven.add(grip.body);
  // Large assemblies retain their summed mass and inertia, with quieter contacts.
@@ -4018,7 +4202,10 @@ world.solver.solve=function(dt,physicsWorld){
  if(story.scene==='lab')settleSupportedGroups(dt,physicsWorld.contacts,driven,articulated);
  const footLimits=walkingFootFriction(physicsWorld,dt),skinPairs=conveyorFrictionPairs(physicsWorld),changed=[];for(const eq of physicsWorld.frictionEquations){if(skinPairs.get(eq.bi)?.has(eq.bj)||skinPairs.get(eq.bj)?.has(eq.bi)){changed.push([eq,eq.minForce,eq.maxForce]);eq.minForce=0;eq.maxForce=0;}else if(footLimits?.has(eq)){changed.push([eq,eq.minForce,eq.maxForce]);eq.maxForce=footLimits.get(eq);eq.minForce=-eq.maxForce;}else if(driven.has(eq.bi)||driven.has(eq.bj)){changed.push([eq,eq.minForce,eq.maxForce]);eq.minForce*=dt;eq.maxForce*=dt;}}
  conveyorImpactConstraints(dt,physicsWorld,this);
- try{return solveRotorContacts.call(this,dt,physicsWorld);}finally{for(const [eq,min,max]of changed){eq.minForce=min;eq.maxForce=max;}}
+ // A brief 60 Hz settling pass may converge a quiet small assembly. Recheck
+ // the total after predictive belt contacts; large contact scenes keep 24.
+ const originalIterations=this.iterations;if(mechanicalRestRefine&&physicsWorld.contacts.length<=64&&this.equations.length<=256)this.iterations=Math.max(originalIterations,96);
+ try{return solveRotorContacts.call(this,dt,physicsWorld);}finally{this.iterations=originalIterations;for(const [eq,min,max]of changed){eq.minForce=min;eq.maxForce=max;}}
 };
 // Completed conveyor rollers are motor records plus a visual angle. The
 // existing electrical model still charges every motor for idle, acceleration
@@ -4307,15 +4494,23 @@ function gripPenetration(a,b){
 // their signed gaps once per candidate pair, then test only the displacement.
 // Keep every axis even if originally separated: that gap can close in a sweep.
 function gripTranslationContact(first,second){
- const aa=first.geometry||=convexPoseGeometry(first.pose),bb=second.geometry||=convexPoseGeometry(second.pose),intervals=[];let depth=Infinity;
- for(const rawAxis of [...aa.normals,...bb.normals,...aa.edges.flatMap(x=>bb.edges.map(y=>x.cross(y)))]){
+ const aa=first.geometry||=convexPoseGeometry(first.pose),bb=second.geometry||=convexPoseGeometry(second.pose);
+ // A nearby convex pair is usually separated by an early face normal. Build
+ // cross-edge projections only when the current translation reaches them;
+ // later sweep samples resume the same axis order and reuse exact intervals.
+ return {aa,bb,intervals:[],nextAxis:0,minimum:Infinity,get depth(){while(gripTranslationInterval(this));return Math.max(0,this.minimum);}};
+}
+function gripTranslationInterval(contact){
+ const {aa,bb}=contact,faceCount=aa.normals.length+bb.normals.length,count=faceCount+aa.edges.length*bb.edges.length;
+ while(contact.nextAxis<count){
+  const i=contact.nextAxis++,edge=i-faceCount,rawAxis=i<aa.normals.length?aa.normals[i]:i<faceCount?bb.normals[i-aa.normals.length]:aa.edges[Math.floor(edge/bb.edges.length)].cross(bb.edges[edge%bb.edges.length]);
   if(rawAxis.norm2()<1e-14)continue;const axis=rawAxis.clone();axis.normalize();let amin=Infinity,amax=-Infinity,bmin=Infinity,bmax=-Infinity;
   for(const v of aa.vertices){const d=v.dot(axis);amin=Math.min(amin,d);amax=Math.max(amax,d);}for(const v of bb.vertices){const d=v.dot(axis);bmin=Math.min(bmin,d);bmax=Math.max(bmax,d);}
-  const forward=amax-bmin,backward=bmax-amin;depth=Math.min(depth,forward,backward);intervals.push({axis,forward,backward});
- }return {intervals,depth:Math.max(0,depth)};
+  const forward=amax-bmin,backward=bmax-amin,interval={axis,forward,backward};contact.minimum=Math.min(contact.minimum,forward,backward);contact.intervals.push(interval);return interval;
+ }return null;
 }
 function gripTranslatedDepth(contact,shift){
- let depth=Infinity;for(const {axis,forward,backward}of contact.intervals){const d=axis.dot(shift);depth=Math.min(depth,forward+d,backward-d);if(depth<=.00035)return 0;}return depth;
+ let depth=Infinity;for(let i=0;;i++){const interval=i<contact.intervals.length?contact.intervals[i]:gripTranslationInterval(contact);if(!interval)return depth;const {axis,forward,backward}=interval,d=axis.dot(shift);depth=Math.min(depth,forward+d,backward-d);if(depth<=.00035)return 0;}
 }
 // One immutable geometry snapshot per grab update. All anchors inspect the
 // same complete mechanism; SAT spans are shared, not rebuilt for each roller.
@@ -5228,7 +5423,7 @@ function stepPhysics(dt){
   const limit=rotorForGroup(g)?QBitsRotorPower.LIMITS.rpm[1]*Math.PI/30:30;
   if(spin>limit)b.angularVelocity.scale(limit/spin,b.angularVelocity);
  }}
- updateCampaignPressure(dt);updateButtonPhysics();prepareRotorPower();updateRotorMotors(dt);driveRobotArms(dt);driveConveyors(dt);driveServos(dt);productionForces(dt);updateFlights(dt);world.step(dt);invalidateConveyorContacts();stabilizeRotors();updateRotorPower(dt);validateServoMarches();tickContactSensors(dt);tickFlightSensors(dt);
+ updateCampaignPressure(dt);updateButtonPhysics();prepareRotorPower();updateRotorMotors(dt);driveRobotArms(dt);driveConveyors(dt);driveServos(dt);productionForces(dt);updateFlights(dt);wakeMechanicalRest();world.step(dt);invalidateConveyorContacts();stabilizeRotors();finishMechanicalRest(dt);updateRotorPower(dt);validateServoMarches();tickContactSensors(dt);tickFlightSensors(dt);
  // The floor correction must translate a hinged assembly as a whole. Moving
  // a single link stretches its constraints and stores an impulse on release.
  if(held){
@@ -5486,8 +5681,14 @@ const shadowGeometry=buffer(vertices.slice(roomVertexCount));vertices.length=roo
 const ringVertices=[];for(let i=0;i<48;i++)for(const n of [i,i+1]){const t=n/48*Math.PI*2;ringVertices.push(Math.cos(t),0,Math.sin(t),0,1,0);}
 const ringGeometry=buffer(ringVertices),lineGeometry=gl.createBuffer();
 const attributes=[['aPosition',0],['aNormal',12],['aPiecePosition',0],['aPieceNormal',12]].map(([name,offset])=>[gl.getAttribLocation(program,name),offset]);
-let boundGeometry=null;
-function bindGeometry(b,batched=false){if(boundGeometry===b)return;gl.bindBuffer(gl.ARRAY_BUFFER,b);for(let i=0;i<attributes.length;i++){const [loc,offset]=attributes[i];gl.vertexAttribPointer(loc,3,gl.FLOAT,false,batched==='outline'?36:batched?48:24,batched==='outline'?(i>1?24:offset):offset+(batched&&i>1?24:0));}boundGeometry=b;}
+sceneGeometryBindings=window.QBitsGraphics?.geometryBindings(gl,attributes)||null;
+let boundGeometry=null,boundGeometryLayout=false;
+function bindGeometry(b,batched=false){
+ if(boundGeometry===b&&boundGeometryLayout===batched)return;
+ if(sceneGeometryBindings)sceneGeometryBindings.bind(b,batched);
+ else{gl.bindBuffer(gl.ARRAY_BUFFER,b);for(let i=0;i<attributes.length;i++){const [loc,offset]=attributes[i];gl.vertexAttribPointer(loc,3,gl.FLOAT,false,batched==='outline'?36:batched?48:24,batched==='outline'?(i>1?24:offset):offset+(batched&&i>1?24:0));}}
+ boundGeometry=b;boundGeometryLayout=batched;
+}
 function setPose(pos,q=Q(),dimensions=V(CUBE_SIZE,CUBE_SIZE,CUBE_SIZE)){
  gl.uniform3f(uniforms.uCenter,pos.x,pos.y,pos.z);gl.uniform4f(uniforms.uQuaternion,q.x,q.y,q.z,q.w);gl.uniform3f(uniforms.uDimensions,dimensions.x,dimensions.y,dimensions.z);
 }
@@ -7124,6 +7325,7 @@ function restoreLabRuntime(saved){
  return {ok:!warnings.length,warnings};
 }
 function clearPuzzleScene(){
+ clearMechanicalRest();
  clearDisassembly();cancelUnitCreation();
  cancelPowerCable();clearPowerNetwork();
  flightStates.clear();resetBatteryLiquids();
@@ -7363,6 +7565,9 @@ function updateMoods(dt){
 function moodVisualPose(g,pose){
  if(g.storySocket)return pose;
  if(g.parts.length!==1||g.route||g.haulJob&&groupWilling(g)||g.moodDuty||g.cooler||g.moodCarried||g.body.velocity.norm()>.03)return pose;
+ // Attached pieces share their collider's pose. Independent mood gestures
+ // otherwise make a stopped axle or a gripped load appear to jump apart.
+ if(g.robotGrip||g.robotHeld||rotorForGroup(g))return pose;
  const m=g.parts[0].mood,phase=simTime*(2.1+m.personality*.4)+g.parts[0].id,joy=m.blend[1],restless=m.blend[2],pulse=Math.max(0,Math.sin(phase));
  if(joy+restless<.001)return pose;
  const q=Q();q.setFromAxisAngle(V(0,0,1),joy*Math.sin(phase)*.018+restless*Math.sin(simTime*28+phase)*(.008+.014*(m.severity||1)));
@@ -8491,6 +8696,7 @@ function drawStoryGlass(){
 }
 const storyTargetMesh=buildLathe([[.88,.006],[1,.006]],72);
 function clearNarrativeScene(){
+ clearMechanicalRest();
  resetSimulationClock(performance.now(),true);
  cancelCullingBenchmark();cullingLab.observer=false;cullingLab.lastFrame=null;document.body.dataset.cullingObserver='false';
  window.QBitsFootsteps?.reset();window.QBitsJoinAudio?.stop();
@@ -10254,8 +10460,8 @@ function visualResolution(w,h,s){
  const max=Number(gl.getParameter(gl.MAX_TEXTURE_SIZE))||4096;
  return Math.min(Math.min(window.devicePixelRatio||1,2)*s.resolution/100*s.sampling,Math.sqrt(4500000/Math.max(1,w*h)),max/Math.max(w,h,1));
 }
-function suspendSceneAttributes(){for(const [location]of attributes)gl.disableVertexAttribArray(location);}
-function restoreSceneProgram(){gl.useProgram(program);for(const [location]of attributes)gl.enableVertexAttribArray(location);boundGeometry=null;}
+function suspendSceneAttributes(){sceneGeometryBindings?.unbind();for(const [location]of attributes)gl.disableVertexAttribArray(location);boundGeometry=null;}
+function restoreSceneProgram(){sceneGeometryBindings?.unbind();gl.useProgram(program);for(const [location]of attributes)gl.enableVertexAttribArray(location);boundGeometry=null;}
 function applyVisualUniforms(){
  surfaceTexture?.bind(visuals);gl.uniform1i(uniforms.uSurface,2);gl.uniform1f(uniforms.uTextureMix,surfaceTexture?1:0);
  gl.uniform1f(uniforms.uTextureScale,visuals.textureScale);gl.uniform1f(uniforms.uWarp,visuals.warp/100);gl.uniform1f(uniforms.uJitter,visuals.jitter/100);gl.uniform2f(uniforms.uResolution,canvas.width,canvas.height);gl.uniform1f(uniforms.uCel,visuals.cel);gl.uniform1f(uniforms.uLighting,visuals.lighting/100);gl.uniform1f(uniforms.uShadows,visuals.shadows==='off'?0:1);
@@ -10464,7 +10670,7 @@ function compositeHeldFocus(destination=null){
  }
  gl.uniform1f(uniforms.uFocusMask,0);gl.depthFunc(gl.LESS);gl.depthMask(true);
  gl.bindFramebuffer(gl.FRAMEBUFFER,destination);gl.viewport(0,0,canvas.width,canvas.height);gl.disable(gl.DEPTH_TEST);
- for(const [location]of attributes)gl.disableVertexAttribArray(location);
+ suspendSceneAttributes();
  gl.useProgram(focusPass.program);gl.bindBuffer(gl.ARRAY_BUFFER,focusPass.quad);gl.enableVertexAttribArray(focusPass.location);gl.vertexAttribPointer(focusPass.location,2,gl.FLOAT,false,0,0);
  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,focusPass.scene.texture);gl.uniform1i(focusPass.uniforms.uScene,0);
  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,focusPass.mask.texture);gl.uniform1i(focusPass.uniforms.uMask,1);
@@ -10556,6 +10762,7 @@ function updateCullingHud(force=false){
  if(el.hidden||(!force&&performance.now()<cullingLab.nextHud))return;cullingLab.nextHud=performance.now()+300;
  const r=cullingLab.last,b=cullingLab.benchmark,fmt=n=>Number.isFinite(n)?n.toFixed(2):'—';
  const lines=[cullingLab.observer?'OBSERVADOR · frustum del jugador':'RENDIMIENTO · vista del jugador'];
+ lines.push('Render: WebGL '+renderContext.version+(sceneGeometryBindings?.supported?' · geometría persistente':''));
  lines.push('Simulación: '+savedPreferences.physicsHz+' pasos/s');
  if(b)lines.push('A/B · escena congelada · '+(b.phase+1)+'/4 · culling '+(b.enabled?'ON':'OFF')+' · Esc cancela');
  else lines.push('Culling '+(visuals.culling===false?'OFF':'ON')+' · / alternar · Num7 observador · Num8 panel · Num9 A/B');

@@ -2,18 +2,26 @@
 // companion replays these exact shaders, buffers and draws on real GLES.
 const fs=require('node:fs'),path=require('node:path'),createGame=require('./game-harness.cjs');
 const output=process.argv[2]||'/tmp/qbits-robot-arm/commands.json',width=Number(process.argv[3])||960,height=Number(process.argv[4])||720;
+const renderBackend=process.env.QBITS_RENDER_BACKEND||'webgl1';
 const constants={VERTEX_SHADER:0x8b31,FRAGMENT_SHADER:0x8b30,COMPILE_STATUS:0x8b81,LINK_STATUS:0x8b82,ARRAY_BUFFER:0x8892,STATIC_DRAW:0x88e4,DYNAMIC_DRAW:0x88e8,FLOAT:0x1406,TRIANGLES:4,LINES:1,DEPTH_TEST:0xb71,BLEND:0xbe2,CULL_FACE:0xb44,COLOR_BUFFER_BIT:0x4000,DEPTH_BUFFER_BIT:0x100,SRC_ALPHA:0x302,ONE_MINUS_SRC_ALPHA:0x303,ONE:1,ZERO:0,LESS:0x201,LEQUAL:0x203,MAX_TEXTURE_SIZE:0xd33,FRAMEBUFFER:0x8d40,TEXTURE0:0x84c0,TEXTURE_2D:0xde1};
 let next=0,commands=[],bound=null,current=null,depthWritable=true;
-const locations=new Map(),attributeKeys=new Map(),buffers=new Map(),attributes=new Map(),enabled=new Set(),validation=[];
+const locations=new Map(),attributeKeys=new Map(),buffers=new Map(),validation=[];
+let attributes=new Map(),enabled=new Set(),activeArray=null;
+const vertexArrays=new Map([[null,{attributes,enabled}]]);
 const serialize=value=>ArrayBuffer.isView(value)?Array.from(value):value;
 const record=(name,args)=>commands.push([name,...args.map(serialize)]);
-const gl=new Proxy({...constants},{get(target,name){
+const vertexArrayAPI={
+ createVertexArray(){const id=++next;vertexArrays.set(id,{attributes:new Map(),enabled:new Set()});record('createVertexArray',[id]);return id;},
+ bindVertexArray(id){if(!vertexArrays.has(id))throw Error('Missing vertex array');activeArray=id;({attributes,enabled}=vertexArrays.get(id));record('bindVertexArray',[id]);},
+ deleteVertexArray(id){if(activeArray===id){activeArray=null;({attributes,enabled}=vertexArrays.get(null));}vertexArrays.delete(id);record('deleteVertexArray',[id]);}
+};
+const gl=new Proxy({...constants,...(renderBackend==='webgl2'?vertexArrayAPI:{})},{get(target,name){
  if(name in target)return target[name];
  if(name==='getShaderParameter'||name==='getProgramParameter')return()=>true;
  if(name==='getShaderInfoLog'||name==='getProgramInfoLog')return()=>'';
  if(name==='getError')return()=>0;
  if(name==='getParameter')return()=>8192;
- if(name==='getExtension')return()=>null;
+ if(name==='getExtension')return name=>name==='OES_vertex_array_object'&&renderBackend==='webgl1-vao'?{createVertexArrayOES:vertexArrayAPI.createVertexArray,bindVertexArrayOES:vertexArrayAPI.bindVertexArray,deleteVertexArrayOES:vertexArrayAPI.deleteVertexArray}:null;
  if(name==='getSupportedExtensions')return()=>[];
  if(name==='isContextLost')return()=>false;
  if(name==='createShader'||name==='createProgram'||name==='createBuffer')return(...args)=>{const id=++next;record(name,[id,...args]);return id;};
@@ -31,7 +39,7 @@ const gl=new Proxy({...constants},{get(target,name){
  if(name.startsWith('delete'))return()=>{};
  return(...args)=>record(name,args);
 }});
-const {t,sandbox}=createGame({gl,graphics:false});t.clearNarrativeScene();Object.assign(t.story,{ready:true,mode:'playing',scene:'lab',phase:'idle'});
+const {t,sandbox}=createGame({gl,graphics:false,webgl2:renderBackend==='webgl2'});t.clearNarrativeScene();Object.assign(t.story,{ready:true,mode:'playing',scene:'lab',phase:'idle'});
 const init=commands;commands=[];const snapshots=[];
 function uniform(name,value){gl.uniform1f(locations.get(name),value);}
 function lab(){t.clearNarrativeScene();Object.assign(t.story,{ready:true,mode:'playing',scene:'lab',phase:'idle'});}

@@ -1,5 +1,51 @@
-/* WebGL1 post effects and a real mipmapped procedural surface texture. */
+/* Compatible WebGL 2/1 setup, post effects and a mipmapped surface texture. */
 (function(){'use strict';
+ function context(canvas){
+  const options={alpha:false,antialias:true,depth:true,powerPreference:'high-performance'};
+  // The existing GLSL ES 1.00 shaders are also accepted by WebGL 2. Keep the
+  // WebGL 1 path for older devices; no simulation or save data lives here.
+  for(const [type,version]of [['webgl2',2],['webgl',1]]){
+   try{const gl=canvas.getContext(type,options);if(gl)return {gl,version};}catch(_){/* Try the compatible context. */}
+  }
+  return {gl:null,version:0};
+ }
+ function geometryBindings(gl,attributes){
+  let arrays=null;
+  try{
+   if(['createVertexArray','bindVertexArray','deleteVertexArray'].every(name=>name in gl&&typeof gl[name]==='function')){
+    arrays={create:()=>gl.createVertexArray(),bind:value=>gl.bindVertexArray(value),remove:value=>gl.deleteVertexArray(value)};
+   }else{
+    const ext=gl.getExtension?.('OES_vertex_array_object');
+    if(ext&&['createVertexArrayOES','bindVertexArrayOES','deleteVertexArrayOES'].every(name=>typeof ext[name]==='function'))arrays={create:()=>ext.createVertexArrayOES(),bind:value=>ext.bindVertexArrayOES(value),remove:value=>ext.deleteVertexArrayOES(value)};
+   }
+  }catch(_){/* Vertex arrays are optional on WebGL 1. */}
+  const buffers=new Map();
+  function configure(layout,enable=false){
+   for(let i=0;i<attributes.length;i++){
+    const [location,offset]=attributes[i];if(location<0)continue;
+    if(enable)gl.enableVertexAttribArray(location);
+    gl.vertexAttribPointer(location,3,gl.FLOAT,false,layout==='outline'?36:layout?48:24,layout==='outline'?(i>1?24:offset):offset+(layout&&i>1?24:0));
+   }
+  }
+  function bind(buffer,layout=false){
+   gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
+   if(!arrays){configure(layout);return;}
+   let variants=buffers.get(buffer),array=variants?.get(layout);
+   if(array){arrays.bind(array);return;}
+   array=arrays.create();
+   if(!array){arrays.bind(null);configure(layout);return;}
+   arrays.bind(array);configure(layout,true);
+   if(!variants){variants=new Map();buffers.set(buffer,variants);}variants.set(layout,array);
+  }
+  // Screen effects use the default VAO. Their attributes must never overwrite
+  // one of the immutable scene layouts, even when a program reuses a location.
+  function unbind(){arrays?.bind(null);}
+  function release(buffer){
+   const variants=buffers.get(buffer);if(!variants)return;
+   for(const array of variants.values())arrays.remove(array);buffers.delete(buffer);
+  }
+  return {bind,unbind,release,get supported(){return !!arrays;}};
+ }
  const vertex=`attribute vec2 aScreen;varying vec2 vUV;void main(){vUV=aScreen*.5+.5;gl_Position=vec4(aScreen,0.,1.);}`;
  // Five bilinear taps are a nine-tap Gaussian. The two half-resolution passes
  // cost only 2.5 full-screen samples and never soften the original scene.
@@ -82,5 +128,5 @@
   }
   return {bind,maxAnisotropy:max};
  }
- window.QBitsGraphics={create,surface,vertex,fragment,blurFragment};
+ window.QBitsGraphics={context,geometryBindings,create,surface,vertex,fragment,blurFragment};
 })();
