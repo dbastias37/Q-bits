@@ -1,0 +1,15 @@
+{
+  "localChromium": {
+    "status": "blocked-before-launch",
+    "error": "socket() failed: Operation not permitted (1)",
+    "fpsMeasured": false
+  },
+  "remoteChrome": {
+    "url": "https://q-bits.onrender.com/",
+    "status": "WebGL initialization failed on initial load and one retry",
+    "message": "No se pudo iniciar la vista 3D. Activa la aceleración gráfica y reintenta.",
+    "source": "opening.js:158; boot.js version 20261122-ground-geometry-1",
+    "fpsMeasured": false
+  },
+  "profileSubstitute": "Node V8 Inspector and perf_hooks GC. No Chrome performance trace or GPU duration was obtained."
+}

@@ -1,0 +1,72 @@
+{
+  "sourceSha256": "d5b6af65ab6a413634e6cf70bc3ea88a16a0ab9cc81b4d5af2364045caf16159",
+  "node": "v24.22.3",
+  "scope": "Real game/Cannon with DOM/GPU stubs. Work counters separate from timing. Object counts are not bytes.",
+  "fixture": {
+    "packs": 32,
+    "cells": 96
+  },
+  "reports": [
+    {
+      "label": "cold-full-recharge",
+      "counts": {
+        "externalBatteryPackComponents": 32,
+        "touchingUnitFaces": 64,
+        "corners": 32
+      }
+    },
+    {
+      "label": "first-liquid-frame",
+      "counts": {
+        "batteryVisualPacks": 32,
+        "corners": 96
+      }
+    },
+    {
+      "label": "first-opaque-pass",
+      "counts": {
+        "batteryVisualPacks": 32,
+        "corners": 96
+      }
+    },
+    {
+      "label": "first-transparent-pass",
+      "counts": {
+        "batteryVisualPacks": 32,
+        "corners": 96
+      }
+    },
+    {
+      "label": "warm-three-passes",
+      "counts": {
+        "batteryVisualPacks": 96,
+        "corners": 288
+      }
+    },
+    {
+      "label": "first-partial-recharge",
+      "counts": {
+        "externalBatteryPackComponents": 32,
+        "touchingUnitFaces": 64,
+        "corners": 32
+      }
+    },
+    {
+      "label": "warm-partial-recharge",
+      "counts": {
+        "externalBatteryPackComponents": 32,
+        "touchingUnitFaces": 64,
+        "corners": 32
+      }
+    }
+  ],
+  "cacheObjects": {
+    "groups": 0,
+    "objectsIncludingArrays": 0,
+    "arrays": 0,
+    "objectReferenceSlots": 0,
+    "borrowedReferenceSlots": 0,
+    "numericSlots": 0
+  },
+  "cacheOwnersAfterRemoval": 0
+}

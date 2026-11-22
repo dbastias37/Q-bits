@@ -1,0 +1,72 @@
+{
+  "sourceSha256": "19efe4aa93ceac0791968c5d4e85ea6f5a980cf65b0b3302f20a70933ffe6da0",
+  "node": "v24.22.3",
+  "scope": "Real game/Cannon with DOM/GPU stubs. Work counters separate from timing. Object counts are not bytes.",
+  "fixture": {
+    "packs": 32,
+    "cells": 96
+  },
+  "reports": [
+    {
+      "label": "cold-full-recharge",
+      "counts": {
+        "externalBatteryGeometry": 32
+      }
+    },
+    {
+      "label": "first-liquid-frame",
+      "counts": {
+        "batteryVisualPacks": 32,
+        "externalBatteryGeometry": 32,
+        "buildBatteryVisualGeometry": 32,
+        "corners": 96
+      }
+    },
+    {
+      "label": "first-opaque-pass",
+      "counts": {
+        "batteryVisualPacks": 32,
+        "externalBatteryGeometry": 32
+      }
+    },
+    {
+      "label": "first-transparent-pass",
+      "counts": {
+        "batteryVisualPacks": 32,
+        "externalBatteryGeometry": 32
+      }
+    },
+    {
+      "label": "warm-three-passes",
+      "counts": {
+        "batteryVisualPacks": 96,
+        "externalBatteryGeometry": 96
+      }
+    },
+    {
+      "label": "first-partial-recharge",
+      "counts": {
+        "externalBatteryGeometry": 32,
+        "buildExternalBatteryComponents": 32,
+        "touchingUnitFaces": 64,
+        "corners": 32
+      }
+    },
+    {
+      "label": "warm-partial-recharge",
+      "counts": {
+        "externalBatteryGeometry": 32,
+        "corners": 32
+      }
+    }
+  ],
+  "cacheObjects": {
+    "groups": 32,
+    "objectsIncludingArrays": 416,
+    "arrays": 192,
+    "objectReferenceSlots": 832,
+    "borrowedReferenceSlots": 448,
+    "numericSlots": 960
+  },
+  "cacheOwnersAfterRemoval": 0
+}
