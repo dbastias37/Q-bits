@@ -2,14 +2,34 @@
 // or browser FPS. Run alone, after stopping other tests/profilers.
 // node --expose-gc tests/benchmark-cpu-architecture.cjs --baseline-root=../qbits-baseline --output=/tmp/cpu.json
 // --mode=matrix measures fixed simulated frames; --mode=equivalence checks state.
+// --families=independent --phase=settled --warmup=60 separates sleeping from
+// --phase=settling (zero physical warm-up, including initial contacts/JIT).
+// --mode=outlines isolates preparation; --instrumentation=counts is a SEPARATE
+// run with bounded call/upload counters and deliberately no primary timings.
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),crypto=require('node:crypto'),assert=require('node:assert/strict');
+const {execFileSync}=require('node:child_process');
 const fixtures=require('./cpu-audit-fixtures.cjs');
 const args=Object.fromEntries(process.argv.slice(2).map(s=>s.replace(/^--/,'').split('=')));
 const root=path.resolve(__dirname,'..'),roots={baseline:path.resolve(root,args['baseline-root']||'../qbits-baseline'),optimized:path.resolve(root,args['optimized-root']||'.')};
-const mode=args.mode||'operations',repetitions=Number(args.repetitions||3),samples=Number(args.samples||24),warmup=Number(args.warmup||8);
+const mode=args.mode||'operations',repetitions=Number(args.repetitions??3),samples=Number(args.samples??24),warmup=Number(args.warmup??8);
+const instrumentation=args.instrumentation||'none',phase=args.phase||'mixed';
+const familyNames=['welded','independent','few-articulated','many-mechanisms','factory'];
+const families=(args.families||(mode==='outlines'?'independent':familyNames.join(','))).split(',');
+const scales=(args.scales||'16,100,500,1000,1500,2000').split(',').map(Number),hz=Number(args.hz||120);
+const budget=Number(args['case-budget-ms']||8000),matrixSamples=Number(args.samples??18);
+const matrixWarmup=phase==='settling'?0:Number(args.warmup??(phase==='settled'?60:12));
+assert(['none','counts'].includes(instrumentation),'instrumentation must be none or counts');
+assert(instrumentation==='none'||mode==='outlines','counts are isolated to --mode=outlines');
+assert(['mixed','settling','settled'].includes(phase),'phase must be mixed, settling or settled');
+assert(families.length&&families.every(f=>familyNames.includes(f)),'unknown family');
+assert(scales.length&&scales.every(n=>Number.isInteger(n)&&n>0&&n<=2000),'scales must respect the shipped 2000-piece limit');
+assert([60,120,240].includes(hz),'choose a real physics preference: 60, 120 or 240 Hz');
+assert(Number.isInteger(repetitions)&&repetitions>0&&Number.isInteger(samples)&&samples>0&&Number.isInteger(warmup)&&warmup>=0&&Number.isFinite(budget)&&budget>0,'invalid sampling or budget');
+if(mode==='matrix'){assert(phase!=='settled'||matrixWarmup>=60,'settled needs at least 60 warm-up frames');assert(phase!=='settling'||args.warmup===undefined||Number(args.warmup)===0,'settling must use zero physical warm-up');}
 const sha=s=>crypto.createHash('sha256').update(s).digest('hex');
 const sources=Object.fromEntries(Object.entries(roots).map(([v,p])=>[v,fs.readFileSync(path.join(p,'assets/js/game.js'),'utf8')]));
-const identity=Object.fromEntries(Object.entries(roots).map(([v,p])=>[v,{gameSha256:sha(sources[v]),workshopSha256:sha(fs.readFileSync(path.join(p,'assets/js/workshop.js')))}]));
+function git(p,...a){try{return execFileSync('git',['-C',p,...a],{encoding:'utf8',stdio:['ignore','pipe','ignore']}).trim();}catch{return null;}}
+const identity=Object.fromEntries(Object.entries(roots).map(([v,p])=>[v,{headCommit:git(p,'rev-parse','HEAD'),headTree:git(p,'rev-parse','HEAD^{tree}'),worktreeStatus:git(p,'status','--porcelain'),gameSha256:sha(sources[v]),workshopSha256:sha(fs.readFileSync(path.join(p,'assets/js/workshop.js'))),harnessSha256:sha(fs.readFileSync(path.join(p,'tests/game-harness.cjs')))}]));
 const quantile=(a,q)=>{const s=[...a].sort((a,b)=>a-b);return s[Math.min(s.length-1,Math.ceil(q*s.length)-1)]??null;};
 const stats=a=>({count:a.length,mean:a.reduce((s,n)=>s+n,0)/Math.max(1,a.length),p50:quantile(a,.5),p95:quantile(a,.95),p99:quantile(a,.99),min:Math.min(...a),max:Math.max(...a)});
 const reports=[];
@@ -25,9 +45,14 @@ function assertEquivalent(before,after,label){
  visit(JSON.parse(before),JSON.parse(after),'state');
  throw new Error(label+' differs: '+JSON.stringify(differences));
 }
-function setup(version,hz=120){
+function setup(version,hz=120,countOutlines=false){
   const source=sources[version],at=source.lastIndexOf('})();');
-  const hooks='window.__auditRaw={sensorWeight,sensorContactActive,sensorMotion,drawWorkshop,drawBatteriesTransparent,externalBatteryPackComponents,floor,settings,moodSettings};';
+  const countHooks=countOutlines?`window.__outlineCounts={enabled:false,drawOutline:0,wideLineTriangles:0,bufferData:0,bufferDataBytes:0,createBuffer:0,drawArrays:0,vertices:0};
+    for(const name of ['bufferData','createBuffer','drawArrays']){const original=gl[name];gl[name]=function(...args){const c=window.__outlineCounts;if(c.enabled){c[name]++;if(name==='bufferData')c.bufferDataBytes+=typeof args[1]==='number'?args[1]:(args[1]?.byteLength||0);if(name==='drawArrays')c.vertices+=args[2]||0;}return original.apply(this,args);};}
+    {const original=drawOutline;drawOutline=function(...a){if(window.__outlineCounts.enabled)window.__outlineCounts.drawOutline++;return original.apply(this,a);};}
+    {const original=wideLineTriangles;wideLineTriangles=function(...a){if(window.__outlineCounts.enabled)window.__outlineCounts.wideLineTriangles++;return original.apply(this,a);};}
+  `:'';
+  const hooks=countHooks+'window.__auditRaw={sensorWeight,sensorContactActive,sensorMotion,drawWorkshop,drawStructureOutlines,drawBatteriesTransparent,externalBatteryPackComponents,floor,settings,moodSettings};';
   const createGame=require(path.join(roots[version],'tests/game-harness.cjs'));
   const saved=new Map(),storage={getItem:k=>saved.get(k)??null,setItem:(k,v)=>saved.set(k,String(v)),removeItem:k=>saved.delete(k)};
   const game=createGame({graphics:false,storage,gameSource:source.slice(0,at)+hooks+source.slice(at)}),{t,sandbox}=game;
@@ -89,29 +114,74 @@ function runOperations(){
  }
 }
 function runMatrix(){
- const scales=(args.scales||'16,100,500,1000,1500,2000').split(',').map(Number),hz=Number(args.hz||120);
- const budget=Number(args['case-budget-ms']||8000),matrixSamples=Number(args.samples||18),matrixWarmup=Number(args.warmup||12);
- for(const kind of ['welded','independent','few-articulated','many-mechanisms','factory']){
+ for(const kind of families){
   let lastCompleted=null;
   for(const pieces of scales){
    if(kind==='factory'&&pieces<100)continue;
    const runs={baseline:[],optimized:[]},states={baseline:[],optimized:[]};let stopped=null;
    for(let r=0;r<repetitions&&!stopped;r++)for(const version of r%2?['optimized','baseline']:['baseline','optimized']){
     const begun=performance.now(),game=setup(version,hz),{t,f}=game;f.scene(kind,pieces,kind==='factory'||kind==='many-mechanisms');
-    const operation=()=>{t.advanceSimulation(1/60);t.updateBatteryLiquids(1/60);t.updateTarget();t.renderScene();};
-    let i=0;for(;i<matrixWarmup&&performance.now()-begun<budget;i++)operation();
-    if(i<matrixWarmup){stopped={version,repetition:r+1,phase:'warmup',completed:i,budgetMs:budget};break;}
-    const initial=f.inventory(),clock=t.getTickState(),wall=[],cpu=[];
-    for(i=0;i<matrixSamples&&performance.now()-begun<budget;i++){const m=timed(operation);wall.push(m.wallMs);cpu.push(m.cpuMs);}
-    if(i<matrixSamples){stopped={version,repetition:r+1,phase:'measurement',completed:i,budgetMs:budget};break;}
+    const setupMs=performance.now()-begun,operation=()=>{t.advanceSimulation(1/60);t.updateBatteryLiquids(1/60);t.updateTarget();t.renderScene();};
+    const stop=(phase,completed)=>{stopped={version,repetition:r+1,phase,completed,budgetMs:budget,elapsedMs:performance.now()-begun,setupMs,inventory:f.inventory(),clock:t.getTickState()};};
+    if(setupMs>=budget){stop('setup',0);break;}
+    const warmupStart=performance.now();let i=0;
+    for(;i<matrixWarmup&&performance.now()-begun<budget;i++)operation();
+    const warmupMs=performance.now()-warmupStart;
+    if(i<matrixWarmup||performance.now()-begun>=budget){stop('warmup',i);break;}
+    const initial=f.inventory(),clock=t.getTickState(),wall=[],cpu=[];let firstFrameInventory=null;
+    if(phase==='settled'&&kind==='independent')assert.equal(initial.awakeBodies,0,'independent scene has not settled; increase --warmup');
+    for(i=0;i<matrixSamples&&performance.now()-begun<budget;i++){
+     const m=timed(operation);wall.push(m.wallMs);cpu.push(m.cpuMs);
+     if(i===0)firstFrameInventory=f.inventory();
+    }
+    if(i<matrixSamples||performance.now()-begun>=budget){stop('measurement',i);stopped.wallSamples=wall;stopped.cpuSamples=cpu;break;}
     const after=t.getTickState();
     assert(Math.abs(after.simTime-clock.simTime-matrixSamples/60)<1e-8,'same simulated duration');
+    assert.equal(after.physics-clock.physics,matrixSamples*hz/60,'all selected physical steps executed');
     assert.equal(after.droppedSeconds,clock.droppedSeconds,'controlled dt must not drop time');
-    states[version].push(f.state());runs[version].push({repetition:r+1,initial,final:f.inventory(),clockDelta:{physics:after.physics-clock.physics,logic:after.logic-clock.logic,simulatedSeconds:after.simTime-clock.simTime,droppedSeconds:after.droppedSeconds-clock.droppedSeconds,physicsAccumulator:after.physicsAccumulator,logicAccumulator:after.logicAccumulator},wallMsPerSimulatedFrame:stats(wall),processCpuMsPerSimulatedFrame:stats(cpu),wallSamples:wall,cpuSamples:cpu});
+    states[version].push(f.state());runs[version].push({repetition:r+1,setupMs,warmupMs,totalCaseMs:performance.now()-begun,initial,firstFrameInventory,final:f.inventory(),clockBefore:clock,clockAfter:after,clockDelta:{physics:after.physics-clock.physics,logic:after.logic-clock.logic,simulatedSeconds:after.simTime-clock.simTime,droppedSeconds:after.droppedSeconds-clock.droppedSeconds,physicsAccumulator:after.physicsAccumulator,logicAccumulator:after.logicAccumulator},wallMsPerSimulatedFrame:stats(wall),processCpuMsPerSimulatedFrame:stats(cpu),wallSamples:wall,cpuSamples:cpu});
    }
-   if(stopped){reports.push({scenario:kind,pieces,hz,stopped,lastCompleted,runs});break;}
-   assert(states.baseline.every((s,i)=>s===states.optimized[i]),kind+' '+pieces+' full state differs');
-   lastCompleted=pieces;reports.push({scenario:kind,pieces,hz,identicalFinalState:true,runs});process.stderr.write(kind+' '+pieces+' completed\n');
+   if(stopped){reports.push({scenario:kind,phase,pieces,hz,stopped,lastCompleted,runs});break;}
+   for(let r=0;r<repetitions;r++)assertEquivalent(states.baseline[r],states.optimized[r],kind+' '+pieces+' full state');
+   lastCompleted=pieces;reports.push({scenario:kind,phase,pieces,hz,identicalFinalState:true,stateSha256:states.optimized.map(sha),runs});process.stderr.write(kind+' '+phase+' '+pieces+' completed\n');
+  }
+ }
+}
+function runOutlines(){
+ const counted=instrumentation==='counts';
+ const beginCounts=game=>{const c=game.sandbox.__outlineCounts;for(const k of Object.keys(c))c[k]=k==='enabled'?true:0;};
+ const endCounts=game=>{const c=game.sandbox.__outlineCounts;c.enabled=false;const {enabled,...snapshot}=c;return snapshot;};
+ for(const kind of families){
+  let lastCompleted=null;
+  for(const pieces of scales){
+   if(kind==='factory'&&pieces<100)continue;
+   const runs={baseline:[],optimized:[]},states={baseline:[],optimized:[]};let stopped=null;
+   for(let r=0;r<repetitions&&!stopped;r++)for(const version of r%2?['optimized','baseline']:['baseline','optimized']){
+    const begun=performance.now(),game=setup(version,hz,counted),{t,f,raw}=game;f.scene(kind,pieces,kind==='factory'||kind==='many-mechanisms');
+    const setupMs=performance.now()-begun,initial=f.inventory(),before=f.state(),clock=t.getTickState();
+    // This operation includes the visibility-frame setup used by renderScene.
+    // It never advances physics; complete state/clock equality is required.
+    const operation=()=>{t.beginVisibilityFrame();raw.drawStructureOutlines();};
+    const stop=(phase,completed)=>{stopped={version,repetition:r+1,phase,completed,budgetMs:budget,elapsedMs:performance.now()-begun,setupMs,inventory:f.inventory(),clock:t.getTickState()};};
+    if(performance.now()-begun>=budget){stop('setup',0);break;}
+    let cold,coldCounts;
+    if(counted){beginCounts(game);operation();coldCounts=endCounts(game);}else{const m=timed(operation);cold={wallMs:m.wallMs,cpuMs:m.cpuMs};}
+    const warmupStart=performance.now();let i=0;
+    for(;i<warmup&&performance.now()-begun<budget;i++)operation();
+    const warmupMs=performance.now()-warmupStart;
+    if(i<warmup||performance.now()-begun>=budget){stop('warmup',i);break;}
+    const wall=[],cpu=[];if(counted)beginCounts(game);
+    for(i=0;i<samples&&performance.now()-begun<budget;i++){
+     if(counted)operation();else{const m=timed(operation);wall.push(m.wallMs);cpu.push(m.cpuMs);}
+    }
+    const counts=counted?endCounts(game):undefined;
+    if(i<samples||performance.now()-begun>=budget){stop('measurement',i);break;}
+    const state=f.state();assertEquivalent(before,state,kind+' outlines must not alter simulation');states[version].push(state);
+    runs[version].push({repetition:r+1,setupMs,warmupMs,totalCaseMs:performance.now()-begun,initial,final:f.inventory(),clockBefore:clock,clockAfter:t.getTickState(),measuredOperations:samples,...(counted?{coldCounts,counts}:{cold,wallMsPerOperation:stats(wall),processCpuMsPerOperation:stats(cpu),wallSamples:wall,cpuSamples:cpu})});
+   }
+   if(stopped){reports.push({scenario:kind+'-outlines',pieces,hz,stopped,lastCompleted,runs});break;}
+   for(let r=0;r<repetitions;r++)assertEquivalent(states.baseline[r],states.optimized[r],kind+' outlines full state');
+   lastCompleted=pieces;reports.push({scenario:kind+'-outlines',pieces,hz,identicalFinalState:true,renderPreservesState:true,stateSha256:states.optimized.map(sha),runs});process.stderr.write(kind+' outlines '+pieces+' completed\n');
   }
  }
 }
@@ -136,6 +206,6 @@ function runEquivalence(){
   reports.push({scenario,hz,identicalFinalState:true,baseline:values.baseline.summary,optimized:values.optimized.summary,stateSha256:sha(values.optimized.state)});process.stderr.write(scenario+' '+hz+' completed\n');
  }
 }
-if(mode==='operations')runOperations();else if(mode==='matrix')runMatrix();else if(mode==='equivalence')runEquivalence();else throw new Error('Unknown mode '+mode);
-const output={schema:1,mode,referenceCommit:'1a0425a250b7911a8c230eb5d8534c54e3a03953',sources:identity,runtime:{node:process.version,platform:process.platform,arch:process.arch,cpuModel:os.cpus()[0]?.model,availableParallelism:os.availableParallelism()},configuration:{repetitions:mode==='equivalence'?1:repetitions,samples:mode==='equivalence'?null:mode==='matrix'?Number(args.samples||18):samples,warmup:mode==='equivalence'?null:mode==='matrix'?Number(args.warmup||12):warmup,forcedGc:!!global.gc,viewport:'1280x720 stubs',graphics:'production preparation + stub GPU; shadows off',order:mode==='equivalence'?'baseline / optimized; one deterministic pair per scenario':'AB / BA / AB'},method:'Real Cannon and production game. Wall elapsed time and process CPU measured separately. NO browser FPS or GPU time. Cold first touch is separate; contact-index builds are included after each real world.step. Retained heap deltas include JIT/harness noise and are not exact cache sizes.',reports};
+if(mode==='operations')runOperations();else if(mode==='matrix')runMatrix();else if(mode==='equivalence')runEquivalence();else if(mode==='outlines')runOutlines();else throw new Error('Unknown mode '+mode);
+const output={schema:1,mode,referenceCommit:args['reference-commit']||identity.baseline.headCommit,sources:identity,runtime:{node:process.version,platform:process.platform,arch:process.arch,cpuModel:os.cpus()[0]?.model,availableParallelism:os.availableParallelism()},configuration:{repetitions:mode==='equivalence'?1:repetitions,samples:mode==='equivalence'?null:mode==='matrix'?matrixSamples:samples,warmup:mode==='equivalence'?null:mode==='matrix'?matrixWarmup:warmup,phase:mode==='matrix'?phase:null,families:mode==='matrix'||mode==='outlines'?families:null,scales:mode==='matrix'||mode==='outlines'?scales:null,hz:mode==='matrix'||mode==='outlines'?hz:null,caseBudgetMs:budget,instrumentation,fixtureSha256:sha(fs.readFileSync(path.join(__dirname,'cpu-audit-fixtures.cjs'))),forcedGc:mode==='operations'&&!!global.gc,exposedGc:!!global.gc,viewport:'1280x720 stubs',graphics:'production preparation + stub GPU; shadows off',order:mode==='equivalence'?'baseline / optimized; one deterministic pair per scenario':Array.from({length:repetitions},(_,r)=>r%2?'BA':'AB').join(' / ')},method:'Real Cannon and production game. Wall elapsed time and process CPU measured separately. NO browser FPS or GPU time. Cold first touch is separate; contact-index builds are included after each real world.step. Retained heap deltas include JIT/harness noise and are not exact cache sizes. Matrix settling has zero physical warm-up and includes initial contact/JIT cost; settled independent bodies must already be asleep. Case budgets cover setup and warm-up and are checked between synchronous operations. Outline counters run separately without primary timings; initialization uploads precede their enable point.',reports};
 if(args.output)fs.writeFileSync(args.output,JSON.stringify(output,null,2)+'\n');else console.log(JSON.stringify(output,null,2));

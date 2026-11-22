@@ -1,0 +1,108 @@
+[
+  {
+    "name": "isolated-1500-240",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=../qbits-independent-baseline",
+      "--mode=matrix",
+      "--families=independent",
+      "--phase=settled",
+      "--repetitions=3",
+      "--scales=1500",
+      "--hz=240",
+      "--warmup=60",
+      "--samples=30",
+      "--case-budget-ms=20000",
+      "--output=/workspace/scratch/d35588e45a49/box-outline-results/isolated-1500-240.json"
+    ],
+    "environmentOverrides": {},
+    "exitCode": 0,
+    "elapsedSeconds": 88.00242829322815
+  },
+  {
+    "name": "control-long-120",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=../qbits-independent-baseline",
+      "--mode=matrix",
+      "--families=independent",
+      "--phase=settled",
+      "--repetitions=3",
+      "--scales=16",
+      "--hz=120",
+      "--warmup=180",
+      "--samples=180",
+      "--case-budget-ms=8000",
+      "--output=/workspace/scratch/d35588e45a49/box-outline-results/control-long-120.json"
+    ],
+    "environmentOverrides": {},
+    "exitCode": 0,
+    "elapsedSeconds": 1.917388916015625
+  },
+  {
+    "name": "architecture-final",
+    "command": [
+      "node",
+      "tests/benchmark-architecture-audit.cjs"
+    ],
+    "environmentOverrides": {},
+    "exitCode": 0,
+    "elapsedSeconds": 0.7521159648895264
+  },
+  {
+    "name": "architecture-baseline",
+    "command": [
+      "node",
+      "tests/benchmark-architecture-audit.cjs"
+    ],
+    "environmentOverrides": {
+      "QBITS_REFERENCE_ROOT": "/workspace/scratch/d35588e45a49/qbits-independent-baseline"
+    },
+    "exitCode": 0,
+    "elapsedSeconds": 0.7193911075592041
+  },
+  {
+    "name": "ground-final",
+    "command": [
+      "node",
+      "tests/benchmark-ground-contacts.cjs"
+    ],
+    "environmentOverrides": {},
+    "exitCode": 0,
+    "elapsedSeconds": 5.785539627075195
+  },
+  {
+    "name": "ground-baseline",
+    "command": [
+      "node",
+      "tests/benchmark-ground-contacts.cjs"
+    ],
+    "environmentOverrides": {
+      "QBITS_GAME_SOURCE": "/workspace/scratch/d35588e45a49/qbits-independent-baseline/assets/js/game.js"
+    },
+    "exitCode": 0,
+    "elapsedSeconds": 5.5818798542022705
+  },
+  {
+    "name": "profile-1500-240",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/profile-cpu-architecture.cjs",
+      "--baseline-root=../qbits-independent-baseline",
+      "--scenario=independent",
+      "--pieces=1500",
+      "--hz=240",
+      "--warmup=60",
+      "--frames=30",
+      "--case-budget-ms=20000",
+      "--output=/workspace/scratch/d35588e45a49/box-outline-results/profile-1500-240.json"
+    ],
+    "exitCode": 0,
+    "kind": "Separate diagnostic, completed; no main timing claims"
+  }
+]

@@ -26,7 +26,16 @@ test('optimized selection strokes upload exactly the same triangles as the previ
 });
 
 test('persistent rigid edges preserve every per-piece endpoint, triangle and material in one upload',()=>{
- const a=fixture(source),b=fixture(source);
+ // Cubes now share a GPU outline too. Keep the former CPU box expansion on
+ // the reference side, so it still checks every mixed-material segment.
+ const reference=source.replace(/function drawOutline\([\s\S]*?(?=function drawUnitOutline)/,`function drawOutline(p,q,size,alpha=.85,selectedOutline=false){
+  if(!renderSphereVisible(p,Math.hypot(size.x,size.y,size.z)/2+.02))return;
+  const expanded=add(size,V(.0009,.0009,.0009)),points=[];
+  for(let i=0;i<edgeData.length;i+=6)points.push(add(p,q.vmult(V(edgeData[i]*expanded.x,edgeData[i+1]*expanded.y,edgeData[i+2]*expanded.z))));
+  drawWideLines(points,[...(selectedOutline?visualRGB('outlineColor'):visuals.style==='cel'?[.06,.09,.1]:[.48,.51,.54]),alpha],selectedOutline?visuals.outlineWidth:visuals.style==='cel'?visuals.outlineWidth:1);
+ }
+ `);assert.notEqual(reference,source);
+ const a=fixture(reference),b=fixture(source);
  for(const chosen of [false,true]){for(const game of [a,b]){
   const {t}=game;t.clearNarrativeScene();t.setLook({camera:[.2,1.4,2.2],yaw:.15,pitch:-.3});Object.assign(t.getVisuals(),{style:'cel',outlineWidth:3});
   const g=t.makeGroup(Array.from({length:16},(_,i)=>{const q=t.Q();q.setFromEuler(i*.13,i*.07,-i*.1);return {id:t.allocateUnitId(),shape:['cube','tetra','pyramid','coupler'][i%4],weight:1,p:t.V(i%4*.14,.3+Math.floor(i/4)*.14,i%3*.12),q};}));

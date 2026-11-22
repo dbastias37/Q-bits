@@ -1,0 +1,180 @@
+[
+  {
+    "name": "matrix-settled-120",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=../qbits-independent-baseline",
+      "--repetitions=3",
+      "--case-budget-ms=20000",
+      "--mode=matrix",
+      "--families=independent",
+      "--phase=settled",
+      "--warmup=60",
+      "--samples=30",
+      "--hz=120",
+      "--output=/workspace/scratch/d35588e45a49/box-outline-results/matrix-settled-120.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 206.14873123168945
+  },
+  {
+    "name": "matrix-settled-60",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=../qbits-independent-baseline",
+      "--repetitions=3",
+      "--case-budget-ms=20000",
+      "--mode=matrix",
+      "--families=independent",
+      "--phase=settled",
+      "--warmup=60",
+      "--samples=30",
+      "--hz=60",
+      "--output=/workspace/scratch/d35588e45a49/box-outline-results/matrix-settled-60.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 151.9467179775238
+  },
+  {
+    "name": "matrix-settled-240",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=../qbits-independent-baseline",
+      "--repetitions=3",
+      "--case-budget-ms=20000",
+      "--mode=matrix",
+      "--families=independent",
+      "--phase=settled",
+      "--warmup=60",
+      "--samples=30",
+      "--hz=240",
+      "--output=/workspace/scratch/d35588e45a49/box-outline-results/matrix-settled-240.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 179.06173133850098
+  },
+  {
+    "name": "matrix-settling-120",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=../qbits-independent-baseline",
+      "--repetitions=3",
+      "--case-budget-ms=20000",
+      "--mode=matrix",
+      "--families=independent",
+      "--phase=settling",
+      "--warmup=0",
+      "--samples=30",
+      "--scales=16,500,1500,2000",
+      "--output=/workspace/scratch/d35588e45a49/box-outline-results/matrix-settling-120.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 124.2768201828003
+  },
+  {
+    "name": "matrix-controls-120",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=../qbits-independent-baseline",
+      "--repetitions=3",
+      "--case-budget-ms=20000",
+      "--mode=matrix",
+      "--families=welded,few-articulated,many-mechanisms,factory",
+      "--phase=mixed",
+      "--warmup=12",
+      "--samples=18",
+      "--scales=100,500,2000",
+      "--output=/workspace/scratch/d35588e45a49/box-outline-results/matrix-controls-120.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 30.124807834625244
+  },
+  {
+    "name": "outlines",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=../qbits-independent-baseline",
+      "--repetitions=3",
+      "--case-budget-ms=20000",
+      "--mode=outlines",
+      "--warmup=12",
+      "--samples=30",
+      "--output=/workspace/scratch/d35588e45a49/box-outline-results/outlines.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 16.303016901016235
+  },
+  {
+    "name": "outline-counts",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=../qbits-independent-baseline",
+      "--repetitions=3",
+      "--case-budget-ms=20000",
+      "--mode=outlines",
+      "--instrumentation=counts",
+      "--repetitions=1",
+      "--warmup=2",
+      "--samples=3",
+      "--output=/workspace/scratch/d35588e45a49/box-outline-results/outline-counts.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 2.3598010540008545
+  },
+  {
+    "name": "profile",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/profile-cpu-architecture.cjs",
+      "--baseline-root=../qbits-independent-baseline",
+      "--scenario=independent",
+      "--pieces=500",
+      "--hz=120",
+      "--warmup=60",
+      "--frames=30",
+      "--case-budget-ms=20000",
+      "--output=/workspace/scratch/d35588e45a49/box-outline-results/profile.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 39.65065240859985
+  },
+  {
+    "name": "equivalence",
+    "command": [
+      "node",
+      "--expose-gc",
+      "tests/benchmark-cpu-architecture.cjs",
+      "--baseline-root=../qbits-independent-baseline",
+      "--repetitions=3",
+      "--case-budget-ms=20000",
+      "--mode=equivalence",
+      "--output=/workspace/scratch/d35588e45a49/box-outline-results/equivalence.json"
+    ],
+    "cwd": "/workspace/scratch/d35588e45a49/qbits",
+    "exitCode": 0,
+    "elapsedSeconds": 29.664047241210938
+  }
+]
