@@ -499,7 +499,7 @@ Configuración: `{"benchmarkSha256":"679fd4b9be7d7657628865d606f00df602ab485b79d
 
 Configuración: `{"benchmarkSha256":"679fd4b9be7d7657628865d606f00df602ab485b79de6e5d925c9db80c38ecf0","budgetMs":20000,"cases":["sparse","churn"],"forcedGc":false,"order":"AB","repetitions":1,"samples":2,"scales":[506,2006],"warmup":3}`.
 
-Conteos independientes de tiempos; se resta `coldCounts` de `totalCounts`. Esa diferencia incluye el calentamiento configurado y las rondas de muestras indicadas en la tabla. No cuenta búsquedas internas de Set, GC ni crecimiento de almacenamiento.
+Conteos independientes de tiempos; se resta `coldCounts` de `totalCounts`. Esa diferencia incluye sólo las rondas medidas indicadas en la tabla; los contadores están desactivados durante el calentamiento. No cuenta búsquedas internas de Set, GC ni crecimiento de almacenamiento.
 
 | Caso | Variante / rep | Rondas de muestras | Lecturas | Escrituras | Reset | Set | Resize |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |

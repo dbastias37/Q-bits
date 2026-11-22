@@ -468,7 +468,7 @@ def markdown(result):
                     lines.append(f"| {label(row)} | " + ' | '.join(values) + ' |')
                 lines.append('')
         elif kind == 'counts':
-            lines.extend(['Conteos independientes de tiempos; se resta `coldCounts` de `totalCounts`. Esa diferencia incluye el calentamiento configurado y las rondas de muestras indicadas en la tabla. No cuenta búsquedas internas de Set, GC ni crecimiento de almacenamiento.', '', '| Caso | Variante / rep | Rondas de muestras | Lecturas | Escrituras | Reset | Set | Resize |', '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |'])
+            lines.extend(['Conteos independientes de tiempos; se resta `coldCounts` de `totalCounts`. Esa diferencia incluye sólo las rondas medidas indicadas en la tabla; los contadores están desactivados durante el calentamiento. No cuenta búsquedas internas de Set, GC ni crecimiento de almacenamiento.', '', '| Caso | Variante / rep | Rondas de muestras | Lecturas | Escrituras | Reset | Set | Resize |', '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |'])
             for row in rows:
                 for count in row['counts']:
                     d = count.get('measuredDelta', {}); calls = d.get('calls', {})

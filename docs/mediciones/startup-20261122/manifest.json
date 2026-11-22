@@ -32,10 +32,10 @@
     {
       "name": "RESULTADOS.md",
       "role": "generated-summary",
-      "storedBytes": 149375,
-      "decodedBytes": 149375,
-      "storedSha256": "65856f923a2f617998ae3e30f65b16cfe8cb8336e74a972e6fe6f7afda49675d",
-      "decodedSha256": "65856f923a2f617998ae3e30f65b16cfe8cb8336e74a972e6fe6f7afda49675d"
+      "storedBytes": 149407,
+      "decodedBytes": 149407,
+      "storedSha256": "3d22e590e2dd2607f1eea156690a41d8477ed6ef4750208c4da0f725ff28aeca",
+      "decodedSha256": "3d22e590e2dd2607f1eea156690a41d8477ed6ef4750208c4da0f725ff28aeca"
     },
     {
       "name": "additional-commands.json",
@@ -704,10 +704,10 @@
     {
       "name": "resumir.py",
       "role": "reproducer-source",
-      "storedBytes": 39281,
-      "decodedBytes": 39281,
-      "storedSha256": "a2c3c83c114994afa997ad24ecd9dc7c599d40206257111470d19b25cb90a480",
-      "decodedSha256": "a2c3c83c114994afa997ad24ecd9dc7c599d40206257111470d19b25cb90a480"
+      "storedBytes": 39313,
+      "decodedBytes": 39313,
+      "storedSha256": "f14b45f473cf21db64985107eb0e27dfe7ad886134242a23a0b3940bd4cd21b6",
+      "decodedSha256": "f14b45f473cf21db64985107eb0e27dfe7ad886134242a23a0b3940bd4cd21b6"
     },
     {
       "name": "settled-120.json.gz",
