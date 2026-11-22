@@ -2,7 +2,21 @@
 
 Actualizado: 22 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Última entrega · Producción 20 a 60, 120 y 240 Hz
+## Última entrega · contornos de cajas en escenas con muchos cuerpos
+
+Sobre el merge `b20cb02` del PR #28 se confirmó un coste distinto de los contornos rígidos ya optimizados: la rama `g.block → drawOutline` seguía reconstruyendo extremos, proyección, triángulos y buffer por cada caja. Ahora todas las cajas comparten una geometría local de doce aristas. Pose, tamaño, gesto de ánimo, color, grosor y cámara siguen leyéndose en vivo; los grupos abiertos mantienen sus huecos y su caché existente. No cambia física, energía, frecuencia, tiempo, guardado ni producción.
+
+Tres repeticiones AB/BA/AB: en 500 piezas la operación aislada de contornos pasa de **15,990 a 1,477 ms de pared p50**. El trabajo parcial Node por fotograma a 120 Hz pasa de **22,870 a 6,938 ms p50** y de **24,808 a 8,391 ms de CPU de proceso media**. Se conservan los 458 envíos de cajas visibles, eliminando 458 triangulaciones y subidas, 791.424 bytes dinámicos por dibujo. El buffer global requiere 2592 bytes, incremento neto de 2016 bytes respecto al buffer sin consumidores sustituido, más un VAO/binding donde corresponda; no hay memoria por pieza ni historial.
+
+Las matrices alcanzan 2000 independientes a 60/120 Hz y 1500 a 240 Hz; 2000/240 agota los 20 s del caso durante calentamiento. El umbral parcial p95 de 16,67 ms aparece después de la mejora en 1500/60, 1000/120 y 1000/240. **No se certifican FPS ni mejora global uniforme:** 1500/240 empeora su mediana de fotograma tanto en la matriz como en la repetición aislada. El perfil conserva la reducción de contornos, pero encuentra corridas de `world.step` de 29 frente a 54–57 ms por fotograma, con el salto fuera de las fases nativas cronometradas de Cannon. No se atribuye ese régimen a una causa V8/GC concreta. Los datos desfavorables se conservan.
+
+Validación: **1228/1228 pruebas**, cinco nuevas, cero fallos/cancelaciones/omisiones; **142 parejas** de runners con estados exactos; los 21 casos de arquitectura y las 36 caídas permanecen idénticos. Fábrica fuera de cámara y Producción 19/20 conservan estados, entregas y energía a 60/120/240 Hz. Las ventanas normales no descartan tiempo; los retrasos deliberados mantienen exactamente los 0,25 s descartados previamente. **112 capturas por ruta gráfica**, WebGL 1/WebGL 2 mediante replay GLES, cero errores; los siete casos nuevos de cajas coinciden píxel a píxel con la referencia CPU. El foco/postprocesado también pasa. Chromium vuelve a fallar al crear sockets; no hay medición nueva de FPS/GPU ni partida de navegador.
+
+Código local medido `dcbf3f8ba9883d07dd867b7311c5f1ece439597d`, publicado `a327f7542ca5aa05460729a8f8747b4a7e9df048`, árbol idéntico `d025ff2d9f827f22a84436e917c4c64bdc7a7443`; `game.js` SHA-256 `db3f26eee06a5b7768cb27ef3dcb18be15dd1d46d32f92efc33201f6e129f4e7`. Versión de carga `20261122-box-outlines-1`. Informe completo, variación, límites, memoria, fuentes y evidencia: [RENDIMIENTO_CONTORNOS_CAJAS_2026-11-22.md](RENDIMIENTO_CONTORNOS_CAJAS_2026-11-22.md).
+
+**Punto de continuación vigente:** siguiente bloque de muchos cuerpos: SAP y trabajo de `World` fuera de sus fases nativas, incluida la matriz triangular de contactos. `needBroadphaseCollision` precede al corte espacial y no corta parejas dormido–dormido; cualquier optimización debe conservar exactamente los pares y su orden. Separar también el reset de matriz para explicar el régimen de 1500/240. Después, numerosas articulaciones/controladores; luego pico frío del BVH, sombras, sensores de movimiento y capturar/validar/hidratar guardados grandes. Mantener tiempo, energía y producción como criterios de aceptación.
+
+## Entrega anterior · Producción 20 a 60, 120 y 240 Hz
 
 El PR #27 se integró en `main` mediante `41bc729c90dde1d1a205ebd1d4c2463b069d688c`. Sobre esa referencia se reprodujo el fallo inicial de Producción 20: a 60 Hz y 30 rpm entregaba dos paquetes y agotaba los 30 J. La traza del solver confirmó que cada uno de cuatro puntos de apoyo recibía el presupuesto de fricción del paquete completo y que Cannon comparaba límites de fuerza contra impulsos. Al quedar plano, el paquete se pegaba a la mesa y bloqueaba la salida.
 
@@ -19,8 +33,6 @@ Tres repeticiones AB/BA/AB conservan esos resultados exactos, las doce identidad
 La corrección tiene coste: en la ventana común de 5–15 s la CPU de proceso Node pasa de 0,6163 a 0,7623 ms/fotograma simulado a 60 Hz, de 1,0034 a 1,1346 a 120 y de 1,8171 a 2,1175 a 240. No se cuenta este arreglo físico como una nueva optimización CPU ni se presenta como FPS. Memoria añadida: una referencia de mesa y estructuras transitorias por paso; máximo observado de cuatro entradas de cuerpo, 32 límites y 32 tuplas de restauración, sin historial retenido.
 
 Suite final: **1223/1223**, diez regresiones nuevas y cero fallos, cancelaciones u omisiones. Las 36 caídas conservan exactamente los resultados físicos anteriores. Los benchmarks de arquitectura y suelo se ejecutaron sobre la fuente final. Código publicado `f48cb4cb28c9be4a1404adeead44ef2b274f4d28`, árbol idéntico al commit local medido `777fa7d`; `game.js` SHA-256 `723a4b6c35369ec900744b17826c39aa7eb24bc678cb217568ae98594548e938`. Versión de scripts: `20261122-production-contact-1`. Informe, fuentes, variación, límites, comandos y evidencia: [CORRECCION_PRODUCCION20_2026-11-22.md](CORRECCION_PRODUCCION20_2026-11-22.md). No hay nuevos FPS ni perfiles Chrome/WebGL medidos.
-
-**Punto de continuación vigente:** seguir un bloque por vez con el coste de muchos cuerpos independientes y numerosas articulaciones, separando contactos, solver y controladores. Después: pico frío del BVH, sombras, sensores de movimiento y coste síncrono de capturar/validar/hidratar guardados grandes. La comprobación en navegador con WebGL continúa pendiente. Mantener tiempo simulado, producción y energía como criterios de aceptación.
 
 ## Entrega anterior · guardado repetido y lecturas de partidas
 

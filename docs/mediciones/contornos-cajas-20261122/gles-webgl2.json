@@ -1,0 +1,1323 @@
+{
+  "capture": {
+    "output": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/commands.json",
+    "frames": 112,
+    "validationErrors": 0
+  },
+  "runtime": {
+    "version": "OpenGL ES 3.2 Mesa 25.0.7-2+deb13u1",
+    "renderer": "llvmpipe (LLVM 19.1.7, 256 bits)"
+  },
+  "validation": {
+    "compiledShaders": 2,
+    "linkedPrograms": 1,
+    "gpuErrors": 0,
+    "rigidBatchEquivalence": {
+      "pixelsChangedOverTwoLevels": 0,
+      "meanChannelError": 0.0,
+      "comparedPixels": 691200
+    },
+    "outlineEquivalence": [
+      {
+        "name": "outline-0-0-merged",
+        "pixelsChangedOverTwoLevels": 2,
+        "meanChannelError": 6.474247685185185e-05,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-0-0-cached",
+        "pixelsChangedOverTwoLevels": 2,
+        "meanChannelError": 6.474247685185185e-05,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-0-1-merged",
+        "pixelsChangedOverTwoLevels": 3,
+        "meanChannelError": 0.00019929108796296296,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-0-1-cached",
+        "pixelsChangedOverTwoLevels": 3,
+        "meanChannelError": 0.00019929108796296296,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-0.45-0-merged",
+        "pixelsChangedOverTwoLevels": 1,
+        "meanChannelError": 5.280671296296296e-05,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-0.45-0-cached",
+        "pixelsChangedOverTwoLevels": 1,
+        "meanChannelError": 5.280671296296296e-05,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-0.45-1-merged",
+        "pixelsChangedOverTwoLevels": 3,
+        "meanChannelError": 0.0002025462962962963,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-0.45-1-cached",
+        "pixelsChangedOverTwoLevels": 3,
+        "meanChannelError": 0.0002025462962962963,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-case-thick-color-merged",
+        "pixelsChangedOverTwoLevels": 7,
+        "meanChannelError": 0.00037724247685185186,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-case-thick-color-cached",
+        "pixelsChangedOverTwoLevels": 7,
+        "meanChannelError": 0.00037724247685185186,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-case-mixed-cel-merged",
+        "pixelsChangedOverTwoLevels": 6,
+        "meanChannelError": 0.0003298611111111111,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-case-mixed-cel-cached",
+        "pixelsChangedOverTwoLevels": 6,
+        "meanChannelError": 0.0003298611111111111,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-case-observer-focal-merged",
+        "pixelsChangedOverTwoLevels": 1,
+        "meanChannelError": 1.1574074074074073e-05,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-case-observer-focal-cached",
+        "pixelsChangedOverTwoLevels": 1,
+        "meanChannelError": 1.1574074074074073e-05,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-case-focus-merged",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-case-focus-cached",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-case-near-plane-merged",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-case-near-plane-cached",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-solo-cel-merged",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-solo-cel-cached",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-rectangle-clean-merged",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-rectangle-clean-cached",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-selected-moved-merged",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-selected-moved-cached",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-mood-excited-merged",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-mood-excited-cached",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-mood-restless-merged",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-mood-restless-cached",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-observer-focus-merged",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-observer-focus-cached",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-near-plane-merged",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-near-plane-cached",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-virtual-0-merged",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-virtual-0.45-merged",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      }
+    ],
+    "boxOutlineEquivalence": [
+      {
+        "name": "outline-box-solo-cel-merged",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-solo-cel-cached",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-rectangle-clean-merged",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-rectangle-clean-cached",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-selected-moved-merged",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-selected-moved-cached",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-mood-excited-merged",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-mood-excited-cached",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-mood-restless-merged",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-mood-restless-cached",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-observer-focus-merged",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-observer-focus-cached",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-near-plane-merged",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      },
+      {
+        "name": "outline-box-near-plane-cached",
+        "pixelsChangedOverTwoLevels": 0,
+        "meanChannelError": 0.0,
+        "comparedPixels": 691200
+      }
+    ],
+    "snapshots": [
+      {
+        "name": "arm-front",
+        "parts": 26,
+        "bodies": 5,
+        "joints": 4,
+        "foregroundPixels": 56884,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/arm-front.png"
+      },
+      {
+        "name": "arm-side",
+        "parts": 26,
+        "bodies": 5,
+        "joints": 4,
+        "foregroundPixels": 61899,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/arm-side.png"
+      },
+      {
+        "name": "arm-top",
+        "parts": 26,
+        "bodies": 5,
+        "joints": 4,
+        "foregroundPixels": 43590,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/arm-top.png"
+      },
+      {
+        "name": "arm-gripper",
+        "parts": 26,
+        "bodies": 5,
+        "joints": 4,
+        "foregroundPixels": 192022,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/arm-gripper.png"
+      },
+      {
+        "name": "arm-cargo",
+        "parts": 26,
+        "bodies": 5,
+        "joints": 4,
+        "foregroundPixels": 61434,
+        "bluePixels": 4422,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/arm-cargo.png"
+      },
+      {
+        "name": "arm-blueprint",
+        "parts": 26,
+        "bodies": 5,
+        "joints": 4,
+        "foregroundPixels": 62218,
+        "bluePixels": 59244,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/arm-blueprint.png"
+      },
+      {
+        "name": "arm-b-placement-blueprint",
+        "parts": 26,
+        "bodies": 5,
+        "joints": 4,
+        "foregroundPixels": 61516,
+        "bluePixels": 30365,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/arm-b-placement-blueprint.png"
+      },
+      {
+        "name": "arm-home-placement-blueprint",
+        "parts": 26,
+        "bodies": 5,
+        "joints": 4,
+        "foregroundPixels": 61799,
+        "bluePixels": 30695,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/arm-home-placement-blueprint.png"
+      },
+      {
+        "name": "arm-light-running",
+        "parts": 26,
+        "bodies": 5,
+        "joints": 4,
+        "foregroundPixels": 288127,
+        "bluePixels": 2437,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/arm-light-running.png"
+      },
+      {
+        "name": "arm-light-waiting",
+        "parts": 26,
+        "bodies": 5,
+        "joints": 4,
+        "foregroundPixels": 288127,
+        "bluePixels": 2437,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/arm-light-waiting.png"
+      },
+      {
+        "name": "arm-light-blocked",
+        "parts": 27,
+        "bodies": 6,
+        "joints": 4,
+        "foregroundPixels": 287713,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/arm-light-blocked.png"
+      },
+      {
+        "name": "rigid-batch-reference",
+        "parts": 12,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 27242,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/rigid-batch-reference.png"
+      },
+      {
+        "name": "rigid-batch-merged",
+        "parts": 12,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 27242,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/rigid-batch-merged.png"
+      },
+      {
+        "name": "mixed-batch-reference",
+        "parts": 12,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 20275,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/mixed-batch-reference.png"
+      },
+      {
+        "name": "mixed-batch-merged",
+        "parts": 12,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 20275,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/mixed-batch-merged.png"
+      },
+      {
+        "name": "conveyor-straight",
+        "parts": 30,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 71433,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/conveyor-straight.png"
+      },
+      {
+        "name": "preview-compact-straight-0-reference",
+        "parts": 30,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 71433,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/preview-compact-straight-0-reference.png"
+      },
+      {
+        "name": "preview-compact-straight-0-merged",
+        "parts": 30,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 71433,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/preview-compact-straight-0-merged.png"
+      },
+      {
+        "name": "preview-compact-straight-0.45-reference",
+        "parts": 30,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 71479,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/preview-compact-straight-0.45-reference.png"
+      },
+      {
+        "name": "preview-compact-straight-0.45-merged",
+        "parts": 30,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 71479,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/preview-compact-straight-0.45-merged.png"
+      },
+      {
+        "name": "conveyor-straight-cargo",
+        "parts": 30,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 72044,
+        "bluePixels": 4098,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/conveyor-straight-cargo.png"
+      },
+      {
+        "name": "conveyor-straight-blueprint",
+        "parts": 30,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 72317,
+        "bluePixels": 67249,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/conveyor-straight-blueprint.png"
+      },
+      {
+        "name": "conveyor-left",
+        "parts": 41,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 53257,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/conveyor-left.png"
+      },
+      {
+        "name": "preview-compact-left-0-reference",
+        "parts": 41,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 53257,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/preview-compact-left-0-reference.png"
+      },
+      {
+        "name": "preview-compact-left-0-merged",
+        "parts": 41,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 53257,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/preview-compact-left-0-merged.png"
+      },
+      {
+        "name": "preview-compact-left-0.45-reference",
+        "parts": 41,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 53274,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/preview-compact-left-0.45-reference.png"
+      },
+      {
+        "name": "preview-compact-left-0.45-merged",
+        "parts": 41,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 53274,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/preview-compact-left-0.45-merged.png"
+      },
+      {
+        "name": "conveyor-left-cargo",
+        "parts": 41,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 53811,
+        "bluePixels": 2108,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/conveyor-left-cargo.png"
+      },
+      {
+        "name": "conveyor-left-blueprint",
+        "parts": 41,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 50322,
+        "bluePixels": 47974,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/conveyor-left-blueprint.png"
+      },
+      {
+        "name": "conveyor-left-rotated-elevated-blueprint",
+        "parts": 41,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 63491,
+        "bluePixels": 60367,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/conveyor-left-rotated-elevated-blueprint.png"
+      },
+      {
+        "name": "conveyor-right",
+        "parts": 41,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 48322,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/conveyor-right.png"
+      },
+      {
+        "name": "preview-compact-right-0-reference",
+        "parts": 41,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 48322,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/preview-compact-right-0-reference.png"
+      },
+      {
+        "name": "preview-compact-right-0-merged",
+        "parts": 41,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 48322,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/preview-compact-right-0-merged.png"
+      },
+      {
+        "name": "preview-compact-right-0.45-reference",
+        "parts": 41,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 48371,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/preview-compact-right-0.45-reference.png"
+      },
+      {
+        "name": "preview-compact-right-0.45-merged",
+        "parts": 41,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 48371,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/preview-compact-right-0.45-merged.png"
+      },
+      {
+        "name": "conveyor-right-cargo",
+        "parts": 41,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 48765,
+        "bluePixels": 1659,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/conveyor-right-cargo.png"
+      },
+      {
+        "name": "conveyor-right-blueprint",
+        "parts": 41,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 44333,
+        "bluePixels": 42401,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/conveyor-right-blueprint.png"
+      },
+      {
+        "name": "conveyor-straight-supports",
+        "parts": 34,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 78701,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/conveyor-straight-supports.png"
+      },
+      {
+        "name": "propeller-rest",
+        "parts": 4,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 42696,
+        "bluePixels": 9215,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/propeller-rest.png"
+      },
+      {
+        "name": "propeller-flight",
+        "parts": 4,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 43581,
+        "bluePixels": 9154,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/propeller-flight.png"
+      },
+      {
+        "name": "propeller-flight-turn",
+        "parts": 4,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 38387,
+        "bluePixels": 9154,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/propeller-flight-turn.png"
+      },
+      {
+        "name": "placement-blue",
+        "parts": 0,
+        "bodies": 0,
+        "joints": 0,
+        "foregroundPixels": 37290,
+        "bluePixels": 37212,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/placement-blue.png"
+      },
+      {
+        "name": "placement-jitter-independent",
+        "parts": 0,
+        "bodies": 0,
+        "joints": 0,
+        "foregroundPixels": 37290,
+        "bluePixels": 37212,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/placement-jitter-independent.png"
+      },
+      {
+        "name": "placement-blocked",
+        "parts": 1,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 37293,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/placement-blocked.png"
+      },
+      {
+        "name": "placement-snap",
+        "parts": 30,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 50451,
+        "bluePixels": 37621,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/placement-snap.png"
+      },
+      {
+        "name": "servo-pivot-rest",
+        "parts": 4,
+        "bodies": 2,
+        "joints": 1,
+        "foregroundPixels": 30374,
+        "bluePixels": 8,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/servo-pivot-rest.png"
+      },
+      {
+        "name": "servo-pivot-35deg",
+        "parts": 4,
+        "bodies": 2,
+        "joints": 1,
+        "foregroundPixels": 30799,
+        "bluePixels": 56,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/servo-pivot-35deg.png"
+      },
+      {
+        "name": "servo-hinge-rest",
+        "parts": 5,
+        "bodies": 2,
+        "joints": 1,
+        "foregroundPixels": 31925,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/servo-hinge-rest.png"
+      },
+      {
+        "name": "servo-hinge-35deg",
+        "parts": 5,
+        "bodies": 2,
+        "joints": 1,
+        "foregroundPixels": 30646,
+        "bluePixels": 16,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/servo-hinge-35deg.png"
+      },
+      {
+        "name": "preview-0-reference",
+        "parts": 0,
+        "bodies": 0,
+        "joints": 0,
+        "foregroundPixels": 43113,
+        "bluePixels": 6203,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/preview-0-reference.png"
+      },
+      {
+        "name": "preview-0-merged",
+        "parts": 0,
+        "bodies": 0,
+        "joints": 0,
+        "foregroundPixels": 43113,
+        "bluePixels": 6203,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/preview-0-merged.png"
+      },
+      {
+        "name": "preview-0.45-reference",
+        "parts": 0,
+        "bodies": 0,
+        "joints": 0,
+        "foregroundPixels": 43136,
+        "bluePixels": 6231,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/preview-0.45-reference.png"
+      },
+      {
+        "name": "preview-0.45-merged",
+        "parts": 0,
+        "bodies": 0,
+        "joints": 0,
+        "foregroundPixels": 43136,
+        "bluePixels": 6231,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/preview-0.45-merged.png"
+      },
+      {
+        "name": "disassembly-pending",
+        "parts": 0,
+        "bodies": 0,
+        "joints": 0,
+        "foregroundPixels": 14237,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/disassembly-pending.png"
+      },
+      {
+        "name": "disassembly-moving",
+        "parts": 0,
+        "bodies": 0,
+        "joints": 0,
+        "foregroundPixels": 15241,
+        "bluePixels": 12099,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/disassembly-moving.png"
+      },
+      {
+        "name": "outline-0-0-reference",
+        "parts": 80,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 59799,
+        "bluePixels": 12366,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-0-0-reference.png"
+      },
+      {
+        "name": "outline-0-0-merged",
+        "parts": 80,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 59799,
+        "bluePixels": 12365,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-0-0-merged.png"
+      },
+      {
+        "name": "outline-0-0-cached",
+        "parts": 80,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 59799,
+        "bluePixels": 12365,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-0-0-cached.png"
+      },
+      {
+        "name": "outline-0-1-reference",
+        "parts": 80,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 43241,
+        "bluePixels": 9855,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-0-1-reference.png"
+      },
+      {
+        "name": "outline-0-1-merged",
+        "parts": 80,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 43241,
+        "bluePixels": 9855,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-0-1-merged.png"
+      },
+      {
+        "name": "outline-0-1-cached",
+        "parts": 80,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 43241,
+        "bluePixels": 9855,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-0-1-cached.png"
+      },
+      {
+        "name": "outline-0.45-0-reference",
+        "parts": 80,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 59865,
+        "bluePixels": 12398,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-0.45-0-reference.png"
+      },
+      {
+        "name": "outline-0.45-0-merged",
+        "parts": 80,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 59865,
+        "bluePixels": 12399,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-0.45-0-merged.png"
+      },
+      {
+        "name": "outline-0.45-0-cached",
+        "parts": 80,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 59865,
+        "bluePixels": 12399,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-0.45-0-cached.png"
+      },
+      {
+        "name": "outline-0.45-1-reference",
+        "parts": 80,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 43263,
+        "bluePixels": 10021,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-0.45-1-reference.png"
+      },
+      {
+        "name": "outline-0.45-1-merged",
+        "parts": 80,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 43263,
+        "bluePixels": 10023,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-0.45-1-merged.png"
+      },
+      {
+        "name": "outline-0.45-1-cached",
+        "parts": 80,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 43263,
+        "bluePixels": 10023,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-0.45-1-cached.png"
+      },
+      {
+        "name": "outline-case-thick-color-reference",
+        "parts": 80,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 45093,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-case-thick-color-reference.png"
+      },
+      {
+        "name": "outline-case-thick-color-merged",
+        "parts": 80,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 45093,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-case-thick-color-merged.png"
+      },
+      {
+        "name": "outline-case-thick-color-cached",
+        "parts": 80,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 45093,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-case-thick-color-cached.png"
+      },
+      {
+        "name": "outline-case-mixed-cel-reference",
+        "parts": 80,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 43379,
+        "bluePixels": 2620,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-case-mixed-cel-reference.png"
+      },
+      {
+        "name": "outline-case-mixed-cel-merged",
+        "parts": 80,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 43379,
+        "bluePixels": 2622,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-case-mixed-cel-merged.png"
+      },
+      {
+        "name": "outline-case-mixed-cel-cached",
+        "parts": 80,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 43379,
+        "bluePixels": 2622,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-case-mixed-cel-cached.png"
+      },
+      {
+        "name": "outline-case-observer-focal-reference",
+        "parts": 80,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 21941,
+        "bluePixels": 5470,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-case-observer-focal-reference.png"
+      },
+      {
+        "name": "outline-case-observer-focal-merged",
+        "parts": 80,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 21941,
+        "bluePixels": 5470,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-case-observer-focal-merged.png"
+      },
+      {
+        "name": "outline-case-observer-focal-cached",
+        "parts": 80,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 21941,
+        "bluePixels": 5470,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-case-observer-focal-cached.png"
+      },
+      {
+        "name": "outline-case-focus-reference",
+        "parts": 80,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 44043,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-case-focus-reference.png"
+      },
+      {
+        "name": "outline-case-focus-merged",
+        "parts": 80,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 44043,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-case-focus-merged.png"
+      },
+      {
+        "name": "outline-case-focus-cached",
+        "parts": 80,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 44043,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-case-focus-cached.png"
+      },
+      {
+        "name": "outline-case-near-plane-reference",
+        "parts": 82,
+        "bodies": 2,
+        "joints": 0,
+        "foregroundPixels": 5760,
+        "bluePixels": 5760,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-case-near-plane-reference.png"
+      },
+      {
+        "name": "outline-case-near-plane-merged",
+        "parts": 82,
+        "bodies": 2,
+        "joints": 0,
+        "foregroundPixels": 5760,
+        "bluePixels": 5760,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-case-near-plane-merged.png"
+      },
+      {
+        "name": "outline-case-near-plane-cached",
+        "parts": 82,
+        "bodies": 2,
+        "joints": 0,
+        "foregroundPixels": 5760,
+        "bluePixels": 5760,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-case-near-plane-cached.png"
+      },
+      {
+        "name": "outline-box-solo-cel-reference",
+        "parts": 1,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 26334,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-box-solo-cel-reference.png"
+      },
+      {
+        "name": "outline-box-solo-cel-merged",
+        "parts": 1,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 26334,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-box-solo-cel-merged.png"
+      },
+      {
+        "name": "outline-box-solo-cel-cached",
+        "parts": 1,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 26334,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-box-solo-cel-cached.png"
+      },
+      {
+        "name": "outline-box-rectangle-clean-reference",
+        "parts": 6,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 26059,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-box-rectangle-clean-reference.png"
+      },
+      {
+        "name": "outline-box-rectangle-clean-merged",
+        "parts": 6,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 26059,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-box-rectangle-clean-merged.png"
+      },
+      {
+        "name": "outline-box-rectangle-clean-cached",
+        "parts": 6,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 26059,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-box-rectangle-clean-cached.png"
+      },
+      {
+        "name": "outline-box-selected-moved-reference",
+        "parts": 6,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 36785,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-box-selected-moved-reference.png"
+      },
+      {
+        "name": "outline-box-selected-moved-merged",
+        "parts": 6,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 36785,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-box-selected-moved-merged.png"
+      },
+      {
+        "name": "outline-box-selected-moved-cached",
+        "parts": 6,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 36785,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-box-selected-moved-cached.png"
+      },
+      {
+        "name": "outline-box-mood-excited-reference",
+        "parts": 1,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 25644,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-box-mood-excited-reference.png"
+      },
+      {
+        "name": "outline-box-mood-excited-merged",
+        "parts": 1,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 25644,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-box-mood-excited-merged.png"
+      },
+      {
+        "name": "outline-box-mood-excited-cached",
+        "parts": 1,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 25644,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-box-mood-excited-cached.png"
+      },
+      {
+        "name": "outline-box-mood-restless-reference",
+        "parts": 1,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 26135,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-box-mood-restless-reference.png"
+      },
+      {
+        "name": "outline-box-mood-restless-merged",
+        "parts": 1,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 26135,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-box-mood-restless-merged.png"
+      },
+      {
+        "name": "outline-box-mood-restless-cached",
+        "parts": 1,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 26135,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-box-mood-restless-cached.png"
+      },
+      {
+        "name": "outline-box-observer-focus-reference",
+        "parts": 2,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 22074,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-box-observer-focus-reference.png"
+      },
+      {
+        "name": "outline-box-observer-focus-merged",
+        "parts": 2,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 22074,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-box-observer-focus-merged.png"
+      },
+      {
+        "name": "outline-box-observer-focus-cached",
+        "parts": 2,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 22074,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-box-observer-focus-cached.png"
+      },
+      {
+        "name": "outline-box-near-plane-reference",
+        "parts": 1,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 5760,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-box-near-plane-reference.png"
+      },
+      {
+        "name": "outline-box-near-plane-merged",
+        "parts": 1,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 5760,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-box-near-plane-merged.png"
+      },
+      {
+        "name": "outline-box-near-plane-cached",
+        "parts": 1,
+        "bodies": 1,
+        "joints": 0,
+        "foregroundPixels": 5760,
+        "bluePixels": 0,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-box-near-plane-cached.png"
+      },
+      {
+        "name": "virtual-conveyor-off",
+        "parts": 31,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 64411,
+        "bluePixels": 25,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/virtual-conveyor-off.png"
+      },
+      {
+        "name": "virtual-conveyor-running-a",
+        "parts": 31,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 64458,
+        "bluePixels": 25,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/virtual-conveyor-running-a.png"
+      },
+      {
+        "name": "virtual-conveyor-running-b",
+        "parts": 31,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 64349,
+        "bluePixels": 25,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/virtual-conveyor-running-b.png"
+      },
+      {
+        "name": "outline-virtual-0-reference",
+        "parts": 31,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 64392,
+        "bluePixels": 339,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-virtual-0-reference.png"
+      },
+      {
+        "name": "outline-virtual-0-merged",
+        "parts": 31,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 64392,
+        "bluePixels": 339,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-virtual-0-merged.png"
+      },
+      {
+        "name": "outline-virtual-0.45-reference",
+        "parts": 31,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 64451,
+        "bluePixels": 287,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-virtual-0.45-reference.png"
+      },
+      {
+        "name": "outline-virtual-0.45-merged",
+        "parts": 31,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 64451,
+        "bluePixels": 287,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/outline-virtual-0.45-merged.png"
+      },
+      {
+        "name": "virtual-conveyor-stopped",
+        "parts": 31,
+        "bodies": 4,
+        "joints": 3,
+        "foregroundPixels": 64350,
+        "bluePixels": 26,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/virtual-conveyor-stopped.png"
+      },
+      {
+        "name": "virtual-conveyor-dismantled",
+        "parts": 31,
+        "bodies": 6,
+        "joints": 3,
+        "foregroundPixels": 62991,
+        "bluePixels": 26,
+        "path": "/workspace/scratch/d35588e45a49/box-outline-results/gles-webgl2/virtual-conveyor-dismantled.png"
+      }
+    ]
+  }
+}
