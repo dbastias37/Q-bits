@@ -68,6 +68,10 @@
  }
  /** Invalid metadata never creates an upgraded battery or movement capability. */
  function partState(part){const raw=part?.mood?.workshop;return raw&&stateValid(part,raw)?{...raw}:defaults(part);}
+ // Sensor discovery is a predicate, not a request for a detached editor state.
+ // Most pieces have no workshop metadata. Read live metadata without creating
+ // defaults/copies, while keeping every ownership and material validation.
+ function hasSensor(part){const raw=part?.mood?.workshop;return raw?.sensor===true&&stateValid(part,raw);}
  function batteryCapacity(part){return SPEC.battery[partState(part).battery];}
  function movementFactors(part){const state=partState(part);return {speed:SPEC.speed[state.movement],energy:SPEC.movementEnergy[state.movement],grip:SPEC.grip[state.lightweight],load:SPEC.load[state.lightweight]};}
  function hasAdaptation(part){const raw=part?.mood?.workshop;if(!raw)return false;if(!stateValid(part,raw))return true;return raw.sensor||raw.battery>1||raw.lightweight>1||raw.movement>1;}
@@ -102,5 +106,5 @@
   if(!next.sensor&&next.battery===1&&next.lightweight===1&&next.movement===1)delete mood.workshop;
   return {part:{...part,weight,mood},materialDelta:part.weight-weight,material:{piece:weight,bench:next.ballast,total:next.baseWeight},storedJ,capacity,cost:0};
  }
- return Object.freeze({VERSION,CREDIT_PER_LEVEL,MAX_LEVEL,RESEARCH,SPEC,normalizeProfile,awardCompleted,researchStatus,purchase,availableResearch,partState,batteryCapacity,movementFactors,hasAdaptation,materialBalance,planPartUpgrade});
+ return Object.freeze({VERSION,CREDIT_PER_LEVEL,MAX_LEVEL,RESEARCH,SPEC,normalizeProfile,awardCompleted,researchStatus,purchase,availableResearch,partState,hasSensor,batteryCapacity,movementFactors,hasAdaptation,materialBalance,planPartUpgrade});
 });
