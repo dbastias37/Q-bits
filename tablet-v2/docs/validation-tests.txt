@@ -1,0 +1,45 @@
+✔ prototype entry point loads only its view and existing inert assets, never the game or Cannon (9.685261ms)
+✔ banco parameter limits match original rotor module; presets remain within each type (2.897379ms)
+✔ initial scene and modified route satisfy the actual original flight validator (5.043998ms)
+✔ selection supports separate piece, whole mechanism, additive and clear (3.701891ms)
+✔ invalid actions are atomic, preserve references and do not notify subscribers (1.945751ms)
+✔ simple and precise controls preserve force↔torque mapping and independent capacity (3.841848ms)
+✔ servo min/max/target invariants are not silently clamped or reset (1.37142ms)
+✔ running motors lock edits/reversal; stop and restart produce distinct states (1.239675ms)
+✔ mixed mechanism preset changes use each original type and are all-or-nothing (0.751823ms)
+✔ families conserve identities, mechanism settings and battery charge on roundtrip (1.781968ms)
+✔ moving a family moves recovered pieces without duplicating inventory (1.484799ms)
+✔ duplicate creates new identities and copies batteries empty, preserving originals (1.256941ms)
+✔ blueprint confirmation changes only selected pose and cancellation preserves pose (1.026029ms)
+✔ route editing preserves point order, stable identities and locks during preview (1.510316ms)
+✔ the original 48-point route limit and empty-route behavior are retained (13.611723ms)
+✔ save roundtrip preserves all capabilities but recovers stopped, with no pending placement (1.581772ms)
+✔ corrupt saved parameters, duplicate inventory IDs and duplicate point IDs are rejected (2.101482ms)
+✔ battery switch preserves its charge and family color accepts black without recoloring inventory (1.653488ms)
+✔ blueprint movement is transactional and serialization discards the pending guide (2.400384ms)
+✔ restart preserves precise settings; zero route speed explains the original automatic fallback (1.65461ms)
+✔ total import and duplicate limits include stored family inventories (14.322616ms)
+✔ invalid tools, guide references, counters and inherited mechanism IDs are rejected (1.968024ms)
+✔ servo inversion reverses its one-shot target with the original limit clamp (1.056665ms)
+✔ import rejects HTML-bearing family counts and prototype-shaped rendering profiles (1.558588ms)
+✔ imports reject missing controllers and mismatched route ownership instead of dropping capabilities (1.30367ms)
+✔ duplicated assembly preserves explicit fixture roles inside a separate group and family roundtrip (2.392352ms)
+✔ Canvas2D fallback projects real geometry and selects a visible piece without modifying scene data (14.808075ms)
+✔ hidden sections, document visibility and dispose stop scheduled rendering and release subscriptions (6.40906ms)
+✔ servo once settles exactly once; reduced motion reaches its target without continuous frames (16.833614ms)
+✔ preview travels from the drone origin to the first point at the configured speed (1.535854ms)
+✔ a landing waits its configured time then continues to the following point (0.196751ms)
+✔ loop waits once at each visit and does not repeat the initial origin leg (0.303068ms)
+✔ zero route speed uses the original .5 fallback without rewriting stored data (0.147037ms)
+✔ zero-length one-point loops and coincident points always return finite samples (0.301617ms)
+✔ pass ignores wait while zero-time landing continues immediately (0.131765ms)
+✔ empty paths finish safely and malformed input is rejected before animation (0.353734ms)
+✔ altitude is an editable route attribute but this top-view preview invents no vertical timing (0.136963ms)
+ℹ tests 37
+ℹ suites 0
+ℹ pass 37
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 212.08967

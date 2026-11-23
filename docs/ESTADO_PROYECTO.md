@@ -2,6 +2,14 @@
 
 Actualizado: 23 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
+## En revisión · Tablet 2.0 independiente
+
+Sobre `e02afe3d1bd9a0d116c5c915e5efc960caa5a26a` (merge del PR #35), la rama `feat/tablet-v2-interactive-prototype` añade `/tablet-v2/`: una demo de **Mecanismo interactivo** con Construir, Controlar, Recorrido y Guardados. Reutiliza geometría, carcasa y fuentes del juego. Incluye tres bocetos, referencia estática del DOM original, matriz de funciones y contrato propuesto para una integración posterior. [Ejecución y alcance](../tablet-v2/README.md), [auditoría](../tablet-v2/docs/AUDITORIA.md), [validación](../tablet-v2/docs/VALIDACION.md).
+
+La entrega sólo añade código del prototipo y documentación: no cambia `index.html`, `assets/`, manipulación, controles, parámetros internos, guardados ni física del juego. No integra la tableta ni hace merge a `main`. La animación demostrativa es cinemática y el JSON de prueba usa almacenamiento propio. Vuelo, destino terrestre y poses de brazo mantienen contratos distintos; familia inventario, conjunto de rotores y estructura tampoco se confunden.
+
+Validación del prototipo: **37/37 pruebas** (25 modelo, 8 recorrido, 3 renderer instrumentado, 1 aislamiento). UI real en navegador con respaldo Canvas 2D, cuatro resoluciones sin desbordamiento horizontal y capturas. Muestra limitada a 7 dibujos con 15 piezas: mediana 3,30 ms, p95 11,10 ms; reposo con cero frames pendientes y cero cuerpos físicos. No son FPS, CPU global ni validación GPU: el navegador de QA no ofreció WebGL. La siguiente etapa es revisar la demo y, sólo después, conectar los controladores originales mediante el puente documentado, con regresiones del juego. No reemplazar la tableta ni hacer merge sin autorización.
+
 ## Entrega actual · agarrar las familias como cubos normales
 
 Referencia de integración: `a0477707a03ca1ed2ca006a628c716d70e3f5175`, merge del PR #34. Versión de carga `20261123-family-grab-1`. Entrega en el [PR #35](https://github.com/dbastias37/Q-bits/pull/35), que conserva la revisión y el commit exactos de integración.

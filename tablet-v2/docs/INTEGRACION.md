@@ -88,6 +88,10 @@ En suelo, una representación del trayecto es una lectura de `preview` y del obj
 - Reabrir debe reconstruir desde un snapshot vivo, conservar preferencias y devolver el foco de forma predecible.
 - Medir tiempo de render/update de UI por separado de Cannon. Las cifras de la demo no son FPS del juego ni un porcentaje de ahorro global de CPU.
 
+### Renderizado existente en el prototipo
+
+El visor intenta WebGL nativo y, cuando el navegador no ofrece ese contexto, usa un respaldo Canvas 2D con los mismos perfiles geométricos, cámara, selección por pieza y cinemática explícita. La carcasa también reutiliza `QBitsTabletModel` en ambas vías. Ninguna vía añade cuerpos físicos. La sesión de navegador de esta entrega utilizó Canvas 2D; los tests instrumentados del renderer no certifican rasterizado GPU. El respaldo ordena caras por profundidad y puede presentar límites de oclusión con geometrías arbitrarias que se intersequen. Al integrar, el backend de la miniatura debe seguir siendo una decisión de presentación, sin afectar la selección canónica, los controladores o las trayectorias del mundo. Las mediciones y el alcance de la verificación se detallan en [VALIDACION.md](VALIDACION.md).
+
 ## 7. Persistencia y datos de ejemplo
 
 La demo usa un namespace de almacenamiento independiente. No escribe en `qbits.save.lab.v1`, `qbits.save.campaign.v1`, `qbits.shapes.v1`, `qbits.mechanisms.v1`, `qbits.workshop.v1` ni en preferencias del juego. Un guardado de ejemplo sólo se carga como ejemplo de Tablet 2.0; no debe ofrecerse como archivo de escena compatible sin un convertidor validado.
