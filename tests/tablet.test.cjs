@@ -139,3 +139,162 @@ test('the bezel weights internal motor reserves and switches to a cabled reservo
  reservoir.cell.mood.energy=0;t.frame(performance.now()+1000);
  assert.equal(el('tablet-battery-value').textContent,'0 %');
 });
+
+function lookAt(t,point){
+ const height=1.6,back=1.6;
+ t.setLook({camera:[point.x,height,point.z+back],yaw:0,pitch:Math.atan2(point.y-height,back)});
+}
+function worldClick(t,button=0){
+ for(const type of ['mousedown','mouseup','click'])t.canvas.dispatchEvent({type,button,clientX:640,clientY:360});
+}
+function chooseBlueprint({el,key},category,id){
+ key('keydown','KeyQ');key('keyup','KeyQ');
+ el('catalog-filters').children.find(button=>button.textContent===category).click();
+ const entry=el('catalog-entries').children.find(button=>button.dataset.creation===id);
+ assert.ok(entry,id+' missing from '+category);entry.click();
+}
+const hardware=(el,id)=>el('tablet-transport').children.find(button=>button.dataset.command===id);
+const commands=el=>Array.from(el('tablet-transport').children,button=>button.dataset.command);
+
+test('placing a saved drone, inspecting it while looking away, and operating its bezel keys controls that copy',()=>{
+ const game=lab(),{t,el,middle}=game;
+ const original=t.spawnSavedMechanism(t.propellerBlueprintTemplate(true),t.V(-1.5,0,0));
+ assert(t.saveMechanism(original,'Mi dron'));
+ chooseBlueprint(game,'Guardados','quick-saved-mechanism-0');
+ lookAt(t,t.V(1,0,0));worldClick(t);
+ const copy=t.getSelected();assert(copy);assert.notEqual(copy.g,original);
+ lookAt(t,original.body.position);middle(t.canvas);
+ assert.equal(t.getSelected().g,copy.g);
+ assert.equal(el('tablet-battery-value').textContent,'100 %');
+ assert.match(el('tablet-battery').title,/apagada/);
+ assert.deepEqual(commands(el),['flight-start','flight-land','flight-stop','battery-on']);
+ assert.equal(hardware(el,'flight-land').disabled,true);
+ hardware(el,'battery-on').click();assert.equal(t.externalBatterySummary(copy.g).active,true);
+ el('wheel-bodies').click();
+ hardware(el,'flight-start').click();
+ assert.equal(t.flightForGroup(copy.g).enabled,true);assert.equal(t.flightForGroup(original).enabled,false);
+ assert.equal(hardware(el,'flight-land').disabled,false);
+ hardware(el,'flight-land').click();assert.equal(t.flightForGroup(copy.g).landing,true);
+ hardware(el,'flight-stop').click();assert.equal(t.flightForGroup(copy.g).enabled,false);
+ const oldKey=hardware(el,'flight-start');
+ const rotor=t.spawnRotor(t.V(2,.15,-1),{mount:'fixed',capacity:256}),tip=t.rotorPart(rotor.aId);
+ lookAt(t,t.poses(tip.g).find(p=>p.part===tip.part).p);worldClick(t);
+ assert.equal(t.rotorForGroup(t.getSelected().g),rotor);
+ assert.deepEqual(commands(el),['rotor-start','rotor-stop','rotor-invert']);
+ oldKey.click();assert.equal(t.flightForGroup(copy.g).enabled,false);
+ hardware(el,'rotor-start').click();assert.equal(rotor.enabled,true);
+ const sense=rotor.direction;
+ hardware(el,'rotor-invert').click();assert.equal(rotor.direction,-sense);
+ hardware(el,'rotor-stop').click();assert.equal(rotor.enabled,false);
+ assert.equal(t.externalBatterySummary(original).active,false);
+});
+
+test('an empty propeller, a separate pack, and its charge are distinguished after canvas selection',()=>{
+ const game=lab(),{t,el,middle}=game;
+ chooseBlueprint(game,'Máquinas','quick-propeller');lookAt(t,t.V(1,0,0));worldClick(t);middle(t.canvas);
+ assert.equal(el('tablet-battery-value').textContent,'—');assert.match(el('tablet-battery').title,/Sin batería/);
+ assert.deepEqual(commands(el),['flight-start','flight-land','flight-stop']);
+ middle(el('panel'));chooseBlueprint(game,'Equipo','quick-battery-1');lookAt(t,t.V(-1,0,.3));worldClick(t);
+ const pack=t.getSelected();assert(t.isExternalBattery(pack.part));pack.part.mood.energy=.14;
+ lookAt(t,t.V(1,0,0));middle(t.canvas);
+ assert.deepEqual(commands(el),['battery-on']);
+ assert.equal(el('tablet-battery-value').textContent,'14 %');
+ assert.equal(el('tablet-battery').dataset.level,'critical');hardware(el,'battery-on').click();
+ assert.equal(t.externalBatteryState(pack.part).enabled,true);
+ assert.deepEqual(commands(el),['battery-off']);hardware(el,'battery-off').click();
+ assert.equal(t.externalBatteryState(pack.part).enabled,false);
+ // Selecting the propeller again must discard the separate pack.
+ lookAt(t,t.V(1,.08,0));worldClick(t);
+ assert.match(el('tablet-battery').title,/Sin batería/);assert.equal(hardware(el,'battery-on'),undefined);
+});
+
+test('the tablet displays the stored charge of an offline wired reservoir without supplying motor power',()=>{
+ const {t,el,middle}=lab();
+ const rotor=t.spawnRotor(t.V(1,.12,.6),{mount:'fixed',capacity:256}),hit=t.rotorPart(rotor.aId);
+ const tank=t.createPowerReservoir(t.V(-.6,0,-.15),{enabled:false});
+ const from={kind:'reservoir',id:tank.id},to={kind:'part',id:hit.part.id};
+ const material=t.addQubit([2,.05,-2]),pieces=t.worldParts(material);pieces[0].weight=2;t.removeGroup(material);
+ assert(t.connectPowerCable(from,to,t.powerSurfaceRoute(from,to),pieces).ok);
+ tank.cell.mood.energy=.23;lookAt(t,t.poses(hit.g).find(p=>p.part===hit.part).p);middle(t.canvas);
+ assert.equal(el('tablet-battery-value').textContent,'23 %');assert.match(el('tablet-battery').title,/apagada/);
+ assert.equal(t.externalBatterySummary(hit.g).active,false);
+});
+
+test('a servo, arm, gripper and belt expose the controls of the placed mechanism',()=>{
+ const game=lab(),{t,el,middle}=game;
+ const cases=[
+  ['Máquinas','quick-servo-hinge',['servo-start','servo-stop','servo-invert','servo-march-start','servo-march-stop']],
+  ['Máquinas','quick-arm',['arm-start','arm-stop','arm-grab','arm-release']],
+  ['Piezas','quick-gripper',['arm-grab','arm-release']],
+  ['Máquinas','quick-conveyor-straight',['conveyor-toggle','conveyor-forward','conveyor-reverse']]
+ ];
+ for(const [index,[category,id,expected]]of cases.entries()){
+  chooseBlueprint(game,category,id);lookAt(t,t.V(index*1.4-2,0,0));worldClick(t);middle(t.canvas);
+  assert(t.getSelected(),id);assert.deepEqual(commands(el),expected,id);
+  if(id==='quick-servo-hinge'){
+   const r=t.rotorForGroup(t.getSelected().g),original=r.servo.direction;
+   hardware(el,'servo-invert').click();assert.equal(r.servo.direction,-original);
+   hardware(el,'servo-march-start').click();assert(t.servoMarchFor(r));
+   hardware(el,'servo-march-stop').click();assert.equal(r.enabled,false);
+  }
+  if(id==='quick-conveyor-straight'){
+   const belt=t.conveyorForGroup(t.getSelected().g);
+   hardware(el,'conveyor-reverse').click();assert.equal(belt.direction,-1);
+   hardware(el,'conveyor-forward').click();assert.equal(belt.direction,1);
+  }
+  middle(el('panel'));
+ }
+});
+
+test('workbench selection, power switch and removing the target update the physical display',()=>{
+ const {t,el,middle}=lab();
+ t.setupWorkshop();const {p}=t.getWorkshopBench();t.position[0]=p.x+.7;t.position[2]=p.z;
+ const first=t.addQubit([p.x,p.y+.048,p.z]),second=t.addQubit([p.x+.23,p.y+.048,p.z]);
+ for(const [g,energy]of [[first,.46],[second,.12]]){
+  const part=g.parts[0];part.mood.externalBattery={version:1,ownerId:part.id,packId:part.id,enabled:false};part.mood.energy=energy;
+ }
+ middle(t.canvas);el('tablet-workshop').click();assert(t.getWorkshopPanel().isOpen);
+ assert.equal(el('tablet-battery-value').textContent,'46 %');
+ lookAt(t,second.body.position);worldClick(t);
+ assert.equal(t.getWorkshopPanel().model.targetId,second.parts[0].id);
+ assert.equal(el('tablet-battery-value').textContent,'12 %');
+ hardware(el,'battery-on').click();assert(t.externalBatteryState(second.parts[0]).enabled);
+ assert.equal(t.externalBatteryState(first.parts[0]).enabled,false);
+ t.removeGroup(second);t.frame(performance.now()+300);
+ assert.equal(t.getWorkshopPanel().model.targetId,first.parts[0].id);
+ assert.equal(el('tablet-battery-value').textContent,'46 %');
+ t.removeGroup(first);t.frame(performance.now()+650);
+ assert.equal(el('tablet-battery-value').textContent,'—');assert.deepEqual(commands(el),[]);
+});
+
+test('inspection follows the clicked mechanism and its physical keys in the campaign as well as the bank',()=>{
+ const {t,el,middle,doc}=lab();
+ const rotor=t.spawnRotor(t.V(1,.12,0),{mount:'fixed',capacity:256});
+ t.rotorPart(rotor.aId).part.mood.energy=.4;t.rotorPart(rotor.bId).part.mood.energy=.6;
+ t.dispatchControlAction('clear',true);t.dispatchControlAction('clear',false);
+ Object.assign(t.story,{scene:'campaign',progress:{level5:true}});
+ lookAt(t,t.V(-2,0,-1));middle(t.canvas);
+ assert.deepEqual(commands(el),[]);
+ const hit=t.rotorPart(rotor.aId);lookAt(t,hit.p);worldClick(t);
+ assert.equal(el('page-mechanisms').hidden,false);
+ assert.equal(doc.pointerLockElement,null);assert.equal(t.rotorForGroup(t.getSelected().g),rotor);
+ assert.equal(el('tablet-battery-value').textContent,'50 %');assert(hardware(el,'rotor-start'));
+});
+
+test('mixed switches show total stored charge on the machine and each selectable battery keeps its own reading',()=>{
+ const {t,el,middle}=lab();
+ const flight=t.spawnSavedMechanism(t.propellerBlueprintTemplate(true),t.V(1,0,0));
+ const battery=flight.parts.find(t.isExternalBattery);battery.mood.energy=.2;
+ const tank=t.createPowerReservoir(t.V(-.6,0,-.15),{enabled:true});tank.cell.mood.energy=.8;
+ const from={kind:'reservoir',id:tank.id},to={kind:'part',id:battery.id};
+ const wire=t.addQubit([2,.05,-2]),pieces=t.worldParts(wire);pieces[0].weight=2;t.removeGroup(wire);
+ assert(t.connectPowerCable(from,to,t.powerSurfaceRoute(from,to),pieces).ok);
+ middle(t.canvas);
+ const pack=t.externalBatteryCapacity(battery),expected=Math.round((tank.capacity*.8+pack*.2)/(tank.capacity+pack)*100);
+ assert.equal(el('tablet-battery-value').textContent,expected+' %');
+ assert.match(el('tablet-battery').title,/incluye baterías apagadas/);
+ // Approach the low battery from the side to avoid the propeller mounted above it.
+ const at=t.rotorPart(battery.id).p;t.setLook({camera:[at.x,at.y,at.z+1],yaw:0,pitch:0});worldClick(t);
+ assert.equal(t.getSelected().part.id,battery.id);assert.equal(el('tablet-battery-value').textContent,'20 %');
+ assert(hardware(el,'battery-on'));
+});

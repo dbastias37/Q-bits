@@ -513,10 +513,16 @@ function onPhysicalMouseDown(event){
  if(familyGroupingJob||familyUi?.isOpen())return;
  if(familyPlacement){onCanvasMouseDown(event);return;}
  if(!settingsScreen?.isOpen&&!robotPoseDraft&&window.QBitsControls?.keyboardAction(savedPreferences.controls.keyboard,'Mouse'+event.button)==='tablet'){event.preventDefault();toggleTablet();return;}
- robotPoseHandledClick=false;if(robotPoseDraft){robotPoseHandledClick=event.button===0;robotPoseMouse(event);return;}if(hudInputActive||settingsScreen?.isOpen||workshopPanel?.isOpen)return;gamepadActive=false;if(keyboardInput?.down('Mouse'+event.button,event))event.preventDefault();else if(!keyboardInput)onCanvasMouseDown(event);}
+ robotPoseHandledClick=false;
+ if(robotPoseDraft){robotPoseHandledClick=event.button===0;robotPoseMouse(event);return;}
+ if(hudInputActive||settingsScreen?.isOpen)return;
+ if(workshopPanel?.isOpen){if(event.button===0)onCanvasMouseDown(event);return;}
+ gamepadActive=false;
+ if(keyboardInput?.down('Mouse'+event.button,event))event.preventDefault();else if(!keyboardInput)onCanvasMouseDown(event);
+}
 function onPhysicalMouseUp(event){if(keyboardInput?.up('Mouse'+event.button,event))event.preventDefault();else if(!keyboardInput||(event.button===0&&savedPreferences.controls?.keyboard.bindings.primary==='Mouse0'&&!controlHolds.has('primary')))onCanvasMouseUp(event);}
 function inputMenuScope(){
- if(workshopPanel?.isOpen)return document.querySelector('#workshop-screen');
+ if(workshopPanel?.isOpen)return panel;
  if(settingsScreen?.isOpen)return document.querySelector(document.querySelector('#settings-confirm').hidden?'#settings-screen':'#settings-confirm');
  if(!menu.hidden)return menu;if(!commandMenu.hidden)return commandMenu;if(!panel.hidden)return panel;
  if(story.phase==='choice'||story.phase==='repeat')return document.querySelector('#story-choices');
@@ -641,7 +647,7 @@ async function captureMouse() {
 let robotPoseHandledClick=false;
 canvas.addEventListener('click',()=>{
  if(robotPoseHandledClick){robotPoseHandledClick=false;return;}
- if(!tabletVisible())captureMouse();
+ if(!tabletAcceptsSelection())captureMouse();
 });
 function editableTarget(target){return !!target&&(['INPUT','TEXTAREA','SELECT'].includes(target.tagName)||target.isContentEditable);}
 function blockNativeContext(event){if(!editableTarget(event.target)){event.preventDefault();event.stopPropagation();}}
@@ -5645,7 +5651,7 @@ function powerElectricalGraph(){
  }
  if(mechanicalStepCache)mechanicalStepCache.electricalGraph=graph;return graph;
 }
-function getCableSupply(subject,graph=powerElectricalGraph()){
+function getCableSupply(subject,graph=powerElectricalGraph(),includeInactive=false){
  const seeds=powerSubjectGroups(subject),result=new Map(),visited=new Set();
  for(const seed of seeds){
   const first=graph.groupNode(seed);if(!first||visited.has(first))continue;visited.add(first);let cells=graph.supplies.get(first);
@@ -5657,7 +5663,7 @@ function getCableSupply(subject,graph=powerElectricalGraph()){
    }
    cells=[...found.values()].sort((a,b)=>a.id-b.id);for(const node of reached)graph.supplies.set(node,cells);
   }
-  for(const cell of cells)if(powerReservoirCell(cell)?.enabled||externalBatteryState(cell)?.enabled)result.set(cell.id,cell);
+  for(const cell of cells)if(includeInactive||powerReservoirCell(cell)?.enabled||externalBatteryState(cell)?.enabled)result.set(cell.id,cell);
  }
  return [...result.values()].sort((a,b)=>a.id-b.id);
 }
@@ -6172,17 +6178,28 @@ function updatePanel(){
  for(const name of ['guide','line'])document.querySelector('#'+name).value=settings[name];
  updateCargoPanel();updatePuzzlePanel();updateMoodPanel();updateAlphaPanel();updateMechanismPanel();
  document.querySelector('#remove').disabled=puzzle.active||!selected;document.querySelector('#split').disabled=!selected||selected.g.parts.length===1;
+ if(!panel.hidden)refreshTabletCharge(performance.now(),true);
 }
 function showArmControls(){
  switchPanelTab('mechanisms');document.querySelector('#arm-panel').scrollIntoView?.({block:'start'});
 }
 function openPanel(){
- cancelUnitCreation();closeWorkshopPanel(false);cancelShelfPlacement();closeCommandMenu(false);selectedCargo=aimCargo(4)?.cargo||selectedCargo;
- if(!selectedRotors().length)selected=held?.family?null:held?{g:held.g,part:held.part}:aimQubit()||selected;
+ cancelUnitCreation();closeWorkshopPanel(false);cancelShelfPlacement();closeCommandMenu(false);
+ if(!selectedRotors().length){
+  const explicit=selected?.part&&mechanicalPartIndex().get(selected.part.id);
+  if(held){selected=held.family?null:{g:held.g,part:held.part};selectedCargo=null;}
+  else if(explicit)selected=explicit;
+  else if(!selectedCargo||!cargos.includes(selectedCargo)){
+   const pointed=aimQubit(ROOM_SIZE*1.5),hit=tabletCanInspect(pointed)?pointed:null,cargo=aimCargo(4);
+   selected=hit&&(!cargo||hit.distance<=cargo.distance)?hit:null;
+   selectedCargo=selected?null:cargo?.cargo||null;
+  }else selected=null;
+ }
  if(panel.hidden)releaseForTablet();showTablet();updatePanel();switchPanelTab(tabletTab==='catalog'&&(story.scene!=='lab'||puzzle.active)?'cube':tabletTab);
  if(selectedSensor())switchPanelTab('mechanisms');
  else if(selected?.part.mood.gripper||robotArmForGroup(selected?.g,selected?.part.id))showArmControls();
- else if(selectedRotors().length||activeRotorSet())switchPanelTab('mechanisms');
+ else if(tabletMechanism(selected)||selectedRotors().length)switchPanelTab('mechanisms');
+ else if(selectedCargo)switchPanelTab('cargo');
 }
 for(const name of ['mass','gravity','bounce','force','friction','damping','speed','maxCarry','maxSelect','rotationSpeed','grip'])document.querySelector('#'+name).addEventListener('input',event=>{
  if(story.scene==='campaign'&&story.campaign?.automation){announce('Ensayo certificado: masa y físicas permanecen fijas. Ajusta el motor.');updatePanel();return;}
@@ -7183,18 +7200,22 @@ function onCanvasMouseDown(event){
  if(trajectoryDraft&&trajectoryWorldClick(event))return;
  if(trajectoryPanel?.isOpen)return;
  if(powerDraft&&powerCableClick(event))return;
- if(workshopPanel?.isOpen)return;
- if(tabletVisible()&&event.button===0){
+ if(tabletAcceptsSelection()&&event.button===0){
   const rect=canvas.getBoundingClientRect(),dir=screenRay(event.clientX-rect.left,event.clientY-rect.top);
   const hit=aimQubit(ROOM_SIZE*1.5,dir),cargo=aimCargo(4,dir);
-  if(cargo){selectedCargo=cargo.cargo;switchPanelTab('cargo');}
-  else if(hit&&(hit.distance<=4||flightForGroup(hit.g))){
+  if(workshopPanel?.isOpen){
+   if(hit&&onWorkshop(partPose(hit.g,hit.part).p)){
+    clearSelection();selected=hit;workshopPanel.refresh();updatePanel();
+   }
+  }else if(cargo&&(!hit||cargo.distance<hit.distance)){
+   clearSelection();selectedCargo=cargo.cargo;updatePanel();switchPanelTab('cargo');
+  }else if(tabletCanInspect(hit)){
    clearSelection();selected=hit;updatePanel();
-   const machine=selectedSensor()||rotorForPart(hit.part.id)||robotArmForGroup(hit.g,hit.part.id)||flightForGroup(hit.g)||conveyorForGroup(hit.g);
-   switchPanelTab(machine?'mechanisms':'cube');
+   switchPanelTab(selectedSensor()||tabletMechanism(hit)?'mechanisms':'cube');
   }
-  if(cargo)updatePanel();event.preventDefault();return;
+  event.preventDefault();return;
  }
+ if(workshopPanel?.isOpen)return;
  if(shelfPreview){event.preventDefault();if(event.button===2)cancelShelfPlacement();else if(event.button===0){updateShelfPlacement(wallAim());confirmShelfPlacement();}return;}
  if(hudInputActive)return;
  if(radialOpen()){event.preventDefault();if(event.button===0)unitRadial.activate();return;}
@@ -7206,7 +7227,10 @@ function onCanvasMouseDown(event){
   if(!unitRadialAllowed()&&!(creationPreview?.plan&&gameInputActive()&&panel.hidden&&!held&&!story.transition)&&!(puzzle.active&&alphaSettings.allowPuzzleSpawn&&creationPreview&&gameInputActive()&&panel.hidden&&!held)){cancelUnitCreation();return;}
   if(event.button===2){cancelUnitCreation();announce('Creación cancelada');return;}
   if(!creationPreview?.plan&&!pendingUnitCreation.startsWith('quick-'))settings.unitShape=pendingUnitCreation;
-  if(spawnQubit())clearSelection();
+  // Templates select the live assembly as they instantiate it. Keep that
+  // selection through the confirming click, even if the player looks away.
+  const placesMechanism=!!creationPreview?.record;
+  if(spawnQubit()&&!placesMechanism)clearSelection();
   return;
  }
  if((held?.reward||held?.latched)){releaseQubit(shiftDown());clearSelection();return;}
@@ -7227,6 +7251,7 @@ function onCanvasMouseDown(event){
  grabQubit();
 }
 function onCanvasMouseUp(event){
+ if(tabletAcceptsSelection())return;
  if(trajectoryDraft||trajectoryPanel?.isOpen)return;
  if(powerDraft)return;
  if(hudInputActive)return;
@@ -7384,7 +7409,7 @@ function individualControlRotor(){const members=controlRotors();return members.l
 function openRotorControls(){closeCommandMenu(false);pause();showTablet();updatePanel();switchPanelTab('mechanisms');}
 function runRotorControls(patch){
  const members=controlRotors();if(!members.length)return false;
- if(!panel.hidden&&members.some(r=>r.enabled)&&patch.enabled!==false)return false;
+ if(!panel.hidden&&members.some(r=>r.enabled)&&patch.enabled!==false&&!patch.invert)return false;
  const subject=rotorControlSubject(),ok=configureRotorSet(subject,patch);
  if(ok)announce((activeRotorSet()?.name||'Rotores')+(patch.enabled===false?' · detenidos':patch.invert?' · marcha invertida':patch.enabled?' · en marcha':' · ajustes aplicados'));
  return ok;
@@ -7626,7 +7651,7 @@ function updateMechanismPanel(){
  for(const id of ['rotor-rpm','rotor-clockwise','rotor-counterclockwise','rotor-side','rotor-mount','rotor-start','rotor-invert'])if(rotor?.servo)document.querySelector('#'+id).disabled=true;
  const powered=targets.some(r=>r.enabled);
  for(const id of ['force','capacity','torque'])document.querySelector('#rotor-'+id).disabled=powered;
- if(powered)for(const id of ['side','mount','disconnect','clockwise','counterclockwise','start','invert'])document.querySelector('#rotor-'+id).disabled=true;
+ if(powered)for(const id of ['side','mount','disconnect','clockwise','counterclockwise','start'])document.querySelector('#rotor-'+id).disabled=true;
  document.querySelector('#rotor-rpm').disabled=powered||!!rotor?.servo;
  for(const id of ['create-coupler','create-rotor'])document.querySelector('#'+id).disabled=!available;
  const list=document.querySelector('#saved-mechanism-list');list.replaceChildren();
@@ -7761,100 +7786,179 @@ function syncTabletMode(){
  const button=tabletEl('tablet-workshop');button.disabled=!near;button.title=near?'Trabajar en la mesa':'Acércate a una mesa desplegada';
  button.setAttribute('aria-pressed',String(workshop));
 }
-function tabletVisible(){return !panel.hidden&&story.mode==='playing'&&!story.transition&&story.scene==='lab';}
+function tabletAcceptsSelection(){return !panel.hidden&&story.mode==='playing'&&!story.transition;}
+function tabletCanInspect(hit){return !!hit&&(hit.distance<=4||isExternalBattery(hit.part)||!!tabletMechanism(hit));}
+function tabletVisible(){return tabletAcceptsSelection()&&story.scene==='lab';}
 const tabletReducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
 let tabletMotionStart=0,tabletStowTimer=0;
-let tabletNextChargeRead=0;
-function tabletChargeReading(){
+let tabletNextChargeRead=0,tabletNextEmptyBenchCheck=0;
+function tabletSubject(time=performance.now()){
+ if(!workshopPanel?.isOpen)return selected?.part?mechanicalPartIndex().get(selected.part.id):null;
+ const id=workshopPanel.model?.targetId;
+ const previous=id!=null?rotorPart(id):null;
+ if(previous&&onWorkshop(previous.p))return previous;
+ if(id==null&&time<tabletNextEmptyBenchCheck)return null;
+ tabletNextEmptyBenchCheck=time+1000;
+ const current=workshopTarget();
+ if(current?.part.id!==id)workshopPanel.refresh();
+ return current;
+}
+function tabletChargeReading(hit){
  const atBench=!!workshopPanel?.isOpen;
- const hit=atBench?mechanicalPartIndex().get(workshopPanel.model?.targetId):selected;
  const multiple=!atBench&&multiSelection.length>1;
- const motors=!atBench&&!multiple&&tabletTab==='mechanisms'&&!isExternalBattery(hit?.part)?controlRotors():[];
- if(!multiple&&!motors.length&&isExternalBattery(hit?.part)){
+ const motors=hit&&!atBench&&!multiple&&!isExternalBattery(hit.part)?controlRotors():[];
+ if(!multiple&&isExternalBattery(hit?.part)){
   const pack=externalBatteryPackInfo(hit.part.id);
-  if(pack)return {percent:pack.percent,label:pack.label+(pack.enabled?' · activa':' · apagada')};
+  if(pack)return {percent:pack.percent,label:pack.label+(pack.enabled?' · activa':' · apagada'),packId:hit.part.id,packOn:pack.enabled};
  }
  const seeds=motors.length?motors.flatMap(rotorGroups):multiple?multiSelection:hit?[hit.g]:[];
  const components=new Set(seeds.map(mechanicalComponentGroups).filter(Boolean));
  if(!components.size)return {percent:null,label:'Sin selección'};
- const cells=new Set();
- const electrical=powerCables.length?powerElectricalGraph():null;
- const belts=new Set(conveyors.map(c=>mechanicalPartIndex().get(c.baseId)?.g));
- let label='Reserva del conjunto';
+ const cells=new Set(),electrical=powerCables.length?powerElectricalGraph():null;
+ const beltGroups=new Set(conveyors.map(c=>mechanicalPartIndex().get(c.baseId)?.g));
+ let label='Reserva del conjunto',packId=null;
  for(const component of components){
-  const supply=electrical?getCableSupply(component[0],electrical):externalBatteryCells(component[0]);
-  if(supply.length){
-   for(const cell of supply)cells.add(cell);
-   if(components.size===1)label='Batería externa del conjunto';
+  const candidates=electrical?getCableSupply(component[0],electrical,true):externalBatteryCandidates(component);
+  const wired=candidates.filter(cell=>powerReservoirCell(cell)||isExternalBattery(cell));
+  const active=wired.filter(cell=>powerReservoirCell(cell)?.enabled||externalBatteryState(cell)?.enabled);
+  if(wired.length){
+   for(const cell of wired)cells.add(cell);
+   if(components.size===1){
+    label=!active.length?'Batería apagada':active.length===wired.length?'Batería externa del conjunto':'Conjunto · incluye baterías apagadas';
+    if(!active.length&&isExternalBattery(wired[0])){
+     const pack=externalBatteryPackInfo(wired[0].id);
+     if(pack&&pack.parts.length===wired.length&&pack.parts.every(cell=>wired.includes(cell)))packId=wired[0].id;
+    }
+   }
    continue;
   }
-  // Belts and propellers require an active external supply to operate.
-  if(propellerModules(component).length||component.some(g=>belts.has(g)))continue;
+  if(propellerModules(component).length||component.some(g=>beltGroups.has(g)))continue;
   const parts=component.flatMap(g=>g.parts);
   const powered=parts.filter(p=>rotorForPart(p.id)||p.mood.gripper);
-  if(powered.length){
-   for(const part of powered)cells.add(part);
-  }else if(multiple||parts.length>1){
-   for(const part of parts)cells.add(part);
-  }else{
-   cells.add(parts[0]);
-   if(components.size===1)label=unitLabel(parts[0])+' '+parts[0].id;
-  }
+  for(const part of powered.length?powered:parts)cells.add(part);
+  if(parts.length===1&&components.size===1)label=unitLabel(parts[0])+' '+parts[0].id;
  }
  let capacity=0,stored=0;
  for(const cell of cells){
   const joules=powerReservoirCell(cell)?.capacity??gameBatteryCapacity(cell);
   capacity+=joules;stored+=joules*cell.mood.energy;
  }
- return capacity?{percent:Math.round(100*stored/capacity),label}:{percent:null,label:'Sin batería activa'};
+ return capacity?{percent:Math.round(100*stored/capacity),label,packId,packOn:false}:{percent:null,label:'Sin batería'};
 }
 const transportCommands={
  flight:['flight-start','flight-land','flight-stop'],
- arm:['arm-start','arm-stop'],
+ arm:['arm-start','arm-stop','arm-grab','arm-release'],
+ gripper:['arm-grab','arm-release'],
  belt:['conveyor-toggle','conveyor-forward','conveyor-reverse'],
  servo:['servo-start','servo-stop','servo-invert','servo-march-start','servo-march-stop'],
  rotor:['rotor-start','rotor-stop','rotor-invert']
 };
-function transportKind(){
- if(!selected?.g)return '';
- if(flightPanelSubject())return 'flight';
- if(robotArmForGroup(selected.g,selected.part?.id))return 'arm';
- if(conveyorPanelSubject())return 'belt';
- if(selectedRotor()?.servo)return 'servo';
- return controlRotors().length?'rotor':'';
+const transportLabels={
+ 'flight-start':['play','Despegar'],'flight-land':['land','Aterrizar'],'flight-stop':['stop','Apagar'],
+ 'arm-start':['play','Iniciar'],'arm-stop':['stop','Detener'],'arm-grab':['grab','Tomar'],'arm-release':['release','Soltar'],
+ 'conveyor-toggle':['play','Marcha'],'conveyor-forward':['forward','Avance'],'conveyor-reverse':['reverse','Inversa'],
+ 'servo-start':['play','Iniciar eje'],'servo-stop':['stop','Detener eje'],'servo-invert':['reverse','Invertir'],
+ 'servo-march-start':['march','Marcha'],'servo-march-stop':['stop','Parar marcha'],
+ 'rotor-start':['play','Iniciar'],'rotor-stop':['stop','Detener'],'rotor-invert':['reverse','Invertir'],
+ 'battery-on':['power','Activar batería'],'battery-off':['power','Apagar batería'],
+ 'route-run':['march','Iniciar ruta'],'route-stop':['stop','Detener ruta']
+};
+const tabletMachineNames={flight:'Dron',arm:'Brazo',gripper:'Pinza',belt:'Cinta',servo:'Servo',rotor:'Rotor'};
+function tabletMechanism(hit){
+ if(!hit)return null;
+ const flight=flightForGroup(hit.g);
+ if(flight)return {kind:'flight',id:flight.id};
+ const ownBelt=conveyorForPart(hit.part.id);
+ if(ownBelt)return {kind:'belt',id:ownBelt.id};
+ const arm=robotArmForGroup(hit.g,hit.part.id);
+ if(arm)return {kind:'arm',id:arm.gripperId};
+ if(hit.part.mood.gripper)return {kind:'gripper',id:hit.part.id};
+ const belt=conveyorForGroup(hit.g);
+ if(belt)return {kind:'belt',id:belt.id};
+ const rotor=rotorForPart(hit.part.id)||rotorForGroup(hit.g);
+ return rotor?{kind:rotor.servo?'servo':'rotor',id:rotor.id}:null;
 }
-function refreshTabletTransport(){
- const host=tabletEl('tablet-transport'),kind=transportKind();
- if(host.dataset.kind!==kind){
-  host.dataset.kind=kind;host.hidden=!kind;host.replaceChildren();
-  for(const id of transportCommands[kind]||[]){
-   const button=document.createElement('button');button.type='button';button.dataset.command=id;
-   button.addEventListener('click',()=>{
-    if(transportKind()!==kind)return;
-    const source=tabletEl(id);
-    if(!source.disabled)source.click();
-    refreshTabletTransport();
-   });
-   host.append(button);
+function runTabletCommand(button){
+ const hit=tabletSubject();
+ if(!hit||hit.part.id!==Number(button.dataset.part))return;
+ const id=button.dataset.command;
+ if(id==='battery-on'||id==='battery-off'){
+  const reading=tabletChargeReading(hit);
+  if(reading.packId!==Number(button.dataset.pack))return;
+  toggleExternalBattery(reading.packId,id==='battery-on');
+ }else if(id==='route-run'||id==='route-stop'){
+  const result=trajectoryPanelAction(hit.part.id,id==='route-run'?'run':'stop');announce(result.message);
+ }else{
+  const source=tabletEl(id);
+  if(source.disabled||!transportCommands[tabletMechanism(hit)?.kind]?.includes(id))return;
+  source.click();
+ }
+ refreshTabletCharge(performance.now(),true);
+}
+function refreshTabletTransport(hit,reading){
+ const host=tabletEl('tablet-transport'),machine=tabletMechanism(hit),kind=machine?.kind,commands=[...(transportCommands[kind]||[])];
+ if(reading.packId!=null)commands.push(reading.packOn?'battery-off':'battery-on');
+ if(hit?.part.mood.trajectory?.role==='receiver'){
+  const system=getTrajectorySystem();
+  if(system.routeFor(hit.part.id))commands.push(system.followers.has(hit.part.id)?'route-stop':'route-run');
+ }
+ const stamp=[hit?.part.id,reading.packId,...commands].join('/');
+ if(host.dataset.stamp!==stamp){
+  host.dataset.stamp=stamp;host.hidden=!commands.length;host.replaceChildren();
+  for(const id of commands){
+   const button=document.createElement('button'),label=document.createElement('span');
+   const [icon,text]=transportLabels[id];
+   button.type='button';button.dataset.command=id;button.dataset.part=String(hit.part.id);
+   if(reading.packId!=null)button.dataset.pack=String(reading.packId);
+   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+   const use=document.createElementNS('http://www.w3.org/2000/svg','use');
+   svg.setAttribute('aria-hidden','true');use.setAttribute('href','assets/tablet-instruments.svg?v=20261123-tablet-live-2#key-'+icon);svg.append(use);
+   label.textContent=text;button.append(svg,label);
+   button.addEventListener('click',()=>runTabletCommand(button));host.append(button);
   }
  }
  for(const button of host.children){
-  const source=tabletEl(button.dataset.command);
-  const text=source.textContent;
-  if(button.textContent!==text)button.textContent=text;
-  if(button.disabled!==source.disabled)button.disabled=source.disabled;
+  const id=button.dataset.command,source=transportCommands[kind]?.includes(id)?tabletEl(id):null;
+  const title=source?.textContent||transportLabels[id][1];
+  if(button.title!==title){button.title=title;button.setAttribute('aria-label',title);}
+  const disabled=!!source?.disabled||id.startsWith('battery-')&&certifiedAutomation();
+  if(button.disabled!==disabled)button.disabled=disabled;
+  if(id==='conveyor-toggle'){
+   const running=source.getAttribute('aria-pressed')==='true',label=button.children[1],text=running?'Detener':'Iniciar';
+   if(label.textContent!==text){
+    label.textContent=text;button.children[0].children[0].setAttribute('href','assets/tablet-instruments.svg?v=20261123-tablet-live-2#key-'+(running?'stop':'play'));
+   }
+  }
  }
+ const subject=tabletEl('tablet-subject');
+ const name=kind?tabletMachineNames[kind]+' '+machine.id:'';
+ const caption=[name,reading.label].filter(Boolean).join(' · ');
+ if(subject.hidden!==!hit)subject.hidden=!hit;
+ if(subject.textContent!==caption)subject.textContent=caption;
 }
-function refreshTabletCharge(time){
- if(panel.hidden||time<tabletNextChargeRead)return;
+let tabletMeshCharge=-1;
+function refreshTabletCharge(time,immediate=false){
+ if(panel.hidden||!immediate&&time<tabletNextChargeRead)return;
  tabletNextChargeRead=time+250;
- refreshTabletTransport();
- const {percent,label}=tabletChargeReading();
+ const hit=tabletSubject(time);
+ // The workbench may choose a different physical piece when its contents change.
+ // Its display and the original actuator handlers must reference that same piece.
+ if(workshopPanel?.isOpen&&hit&&selected?.part!==hit.part){
+  clearSelection();selected=hit;updateMechanismPanel();
+ }
+ const reading=tabletChargeReading(hit),{percent,label}=reading;
+ refreshTabletTransport(hit,reading);
  const indicator=tabletEl('tablet-battery'),value=tabletEl('tablet-battery-value');
  const display=percent===null?'—':percent+' %';
  const level=percent===null?'none':percent<=15?'critical':percent<=35?'low':'normal';
  const description=percent===null?label:label+' · '+display+' de carga'+(level==='critical'?' · batería crítica':'');
- if(indicator.dataset.level!==level)indicator.dataset.level=level;
+ if(indicator.dataset.level!==level){
+  indicator.dataset.level=level;indicator.setAttribute('role',percent===null?'img':'meter');
+ }
+ if(percent===null){if(indicator.getAttribute('aria-valuenow')!==null)indicator.removeAttribute('aria-valuenow');}
+ else if(indicator.getAttribute('aria-valuenow')!==String(percent))indicator.setAttribute('aria-valuenow',String(percent));
+ const fraction=percent===null?-1:percent/100;
+ if(tabletMeshCharge!==fraction){tabletMeshCharge=fraction;redraw=true;}
  if(value.textContent!==display){
   value.textContent=display;
   tabletEl('tablet-charge-fill').style.width=(percent??0)+'%';
@@ -9095,7 +9199,10 @@ function spawnSavedMechanism(record,point,rotation=Q()){
   if(record.robotArm&&typeof restoreRobotArmTemplate==='function')restoreRobotArmTemplate(record.robotArm,ids,joints);
   if(record.conveyors&&typeof restoreConveyorTemplate==='function'){const modules=restoreConveyorTemplate(record.conveyors,ids,joints);if(!Array.isArray(modules)||modules.length!==record.conveyors.length)throw new Error('La cinta no pudo recuperar sus rodillos.');}
   if(made.some(g=>!validPose(g,g.body.position,g.body.quaternion,made)))throw new Error('No hay espacio libre para la superficie del mecanismo.');
-  clearRotorSelection();multiSelection=made;selected={g:made[0],part:made[0].parts[0]};announce(record.name+' creado · '+count+' piezas'+(made.some(g=>g.parts.some(isExternalBattery))?' · baterías vacías: apágalas y déjalas sobre el piso':''));return joints[0]||made[0];
+  const focusGroup=made.find(g=>g.parts.some(part=>!isExternalBattery(part)))||made[0];
+  const focusPart=focusGroup.parts.find(part=>!isExternalBattery(part))||focusGroup.parts[0];
+  clearRotorSelection();multiSelection=made;selected={g:focusGroup,part:focusPart};
+  announce(record.name+' creado · '+count+' piezas'+(made.some(g=>g.parts.some(isExternalBattery))?' · baterías vacías: apágalas y déjalas sobre el piso':''));return joints[0]||made[0];
  }catch(error){
   for(const rotor of joints)disconnectRotor(rotor);for(const g of made)removeGroup(g);if(typeof pruneConveyors==='function')pruneConveyors();pruneRobotArms();refreshRotors();announce(error.message||'No se pudo crear el mecanismo.');return null;
  }
@@ -10725,8 +10832,15 @@ function onWorkshop(p){if(!workshopBench)return false;const local=workshopBench.
  return Math.abs(local.x)<workshopBench.surfaceHalf.x&&Math.abs(local.z)<workshopBench.surfaceHalf.z&&local.y>=-.02&&local.y<=.45;}
 function workshopTarget(){
  if(!workshopBench)return null;
- const eligible=groups.flatMap(g=>g.parts.map(part=>({g,part,...partPose(g,part)}))).filter(o=>!o.part.mood.production&&onWorkshop(o.p)&&!held?.items?.some(item=>item.g===o.g));
- return eligible.find(o=>selected?.part.id===o.part.id)||eligible.sort((a,b)=>a.p.distanceTo(workshopBench.p)-b.p.distanceTo(workshopBench.p))[0]||null;
+ const chosen=selected?.part&&rotorPart(selected.part.id),carried=new Set(held?.items?.map(item=>item.g)||[]);
+ if(chosen&&!chosen.part.mood.production&&!carried.has(chosen.g)&&onWorkshop(chosen.p))return chosen;
+ let nearest=null,distance=Infinity;
+ for(const g of groups)if(!carried.has(g))for(const part of g.parts){
+  if(part.mood.production)continue;
+  const pose=partPose(g,part),d=pose.p.distanceSquared(workshopBench.p);
+  if(d<distance&&onWorkshop(pose.p)){nearest=pose;distance=d;}
+ }
+ return nearest;
 }
 // The body editor rearranges existing cubes; it never stretches a collider or
 // creates material. Preview and apply share validation to avoid stale UI plans.
@@ -11969,7 +12083,9 @@ function renderScene(time=performance.now()){
     panel.style.translate=lift?('0 '+lift+'px'):'none';
     suspendSceneAttributes();
     drawTabletMesh??=window.QBitsTabletView.renderer(gl,shader,submitDraw);
-    drawTabletMesh(lift?{...tabletPose,y:tabletPose.y+lift}:tabletPose);restoreSceneProgram();
+    drawTabletMesh(lift?{...tabletPose,y:tabletPose.y+lift}:tabletPose,tabletMeshCharge,tabletReducedMotion.matches?1:(1+Math.cos(time*Math.PI/700))/2);
+    if(!panel.dataset.mesh)panel.dataset.mesh='drawn';
+    restoreSceneProgram();
   }
   radialGlassStamp=glass.stamp;
   redraw=false;
@@ -11995,11 +12111,16 @@ function visualFrameDue(time,fps){
 }
 let panelNextRead=0,panelActiveStamp='';
 function liveMechanismPanel(time){
- if(panel.hidden||document.querySelector('#page-mechanisms').hidden){panelActiveStamp='';return;}
+ const pageHidden=tabletEl('page-mechanisms').hidden;
+ if(panel.hidden||pageHidden&&tabletEl('tablet-transport').hidden){panelActiveStamp='';return;}
  if(time<panelNextRead)return;panelNextRead=time+200;
  const sensor=selectedSensor(),arm=robotPanelSubject().arm,belt=conveyorPanelSubject(),flight=flightPanelSubject(),members=controlRotors();
  const stamp=[arm?.running,arm?.jogging,belt?.running,belt&&conveyorLine(belt).every(c=>c.running),flight?.enabled,sensor&&sensorTargetBusy(sensorTarget(sensor.part)),...members.map(r=>r.enabled)].join('|');
- if(panelActiveStamp!==stamp){if(panelActiveStamp)updateMechanismPanel();panelActiveStamp=stamp;}
+ if(panelActiveStamp!==stamp){
+  if(panelActiveStamp){updateMechanismPanel();refreshTabletCharge(time,true);}
+  panelActiveStamp=stamp;
+ }
+ if(pageHidden)return;
  if(sensor)liveSensorPanel(sensor);
  if(arm){
   const signal=robotArmSignal(arm);document.querySelector('#arm-status').textContent=robotArmStatus(arm);
@@ -12106,6 +12227,7 @@ function frame(time=performance.now()) {
     redraw = true;
   }else{accumulator=0;}
   autosaveGame(time);
+  if(frozen&&tabletAcceptsSelection()&&!tabletReducedMotion.matches&&tabletMeshCharge>=0&&tabletMeshCharge<=.15)redraw=true;
   if (redraw && !document.hidden && visualFrameDue(time,visuals.fps)) {
     renderScene(time);
   }

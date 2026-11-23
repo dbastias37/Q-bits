@@ -2,11 +2,15 @@
 
 Actualizado: 23 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Entrega actual · tableta grafito
+## Entrega actual · tableta grafito y selección en la sala
 
-La carcasa lleva asa lateral y las pantallas de Banco y Mesa conservan sus controles. Las barras tienen tarjetas rectangulares e iconos. El indicador del bisel muestra la reserva de la selección, del paquete de batería o de la pieza identificada por la mesa. El cálculo usa la capacidad en julios y cuenta una sola vez cada fuente compartida. Con 16–35 % la lectura es ámbar. Con 15 % o menos pulsa en rojo y respeta la preferencia de movimiento reducido. Un guion indica que falta una lectura.
+La tableta usa la malla de 100 triángulos del modelo «Q-bits Tableta Grafito 3D», con su asa, su carcasa mate y la ranura de carga en el borde inferior derecho. Banco y Mesa conservan la información y los controles del juego. La barra ocupa la ranura de la carcasa. El rayo y el porcentaje se alinean junto a ella. A partir del 35 % hacia abajo pasa a ámbar y al llegar al 15 % pulsa en rojo, incluido el 0 %. Con movimiento reducido el rojo permanece fijo.
 
-Verificación en Node y Cannon: 1.506 pruebas aprobadas, incluidas la descarga hasta cero, recuperación, batería apagada y alimentación por cable. Los shaders de la tableta compilan y enlazan en GLES. Queda por comprobar la legibilidad del bisel durante una partida en un equipo físico.
+El clic que confirma la colocación de un mecanismo guardado conserva la selección de la copia recién creada. Al abrir la tableta con M3, el jugador puede seguir mirando hacia otro lado. Con la tableta abierta, un clic sobre otra máquina de la sala cambia inmediatamente la lectura y los mandos. En la mesa, la pieza elegida y la vista previa del taller comparten el mismo objetivo. Si esa pieza deja la mesa, el indicador pasa a la pieza disponible o muestra un guion si la mesa está vacía.
+
+La lectura del montaje cuenta la energía almacenada y la capacidad de las baterías conectadas, incluidas las apagadas y las conectadas por cable. Cada fuente se cuenta una sola vez. Seleccionar una batería individual muestra la carga de ese paquete. Una hélice sin fuente muestra «Sin batería». Las teclas del borde inferior accionan el componente seleccionado y siguen disponibles al desplazarse por el menú. Un dron ofrece despegue, aterrizaje y parada. Los rotores admiten invertir la marcha en funcionamiento. Servos, cintas, brazos y pinzas usan sus propios mandos. Los receptores con una ruta asignada permiten iniciarla o detenerla. Versión de los recursos `20261123-tablet-live-2`.
+
+**Verificación.** Se ejecutaron 1.513 pruebas de Node y Cannon, incluidas siete regresiones que reproducen la colocación desde Guardados, el cambio de selección, la operación de los botones, los depósitos por cable, la mesa y la campaña. Una prueba EGL/GLES dibujó la malla de producción y midió los píxeles de la ranura en diez estados de carga y parpadeo. Los controles de foco y posprocesado también pasaron sus pruebas en GLES. La comprobación en el dispositivo del jugador sigue pendiente.
 
 ## Entrega anterior · identidades explícitas y circuitos ortogonales
 

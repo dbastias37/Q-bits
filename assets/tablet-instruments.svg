@@ -10,4 +10,13 @@
 <symbol id="instrument-grip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M3 6v7l4 3 2-2-3-3V6m15 0v7l-4 3-2-2 3-3V6M9 10h6v5H9z"/></symbol>
 <symbol id="instrument-time" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="13.5" r="7.6"/><path d="M12 9v5l3 2M9 3h6m-3 0v3m6 1 2-2"/></symbol>
 <symbol id="instrument-count" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="m4 8 8-4 8 4v9l-8 4-8-4zm0 0 8 4 8-4m-8 4v9"/></symbol>
+<symbol id="key-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M6 3.5 20 12 6 20.5Z" fill="currentColor" stroke="none"/></symbol>
+<symbol id="key-stop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><rect x="5" y="5" width="14" height="14" rx="1" fill="currentColor" stroke="none"/></symbol>
+<symbol id="key-land" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3v12m-5-5 5 5 5-5M4 19h16"/></symbol>
+<symbol id="key-forward" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M3 12h17m-6-6 6 6-6 6"/></symbol>
+<symbol id="key-reverse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M3 8h16l-4-4M21 16H5l4 4"/></symbol>
+<symbol id="key-march" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="m3 5 9 7-9 7zm10 0 9 7-9 7z" fill="currentColor" stroke="none"/></symbol>
+<symbol id="key-grab" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M3 6v10l6 3 2-4m10-9v10l-6 3-2-4"/></symbol>
+<symbol id="key-release" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M8 5v7l-5 3m13-10v7l5 3m-9-1v7m-3-3 3 3 3-3"/></symbol>
+<symbol id="key-power" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M12 2v10m-4-7a8 8 0 1 0 8 0"/></symbol>
 </svg>

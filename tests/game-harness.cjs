@@ -55,7 +55,8 @@ module.exports = function createGame(options = {}) {
       removeChild(item) { const at=this.children.indexOf(item);if(at>=0)this.children.splice(at,1);item.parentNode=null;return item; },
       replaceChildren(...items) { for(const item of this.children)item.parentNode=null;this.children=[];this.append(...items); },
       remove() { this.parentNode?.removeChild(this); }, focus() {}, blur() {},
-      querySelector: query => element(key + ' ' + query), querySelectorAll: () => [],
+      click() { if(!this.disabled)this.dispatchEvent({type:'click'}); },
+      querySelector: query => element(/^#[\w-]+$/.test(query)?query:key+' '+query), querySelectorAll: () => [],
       contains: () => false, matches: () => false, closest: () => null,
       getBoundingClientRect: () => ({ x: 0, y: 0, left: 0, top: 0, right: 1280, bottom: 720, width: 1280, height: 720 })
     });

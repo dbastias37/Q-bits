@@ -19,19 +19,27 @@ window.QBitsTabletView = (() => {
   const fragment = `
     precision mediump float;
     varying vec3 vPoint, vNormal;
-    uniform float uAlloy;
+    uniform float uCharge, uPulse;
     void main() {
       vec3 n = normalize(vNormal);
       float light = .5 + .5 * dot(n, normalize(vec3(-.42, -.62, .68)));
       vec2 p = vPoint.xy;
-      vec3 metal = mix(vec3(.19,.24,.25), vec3(.235,.24,.25), uAlloy) * (.42 + .71*light);
+      vec3 metal = vec3(.205,.224,.219) * (.42 + .71*light);
       if (abs(vPoint.z) < .00015) {
         bool screen = p.x > -.474 && p.x < .408 && p.y > -.453 && p.y < .392;
-        if (screen) metal = mix(vec3(.055,.13,.15), vec3(.085,.104,.12), uAlloy);
+        if (screen) metal = vec3(.061,.076,.073);
         else {
           float notch = step(.411,p.y)*step(p.y,.458)*step(-.386,p.x)*step(p.x,-.267)
                       *step(.53,fract((p.x-.38*p.y)*72.));
           metal *= 1.-.61*notch;
+          // The lower-right lamp is part of the Graphite mesh itself.
+          if (p.x>=.27 && p.x<=.343 && p.y>=.429 && p.y<=.438) {
+            bool critical = uCharge>=0. && uCharge<=.1501;
+            vec3 track = critical ? mix(vec3(.20,.045,.04),vec3(.47,.09,.07),uPulse) : vec3(.09,.12,.11);
+            vec3 charged = critical ? vec3(1.,.32,.27)*(.62+.38*uPulse) :
+                            (uCharge<=.3501 ? vec3(1.,.78,.43) : vec3(.69,.82,.44));
+            metal = uCharge>0. && (p.x-.27)/.073<uCharge ? charged : track;
+          }
           vec2 bolt=vec2(abs(p.x+.032)-.423,abs(p.y)-.461);
           if(length(bolt*vec2(1.,.64)) < .006) metal = vec3(.052,.061,.055);
         }
@@ -43,7 +51,7 @@ window.QBitsTabletView = (() => {
         if(abs(p.y-.22)<.046 && abs(p.x+.21)<.10)
           metal *= .56+.44*step(.43,fract(p.x*72.));
       }
-      gl_FragColor=vec4(metal, mix(.94,1.,uAlloy));
+      gl_FragColor=vec4(metal,1.);
     }`;
 
   function placement(viewWidth, viewHeight, prefs) {
@@ -60,7 +68,7 @@ window.QBitsTabletView = (() => {
     const margin = Math.min(20, viewWidth*.025, viewHeight*.025);
     const fit = Math.min(1, (viewWidth-2*margin)/(760*scale*1.10), (viewHeight-2*margin)/(460*scale*1.15));
     const width = 760*fit, height = 460*fit;
-    const depth = width * (alloy ? 1 : .68);
+    const depth = width;
     let minX=Infinity, maxX=-Infinity, minY=Infinity, maxY=-Infinity;
     for (const x of [-width/2,width/2]) for (const y of [-height/2,height/2]) for (const z of [0,-.056*depth]) {
       const w = pose[3]*x + pose[7]*y + pose[11]*z + 1;
@@ -91,8 +99,8 @@ window.QBitsTabletView = (() => {
     const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
     gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);
     const point=gl.getAttribLocation(program,'aPoint'),normal=gl.getAttribLocation(program,'aNormal');
-    const loc=Object.fromEntries(['uPose','uSize','uCenter','uViewport','uAlloy'].map(k=>[k,gl.getUniformLocation(program,k)]));
-    return frame=>{
+    const loc=Object.fromEntries(['uPose','uSize','uCenter','uViewport','uCharge','uPulse'].map(k=>[k,gl.getUniformLocation(program,k)]));
+    return (frame,charge=-1,pulse=1)=>{
       gl.bindFramebuffer(gl.FRAMEBUFFER,null);
       gl.viewport(0,0,gl.drawingBufferWidth,gl.drawingBufferHeight);
       gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.clear(gl.DEPTH_BUFFER_BIT);gl.disable(gl.BLEND);
@@ -102,12 +110,8 @@ window.QBitsTabletView = (() => {
       }
       gl.uniformMatrix4fv(loc.uPose,false,frame.pose);gl.uniform3f(loc.uSize,frame.width,frame.height,frame.depth);
       gl.uniform2f(loc.uCenter,frame.x,frame.y);gl.uniform2f(loc.uViewport,frame.viewWidth,frame.viewHeight);
-      gl.uniform1f(loc.uAlloy,Number(frame.alloy));
-      // Resolve the nearest surface once before blending the tinted glass over the room.
-      gl.colorMask(false,false,false,false);submit(gl.TRIANGLES,0,data.length/6);
-      gl.colorMask(true,true,true,true);gl.depthFunc(gl.EQUAL);
-      gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
-      submit(gl.TRIANGLES,0,data.length/6);gl.disable(gl.BLEND);gl.depthFunc(gl.LESS);
+      gl.uniform1f(loc.uCharge,charge);gl.uniform1f(loc.uPulse,pulse);
+      submit(gl.TRIANGLES,0,data.length/6);
       gl.disableVertexAttribArray(point);gl.disableVertexAttribArray(normal);
     };
   }
