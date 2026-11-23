@@ -1,0 +1,141 @@
+{
+  "date": "2026-11-23",
+  "command": "node --test tests/trajectory-drive.test.cjs tests/trajectory-controller.test.cjs",
+  "passed": 21,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "driveTests": 7,
+  "controllerTests": 14,
+  "physicsEngine": "Cannon from the repository, real game physics in the Node harness",
+  "physicsHz": 120,
+  "guidanceMaximumHz": 20,
+  "sourceSha256": {
+    "assets/js/game.js": "898cdff35839c7f7f3c4d756b3ec7bf548832d8b6e71691957a2bf0b87d643a1",
+    "assets/js/trajectory-drive.js": "be79a913a274657f9d122ccea0d84f8bd1ce39ee8a3786015e5824ccfd8ecdc4",
+    "assets/js/trajectory-controller.js": "74afed0edfa06ff07c09f34beb1757ae8f61b4d0a3dc23d4cf0349f053cefefb",
+    "tests/trajectory-drive.test.cjs": "3750aaf974320f1556e662f2025c3ab7cd1af29c6b02c412fcf75f0e189b3aa3",
+    "tests/trajectory-controller.test.cjs": "9f76df86a3eb479f79f62ecd0ac3dede50288dd47324d064b5e40a7f6b426e2a",
+    "tests/trajectory-fixtures.cjs": "e4b84fd53a8da08db93926b7125d7f8251ae6f1bee3d052eac2bb8d1931936ec",
+    "tests/game-harness.cjs": "84e989e145a5d44ef993271ec73b06a463d3757b0885a21f601edbfc91a81676"
+  },
+  "cases": [
+    {
+      "name": "four-motor wheel drive",
+      "targetDeltaMeters": {
+        "x": 0.45,
+        "z": -0.12
+      },
+      "simulationSeconds": 10,
+      "closestDistanceAssertionMeters": {
+        "lessThan": 0.07
+      },
+      "finalDistanceAssertionMeters": {
+        "lessThan": 0.1
+      },
+      "torqueLimit": 0.8,
+      "energySpentAsserted": true,
+      "configuredMotorsUnchangedAsserted": true
+    },
+    {
+      "name": "eight-servo walker drive",
+      "targetDeltaMeters": {
+        "x": 0.9,
+        "z": -0.3
+      },
+      "simulationSeconds": 20,
+      "closestDistanceAssertionMeters": {
+        "lessThan": 0.085
+      },
+      "finalDistanceAssertionMeters": {
+        "lessThan": 0.1
+      },
+      "servoErrorAssertionDegrees": {
+        "lessThan": 10
+      },
+      "torqueLimit": 3.2,
+      "upVectorYAssertion": {
+        "greaterThan": 0.98
+      },
+      "configuredServosUnchangedAsserted": true
+    },
+    {
+      "name": "wheel controller wait and drop callback",
+      "waypointDeltaMeters": [
+        [
+          0,
+          0
+        ],
+        [
+          0.45,
+          -0.12
+        ],
+        [
+          0.9,
+          -0.12
+        ]
+      ],
+      "waitSeconds": 0.2,
+      "maximumSimulationSeconds": 30,
+      "finalDistanceAssertionMeters": {
+        "lessThan": 0.1
+      },
+      "dropCallsAsserted": 1,
+      "dropIsAdapterStub": true,
+      "motorsStoppedAsserted": true
+    },
+    {
+      "name": "wheel controller ping-pong",
+      "waypointDeltaMeters": [
+        [
+          0,
+          0
+        ],
+        [
+          0.3,
+          0
+        ],
+        [
+          0.6,
+          -0.1
+        ]
+      ],
+      "maximumSimulationSeconds": 30,
+      "assertedWaypointOrder": [
+        "0:1",
+        "1:1",
+        "2:1",
+        "1:-1",
+        "0:-1",
+        "1:1"
+      ],
+      "returnDistanceAssertionMeters": {
+        "lessThan": 0.1
+      },
+      "largestPhysicsStepAssertionMeters": {
+        "lessThan": 0.05
+      }
+    },
+    {
+      "name": "walker controller finish",
+      "targetDeltaMeters": {
+        "x": 0.9,
+        "z": -0.3
+      },
+      "maximumSimulationSeconds": 25,
+      "finalDistanceAssertionMeters": {
+        "lessThan": 0.11
+      },
+      "allServosAndMarchStoppedAsserted": true
+    }
+  ],
+  "browserValidated": false,
+  "gpuValidatedByThisSuite": false,
+  "fpsMeasured": false,
+  "cpuBenchmark": false,
+  "notes": [
+    "Distances and time windows are passed test assertions, not statistical accuracy guarantees.",
+    "The drop adapter is a stub in the controller physics fixture; this test verifies dispatch once after arrival, not physical cargo release.",
+    "The drive tests preserve configured RPM, direction, torque and capacity and use ordinary motor/servo energy checks."
+  ]
+}
