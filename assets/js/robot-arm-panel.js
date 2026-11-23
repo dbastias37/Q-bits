@@ -75,7 +75,7 @@
    }
    const pieces=arm?.pieces??gripper?.pieces;
    get('load').textContent=number(arm?.load??gripper?.load??0,' u')+' / '+number(arm?.capacity??gripper?.capacity,' u')+(pieces?' · '+pieces+(pieces===1?' pieza':' piezas'):'');
-   get('energy').textContent=number(arm?.energy??gripper?.energy,' J');get('cycles').textContent=number(arm?.cycles??0);get('efficiency').textContent=arm?.efficiency==null?'—':number(arm.efficiency,' %');
+   get('energy').textContent=arm?.chargeText??gripper?.chargeText??number(arm?.energy??gripper?.energy,' J');get('cycles').textContent=number(arm?.cycles??0);get('efficiency').textContent=arm?.efficiency==null?'—':number(arm.efficiency,' %');
    const phases={waiting:'detect',detect:'detect',grabbing:'grab',grab:'grab',moving:'move',move:'move',place:'move',releasing:'release',release:'release',returning:'return',return:'return',pick:'return'};
    for(const phase of PHASES){const node=get('phase-'+phase);node.dataset.active=String(!!arm?.running&&phases[arm.phase]===phase);node.setAttribute('aria-current',!!arm?.running&&phases[arm.phase]===phase?'step':'false');}
   }

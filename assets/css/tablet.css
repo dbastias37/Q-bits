@@ -111,3 +111,48 @@
  #panel.tablet select,#panel.tablet option {white-space:normal;word-break:normal}
  #panel.tablet option {padding:5px 7px}
 }
+
+.settings-tablet-preview{display:inline-block;padding:8px 0;color:inherit;text-underline-offset:3px}
+#panel.tablet:not([data-style="graphite"]) :is(.graphite-only,.instrument-icon){display:none!important}
+#panel.tablet[data-style="graphite"]{
+  --aqua:#c0dc88;--edge:#65705a80;--control:#29322d;--active:#3c4835;color:#e3e9dc
+}
+#panel.tablet[data-style="graphite"] .tablet-projection{inset:5.3% 9.6% 11.7% 3.2%;background:#17201c}
+#panel.tablet[data-style="graphite"] .tablet-projection::before{background:none}
+#panel.tablet[data-style="graphite"] .tablet-layout{grid-template-columns:124px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+#panel.tablet[data-style="graphite"] .tablet-guide{display:none}
+#panel.tablet[data-style="graphite"][data-mode="bank"][data-help="true"] .tablet-guide{
+  display:block;position:absolute;z-index:3;right:4px;top:0;width:min(270px,94%);max-height:100%;overflow:auto;
+  padding:14px;background:#252f28;border:1px solid #86957c;box-shadow:0 8px 16px #0006
+}
+#panel.tablet[data-style="graphite"][data-mode="workshop"] #tablet-context-help{display:none}
+#panel.tablet[data-style="graphite"] #tablet-context-help,#panel.tablet[data-style="graphite"] .instrument-help b{
+  display:inline-grid;place-items:center;min-width:24px;height:24px;border:1px solid #9aa893!important;border-radius:50%!important;
+  padding:0;color:#dbe8d2;font:600 14px/1 system-ui
+}
+#panel.tablet[data-style="graphite"] .instrument-help summary{display:flex;gap:8px;align-items:center;min-height:30px}
+#panel.tablet[data-style="graphite"] .instrument-help{border:0;margin:6px 0}
+#panel.tablet[data-style="graphite"] .instrument-help b{min-width:18px;height:18px;font-size:11px}
+#panel.tablet[data-style="graphite"] #tablet-physics-toggle[aria-expanded="false"] + #tablet-physics{display:none}
+#panel.tablet[data-style="graphite"] #tablet-physics-toggle:after{content:" +"}
+#panel.tablet[data-style="graphite"] #tablet-physics-toggle[aria-expanded="true"]:after{content:" −"}
+#panel.tablet[data-style="graphite"] button{color:#dce5da;border-color:#64715c!important}
+#panel.tablet[data-style="graphite"] button:not(:disabled):is(:hover,:focus-visible),
+#panel.tablet[data-style="graphite"] button:is([aria-pressed="true"],[aria-selected="true"],.active){
+  color:#edffd3!important;border-color:#aac785!important;box-shadow:inset 2px 0 #b9d885!important
+}
+#panel.tablet[data-style="graphite"] :is(h2,h3,label,dt,dd,output,p,small,li,figcaption,.tablet-brand,.tablet-footer){color:#d0dbcf}
+#panel.tablet[data-style="graphite"] :is(output,.instrument-icon,[data-reading]){color:#c5db9c}
+#panel.tablet[data-style="graphite"] .instrument-label{display:inline-flex;align-items:center;gap:6px}
+#panel.tablet[data-style="graphite"] :is(input,select){accent-color:var(--aqua)}
+#panel.tablet[data-style="graphite"] :is(select,input:not([type="range"],[type="color"],[type="checkbox"],[type="radio"])){background:#202a24;border-color:#63715e;color:#edf3e7}
+#panel.tablet[data-style="graphite"] .tablet-brand i{border:1px solid #a9b89c;box-shadow:inset 3px -3px 0 #a6c37c}
+#panel.tablet[data-style="graphite"] #page-mechanisms [role="status"]:not(:empty){background:#26332b;color:#dce8cf}
+#panel.tablet[data-style="graphite"] #page-mechanisms [data-error="true"]:not(:empty){background:#572f33;color:#ffd1c6}
+#panel.tablet[data-style="graphite"] [data-reading="charge"]:not(:empty):after{content:"";display:inline-block;margin-left:3px;vertical-align:-.16em;width:1.1em;height:1.1em;background:currentColor;mask:var(--glyph) center / contain no-repeat}
+@container tablet (max-width:450px){
+ #panel.tablet[data-style="graphite"] .tablet-layout{display:flex}
+ #panel.tablet[data-style="graphite"] .tablet-guide{flex:none}
+}
+
+#panel.tablet[data-style="graphite"]:not([data-help="true"]) .tablet-instructions{display:none}

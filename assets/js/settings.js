@@ -92,7 +92,10 @@
   }
   function renderGameplay(){
    field(tx.draft,'tabletScale','Tamaño de la tableta','range',[75,125,5,' %']);
-   field(tx.draft,'tabletStyle','Estilo de la tableta','select',[[['glass','Cristal'],['alloy','Industrial']]]);
+   field(tx.draft,'tabletStyle','Estilo de la tableta','select',[[['glass','Cristal'],['alloy','Industrial'],['graphite','Tableta 2.0 · Grafito']]]);
+   const preview=document.createElement('a');
+   preview.href='propuestas/tableta-grafito/';preview.target='_blank';preview.rel='noopener';
+   preview.textContent='Ver propuesta en 3D ↗';preview.className='settings-tablet-preview';fields.append(preview);
    field(tx.draft,'tabletHand','Mano de la tableta','select',[[['left','Izquierda'],['right','Derecha']]],{onChange:()=>{tx.draft.tabletX=100-tx.draft.tabletX;render();}});
    field(tx.draft,'tabletX','Posición horizontal','range',[0,100,1,' %']);
    field(tx.draft,'tabletY','Posición vertical','range',[0,100,1,' %']);
