@@ -2,6 +2,8 @@
 
 Fecha: 23 de noviembre de 2026. Referencia: `a0477707a03ca1ed2ca006a628c716d70e3f5175`, integración del PR #34. Versión de carga: `20261123-family-grab-1`.
 
+Entrega: [PR #35](https://github.com/dbastias37/Q-bits/pull/35).
+
 Fuente final de `assets/js/game.js`, SHA-256:
 
 `c6eb37fc126a165a3b774a157aac392ef23cb4d23b5bd7e1418953cdf8bbb2e0`

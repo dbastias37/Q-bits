@@ -4,7 +4,7 @@ Actualizado: 23 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
 ## Entrega actual · agarrar las familias como cubos normales
 
-Referencia de integración: `a0477707a03ca1ed2ca006a628c716d70e3f5175`, merge del PR #34. Versión de carga `20261123-family-grab-1`.
+Referencia de integración: `a0477707a03ca1ed2ca006a628c716d70e3f5175`, merge del PR #34. Versión de carga `20261123-family-grab-1`. Entrega en el [PR #35](https://github.com/dbastias37/Q-bits/pull/35), que conserva la revisión y el commit exactos de integración.
 
 El clic principal ahora conecta el contenedor al mismo sistema de mano física de los cubos. En el banco se mantiene el botón izquierdo para sostenerlo y se suelta para dejarlo; en campaña se toma con un clic y se suelta con otro. **Tomar familia** en el menú secundario permite llevarla hasta el siguiente clic. La rueda ajusta la distancia, **Shift + WASD** gira y **Ctrl** muestra la caída prevista con las dimensiones exteriores correctas. Se conserva el nombre y **×N** en el indicador inferior. La explicación existente del NPC incluye el agarre normal.
 
