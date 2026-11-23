@@ -20,6 +20,8 @@ La pareja usa el alcance del extremo de menor nivel. Se mide la longitud del tra
 
 La adaptación conserva la identidad, masa, materia y carga del cubo. Los niveles usan la investigación existente de mesas II y III; no añaden nuevas compras a su economía. No se combina esta adaptación con sensores, pinzas, baterías externas, materia dividida u otras mejoras de esa misma pieza. Esos módulos pueden pertenecer a otras piezas del mecanismo.
 
+Las balizas y los receptores mantienen el cuerpo, la cara y el contorno alineados con su posición física. Conservan su ánimo y energía, pero no hacen los balanceos ni los saltos visuales de entusiasmo o inquietud, incluso antes de enlazarlos. Al retirar la adaptación recuperan los gestos normales del cubo.
+
 **Restaurar pieza** retira la adaptación y desvincula sus conexiones. Cambiar de nivel mantiene el enlace. Para cambiar una baliza enlazada a receptor, primero hay que desvincularla.
 
 ## Crear la pareja y dibujar

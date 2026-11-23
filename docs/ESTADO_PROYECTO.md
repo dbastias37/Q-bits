@@ -2,7 +2,17 @@
 
 Actualizado: 23 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Entrega actual · cubos de trayectoria para robots y drones
+## Corrección actual · cubos de trayectoria sin gestos emocionales
+
+Base de la corrección: `1a809c1da1c087147e22ef17e5a6e8759d57ac23`, integración del PR #37. Versión de carga: `20261123-trajectory-rigid-moods-1`.
+
+La captura del jugador mostró que, al entusiasmarse, el cuerpo se balanceaba mientras la placa de trayectoria seguía su pose física, cortando visualmente la cara. Las balizas y los receptores ahora omiten el gesto emocional del mundo: cuerpo, contorno y máscara de foco conservan la pose física que ya usa la cara de 10 × 10. La regla también cubre inquietud y transiciones, piezas libres o enlazadas y cualquier orientación. La adaptación mantiene ánimo, energía, identidad, rutas y física; retirarla recupera los gestos normales. Los cubos comunes siguen animándose. No se añaden consultas, texturas ni actualizaciones periódicas.
+
+**Verificación:** 1.468 pruebas globales aprobadas, sin fallos, canceladas ni omitidas. Las cuatro regresiones nuevas de `tests/trajectory-mood-pose.test.cjs` capturan transformaciones y geometría reales de cuerpo, placa, cara y contorno; comprueban ambas adaptaciones, ambos ánimos, retirada de la mejora y recuperación de energía. Tres fallan contra el código anterior y las cuatro pasan con la corrección. Pasa también `python3 tests/validate-focus-gles.py`, con compilación de shaders y lectura de píxeles del foco y postproceso mediante EGL/GLES. No se ha certificado una partida visual en navegador.
+
+**Punto de continuación:** comprobar la corrección en la escena del jugador después del despliegue, dejando una baliza entusiasmada sobre la mesa y verificando su cara y contorno al girar la cámara. La revisión automática de transformaciones y shaders no sustituye esa comprobación en navegador.
+
+## Entrega de base · cubos de trayectoria para robots y drones
 
 Referencia de partida: `e02afe3d1bd9a0d116c5c915e5efc960caa5a26a`, `main` después del PR #35. Versión de carga: `20261123-trajectory-beacons-1`. Desarrollo autorizado para integrar en `main`; esta entrega pertenece al banco de pruebas y conserva los niveles de campaña existentes.
 
