@@ -277,7 +277,7 @@ $('#save-form').addEventListener('submit',event=>{
   event.preventDefault();const name=$('#save-name').value.trim();if(!name||name.length>40)return;
   const state=store.getState(),data=serializeDemo({...state,name});
   if(saves.length>=20){say('Ya hay 20 guardados. Exporta o elimina uno antes de crear otro.');return;}
-  if(writeSaves([{id:crypto.randomUUID(),name,date:new Date().toISOString(),data},...saves])){$('#save-dialog').close();act({type:'SET_SECTION',section:'saves'});say('Construcción guardada en este navegador.');}
+  if(writeSaves([{id:crypto.randomUUID(),name,date:new Date().toISOString(),data},...saves])){$('#save-dialog').close();act({type:'SET_SECTION',section:'saves'});renderSaves();say('Construcción guardada en este navegador.');}
 });
 function download(data,name){const blob=new Blob([data],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'-').slice(0,60)+'-tablet-v2.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);say('Archivo exportado.');}
 $('#import-file').addEventListener('change',async event=>{
@@ -334,7 +334,7 @@ function openCatalog(){
   $('#catalog-dialog').showModal();
 }
 $('#open-catalog').addEventListener('click',openCatalog);
-$('#open-display').addEventListener('click',()=>{$('#tablet-size').value=display.size;$('#tablet-material').value=display.material;$('#display-dialog').showModal();$('#open-display').setAttribute('aria-expanded','true');});
+$('#open-display').addEventListener('click',()=>{const compact=innerWidth<=620;$('#tablet-size').value=display.size;$('#tablet-size').disabled=compact;$$('[data-dock]').forEach(el=>el.disabled=compact);$('#display-dialog .helper').textContent=compact?'En pantallas pequeñas la tableta ocupa el ancho disponible para conservar la legibilidad.':'El texto conserva su tamaño para seguir siendo legible.';$('#tablet-material').value=display.material;$('#display-dialog').showModal();$('#open-display').setAttribute('aria-expanded','true');});
 $('#display-dialog').addEventListener('close',()=>$('#open-display').setAttribute('aria-expanded','false'));
 $('#tablet-size').addEventListener('input',e=>{display.size=Number(e.target.value);applyDisplay();});
 $('#restore-display').addEventListener('click',()=>{display={size:100,x:0,y:0,dock:'center',material:'glass'};$('#tablet-size').value=100;$('#tablet-material').value='glass';shell?.setPose?.({alloy:false});applyDisplay();say('Tamaño y posición restaurados.');});
