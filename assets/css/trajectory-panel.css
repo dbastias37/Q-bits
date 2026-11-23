@@ -54,11 +54,3 @@
 @media(max-height:480px) and (min-width:601px){#trajectory-screen{padding:10px}.trajectory-shell{max-height:calc(100svh - 20px);padding:15px 20px}.trajectory-header{padding-bottom:10px}.trajectory-content{padding:14px 2px 14px 0}.trajectory-footer{padding-top:10px}#trajectory-glyph{width:80px;height:80px}}
 @media(prefers-contrast:more){.trajectory-shell{background:#f1f7f1;border-color:#476b5d}.trajectory-guide,.trajectory-orientation,.trajectory-status,.trajectory-kind{color:#415e4c}}
 @media(prefers-reduced-motion:reduce){#trajectory-screen button{transition:none}}
-
-.trajectory-stages {display:flex;gap:6px;margin:0;padding:0;list-style:none}
-.trajectory-stages li {flex:1;border-bottom:2px solid #97b7a4;color:#557361;padding:4px 0}
-.trajectory-stages li[aria-current="step"] {border-color:#346947;color:#254c33;font-weight:700}
-#trajectory-screen[data-layout="studio"] .trajectory-preview {order:-1}
-#trajectory-screen[data-layout="console"] .trajectory-content {gap:12px;padding-block:10px}
-#trajectory-screen[data-layout="console"] .trajectory-controls {gap:6px}
-#trajectory-screen[data-layout="console"] .trajectory-actions>button {flex:0 1 auto;min-height:30px;padding:5px 9px}

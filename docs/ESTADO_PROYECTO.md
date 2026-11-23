@@ -2,21 +2,7 @@
 
 Actualizado: 23 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Entrega actual · tres distribuciones de la tableta
-
-Pausa → Comparar tabletas abre la configuración de Juego. Guiada confirma la colocación después de examinar el objeto. Taller visual conserva el clic directo con ratón junto a una proyección. Consola muestra todas las páginas permitidas en su índice. Guardar configuración aplica la distribución. El comparador permite alternar una muestra de Guardados y otra de Trayectoria antes de elegir.
-
-El catálogo y el archivo proyectan un solo objeto a la vez. El holograma usa posiciones y orientaciones de la construcción, con un máximo de diez actualizaciones animadas por segundo. A partir de 81 piezas representa el volumen en hasta 125 celdas para limitar el trabajo de dibujo. No añade cuerpos a Cannon. Recorrido permite elegir una baliza o un receptor de la sala y abre su editor físico para emparejar, dibujar y asignar el camino.
-
-Verificación en Node y Cannon: 1.510 pruebas aprobadas. Las pruebas ejercitan colocación, opciones de pausa, trazado desde cada distribución y la proyección de 2.000 piezas. Continúa pendiente observar a jugadores nuevos y comparar en qué pasos necesitan ayuda.
-
-## Entrega anterior · tableta grafito
-
-La carcasa lleva asa lateral y las pantallas de Banco y Mesa conservan sus controles. Las barras tienen tarjetas rectangulares e iconos. El indicador del bisel muestra la reserva de la selección, del paquete de batería o de la pieza identificada por la mesa. El cálculo usa la capacidad en julios y cuenta una sola vez cada fuente compartida. Con 16–35 % la lectura es ámbar. Con 15 % o menos pulsa en rojo y respeta la preferencia de movimiento reducido. Un guion indica que falta una lectura.
-
-Verificación en Node y Cannon: 1.506 pruebas aprobadas, incluidas la descarga hasta cero, recuperación, batería apagada y alimentación por cable. Los shaders de la tableta compilan y enlazan en GLES. Queda por comprobar la legibilidad del bisel durante una partida en un equipo físico.
-
-## Entrega anterior · identidades explícitas y circuitos ortogonales
+## Entrega actual · identidades explícitas y circuitos ortogonales
 
 Base de la corrección: `f0ecff1f8f90ea2bccd1dfcb1d3230ec8c7fe247`, integración del PR #38. Versión de carga: `20261123-trajectory-circuits-1`.
 
