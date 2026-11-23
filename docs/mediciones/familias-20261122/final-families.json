@@ -1,0 +1,819 @@
+{
+  "capturedAt": "2026-11-23T00:29:03.169Z",
+  "sourceSha256": "9e55241e807593de42c19553878912863dea7952f23f6669b8d0c4257dc57d7a",
+  "supportingSources": {
+    "families": "5bf27891ca4cec8defdecd9ee5b1c8397af119042917a3e24268730339efda7e",
+    "cannon": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab",
+    "harness": "92ac6e59c151b7f32d7092e64885f4182bfdfa16235988a9eedd7007eb929cd5"
+  },
+  "node": "v24.22.3",
+  "cpu": "AMD EPYC 9V74 80-Core Processor",
+  "repetitions": 3,
+  "warmupFrames": 120,
+  "measuredFrames": 60,
+  "physicsHz": 120,
+  "scope": "Current game loose independent pieces vs families with identical inventory at transfer. Real Cannon and game simulation; DOM/GPU simulated. Two 120 Hz steps per synthetic frame. Storage intentionally suspends piece mood/energy logic, so post-run individual states are not expected to equal loose states. Incremental advance calls run consecutively for measurement: their count describes logical work slices, not elapsed browser frames. No browser FPS, GPU or end-to-end render measurement.",
+  "results": [
+    {
+      "count": 100,
+      "median": {
+        "loose": {
+          "cpuMsPerFrame": 0.8021666666666667,
+          "wallP50": 0.4268460000000118,
+          "wallP95": 0.6760760000000232,
+          "groupingMs": 0,
+          "bodies": 106,
+          "families": 0,
+          "storedPieces": 0
+        },
+        "families": {
+          "cpuMsPerFrame": 0.06376666666666667,
+          "wallP50": 0.027060000000005857,
+          "wallP95": 0.05843700000013996,
+          "groupingMs": 23.859425999999985,
+          "bodies": 7,
+          "families": 1,
+          "storedPieces": 100
+        }
+      },
+      "runs": {
+        "loose": [
+          {
+            "mode": "loose",
+            "count": 100,
+            "groupingMs": 0,
+            "cpuMsPerFrame": 0.6375666666666666,
+            "wallMsPerFrame": {
+              "p50": 0.4268460000000118,
+              "p95": 0.6760760000000232,
+              "max": 0.7654489999999896
+            },
+            "bodies": 106,
+            "liveGroups": 100,
+            "families": 0,
+            "constraints": 0,
+            "storedPieces": 0,
+            "physicsSteps": 120,
+            "simulatedSeconds": 0.9999999999999967
+          },
+          {
+            "mode": "loose",
+            "count": 100,
+            "groupingMs": 0,
+            "cpuMsPerFrame": 0.8021666666666667,
+            "wallMsPerFrame": {
+              "p50": 0.42897900000002664,
+              "p95": 0.700132000000167,
+              "max": 0.9066299999999501
+            },
+            "bodies": 106,
+            "liveGroups": 100,
+            "families": 0,
+            "constraints": 0,
+            "storedPieces": 0,
+            "physicsSteps": 120,
+            "simulatedSeconds": 0.9999999999999967
+          },
+          {
+            "mode": "loose",
+            "count": 100,
+            "groupingMs": 0,
+            "cpuMsPerFrame": 0.8180999999999999,
+            "wallMsPerFrame": {
+              "p50": 0.40927899999996953,
+              "p95": 0.5314410000000862,
+              "max": 0.8189789999998993
+            },
+            "bodies": 106,
+            "liveGroups": 100,
+            "families": 0,
+            "constraints": 0,
+            "storedPieces": 0,
+            "physicsSteps": 120,
+            "simulatedSeconds": 0.9999999999999967
+          }
+        ],
+        "families": [
+          {
+            "mode": "families",
+            "count": 100,
+            "groupingMs": 23.859425999999985,
+            "cpuMsPerFrame": 0.12011666666666666,
+            "wallMsPerFrame": {
+              "p50": 0.10457599999995182,
+              "p95": 0.14132000000006428,
+              "max": 0.16685800000004747
+            },
+            "bodies": 7,
+            "liveGroups": 0,
+            "families": 1,
+            "constraints": 0,
+            "storedPieces": 100,
+            "physicsSteps": 120,
+            "simulatedSeconds": 0.9999999999999967
+          },
+          {
+            "mode": "families",
+            "count": 100,
+            "groupingMs": 11.073473000000035,
+            "cpuMsPerFrame": 0.06313333333333333,
+            "wallMsPerFrame": {
+              "p50": 0.027060000000005857,
+              "p95": 0.04995499999995445,
+              "max": 0.13351799999998093
+            },
+            "bodies": 7,
+            "liveGroups": 0,
+            "families": 1,
+            "constraints": 0,
+            "storedPieces": 100,
+            "physicsSteps": 120,
+            "simulatedSeconds": 0.9999999999999967
+          },
+          {
+            "mode": "families",
+            "count": 100,
+            "groupingMs": 24.74457499999994,
+            "cpuMsPerFrame": 0.06376666666666667,
+            "wallMsPerFrame": {
+              "p50": 0.02602900000010777,
+              "p95": 0.05843700000013996,
+              "max": 0.16652699999985998
+            },
+            "bodies": 7,
+            "liveGroups": 0,
+            "families": 1,
+            "constraints": 0,
+            "storedPieces": 100,
+            "physicsSteps": 120,
+            "simulatedSeconds": 0.9999999999999967
+          }
+        ]
+      },
+      "incremental": {
+        "median": {
+          "startMs": 0.061802000000170665,
+          "workWallMs": 12.095557999997254,
+          "cpuMs": 24.365,
+          "advanceCalls": 3,
+          "largestSynchronousMs": 9.91669499999989,
+          "advanceP50": 1.089762999999948,
+          "advanceP95": 9.91669499999989
+        },
+        "peakSynchronousMs": 10.05032299999948,
+        "runs": [
+          {
+            "count": 100,
+            "fixture": "loose",
+            "startMs": 0.295920999997179,
+            "workWallMs": 12.095557999997254,
+            "cpuMs": 25.405,
+            "advanceCalls": 3,
+            "advanceMs": {
+              "p50": 1.162600999999995,
+              "p95": 9.718869000000268,
+              "max": 9.718869000000268
+            },
+            "largestSynchronousMs": 9.718869000000268,
+            "bodies": 7,
+            "families": 1,
+            "storedPieces": 100
+          },
+          {
+            "count": 100,
+            "fixture": "loose",
+            "startMs": 0.061802000000170665,
+            "workWallMs": 12.170570000002044,
+            "cpuMs": 24.038,
+            "advanceCalls": 3,
+            "advanceMs": {
+              "p50": 1.089762999999948,
+              "p95": 10.05032299999948,
+              "max": 10.05032299999948
+            },
+            "largestSynchronousMs": 10.05032299999948,
+            "bodies": 7,
+            "families": 1,
+            "storedPieces": 100
+          },
+          {
+            "count": 100,
+            "fixture": "loose",
+            "startMs": 0.05466100000194274,
+            "workWallMs": 11.976251000000047,
+            "cpuMs": 24.365,
+            "advanceCalls": 3,
+            "advanceMs": {
+              "p50": 1.0750200000002224,
+              "p95": 9.91669499999989,
+              "max": 9.91669499999989
+            },
+            "largestSynchronousMs": 9.91669499999989,
+            "bodies": 7,
+            "families": 1,
+            "storedPieces": 100
+          }
+        ]
+      },
+      "incrementalCompound": {
+        "median": {
+          "startMs": 0.05448100000285194,
+          "workWallMs": 11.270070000002306,
+          "cpuMs": 21.63,
+          "advanceCalls": 2,
+          "largestSynchronousMs": 10.684527999997954,
+          "advanceP50": 10.684527999997954,
+          "advanceP95": 10.684527999997954
+        },
+        "peakSynchronousMs": 10.872568000002502,
+        "runs": [
+          {
+            "count": 100,
+            "fixture": "compound",
+            "startMs": 0.052608000001782784,
+            "workWallMs": 11.441264000004594,
+            "cpuMs": 18.295,
+            "advanceCalls": 2,
+            "advanceMs": {
+              "p50": 10.872568000002502,
+              "p95": 10.872568000002502,
+              "max": 10.872568000002502
+            },
+            "largestSynchronousMs": 10.872568000002502,
+            "bodies": 7,
+            "families": 1,
+            "storedPieces": 100
+          },
+          {
+            "count": 100,
+            "fixture": "compound",
+            "startMs": 0.056394000002910616,
+            "workWallMs": 11.270070000002306,
+            "cpuMs": 21.63,
+            "advanceCalls": 2,
+            "advanceMs": {
+              "p50": 10.684527999997954,
+              "p95": 10.684527999997954,
+              "max": 10.684527999997954
+            },
+            "largestSynchronousMs": 10.684527999997954,
+            "bodies": 7,
+            "families": 1,
+            "storedPieces": 100
+          },
+          {
+            "count": 100,
+            "fixture": "compound",
+            "startMs": 0.05448100000285194,
+            "workWallMs": 11.207696000001306,
+            "cpuMs": 22.577,
+            "advanceCalls": 2,
+            "advanceMs": {
+              "p50": 10.605859999999666,
+              "p95": 10.605859999999666,
+              "max": 10.605859999999666
+            },
+            "largestSynchronousMs": 10.605859999999666,
+            "bodies": 7,
+            "families": 1,
+            "storedPieces": 100
+          }
+        ]
+      }
+    },
+    {
+      "count": 500,
+      "median": {
+        "loose": {
+          "cpuMsPerFrame": 3.691733333333333,
+          "wallP50": 1.9637640000000829,
+          "wallP95": 2.4114300000001094,
+          "groupingMs": 0,
+          "bodies": 506,
+          "families": 0,
+          "storedPieces": 0
+        },
+        "families": {
+          "cpuMsPerFrame": 0.12805,
+          "wallP50": 0.026939999999740394,
+          "wallP95": 0.050495999999839114,
+          "groupingMs": 49.44908200000009,
+          "bodies": 11,
+          "families": 5,
+          "storedPieces": 500
+        }
+      },
+      "runs": {
+        "loose": [
+          {
+            "mode": "loose",
+            "count": 500,
+            "groupingMs": 0,
+            "cpuMsPerFrame": 3.691733333333333,
+            "wallMsPerFrame": {
+              "p50": 1.9637640000000829,
+              "p95": 2.402506999999787,
+              "max": 2.459711999999854
+            },
+            "bodies": 506,
+            "liveGroups": 500,
+            "families": 0,
+            "constraints": 0,
+            "storedPieces": 0,
+            "physicsSteps": 120,
+            "simulatedSeconds": 0.9999999999999967
+          },
+          {
+            "mode": "loose",
+            "count": 500,
+            "groupingMs": 0,
+            "cpuMsPerFrame": 3.6247,
+            "wallMsPerFrame": {
+              "p50": 1.955630999999812,
+              "p95": 2.4114300000001094,
+              "max": 2.489255999999841
+            },
+            "bodies": 506,
+            "liveGroups": 500,
+            "families": 0,
+            "constraints": 0,
+            "storedPieces": 0,
+            "physicsSteps": 120,
+            "simulatedSeconds": 0.9999999999999967
+          },
+          {
+            "mode": "loose",
+            "count": 500,
+            "groupingMs": 0,
+            "cpuMsPerFrame": 3.8836,
+            "wallMsPerFrame": {
+              "p50": 2.032905999999457,
+              "p95": 2.7274799999995594,
+              "max": 3.122718999999961
+            },
+            "bodies": 506,
+            "liveGroups": 500,
+            "families": 0,
+            "constraints": 0,
+            "storedPieces": 0,
+            "physicsSteps": 120,
+            "simulatedSeconds": 0.9999999999999967
+          }
+        ],
+        "families": [
+          {
+            "mode": "families",
+            "count": 500,
+            "groupingMs": 49.44908200000009,
+            "cpuMsPerFrame": 0.19306666666666666,
+            "wallMsPerFrame": {
+              "p50": 0.026740000000245345,
+              "p95": 0.050495999999839114,
+              "max": 0.07314899999983027
+            },
+            "bodies": 11,
+            "liveGroups": 0,
+            "families": 5,
+            "constraints": 0,
+            "storedPieces": 500,
+            "physicsSteps": 120,
+            "simulatedSeconds": 0.9999999999999967
+          },
+          {
+            "mode": "families",
+            "count": 500,
+            "groupingMs": 47.95827099999997,
+            "cpuMsPerFrame": 0.12805,
+            "wallMsPerFrame": {
+              "p50": 0.026939999999740394,
+              "p95": 0.059649000000263186,
+              "max": 0.08982400000013513
+            },
+            "bodies": 11,
+            "liveGroups": 0,
+            "families": 5,
+            "constraints": 0,
+            "storedPieces": 500,
+            "physicsSteps": 120,
+            "simulatedSeconds": 0.9999999999999967
+          },
+          {
+            "mode": "families",
+            "count": 500,
+            "groupingMs": 58.73672499999975,
+            "cpuMsPerFrame": 0.05313333333333334,
+            "wallMsPerFrame": {
+              "p50": 0.027029999999285792,
+              "p95": 0.05007500000010623,
+              "max": 0.06884300000001531
+            },
+            "bodies": 11,
+            "liveGroups": 0,
+            "families": 5,
+            "constraints": 0,
+            "storedPieces": 500,
+            "physicsSteps": 120,
+            "simulatedSeconds": 0.9999999999999967
+          }
+        ]
+      },
+      "incremental": {
+        "median": {
+          "startMs": 0.10030900000128895,
+          "workWallMs": 48.44062200000917,
+          "cpuMs": 79.656,
+          "advanceCalls": 14,
+          "largestSynchronousMs": 10.542885999999271,
+          "advanceP50": 1.8845560000008845,
+          "advanceP95": 10.542885999999271
+        },
+        "peakSynchronousMs": 10.706469999997353,
+        "runs": [
+          {
+            "count": 500,
+            "fixture": "loose",
+            "startMs": 0.10030900000128895,
+            "workWallMs": 48.44062200000917,
+            "cpuMs": 79.656,
+            "advanceCalls": 14,
+            "advanceMs": {
+              "p50": 1.973638999999821,
+              "p95": 10.542885999999271,
+              "max": 10.542885999999271
+            },
+            "largestSynchronousMs": 10.542885999999271,
+            "bodies": 11,
+            "families": 5,
+            "storedPieces": 500
+          },
+          {
+            "count": 500,
+            "fixture": "loose",
+            "startMs": 0.11018399999738904,
+            "workWallMs": 48.22872499999721,
+            "cpuMs": 80.472,
+            "advanceCalls": 14,
+            "advanceMs": {
+              "p50": 1.769975000002887,
+              "p95": 10.297500999997283,
+              "max": 10.297500999997283
+            },
+            "largestSynchronousMs": 10.297500999997283,
+            "bodies": 11,
+            "families": 5,
+            "storedPieces": 500
+          },
+          {
+            "count": 500,
+            "fixture": "loose",
+            "startMs": 0.09406999999919208,
+            "workWallMs": 49.16336600001159,
+            "cpuMs": 78.595,
+            "advanceCalls": 14,
+            "advanceMs": {
+              "p50": 1.8845560000008845,
+              "p95": 10.706469999997353,
+              "max": 10.706469999997353
+            },
+            "largestSynchronousMs": 10.706469999997353,
+            "bodies": 11,
+            "families": 5,
+            "storedPieces": 500
+          }
+        ]
+      },
+      "incrementalCompound": {
+        "median": {
+          "startMs": 0.07852699999784818,
+          "workWallMs": 51.6050000000032,
+          "cpuMs": 86.012,
+          "advanceCalls": 7,
+          "largestSynchronousMs": 11.901488999999856,
+          "advanceP50": 7.375691000001098,
+          "advanceP95": 11.901488999999856
+        },
+        "peakSynchronousMs": 12.412739999999758,
+        "runs": [
+          {
+            "count": 500,
+            "fixture": "compound",
+            "startMs": 0.07637400000021444,
+            "workWallMs": 51.6050000000032,
+            "cpuMs": 86.012,
+            "advanceCalls": 7,
+            "advanceMs": {
+              "p50": 7.3636030000016035,
+              "p95": 11.901488999999856,
+              "max": 11.901488999999856
+            },
+            "largestSynchronousMs": 11.901488999999856,
+            "bodies": 11,
+            "families": 5,
+            "storedPieces": 500
+          },
+          {
+            "count": 500,
+            "fixture": "compound",
+            "startMs": 0.07852699999784818,
+            "workWallMs": 48.3484529999987,
+            "cpuMs": 77.568,
+            "advanceCalls": 7,
+            "advanceMs": {
+              "p50": 7.375691000001098,
+              "p95": 12.412739999999758,
+              "max": 12.412739999999758
+            },
+            "largestSynchronousMs": 12.412739999999758,
+            "bodies": 11,
+            "families": 5,
+            "storedPieces": 500
+          },
+          {
+            "count": 500,
+            "fixture": "compound",
+            "startMs": 0.19569200000114506,
+            "workWallMs": 54.862961000013456,
+            "cpuMs": 90.16,
+            "advanceCalls": 8,
+            "advanceMs": {
+              "p50": 7.797038000000612,
+              "p95": 11.061177999999927,
+              "max": 11.061177999999927
+            },
+            "largestSynchronousMs": 11.061177999999927,
+            "bodies": 11,
+            "families": 5,
+            "storedPieces": 500
+          }
+        ]
+      }
+    },
+    {
+      "count": 2000,
+      "median": {
+        "loose": {
+          "cpuMsPerFrame": 15.976316666666666,
+          "wallP50": 8.799299999998766,
+          "wallP95": 12.231489999998303,
+          "groupingMs": 0,
+          "bodies": 2006,
+          "families": 0,
+          "storedPieces": 0
+        },
+        "families": {
+          "cpuMsPerFrame": 0.07568333333333334,
+          "wallP50": 0.03482199999962177,
+          "wallP95": 0.05239799999981187,
+          "groupingMs": 199.801408000003,
+          "bodies": 26,
+          "families": 20,
+          "storedPieces": 2000
+        }
+      },
+      "runs": {
+        "loose": [
+          {
+            "mode": "loose",
+            "count": 2000,
+            "groupingMs": 0,
+            "cpuMsPerFrame": 16.162183333333335,
+            "wallMsPerFrame": {
+              "p50": 9.09231699999873,
+              "p95": 11.719778000000588,
+              "max": 12.659505999999965
+            },
+            "bodies": 2006,
+            "liveGroups": 2000,
+            "families": 0,
+            "constraints": 0,
+            "storedPieces": 0,
+            "physicsSteps": 120,
+            "simulatedSeconds": 0.9999999999999967
+          },
+          {
+            "mode": "loose",
+            "count": 2000,
+            "groupingMs": 0,
+            "cpuMsPerFrame": 15.976316666666666,
+            "wallMsPerFrame": {
+              "p50": 8.438694000000396,
+              "p95": 13.651825000000827,
+              "max": 13.845163000001776
+            },
+            "bodies": 2006,
+            "liveGroups": 2000,
+            "families": 0,
+            "constraints": 0,
+            "storedPieces": 0,
+            "physicsSteps": 120,
+            "simulatedSeconds": 0.9999999999999967
+          },
+          {
+            "mode": "loose",
+            "count": 2000,
+            "groupingMs": 0,
+            "cpuMsPerFrame": 15.804933333333334,
+            "wallMsPerFrame": {
+              "p50": 8.799299999998766,
+              "p95": 12.231489999998303,
+              "max": 26.91746499999863
+            },
+            "bodies": 2006,
+            "liveGroups": 2000,
+            "families": 0,
+            "constraints": 0,
+            "storedPieces": 0,
+            "physicsSteps": 120,
+            "simulatedSeconds": 0.9999999999999967
+          }
+        ],
+        "families": [
+          {
+            "mode": "families",
+            "count": 2000,
+            "groupingMs": 208.53935599999932,
+            "cpuMsPerFrame": 0.075,
+            "wallMsPerFrame": {
+              "p50": 0.0346319999989646,
+              "p95": 0.07979900000100315,
+              "max": 0.11198599999988801
+            },
+            "bodies": 26,
+            "liveGroups": 0,
+            "families": 20,
+            "constraints": 0,
+            "storedPieces": 2000,
+            "physicsSteps": 120,
+            "simulatedSeconds": 0.9999999999999967
+          },
+          {
+            "mode": "families",
+            "count": 2000,
+            "groupingMs": 184.31347900000037,
+            "cpuMsPerFrame": 0.10313333333333333,
+            "wallMsPerFrame": {
+              "p50": 0.03482199999962177,
+              "p95": 0.05239799999981187,
+              "max": 0.11778600000070583
+            },
+            "bodies": 26,
+            "liveGroups": 0,
+            "families": 20,
+            "constraints": 0,
+            "storedPieces": 2000,
+            "physicsSteps": 120,
+            "simulatedSeconds": 0.9999999999999967
+          },
+          {
+            "mode": "families",
+            "count": 2000,
+            "groupingMs": 199.801408000003,
+            "cpuMsPerFrame": 0.07568333333333334,
+            "wallMsPerFrame": {
+              "p50": 0.03495199999815668,
+              "p95": 0.052378000000317115,
+              "max": 0.09398000000146567
+            },
+            "bodies": 26,
+            "liveGroups": 0,
+            "families": 20,
+            "constraints": 0,
+            "storedPieces": 2000,
+            "physicsSteps": 120,
+            "simulatedSeconds": 0.9999999999999967
+          }
+        ]
+      },
+      "incremental": {
+        "median": {
+          "startMs": 0.1988759999985632,
+          "workWallMs": 192.95191100001102,
+          "cpuMs": 272.141,
+          "advanceCalls": 54,
+          "largestSynchronousMs": 19.691306999997323,
+          "advanceP50": 0.49635900000066613,
+          "advanceP95": 9.505490999999893
+        },
+        "peakSynchronousMs": 19.915780999999697,
+        "runs": [
+          {
+            "count": 2000,
+            "fixture": "loose",
+            "startMs": 0.1988759999985632,
+            "workWallMs": 192.95191100001102,
+            "cpuMs": 257.535,
+            "advanceCalls": 54,
+            "advanceMs": {
+              "p50": 0.49635900000066613,
+              "p95": 9.505490999999893,
+              "max": 16.87055699999837
+            },
+            "largestSynchronousMs": 16.87055699999837,
+            "bodies": 26,
+            "families": 20,
+            "storedPieces": 2000
+          },
+          {
+            "count": 2000,
+            "fixture": "loose",
+            "startMs": 0.2235529999998107,
+            "workWallMs": 191.66027599997324,
+            "cpuMs": 272.141,
+            "advanceCalls": 54,
+            "advanceMs": {
+              "p50": 0.46213799999895855,
+              "p95": 9.191254000001209,
+              "max": 19.915780999999697
+            },
+            "largestSynchronousMs": 19.915780999999697,
+            "bodies": 26,
+            "families": 20,
+            "storedPieces": 2000
+          },
+          {
+            "count": 2000,
+            "fixture": "loose",
+            "startMs": 0.1932970000016212,
+            "workWallMs": 210.66259000000355,
+            "cpuMs": 332.723,
+            "advanceCalls": 54,
+            "advanceMs": {
+              "p50": 0.5442609999990964,
+              "p95": 14.199510999998893,
+              "max": 19.691306999997323
+            },
+            "largestSynchronousMs": 19.691306999997323,
+            "bodies": 26,
+            "families": 20,
+            "storedPieces": 2000
+          }
+        ]
+      },
+      "incrementalCompound": {
+        "median": {
+          "startMs": 0.08385500000076718,
+          "workWallMs": 174.99095099999977,
+          "cpuMs": 217.607,
+          "advanceCalls": 26,
+          "largestSynchronousMs": 11.239714000003005,
+          "advanceP50": 7.08578000000125,
+          "advanceP95": 8.112638000002335
+        },
+        "peakSynchronousMs": 13.235665000000154,
+        "runs": [
+          {
+            "count": 2000,
+            "fixture": "compound",
+            "startMs": 0.08010899999862886,
+            "workWallMs": 172.38519099999758,
+            "cpuMs": 215.857,
+            "advanceCalls": 25,
+            "advanceMs": {
+              "p50": 6.9050700000007055,
+              "p95": 11.045125000000553,
+              "max": 13.235665000000154
+            },
+            "largestSynchronousMs": 13.235665000000154,
+            "bodies": 26,
+            "families": 20,
+            "storedPieces": 2000
+          },
+          {
+            "count": 2000,
+            "fixture": "compound",
+            "startMs": 0.08385500000076718,
+            "workWallMs": 174.99095099999977,
+            "cpuMs": 217.607,
+            "advanceCalls": 26,
+            "advanceMs": {
+              "p50": 7.106349999998201,
+              "p95": 8.059908999999607,
+              "max": 8.768335000000661
+            },
+            "largestSynchronousMs": 8.768335000000661,
+            "bodies": 26,
+            "families": 20,
+            "storedPieces": 2000
+          },
+          {
+            "count": 2000,
+            "fixture": "compound",
+            "startMs": 0.08535699999993085,
+            "workWallMs": 176.4812189999975,
+            "cpuMs": 223.146,
+            "advanceCalls": 26,
+            "advanceMs": {
+              "p50": 7.08578000000125,
+              "p95": 8.112638000002335,
+              "max": 11.239714000003005
+            },
+            "largestSynchronousMs": 11.239714000003005,
+            "bodies": 26,
+            "families": 20,
+            "storedPieces": 2000
+          }
+        ]
+      }
+    }
+  ]
+}

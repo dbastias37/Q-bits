@@ -19,14 +19,26 @@ Las repisas siguen colocándose en paredes. Depósitos, enfriadores y cuerpos s�
 
 Las estructuras se sujetan desde su centro para evitar giros provocados por tirar de un extremo. Su masa sigue siendo la suma de sus piezas; soltar elimina el giro residual de la mano. Las estructuras rígidas libres amortiguan más el giro y rebotan menos que los cubos sueltos. Los motores conservan su amortiguación calibrada, límites de carga y consumo.
 
+## Agrupar en familias
+
+Selecciona varias piezas y abre **clic secundario → Agrupar en familia…**. Escribe un nombre y elige un color, incluido negro. Cada familia guarda hasta **100 piezas base**, muestra **×N** y puede contener módulos completos: un rotor de dos enganches sigue contando como dos piezas. La animación reúne el material en el contenedor.
+
+Haz clic sobre una familia para moverla. Desde su menú secundario puedes **Nombrar familia y elegir color…**, retirar un elemento, **Retirar hasta 10 elementos**, **Desagrupar familia** o unirla con otra compatible. El nombre, la cantidad y la acción actual aparecen en el indicador inferior. **Hasta 10 elementos** puede incluir módulos de varias piezas; **Dividir en familias de hasta 10** reparte por cantidad de piezas base.
+
+Apunta la guía al suelo: **azul** permite colocar y **rojo** indica un obstáculo. **Rueda** gira, **Shift** alinea a la cuadrícula, **clic/E/Enter** confirma y **Escape o clic secundario** cancela conservando el inventario. Durante **Mover familia**, **Shift + varias sacudidas** divide en lotes de hasta diez piezas cuando los módulos caben; no corta módulos indivisibles para completar un lote. La capacidad manual sigue contando todo el peso.
+
+El banco guarda familias, contenido, nombres, colores y posiciones. La campaña guarda el punto de control del nivel, no la escena física en curso. La [guía de familias](FAMILIAS_QBITS.md) detalla conservación, baterías, módulos y recuperación ante falta de espacio.
+
 ## Elegir cómo desarmar
+
+**Alt → Desarmar en familias** recupera el montaje en contenedores por tipo. La selección y el menú secundario ofrecen también **Desarmar y agrupar por tipo**. Para dejar los componentes separados, elige **Desarmar en piezas sueltas**.
 
 En **Configuración → Juego → Desarme de conjuntos**, elige una opción y pulsa **Guardar**:
 
 - **Inmediato:** mantiene el desarme actual. Al agitar, conservas en la mano la pieza tomada.
 - **Por etapas · banco de pruebas:** suelta y detiene el montaje; sus piezas salen de arriba hacia abajo hacia huecos libres del suelo. No necesitas volver a agitar. Si aparece «libera espacio», mueve los obstáculos: el proceso seguirá solo.
 
-Activa el desarme tomando una estructura y haciendo **Shift + varias sacudidas**, o con **Alt → Desarmar todo** sobre el cuerpo seleccionado. Pausar detiene el proceso; salir a otro nivel y volver al banco conserva las piezas pendientes. El contador las muestra como «en desarme». Para repetir la comparación, vuelve a armar o crear el mismo montaje. La campaña y los puzles mantienen el desarme inmediato. Con muchos cubos separados el coste físico final sigue existiendo.
+Activa el desarme en piezas sueltas tomando una estructura y haciendo **Shift + varias sacudidas**, o con **Alt → Desarmar en piezas sueltas** sobre el cuerpo seleccionado. Pausar detiene el proceso; salir a otro nivel y volver al banco conserva las piezas pendientes. El contador las muestra como «en desarme». Para repetir la comparación, vuelve a armar o crear el mismo montaje. La campaña y los puzles mantienen el desarme inmediato. Con muchos cubos separados el coste físico final sigue existiendo.
 
 La selección se muestra **abajo a la derecha**, frente al contador de población de la izquierda. Conserva los controles de selección y las páginas cuando hay muchas estructuras.
 

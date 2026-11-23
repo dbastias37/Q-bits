@@ -1,0 +1,42 @@
+{
+  "capturedAt": "2026-11-23T00:28:32.451Z",
+  "node": "v24.22.3",
+  "baseline": {
+    "commit": "f045a96e812c1142f77008b0a113debb994b91bb",
+    "command": "node --test tests/*.test.cjs",
+    "log": "tests-baseline.log.gz",
+    "tests": 1269,
+    "suites": 0,
+    "pass": 1269,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "duration_ms": 54796.597192
+  },
+  "final": {
+    "command": "node --test --test-reporter=tap tests/*.test.cjs",
+    "log": "tests-final.tap.gz",
+    "sourceSha256": {
+      "game": "9e55241e807593de42c19553878912863dea7952f23f6669b8d0c4257dc57d7a",
+      "families": "5bf27891ca4cec8defdecd9ee5b1c8397af119042917a3e24268730339efda7e",
+      "boot": "2c785b979913f8c6c6525343b8bd229cba6f1831b3d057c629cb5c7eae3227fb",
+      "harness": "92ac6e59c151b7f32d7092e64885f4182bfdfa16235988a9eedd7007eb929cd5",
+      "integration": "a239026491ec474fe2f7aa55984a211f56be8dc562082db5400f192e8aa41512",
+      "sets": "1501cd23d19097b2cfef95227361b2be474f79e7ece4f06d1268e625b424d32a"
+    },
+    "tests": 1328,
+    "suites": 0,
+    "pass": 1328,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "duration_ms": 56389.308213
+  },
+  "scope": "Functional Node test suite; game harness uses real Cannon physics and simulated DOM/WebGL. This does not certify browser pointer-lock, browser FPS or end-to-end visual appearance. See GLES evidence for real shader/render checks.",
+  "notes": [
+    "Unchanged audio manifests excluded by the initial sparse checkout were restored before establishing the clean baseline.",
+    "The first full integration run found 32 failures in the boot test fixture, whose dependency list omitted families.js. The dependency order and missing-script test were updated; the complete suite was repeated."
+  ]
+}

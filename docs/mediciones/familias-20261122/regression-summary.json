@@ -1,0 +1,123 @@
+{
+  "batteryFrames": 25,
+  "batteryGpuErrors": 0,
+  "batteryCompiledShaders": 2,
+  "batteryLinkedPrograms": 1,
+  "sameSceneShadersAsFamilies": true,
+  "sceneShaderSha256": [
+    "6e775880c1e8e2d8943dd2fd9c19334a2d4c31ff2b1c57a1e5ee398ae85ada9f",
+    "f926a2bb88df47789a57e04f4b6bb04dd9adce9d2f60c9354161d5b796be60c5"
+  ],
+  "focus": [
+    {
+      "version": "OpenGL ES 3.2 Mesa 25.0.7-2+deb13u1",
+      "renderer": "llvmpipe (LLVM 19.1.7, 256 bits)"
+    },
+    {
+      "shader": "vertexSource",
+      "compiled": true,
+      "log": ""
+    },
+    {
+      "shader": "fragmentSource",
+      "compiled": true,
+      "log": ""
+    },
+    {
+      "shader": "focusVertexSource",
+      "compiled": true,
+      "log": ""
+    },
+    {
+      "shader": "focusFragmentSource",
+      "compiled": true,
+      "log": ""
+    },
+    {
+      "shader": "vertex",
+      "compiled": true,
+      "log": ""
+    },
+    {
+      "shader": "blurFragment",
+      "compiled": true,
+      "log": ""
+    },
+    {
+      "shader": "fragment",
+      "compiled": true,
+      "log": ""
+    },
+    {
+      "program": [
+        "vertexSource",
+        "fragmentSource"
+      ],
+      "linked": true,
+      "log": ""
+    },
+    {
+      "program": [
+        "focusVertexSource",
+        "focusFragmentSource"
+      ],
+      "linked": true,
+      "log": ""
+    },
+    {
+      "program": [
+        "vertex",
+        "fragment"
+      ],
+      "linked": true,
+      "log": ""
+    },
+    {
+      "program": [
+        "vertex",
+        "blurFragment"
+      ],
+      "linked": true,
+      "log": ""
+    },
+    {
+      "pixel_fixture": "PASS",
+      "size": [
+        64,
+        64
+      ],
+      "disabled_max_pixel_error": 0,
+      "held_foreground_max_pixel_error": 0,
+      "background_checker_contrast_original": 255,
+      "background_checker_contrast_focused": 11,
+      "white_background_min_after_dark_foreground_exclusion": 255,
+      "black_foreground_max": 0
+    },
+    {
+      "graphics_pixel_fixture": "PASS",
+      "quantized_levels": 8,
+      "dither_levels": 2,
+      "color_bloom": true,
+      "neutral_room_preserved": true,
+      "connected_halo_tail": [
+        72,
+        52,
+        33,
+        23,
+        23,
+        20,
+        15,
+        12,
+        12,
+        12,
+        12,
+        12,
+        12,
+        12
+      ],
+      "antialias_levels": 11
+    }
+  ],
+  "browserValidated": false,
+  "comparedFamilySourceSha256": "9e55241e807593de42c19553878912863dea7952f23f6669b8d0c4257dc57d7a"
+}

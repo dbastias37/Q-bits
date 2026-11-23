@@ -72,7 +72,7 @@
   function loadScript(path) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = path + '?v=20261122-pressure-query-1';
+      script.src = path + '?v=20261122-families-1';
       script.onload = resolve;
       script.onerror = () => reject(new Error('No se pudo cargar ' + path));
       document.head.append(script);
@@ -148,6 +148,7 @@
       await loadScript('assets/js/workshop.js');
       await Promise.all(['furniture-models','tablet-model','tablet-view'].map(name=>loadScript('assets/js/'+name+'.js')));
       await loadScript('assets/js/organizers.js');
+      await loadScript('assets/js/families.js');
       await loadScript('assets/js/workshop-panel.js');
       await loadScript('assets/js/robot-arm-panel.js');
       await loadScript('assets/js/conveyor-panel.js');
