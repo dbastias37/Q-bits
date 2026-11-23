@@ -61,14 +61,15 @@ test('hand changes persist and old preferences acquire the default tablet scale'
  assert.equal(preferences.sanitize({tabletScale:250}).tabletScale,125);
 });
 
-test('both 3D housings stay on screen at every corner and scale',()=>{
- const {sandbox}=lab(),{placement}=sandbox.QBitsTabletView,points=sandbox.QBitsTabletModel.positions;
+test('all 3D housings stay on screen at every corner and scale',()=>{
+ const {sandbox}=lab(),{placement}=sandbox.QBitsTabletView;
  assert.equal(preferences.sanitize({tabletHand:'right'}).tabletX,100);
  assert.equal(preferences.sanitize({tabletX:-20,tabletY:180,tabletStyle:'unknown'}).tabletStyle,'glass');
  for(const [w,h] of [[320,568],[667,375],[1366,768],[2048,1024]]){
-  for(const hand of ['left','right'])for(const style of ['glass','alloy'])for(const scale of [75,100,125]){
+  for(const hand of ['left','right'])for(const style of ['glass','alloy','graphite'])for(const scale of [75,100,125]){
    for(const corner of [[0,0],[25,25],[50,50],[75,75],[100,0],[0,100],[100,100]]){
     const f=placement(w,h,{tabletStyle:style,tabletHand:hand,tabletScale:scale,tabletX:corner[0],tabletY:corner[1]});
+    const points=(style==='graphite'?sandbox.QBitsGraphiteModel:sandbox.QBitsTabletModel).positions;
     const m=f.pose;
     assert.equal(Math.sign(m[8]),Math.sign(50-corner[0]));
     assert(Math.abs(f.width/f.height-760/460)<1e-9);
@@ -95,4 +96,32 @@ test('dragging the header persists both coordinates and does not change the acti
  assert(stored.tabletX>0&&stored.tabletX<100);
  assert(stored.tabletY>0&&stored.tabletY<100);
  assert.equal(el('panel').dataset.group,'bodies');
+});
+
+test('Graphite uses the saved style and its disclosures leave the active piece intact',()=>{
+ const {t,el,middle}=lab();
+ assert.equal(preferences.sanitize({tabletStyle:'graphite'}).tabletStyle,'graphite');
+ t.applyPreferences({...preferences.defaults(),tabletStyle:'graphite'});
+ middle(t.canvas);
+ assert.equal(el('panel').dataset.style,'graphite');
+ const selected=t.getSelected(), mass=el('mass').value;
+ for(const id of ['tablet-context-help','tablet-physics-toggle']){
+  el(id).dispatchEvent({type:'click'});assert.equal(el(id).getAttribute('aria-expanded'),'true');
+  el(id).dispatchEvent({type:'click'});assert.equal(el(id).getAttribute('aria-expanded'),'false');
+ }
+ assert.equal(el('panel').dataset.help,'false');
+ assert.equal(el('mass').value,mass);assert.equal(t.getSelected(),selected);
+});
+
+test('Graphite presents internal gripper charge against the actual capacity',()=>{
+ const {t,el}=lab();
+ const g=t.makeGroup([{id:t.allocateUnitId(),shape:'cube',weight:1,p:t.V(0,.1,0),q:t.Q()}]);
+ const part=g.parts[0];t.configureGripper(part.id,{});part.mood.energy=.375;
+ t.setSelected({g,part});t.applyPreferences({...preferences.defaults(),tabletStyle:'graphite'});
+ const number=new Intl.NumberFormat('es-CL',{maximumFractionDigits:0}),limit=t.gameBatteryCapacity(part);
+ const reading=number.format(.375*limit)+' / '+number.format(limit);
+ assert.equal(t.robotPanelSnapshot().gripper.chargeText,reading);
+ t.updateRobotArmPanel();assert.equal(el('arm-energy').textContent,reading);
+ t.applyPreferences({...preferences.defaults(),tabletStyle:'glass'});
+ t.updateRobotArmPanel();assert.match(el('arm-energy').textContent,/ J$/);
 });

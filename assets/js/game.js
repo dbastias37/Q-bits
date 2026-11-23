@@ -2263,7 +2263,8 @@ flightField('map').addEventListener('click',event=>{
 });
 function updateFlightPanel(){
  const f=flightPanelSubject(),section=document.querySelector('#flight-panel');section.hidden=!f;if(!f)return;
- drawFlightRoute(f);const s=flightSnapshot(f),c=s.config;document.querySelector('#flight-status').textContent=f.status+' · '+f.modules.length+'/4 hélices · '+s.load.toFixed(2)+' / '+s.maxLoad.toFixed(2)+' u · '+Math.round(s.supply.storedJ)+' J';
+ drawFlightRoute(f);const s=flightSnapshot(f),c=s.config;document.querySelector('#flight-status').textContent=f.status+' · '+f.modules.length+'/4 hélices · '+s.load.toFixed(2)+' / '+s.maxLoad.toFixed(2)+' u'+(savedPreferences.tabletStyle==='graphite'?'':' · '+Math.round(s.supply.storedJ)+' J');
+ if(savedPreferences.tabletStyle==='graphite')document.querySelector('#flight-charge').textContent=chargeReading(s.supply.storedJ,s.supply.capacity);
  document.querySelector('#flight-height').value=String(c.height);document.querySelector('#flight-speed').value=String(c.speed);
  document.querySelector('#flight-telemetry').textContent='Altura '+s.height.toFixed(2)+' m · '+(f.power?.rpm||0).toFixed(0)+' rpm · '+(f.power?.inputWatts||0).toFixed(2)+' W'+(f.power?.remainingSeconds!=null?' · autonomía estimada '+f.power.remainingSeconds.toFixed(0)+' s · alcance estimado '+(f.power.remainingSeconds*Math.hypot(s.velocity.x,s.velocity.z)).toFixed(1)+' m':'')+'. La estimación cambia con la carga, altura y consumo del resto de herramientas.';
  for(const id of ['height','speed','apply','heading'])document.querySelector('#flight-'+id).disabled=f.enabled;
@@ -7434,19 +7435,34 @@ function robotPanelSubject(){
  if(!hit?.part.mood.gripper){robotPanelGripperId=null;hit=null;}
  return {selection,hit,arm:hit?robotArms.find(arm=>arm.gripperId===hit.part.id)||null:null};
 }
+const tabletChargeNumber=new Intl.NumberFormat('es-CL',{maximumFractionDigits:0});
+function chargeReading(stored,total){
+ return total>0 ? tabletChargeNumber.format(stored)+' / '+tabletChargeNumber.format(total) : 'Sin batería activa';
+}
+function armPanelPower(supply,ids){
+ if(supply?.active)return supply;
+ let capacity=0,storedJ=0;
+ for(const id of ids){
+  const part=rotorPart(id)?.part;if(!part)continue;
+  const limit=gameBatteryCapacity(part);
+  capacity+=limit;storedJ+=part.mood.energy*limit;
+ }
+ return {capacity,storedJ};
+}
 function robotPanelSnapshot(){
  const {selection,hit,arm}=robotPanelSubject(),component=hit?rotorConnectedGroups([hit.g]):[],config=hit?.part.mood.gripper;
  const grip=hit?robotGrips.get(hit.part.id):null,load=grip?.weight||0,pieces=grip?.g?.parts.length,supply=hit?gripperSupply(hit):null;
  const motorIds=new Set(arm?arm.joints.flatMap(j=>[j.aId,j.bId]).concat(arm.gripperId):hit?[hit.part.id]:[]);
- const energy=supply?.active?supply.storedJ:[...motorIds].reduce((sum,id)=>{const p=rotorPart(id)?.part;return sum+(p?p.mood.energy*gameBatteryCapacity(p):0);},0);
+ const power=armPanelPower(supply,motorIds),energy=power.storedJ;
+ const chargeText=savedPreferences.tabletStyle==='graphite'?chargeReading(energy,power.capacity):null;
  const sample=selection&&!component.includes(selection.g)?selection:null;
  const source=selection?.part,canConvert=!selection?.g?.robotHeld&&!selection?.g?.blueprintJob&&!robotArmForGroup(selection?.g)&&story.scene==='lab'&&!puzzle.active&&source?.shape==='cube'&&!source.mood.gripper&&!isExternalBattery(source)&&!source.mood.production&&!source.mood.matter&&!QBitsWorkshop.hasAdaptation(source);
  const snapshot={available:story.scene==='lab'&&!puzzle.active,selectedLabel:selection?(selection.part.mood.name||'Pieza '+selection.part.id)+(hit&&sample?' · muestra para '+hit.part.mood.name:''):'Selecciona el brazo o un Q-bit para adaptarlo.',canConvert:!!canConvert,canRegister:!!hit&&!arm&&component.length>1,canCaptureShape:!!sample,canCapturePiece:!!sample,
- targets:groups.filter(g=>!component.includes(g)).flatMap(g=>g.parts.map(p=>({id:p.id,label:(p.mood.name||'Pieza')+' · #'+p.id}))).concat(cargos.filter(c=>c.intake==null).map(c=>({id:-c.id,label:'Cuerpo '+c.id+' · '+c.color+' · '+c.required+' u'}))),gripper:config?{...config,reachCm:gripperReach(config)*100,id:hit.part.id,name:hit.part.mood.name,energy:supply.storedJ,load,pieces}:null};
+ targets:groups.filter(g=>!component.includes(g)).flatMap(g=>g.parts.map(p=>({id:p.id,label:(p.mood.name||'Pieza')+' · #'+p.id}))).concat(cargos.filter(c=>c.intake==null).map(c=>({id:-c.id,label:'Cuerpo '+c.id+' · '+c.color+' · '+c.required+' u'}))),gripper:config?{...config,reachCm:gripperReach(config)*100,id:hit.part.id,name:hit.part.mood.name,energy:supply.storedJ,chargeText,load,pieces}:null};
  if(arm){
   const members=robotArmRotors(arm),running=arm.running||arm.jogging,holding=!!grip,capacity=robotLiftCapacity(config,members);
   snapshot.arm={name:'Brazo Q-bits',status:robotArmStatus(arm),signal:robotArmSignal(arm),running,holding,phase:arm.state==='wait'?'detect':arm.state==='carry'?'move':arm.state,repeat:arm.repeat,
-   homeReady:!!arm.poses.home,pickReady:!!arm.poses.pick,placeReady:!!arm.poses.place,load,pieces,capacity,energy,cycles:arm.cycles,
+   homeReady:!!arm.poses.home,pickReady:!!arm.poses.pick,placeReady:!!arm.poses.place,load,pieces,capacity,energy,chargeText,cycles:arm.cycles,
    canFit:capacity<config.capacity,posable:robotKinematics(arm)!==null,
    efficiency:Math.max(0,100-load/capacity*100),joints:members.map((r,i)=>({name:robotJointName(i),rpm:r.rpm,maxTorque:r.maxTorque,capacity:r.capacity,angle:arm.poses.pick?-robotTargetError(r,arm.poses.pick[i])*180/Math.PI:0}))};
  }
@@ -7535,7 +7551,7 @@ function conveyorPanelSubject(){const hit=held||selected,g=hit?.g;return g?(conv
 function conveyorPanelSnapshot(){
  const c=conveyorPanelSubject(),base=c?rotorPart(c.baseId):null,line=c?conveyorLine(c):[],supply=base?externalBatterySummary(base.g):null;
  const materials={},materialsWithSupports={};for(const kind of ['straight','left','right']){const recipe=conveyorBlueprintTemplate(kind,false),supported=conveyorBlueprintTemplate(kind,true);materials[kind]=recipe?blueprintMaterials(mechanismBlueprintShape(recipe)):'Plano en preparación';materialsWithSupports[kind]=supported?blueprintMaterials(mechanismBlueprintShape(supported)):materials[kind];}
- return {available:story.scene==='lab'&&!puzzle.active,supportsAvailable:true,materials,materialsWithSupports,selectedLabel:c?(c.kind==='straight'?'Cinta recta':c.kind==='left'?'Esquina izquierda':'Esquina derecha')+' · tramo '+c.id:'Selecciona un rodillo del tramo para configurarlo.',conveyor:c?{id:c.id,kind:c.kind,enabled:c.running,direction:c.direction,status:conveyorStatus(c),load:c.load,capacity:c.capacity,speed:conveyorRotors(c).reduce((sum,r)=>sum+Math.abs(r.actualRpm||0)*Math.PI*CUBE_SIZE/60,0)/Math.max(1,c.joints.length),energy:supply?.storedJ||0,connected:line.length,lineRunning:line.every(section=>section.running)}:null};
+ return {available:story.scene==='lab'&&!puzzle.active,supportsAvailable:true,materials,materialsWithSupports,selectedLabel:c?(c.kind==='straight'?'Cinta recta':c.kind==='left'?'Esquina izquierda':'Esquina derecha')+' · tramo '+c.id:'Selecciona un rodillo del tramo para configurarlo.',conveyor:c?{id:c.id,kind:c.kind,enabled:c.running,direction:c.direction,status:conveyorStatus(c),load:c.load,capacity:c.capacity,speed:conveyorRotors(c).reduce((sum,r)=>sum+Math.abs(r.actualRpm||0)*Math.PI*CUBE_SIZE/60,0)/Math.max(1,c.joints.length),energy:supply?.storedJ||0,chargeText:savedPreferences.tabletStyle==='graphite'?chargeReading(supply?.storedJ,supply?.capacity):null,connected:line.length,lineRunning:line.every(section=>section.running)}:null};
 }
 function conveyorPortWorld(c,name){const base=rotorPart(c?.baseId),port=c?.ports?.[name];return base&&port?{p:add(base.p,base.q.vmult(V(...port.p))),direction:base.q.vmult(V(...port.direction))}:null;}
 function conveyorBlueprintPlacement(record,c){
@@ -7615,7 +7631,8 @@ function updateMechanismPanel(){
  const batteryList=document.querySelector('#connected-batteries');batteryList.replaceChildren();const shownPacks=new Set();
  for(const g of rotorConnectedGroups(targets.flatMap(rotorGroups)))for(const part of g.parts)if(isExternalBattery(part)){
   const info=externalBatteryPackInfo(part.id),key=Math.min(...info.parts.map(p=>p.id));if(shownPacks.has(key))continue;shownPacks.add(key);
-  const button=document.createElement('button');button.type='button';button.textContent=(info.enabled?'Apagar ':'Activar ')+info.label+' · '+info.percent+' %';button.addEventListener('click',()=>{toggleExternalBattery(part.id,!info.enabled);updateMechanismPanel();});batteryList.appendChild(button);
+  const button=document.createElement('button');button.type='button';button.textContent=(info.enabled?'Apagar ':'Activar ')+info.label+' · '+(savedPreferences.tabletStyle==='graphite'?chargeReading(info.storedJ,info.capacity):info.percent+' %');
+  button.dataset.reading='charge';button.addEventListener('click',()=>{toggleExternalBattery(part.id,!info.enabled);updateMechanismPanel();});batteryList.appendChild(button);
  }
  document.querySelector('#rotor-technical-readout').textContent=rotor?rotorPowerDescription(rotor):'';
  document.querySelector('#rotor-individual-note').textContent=targets.length>1?'Selecciona un solo rotor con Ctrl + clic para cambiar su montaje o lado.':'Montaje del rotor seleccionado. El conjunto conserva la orientación de cada eje.';
@@ -7720,6 +7737,14 @@ const tabletPages={
 };
 let tabletTab='cube',catalogFilter='Piezas',tabletWheelTime=-Infinity;
 const tabletEl=id=>document.getElementById(id);
+for(const [id,flag] of [['tablet-context-help','help'],['tablet-physics-toggle','physics']]){
+ const button=tabletEl(id);
+ button.addEventListener('click',()=>{
+  const opened=button.getAttribute('aria-expanded')!=='true';
+  button.setAttribute('aria-expanded',String(opened));
+  if(flag==='help')panel.dataset.help=String(opened);
+ });
+}
 const tabletMovement={forward:'KeyW',backward:'KeyS',left:'KeyA',right:'KeyD',crouch:'KeyC'};
 function tabletTyping(el){
  return !!el&&(el.isContentEditable||el.tagName==='TEXTAREA'||el.tagName==='INPUT'&&
@@ -11908,8 +11933,8 @@ function liveMechanismPanel(time){
   document.querySelector('#arm-cycles').textContent=String(arm.cycles);
   const gripHit=robotGripperHit(arm.gripperId),supply=gripperSupply(gripHit),joints=robotArmRotors(arm);
   const ids=new Set([arm.gripperId,...arm.joints.flatMap(j=>[j.aId,j.bId])]);
-  const energy=supply.active?supply.storedJ:[...ids].reduce((sum,id)=>{const p=rotorPart(id)?.part;return sum+(p?p.mood.energy*gameBatteryCapacity(p):0);},0);
-  document.querySelector('#arm-energy').textContent=Math.round(energy)+' J';
+  const power=armPanelPower(supply,ids);
+  document.querySelector('#arm-energy').textContent=savedPreferences.tabletStyle==='graphite'?chargeReading(power.storedJ,power.capacity):Math.round(power.storedJ)+' J';
   const grip=robotGrips.get(arm.gripperId),capacity=robotLiftCapacity(gripHit.part.mood.gripper,joints);
   document.querySelector('#arm-load').textContent=formatWeight(grip?.weight||0)+' / '+capacity+' u';
   const phase={wait:'detect',carry:'move',return:'return',home:'return',grab:'grab',release:'release'}[arm.state];
@@ -11921,7 +11946,8 @@ function liveMechanismPanel(time){
  }
  if(belt){
   document.querySelector('#conveyor-status').textContent=conveyorStatus(belt);
-  document.querySelector('#conveyor-energy').textContent=Math.round(externalBatterySummary(rotorPart(belt.baseId).g).storedJ)+' J';
+  const power=externalBatterySummary(rotorPart(belt.baseId).g);
+  document.querySelector('#conveyor-energy').textContent=savedPreferences.tabletStyle==='graphite'?chargeReading(power.storedJ,power.capacity):Math.round(power.storedJ)+' J';
   document.querySelector('#conveyor-load').textContent=formatWeight(belt.load)+' / '+belt.capacity+' u';
   const motors=conveyorRotors(belt),speed=motors.reduce((n,r)=>n+Math.abs(r.actualRpm||0)*Math.PI*CUBE_SIZE/60,0)/Math.max(1,motors.length);
   document.querySelector('#conveyor-speed').textContent=speed.toFixed(2)+' m/s';

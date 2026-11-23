@@ -28,7 +28,7 @@
    get('capacity').disabled=!c||!!c.enabled||s.available===false;if(c)get('capacity').value=c.capacity;
    get('load').textContent=c?number(c.load,' u')+' / '+number(c.capacity,' u'):'—';
    get('speed').textContent=c?number(c.speed,' m/s',2):'—';
-   get('energy').textContent=c?number(c.energy,' J'):'—';
+   get('energy').textContent=c?(c.chargeText??number(c.energy,' J')):'—';
    get('connected').textContent=c&&finite(c.connected)?number(c.connected,'',0)+' '+(Number(c.connected)===1?'tramo':'tramos'):'—';
   }
   for(const kind of KINDS)get('blueprint-'+kind).addEventListener('click',()=>{

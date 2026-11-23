@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#121614"><title>Q-bits · Tableta de campo</title>
+<link rel="stylesheet" href="../../assets/css/tablet-instruments.css"><link rel="stylesheet" href="visor.css"></head><body>
+<header class="mast"><b>Q-bits</b><span>Banco de pruebas</span></header>
+<main><div class="heading"><div><p class="kicker">DISEÑO DE EQUIPO</p><h1>Tableta de campo<span>.</span></h1></div><p class="version">GRAFITO <b>/</b> 2.0</p></div>
+<div class="layout"><section class="stage" aria-label="Vista tridimensional"><div class="stage-tag"><i></i> Vista 3D</div>
+<div id="orbit" tabindex="0" aria-label="Girar la tableta con las flechas o arrastrando"><canvas id="model"></canvas><div id="plane" aria-hidden="true"><div class="display"><div class="screen-head"><b>Q-bits</b><span>BANCO &nbsp; / &nbsp; VUELO</span></div><div class="screen-body"><div class="drawing"><span>HÉLICES</span><svg id="drone" viewBox="-108 -67 216 134"></svg></div><div class="screen-read"><small>DRON DE PRUEBA</small><strong id="example-val"></strong><span id="example-label"></span><div class="tick"></div></div></div><div class="screen-foot">MODELO DE MUESTRA <b>Q / B</b></div></div></div>
+<p id="no-gl" hidden>El navegador no pudo dibujar la carcasa. Los indicadores siguen disponibles.</p></div>
+<div class="view-controls" aria-label="Orientación"><button data-view="persp" aria-pressed="true">Perspectiva</button><button data-view="front" aria-pressed="false">Frente</button><button data-view="back" aria-pressed="false">Reverso</button></div></section>
+<aside><p class="kicker">PANTALLA DE MUESTRA</p><h2>Indicadores</h2><div id="metrics"></div><div id="explanation" aria-live="polite"><h3></h3><p></p></div></aside></div>
+<footer><span>Arrastra el equipo para girarlo o usa las flechas.</span><span>100 triángulos <i>/</i> Carcasa mate</span></footer></main>
+<script src="../../assets/js/tablet-model.js"></script><script src="../../assets/js/tablet-view.js"></script><script src="visor.js"></script></body></html>

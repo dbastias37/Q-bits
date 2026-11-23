@@ -20,9 +20,36 @@ window.QBitsTabletView = (() => {
     precision mediump float;
     varying vec3 vPoint, vNormal;
     uniform float uAlloy;
+    uniform float uGraphite;
     void main() {
       vec3 n = normalize(vNormal);
       float light = .5 + .5 * dot(n, normalize(vec3(-.42, -.62, .68)));
+      if (uGraphite > .5) {
+        vec2 p = vPoint.xy;
+        vec3 metal = vec3(.205,.224,.219) * (.42 + .71*light);
+        if (abs(vPoint.z) < .00015) {
+          bool screen = p.x > -.474 && p.x < .408 && p.y > -.453 && p.y < .392;
+          if (screen) metal = vec3(.061,.076,.073);
+          else {
+            float notch = step(.411,p.y)*step(p.y,.458)*step(-.386,p.x)*step(p.x,-.267)
+                        *step(.53,fract((p.x-.38*p.y)*72.));
+            metal *= 1.-.61*notch;
+            float lightBar = step(.27,p.x)*step(p.x,.343)*step(.429,p.y)*step(p.y,.438);
+            metal=mix(metal,vec3(.69,.82,.44),lightBar);
+            vec2 bolt=vec2(abs(p.x+.032)-.423,abs(p.y)-.461);
+            if(length(bolt*vec2(1.,.64)) < .006) metal = vec3(.052,.061,.055);
+          }
+        } else if (p.x>.469 && abs(p.y)<.19) {
+          metal *= .50 + .10*step(.72,fract(p.y*37.));
+        }
+        if(vPoint.z < -.051) {
+          metal *= .86;
+          if(abs(p.y-.22)<.046 && abs(p.x+.21)<.10)
+            metal *= .56+.44*step(.43,fract(p.x*72.));
+        }
+        gl_FragColor=vec4(metal,1.);
+        return;
+      }
       vec3 rim = mix(vec3(.13,.48,.51), vec3(.20,.23,.26), uAlloy);
       vec3 signal = mix(vec3(.39,.94,.91), vec3(.96,.65,.29), uAlloy);
       float z = -vPoint.z;
@@ -80,7 +107,7 @@ window.QBitsTabletView = (() => {
     }
     const travelX = Math.max(0,viewWidth-2*margin-(maxX-minX));
     const travelY = Math.max(0,viewHeight-2*margin-(maxY-minY));
-    return {width,height,depth,pose,alloy,travelX,travelY,viewWidth,viewHeight,
+    return {width,height,depth,pose,alloy,graphite:prefs.tabletStyle==='graphite',travelX,travelY,viewWidth,viewHeight,
       x:margin-minX+travelX*prefs.tabletX/100, y:margin-minY+travelY*prefs.tabletY/100};
   }
 
@@ -91,20 +118,26 @@ window.QBitsTabletView = (() => {
     }
     gl.linkProgram(program);
     if (!gl.getProgramParameter(program,gl.LINK_STATUS)) throw Error(gl.getProgramInfoLog(program));
-    const {positions,triangles}=window.QBitsTabletModel, data=[];
-    for (let i=0;i<triangles.length;i+=3) {
-      const points=triangles.slice(i,i+3).map(id=>positions.slice(id*3,id*3+3));
-      const [a,b,c]=points, u=b.map((p,j)=>p-a[j]), v=c.map((p,j)=>p-a[j]);
-      const normal=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
-      // The model uses screen Y down. Orient each face away from the shell interior.
-      const outside=[a[0],a[1],a[2]+.028];
-      if (normal.reduce((sum,n,j)=>sum+n*outside[j],0)<0) for(let j=0;j<3;j++) normal[j]*=-1;
-      for(const p of points)data.push(...p,...normal);
+    const data=[];
+    function appendModel({positions,triangles}, orientFromCenter) {
+      const first=data.length/6;
+      for (let i=0;i<triangles.length;i+=3) {
+        const points=triangles.slice(i,i+3).map(id=>positions.slice(id*3,id*3+3));
+        const [a,b,c]=points, u=b.map((p,j)=>p-a[j]), v=c.map((p,j)=>p-a[j]);
+        const normal=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
+        // The model uses screen Y down. Orient each face away from the shell interior.
+        const outside=[a[0],a[1],a[2]+.028];
+        if (orientFromCenter && normal.reduce((sum,n,j)=>sum+n*outside[j],0)<0) for(let j=0;j<3;j++) normal[j]*=-1;
+        for(const p of points)data.push(...p,...normal);
+      }
+      return {first,count:data.length/6-first};
     }
+    const classic=appendModel(window.QBitsTabletModel,true);
+    const graphite=window.QBitsGraphiteModel && appendModel(window.QBitsGraphiteModel,false);
     const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
     gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);
     const point=gl.getAttribLocation(program,'aPoint'),normal=gl.getAttribLocation(program,'aNormal');
-    const loc=Object.fromEntries(['uPose','uSize','uCenter','uViewport','uAlloy'].map(k=>[k,gl.getUniformLocation(program,k)]));
+    const loc=Object.fromEntries(['uPose','uSize','uCenter','uViewport','uAlloy','uGraphite'].map(k=>[k,gl.getUniformLocation(program,k)]));
     return frame=>{
       gl.bindFramebuffer(gl.FRAMEBUFFER,null);
       gl.viewport(0,0,gl.drawingBufferWidth,gl.drawingBufferHeight);
@@ -116,11 +149,18 @@ window.QBitsTabletView = (() => {
       gl.uniformMatrix4fv(loc.uPose,false,frame.pose);gl.uniform3f(loc.uSize,frame.width,frame.height,frame.depth);
       gl.uniform2f(loc.uCenter,frame.x,frame.y);gl.uniform2f(loc.uViewport,frame.viewWidth,frame.viewHeight);
       gl.uniform1f(loc.uAlloy,Number(frame.alloy));
+      gl.uniform1f(loc.uGraphite,frame.graphite ? 1 : 0);
+      const mesh=frame.graphite && graphite ? graphite : classic;
+      if (frame.graphite) {
+        submit(gl.TRIANGLES,mesh.first,mesh.count);
+        gl.disableVertexAttribArray(point);gl.disableVertexAttribArray(normal);
+        return;
+      }
       // Resolve the nearest surface once before blending the tinted glass over the room.
-      gl.colorMask(false,false,false,false);submit(gl.TRIANGLES,0,data.length/6);
+      gl.colorMask(false,false,false,false);submit(gl.TRIANGLES,mesh.first,mesh.count);
       gl.colorMask(true,true,true,true);gl.depthFunc(gl.EQUAL);
       gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
-      submit(gl.TRIANGLES,0,data.length/6);gl.disable(gl.BLEND);gl.depthFunc(gl.LESS);
+      submit(gl.TRIANGLES,mesh.first,mesh.count);gl.disable(gl.BLEND);gl.depthFunc(gl.LESS);
       gl.disableVertexAttribArray(point);gl.disableVertexAttribArray(normal);
     };
   }

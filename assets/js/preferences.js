@@ -20,7 +20,7 @@
   d.tabletY=limit(s.tabletY,0,100,100);
   d.style=pick(s.style,Object.keys(styles),d.style);d.quality=pick(s.quality,[...Object.keys(quality),'custom'],d.quality);
   for(const [k,a,b]of [['tabletScale',75,125],['resolution',50,150],['lighting',0,100],['volume',0,100],['guideVolume',0,100],['footstepVolume',0,100],['joinVolume',0,100]])d[k]=limit(s[k],a,b,d[k]);
-  for(const [k,opts]of Object.entries({tabletStyle:['glass','alloy'],tabletHand:['left','right'],shadows:['off','soft','sharp'],anisotropy:[1,2,4,8,16],filter:['nearest','linear','trilinear'],fps:[0,30,60,120],sampling:[1,1.5,2],textureScale:[.25,.5,1,2,4],grabSpeed:[1,2,3.5],physicsHz:[240,120,60],disassemblyMode:['instant','staged']}))d[k]=pick(s[k],opts,d[k]);
+  for(const [k,opts]of Object.entries({tabletStyle:['glass','alloy','graphite'],tabletHand:['left','right'],shadows:['off','soft','sharp'],anisotropy:[1,2,4,8,16],filter:['nearest','linear','trilinear'],fps:[0,30,60,120],sampling:[1,1.5,2],textureScale:[.25,.5,1,2,4],grabSpeed:[1,2,3.5],physicsHz:[240,120,60],disassemblyMode:['instant','staged']}))d[k]=pick(s[k],opts,d[k]);
   for(const k of ['culling','markers','markerMotion','music','guideVoice','footsteps','joinSounds','invertObjectDistance','invertPieceRotation'])if(typeof s[k]==='boolean')d[k]=s[k];
   for(const name of Object.keys(styles)){
    const p=s.profiles?.[name]||{},out=d.profiles[name];

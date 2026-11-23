@@ -2,7 +2,15 @@
 
 Actualizado: 23 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Entrega actual · identidades explícitas y circuitos ortogonales
+## Propuesta de tableta de campo · Grafito
+
+Configuración → Juego → Estilo de la tableta ofrece **Tableta 2.0 · Grafito**. El visor [Tableta de campo](../propuestas/tableta-grafito/index.html) usa la misma malla de 100 triángulos; su dron y sus cuatro lecturas son ejemplos. Durante la partida, la tableta muestra los controles de la selección y la carga que mide el juego. El brazo suma una sola vez las reservas internas de sus piezas cuando usa esa fuente. Los paneles de vuelo y cinta leen las baterías activas, y las baterías individuales también indican su carga al estar apagadas.
+
+**Uso.** El signo de interrogación abre la guía de la sección y sus instrucciones. En Piezas, Física y agarre despliega los controles secundarios. El acabado grafito se dibuja en una pasada opaca con la misma matriz de proyección que los controles. Cristal e Industrial conservan su presentación y el visor se carga sólo al abrir su enlace.
+
+**Pruebas.** 1.506 pruebas Node aprobadas, incluidas la elección del estilo, los despliegues, la lectura de la pinza y la proyección dentro de la pantalla en cuatro tamaños. Validación general GLES y render de la carcasa con sus shaders reales. Queda por comprobar la legibilidad durante una partida en un navegador con WebGL.
+
+## Identidades explícitas y circuitos ortogonales
 
 Base de la corrección: `f0ecff1f8f90ea2bccd1dfcb1d3230ec8c7fe247`, integración del PR #38. Versión de carga: `20261123-trajectory-circuits-1`.
 
