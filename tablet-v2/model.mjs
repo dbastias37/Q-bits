@@ -6,6 +6,13 @@
  */
 export const DEMO_FORMAT = 'qbits-tablet-v2-demo';
 export const STORAGE_KEY = 'qbits.tablet-v2.demo-saves.v1';
+// Visual fixture roles identify this demonstration's existing articulated parts.
+// They are not inferred joints, game connections, mechanics or physical bodies.
+export const DEMO_ROLES = Object.freeze([
+  'base-1', 'base-2', 'base-3', 'base-4', 'rotor-1', 'column-1', 'column-2',
+  'servo-1', 'arm-1', 'arm-2', 'servo-2', 'gripper-1', 'gripper-2',
+  'battery-1', 'cube-1', 'drone-1'
+]);
 const range = (min, max, value, unit, presets = {}) => Object.freeze({ min, max, default: value, unit, presets: Object.freeze(presets) });
 const motor = {
   force: range(2, 3200, 320, '', { soft: 80, normal: 320, strong: 800 }),
@@ -38,7 +45,7 @@ const freeze = object => {
 };
 
 function piece(id, name, type, position, size = [.62, .62, .62], extra = {}) {
-  return { id, name, type, position, size, rotation: [0, 0, 0], groupId: 'arm', color: '#343b3d', ...extra };
+  return { id, name, type, position, size, rotation: [0, 0, 0], groupId: 'arm', color: '#343b3d', ...(DEMO_ROLES.includes(id) ? { demoRole: id } : {}), ...extra };
 }
 export function createInitialState() {
   const pieces = [
@@ -122,7 +129,7 @@ function mechanismValid(m) {
   return m.type !== 'servo' || (['pivot', 'hinge'].includes(m.kind) && ['hold', 'once', 'repeat'].includes(m.mode) && m.min < m.max && m.target >= m.min && m.target <= m.max);
 }
 function pieceValid(p) {
-  return plain(p) && validId(p.id) && validName(p.name) && ['cube', 'rotor', 'servo', 'battery', 'gripper', 'drone', 'family', 'pyramid', 'coupler'].includes(p.type) && (p.shape === undefined || ['cube', 'pyramid', 'tetra', 'coupler'].includes(p.shape)) && vector(p.position) && vector(p.rotation) && vector(p.size) && p.size.every(n => n > 0 && n < 100) && validId(p.groupId) && typeof p.color === 'string' && /^#[0-9a-f]{6}$/i.test(p.color) && (p.type !== 'family' || Number.isInteger(p.count) && p.count >= 1 && p.count <= 100) && (p.type !== 'battery' || finite(p.charge) && p.charge >= 0 && p.charge <= 1 && typeof p.enabled === 'boolean' && [1, 2, 3].includes(p.cells));
+  return plain(p) && validId(p.id) && validName(p.name) && ['cube', 'rotor', 'servo', 'battery', 'gripper', 'drone', 'family', 'pyramid', 'coupler'].includes(p.type) && (p.demoRole === undefined || DEMO_ROLES.includes(p.demoRole)) && (p.shape === undefined || ['cube', 'pyramid', 'tetra', 'coupler'].includes(p.shape)) && vector(p.position) && vector(p.rotation) && vector(p.size) && p.size.every(n => n > 0 && n < 100) && validId(p.groupId) && typeof p.color === 'string' && /^#[0-9a-f]{6}$/i.test(p.color) && (p.type !== 'family' || Number.isInteger(p.count) && p.count >= 1 && p.count <= 100) && (p.type !== 'battery' || finite(p.charge) && p.charge >= 0 && p.charge <= 1 && typeof p.enabled === 'boolean' && [1, 2, 3].includes(p.cells));
 }
 function snapshotValid(s) {
   if (!plain(s) || s.version !== 1 || !validName(s.name) || !['build', 'control', 'route', 'saves'].includes(s.section) || !['arm', 'drone'].includes(s.scene) || !['piece', 'assembly'].includes(s.selectionMode) || !['select', 'move', 'rotate', 'blueprint'].includes(s.tool) || typeof s.notice !== 'string' || s.notice.length > 500) return false;

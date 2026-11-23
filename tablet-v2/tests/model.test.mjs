@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { createInitialState, createStore, getSelection, getCapabilities, PARAMS, serializeDemo, restoreDemo, STORAGE_KEY } from '../model.mjs';
+import { createInitialState, createStore, getSelection, getCapabilities, PARAMS, serializeDemo, restoreDemo, STORAGE_KEY, DEMO_ROLES } from '../model.mjs';
 const require = createRequire(import.meta.url);
 const flight = require('../../assets/js/propeller-power.js');
 const rotor = require('../../assets/js/rotor-power.js');
@@ -316,4 +316,28 @@ test('imports reject missing controllers and mismatched route ownership instead 
   assert.equal(getCapabilities(store.getState()).canEditRoute, false);
   assert.equal(store.dispatch({ type: 'ROUTE_RUN' }).ok, false);
   assert.doesNotThrow(() => restoreDemo(serializeDemo(store.getState())), 'deleting the drone leaves a valid empty route');
+});
+
+test('duplicated assembly preserves explicit fixture roles inside a separate group and family roundtrip', () => {
+  const store = createStore(); store.dispatch({ type: 'SET_SELECTION_MODE', mode: 'assembly' });
+  const original = getSelection(store.getState());
+  assert.equal(DEMO_ROLES.length, 16);
+  assert.ok(original.every(p => p.demoRole === p.id));
+  assert.equal(store.dispatch({ type: 'DUPLICATE' }).ok, true);
+  const copies = getSelection(store.getState()), group = copies[0].groupId;
+  assert.notEqual(group, 'arm');
+  assert.ok(copies.every(p => p.groupId === group && p.demoRole && p.id !== p.demoRole));
+  assert.deepEqual(copies.map(p => p.demoRole).sort(), original.map(p => p.demoRole).sort());
+  for (const role of ['rotor-1', 'servo-1', 'arm-1', 'arm-2', 'servo-2', 'gripper-1', 'gripper-2']) {
+    const copy = copies.find(p => p.demoRole === role), source = original.find(p => p.demoRole === role);
+    assert.ok(copy && source); assert.notEqual(copy.id, source.id); assert.notEqual(copy.groupId, source.groupId);
+  }
+  store.dispatch({ type: 'GROUP' });
+  assert.equal(getSelection(store.getState())[0].demoRole, undefined, 'container creates no visual joint role');
+  const restored = createStore(restoreDemo(serializeDemo(store.getState()))); restored.dispatch({ type: 'UNGROUP' });
+  assert.deepEqual(getSelection(restored.getState()).map(p => [p.id, p.demoRole, p.groupId]), copies.map(p => [p.id, p.demoRole, p.groupId]));
+  const older = JSON.parse(serializeDemo(createInitialState())); older.state.pieces.forEach(p => delete p.demoRole);
+  assert.doesNotThrow(() => restoreDemo(older), 'role metadata remains optional for older demonstration saves');
+  const invalid = structuredClone(older); invalid.state.pieces[0].demoRole = '__proto__';
+  assert.throws(() => restoreDemo(invalid));
 });
