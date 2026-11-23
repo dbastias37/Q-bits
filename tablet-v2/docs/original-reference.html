@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#edf2ef">
+<meta name="description" content="Referencia estática del DOM y los estilos originales de la tableta Q-bits, revisión e02afe3. Sin simulación ni acciones del juego.">
+<title>Q-bits · Referencia de la interfaz original</title>
+<link rel="icon" href="../icon.svg" type="image/svg+xml">
+<style>
+/* Original panel CSS, extracted from index.html and the original specialized files.
+   Base revision: e02afe3d1bd9a0d116c5c915e5efc960caa5a26a.
+   No game.js, Cannon, gameplay state, or existing saved data is loaded. */
+#panel { position: fixed; top: 18px; right: 18px; width: 280px; max-width: calc(100vw - 36px);
+      padding: 20px; background: rgba(255,255,255,.97); border: 1px solid #ddd;
+      border-radius: 8px; font: 13px/1.5 var(--font-menu), sans-serif; color: #34383b; box-shadow: 0 6px 32px #0000000c; }
+#panel h2 { font-size: 15px; margin: 0 0 5px; font-weight: 600; }
+#panel p { margin: 5px 0 15px; font-size: 12px; color: #73777b; }
+#panel label { display: block; margin: 14px 0; }
+#panel output { float: right; font-variant-numeric: tabular-nums; }
+#panel input { display: block; width: 100%; accent-color: #454a4e; margin-top: 7px; }
+#panel button { border: 1px solid #d4d6d8; border-radius: 4px; background: #fff; color: #34383b; padding: 8px 10px; cursor: pointer; }
+#panel .actions { display: flex; flex-wrap: wrap; gap: 7px; }
+#panel #resume { margin-top: 16px; width: 100%; background: #282b2e; color: #fff; border-color: #282b2e; }
+#panel { width: 310px; max-height: calc(100vh - 36px); overflow-y: auto; padding: 18px; }
+#panel label { margin: 10px 0; }
+#panel input { margin-top: 3px; }
+#panel select { display: block; width: 100%; margin-top: 5px; border: 1px solid #d4d6d8; padding: 6px; background: white; color: #34383b; }
+#panel .tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+#panel .tabs button { flex: 1; }
+#panel [aria-selected="true"] { background: #e9eeee; }
+#panel details { margin: 14px 0; color: #656b70; font-size: 12px; }
+#panel summary { cursor: pointer; }
+#panel .tabs { gap:3px; }
+#panel .tabs button { padding:7px 4px; font-size:11px; }
+#panel button:disabled { opacity:.4; cursor:default; }
+#panel input[type=checkbox] { display:inline-block; width:auto; margin-right:5px; }
+:root { --ink:#252e30; --muted:#778487; --mint:#6fa59b; }
+#panel {z-index:100;}
+/* Original supplied fonts. Empty Spaceman glyphs fall back instead of hiding accents or signs. */
+@font-face{font-family:"LED Calculator";src:url('../../assets/fonts/led-calculator/LEDCalculator.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:Tengoku;src:url('../../assets/fonts/tengoku/Tengoku.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:"Spaceman UI";src:url('../../assets/fonts/spaceman/Spaceman-Regular.ttf') format('truetype');unicode-range:U+20-21, U+27-29, U+2B-3B, U+3D, U+3F-5C, U+5F-7B, U+7D, U+A0-A1, U+B4, U+BF, U+D1, U+E1, U+E4, U+E9, U+ED, U+F1, U+F3, U+F6-F7, U+FA, U+FC, U+2010, U+2014, U+201C-201D;font-weight:400;font-style:normal;font-display:swap;}
+:root{--font-menu:"Spaceman UI",system-ui,sans-serif;--font-npc:Tengoku,system-ui,sans-serif;--font-title:"LED Calculator",system-ui,sans-serif;--font-info:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;}
+.game-screen h2,#panel h2,#completion-panel h2{font-family:var(--font-menu);font-weight:400;font-synthesis:none;letter-spacing:0;line-height:1.5;text-align:center;max-width:min(720px,90vw);overflow-wrap:anywhere;}
+.game-screen button,#panel button,#completion-panel button,#command-menu button,#detach-menu button,#story-choices button,#wake-button,#boot-screen button,#skip-encounter{
+ font-family:var(--font-menu);font-size:13px;font-weight:400;line-height:1.55;font-synthesis:none;letter-spacing:0;
+ border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;color:inherit;
+}
+.game-screen button:hover,#panel button:hover,#completion-panel button:hover,#command-menu button:hover,#detach-menu button:hover,#story-choices button:hover,#wake-button:hover,#boot-screen button:hover,#skip-encounter:hover{background:none!important;box-shadow:none!important;text-decoration:underline;text-underline-offset:6px;}
+.game-screen button:focus-visible,#panel button:focus-visible,#completion-panel button:focus-visible,#command-menu button:focus-visible,#detach-menu button:focus-visible,#story-choices button:focus-visible,#wake-button:focus-visible,#boot-screen button:focus-visible,#skip-encounter:focus-visible{outline:1px dashed currentColor;outline-offset:5px;text-decoration:underline;text-underline-offset:6px;}
+#panel .tabs{flex-wrap:wrap;}
+#panel .tabs button{flex:1 1 40%;font-size:10px;}
+#panel [aria-selected='true']{text-decoration:underline;text-underline-offset:5px;}
+#panel #resume{color:var(--ink);}
+#panel p,#panel label,#panel details{font-size:9px;line-height:1.9;}
+/* Quiet measurements and state descriptions, separate from names and menus. */
+#callout-count,#callout-weight,#mood-state-description,#mood-energy-label,#mood-group-count,
+#cooling-track span,#route-readout,#target,#detach-title,#panel output,#panel label,#panel p,
+.campaign-label:not([data-voice='npc']){
+ font-family:var(--font-info);font-size:11px;font-weight:400;line-height:1.5;letter-spacing:0;
+ font-variant-numeric:tabular-nums;color:#737d7a;
+}
+
+/* Original file: assets/css/servo-panel.css */
+#servo-panel{margin:12px 0 18px;padding:14px;border:1px solid #76a0a34a;border-radius:14px;background:linear-gradient(145deg,#f2ffff80,#dce9e72a);color:#466366}
+#servo-panel [hidden]{display:none!important}
+#panel #servo-panel h3{font:13px/1.5 system-ui,sans-serif;letter-spacing:.03em;margin:0 0 7px;color:#416367}
+#panel #servo-panel p{font-size:10px;line-height:1.6;margin:7px 0 10px;color:#687e80}
+#servo-panel .servo-kicker{font-size:8px!important;letter-spacing:.15em;text-transform:uppercase;margin:0 0 4px!important}
+#servo-panel .servo-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#servo-panel .servo-fields label{display:flex;flex-direction:column;gap:4px;min-width:0;margin:0;font-size:10px}
+#servo-panel .servo-fields input,#servo-panel .servo-fields select{box-sizing:border-box;width:100%;min-width:0;font:11px/1.4 system-ui,sans-serif;min-height:32px;padding:5px}
+#servo-panel .servo-preview{margin:5px auto 12px;text-align:center;max-width:220px}
+#servo-panel svg{display:block;width:100%;overflow:visible}
+#servo-panel svg path{fill:none;stroke-linecap:round}
+#servo-panel .servo-arc-base{stroke:#809b9d30;stroke-width:6}
+#servo-arc{stroke:#7bafb2;stroke-width:6}
+#servo-pointer{stroke:#3a7378;stroke-width:3}
+#servo-panel svg circle{fill:#3a7378}
+#servo-panel svg text{font:8px system-ui,sans-serif;fill:#687e80}
+#servo-panel figcaption{font:10px/1.5 system-ui,sans-serif;color:#526f72;font-variant-numeric:tabular-nums}
+#servo-panel .servo-actions{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+#servo-panel .servo-actions button{flex:1 1 70px}
+#panel #servo-panel button{font-size:10px;padding:7px 6px;line-height:1.4;min-height:32px}
+#servo-apply{margin-top:10px;width:100%}
+#servo-panel .servo-facts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:10px 0 0;border-top:1px solid #76a0a333;padding-top:8px}
+#servo-panel dt{font:8px/1.5 system-ui,sans-serif;color:#738e91}
+#servo-panel dd{font:11px/1.5 system-ui,sans-serif;margin:2px 0;color:#526f72;font-variant-numeric:tabular-nums}
+#panel #servo-feedback:not(:empty){padding:8px;border-radius:7px;background:#e0eeeb;color:#456e66;margin-bottom:0}
+#panel #servo-feedback[data-error=true]{background:#f6e9e2;color:#895d45}
+@media(max-width:380px){#servo-panel{padding:10px}#servo-panel .servo-fields{gap:6px}}
+
+.servo-march{border-bottom:1px solid #bac8c8;padding-bottom:16px;margin-bottom:16px}.servo-march-row{display:flex;align-items:end;gap:10px;margin:10px 0}.servo-march-row label{flex:1}.servo-march-row button{flex:0 0 auto}@media(max-width:600px){.servo-march-row{flex-wrap:wrap}}
+
+
+/* Original file: assets/css/robot-arm-panel.css */
+#arm-panel{margin:14px 0 18px;padding:14px;border:1px solid #9bb8a050;border-radius:14px;background:linear-gradient(145deg,#f7fff87d,#dcece125);color:#47624f}
+#arm-panel [hidden],#saved-shape-list[hidden],#saved-library-mechanisms[hidden]{display:none!important}
+#panel #arm-panel h3{font:13px/1.5 system-ui,sans-serif;letter-spacing:.03em;margin:0 0 7px;color:#3c5845}
+#panel #arm-panel p{font-size:10px;line-height:1.6;margin:7px 0 10px;color:#687c6e}
+#arm-panel .arm-kicker{font-size:8px!important;letter-spacing:.15em;text-transform:uppercase;color:#8a9c8d!important;margin:0 0 4px!important}
+#panel #arm-panel button{font-size:10px;padding:7px 6px;line-height:1.4;min-height:31px}
+#arm-panel .arm-actions{display:flex;flex-wrap:wrap;gap:6px;margin:9px 0}
+#arm-panel .arm-actions>button{flex:1 1 88px}
+#arm-panel .arm-sequence{list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:0;margin:12px 0}
+#arm-panel .arm-sequence li{font:9px/1.5 system-ui,sans-serif;padding:6px 4px;border:1px solid #94ac9a3b;border-radius:7px;text-align:center;color:#829087;background:#ffffff35}
+#arm-panel .arm-sequence li[data-active=true]{color:#2e6945;border-color:#7da489;background:#e7f5e9}
+#arm-panel .arm-sequence li:first-child{grid-column:span 2}
+#arm-panel .arm-joint{display:grid;grid-template-columns:minmax(0,1fr) auto 38px auto;gap:4px;align-items:center;font:10px/1.4 system-ui,sans-serif;margin:4px 0}
+#arm-panel .arm-joint span{overflow-wrap:anywhere}
+#panel #arm-panel .arm-joint output{float:none;text-align:center;color:#728277;font-size:9px}
+#arm-panel .arm-poses{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,125px),1fr));gap:6px;margin:10px 0}
+#arm-panel .arm-poses>div{padding:8px 5px;border:1px solid #94ac9a30;border-radius:9px;text-align:center}
+#arm-panel .arm-poses span{display:block;font:9px/1.5 system-ui,sans-serif;color:#7d8d82;margin-top:3px}
+#arm-panel .arm-facts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0 4px;border-top:1px solid #91ab9730;padding-top:10px}
+#arm-panel .arm-facts dt{font:8px/1.5 system-ui,sans-serif;color:#8a9b8e}
+#arm-panel .arm-facts dd{font:11px/1.6 system-ui,sans-serif;margin:2px 0 0;color:#4e6b57;font-variant-numeric:tabular-nums}
+#panel #arm-panel input[type=color]{height:33px;padding:2px;border:1px solid #91ab9750;background:#f6fff8;border-radius:5px}
+#panel #arm-panel select{max-width:100%;font-size:10px;min-height:31px}
+#panel #arm-feedback:not(:empty),#panel #arm-check-result:not(:empty){padding:8px;border-radius:7px;background:#eaf8ee;color:#3d7753;margin-bottom:0}
+#panel #arm-feedback[data-error=true],#panel #arm-check-result[data-error=true]{background:#f7eee8;color:#936d50}
+#panel #page-manual{font:12px/1.65 system-ui,sans-serif}
+#panel #page-manual p,#panel #page-manual li{font-size:12px;line-height:1.65}
+#page-manual ol,#page-manual ul{padding-left:20px}
+#page-manual li{margin:8px 0}
+#page-manual strong{color:#345343}
+#page-manual .manual-note{padding:10px;border-left:3px solid #8aa996;background:#eff7f0}
+#page-manual details{margin:12px 0}
+#panel .saved-library-tabs{display:flex;gap:8px;margin:12px 0 6px}
+#panel .saved-library-tabs button{flex:1;font-size:10px;padding:7px}
+#saved-library-mechanisms{margin:8px 0;max-height:220px;overflow:auto}
+#saved-library-mechanisms>div{display:flex;gap:5px;margin:4px 0}
+#saved-library-mechanisms button:first-child{flex:1;text-align:left;overflow-wrap:anywhere}
+@media(max-width:380px){#arm-panel{padding:10px}#arm-panel .arm-joint{grid-template-columns:minmax(0,1fr) auto 30px auto;gap:2px}#panel #arm-panel .arm-joint button{font-size:9px;padding:6px 3px}}
+#arm-panel .arm-indicator{display:flex;align-items:center;gap:7px;margin:10px 0 4px;font:11px/1.4 system-ui,sans-serif}
+#arm-panel .arm-indicator span{width:9px;height:9px;border-radius:50%;background:#808c85}
+#arm-panel .arm-indicator[data-state=running] span,#arm-panel .arm-indicator[data-state=waiting] span{background:#169b55;box-shadow:0 0 8px #169b5580}
+#arm-panel .arm-indicator[data-state=waiting] span{animation:arm-status-breath 2.8s ease-in-out infinite}
+#arm-panel .arm-indicator[data-state=blocked] span{background:#c4343b;box-shadow:0 0 8px #c4343b80}
+@keyframes arm-status-breath{0%,100%{opacity:.38}50%{opacity:1}}
+@media(prefers-reduced-motion:reduce){#arm-panel .arm-indicator span{animation:none!important}}
+#arm-panel .arm-poses button{width:100%}
+#arm-panel .arm-poses label{display:block;margin:.35rem 0 0;text-align:left}
+#arm-panel .arm-motor-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:6px 0}
+#panel #arm-panel input[type=number]{width:100%;min-height:30px;padding:3px 4px;font-size:11px}
+
+#flight-editor{margin:12px 0;padding:10px;border:1px solid #64888666;border-radius:6px}
+#flight-editor summary{cursor:pointer;font-weight:600}
+#flight-fields{margin:8px 0;padding:8px;border:1px solid #64888644;min-width:0}
+#flight-map{position:relative;width:100%;aspect-ratio:1;max-width:320px;margin:8px auto;cursor:crosshair;background-color:#eaf4f1;background-image:linear-gradient(#82a8a744 1px,transparent 1px),linear-gradient(90deg,#82a8a744 1px,transparent 1px);background-size:10% 10%;border:1px solid #688d89}
+#flight-map svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#flight-fields:disabled #flight-map{cursor:default;opacity:.7}
+.flight-xy{display:flex;gap:8px}.flight-xy label{min-width:0;flex:1}
+#flight-editor ol{padding-left:1.8em;font-size:.85em}
+
+
+/* Original file: assets/css/conveyor-panel.css */
+#conveyor-panel{margin:14px 0 18px;padding:14px;border:1px solid #aaa38355;border-radius:14px;background:linear-gradient(145deg,#fffdf27d,#e9e4d625);color:#64604b}
+#conveyor-panel [hidden]{display:none!important}
+#panel #conveyor-panel h3{font:13px/1.5 system-ui,sans-serif;letter-spacing:.03em;margin:0 0 7px;color:#635d42}
+#panel #conveyor-panel p{font-size:10px;line-height:1.6;margin:7px 0 10px;color:#7f7a67}
+#conveyor-panel .conveyor-kicker{font-size:8px!important;letter-spacing:.15em;text-transform:uppercase;color:#9c957e!important;margin:0 0 4px!important}
+#panel #conveyor-panel button{font-size:10px;padding:7px 6px;line-height:1.4;min-height:31px}
+#conveyor-panel .conveyor-blueprints{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:10px 0}
+#conveyor-panel .conveyor-blueprints>div{min-width:0}
+#conveyor-panel .conveyor-blueprints button{width:100%;min-height:46px!important}
+#conveyor-panel .conveyor-blueprints p{font-size:8px!important;line-height:1.5!important;margin:5px 0 0!important;overflow-wrap:anywhere}
+#conveyor-panel .conveyor-actions{display:flex;gap:6px;margin:9px 0}
+#conveyor-panel .conveyor-actions>button{flex:1}
+#conveyor-panel button[aria-pressed=true]{background:#e9e5d3;color:#655a31;border-color:#b2a46d}
+#conveyor-panel .conveyor-facts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0 4px;border-top:1px solid #aaa38338;padding-top:10px}
+#conveyor-panel .conveyor-facts dt{font:8px/1.5 system-ui,sans-serif;color:#948d77}
+#conveyor-panel .conveyor-facts dd{font:11px/1.6 system-ui,sans-serif;margin:2px 0 0;color:#696148;font-variant-numeric:tabular-nums}
+#panel #conveyor-feedback:not(:empty){padding:8px;border-radius:7px;background:#efefdf;color:#686339;margin-bottom:0}
+#panel #conveyor-feedback[data-error=true]{background:#f7eee8;color:#936d50}
+@media(max-width:380px){#conveyor-panel{padding:10px}#conveyor-panel .conveyor-blueprints{gap:4px}#panel #conveyor-panel .conveyor-blueprints button{font-size:9px;padding:6px 3px}}
+
+
+/* Original file: assets/css/workshop-panel.css */
+#workshop-screen[hidden]{display:none!important}
+#workshop-screen{position:fixed;inset:0;z-index:110;display:grid;place-items:center;padding:clamp(12px,3vw,36px);background:rgba(223,234,226,.18);color:#294638;font:14px/1.5 system-ui,sans-serif}
+#workshop-screen *{box-sizing:border-box}
+.workshop-shell{width:min(1080px,100%);max-height:calc(100svh - 48px);display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--glass-line,#ffffffd9);border-radius:28px;background:var(--glass-body,rgba(239,248,242,.88));box-shadow:var(--glass-shadow,0 20px 80px #244b3930);backdrop-filter:blur(24px) saturate(.85);padding:26px}
+.workshop-header{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;padding-bottom:20px;border-bottom:1px solid #698b7829}
+.workshop-eyebrow{margin:0 0 6px;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#718778}
+#workshop-title{font:24px/1.3 var(--font-menu,system-ui),sans-serif;margin:0;color:#314d3d;font-weight:400}
+#workshop-target{font-size:13px;margin:8px 0 0;color:#60786a;max-width:65ch}
+.workshop-header-actions{display:flex;align-items:center;gap:18px;white-space:nowrap;font-size:12px;color:#60786a}
+#workshop-screen button{font:inherit;color:inherit;cursor:pointer;border:1px solid #8aa39145;border-radius:12px;background:#f5fcf680;padding:10px 14px;text-align:left;transition:background .15s,border-color .15s}
+#workshop-screen button:hover{background:#f9fffccf;border-color:#759c86a0}
+#workshop-screen button:focus-visible,#workshop-screen input:focus-visible,#workshop-screen select:focus-visible{outline:2px solid #5d9875;outline-offset:3px}
+#workshop-screen button:disabled{opacity:.46;cursor:default}
+#workshop-close{font-size:22px!important;line-height:1!important;padding:8px 12px!important;background:transparent!important;border-color:transparent!important}
+.workshop-tabs{display:flex;gap:8px;padding:20px 0 0}
+#workshop-screen .workshop-tabs button{border:0;background:transparent;border-radius:10px;padding:10px 18px;color:#768c7e}
+#workshop-screen .workshop-tabs button[aria-selected=true]{background:#ffffff90;box-shadow:0 1px 3px #4b715513;color:#2e5940}
+.workshop-grid{display:grid;grid-template-columns:minmax(250px,.85fr) minmax(300px,1.15fr);gap:30px;min-height:0;overflow:hidden;padding:18px 0}
+.workshop-controls,.workshop-result{min-width:0;overflow:auto;scrollbar-width:thin;scrollbar-color:#9ab6a5 transparent;padding:3px 5px 5px}
+#workshop-intro{margin:0 0 14px;font-size:13px;color:#698171}
+#workshop-options{display:grid;grid-template-columns:1fr;gap:9px}
+#workshop-screen .workshop-choice{padding:14px 16px;display:flex;flex-direction:column;gap:3px;border-radius:14px}
+.workshop-choice strong{font-size:14px;font-weight:600}
+.workshop-choice span{font-size:12px;color:#708577}
+.workshop-choice small{font-size:11px;color:#829487}
+#workshop-screen .workshop-choice[aria-pressed=true]{background:#e6f3e9cd;border-color:#77a087;box-shadow:inset 3px 0 0 #77a087}
+#workshop-modes{display:flex;gap:8px;margin-bottom:12px}
+#workshop-modes:empty{display:none}
+#workshop-screen .workshop-mode{font-size:12px;padding:7px 12px;background:transparent;border:0}
+#workshop-screen .workshop-mode[aria-pressed=true]{background:#f9fffb9c;color:#345a43}
+.workshop-field{display:block;font-size:12px;margin:16px 0;color:#5a7462}
+.workshop-field output{float:right;font-variant-numeric:tabular-nums;color:#304f3b}
+.workshop-field input,.workshop-field select{display:block;width:100%;margin-top:7px;accent-color:#668c71}
+.workshop-field select{border:1px solid #8aa3916b;border-radius:10px;background:#f5fcf6b8;color:#345641;padding:9px}
+.workshop-result{border-radius:18px;background:linear-gradient(145deg,#ffffff75,#e7f2e937);border:1px solid #ffffffad;display:flex;flex-direction:column;min-height:0;padding:20px}
+.workshop-preview-label{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#91a096;margin:0}
+#workshop-preview-title{font-size:21px;line-height:1.3;font-weight:400;margin:8px 0 3px}
+#workshop-preview-description{font-size:12px;color:#74897b;margin:0}
+#workshop-preview{width:100%;height:230px;object-fit:contain;flex:0 0 230px;min-height:230px;display:block}
+#workshop-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:8px 0 0;padding-top:14px;border-top:1px solid #92ae9c26}
+.workshop-fact dt{font-size:10px;color:#84958a}.workshop-fact dd{font-size:13px;color:#3b5b46;margin:4px 0 0;overflow-wrap:anywhere}
+#workshop-help{font-size:11px;color:#85998c;margin:16px 0 0}
+.workshop-footer{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:center;border-top:1px solid #698b7829;padding-top:17px}
+#workshop-reason,#workshop-feedback{margin:0;font-size:12px;color:#607b69}
+#workshop-feedback:not(:empty){margin-top:5px;color:#2d7950;font-weight:600}
+#workshop-screen [data-error=true]{color:#8a634d}
+.workshop-footer-actions{display:flex;gap:10px}
+#workshop-screen #workshop-apply{background:#436d51;color:#f2fbf4;border-color:#436d51;text-align:center;min-width:150px}
+#workshop-screen #workshop-return{background:transparent;border-color:transparent;font-size:12px}
+@media(max-width:680px){#workshop-screen{padding:10px}.workshop-shell{padding:18px;max-height:calc(100svh - 20px);border-radius:22px}.workshop-header{padding-bottom:12px;gap:10px}#workshop-title{font-size:19px}.workshop-header-actions{gap:4px}#workshop-credits{display:none}.workshop-tabs{padding-top:12px;gap:0}.workshop-tabs button{flex:1;text-align:center!important;padding:9px!important}.workshop-grid{grid-template-columns:1fr;overflow:auto;gap:16px}.workshop-controls,.workshop-result{overflow:visible}.workshop-result{min-height:280px;padding:17px}#workshop-preview{height:190px;min-height:190px;flex-basis:190px}.workshop-footer{grid-template-columns:1fr;gap:12px}.workshop-footer-actions{justify-content:space-between}#workshop-apply{flex:1}.workshop-header-actions #workshop-close{margin-top:-4px}}
+@media(prefers-reduced-motion:reduce){#workshop-screen button{transition:none}}
+
+
+/* Original file: assets/css/tablet.css */
+/* The WebGL mesh carries the casing, bevels and display glass. */
+#panel.tablet {
+  --aqua:#8df7f2; --edge:#8febe652; --control:#153f4bbb; --active:#30656b;
+  position:fixed; inset:0 auto auto 0; z-index:35; box-sizing:border-box;
+  max-width:none; max-height:none; padding:0; overflow:visible;
+  transform-origin:center; color:#e0f7f8; font:12px/1.45 var(--font-info);
+  border:0; background:none; box-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none;
+}
+#panel.tablet[data-style="alloy"] {
+  --aqua:#ffd494; --edge:#ceb48b54; --control:#2c3035d9; --active:#5b4a33;
+}
+#panel.tablet[hidden] {display:none!important}
+#panel.tablet[hidden][data-stowing="true"] {display:block!important;pointer-events:none}
+#panel.tablet * {box-sizing:border-box}
+.tablet-projection {
+  position:absolute; inset:4.5% 3.5% 9.2%; container:tablet / inline-size;
+  display:grid;grid-template-rows:auto minmax(0,1fr) auto;
+}
+.tablet-projection::before {content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(135deg,transparent 0 5px,#9ffbff06 5px 6px);border-radius:inherit}
+.tablet-header,.tablet-footer,.tablet-layout {position:relative;min-width:0}
+.tablet-header {display:flex;align-items:center;gap:6px;padding:7px 10px;border-bottom:1px solid var(--edge)}
+.tablet-brand {display:flex;align-items:center;gap:9px;margin-right:auto;color:#d4ffff;font:12px/1.45 var(--font-menu);cursor:grab;touch-action:none;user-select:none}
+.tablet-brand i {width:11px;height:11px;border:1px solid var(--aqua);transform:rotate(45deg);box-shadow:inset 3px -3px 0 #68d9cf,0 0 7px #7ceadf66}
+.tablet-header nav,.catalog-filters {display:flex;gap:4px;flex-wrap:wrap}
+#panel.tablet button {
+  border:1px solid #80d7dc4d!important;border-radius:3px!important;background:var(--control)!important;
+  color:#cfeaf1;font:9px/1.55 var(--font-menu);padding:6px 7px;text-align:left;
+  min-width:0;max-width:100%;white-space:normal;overflow-wrap:normal;word-break:normal;height:auto;
+}
+#panel.tablet button:not(:disabled):is(:hover,:focus-visible),#panel.tablet button:is([aria-pressed="true"],[aria-selected="true"],.active) {
+  color:#eaffff!important;border-color:#92fff5cc!important;background:var(--active)!important;box-shadow:inset 2px 0 var(--aqua),0 0 6px #75ecec33!important;text-decoration:none;outline-offset:1px
+}
+#panel.tablet button:disabled {opacity:.44;cursor:default}
+#panel.tablet :is(select,input) {color-scheme:dark;accent-color:#87f6ec}
+#panel.tablet select,#panel.tablet input:not([type="range"],[type="checkbox"],[type="color"],[type="radio"]) {min-width:0;max-width:100%;background:#133742;border:1px solid var(--edge);color:#eaffff}
+#panel.tablet input:focus-visible,#panel.tablet select:focus-visible {outline:2px solid var(--aqua)}
+#panel.tablet output {color:var(--aqua)}
+#panel.tablet #resume,#panel.tablet #tablet-hand {width:30px;height:28px;margin:0;padding:0;text-align:center;font:19px/1 system-ui}
+.tablet-layout {display:grid;min-height:0;grid-template-columns:140px minmax(0,1fr) 140px}
+.tablet-rail,.tablet-center,.tablet-guide {min-width:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#57939a transparent}
+.tablet-rail {padding:14px 8px;border-right:1px solid var(--edge)}
+.tablet-wheel {width:78px;height:78px;display:grid;grid-template:1fr 1fr / 1fr 1fr;gap:2px;margin:0 auto 10px;border-radius:50%;overflow:hidden;position:relative;border:1px solid var(--edge)}
+.tablet-wheel::after {content:"";pointer-events:none;position:absolute;top:50%;left:50%;width:10px;height:10px;border:1px solid var(--edge);border-radius:50%;background:#133743;transform:translate(-50%,-50%)}
+#panel.tablet .tablet-wheel button {display:grid;place-items:center;padding:5px;border:0!important;border-radius:0!important}
+.tablet-wheel svg {width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+#wheel-help {grid-row:2;grid-column:1}
+#panel.tablet .tabs {display:grid;grid-template-columns:minmax(0,1fr);gap:4px;margin:8px 0}
+#panel.tablet [hidden] {display:none!important}
+#panel.tablet h2,#panel.tablet h3 {text-align:left;color:#ceffff;font-family:var(--font-menu);font-weight:400}
+#panel.tablet #tablet-group-title {font-size:9px;text-align:center;overflow-wrap:normal}
+.tablet-center {padding:14px}
+#panel.tablet #tablet-title {font-size:16px;border-bottom:1px solid var(--edge);padding-bottom:9px;margin-bottom:12px}
+.tablet-guide {border-left:1px solid var(--edge);padding:15px 10px}
+#panel.tablet .tablet-guide h3 {font-size:11px;margin:0 0 8px}
+#panel.tablet :is(p,li,small),#panel.tablet .tablet-guide {font:12px/1.5 var(--font-info);color:#c0dadf}
+#panel.tablet #editing {border-top:1px solid #84d5d84d;padding-top:9px;font-size:11px}
+#panel.tablet [role="tabpanel"] :is(details,section,fieldset) {background:transparent;color:inherit;border-color:var(--edge);max-width:100%;min-width:0}
+#panel.tablet summary {color:var(--aqua);cursor:pointer}
+#panel.tablet .tablet-footer {display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--edge);padding:5px max(12px,4%);color:#a8d3d9;font:10px/1.5 var(--font-info)}
+#catalog-entries {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr));gap:5px;margin-top:10px}
+#panel.tablet #catalog-entries button {min-height:36px}
+#panel.tablet[data-mode="workshop"] :is(.tablet-rail,.tablet-center,.tablet-guide) {display:none}
+#panel.tablet #workshop-screen {position:static;inset:auto;display:block;grid-column:1/-1;min-height:0;overflow:auto;padding:10px;background:none;color:#d5edef}
+#panel.tablet .workshop-shell {width:100%;max-height:none;overflow:visible;padding:0;background:none;border:0;border-radius:0;box-shadow:none;backdrop-filter:none}
+#panel.tablet .workshop-grid {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;overflow:visible;padding:9px 0}
+#panel.tablet :is(.workshop-result,.workshop-controls,.workshop-header,.workshop-footer,.workshop-tabs) {background:transparent;border-color:var(--edge);padding:5px;gap:5px}
+#panel.tablet .workshop-result :is(strong,dt,dd),#panel.tablet .workshop-choice span {color:#c3e1e4}
+#panel.tablet .workshop-eyebrow,#panel.tablet #workshop-close {display:none}
+#panel.tablet .tablet-header {flex-wrap:wrap}
+.tablet-brand:active {cursor:grabbing}
+#panel.tablet .tabs button,#panel.tablet #machine-links button {font-size:9px;line-height:1.55;padding:7px 5px;}
+#panel.tablet :is(select,option,summary),#panel.tablet .workshop-choice strong {font:9px/1.6 var(--font-menu)}
+#panel.tablet :is(label,summary,details,output) {color:#c5dee1}
+#panel.tablet label,#panel.tablet output {font:12px/1.5 var(--font-info)}
+#panel.tablet [role="tabpanel"] {min-width:0;overflow-wrap:break-word}
+#panel.tablet .workshop-tabs,#panel.tablet #workshop-modes,#panel.tablet .workshop-footer-actions {flex-wrap:wrap}
+#panel.tablet #workshop-title {font-size:15px}
+#panel.tablet #workshop-apply {min-width:0}
+@container tablet (max-width:600px){
+ .tablet-layout {grid-template-columns:132px minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto}
+ .tablet-rail {grid-row:1/3;padding:8px 5px}
+ .tablet-center,.tablet-guide {padding:8px}
+ .tablet-guide {grid-column:2;max-height:72px;border-top:1px solid var(--edge);border-left:0}
+ #panel.tablet #workshop-screen {grid-row:1/3}
+ #panel.tablet .workshop-grid,#panel.tablet .workshop-footer {grid-template-columns:minmax(0,1fr)}
+ #panel.tablet #workshop-facts {grid-template-columns:repeat(auto-fit,minmax(80px,1fr))}
+}
+@container tablet (max-width:450px){
+ .tablet-layout {display:flex;flex-direction:column;overflow:auto;overscroll-behavior:contain}
+ .tablet-rail,.tablet-center,.tablet-guide {flex:none;overflow:visible;max-height:none}
+ .tablet-rail {display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:4px 8px;border-right:0;border-bottom:1px solid var(--edge)}
+ .tablet-wheel {width:60px;height:60px;grid-row:span 2;margin:0}
+ .tablet-wheel svg {width:17px;height:17px}
+ #panel.tablet .tabs,#panel.tablet #machine-links {display:flex;flex-wrap:wrap;margin:0;padding:0;border:0}
+ #panel.tablet .tabs button {flex:0 1 auto}
+ #panel.tablet #tablet-group-title {margin:0;text-align:left}
+ .tablet-guide {border-top:1px solid var(--edge)}
+ .tablet-header,.tablet-footer {flex-wrap:wrap}
+ .tablet-brand {font-size:10px}
+ #panel.tablet #workshop-screen {overflow:visible}
+ #panel.tablet .arm-motor-fields {grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}
+}
+#machine-links {display:grid;gap:4px}
+#panel.tablet #page-mechanisms :is(h3,output,dd) {color:#d0f4f1}
+#panel.tablet #page-mechanisms :is(p,dt,figcaption,.arm-poses span) {color:#b6d7d8}
+#panel.tablet #page-mechanisms [role="status"]:not(:empty) {background:#163f47;color:#b9ece4}
+#panel.tablet #page-mechanisms [data-error="true"]:not(:empty) {background:#572f33;color:#ffd1c6}
+#panel.tablet #page-mechanisms [data-active="true"] {color:#d7fffa;background:#23585c;border-color:var(--aqua)}
+@supports (appearance:base-select){
+ #panel.tablet select,#panel.tablet select::picker(select) {appearance:base-select}
+ #panel.tablet select,#panel.tablet option {white-space:normal;word-break:normal}
+ #panel.tablet option {padding:5px 7px}
+}
+
+</style>
+<style>
+/* Viewer-only framing. The device has its original 760 by 460 layout, without
+   perspective. This surface is expressly a placeholder for the WebGL casing. */
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#edf2ef;color:#233a35;font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}[hidden]{display:none!important}
+.reference-page{width:min(1120px,calc(100% - 48px));margin:0 auto;padding:35px 0 45px}.reference-header{display:flex;justify-content:space-between;align-items:flex-start;gap:30px;margin-bottom:28px}.reference-kicker{font:12px/1.5 var(--font-menu);letter-spacing:.08em;color:#557b6c;margin:0 0 10px}.reference-header h1{font-size:clamp(26px,3.3vw,38px);font-weight:500;letter-spacing:-.03em;line-height:1.18;margin:0 0 12px}.reference-header p{max-width:780px;margin:0;font-size:15px;color:#526c61}.reference-header a,.reference-footer a{color:#315f4c;text-underline-offset:4px}.reference-label{display:inline-block;border:1px solid #c3d6ca;padding:7px 12px;background:#e1ebe5;font-size:13px;color:#3e5f51;margin-top:15px}.reference-nav{display:flex;gap:9px;flex-wrap:wrap;padding:18px 0 22px;border-top:1px solid #c9d8cf}.reference-nav button{font:14px system-ui;color:#3c5e50;border:1px solid #b4cabe;background:#f8fcf9;padding:10px 16px;cursor:pointer;border-radius:3px;min-height:42px}.reference-nav button[aria-pressed=true]{background:#244b3c;color:white;border-color:#244b3c}.reference-nav button:focus-visible{outline:3px solid #477d66;outline-offset:3px}.reference-viewport{overflow:auto;padding:30px 32px 28px;background:linear-gradient(145deg,#e0e9e2,#f8faf8);border:1px solid #cad9d1;box-shadow:inset 0 0 80px #6388730c}.reference-device{position:relative;width:760px;height:460px;margin:0 auto;flex:none}.reference-casing{position:absolute;inset:0;background:linear-gradient(138deg,#22424c,#112d37);border:1px solid #536c70;border-radius:16px;box-shadow:0 6px 0 #16343d,0 7px 0 #75908a,0 18px 30px #173d3226;pointer-events:none}.reference-casing:after{content:"";position:absolute;inset:4.5% 3.5% 9.2%;background:#0f2c35;border:1px solid #527b7d5e}
+#panel.tablet{position:absolute;inset:0;width:760px;height:460px;max-height:none;transform:none;z-index:1}#panel .tablet-brand{cursor:default}.reference-caption{font-size:13px;line-height:1.6;color:#4b6659;margin:16px 0 0}.reference-caption strong{color:#345142}.reference-note{padding:20px 0 0;margin:0;font-size:15px;color:#4d675a;max-width:880px}.reference-footer{margin-top:28px;border-top:1px solid #c6d7cd;padding-top:20px;display:flex;gap:20px;flex-wrap:wrap;justify-content:space-between;font-size:14px}.source-note{font-size:12px;color:#637a6e;margin-top:12px;overflow-wrap:anywhere}.reference-status{font-size:13px;color:#496353;margin:0 0 12px;min-height:21px}.reference-callout{border-left:3px solid #92b4a0;padding-left:16px;margin-top:22px}
+@media(max-width:840px){.reference-page{width:calc(100% - 28px);padding-top:25px}.reference-viewport{padding:22px 18px}.reference-device{margin:0}.reference-header{display:block}.reference-header>a{display:inline-block;margin-top:17px}.reference-nav{gap:7px}.reference-nav button{padding:9px 12px}.reference-caption{font-size:13px}}
+</style>
+</head>
+<body>
+<div class="reference-page">
+<header class="reference-header"><div><p class="reference-kicker">Q-BITS · COMPARACIÓN DOCUMENTADA</p><h1>Referencia de la interfaz original</h1><p>Contenido extraído del panel real de Q-bits. Esta vista permite comparar su organización, textos y densidad de controles con la propuesta Tablet 2.0.</p><span class="reference-label">DOM de e02afe3 · sin simulación</span></div><a href="../">Abrir Tablet 2.0</a></header>
+<nav class="reference-nav" aria-label="Vista de referencia"><button data-page="cube" aria-pressed="true">Piezas</button><button data-page="mechanisms" data-focus="create-rotor" aria-pressed="false">Rotores</button><button data-page="mechanisms" data-focus="servo-panel" aria-pressed="false">Mecanismos</button><button data-page="route" aria-pressed="false">Recorrido</button><button data-page="alpha" aria-pressed="false">Archivo</button><button data-page="manual" aria-pressed="false">Manual</button></nav>
+<p class="reference-status" id="reference-status">Piezas · contenido del HTML original</p>
+<div class="reference-viewport"><div class="reference-device"><div class="reference-casing" aria-hidden="true"></div>
+<!-- BEGIN source fragment: index.html #panel, e02afe3d1bd9a0d116c5c915e5efc960caa5a26a. -->
+<section id="panel" class="tablet" data-style="glass" aria-label="Tableta Q-bits" data-mode="bank" data-group="bodies">
+    <div class="tablet-projection">
+      <header class="tablet-header">
+        <div class="tablet-brand" id="tablet-grip" title="Arrastrar para mover la tableta"><i aria-hidden="true"></i> Q-bits</div>
+        <nav aria-label="Entorno de trabajo"><button id="tablet-bank" aria-pressed="true">Banco</button><button id="tablet-workshop" aria-pressed="false" disabled>Mesa</button></nav>
+        <button id="tablet-hand" title="Cambiar de mano" aria-label="Cambiar de mano">⇄</button>
+        <button id="resume" aria-label="Guardar tableta" title="Guardar tableta">×</button>
+      </header>
+      <div class="tablet-layout">
+        <nav class="tablet-rail" aria-label="Secciones de la tableta">
+          <div class="tablet-wheel" aria-label="Rueda de secciones"><button type="button" id="wheel-bodies" title="Cuerpos" aria-label="Cuerpos" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 9 5v10l-9 5-9-5V7zM3 7l9 5 9-5M12 12v10"/></svg></button><button type="button" id="wheel-machines" title="Mecanismos" aria-label="Mecanismos" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3 1-1h4l1 3 3 1 3 1v4l-2 2-1 3 1 3-4 2-3-2-3 1-3-2v-3l-2-3-2-1 1-4 3-1z"/><circle cx="12" cy="11" r="3"/></svg></button><button type="button" id="wheel-files" title="Archivo" aria-label="Archivo" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 6h8l2 3h10l-2 11H2zM2 8V4h8l3 2h7v3"/></svg></button><button type="button" id="wheel-help" title="Ayuda" aria-label="Ayuda" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 2-3 5m0 2v1"/></svg></button></div>
+          <h2 id="tablet-group-title">Cuerpos</h2>
+    <div class="tabs" role="tablist"><button id="tab-catalog" role="tab" aria-selected="false" aria-controls="page-catalog">Catálogo</button><button id="tab-cube" role="tab" aria-controls="page-cube" aria-selected="true">Piezas</button><button id="tab-route" role="tab" aria-controls="page-route" aria-selected="false">Recorrido</button><button id="tab-cargo" role="tab" aria-controls="page-cargo" aria-selected="false">Cuerpos</button><button id="tab-puzzle" role="tab" aria-controls="page-puzzle" aria-selected="false">Puzle</button><button id="tab-mechanisms" role="tab" aria-controls="page-mechanisms" aria-selected="false">Mecanismos</button><button id="tab-alpha" role="tab" aria-controls="page-alpha" aria-selected="false">Formas y planos</button><button id="tab-manual" role="tab" aria-controls="page-manual" aria-selected="false">Manual</button></div>
+          <div id="machine-links" hidden></div>
+        </nav>
+        <div class="tablet-center" id="tablet-center">
+        <h2 id="tablet-title">Piezas</h2>
+        <div id="page-catalog" role="tabpanel" aria-labelledby="tab-catalog" hidden>
+          <nav class="catalog-filters" id="catalog-filters" aria-label="Tipos de objeto"></nav>
+          <div id="catalog-entries"></div>
+        </div>
+    <div id="page-cube" role="tabpanel">
+      <label>Tipo de pieza<select id="unit-shape"><option value="cube">Q-bit · cubo</option><option value="tetra">T-bit · pirámide triangular</option><option value="pyramid">T-bit · pirámide de base cuadrada</option><option value="coupler">Enganche · mitad del eje</option><option value="rotor">Rotor · dos enganches unidos</option></select></label>
+      <label>Peso por pieza <output id="massValue"></output><input id="mass" type="range" min="0.25" max="3" step="0.25" value="1"></label>
+      <label>Gravedad <output id="gravityValue"></output><input id="gravity" type="range" min="1" max="20" step="0.5" value="9.8"></label>
+      <label>Rebote <output id="bounceValue"></output><input id="bounce" type="range" min="0" max="0.65" step="0.05" value="0.12"></label>
+      <label>Fricción <output id="frictionValue"></output><input id="friction" type="range" min="0.05" max="0.8" step="0.01" value="0.38"></label>
+      <label>Freno del giro <output id="dampingValue"></output><input id="damping" type="range" min="0.01" max="0.8" step="0.01" value="0.12"></label>
+      <label>Fuerza de agarre <output id="forceValue"></output><input id="force" type="range" min="4" max="300" step="1" value="60"></label>
+      <label>Estabilidad del agarre <output id="gripValue"></output><input id="grip" type="range" min="0" max="1" step="0.05" value="0.95"></label>
+      <label>Velocidad de giro con Shift <output id="rotationSpeedValue"></output><input id="rotationSpeed" type="range" min="1" max="5" step="0.1" value="2.8"></label>
+      <label>Capacidad de carga <output id="maxCarryValue"></output><input id="maxCarry" type="range" min="1" max="2000" step="1" value="2000"></label>
+      <label>Límite de selección <output id="maxSelectValue"></output><input id="maxSelect" type="range" min="1" max="2000" step="1" value="2000"></label>
+      <label>Proyección al mantener Ctrl<select id="guide"><option value="ghost">Pieza semitransparente</option><option value="dot">Punto</option><option value="x">X</option><option value="none">Sin marca</option></select></label>
+      <label>Línea de caída<select id="line"><option value="dashed">Segmentada y animada</option><option value="solid">Continua</option><option value="none">Sin línea</option></select></label>
+      <details><summary>Estados y energía</summary>
+        <label><input id="dialogues-enabled" type="checkbox" checked> Diálogos de los Q-bits</label><p>Reaccionan a las tareas, al contacto y a cómo los sostienes. Habla uno a la vez, con pausas amplias. Los comentarios espontáneos son ocasionales; las reacciones responden a lo que ocurre.</p>
+        <p>Neutro: trabaja o descansa. Entusiasmado: energía completa y un pequeño impulso de velocidad. Inquieto: agotamiento, bloqueo o demasiada inactividad. Descansa y retoma las órdenes pendientes.</p>
+        <p>Esperar compañeros y mantener un botón cuentan como tareas. Los gestos no cambian las físicas. Al acercar las piezas sostenidas con la rueda se enfocan y aparecen sus nombres y barras de energía; de lejos, las barras se ocultan. Los enfados repetidos intensifican los gestos; el enfriador ayuda a recuperar la calma.</p>
+        <label>Gasto de energía <output id="mood-drainValue">3.5 % / m</output><input id="mood-drain" type="range" min="0.005" max="0.08" step="0.005" value="0.035"></label>
+        <label>Recuperación <output id="mood-recoveryValue">6 % / s</output><input id="mood-recovery" type="range" min="0.02" max="0.15" step="0.01" value="0.06"></label>
+        <label>Tolerancia a la inactividad <output id="mood-idleSecondsValue">90 s</output><input id="mood-idleSeconds" type="range" min="45" max="180" step="5" value="90"></label>
+        <div class="actions"><button id="mood-test-tired" type="button">Agotar seleccionado</button><button id="mood-test-rested" type="button">Recargar seleccionado</button></div>
+        <p>Estas dos pruebas afectan solo a la pieza seleccionada y están disponibles en el banco libre.</p>
+      </details>
+      <p>La guía muestra una caída vertical aproximada. Los choques pueden cambiar la posición final.</p>
+    <div class="actions"><button id="create" type="button">Crear Q-bit</button><button id="remove" type="button">Borrar pieza</button><button id="split" type="button">Desarmar estructura</button></div>
+    </div>
+    <div id="page-mechanisms" role="tabpanel" hidden>
+      <p id="mechanism-unlock"></p>
+      <section id="sensor-panel" hidden>
+        <h3>Sensor</h3>
+        <label>Detectar<select id="sensor-mode"><option value="contact">Contacto frontal con una pared</option><option value="motion">Movimiento cercano</option><option value="laser">Obstrucción del láser</option><option value="weight">Peso apoyado encima</option></select></label>
+        <label id="sensor-range-row">Alcance<select id="sensor-range"><option value="25">I · 25 cm</option><option value="50">II · 50 cm</option><option value="100">III · 1 m</option><option value="200">IV · 2 m</option></select></label>
+        <label id="sensor-speed-row">Velocidad mínima (cm/s)<input id="sensor-speed" type="number" min="1" max="500" step="1"></label>
+        <label id="sensor-weight-row">Peso mínimo (u)<input id="sensor-weight" type="number" min="0.25" max="2000" step="0.25"></label>
+        <label>Destino del sensor<select id="sensor-target"></select></label>
+        <label>Al detectar<select id="sensor-action"><option value="reverse" id="sensor-reverse">Invertir marcha</option><option value="start">Iniciar</option><option value="stop">Detener</option></select></label>
+        <p>Orienta la punta con Shift. Mantén Alt para ver el láser. Elige un rotor, un conjunto con nombre o un mecanismo guardado colocado en la sala. Acerca el sensor a menos de 3 m de uno de sus ejes. La acción se repite cuando la zona queda libre y vuelve a detectar.</p>
+        <strong id="sensor-reading"></strong>
+      </section>
+      <section id="servo-panel" aria-labelledby="servo-title">
+        <p class="servo-kicker">Articular · ajustar · probar</p><h3 id="servo-title">Servos Q-bits</h3>
+        <p id="servo-empty">Selecciona un Servo pivote o un Servo bisagra para configurar su recorrido.</p>
+        <div id="servo-controls" hidden>
+          <section class="servo-march" aria-labelledby="servo-march-title">
+            <h4 id="servo-march-title">Marcha del conjunto</h4>
+            <p id="servo-march-status" role="status"></p>
+            <p>Todos los servos unidos físicamente pertenecen al mismo mecanismo. Elige cómo parte cada articulación: mínimo o máximo para moverla en oposición.</p>
+            <div id="servo-march-members"></div>
+            <div class="servo-actions"><button id="servo-march-start" type="button">Iniciar marcha del conjunto</button><button id="servo-march-stop" type="button">Detener conjunto</button></div>
+            <p>Primero se preparan todas las posiciones iniciales; después comparten el mismo ritmo. Si una articulación se bloquea o pierde energía, se detienen todas.</p>
+          </section>
+          <h4>Ajuste individual de la articulación</h4>
+          <p id="servo-description"></p>
+          <figure class="servo-preview">
+            <svg id="servo-diagram" viewBox="0 0 200 112" role="img" aria-label="Recorrido lateral del servo">
+              <path class="servo-arc-base" d="M 22 92 A 78 78 0 0 1 178 92"/>
+              <path id="servo-arc" d="M 22 92 A 78 78 0 0 1 178 92"/>
+              <path id="servo-pointer" d="M 100 92 L 100 24"/>
+              <circle cx="100" cy="92" r="5"/>
+              <text x="12" y="108">−90°</text><text x="91" y="10">0°</text><text x="164" y="108">90°</text>
+            </svg>
+            <figcaption id="servo-angle">Ángulo actual: 0°</figcaption>
+          </figure>
+          <div class="servo-fields">
+            <label>Desde (°)<input id="servo-min" type="number" min="-90" max="90" step="5" value="-40" inputmode="decimal"></label>
+            <label>Hasta (°)<input id="servo-max" type="number" min="-90" max="90" step="5" value="40" inputmode="decimal"></label>
+            <label>Velocidad (°/s)<input id="servo-speed" type="number" min="5" max="540" step="5" value="45" inputmode="decimal"></label>
+            <label>Movimiento<select id="servo-mode"><option value="hold">Mantener posición</option><option value="once">Mover una vez</option><option value="repeat">Ida y vuelta</option></select></label>
+            <label id="servo-target-row">Posición objetivo (°)<input id="servo-target" type="number" min="-90" max="90" step="5" value="0" inputmode="decimal"></label>
+          </div>
+          <button id="servo-apply" type="button">Aplicar recorrido</button>
+          <div class="servo-actions"><button id="servo-start" type="button">Iniciar</button><button id="servo-stop" type="button">Detener y bloquear</button><button id="servo-invert" type="button">Invertir sentido</button></div>
+          <p id="servo-status" role="status" aria-live="polite"></p>
+          <p class="servo-pause-note">Puedes observar el giro desde P. Detén el servo para editarlo. Al detenerse, la articulación conserva su ángulo.</p>
+          <dl class="servo-facts"><div><dt>Torque máximo</dt><dd id="servo-torque">—</dd></div><div><dt>Carga máxima</dt><dd id="servo-capacity">—</dd></div></dl>
+        </div>
+        <p id="servo-feedback" role="status" aria-live="polite"></p>
+      </section>
+      <section id="flight-fleet" hidden><h3>Drones de la sala</h3><div id="flight-fleet-list" class="actions"></div></section>
+      <section id="flight-panel" aria-labelledby="flight-title" hidden>
+        <h3 id="flight-title">Hélices · vuelo modular</h3>
+        <p id="flight-status" role="status"></p>
+        <p>Una hélice: 1 enganche + 2 T-bits triangulares. Conecta una batería de 1, 2 o 3 celdas y enciéndela. El conjunto admite hasta 4 hélices, con estabilización asistida.</p>
+        <label>Altura sobre el piso (m)<input id="flight-height" type="number" min="0.15" max="3" step="0.05" value="0.5"></label>
+        <label>Velocidad de avance (m/s)<input id="flight-speed" type="number" min="0" max="1.2" step="0.1" value="0"></label>
+        <div class="actions"><button id="flight-apply" type="button">Aplicar altura y velocidad</button><button id="flight-heading" type="button">Avanzar hacia donde miro</button></div>
+        <div class="actions"><button id="flight-start" type="button">Despegar</button><button id="flight-land" type="button">Aterrizar</button><button id="flight-stop" type="button">Apagar motores</button></div>
+        <details id="flight-editor"><summary>Crear trayectoria</summary>
+          <p>El centro del plano es el lugar de despegue. Elige una acción y haz clic en el plano para añadir el punto. También puedes introducir sus coordenadas en metros. Con velocidad 0, la ruta usa 0,5 m/s.</p>
+          <label>Recorrido<select id="flight-mode"><option value="once">Una vez · aterrizar al final</option><option value="loop">En bucle hasta pedir aterrizaje</option></select></label>
+          <fieldset id="flight-fields"><legend>Nuevo punto</legend>
+            <label>Acción<select id="flight-action"><option value="pass">Pasar al siguiente</option><option value="wait">Parar en vuelo</option><option value="land">Aterrizar y volver a despegar</option></select></label>
+            <label>Altura de vuelo (m)<input id="flight-altitude" type="number" min="0.15" max="3" step="0.05" value="0.5"></label>
+            <label>Duración de la parada (s)<input id="flight-wait" type="number" min="0" max="120" step="1" value="3"></label>
+            <label>Escala del plano<select id="flight-scale"><option value="2">±2 m</option><option value="7">±7 m</option><option value="28">±28 m</option></select></label>
+            <div id="flight-map" aria-label="Plano del recorrido visto desde arriba"><svg id="flight-path" viewBox="0 0 100 100" aria-hidden="true"></svg></div>
+            <div class="flight-xy"><label>X (m)<input id="flight-x" type="number" min="-28" max="28" step="0.05" value="0"></label><label>Z (m)<input id="flight-z" type="number" min="-28" max="28" step="0.05" value="0"></label></div>
+            <div class="actions"><button id="flight-add" type="button">Añadir punto</button><button id="flight-undo" type="button">Quitar último</button></div>
+          </fieldset>
+          <ol id="flight-points"></ol><p id="flight-route-feedback" role="status"></p>
+        </details>
+        <p id="flight-telemetry"></p>
+        <p>Velocidad 0 mantiene posición horizontal. Aterrizar conserva energía para bajar; apagar motores corta la sustentación. P muestra el vuelo en directo. Más peso o altura exige más esfuerzo. Una batería agotada provoca caída.</p>
+        <p>Un sensor montado en el mismo dron invierte el avance cuando su cara activa toca una pared. El agarre conserva su menú propio y su carga cuenta para el vuelo.</p>
+      </section>
+      <section id="arm-panel" aria-labelledby="arm-title">
+        <p class="arm-kicker">Construir · enseñar · repetir</p><h3 id="arm-title">Brazo Q-bits</h3>
+        <button id="arm-help" type="button">Guía paso a paso</button><p>Observa el recorrido desde P. Detén el brazo para editar sus ajustes.</p>
+        <p id="arm-target">Selecciona el brazo o un Q-bit para adaptarlo.</p>
+        <p>Para una primera prueba: abre el catálogo con Q, elige Máquinas → Brazo Q-bits y confirma con clic. El plano de abajo requiere 18 cubos + 8 enganches existentes. El brazo puede probarse con su energía interna; una batería activa amplía su autonomía.</p>
+        <div class="arm-actions"><button id="arm-blueprint" type="button">Colocar blueprint del brazo</button><button id="arm-convert" type="button">Convertir cubo en agarre</button></div>
+        <div id="arm-indicator" class="arm-indicator" data-state="off" hidden><span aria-hidden="true"></span><strong id="arm-indicator-label">Apagado</strong></div>
+        <p id="arm-status" role="status" aria-live="polite">El plano necesita piezas existentes antes de funcionar.</p>
+        <button id="arm-register" type="button">Usar este montaje como brazo</button>
+        <div id="arm-gripper-controls" hidden>
+          <details open><summary id="arm-gripper-id">Cubo de agarre</summary>
+            <p>La cara inferior toma un sólido cercano. No atrae objetos a distancia.</p>
+            <label>Qué puede tomar<select id="arm-filter-mode"><option value="any">Cualquier sólido</option><option value="color">Un color</option><option value="piece">Una pieza específica</option><option value="shape">Un tipo de pieza</option><option value="form">Una forma aprendida</option></select></label>
+            <label id="arm-color-row" hidden>Color objetivo<input id="arm-filter-color" type="color" value="#b36b4d"></label>
+            <div id="arm-piece-row" hidden><label>Pieza objetivo<select id="arm-filter-piece"><option value="">Elige una pieza de la sala</option></select></label><button id="arm-capture-piece" type="button">Usar pieza seleccionada</button></div>
+            <div id="arm-shape-row" hidden><label id="arm-shape-type-row">Tipo de pieza<select id="arm-filter-shape"><option value="cube">Cubo</option><option value="pyramid">Pirámide de base cuadrada</option><option value="tetra">Triangular</option><option value="coupler">Enganche</option></select></label><div id="arm-form-row" hidden><button id="arm-capture-shape" type="button">Aprender forma seleccionada</button><p id="arm-shape-memory"></p><p>Selecciona una estructura de la sala y vuelve a este panel para aprender su disposición.</p></div></div>
+            <label>Carga máxima <output id="arm-capacity-value">4 u</output><input id="arm-capacity" type="range" min="1" max="2000" step="1" value="4"></label>
+            <label>Alcance de toma <output id="arm-reach-value">5 cm</output><input id="arm-reach" type="range" min="1.8" max="5" step="0.1" value="5"></label>
+            <button id="arm-apply-filter" type="button">Aplicar filtro, carga y alcance</button>
+            <button id="arm-check" type="button">Comprobar toma · qué falta</button>
+            <p id="arm-check-result" role="status" aria-live="polite"></p>
+            <div class="arm-actions"><button id="arm-grab" type="button">Tomar ahora</button><button id="arm-release" type="button">Soltar</button></div>
+          </details>
+        </div>
+        <div id="arm-controls" hidden>
+          <ol class="arm-sequence" aria-label="Secuencia del brazo"><li id="arm-phase-detect">1 · Detectar</li><li id="arm-phase-grab">2 · Tomar</li><li id="arm-phase-move">3 · Ir a B</li><li id="arm-phase-release">4 · Soltar</li><li id="arm-phase-return">5 · Volver a A</li></ol>
+          <details open>
+            <summary>Posición inicial y recorrido A/B</summary>
+            <p>Marca A sobre el objeto y B en la entrega. Puedes añadir una posición inicial para acercarte a A desde arriba. Apunta con la mira, sube o baja con la rueda y confirma con clic cuando el brazo se vea azul.</p>
+            <div class="arm-poses">
+              <div><button id="arm-pose-home" type="button">Marcar posición inicial</button><span id="arm-home-state">Opcional</span><label>Altura sobre la mira (cm)<input id="arm-home-height" type="number" min="0" step="0.1" value="20"></label><button id="arm-goto-home" type="button">Ir a posición inicial</button><button id="arm-clear-home" type="button">Quitar posición inicial</button></div>
+              <div><button id="arm-pose-pick" type="button">Marcar A · tomar</button><span id="arm-pick-state">Por enseñar</span><label>Altura sobre la mira (cm)<input id="arm-pick-height" type="number" min="0" step="0.1" value="3"></label></div>
+              <div><button id="arm-pose-place" type="button">Marcar B · soltar</button><span id="arm-place-state">Por enseñar</span><label>Altura sobre la mira (cm)<input id="arm-place-height" type="number" min="0" step="0.1" value="13"></label></div>
+            </div>
+          </details>
+          <details id="arm-motors">
+            <summary>Rotores y ajuste manual</summary>
+            <p id="arm-payload-limit"></p>
+            <div class="arm-actions"><button id="arm-fit-load" type="button">Ajustar ejes al límite de la pinza</button></div>
+            <label>Eje<select id="arm-motor-axis"></select></label>
+            <div class="arm-motor-fields">
+              <label>Velocidad (rpm)<input id="arm-motor-rpm" type="number" min="1" max="360" step="any"></label>
+              <label>Torque (N·m)<input id="arm-motor-torque" type="number" min="0.02" max="32" step="any"></label>
+              <label>Carga máxima (u)<input id="arm-motor-capacity" type="number" min="2" max="16000" step="1"></label>
+            </div>
+            <button id="arm-apply-motor" type="button">Aplicar ajuste al eje</button>
+            <p id="arm-live-speed"></p>
+            <p>Hombro, codo y muñeca tienen reducción 3:1. Ajusta las rpm del motor por eje. Con reducción 3:1, 60 rpm del motor equivalen a 20 rpm del eje. La carga y el torque afectan el giro real.</p>
+            <label>Paso de giro<select id="arm-jog-step"><option value="5">5° · ajuste fino</option><option value="15" selected>15° · ajuste normal</option><option value="45">45° · ajuste medio</option><option value="90">90° · cuarto de vuelta</option></select></label>
+            <div id="arm-joints" aria-label="Articulaciones del brazo"></div>
+            <div class="arm-actions"><button id="arm-teach-pick" type="button">Guardar postura actual como A</button><button id="arm-teach-place" type="button">Guardar postura actual como B</button></div>
+          </details>
+          <div class="arm-actions"><button id="arm-goto-pick" type="button">Ir a A · sin tomar</button><button id="arm-goto-place" type="button">Ir a B · sin tomar</button></div><p>Estos botones prueban el recorrido sin cambiar las posturas guardadas. Suelta la carga antes de usarlos.</p>
+          <label><input id="arm-repeat" type="checkbox" checked> Repetir la secuencia</label><div class="arm-actions"><button id="arm-start" type="button">Iniciar secuencia</button><button id="arm-stop" type="button">Detener</button></div>
+          <p>Sin Repetir, termina en B. Con Repetir, vuelve a A y espera otro objeto. Detener suelta la carga. Un brazo unido a una cinta sigue necesitando sus propias posturas A y B.</p>
+        </div>
+        <dl class="arm-facts"><div><dt>Objeto sostenido / límite</dt><dd id="arm-load">0 u / —</dd></div><div><dt>Energía disponible</dt><dd id="arm-energy">—</dd></div><div><dt>Entregas completas</dt><dd id="arm-cycles">0</dd></div><div><dt>Margen de carga</dt><dd id="arm-efficiency">—</dd></div></dl>
+        <p id="arm-feedback" role="status" aria-live="polite"></p>
+      </section>
+
+      <section id="conveyor-panel" aria-labelledby="conveyor-title">
+        <p class="conveyor-kicker">Construir · conectar · transportar</p><h3 id="conveyor-title">Cinta de rodillos Q-bits</h3>
+        <p>Los rodillos de Q-bits mueven la banda que lleva los sólidos. Completa el plano y acopla una batería con Shift para ponerlo en marcha.</p>
+        <details><summary>Colocación del plano</summary>
+          <label><input id="conveyor-extend" type="checkbox"> Al final de la cinta seleccionada</label>
+          <label>Orientación<select id="conveyor-orientation"><option value="0">0°</option><option value="1">90°</option><option value="2">180°</option><option value="3">270°</option></select></label>
+          <label>Altura sobre el suelo (m)<input id="conveyor-height" type="number" min="0" max="6" step="0.09" value="0" inputmode="decimal"></label>
+          <label id="conveyor-supports-row" hidden><input id="conveyor-supports" type="checkbox"> Incluir patas cortas</label>
+          <p>La extensión sigue la altura y el sentido actual de salida del tramo seleccionado. Puedes apoyar o fijar las secciones elevadas a tus propias estructuras.</p>
+        </details>
+        <div class="conveyor-blueprints">
+          <div><button id="conveyor-blueprint-straight" type="button">Blueprint<br>Recta</button><p id="conveyor-materials-straight">Requiere piezas existentes.</p></div>
+          <div><button id="conveyor-blueprint-left" type="button">Blueprint<br>Esquina izquierda</button><p id="conveyor-materials-left">Requiere piezas existentes.</p></div>
+          <div><button id="conveyor-blueprint-right" type="button">Blueprint<br>Esquina derecha</button><p id="conveyor-materials-right">Requiere piezas existentes.</p></div>
+        </div>
+        <p id="conveyor-target">Selecciona un tramo para cambiar su marcha.</p>
+        <p id="conveyor-status" role="status" aria-live="polite">Completa todas las piezas del plano para habilitar la cinta.</p>
+        <div id="conveyor-controls" hidden>
+          <label>Carga máxima (u)<input id="conveyor-capacity" type="number" min="1" max="2000" step="1" value="8"></label>
+          <div class="conveyor-actions" role="group" aria-label="Sentido de la cinta"><button id="conveyor-forward" type="button" aria-pressed="false">Avance</button><button id="conveyor-reverse" type="button" aria-pressed="false">Inversa</button></div>
+          <p id="conveyor-direction-note">Sentido indicado en el plano.</p>
+          <button id="conveyor-toggle" type="button" aria-pressed="false">Iniciar marcha de la línea</button>
+          <p>Activa la batería y deja libres la entrada y la salida. Al unir un tramo, su avance sigue el sentido del tramo receptor.</p>
+        </div>
+        <dl class="conveyor-facts"><div><dt>Carga / límite del tramo</dt><dd id="conveyor-load">—</dd></div><div><dt>Velocidad de la banda</dt><dd id="conveyor-speed">—</dd></div><div><dt>Energía disponible</dt><dd id="conveyor-energy">—</dd></div><div><dt>Línea conectada</dt><dd id="conveyor-connected">—</dd></div></dl>
+        <p id="conveyor-feedback" role="status" aria-live="polite"></p>
+      </section>
+
+      <div class="actions"><button id="create-coupler" type="button">Crear enganche</button><button id="create-rotor" type="button">Crear rotor</button></div>
+      <p id="rotor-status"></p>
+      <label>Nombre del conjunto<input id="rotor-set-name" type="text" maxlength="40" placeholder="Ej. Automóvil" autocomplete="off"></label>
+      <div class="actions"><button id="rotor-set-create" type="button">Crear conjunto</button><button id="rotor-set-dissolve" type="button">Disolver conjunto</button></div>
+      <p>Ctrl + clic en cada rotor: añadir o quitar. Después, escribe un nombre y crea el conjunto. Cada rotor pertenece a un conjunto; si lo incluyes en otro, se traslada.</p>
+      <div class="actions"><button id="rotor-start" type="button">Iniciar marcha</button><button id="rotor-stop" type="button">Detener</button><button id="rotor-invert" type="button">Invertir marcha</button></div>
+      <label>Velocidad <output id="rotor-rpm-value">30</output><input id="rotor-rpm" type="range" min="1" max="360" step="1" value="30"></label>
+      <label>Fuerza <output id="rotor-force-value">320</output><input id="rotor-force" type="range" min="2" max="3200" step="1" value="320"></label>
+      <label>Carga máxima <output id="rotor-capacity-value">256</output><input id="rotor-capacity" type="range" min="2" max="16000" step="1" value="256"></label>
+      <p id="rotor-power-readout" role="status" aria-live="polite"></p>
+      <p id="rotor-supply-status"></p>
+      <div id="connected-batteries" class="actions" aria-label="Baterías conectadas"></div>
+      <details><summary>Baterías externas · guía</summary>
+        <p>En el taller, convierte 1, 2 o 3 cubos unidos en línea en una batería transparente. Las tres versiones están disponibles desde el principio; la doble almacena el doble y la triple, el triple. El líquido verde baja con la carga.</p>
+        <p>Acóplala al mecanismo con Shift y actívala desde su clic derecho o desde este panel. Verifica «Batería externa activa» antes de arrancar. Sin una batería externa activa, cada rotor usa su reserva interna.</p>
+        <p>Una batería externa activa y vacía detiene los motores. Para recargarla, apágala, detén el mecanismo y déjala quieta con la carcasa tocando el piso. Para volver a usar las reservas internas, apaga la batería externa.</p>
+        <p>La conversión conserva la energía de los cubos, por lo que la nueva batería puede empezar parcialmente llena. Las copias guardadas se crean vacías y deben recargarse.</p>
+        <button id="battery-guide" type="button">Ver instrucciones paso a paso</button>
+      </details>
+      <p>Los ajustes se aplican a todos los rotores elegidos. «Varios» indica valores distintos. Iniciar conserva el sentido de cada rueda; invertir cambia todos los sentidos. La carga máxima es el límite de cada rotor, no se suma entre motores.</p>
+      <label id="rotor-tier-row">Nivel de fuerza<select id="rotor-tier"><option value="1">I · 40</option><option value="2">II · 65</option><option value="3">III · 100</option></select></label>
+      <p id="rotor-tier-status"></p>
+      <details><summary>Conjuntos de esta sala</summary><div id="rotor-set-list" class="actions"></div></details>
+      <details><summary>Montaje y ajustes avanzados</summary>
+      <p id="rotor-individual-note"></p>
+      <label>Montaje<select id="rotor-mount"><option value="wheel">Rueda libre · el conjunto puede moverse</option><option value="fixed">Eje fijo · base anclada al banco</option></select></label>
+      <label>Torque máximo <output id="rotor-torque-value">3.20 N·m</output><input id="rotor-torque" type="range" min="0.02" max="32" step="0.02" value="3.2"></label>
+      <label>Lado que gira<select id="rotor-side"><option value="a">Lado A · lado B como base</option><option value="b">Lado B · lado A como base</option></select></label>
+      <p>Velocidad representa vueltas por minuto. Fuerza 40 equivale al torque 0,40; carga 1 equivale al peso de un Q-bit normal. La carga incluye todas las piezas conectadas. Sin batería o con sobrecarga, el motor se detiene.</p>
+      <p id="rotor-technical-readout"></p>
+      <p>El sentido se observa desde el lado que gira, mirando hacia su punta. Al tomar el mecanismo se detiene para poder transportarlo.</p>
+      <div class="actions"><button id="rotor-clockwise" type="button">Horario</button><button id="rotor-counterclockwise" type="button">Antihorario</button><button id="rotor-disconnect" type="button">Separar enganches</button></div>
+      </details>
+      <details><summary>Cómo montar un vehículo</summary><p>Une dos puntas de enganche con Shift para formar un rotor. Fija una cara cuadrada de una mitad al chasis; la otra queda libre para la rueda. Repite con los demás rotores y deja espacio para que giren. Para rodar, coloca los ejes horizontales. Una rueda de cubos avanza sobre sus aristas.</p><p>Selecciona cada rotor por separado si necesitas ajustar el lado o el sentido de giro antes de crear el conjunto. Los sensores existentes conservan sus enlaces individuales.</p></details>
+      <div class="actions"><button id="rotor-save" type="button">Guardar mecanismo</button></div>
+      <p id="rotor-save-note"></p>
+      <details open><summary>Mecanismos guardados</summary><div id="saved-mechanism-list"></div><div class="actions"><button id="export-mechanisms" type="button">Exportar mecanismos</button><label>Importar mecanismos<input id="import-mechanisms" type="file" accept="application/json,.json"></label></div></details>
+    </div>
+    <div id="page-route" role="tabpanel" hidden>
+      <p>Clic derecho para seleccionar un Q-bit. Después, clic derecho en el suelo → Ir a este punto. Para un grupo, arrastra con clic izquierdo desde un espacio vacío. La estructura busca espacio libre y rueda sobre sus aristas; más peso significa menor velocidad.</p>
+      <label>Velocidad base <output id="speedValue"></output><input id="speed" type="range" min="0.12" max="0.7" step="0.02" value="0.32"></label>
+      <p>R vuelve al punto de partida y reinicia el recorrido. Si un objeto bloquea el paso, se busca otro camino o se detiene.</p><button id="stop" type="button">Detener selección</button>
+    </div>
+    <div id="page-cargo" role="tabpanel" hidden>
+      <p id="cargo-editing"></p>
+      <label>Lado de los nuevos cuerpos <output id="cargoSideValue"></output><input id="cargoSide" type="range" min="1" max="12" step="1" value="4"></label>
+      <p>Un paso equivale al lado de un Q-bit. Los tres lados siempre tienen la misma longitud.</p>
+      <label>Peso / Q-bits necesarios <output id="cargoRequiredValue"></output><input id="cargoRequired" type="range" min="1" max="2000" step="1" value="8"></label>
+      <label>Color <input id="cargoColor" type="color" value="#f4f4f1"></label>
+      <label>Velocidad base de arrastre <output id="haulSpeedValue"></output><input id="haulSpeed" type="range" min="0.08" max="0.4" step="0.01" value="0.2"></label>
+      <label>Fuerza por Q-bit <output id="haulForceValue"></output><input id="haulForce" type="range" min="1.5" max="5" step="0.1" value="2"></label>
+      <p>El tamaño no fija el peso. Para mover un cuerpo deben llegar a sus puestos tantos Q-bits como indique su requisito. Más participantes aumentan la velocidad. Una estructura aporta tantas piezas como contiene.</p>
+      <div class="actions"><button id="create-cargo" type="button">Crear cuerpo</button><button id="delete-cargo" type="button">Borrar cuerpo seleccionado</button></div>
+      <p>Selecciona el equipo → clic derecho en el cuerpo → Arrastrar → clic derecho en el suelo → Llevar carga a este punto. Para sumar participantes, selecciona más y abre otra vez las órdenes del cuerpo.</p>
+    </div>
+    <div id="page-puzzle" role="tabpanel" hidden>
+      <p id="puzzle-description">Monta la primera cadena dentro de la sala. Al salir se recupera el contenido de tu banco de pruebas.</p>
+      <p>Empiezas con cuatro Q-bits. Calipso necesita 1, Violeta 5 y Ámbar 9 para arrastrar su material. Son valores de esta prueba. Cada entrega concede cuatro Q-bits.</p>
+      <p>Los primeros portales permanecen abiertos. En Ámbar, mantén 1 u en Marco y 2 u en Energía. El aro luminoso muestra el peso reunido: en Energía, 1 Q-bit carga la mitad y 2 completan el círculo. Al retirar el peso, su carga se pierde; sin Marco también desaparece la energía.</p>
+      <label>Tiempo del marco <output id="frameSecondsValue">12 s</output><input id="frameSeconds" type="range" min="1" max="30" step="1" value="12"></label>
+      <label>Tiempo de la energía <output id="energySecondsValue">8 s</output><input id="energySeconds" type="range" min="1" max="30" step="1" value="8"></label>
+      <p>Selecciona el equipo → clic derecho en el material → Entregar. También puedes elegir el destino con clic derecho en el suelo. Los Q-bits se quedan fuera del portal.</p>
+      <p>La recompensa aparece sostenida frente a ti. Clic derecho o izquierdo la deja caer. Si tienes las manos ocupadas, espera hasta que las liberes.</p>
+      <div class="actions"><button id="start-puzzle" type="button">Montar puzle 01</button><button id="leave-puzzle" type="button" disabled>Volver al banco</button></div>
+    </div>
+    <div id="page-alpha" role="tabpanel" hidden>
+      <label>Nombre del Q-bit seleccionado<input id="qubit-name" type="text" maxlength="24" placeholder="Selecciona un Q-bit"></label><button id="rename-qubit" type="button">Guardar nombre</button>
+      <p>El nombre y el estado acompañan a cada pieza al unirla o separarla.</p>
+      <button id="save-shape" type="button">Guardar estructura seleccionada</button>
+      <div class="saved-library-tabs" role="tablist" aria-label="Formas guardadas"><button id="saved-library-forms-tab" type="button" role="tab" aria-selected="true" aria-controls="saved-shape-list">Formas</button><button id="saved-library-mechanisms-tab" type="button" role="tab" aria-selected="false" aria-controls="saved-library-mechanisms" tabindex="-1">Mecanismos</button></div>
+      <div id="saved-shape-list" role="tabpanel" aria-labelledby="saved-library-forms-tab"></div><div id="saved-library-mechanisms" role="tabpanel" aria-labelledby="saved-library-mechanisms-tab" hidden></div>
+      <p>Clic derecho en el piso → Formas guardadas. Después, clic derecho en el blueprint → Integrar cercanos. Acerca Q-bits sueltos, descansados y apoyados en el piso.</p>
+      <label>Radio de integración <output id="alpha-blueprintRangeValue"></output><input id="alpha-blueprintRange" type="range" min="0.5" max="3" step="0.1" value="1.5"></label>
+      <button id="export-shapes" type="button">Exportar formas</button><label>Importar copia de formas<input id="import-shapes" type="file" accept=".json,application/json"></label>
+      <p>Las formas se conservan en este navegador cuando permite almacenamiento local. Exporta una copia para trasladarlas a otra versión o equipo. Importar reemplaza la lista guardada.</p>
+      <label><input id="alpha-coolingOn" type="checkbox" checked> Enfriadores activos</label><button id="place-cooler" type="button">Colocar enfriador donde apunto</button>
+      <label>Capacidad de nuevos enfriadores <output id="alpha-capacityValue"></output><input id="alpha-capacity" type="range" min="1" max="2000" step="1" value="4"></label>
+      <label>Tiempo de enfriamiento <output id="alpha-coolSecondsValue"></output><input id="alpha-coolSeconds" type="range" min="5" max="60" step="1" value="35"></label>
+      <label>Energía al salir <output id="alpha-exitEnergyValue"></output><input id="alpha-exitEnergy" type="range" min="0.25" max="0.75" step="0.05" value="0.5"></label>
+      <label>Calma natural al tercer enfado <output id="alpha-maxRestValue"></output><input id="alpha-maxRest" type="range" min="15" max="180" step="5" value="180"></label>
+      <p>El tercer episodio cercano acumula más tensión. El recipiente acelera la vuelta a neutro y deja la energía limitada al valor de salida mientras permanezcan dentro.</p>
+      <label><input id="alpha-allowPuzzleSpawn" type="checkbox"> Permitir crear Q-bits durante el puzle</label><p>Actívalo para usar N o Crear Q-bit sin salir del desafío.</p>
+      <label>Brillo sutil <output id="alpha-glowValue"></output><input id="alpha-glow" type="range" min="0" max="1" step="0.05" value="0.6"></label>
+    </div>
+    <div id="page-manual" role="tabpanel" aria-labelledby="tab-manual" hidden>
+      <h3>Manual del banco de pruebas</h3>
+      <details><summary>Desarme inmediato o por etapas</summary><p>Configuración → Juego → Desarme de conjuntos → Guardar. Inmediato conserva el gesto actual. Por etapas, en el banco de pruebas, detiene el montaje y coloca sus piezas en huecos libres del suelo, de arriba hacia abajo. Actívalo con Shift + varias sacudidas o Alt → Desarmar todo. Si espera, libera espacio; no hace falta volver a agitar. Pausar detiene el proceso y salir y volver al banco conserva las piezas pendientes. Campaña y puzles mantienen el desarme inmediato. La selección aparece abajo a la derecha.</p></details>
+      <p class="manual-note"><strong>Empieza con una máquina y un cubo.</strong> P abre este panel mientras la simulación sigue en marcha. Esc abre la pausa. Los controles indicados son los predeterminados; si los cambiaste, revisa Configuración → Teclado.</p>
+      <details open><summary>Colocar y conectar piezas</summary>
+        <p>Pulsa Q para abrir el catálogo y elige una pieza. Apunta al suelo o a una superficie: la vista previa azul muestra dónde quedará. Rojo significa espacio ocupado. Por defecto la posición es libre y la rueda gira 90° por paso. Mantén Shift para ver y usar la cuadrícula del suelo. Con Shift y rueda puedes elegir cualquier ángulo. Suelta Shift para volver a mover el plano libremente. Haz clic para colocar o pulsa Esc para cancelar.</p>
+        <p>Para prolongar una cinta, apunta cerca de su flecha de salida y mantén Shift. La vista previa se alinea con la conexión: confirma con clic sin soltar Shift. Se unen las bases y se conservan los rodillos. Las repisas se colocan en paredes; depósito, enfriador y cuerpo sólido van en el suelo. La tarjeta Mesa de trabajo permite colocarla o reubicarla. Haz clic derecho en una zona libre de la mesa para retirarla. El clic derecho sobre una pieza abre sus propiedades y E abre el taller.</p>
+        <p>Con una pieza en la mano: rueda abajo acerca y rueda arriba aleja. Configuración → Juego permite invertir la distancia y el giro por separado. N, B y los botones Crear también preparan una vista previa.</p>
+      </details>
+      <details><summary>Servos · pivote, bisagra y primera extremidad</summary>
+        <ol>
+          <li>Abre Q → Máquinas y elige Servo pivote o Servo bisagra. Confirma la vista previa con clic.</li>
+          <li>Clic derecho en la articulación → Configurar servo, o selecciónala y abre P → Mecanismos.</li>
+          <li>Prueba Desde −20°, Hasta 20°, velocidad 30 °/s y Movimiento: Ida y vuelta. Pulsa Iniciar y observa el giro.</li>
+          <li>Detener y bloquear conserva el ángulo actual. Mantener posición y Mover una vez llegan al objetivo y quedan bloqueados. Ida y vuelta alterna entre los extremos.</li>
+        </ol>
+        <p>Recorrido disponible: −90° a 90°. Velocidad: 5–540 °/s. La fuerza, el peso y los obstáculos condicionan el movimiento real.</p>
+        <p><strong>Pivote manual:</strong> clic derecho sobre una pirámide de base cuadrada → Preparar Servo pivote. Une su base al cuerpo con Shift; conecta la cara inferior de un cubo a la punta con Shift. Ese cubo inicia el tramo móvil.</p>
+        <p><strong>Bisagra manual:</strong> prepara una pirámide como Servo bisagra y conecta por su punta otra pirámide con Shift. Cada base sostiene un tramo rígido; las puntas permanecen unidas al abrirse lateralmente.</p>
+        <p>La energía interna permite probar los servos. Una batería externa activa conectada al conjunto comparte su reserva; estar cerca no basta. Si se bloquea, revisa energía, carga, fuerza y espacio. Para mover todas las patas, únelas al mismo cuerpo. En Marcha del conjunto elige inicio mínimo/máximo por articulación, pulsa Iniciar marcha del conjunto desde P. Todas se preparan y repiten juntas; Detener conjunto las bloquea a la vez. Un fallo de energía o bloqueo persistente detiene el mecanismo completo. Ajusta los recorridos y apoyos para conseguir equilibrio.</p>
+      </details>
+      <details><summary>Hélice y primer dron</summary>
+        <ol><li>En Q → Máquinas, elige <strong>Dron de prueba</strong>. Confirma con clic: aparece una hélice con batería I cargada y apagada.</li>
+        <li>Clic derecho en la batería → encender. Clic derecho en el enganche → <strong>Vuelo</strong>.</li>
+        <li>Deja altura 0,5 m y velocidad 0. Pulsa <strong>Despegar</strong> y vuelve a la sala. Después prueba velocidad 0,3 y <strong>Avanzar hacia donde miro</strong>.</li>
+        <li>Para programar el vuelo, elige <strong>Crear trayectoria</strong> en el enganche. Marca puntos en el plano y elige paso, espera en vuelo o aterrizaje con despegue. Un recorrido único aterriza al terminar. En bucle, puedes pedir el aterrizaje desde cualquier punto.</li>
+        <li>Selecciona un dron en el aire con un clic o búscalo en <strong>P → Mecanismos → Drones de la sala</strong>. Acopla el sensor al chasis por debajo de las palas. Su umbral de detección es independiente del peso de la pieza.</li>
+        <li>Usa <strong>Aterrizar</strong> antes de quedarte sin batería. Una vez apoyado, apaga la batería para recargarla.</li>
+        <li>Montaje manual: toma un triangular, mantén Shift y acerca una punta a la del enganche; suelta cuando aparezca «Pala alineada». Repite con otro triangular en el lado libre. La base y los costados cuadrados del enganche reciben chasis y batería.</li>
+        <li>Une de 1 a 4 hélices completas al mismo chasis, orientadas hacia arriba y con espacio libre entre palas. Una quinta impide arrancar hasta separarla. El peso de baterías, chasis, sensores, brazos y carga se suma.</li></ol>
+        <p>Material por hélice: 1 enganche + 2 triangulares existentes. No hay un cobro adicional en créditos. El plano usa tus piezas; Banco rápido crea copias de prueba. Q-bits usa estabilización asistida y límites de vuelo calibrados para el juego.</p>
+      </details>
+      <details id="manual-arm" open><summary>1 · Mi primera entrega con el brazo</summary>
+        <p>El brazo repite dos posturas que tú guardas: <strong>A para tomar</strong> y <strong>B para soltar</strong>. Unirlo a una cinta no le enseña esas posiciones.</p>
+        <ol>
+          <li><strong>Crea el brazo.</strong> En la sala, abre Q → Máquinas, elige Brazo Q-bits y confirma con clic. Aparece completo y detenido, con A preparada para un cubo en el suelo y B a un cuarto de vuelta.</li>
+          <li><strong>Déjalo en el suelo, con espacio alrededor.</strong> Para aprender, usa el brazo recién creado y separado de otras máquinas. Su base se fija durante el movimiento; no necesitas unirla a una cinta. Su energía interna permite la primera prueba.</li>
+          <li><strong>Prepara un cubo normal.</strong> Elígelo desde Q → Piezas y confirma con clic. Acércalo debajo de la cara naranja del extremo del brazo. Apóyalo en el suelo y suéltalo sin Shift, para que quede separado. C permite agacharte.</li>
+          <li><strong>Abre el brazo.</strong> Clic derecho sobre una pieza del brazo → Configurar agarre y secuencia. En «Qué puede tomar», elige Cualquier sólido y pulsa Aplicar filtro, carga y alcance.</li>
+          <li><strong>Comprueba el contacto.</strong> Pulsa Comprobar toma. Centra la cara naranja sobre el cubo. Puedes ajustar el alcance de toma entre 1,8 y 5 cm. Si indica distancia, alineación o filtro, corrige eso y vuelve a comprobar.</li>
+          <li><strong>Haz una entrega.</strong> Desmarca Repetir la secuencia y pulsa Iniciar secuencia. El brazo toma el cubo, gira a B y lo suelta. Con un brazo nuevo no hace falta enseñar A y B otra vez.</li>
+          <li><strong>Comprueba el resultado.</strong> Abre P → Mecanismos. Debe mostrar «Ciclo completado» y una entrega. Sin Repetir queda en B. Usa Ir a A · sin tomar para volver; para varias entregas, activa Repetir antes de iniciar.</li>
+        </ol>
+        <p>Para elegir por dónde empieza, abre Marcar posición inicial, apunta y ajusta la altura con la rueda. Pulsa Ir a posición inicial para probarla en vacío. Al iniciar la secuencia, el brazo pasa por allí antes de ir a A. Si el panel indica recorrido bloqueado, despeja el paso o cambia la postura.</p>
+        <button id="manual-arm-controls" type="button">Abrir controles del brazo</button>
+      </details>
+      <details><summary>2 · Llevar objetos desde una cinta</summary>
+        <ol>
+          <li><strong>Detén ambas máquinas.</strong> Puedes apoyar el brazo en el suelo o en una estructura estable junto a la cinta. También puedes unir su base a una cara fija del chasis con Shift; deja libres la banda, los rodillos y las articulaciones.</li>
+          <li><strong>Coloca un cubo sobre la banda detenida.</strong> El cubo debe quedar suelto, nunca unido al brazo o a la cinta.</li>
+          <li><strong>Enseña A a esa altura.</strong> En P → Mecanismos → Brazo Q-bits, pulsa Marcar A · tomar y apunta a la cara superior del objeto. Ajusta la altura con la rueda y confirma cuando el plano se vea azul. También puedes ajustar los ejes y guardar la postura actual.</li>
+          <li><strong>Enseña B.</strong> Pulsa Marcar B · soltar y apunta a la superficie de entrega. Ajusta la altura para dejar espacio para la carga. Haz clic cuando el plano se vea azul.</li>
+          <li><strong>Prueba el recorrido vacío.</strong> Usa Ir a A e Ir a B. Estos botones mueven los motores, no guardan posiciones ni toman objetos. Si el brazo choca, cambia A/B o la ubicación de las máquinas.</li>
+          <li><strong>Prueba un cubo con la cinta detenida.</strong> Desmarca Repetir e inicia el brazo. Una vez lograda la entrega, activa Repetir e inicia también la cinta desde sus propios controles.</li>
+        </ol>
+        <p class="manual-note"><strong>Unión y programación son cosas distintas.</strong> Un brazo puede estar bien unido y tener el agarre fuera de la trayectoria. La cara naranja debe pasar por encima de la carga. Si la cinta va demasiado rápido para tomarla, baja sus rpm o detén la cinta durante la prueba.</p>
+        <p>La capacidad del brazo se aplica al objeto que sostiene la pinza. El límite efectivo es el menor entre la pinza y sus ejes. El peso de los eslabones y del objeto influye en el torque y el consumo. Si compartes batería con la cinta, revisa también la energía disponible.</p>
+      </details>
+      <details><summary>3 · Cintas y baterías</summary>
+        <ol>
+          <li>Crea una cinta desde Q → Tab. Déjala nivelada y apoyada. También puedes construirla con un plano en P → Mecanismos, acercando las piezas solicitadas e integrándolas con clic derecho.</li>
+          <li>Crea una Batería I, II o III desde el catálogo rápido. Estas copias de prueba aparecen cargadas y apagadas.</li>
+          <li>Toma la batería, acércala a una cara libre del chasis y suelta con Shift para unirla. Clic derecho sobre la batería → Activar batería. Estar cerca no basta para transmitir energía.</li>
+          <li>Clic derecho sobre la cinta → «Configurar cinta y extender…». Pulsa Iniciar marcha de la línea para arrancar los tramos unidos al mismo chasis. Clic derecho en un tramo permite detenerlo o invertir solo ese tramo.</li>
+          <li>Deja un cubo suelto sobre la banda y mantén libre la salida. Si la batería se agota, apágala y apóyala en el suelo para recargar.</li>
+        </ol>
+        <p>En el taller también puedes fabricar baterías con uno, dos o tres cubos normales unidos en línea sobre la mesa. Las baterías fabricadas conservan los julios de esas piezas; no aparecen llenas por fabricarlas.</p>
+      </details>
+      <details><summary>4 · Tomar, unir, separar y mover</summary>
+        <ul>
+          <li><strong>Crear:</strong> abre Q, selecciona una categoría y elige el objeto. Haz clic en el lugar donde quieres colocarlo. Esc cancela la creación pendiente.</li>
+          <li><strong>Tomar:</strong> clic sobre una pieza, con la mano libre y sin una selección previa. Otro clic la suelta. La rueda acerca o aleja; C te agacha.</li>
+          <li><strong>Unir:</strong> sostén la pieza, acerca caras compatibles y suelta con Shift cuando veas el encaje. Shift + WASD gira la pieza sostenida.</li>
+          <li><strong>Separar:</strong> Alt apuntando a una pieza abre las opciones. Shift + varias sacudidas desarma una estructura sostenida. Se conservan sus piezas.</li>
+          <li><strong>Dar un destino:</strong> selecciona el equipo; clic derecho en el suelo → Ir a este punto. R repite el recorrido desde el inicio. Detener selección cancela la orden. Un objeto con una ruta activa no queda disponible para la pinza hasta detenerlo.</li>
+        </ul>
+      </details>
+      <details><summary>5 · Rotores, taller y sensor</summary>
+        <p><strong>Rotor:</strong> dos enganches unidos forman un eje. Fija una mitad al soporte y la otra a la pieza que girará. En P → Mecanismos revisa rpm, sentido, torque y capacidad. En un brazo, usa los controles del brazo para mover sus ejes.</p>
+        <p><strong>Qué significa cada ajuste:</strong> rpm controla velocidad; torque limita fuerza de giro; capacidad limita la carga. En un brazo se aplica al objeto sostenido. Los rotores ordinarios cuentan el peso de la red conectada.</p>
+        <p><strong>Taller:</strong> deja la pieza sobre la mesa, suéltala, apunta a la mesa y pulsa E. Lee el efecto y el coste de la mejora antes de aplicarla. La investigación disponible se conserva en el navegador.</p>
+        <p><strong>Sensor configurable.</strong> Elige un sensor en Banco rápido o adáptalo en el taller. Clic derecho → Configurar sensor. Selecciona contacto, movimiento, láser o peso, elige el mecanismo y la acción. El alcance del láser y del movimiento se ajusta entre 25 cm y 2 m. Mantén Alt para ver el haz. El enlace admite hasta 3 m. Para que una pieza en movimiento arranque un móvil, selecciona Movimiento cercano, el conjunto o el mecanismo del móvil e Iniciar. Para controlar un eje individual, elige Rotor.</p>
+      </details>
+      <details><summary>6 · Planos, guardado y repisas</summary>
+        <p><strong>Catálogo rápido (Q → Tab):</strong> crea copias completas para experimentar en el banco. Respeta el límite de piezas de la sala.</p>
+        <p><strong>Blueprint o plano:</strong> es una guía de construcción. Acerca los tipos de piezas que pide; clic derecho → Integrar cercanos. Solo funciona al completarlo.</p>
+        <p><strong>Guardar:</strong> detén el mecanismo y suelta su carga. En Formas guardadas se distinguen Formas y Mecanismos. Un brazo guardado conserva sus conexiones, filtros y posturas. Exporta tus plantillas para tener una copia.</p>
+        <p><strong>Repisa:</strong> almacena el objeto real. Al recuperarlo, los controles quedan detenidos. Revisa el espacio y la posición del objeto antes de reiniciar una secuencia.</p>
+      </details>
+      <details><summary>7 · Si algo no funciona</summary>
+        <ul>
+          <li><strong>No se mueve:</strong> lee el estado del mecanismo y comprueba la energía, el límite de carga y el espacio para moverse.</li>
+          <li><strong>Espera sin tomar:</strong> usa Comprobar toma; revisa que el cubo esté suelto, centrado bajo la cara naranja y casi tocándola. Detén sus rutas y suéltalo de tu mano.</li>
+          <li><strong>Toma otro objeto:</strong> selecciona una pieza específica o un filtro de tipo/color y pulsa Aplicar filtro y carga.</li>
+          <li><strong>Choca durante el giro:</strong> Detener, despejar el recorrido, ajustar A/B y probar el movimiento vacío.</li>
+          <li><strong>No vuelve a A:</strong> una sola entrega termina en B. Usa Ir a A o activa Repetir para el siguiente ciclo.</li>
+          <li><strong>La unión dejó todo sin funcionar:</strong> comprueba si el montaje estorba el recorrido o si otro rotor alcanzó su límite de carga conectada.</li>
+        </ul>
+      </details>
+    <details class="culling-tools"><summary>Prueba de rendimiento · culling</summary>
+      <p>Oculta del dibujo lo que está fuera de la vista. La física y las máquinas continúan. Num7 muestra al jugador desde fuera; mouse y WASD siguen controlando su mirada y posición. Vuelve con Num7 para manipular piezas.</p>
+      <div class="actions"><button id="culling-toggle" type="button">Culling: activado</button><button id="culling-observer" type="button">Observador · Num7</button><button id="culling-stats" type="button">Mediciones · Num8</button><button id="culling-benchmark" type="button">Comparar A/B · Num9</button></div>
+      <p>A/B congela la escena unos segundos y compara OFF / ON / ON / OFF, sin cámara externa. Esc cancela. No cambia tu configuración. / alterna culling si esa tecla no tiene otra acción asignada.</p>
+    </details>
+    <details><summary>Controles</summary><p>En el banco, Q abre el catálogo de la tableta. Apunta la vista previa azul y confirma con clic izquierdo; Esc o clic derecho cancelan. Clic sin selección: tomar. Mantener C: agacharse, con las manos libres o sosteniendo una pieza. C + rueda: ajustar altura (abajo baja, arriba sube). Soltar C: levantarse. Tomar o unir piezas no cambia la postura. Con una pieza en la mano, Shift + WASD: girar sin caminar. Shift + soltar junto a una cara compatible: unir. Shift + sacudir rápidamente una estructura de un lado a otro varias veces: desarmar según Configuración → Juego; en modo inmediato la pieza tomada permanece en la mano, y por etapas las piezas bajan al suelo. Rueda: acercar o alejar, con enfoque progresivo y barras de energía visibles de cerca. El ajuste alinea caras compatibles. Dos triangulares completan una pirámide; seis pirámides o doce triangulares completan un cubo. Arrastrar con clic izquierdo desde un espacio vacío: seleccionar varias piezas visibles, hasta 4 m. Ctrl + clic sobre enganches: añadir o quitar rotores de la selección; P → Mecanismos permite crear un conjunto con nombre. Clic izquierdo con una selección activa: deseleccionar. Clic derecho en la selección → Tomar selección: levantar el conjunto; clic para soltar. Alt, apuntando a una estructura: opciones de separación. V: duplicar selección. Supr: borrar pieza. Ctrl: guía de caída. Clic derecho en el suelo → Ir a este punto: recorrido individual o en grupo. R: detener. Esc: liberar mouse.<br>La selección para órdenes respeta el límite de piezas; el peso máximo se aplica al agarre manual. La orden en el suelo mueve todas las estructuras seleccionadas. Alt cerca del pin muestra el camino y las mediciones. B prepara la vista previa de un cuerpo que solo puede arrastrar un equipo. Máximo de 2000 piezas en la sala. Selección y carga manual: hasta 2000 piezas / u, ajustables en P.</p></details>
+    </div>
+        </div>
+        <aside class="tablet-guide"><h3>Guía</h3><p id="tablet-help"></p><p id="editing"></p></aside>
+        <section id="workshop-screen" hidden role="region" aria-labelledby="workshop-title">
+    <div class="workshop-shell">
+      <header class="workshop-header"><div><p class="workshop-eyebrow">Q-bits · Banco de trabajo</p><h2 id="workshop-title">Taller</h2><p id="workshop-target"></p></div><div class="workshop-header-actions"><span id="workshop-credits"></span><button id="workshop-close" type="button" aria-label="Cerrar taller">×</button></div></header>
+      <nav class="workshop-tabs" role="tablist" aria-label="Secciones del taller"><button id="workshop-tab-batteries" type="button" role="tab" aria-controls="workshop-content" aria-selected="true">Baterías</button><button id="workshop-tab-upgrades" type="button" role="tab" aria-controls="workshop-content" aria-selected="false">Mejoras</button><button id="workshop-tab-bodies" type="button" role="tab" aria-controls="workshop-content" aria-selected="false">Cuerpos</button></nav>
+      <div id="workshop-content" class="workshop-grid" role="tabpanel" aria-labelledby="workshop-tab-batteries"><div class="workshop-controls"><div id="workshop-modes"></div><p id="workshop-intro"></p><div id="workshop-options"></div><div id="workshop-fields"></div></div><section class="workshop-result" aria-label="Vista previa del resultado"><p class="workshop-preview-label">Resultado previsto</p><h3 id="workshop-preview-title"></h3><p id="workshop-preview-description"></p><canvas id="workshop-preview" width="620" height="390" role="img" aria-label="Vista previa"></canvas><dl id="workshop-facts"></dl><p id="workshop-help"></p></section></div>
+      <footer class="workshop-footer"><div><p id="workshop-reason"></p><p id="workshop-feedback" role="status" aria-live="polite"></p></div><div class="workshop-footer-actions"><button id="workshop-return" type="button">Volver a la sala</button><button id="workshop-apply" type="button">Aplicar</button></div></footer>
+    </div>
+  </section>
+  <aside id="culling-hud" hidden aria-label="Mediciones de renderizado"></aside>
+      </div>
+      <footer class="tablet-footer"><span>Rueda · sección</span><span>Shift + rueda · mesa</span><span id="tablet-close-hint">M3 · guardar</span></footer>
+    </div>
+  </section>
+<!-- END source fragment. -->
+</div></div>
+<p class="reference-caption"><strong>Referencia a 760 × 460 px.</strong> La carcasa de fondo es esquemática. La malla WebGL, su perspectiva, los estados de selección y la simulación del juego no se ejecutan aquí. En pantallas pequeñas puedes desplazar horizontalmente esta referencia sin reducir los controles.</p>
+<div class="reference-callout"><p class="reference-note">Sólo funcionan la navegación y la apertura de apartados. Las acciones y campos están desactivados para observar el contenido sin modificarlo. Los valores son los incluidos en el HTML; no representan una construcción seleccionada. Las listas dinámicas de catálogo, mesa y guardados quedan sin poblar.</p><p class="source-note">Fuente: <a href="https://github.com/dbastias37/Q-bits/blob/e02afe3d1bd9a0d116c5c915e5efc960caa5a26a/index.html">index.html en la revisión auditada</a>. Se reutiliza su panel, reglas CSS y fuentes originales; sólo se añade este marco de documentación y navegación de visibilidad.</p></div>
+<footer class="reference-footer"><a href="../design.html">Comparar los tres bocetos</a><a href="AUDITORIA.md">Matriz de funciones</a><a href="INTEGRACION.md">Guía de integración</a><a href="https://github.com/dbastias37/Q-bits/blob/e02afe3d1bd9a0d116c5c915e5efc960caa5a26a/THIRD_PARTY_NOTICES.md">Recursos y atribuciones</a></footer>
+</div>
+<script>
+// Visibility-only reference viewer. This does not load or call the game.
+(() => {
+  const panel = document.getElementById('panel');
+  const groups = {bodies:{label:'Cuerpos',tabs:['catalog','cube','route','cargo']},machines:{label:'Mecanismos',tabs:['mechanisms']},files:{label:'Archivo',tabs:['alpha','puzzle']},help:{label:'Ayuda',tabs:['manual']}};
+  const pages = {
+    catalog:['Catálogo','Elige un objeto para ver su plano en la sala. Confirma con clic. Shift alinea la posición a la cuadrícula.'],
+    cube:['Piezas','Selecciona una pieza en la sala para ver su masa y ajustar el agarre o la física.'],
+    route:['Recorrido','Selecciona las piezas que van a moverse. Usa el menú del suelo para indicar el destino.'],
+    cargo:['Cuerpos','Selecciona un cuerpo para ajustar sus propiedades y las órdenes de transporte.'],
+    mechanisms:['Mecanismos','Selecciona la máquina en la sala. Los indicadores siguen en vivo mientras ajustas los controles disponibles.'],
+    alpha:['Archivo del banco','Consulta las formas guardadas, los planos y las herramientas del banco.'],
+    puzzle:['Puzle','Prepara el desafío y consulta sus condiciones antes de iniciarlo.'],
+    manual:['Manual','Abre el capítulo del mecanismo que quieras probar. Encontrarás los controles y los pasos para montarlo.']
+  };
+  const get = id => document.getElementById(id);
+  // Retain the original HTML and initial values; disable all non-navigation controls.
+  for (const element of panel.querySelectorAll('input,select,textarea,button')) {
+    if (element.closest('.tablet-wheel,.tabs')) continue;
+    element.disabled = true;
+    element.title = 'Referencia estática: esta acción no se ejecuta aquí.';
+  }
+  function show(name, focus) {
+    if (!pages[name]) return;
+    const group = Object.keys(groups).find(id => groups[id].tabs.includes(name));
+    panel.dataset.group = group;
+    get('tablet-group-title').textContent = groups[group].label;
+    get('tablet-title').textContent = pages[name][0];
+    get('tablet-help').textContent = pages[name][1];
+    for (const id of Object.keys(groups)) get('wheel-'+id).setAttribute('aria-pressed',String(id===group));
+    for (const tab of Object.keys(pages)) {
+      get('tab-'+tab).hidden = !groups[group].tabs.includes(tab);
+      get('tab-'+tab).setAttribute('aria-selected',String(tab===name));
+      get('page-'+tab).hidden = tab!==name;
+    }
+    get('tablet-center').scrollTop = 0;
+    get('machine-links').hidden = true;
+    for (const button of document.querySelectorAll('.reference-nav button')) button.setAttribute('aria-pressed',String(button.dataset.page===name && (name!=='mechanisms' || button.dataset.focus===(focus||'servo-panel'))));
+    get('reference-status').textContent = (focus==='create-rotor'?'Rotores':pages[name][0])+' · contenido del HTML original';
+    if (focus && get(focus)) requestAnimationFrame(() => {
+      const center = get('tablet-center');
+      center.scrollTop = get(focus).getBoundingClientRect().top - center.getBoundingClientRect().top + center.scrollTop - 10;
+    });
+  }
+  for (const name of Object.keys(pages)) get('tab-'+name).addEventListener('click',()=>show(name));
+  for (const id of Object.keys(groups)) get('wheel-'+id).addEventListener('click',()=>show(groups[id].tabs[0]));
+  for (const button of document.querySelectorAll('.reference-nav button')) button.addEventListener('click',()=>show(button.dataset.page,button.dataset.focus));
+  const params = new URLSearchParams(location.search);
+  show(pages[params.get('page')]?params.get('page'):'cube',params.get('focus'));
+})();
+</script>
+</body>
+</html>

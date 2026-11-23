@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#142629">
+  <meta name="description" content="Q-bits Tablet 2.0. Explora tu construcción, controla sus mecanismos y dibuja sus recorridos en una tableta interactiva independiente.">
+  <title>Q-bits · Tablet 2.0</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="preload" href="../assets/fonts/led-calculator/LEDCalculator.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="../assets/fonts/spaceman/Spaceman-Regular.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="tablet.css">
+  <script src="../assets/js/rotor-power.js" defer></script>
+  <script src="../assets/js/propeller-power.js" defer></script>
+  <script src="../assets/js/tablet-model.js" defer></script>
+  <script type="module" src="app.mjs"></script>
+</head>
+<body>
+  <div class="room" aria-hidden="true"><div class="room-grid"></div><div class="room-light"></div><div class="world-cube cube-a"><i></i><b></b></div><div class="world-cube cube-b"><i></i><b></b></div><div class="world-cube cube-c"><i></i><b></b></div></div>
+  <header class="world-header">
+    <a class="world-brand" href="./" aria-label="Q-bits Tablet 2.0">Q-bits<span>TABLET 2.0</span></a>
+    <div class="world-actions"><span class="prototype-tag">Prototipo interactivo</span><a href="design.html">Ver los 3 bocetos <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M10 4v16M10 13h11"/></svg></a></div>
+  </header>
+  <main id="workspace" aria-label="Prototipo de tableta Q-bits">
+    <div id="device-position">
+      <section id="tablet" class="tablet" aria-label="Tableta de construcción">
+        <div class="tablet-back" aria-hidden="true"></div><div class="tablet-edge" aria-hidden="true"></div>
+        <canvas id="tablet-shell" aria-hidden="true"></canvas>
+        <div class="screen">
+          <header class="device-header">
+            <div id="drag-handle" class="device-grip" title="Arrastra para mover la tableta"><span class="grip-dots" aria-hidden="true">⠿</span><strong class="device-wordmark">Q-bits</strong><span class="device-subtitle">BANCO DE PRUEBAS</span></div>
+            <div class="header-buttons"><button id="open-catalog" class="icon-button" title="Funciones y piezas" aria-label="Funciones y piezas"></button><button id="open-display" class="icon-button" title="Ajustar tableta" aria-label="Ajustar tableta" aria-expanded="false"></button><button id="close-tablet" class="icon-button" title="Guardar tableta" aria-label="Guardar tableta"></button></div>
+          </header>
+          <nav id="navigation" class="main-nav" aria-label="Secciones de la tableta">
+            <button data-section="build" aria-current="page"><span data-icon="build"></span><span>Construir</span></button>
+            <button data-section="control"><span data-icon="control"></span><span>Controlar</span></button>
+            <button data-section="route"><span data-icon="route"></span><span>Recorrido</span></button>
+            <button data-section="saves"><span data-icon="save"></span><span>Guardados</span></button>
+          </nav>
+          <div class="tablet-layout">
+            <aside id="tools" class="tools" aria-label="Herramientas contextuales"></aside>
+            <section class="construction" aria-label="Construcción interactiva">
+              <div class="scene-header"><div><p class="eyebrow" id="scene-eyebrow">TU CONSTRUCCIÓN</p><h1 id="scene-title">Brazo modular</h1><p class="scene-description" id="scene-description">Cada pieza tiene su lugar.</p></div><span class="state-pill" id="scene-status">En reposo</span></div>
+              <div class="scene-toolbar" id="scene-toolbar"><div class="segmented selection-mode" aria-label="Modo de selección"><button data-selection-mode="piece" aria-pressed="true">Pieza</button><button data-selection-mode="assembly" aria-pressed="false">Conjunto</button></div><button class="text-button" id="fit-view" title="Centrar construcción"><span data-icon="focus"></span><span>Centrar</span></button></div>
+              <div id="scene-view" class="scene-view"><canvas id="mechanism" aria-label="Vista 3D del mecanismo; elige una pieza con un clic. Arrastra el fondo para girar la vista." role="img"></canvas><div class="scene-corner top-left" aria-hidden="true"></div><div class="scene-corner bottom-right" aria-hidden="true"></div><span class="view-label">VISTA DEL CONJUNTO</span><div id="blueprint-note" class="blueprint-note" hidden>Elige una posición y confirma la guía azul.</div><div class="view-controls"><button id="orbit-left" class="icon-button" aria-label="Girar vista a la izquierda"></button><button id="orbit-right" class="icon-button" aria-label="Girar vista a la derecha"></button><button id="zoom-in" class="icon-button" aria-label="Acercar vista"></button><button id="zoom-out" class="icon-button" aria-label="Alejar vista"></button></div></div>
+              <div id="route-view" class="route-view" hidden><svg id="route-canvas" viewBox="0 0 600 400" role="group" aria-label="Mapa del recorrido del dron"></svg><p class="route-map-help" id="route-map-help">Elige un punto. Arrástralo para cambiar su posición.</p></div>
+              <div id="saves-view" class="saves-view" hidden></div>
+              <div class="scene-bottom" id="scene-bottom"><div id="piece-picker" class="piece-picker" aria-label="Elegir pieza por nombre"></div><p class="interaction-hint" id="interaction-hint">Toca una pieza para descubrir qué puede hacer.</p></div>
+            </section>
+            <aside id="context" class="context" aria-label="Controles de la selección"></aside>
+          </div>
+          <footer class="device-footer"><span id="selection-summary">Elige una pieza</span><span id="notice" role="status" aria-live="polite">Explora, ajusta y prueba.</span><button id="open-performance" class="footer-button" title="Medición del prototipo">Rendimiento</button></footer>
+        </div>
+        <div class="hardware-mark" aria-hidden="true"><span></span>Q / 02<span></span></div>
+      </section>
+    </div>
+    <button id="reopen-tablet" class="reopen-tablet" hidden><span data-icon="tablet"></span>Abrir tableta</button>
+  </main>
+  <footer class="world-footer"><span><i aria-hidden="true"></i> ESPACIO DE PRUEBA</span><p>Una máquina de cubos. Todo a mano.</p><span>Los cambios de esta demo se guardan aparte del juego.</span></footer>
+  <dialog id="display-dialog" class="floating-dialog"><form method="dialog"><header><div><p class="eyebrow">A TU MEDIDA</p><h2>Tu tableta</h2></div><button class="icon-button" aria-label="Cerrar ajustes">×</button></header><label class="field-label" for="tablet-size">Tamaño</label><div class="range-row"><span>Compacta</span><input id="tablet-size" type="range" min="75" max="115" value="100" aria-label="Tamaño de la tableta"><span>Amplia</span></div><p class="helper">El texto conserva su tamaño para seguir siendo legible.</p><label class="field-label">Posición</label><div class="segmented"><button type="button" data-dock="left">Izquierda</button><button type="button" data-dock="center">Centro</button><button type="button" data-dock="right">Derecha</button></div><p class="helper">También puedes arrastrar la cabecera de la tableta.</p><label class="field-label" for="tablet-material">Carcasa</label><select id="tablet-material"><option value="glass">Cristal oscuro</option><option value="alloy">Grafito</option></select><button type="button" id="restore-display" class="secondary-button full">Restaurar tamaño y posición</button></form></dialog>
+  <dialog id="catalog-dialog" class="catalog-dialog"><header><div><p class="eyebrow">EL UNIVERSO Q-BITS</p><h2>Piezas y posibilidades</h2><p class="helper">Las funciones del banco, organizadas por lo que quieres hacer.</p></div><button class="icon-button" data-close-dialog="catalog-dialog" aria-label="Cerrar catálogo">×</button></header><div id="catalog-content"></div><footer><a href="docs/AUDITORIA.md" target="_blank">Matriz de funciones originales</a><a href="docs/INTEGRACION.md" target="_blank">Guía de conexión con el juego</a></footer></dialog>
+  <dialog id="performance-dialog" class="floating-dialog"><header><div><p class="eyebrow">SOLO EL PROTOTIPO</p><h2>Rendimiento</h2></div><button class="icon-button" data-close-dialog="performance-dialog" aria-label="Cerrar rendimiento">×</button></header><div id="performance-content"></div><button id="measure-performance" class="primary-button full">Medir respuesta de la vista</button><p class="helper">Esta medición no representa los FPS ni el uso de CPU del juego completo.</p></dialog>
+  <dialog id="save-dialog" class="floating-dialog"><form id="save-form"><header><div><p class="eyebrow">CONSERVA TU IDEA</p><h2>Guardar construcción</h2></div><button type="button" class="icon-button" data-close-dialog="save-dialog" aria-label="Cerrar guardado">×</button></header><label class="field-label" for="save-name">Nombre</label><input id="save-name" maxlength="40" required value="Mi brazo modular"><p class="helper">Se guardan las piezas, los ajustes y el recorrido de esta demo en este navegador.</p><button class="primary-button full" type="submit">Guardar</button></form></dialog>
+  <input type="file" id="import-file" accept="application/json,.json" hidden>
+  <noscript>Activa JavaScript para probar la tableta interactiva.</noscript>
+</body>
+</html>
