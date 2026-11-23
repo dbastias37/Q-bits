@@ -5645,8 +5645,8 @@ function powerElectricalGraph(){
  }
  if(mechanicalStepCache)mechanicalStepCache.electricalGraph=graph;return graph;
 }
-function getCableSupply(subject){
- const graph=powerElectricalGraph(),seeds=powerSubjectGroups(subject),result=new Map(),visited=new Set();
+function getCableSupply(subject,graph=powerElectricalGraph()){
+ const seeds=powerSubjectGroups(subject),result=new Map(),visited=new Set();
  for(const seed of seeds){
   const first=graph.groupNode(seed);if(!first||visited.has(first))continue;visited.add(first);let cells=graph.supplies.get(first);
   if(!cells){
@@ -7764,9 +7764,67 @@ function syncTabletMode(){
 function tabletVisible(){return !panel.hidden&&story.mode==='playing'&&!story.transition&&story.scene==='lab';}
 const tabletReducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
 let tabletMotionStart=0,tabletStowTimer=0;
+let tabletNextChargeRead=0;
+function tabletChargeReading(){
+ const atBench=!!workshopPanel?.isOpen;
+ const hit=atBench?mechanicalPartIndex().get(workshopPanel.model?.targetId):selected;
+ const multiple=!atBench&&multiSelection.length>1;
+ const motors=!atBench&&!multiple&&tabletTab==='mechanisms'&&!isExternalBattery(hit?.part)?controlRotors():[];
+ if(!multiple&&!motors.length&&isExternalBattery(hit?.part)){
+  const pack=externalBatteryPackInfo(hit.part.id);
+  if(pack)return {percent:pack.percent,label:pack.label+(pack.enabled?' · activa':' · apagada')};
+ }
+ const seeds=motors.length?motors.flatMap(rotorGroups):multiple?multiSelection:hit?[hit.g]:[];
+ const components=new Set(seeds.map(mechanicalComponentGroups).filter(Boolean));
+ if(!components.size)return {percent:null,label:'Sin selección'};
+ const cells=new Set();
+ const electrical=powerCables.length?powerElectricalGraph():null;
+ const belts=new Set(conveyors.map(c=>mechanicalPartIndex().get(c.baseId)?.g));
+ let label='Reserva del conjunto';
+ for(const component of components){
+  const supply=electrical?getCableSupply(component[0],electrical):externalBatteryCells(component[0]);
+  if(supply.length){
+   for(const cell of supply)cells.add(cell);
+   if(components.size===1)label='Batería externa del conjunto';
+   continue;
+  }
+  // Belts and propellers require an active external supply to operate.
+  if(propellerModules(component).length||component.some(g=>belts.has(g)))continue;
+  const parts=component.flatMap(g=>g.parts);
+  const powered=parts.filter(p=>rotorForPart(p.id)||p.mood.gripper);
+  if(powered.length){
+   for(const part of powered)cells.add(part);
+  }else if(multiple||parts.length>1){
+   for(const part of parts)cells.add(part);
+  }else{
+   cells.add(parts[0]);
+   if(components.size===1)label=unitLabel(parts[0])+' '+parts[0].id;
+  }
+ }
+ let capacity=0,stored=0;
+ for(const cell of cells){
+  const joules=powerReservoirCell(cell)?.capacity??gameBatteryCapacity(cell);
+  capacity+=joules;stored+=joules*cell.mood.energy;
+ }
+ return capacity?{percent:Math.round(100*stored/capacity),label}:{percent:null,label:'Sin batería activa'};
+}
+function refreshTabletCharge(time){
+ if(panel.hidden||time<tabletNextChargeRead)return;
+ tabletNextChargeRead=time+250;
+ const {percent,label}=tabletChargeReading();
+ const indicator=tabletEl('tablet-battery'),value=tabletEl('tablet-battery-value');
+ const display=percent===null?'—':percent+' %';
+ const level=percent===null?'none':percent<=15?'critical':percent<=35?'low':'normal';
+ const description=percent===null?label:label+' · '+display+' de carga'+(level==='critical'?' · batería crítica':'');
+ if(indicator.dataset.level!==level)indicator.dataset.level=level;
+ if(value.textContent!==display)value.textContent=display;
+ if(indicator.title!==description){
+  indicator.title=description;indicator.setAttribute('aria-label',description);
+ }
+}
 function showTablet(){
  if(panel.hidden){tabletMotionStart=performance.now();clearTimeout(tabletStowTimer);delete panel.dataset.stowing;}
- panel.hidden=false;tabletPreferences();syncTabletMode();
+ panel.hidden=false;tabletPreferences();syncTabletMode();tabletNextChargeRead=0;refreshTabletCharge(performance.now());
 }
 function stowTablet(){
  if(panel.hidden)return;
@@ -11953,6 +12011,7 @@ function frame(time=performance.now()) {
     requestAnimationFrame(frame);return;
   }
   tickStory(dt,false);
+  refreshTabletCharge(time);
   liveMechanismPanel(time);
   const frozen=storySuspended()||!!story.transition;
   if(tabletVisible()){

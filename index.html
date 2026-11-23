@@ -314,7 +314,7 @@ input,select,textarea{font-family:var(--font-menu);}
 <link rel="stylesheet" href="assets/css/conveyor-panel.css?v=20261116-quick-catalogue-1">
 <link rel="stylesheet" href="assets/css/servo-panel.css?v=20261117-culling-1">
   <link rel="stylesheet" href="assets/css/culling-lab.css?v=20261117-culling-1">
-  <link rel="stylesheet" href="assets/css/tablet.css?v=20261119-marcha-2">
+  <link rel="stylesheet" href="assets/css/tablet.css?v=20261123-tablet-graphite-1">
   <link rel="stylesheet" href="assets/css/saved-games.css?v=20261121-saved-games-1">
   <link rel="stylesheet" href="assets/css/families.css?v=20261122-families-1">
 </head>
@@ -446,25 +446,25 @@ input,select,textarea{font-family:var(--font-menu);}
         </div>
     <div id="page-cube" role="tabpanel">
       <label>Tipo de pieza<select id="unit-shape"><option value="cube">Q-bit · cubo</option><option value="tetra">T-bit · pirámide triangular</option><option value="pyramid">T-bit · pirámide de base cuadrada</option><option value="coupler">Enganche · mitad del eje</option><option value="rotor">Rotor · dos enganches unidos</option></select></label>
-      <label>Peso por pieza <output id="massValue"></output><input id="mass" type="range" min="0.25" max="3" step="0.25" value="1"></label>
-      <label>Gravedad <output id="gravityValue"></output><input id="gravity" type="range" min="1" max="20" step="0.5" value="9.8"></label>
-      <label>Rebote <output id="bounceValue"></output><input id="bounce" type="range" min="0" max="0.65" step="0.05" value="0.12"></label>
-      <label>Fricción <output id="frictionValue"></output><input id="friction" type="range" min="0.05" max="0.8" step="0.01" value="0.38"></label>
-      <label>Freno del giro <output id="dampingValue"></output><input id="damping" type="range" min="0.01" max="0.8" step="0.01" value="0.12"></label>
-      <label>Fuerza de agarre <output id="forceValue"></output><input id="force" type="range" min="4" max="300" step="1" value="60"></label>
-      <label>Estabilidad del agarre <output id="gripValue"></output><input id="grip" type="range" min="0" max="1" step="0.05" value="0.95"></label>
-      <label>Velocidad de giro con Shift <output id="rotationSpeedValue"></output><input id="rotationSpeed" type="range" min="1" max="5" step="0.1" value="2.8"></label>
-      <label>Capacidad de carga <output id="maxCarryValue"></output><input id="maxCarry" type="range" min="1" max="2000" step="1" value="2000"></label>
-      <label>Límite de selección <output id="maxSelectValue"></output><input id="maxSelect" type="range" min="1" max="2000" step="1" value="2000"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-mass"/></svg>Peso por pieza <output id="massValue"></output><input id="mass" type="range" min="0.25" max="3" step="0.25" value="1"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-height"/></svg>Gravedad <output id="gravityValue"></output><input id="gravity" type="range" min="1" max="20" step="0.5" value="9.8"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-friction"/></svg>Rebote <output id="bounceValue"></output><input id="bounce" type="range" min="0" max="0.65" step="0.05" value="0.12"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-friction"/></svg>Fricción <output id="frictionValue"></output><input id="friction" type="range" min="0.05" max="0.8" step="0.01" value="0.38"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-friction"/></svg>Freno del giro <output id="dampingValue"></output><input id="damping" type="range" min="0.01" max="0.8" step="0.01" value="0.12"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-grip"/></svg>Fuerza de agarre <output id="forceValue"></output><input id="force" type="range" min="4" max="300" step="1" value="60"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-grip"/></svg>Estabilidad del agarre <output id="gripValue"></output><input id="grip" type="range" min="0" max="1" step="0.05" value="0.95"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-speed"/></svg>Velocidad de giro con Shift <output id="rotationSpeedValue"></output><input id="rotationSpeed" type="range" min="1" max="5" step="0.1" value="2.8"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-mass"/></svg>Capacidad de carga <output id="maxCarryValue"></output><input id="maxCarry" type="range" min="1" max="2000" step="1" value="2000"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-count"/></svg>Límite de selección <output id="maxSelectValue"></output><input id="maxSelect" type="range" min="1" max="2000" step="1" value="2000"></label>
       <label>Proyección al mantener Ctrl<select id="guide"><option value="ghost">Pieza semitransparente</option><option value="dot">Punto</option><option value="x">X</option><option value="none">Sin marca</option></select></label>
       <label>Línea de caída<select id="line"><option value="dashed">Segmentada y animada</option><option value="solid">Continua</option><option value="none">Sin línea</option></select></label>
       <details><summary>Estados y energía</summary>
         <label><input id="dialogues-enabled" type="checkbox" checked> Diálogos de los Q-bits</label><p>Reaccionan a las tareas, al contacto y a cómo los sostienes. Habla uno a la vez, con pausas amplias. Los comentarios espontáneos son ocasionales; las reacciones responden a lo que ocurre.</p>
         <p>Neutro: trabaja o descansa. Entusiasmado: energía completa y un pequeño impulso de velocidad. Inquieto: agotamiento, bloqueo o demasiada inactividad. Descansa y retoma las órdenes pendientes.</p>
         <p>Esperar compañeros y mantener un botón cuentan como tareas. Los gestos no cambian las físicas. Al acercar las piezas sostenidas con la rueda se enfocan y aparecen sus nombres y barras de energía; de lejos, las barras se ocultan. Los enfados repetidos intensifican los gestos; el enfriador ayuda a recuperar la calma.</p>
-        <label>Gasto de energía <output id="mood-drainValue">3.5 % / m</output><input id="mood-drain" type="range" min="0.005" max="0.08" step="0.005" value="0.035"></label>
-        <label>Recuperación <output id="mood-recoveryValue">6 % / s</output><input id="mood-recovery" type="range" min="0.02" max="0.15" step="0.01" value="0.06"></label>
-        <label>Tolerancia a la inactividad <output id="mood-idleSecondsValue">90 s</output><input id="mood-idleSeconds" type="range" min="45" max="180" step="5" value="90"></label>
+        <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-charge"/></svg>Gasto de energía <output id="mood-drainValue">3.5 % / m</output><input id="mood-drain" type="range" min="0.005" max="0.08" step="0.005" value="0.035"></label>
+        <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-charge"/></svg>Recuperación <output id="mood-recoveryValue">6 % / s</output><input id="mood-recovery" type="range" min="0.02" max="0.15" step="0.01" value="0.06"></label>
+        <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-time"/></svg>Tolerancia a la inactividad <output id="mood-idleSecondsValue">90 s</output><input id="mood-idleSeconds" type="range" min="45" max="180" step="5" value="90"></label>
         <div class="actions"><button id="mood-test-tired" type="button">Agotar seleccionado</button><button id="mood-test-rested" type="button">Recargar seleccionado</button></div>
         <p>Estas dos pruebas afectan solo a la pieza seleccionada y están disponibles en el banco libre.</p>
       </details>
@@ -509,17 +509,17 @@ input,select,textarea{font-family:var(--font-menu);}
             <figcaption id="servo-angle">Ángulo actual: 0°</figcaption>
           </figure>
           <div class="servo-fields">
-            <label>Desde (°)<input id="servo-min" type="number" min="-90" max="90" step="5" value="-40" inputmode="decimal"></label>
-            <label>Hasta (°)<input id="servo-max" type="number" min="-90" max="90" step="5" value="40" inputmode="decimal"></label>
-            <label>Velocidad (°/s)<input id="servo-speed" type="number" min="5" max="540" step="5" value="45" inputmode="decimal"></label>
+            <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-angle"/></svg>Desde (°)<input id="servo-min" type="number" min="-90" max="90" step="5" value="-40" inputmode="decimal"></label>
+            <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-angle"/></svg>Hasta (°)<input id="servo-max" type="number" min="-90" max="90" step="5" value="40" inputmode="decimal"></label>
+            <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-speed"/></svg>Velocidad (°/s)<input id="servo-speed" type="number" min="5" max="540" step="5" value="45" inputmode="decimal"></label>
             <label>Movimiento<select id="servo-mode"><option value="hold">Mantener posición</option><option value="once">Mover una vez</option><option value="repeat">Ida y vuelta</option></select></label>
-            <label id="servo-target-row">Posición objetivo (°)<input id="servo-target" type="number" min="-90" max="90" step="5" value="0" inputmode="decimal"></label>
+            <label id="servo-target-row"><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-angle"/></svg>Posición objetivo (°)<input id="servo-target" type="number" min="-90" max="90" step="5" value="0" inputmode="decimal"></label>
           </div>
           <button id="servo-apply" type="button">Aplicar recorrido</button>
           <div class="servo-actions"><button id="servo-start" type="button">Iniciar</button><button id="servo-stop" type="button">Detener y bloquear</button><button id="servo-invert" type="button">Invertir sentido</button></div>
           <p id="servo-status" role="status" aria-live="polite"></p>
           <p class="servo-pause-note">Puedes observar el giro desde P. Detén el servo para editarlo. Al detenerse, la articulación conserva su ángulo.</p>
-          <dl class="servo-facts"><div><dt>Torque máximo</dt><dd id="servo-torque">—</dd></div><div><dt>Carga máxima</dt><dd id="servo-capacity">—</dd></div></dl>
+          <dl class="servo-facts"><div><dt><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-torque"/></svg>Torque máximo</dt><dd id="servo-torque">—</dd></div><div><dt>Carga máxima</dt><dd id="servo-capacity">—</dd></div></dl>
         </div>
         <p id="servo-feedback" role="status" aria-live="polite"></p>
       </section>
@@ -528,8 +528,8 @@ input,select,textarea{font-family:var(--font-menu);}
         <h3 id="flight-title">Hélices · vuelo modular</h3>
         <p id="flight-status" role="status"></p>
         <p>Una hélice: 1 enganche + 2 T-bits triangulares. Conecta una batería de 1, 2 o 3 celdas y enciéndela. El conjunto admite hasta 4 hélices, con estabilización asistida.</p>
-        <label>Altura sobre el piso (m)<input id="flight-height" type="number" min="0.15" max="3" step="0.05" value="0.5"></label>
-        <label>Velocidad de avance (m/s)<input id="flight-speed" type="number" min="0" max="1.2" step="0.1" value="0"></label>
+        <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-height"/></svg>Altura sobre el piso (m)<input id="flight-height" type="number" min="0.15" max="3" step="0.05" value="0.5"></label>
+        <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-speed"/></svg>Velocidad de avance (m/s)<input id="flight-speed" type="number" min="0" max="1.2" step="0.1" value="0"></label>
         <div class="actions"><button id="flight-apply" type="button">Aplicar altura y velocidad</button><button id="flight-heading" type="button">Avanzar hacia donde miro</button></div>
         <div class="actions"><button id="flight-start" type="button">Despegar</button><button id="flight-land" type="button">Aterrizar</button><button id="flight-stop" type="button">Apagar motores</button></div>
         <details id="flight-editor"><summary>Crear trayectoria</summary>
@@ -566,8 +566,8 @@ input,select,textarea{font-family:var(--font-menu);}
             <label id="arm-color-row" hidden>Color objetivo<input id="arm-filter-color" type="color" value="#b36b4d"></label>
             <div id="arm-piece-row" hidden><label>Pieza objetivo<select id="arm-filter-piece"><option value="">Elige una pieza de la sala</option></select></label><button id="arm-capture-piece" type="button">Usar pieza seleccionada</button></div>
             <div id="arm-shape-row" hidden><label id="arm-shape-type-row">Tipo de pieza<select id="arm-filter-shape"><option value="cube">Cubo</option><option value="pyramid">Pirámide de base cuadrada</option><option value="tetra">Triangular</option><option value="coupler">Enganche</option></select></label><div id="arm-form-row" hidden><button id="arm-capture-shape" type="button">Aprender forma seleccionada</button><p id="arm-shape-memory"></p><p>Selecciona una estructura de la sala y vuelve a este panel para aprender su disposición.</p></div></div>
-            <label>Carga máxima <output id="arm-capacity-value">4 u</output><input id="arm-capacity" type="range" min="1" max="2000" step="1" value="4"></label>
-            <label>Alcance de toma <output id="arm-reach-value">5 cm</output><input id="arm-reach" type="range" min="1.8" max="5" step="0.1" value="5"></label>
+            <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-mass"/></svg>Carga máxima <output id="arm-capacity-value">4 u</output><input id="arm-capacity" type="range" min="1" max="2000" step="1" value="4"></label>
+            <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-range"/></svg>Alcance de toma <output id="arm-reach-value">5 cm</output><input id="arm-reach" type="range" min="1.8" max="5" step="0.1" value="5"></label>
             <button id="arm-apply-filter" type="button">Aplicar filtro, carga y alcance</button>
             <button id="arm-check" type="button">Comprobar toma · qué falta</button>
             <p id="arm-check-result" role="status" aria-live="polite"></p>
@@ -591,8 +591,8 @@ input,select,textarea{font-family:var(--font-menu);}
             <div class="arm-actions"><button id="arm-fit-load" type="button">Ajustar ejes al límite de la pinza</button></div>
             <label>Eje<select id="arm-motor-axis"></select></label>
             <div class="arm-motor-fields">
-              <label>Velocidad (rpm)<input id="arm-motor-rpm" type="number" min="1" max="360" step="any"></label>
-              <label>Torque (N·m)<input id="arm-motor-torque" type="number" min="0.02" max="32" step="any"></label>
+              <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-speed"/></svg>Velocidad (rpm)<input id="arm-motor-rpm" type="number" min="1" max="360" step="any"></label>
+              <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-torque"/></svg>Torque (N·m)<input id="arm-motor-torque" type="number" min="0.02" max="32" step="any"></label>
               <label>Carga máxima (u)<input id="arm-motor-capacity" type="number" min="2" max="16000" step="1"></label>
             </div>
             <button id="arm-apply-motor" type="button">Aplicar ajuste al eje</button>
@@ -606,7 +606,7 @@ input,select,textarea{font-family:var(--font-menu);}
           <label><input id="arm-repeat" type="checkbox" checked> Repetir la secuencia</label><div class="arm-actions"><button id="arm-start" type="button">Iniciar secuencia</button><button id="arm-stop" type="button">Detener</button></div>
           <p>Sin Repetir, termina en B. Con Repetir, vuelve a A y espera otro objeto. Detener suelta la carga. Un brazo unido a una cinta sigue necesitando sus propias posturas A y B.</p>
         </div>
-        <dl class="arm-facts"><div><dt>Objeto sostenido / límite</dt><dd id="arm-load">0 u / —</dd></div><div><dt>Energía disponible</dt><dd id="arm-energy">—</dd></div><div><dt>Entregas completas</dt><dd id="arm-cycles">0</dd></div><div><dt>Margen de carga</dt><dd id="arm-efficiency">—</dd></div></dl>
+        <dl class="arm-facts"><div><dt>Objeto sostenido / límite</dt><dd id="arm-load">0 u / —</dd></div><div><dt><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-charge"/></svg>Energía disponible</dt><dd id="arm-energy">—</dd></div><div><dt>Entregas completas</dt><dd id="arm-cycles">0</dd></div><div><dt>Margen de carga</dt><dd id="arm-efficiency">—</dd></div></dl>
         <p id="arm-feedback" role="status" aria-live="polite"></p>
       </section>
 
@@ -628,13 +628,13 @@ input,select,textarea{font-family:var(--font-menu);}
         <p id="conveyor-target">Selecciona un tramo para cambiar su marcha.</p>
         <p id="conveyor-status" role="status" aria-live="polite">Completa todas las piezas del plano para habilitar la cinta.</p>
         <div id="conveyor-controls" hidden>
-          <label>Carga máxima (u)<input id="conveyor-capacity" type="number" min="1" max="2000" step="1" value="8"></label>
+          <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-mass"/></svg>Carga máxima (u)<input id="conveyor-capacity" type="number" min="1" max="2000" step="1" value="8"></label>
           <div class="conveyor-actions" role="group" aria-label="Sentido de la cinta"><button id="conveyor-forward" type="button" aria-pressed="false">Avance</button><button id="conveyor-reverse" type="button" aria-pressed="false">Inversa</button></div>
           <p id="conveyor-direction-note">Sentido indicado en el plano.</p>
           <button id="conveyor-toggle" type="button" aria-pressed="false">Iniciar marcha de la línea</button>
           <p>Activa la batería y deja libres la entrada y la salida. Al unir un tramo, su avance sigue el sentido del tramo receptor.</p>
         </div>
-        <dl class="conveyor-facts"><div><dt>Carga / límite del tramo</dt><dd id="conveyor-load">—</dd></div><div><dt>Velocidad de la banda</dt><dd id="conveyor-speed">—</dd></div><div><dt>Energía disponible</dt><dd id="conveyor-energy">—</dd></div><div><dt>Línea conectada</dt><dd id="conveyor-connected">—</dd></div></dl>
+        <dl class="conveyor-facts"><div><dt>Carga / límite del tramo</dt><dd id="conveyor-load">—</dd></div><div><dt><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-speed"/></svg>Velocidad de la banda</dt><dd id="conveyor-speed">—</dd></div><div><dt><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-charge"/></svg>Energía disponible</dt><dd id="conveyor-energy">—</dd></div><div><dt>Línea conectada</dt><dd id="conveyor-connected">—</dd></div></dl>
         <p id="conveyor-feedback" role="status" aria-live="polite"></p>
       </section>
 
@@ -644,9 +644,9 @@ input,select,textarea{font-family:var(--font-menu);}
       <div class="actions"><button id="rotor-set-create" type="button">Crear conjunto</button><button id="rotor-set-dissolve" type="button">Disolver conjunto</button></div>
       <p>Ctrl + clic en cada rotor: añadir o quitar. Después, escribe un nombre y crea el conjunto. Cada rotor pertenece a un conjunto; si lo incluyes en otro, se traslada.</p>
       <div class="actions"><button id="rotor-start" type="button">Iniciar marcha</button><button id="rotor-stop" type="button">Detener</button><button id="rotor-invert" type="button">Invertir marcha</button></div>
-      <label>Velocidad <output id="rotor-rpm-value">30</output><input id="rotor-rpm" type="range" min="1" max="360" step="1" value="30"></label>
-      <label>Fuerza <output id="rotor-force-value">320</output><input id="rotor-force" type="range" min="2" max="3200" step="1" value="320"></label>
-      <label>Carga máxima <output id="rotor-capacity-value">256</output><input id="rotor-capacity" type="range" min="2" max="16000" step="1" value="256"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-speed"/></svg>Velocidad <output id="rotor-rpm-value">30</output><input id="rotor-rpm" type="range" min="1" max="360" step="1" value="30"><small class="tablet-field-hint">Vueltas por minuto que intentará alcanzar el motor.</small></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-torque"/></svg>Fuerza <output id="rotor-force-value">320</output><input id="rotor-force" type="range" min="2" max="3200" step="1" value="320"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-mass"/></svg>Carga máxima <output id="rotor-capacity-value">256</output><input id="rotor-capacity" type="range" min="2" max="16000" step="1" value="256"><small class="tablet-field-hint">Peso máximo que admite cada rotor.</small></label>
       <p id="rotor-power-readout" role="status" aria-live="polite"></p>
       <p id="rotor-supply-status"></p>
       <div id="connected-batteries" class="actions" aria-label="Baterías conectadas"></div>
@@ -664,7 +664,7 @@ input,select,textarea{font-family:var(--font-menu);}
       <details><summary>Montaje y ajustes avanzados</summary>
       <p id="rotor-individual-note"></p>
       <label>Montaje<select id="rotor-mount"><option value="wheel">Rueda libre · el conjunto puede moverse</option><option value="fixed">Eje fijo · base anclada al banco</option></select></label>
-      <label>Torque máximo <output id="rotor-torque-value">3.20 N·m</output><input id="rotor-torque" type="range" min="0.02" max="32" step="0.02" value="3.2"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-torque"/></svg>Torque máximo <output id="rotor-torque-value">3.20 N·m</output><input id="rotor-torque" type="range" min="0.02" max="32" step="0.02" value="3.2"><small class="tablet-field-hint">Límite de fuerza de giro del eje.</small></label>
       <label>Lado que gira<select id="rotor-side"><option value="a">Lado A · lado B como base</option><option value="b">Lado B · lado A como base</option></select></label>
       <p>Velocidad representa vueltas por minuto. Fuerza 40 equivale al torque 0,40; carga 1 equivale al peso de un Q-bit normal. La carga incluye todas las piezas conectadas. Sin batería o con sobrecarga, el motor se detiene.</p>
       <p id="rotor-technical-readout"></p>
@@ -678,17 +678,17 @@ input,select,textarea{font-family:var(--font-menu);}
     </div>
     <div id="page-route" role="tabpanel" hidden>
       <p>Clic derecho para seleccionar un Q-bit. Después, clic derecho en el suelo → Ir a este punto. Para un grupo, arrastra con clic izquierdo desde un espacio vacío. La estructura busca espacio libre y rueda sobre sus aristas; más peso significa menor velocidad.</p>
-      <label>Velocidad base <output id="speedValue"></output><input id="speed" type="range" min="0.12" max="0.7" step="0.02" value="0.32"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-speed"/></svg>Velocidad base <output id="speedValue"></output><input id="speed" type="range" min="0.12" max="0.7" step="0.02" value="0.32"></label>
       <p>R vuelve al punto de partida y reinicia el recorrido. Si un objeto bloquea el paso, se busca otro camino o se detiene.</p><button id="stop" type="button">Detener selección</button>
     </div>
     <div id="page-cargo" role="tabpanel" hidden>
       <p id="cargo-editing"></p>
-      <label>Lado de los nuevos cuerpos <output id="cargoSideValue"></output><input id="cargoSide" type="range" min="1" max="12" step="1" value="4"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-range"/></svg>Lado de los nuevos cuerpos <output id="cargoSideValue"></output><input id="cargoSide" type="range" min="1" max="12" step="1" value="4"></label>
       <p>Un paso equivale al lado de un Q-bit. Los tres lados siempre tienen la misma longitud.</p>
-      <label>Peso / Q-bits necesarios <output id="cargoRequiredValue"></output><input id="cargoRequired" type="range" min="1" max="2000" step="1" value="8"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-mass"/></svg>Peso / Q-bits necesarios <output id="cargoRequiredValue"></output><input id="cargoRequired" type="range" min="1" max="2000" step="1" value="8"></label>
       <label>Color <input id="cargoColor" type="color" value="#f4f4f1"></label>
-      <label>Velocidad base de arrastre <output id="haulSpeedValue"></output><input id="haulSpeed" type="range" min="0.08" max="0.4" step="0.01" value="0.2"></label>
-      <label>Fuerza por Q-bit <output id="haulForceValue"></output><input id="haulForce" type="range" min="1.5" max="5" step="0.1" value="2"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-speed"/></svg>Velocidad base de arrastre <output id="haulSpeedValue"></output><input id="haulSpeed" type="range" min="0.08" max="0.4" step="0.01" value="0.2"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-grip"/></svg>Fuerza por Q-bit <output id="haulForceValue"></output><input id="haulForce" type="range" min="1.5" max="5" step="0.1" value="2"></label>
       <p>El tamaño no fija el peso. Para mover un cuerpo deben llegar a sus puestos tantos Q-bits como indique su requisito. Más participantes aumentan la velocidad. Una estructura aporta tantas piezas como contiene.</p>
       <div class="actions"><button id="create-cargo" type="button">Crear cuerpo</button><button id="delete-cargo" type="button">Borrar cuerpo seleccionado</button></div>
       <p>Selecciona el equipo → clic derecho en el cuerpo → Arrastrar → clic derecho en el suelo → Llevar carga a este punto. Para sumar participantes, selecciona más y abre otra vez las órdenes del cuerpo.</p>
@@ -697,8 +697,8 @@ input,select,textarea{font-family:var(--font-menu);}
       <p id="puzzle-description">Monta la primera cadena dentro de la sala. Al salir se recupera el contenido de tu banco de pruebas.</p>
       <p>Empiezas con cuatro Q-bits. Calipso necesita 1, Violeta 5 y Ámbar 9 para arrastrar su material. Son valores de esta prueba. Cada entrega concede cuatro Q-bits.</p>
       <p>Los primeros portales permanecen abiertos. En Ámbar, mantén 1 u en Marco y 2 u en Energía. El aro luminoso muestra el peso reunido: en Energía, 1 Q-bit carga la mitad y 2 completan el círculo. Al retirar el peso, su carga se pierde; sin Marco también desaparece la energía.</p>
-      <label>Tiempo del marco <output id="frameSecondsValue">12 s</output><input id="frameSeconds" type="range" min="1" max="30" step="1" value="12"></label>
-      <label>Tiempo de la energía <output id="energySecondsValue">8 s</output><input id="energySeconds" type="range" min="1" max="30" step="1" value="8"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-time"/></svg>Tiempo del marco <output id="frameSecondsValue">12 s</output><input id="frameSeconds" type="range" min="1" max="30" step="1" value="12"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-time"/></svg>Tiempo de la energía <output id="energySecondsValue">8 s</output><input id="energySeconds" type="range" min="1" max="30" step="1" value="8"></label>
       <p>Selecciona el equipo → clic derecho en el material → Entregar. También puedes elegir el destino con clic derecho en el suelo. Los Q-bits se quedan fuera del portal.</p>
       <p>La recompensa aparece sostenida frente a ti. Clic derecho o izquierdo la deja caer. Si tienes las manos ocupadas, espera hasta que las liberes.</p>
       <div class="actions"><button id="start-puzzle" type="button">Montar puzle 01</button><button id="leave-puzzle" type="button" disabled>Volver al banco</button></div>
@@ -710,14 +710,14 @@ input,select,textarea{font-family:var(--font-menu);}
       <div class="saved-library-tabs" role="tablist" aria-label="Formas guardadas"><button id="saved-library-forms-tab" type="button" role="tab" aria-selected="true" aria-controls="saved-shape-list">Formas</button><button id="saved-library-mechanisms-tab" type="button" role="tab" aria-selected="false" aria-controls="saved-library-mechanisms" tabindex="-1">Mecanismos</button></div>
       <div id="saved-shape-list" role="tabpanel" aria-labelledby="saved-library-forms-tab"></div><div id="saved-library-mechanisms" role="tabpanel" aria-labelledby="saved-library-mechanisms-tab" hidden></div>
       <p>Clic derecho en el piso → Formas guardadas. Después, clic derecho en el blueprint → Integrar cercanos. Acerca Q-bits sueltos, descansados y apoyados en el piso.</p>
-      <label>Radio de integración <output id="alpha-blueprintRangeValue"></output><input id="alpha-blueprintRange" type="range" min="0.5" max="3" step="0.1" value="1.5"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-range"/></svg>Radio de integración <output id="alpha-blueprintRangeValue"></output><input id="alpha-blueprintRange" type="range" min="0.5" max="3" step="0.1" value="1.5"></label>
       <button id="export-shapes" type="button">Exportar formas</button><label>Importar copia de formas<input id="import-shapes" type="file" accept=".json,application/json"></label>
       <p>Las formas se conservan en este navegador cuando permite almacenamiento local. Exporta una copia para trasladarlas a otra versión o equipo. Importar reemplaza la lista guardada.</p>
       <label><input id="alpha-coolingOn" type="checkbox" checked> Enfriadores activos</label><button id="place-cooler" type="button">Colocar enfriador donde apunto</button>
-      <label>Capacidad de nuevos enfriadores <output id="alpha-capacityValue"></output><input id="alpha-capacity" type="range" min="1" max="2000" step="1" value="4"></label>
-      <label>Tiempo de enfriamiento <output id="alpha-coolSecondsValue"></output><input id="alpha-coolSeconds" type="range" min="5" max="60" step="1" value="35"></label>
-      <label>Energía al salir <output id="alpha-exitEnergyValue"></output><input id="alpha-exitEnergy" type="range" min="0.25" max="0.75" step="0.05" value="0.5"></label>
-      <label>Calma natural al tercer enfado <output id="alpha-maxRestValue"></output><input id="alpha-maxRest" type="range" min="15" max="180" step="5" value="180"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-count"/></svg>Capacidad de nuevos enfriadores <output id="alpha-capacityValue"></output><input id="alpha-capacity" type="range" min="1" max="2000" step="1" value="4"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-time"/></svg>Tiempo de enfriamiento <output id="alpha-coolSecondsValue"></output><input id="alpha-coolSeconds" type="range" min="5" max="60" step="1" value="35"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-charge"/></svg>Energía al salir <output id="alpha-exitEnergyValue"></output><input id="alpha-exitEnergy" type="range" min="0.25" max="0.75" step="0.05" value="0.5"></label>
+      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-time"/></svg>Calma natural al tercer enfado <output id="alpha-maxRestValue"></output><input id="alpha-maxRest" type="range" min="15" max="180" step="5" value="180"></label>
       <p>El tercer episodio cercano acumula más tensión. El recipiente acelera la vuelta a neutro y deja la energía limitada al valor de salida mientras permanezcan dentro.</p>
       <label><input id="alpha-allowPuzzleSpawn" type="checkbox"> Permitir crear Q-bits durante el puzle</label><p>Actívalo para usar N o Crear Q-bit sin salir del desafío.</p>
       <label>Brillo sutil <output id="alpha-glowValue"></output><input id="alpha-glow" type="range" min="0" max="1" step="0.05" value="0.6"></label>
@@ -842,6 +842,7 @@ input,select,textarea{font-family:var(--font-menu);}
       </div>
       <footer class="tablet-footer"><span>Rueda · sección</span><span>Shift + rueda · mesa</span><span id="tablet-close-hint">M3 · guardar</span></footer>
     </div>
+    <div id="tablet-battery" role="img" aria-label="Sin selección" title="Sin selección"><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-charge"/></svg><span id="tablet-battery-value">—</span></div>
   </section>
 
   <section id="settings-screen" hidden role="dialog" aria-modal="true" aria-labelledby="settings-title">
@@ -859,6 +860,6 @@ input,select,textarea{font-family:var(--font-menu);}
   <script src="assets/js/opening.js?v=20261116-block-joins-1" defer></script>
   <script src="assets/js/servo-panel.js?v=20261119-marcha-2" defer></script>
   <script src="assets/js/families-ui.js?v=20261122-families-1" defer></script>
-  <script src="assets/js/boot.js?v=20261123-trajectory-circuits-1" defer></script>
+  <script src="assets/js/boot.js?v=20261123-tablet-graphite-1" defer></script>
 </body>
 </html>

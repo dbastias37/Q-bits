@@ -23,37 +23,27 @@ window.QBitsTabletView = (() => {
     void main() {
       vec3 n = normalize(vNormal);
       float light = .5 + .5 * dot(n, normalize(vec3(-.42, -.62, .68)));
-      vec3 rim = mix(vec3(.13,.48,.51), vec3(.20,.23,.26), uAlloy);
-      vec3 signal = mix(vec3(.39,.94,.91), vec3(.96,.65,.29), uAlloy);
-      float z = -vPoint.z;
-      vec3 color = rim * (.42 + light * 1.05);
-      color += vec3(.37) * pow(light, 9.);
-      float seam = 1. - smoothstep(.0013,.0032,abs(z - .026));
-      color = mix(color, signal, seam * .9);
-      float display = 0.;
-      if (z < .0002) {
-        vec2 p = vPoint.xy;
-        display = step(abs(p.x), .465) * step(-.455,p.y) * step(p.y,.408);
-        vec3 face = mix(vec3(.053,.158,.19),vec3(.085,.104,.12),uAlloy);
-        face += vec3(.019,.044,.048) * (.5 - p.y) * (.6 - p.x);
-        float reflection = exp(-9. * abs(p.x + .52*p.y + .31));
-        face += vec3(.016,.023,.026) * reflection * (1.-uAlloy);
-        color = mix(color, face, display);
-        // Recessed fasteners and side grips belong to the industrial shell.
-        vec2 bolt = vec2(abs(p.x)-.445,p.y+.473) * vec2(1.,.61);
-        float radius = length(bolt);
-        color = mix(color,vec3(.09,.11,.12),uAlloy*(1.-smoothstep(.004,.006,radius)));
-        color += vec3(.30)*uAlloy*(1.-smoothstep(.0005,.0013,abs(radius-.0045)));
-        float grip = step(.47,abs(p.x))*step(abs(p.y),.19)*step(.6,fract((p.y+.2)*43.));
-        color *= 1.-.42*uAlloy*grip;
-        float strip = step(.431,p.y) * step(p.y,.437) * step(abs(p.x),.27);
-        color = mix(color, signal, strip);
+      vec2 p = vPoint.xy;
+      vec3 metal = mix(vec3(.19,.24,.25), vec3(.235,.24,.25), uAlloy) * (.42 + .71*light);
+      if (abs(vPoint.z) < .00015) {
+        bool screen = p.x > -.474 && p.x < .408 && p.y > -.453 && p.y < .392;
+        if (screen) metal = mix(vec3(.055,.13,.15), vec3(.085,.104,.12), uAlloy);
+        else {
+          float notch = step(.411,p.y)*step(p.y,.458)*step(-.386,p.x)*step(p.x,-.267)
+                      *step(.53,fract((p.x-.38*p.y)*72.));
+          metal *= 1.-.61*notch;
+          vec2 bolt=vec2(abs(p.x+.032)-.423,abs(p.y)-.461);
+          if(length(bolt*vec2(1.,.64)) < .006) metal = vec3(.052,.061,.055);
+        }
+      } else if (p.x>.469 && abs(p.y)<.19) {
+        metal *= .50 + .10*step(.72,fract(p.y*37.));
       }
-      // Old cover alpha was 0x7a–0xa6 and the display was 0xeb–0xf0.
-      float cover = mix(.48,.65,light);
-      float alpha = min(1., mix(cover,.93,display) * 1.10);
-      alpha = mix(alpha,1.,uAlloy * (1. - display));
-      gl_FragColor = vec4(color, alpha);
+      if(vPoint.z < -.051) {
+        metal *= .86;
+        if(abs(p.y-.22)<.046 && abs(p.x+.21)<.10)
+          metal *= .56+.44*step(.43,fract(p.x*72.));
+      }
+      gl_FragColor=vec4(metal, mix(.94,1.,uAlloy));
     }`;
 
   function placement(viewWidth, viewHeight, prefs) {
@@ -96,9 +86,6 @@ window.QBitsTabletView = (() => {
       const points=triangles.slice(i,i+3).map(id=>positions.slice(id*3,id*3+3));
       const [a,b,c]=points, u=b.map((p,j)=>p-a[j]), v=c.map((p,j)=>p-a[j]);
       const normal=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
-      // The model uses screen Y down. Orient each face away from the shell interior.
-      const outside=[a[0],a[1],a[2]+.028];
-      if (normal.reduce((sum,n,j)=>sum+n*outside[j],0)<0) for(let j=0;j<3;j++) normal[j]*=-1;
       for(const p of points)data.push(...p,...normal);
     }
     const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);

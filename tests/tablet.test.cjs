@@ -96,3 +96,44 @@ test('dragging the header persists both coordinates and does not change the acti
  assert(stored.tabletY>0&&stored.tabletY<100);
  assert.equal(el('panel').dataset.group,'bodies');
 });
+
+test('the bezel follows the selected battery even when switched off and distinguishes empty from absent',()=>{
+ const {t,el,middle}=lab();
+ const g=t.addQubit([3,.3,0]),part=g.parts[0];
+ part.mood.externalBattery={version:1,ownerId:part.id,packId:part.id,enabled:false};
+ part.mood.energy=.37;t.setSelected({g,part});
+ middle(t.canvas);
+ assert.equal(el('tablet-battery-value').textContent,'37 %');
+ const bezel=el('tablet-battery');
+ assert.match(bezel.title,/apagada/);
+ assert.equal(bezel.dataset.level,'normal');
+ const start=performance.now();
+ for(const [i,[percent,level]] of [[35,'low'],[16,'low'],[15,'critical'],[14,'critical'],[16,'low'],[80,'normal']].entries()){
+  part.mood.energy=percent/100;t.frame(start+300*(i+1));
+  assert.equal(bezel.dataset.level,level);
+  assert.equal(el('tablet-battery-value').textContent,percent+' %');
+ }
+ part.mood.energy=0;t.frame(start+2300);
+ assert.equal(el('tablet-battery-value').textContent,'0 %');
+ assert.equal(bezel.dataset.level,'critical');
+ t.removeGroup(g);t.frame(start+2700);
+ assert.equal(bezel.dataset.level,'none');
+ assert.equal(el('tablet-battery-value').textContent,'—');
+});
+
+test('the bezel weights internal motor reserves and switches to a cabled reservoir, including at zero',()=>{
+ const {t,el,middle}=lab();
+ const rotor=t.spawnRotor(t.V(.8,.12,.6),{mount:'fixed',capacity:256});
+ const hit=t.rotorPart(rotor.aId),other=t.rotorPart(rotor.bId);
+ hit.part.mood.energy=.2;other.part.mood.energy=.6;t.setSelected(hit);
+ middle(t.canvas);
+ assert.equal(el('tablet-battery-value').textContent,'40 %');
+ const reservoir=t.createPowerReservoir(t.V(-.6,0,-.15),{enabled:true});
+ const from={kind:'reservoir',id:reservoir.id},to={kind:'part',id:rotor.aId};
+ const material=t.addQubit([2,.05,-2]),pieces=t.worldParts(material);pieces[0].weight=2;t.removeGroup(material);
+ assert(t.connectPowerCable(from,to,t.powerSurfaceRoute(from,to),pieces).ok);
+ reservoir.cell.mood.energy=.73;t.frame(performance.now()+500);
+ assert.equal(el('tablet-battery-value').textContent,'73 %');
+ reservoir.cell.mood.energy=0;t.frame(performance.now()+1000);
+ assert.equal(el('tablet-battery-value').textContent,'0 %');
+});
