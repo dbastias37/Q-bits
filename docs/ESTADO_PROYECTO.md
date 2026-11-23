@@ -4,7 +4,7 @@ Actualizado: 22 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
 ## Entrega actual · familias para organizar y recuperar piezas
 
-Referencia de integración: `f045a96e812c1142f77008b0a113debb994b91bb`, merge del PR #33. Familias implementadas y verificadas con versión de carga `20261122-families-1`. El PR de esta entrega conserva la revisión y el commit exactos de integración.
+Referencia de integración: `f045a96e812c1142f77008b0a113debb994b91bb`, merge del PR #33. Familias implementadas y verificadas con versión de carga `20261122-families-1`. Entrega en el [PR #34](https://github.com/dbastias37/Q-bits/pull/34), que conserva la revisión y el commit exactos de integración.
 
 Las **familias** agrupan material existente en contenedores de hasta **100 piezas base**. Cada contenedor usa un cuerpo físico y conserva el inventario como datos: identidad, geometría, masa, origen, energía, mejoras y módulos. La selección y el menú secundario ofrecen **Agrupar en familia…** y **Desarmar y agrupar por tipo**; el menú Alt distingue **Desarmar en familias** de **Desarmar en piezas sueltas**. Los módulos reconocidos se reparten completos y cuentan todas sus piezas, sin rebasar la capacidad para hacerlos caber.
 
