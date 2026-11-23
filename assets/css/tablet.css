@@ -144,3 +144,10 @@
 @keyframes tablet-low-charge {
   50% {background:#361c22;border-color:#be5f5b}
 }
+
+.battery-track {width:clamp(28px,4vw,56px);height:.7em;border:1px solid currentColor;padding:1px;box-sizing:content-box}
+#tablet-charge-fill {display:block;height:100%;width:0;background:currentColor}
+#tablet-battery[data-level="critical"] .battery-track {color:#ff8078}
+#panel.tablet .tablet-footer:has(#tablet-transport:not([hidden])) > span {display:none}
+#tablet-transport:not([hidden]) {display:flex;flex-wrap:wrap;gap:4px}
+#panel.tablet #tablet-transport button {padding:3px 7px;min-height:24px;font-size:11px}

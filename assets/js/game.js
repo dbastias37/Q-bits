@@ -7808,16 +7808,57 @@ function tabletChargeReading(){
  }
  return capacity?{percent:Math.round(100*stored/capacity),label}:{percent:null,label:'Sin batería activa'};
 }
+const transportCommands={
+ flight:['flight-start','flight-land','flight-stop'],
+ arm:['arm-start','arm-stop'],
+ belt:['conveyor-toggle','conveyor-forward','conveyor-reverse'],
+ servo:['servo-start','servo-stop','servo-invert','servo-march-start','servo-march-stop'],
+ rotor:['rotor-start','rotor-stop','rotor-invert']
+};
+function transportKind(){
+ if(!selected?.g)return '';
+ if(flightPanelSubject())return 'flight';
+ if(robotArmForGroup(selected.g,selected.part?.id))return 'arm';
+ if(conveyorPanelSubject())return 'belt';
+ if(selectedRotor()?.servo)return 'servo';
+ return controlRotors().length?'rotor':'';
+}
+function refreshTabletTransport(){
+ const host=tabletEl('tablet-transport'),kind=transportKind();
+ if(host.dataset.kind!==kind){
+  host.dataset.kind=kind;host.hidden=!kind;host.replaceChildren();
+  for(const id of transportCommands[kind]||[]){
+   const button=document.createElement('button');button.type='button';button.dataset.command=id;
+   button.addEventListener('click',()=>{
+    if(transportKind()!==kind)return;
+    const source=tabletEl(id);
+    if(!source.disabled)source.click();
+    refreshTabletTransport();
+   });
+   host.append(button);
+  }
+ }
+ for(const button of host.children){
+  const source=tabletEl(button.dataset.command);
+  const text=source.textContent;
+  if(button.textContent!==text)button.textContent=text;
+  if(button.disabled!==source.disabled)button.disabled=source.disabled;
+ }
+}
 function refreshTabletCharge(time){
  if(panel.hidden||time<tabletNextChargeRead)return;
  tabletNextChargeRead=time+250;
+ refreshTabletTransport();
  const {percent,label}=tabletChargeReading();
  const indicator=tabletEl('tablet-battery'),value=tabletEl('tablet-battery-value');
  const display=percent===null?'—':percent+' %';
  const level=percent===null?'none':percent<=15?'critical':percent<=35?'low':'normal';
  const description=percent===null?label:label+' · '+display+' de carga'+(level==='critical'?' · batería crítica':'');
  if(indicator.dataset.level!==level)indicator.dataset.level=level;
- if(value.textContent!==display)value.textContent=display;
+ if(value.textContent!==display){
+  value.textContent=display;
+  tabletEl('tablet-charge-fill').style.width=(percent??0)+'%';
+ }
  if(indicator.title!==description){
   indicator.title=description;indicator.setAttribute('aria-label',description);
  }

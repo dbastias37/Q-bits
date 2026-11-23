@@ -112,6 +112,7 @@ test('the bezel follows the selected battery even when switched off and distingu
   part.mood.energy=percent/100;t.frame(start+300*(i+1));
   assert.equal(bezel.dataset.level,level);
   assert.equal(el('tablet-battery-value').textContent,percent+' %');
+  assert.equal(el('tablet-charge-fill').style.width,percent+'%');
  }
  part.mood.energy=0;t.frame(start+2300);
  assert.equal(el('tablet-battery-value').textContent,'0 %');
@@ -128,6 +129,7 @@ test('the bezel weights internal motor reserves and switches to a cabled reservo
  hit.part.mood.energy=.2;other.part.mood.energy=.6;t.setSelected(hit);
  middle(t.canvas);
  assert.equal(el('tablet-battery-value').textContent,'40 %');
+ assert.deepEqual(Array.from(el('tablet-transport').children,b=>b.dataset.command),['rotor-start','rotor-stop','rotor-invert']);
  const reservoir=t.createPowerReservoir(t.V(-.6,0,-.15),{enabled:true});
  const from={kind:'reservoir',id:reservoir.id},to={kind:'part',id:rotor.aId};
  const material=t.addQubit([2,.05,-2]),pieces=t.worldParts(material);pieces[0].weight=2;t.removeGroup(material);
