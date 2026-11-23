@@ -32,6 +32,9 @@
   reachRow.append(element('dt','', 'Alcance'),rangeValue);lengthRow.append(element('dt','', 'Trazado'),lengthValue);facts.append(reachRow,lengthRow);
   const availability=element('p','trajectory-guide','','availability');
   const changeGlyph=button('glyph-next','Cambiar cara','trajectory-subtle');identity.append(glyph,routeLabel,kind,orientation,facts,availability,changeGlyph);
+  const stages=element('ol','trajectory-stages');
+  const stageLabels=['Balizas','Trazado','Receptor'];
+  for(const text of stageLabels)stages.appendChild(element('li','',text));
   const controls=element('div','trajectory-controls'),guide=element('p','trajectory-guide','','guide'),actions=element('div','trajectory-actions');
   actions.append(button('start-route','Generar cara nueva','trajectory-primary'),button('link-route','Vincular como fin','trajectory-primary'),button('pair','Elegir final','trajectory-primary'),button('trace','Trazar recorrido','trajectory-primary'),button('assign','Elegir ruta','trajectory-primary'),button('run','Iniciar recorrido','trajectory-primary'),button('stop','Detener recorrido','trajectory-stop'));
   const preview=element('div','trajectory-preview'),map=svg('svg',{viewBox:'0 0 420 150',role:'img','aria-label':'Vista superior del recorrido'});map.id='trajectory-map';
@@ -49,7 +52,7 @@
   const waitLabel=field('Espera (segundos)',wait,'wait');pointFields.append(heightLabel,actionLabel,waitLabel);
   const pointActions=element('div','trajectory-point-actions');pointActions.append(button('point-save','Guardar punto'),button('point-remove','Quitar punto','trajectory-subtle'));
   pointControls.append(pointSelection,pointFields,pointActions);details.append(pointControls);
-  const reason=element('p','trajectory-reason','','reason');controls.append(guide,actions,preview,routeOptions,details,reason);content.append(identity,controls);
+  const reason=element('p','trajectory-reason','','reason');controls.append(stages,guide,actions,preview,routeOptions,details,reason);content.append(identity,controls);
   const footer=element('footer','trajectory-footer'),feedback=element('p','trajectory-feedback','','feedback');feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');feedback.setAttribute('aria-atomic','true');
   const footerActions=element('div','trajectory-footer-actions');footerActions.append(button('unlink','Desvincular','trajectory-subtle'),button('return','Volver'));
   footer.append(feedback,footerActions);shell.append(header,content,footer);screen.append(shell);doc.body.append(screen);
@@ -110,6 +113,10 @@
    if(!opened||disposed)return false;const s=snapshot();last=s;
    if(lastRouteId!==s?.routeId){dirty=false;draft=null;selectedPoint=0;pointStamp=null;}lastRouteId=s?.routeId;
    const beacon=s?.role!=='receiver',linked=hasRoute(s),paired=linked&&!!s?.paired,points=Array.isArray(s?.points)?s.points:[];
+   screen.dataset.layout=hooks.layout?.()||'studio';
+   stages.hidden=screen.dataset.layout!=='guided';
+   const step=beacon?(paired?1:0):2;
+   [...stages.children].forEach((item,i)=>item.setAttribute('aria-current',i===step?'step':'false'));
    setText(title,s?.title||(beacon?'Cubo de trayectoria':'Receptor de trayectoria'));setText(status,s?.status||(s?'Prepara el recorrido':'Esta pieza ya no está disponible.'));status.dataset.running=String(!!s?.running);
    setText(routeLabel,s?.routeLabel||(linked?'Ruta enlazada':'Sin ruta'));setText(kind,(beacon?'Baliza':'Receptor · sigue una cara existente')+(beacon&&finite(s?.level)?' · Nivel '+(['I','II','III'][s.level-1]||s.level):''));
    setText(orientation,s?.mode==='air'?'Cara hacia arriba · vuelo':s?.mode==='ground'?'Cara lateral · suelo':'Orienta la cara hacia un costado o hacia arriba.');

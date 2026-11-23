@@ -100,7 +100,7 @@
   });
   get('filter-mode').addEventListener('change',()=>{dirty=true;fields();});
   const lists={forms:document.querySelector('#saved-shape-list'),mechanisms:document.querySelector('#saved-library-mechanisms')};
-  function category(name){for(const type of ['forms','mechanisms']){const tab=document.querySelector('#saved-library-'+type+'-tab');tab.setAttribute('aria-selected',String(type===name));tab.tabIndex=type===name?0:-1;lists[type].hidden=type!==name;}}
+  function category(name){for(const type of ['forms','mechanisms']){const tab=document.querySelector('#saved-library-'+type+'-tab');tab.setAttribute('aria-selected',String(type===name));tab.tabIndex=type===name?0:-1;lists[type].hidden=type!==name;}hooks.onLibraryTab?.(name);}
   for(const type of ['forms','mechanisms']){const tab=document.querySelector('#saved-library-'+type+'-tab');tab.addEventListener('click',()=>category(type));tab.addEventListener('keydown',event=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){event.preventDefault();const name=event.key==='Home'?'forms':event.key==='End'?'mechanisms':type==='forms'?'mechanisms':'forms';category(name);document.querySelector('#saved-library-'+name+'-tab').focus();}});}
   category('forms');return {refresh,category,get snapshot(){return last;}};
  }

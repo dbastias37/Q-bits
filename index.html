@@ -12,7 +12,7 @@
   <link rel="preload" href="assets/fonts/led-calculator/LEDCalculator.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="stylesheet" href="assets/css/radial-menu.css?v=20261116-quick-catalogue-1">
   <link rel="stylesheet" href="assets/css/quick-catalogue.css?v=20261116-quick-catalogue-1">
-  <link rel="stylesheet" href="assets/css/settings.css?v=20261119-marcha-2">
+  <link rel="stylesheet" href="assets/css/settings.css?v=20261123-layouts-1">
   <style>
     * { box-sizing: border-box; }
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000; }
@@ -309,12 +309,12 @@ input,select,textarea{font-family:var(--font-menu);}
 <link rel="stylesheet" href="assets/css/subtitles.css?v=20261116-robot-arm-1">
 <link rel="stylesheet" href="assets/css/glass-panels.css?v=20261116-robot-arm-1">
 <link rel="stylesheet" href="assets/css/workshop-panel.css?v=20261116-robot-arm-1">
-<link rel="stylesheet" href="assets/css/trajectory-panel.css?v=20261123-trajectory-circuits-1">
+<link rel="stylesheet" href="assets/css/trajectory-panel.css?v=20261123-layouts-1">
 <link rel="stylesheet" href="assets/css/robot-arm-panel.css?v=20261119-drone-routes">
 <link rel="stylesheet" href="assets/css/conveyor-panel.css?v=20261116-quick-catalogue-1">
 <link rel="stylesheet" href="assets/css/servo-panel.css?v=20261117-culling-1">
   <link rel="stylesheet" href="assets/css/culling-lab.css?v=20261117-culling-1">
-  <link rel="stylesheet" href="assets/css/tablet.css?v=20261123-tablet-graphite-1">
+  <link rel="stylesheet" href="assets/css/tablet.css?v=20261123-layouts-1">
   <link rel="stylesheet" href="assets/css/saved-games.css?v=20261121-saved-games-1">
   <link rel="stylesheet" href="assets/css/families.css?v=20261122-families-1">
 </head>
@@ -344,7 +344,7 @@ input,select,textarea{font-family:var(--font-menu);}
       <button id="pause-resume" class="primary">Continuar <span class="menu-arrow" aria-hidden="true"></span></button>
       <button id="pause-save" type="button" aria-describedby="pause-save-status">Guardar partida</button>
       <small id="pause-save-status" role="status" aria-live="polite" aria-atomic="true"></small>
-      <button id="pause-restart">Reiniciar nivel</button><button id="pause-levels">Seleccionar nivel</button><button id="pause-main">Menú principal</button><button id="pause-lab">Banco de pruebas</button><button id="pause-codex">Catálogo de materia</button><button id="pause-settings">Configuración</button>
+      <button id="pause-restart">Reiniciar nivel</button><button id="pause-levels">Seleccionar nivel</button><button id="pause-main">Menú principal</button><button id="pause-lab">Banco de pruebas</button><button id="pause-codex">Catálogo de materia</button><button id="pause-tablet">Comparar tabletas</button><button id="pause-settings">Configuración</button>
     </div>
     <small class="menu-foot">Esc · volver &nbsp;&nbsp; P · herramientas de prueba</small>
   </section>
@@ -431,6 +431,9 @@ input,select,textarea{font-family:var(--font-menu);}
         <button id="tablet-hand" title="Cambiar de mano" aria-label="Cambiar de mano">⇄</button>
         <button id="resume" aria-label="Guardar tableta" title="Guardar tableta">×</button>
       </header>
+      <nav id="tablet-tasks" aria-label="Tareas del banco">
+        <button id="task-build" type="button"><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-count"/></svg>Crear objeto</button><button id="task-saved" type="button"><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-grip"/></svg>Guardados</button><button id="task-route" type="button"><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-range"/></svg>Trazar ruta</button><button id="task-tools" type="button" aria-expanded="false"><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-torque"/></svg>Herramientas</button>
+      </nav>
       <div class="tablet-layout">
         <nav class="tablet-rail" aria-label="Secciones de la tableta">
           <div class="tablet-wheel" aria-label="Rueda de secciones"><button type="button" id="wheel-bodies" title="Cuerpos" aria-label="Cuerpos" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 9 5v10l-9 5-9-5V7zM3 7l9 5 9-5M12 12v10"/></svg></button><button type="button" id="wheel-machines" title="Mecanismos" aria-label="Mecanismos" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3 1-1h4l1 3 3 1 3 1v4l-2 2-1 3 1 3-4 2-3-2-3 1-3-2v-3l-2-3-2-1 1-4 3-1z"/><circle cx="12" cy="11" r="3"/></svg></button><button type="button" id="wheel-files" title="Archivo" aria-label="Archivo" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 6h8l2 3h10l-2 11H2zM2 8V4h8l3 2h7v3"/></svg></button><button type="button" id="wheel-help" title="Ayuda" aria-label="Ayuda" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 2-3 5m0 2v1"/></svg></button></div>
@@ -442,11 +445,12 @@ input,select,textarea{font-family:var(--font-menu);}
         <h2 id="tablet-title">Piezas</h2>
         <div id="page-catalog" role="tabpanel" aria-labelledby="tab-catalog" hidden>
           <nav class="catalog-filters" id="catalog-filters" aria-label="Tipos de objeto"></nav>
-          <div id="catalog-entries"></div>
+          <div class="tablet-browser"><div id="catalog-entries"></div><div id="catalog-projection"></div></div>
         </div>
     <div id="page-cube" role="tabpanel">
       <label>Tipo de pieza<select id="unit-shape"><option value="cube">Q-bit · cubo</option><option value="tetra">T-bit · pirámide triangular</option><option value="pyramid">T-bit · pirámide de base cuadrada</option><option value="coupler">Enganche · mitad del eje</option><option value="rotor">Rotor · dos enganches unidos</option></select></label>
       <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-mass"/></svg>Peso por pieza <output id="massValue"></output><input id="mass" type="range" min="0.25" max="3" step="0.25" value="1"></label>
+      <details class="tablet-options"><summary>Física y agarre</summary>
       <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-height"/></svg>Gravedad <output id="gravityValue"></output><input id="gravity" type="range" min="1" max="20" step="0.5" value="9.8"></label>
       <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-friction"/></svg>Rebote <output id="bounceValue"></output><input id="bounce" type="range" min="0" max="0.65" step="0.05" value="0.12"></label>
       <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-friction"/></svg>Fricción <output id="frictionValue"></output><input id="friction" type="range" min="0.05" max="0.8" step="0.01" value="0.38"></label>
@@ -458,6 +462,7 @@ input,select,textarea{font-family:var(--font-menu);}
       <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-count"/></svg>Límite de selección <output id="maxSelectValue"></output><input id="maxSelect" type="range" min="1" max="2000" step="1" value="2000"></label>
       <label>Proyección al mantener Ctrl<select id="guide"><option value="ghost">Pieza semitransparente</option><option value="dot">Punto</option><option value="x">X</option><option value="none">Sin marca</option></select></label>
       <label>Línea de caída<select id="line"><option value="dashed">Segmentada y animada</option><option value="solid">Continua</option><option value="none">Sin línea</option></select></label>
+      </details>
       <details><summary>Estados y energía</summary>
         <label><input id="dialogues-enabled" type="checkbox" checked> Diálogos de los Q-bits</label><p>Reaccionan a las tareas, al contacto y a cómo los sostienes. Habla uno a la vez, con pausas amplias. Los comentarios espontáneos son ocasionales; las reacciones responden a lo que ocurre.</p>
         <p>Neutro: trabaja o descansa. Entusiasmado: energía completa y un pequeño impulso de velocidad. Inquieto: agotamiento, bloqueo o demasiada inactividad. Descansa y retoma las órdenes pendientes.</p>
@@ -674,15 +679,19 @@ input,select,textarea{font-family:var(--font-menu);}
       <details><summary>Cómo montar un vehículo</summary><p>Une dos puntas de enganche con Shift para formar un rotor. Fija una cara cuadrada de una mitad al chasis; la otra queda libre para la rueda. Repite con los demás rotores y deja espacio para que giren. Para rodar, coloca los ejes horizontales. Una rueda de cubos avanza sobre sus aristas.</p><p>Selecciona cada rotor por separado si necesitas ajustar el lado o el sentido de giro antes de crear el conjunto. Los sensores existentes conservan sus enlaces individuales.</p></details>
       <div class="actions"><button id="rotor-save" type="button">Guardar mecanismo</button></div>
       <p id="rotor-save-note"></p>
-      <details open><summary>Mecanismos guardados</summary><div id="saved-mechanism-list"></div><div class="actions"><button id="export-mechanisms" type="button">Exportar mecanismos</button><label>Importar mecanismos<input id="import-mechanisms" type="file" accept="application/json,.json"></label></div></details>
+      <details open><summary>Mecanismos guardados</summary><div class="tablet-browser"><div id="saved-mechanism-list"></div><div id="motor-projection"></div></div><div class="actions"><button id="export-mechanisms" type="button">Exportar mecanismos</button><label>Importar mecanismos<input id="import-mechanisms" type="file" accept="application/json,.json"></label></div></details>
     </div>
     <div id="page-route" role="tabpanel" hidden>
+      <section class="tablet-route-picker"><h3>Trayectoria del mecanismo</h3>
+       <label>Baliza o receptor<select id="tablet-route-node"></select></label>
+       <p id="tablet-route-hint"></p><button id="tablet-route-edit" type="button">Abrir recorrido</button>
+      </section><h3>Movimiento de Q-bits</h3>
       <p>Clic derecho para seleccionar un Q-bit. Después, clic derecho en el suelo → Ir a este punto. Para un grupo, arrastra con clic izquierdo desde un espacio vacío. La estructura busca espacio libre y rueda sobre sus aristas; más peso significa menor velocidad.</p>
       <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-speed"/></svg>Velocidad base <output id="speedValue"></output><input id="speed" type="range" min="0.12" max="0.7" step="0.02" value="0.32"></label>
       <p>R vuelve al punto de partida y reinicia el recorrido. Si un objeto bloquea el paso, se busca otro camino o se detiene.</p><button id="stop" type="button">Detener selección</button>
     </div>
     <div id="page-cargo" role="tabpanel" hidden>
-      <p id="cargo-editing"></p>
+      <p id="cargo-editing"></p><div id="cargo-projection"></div>
       <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-range"/></svg>Lado de los nuevos cuerpos <output id="cargoSideValue"></output><input id="cargoSide" type="range" min="1" max="12" step="1" value="4"></label>
       <p>Un paso equivale al lado de un Q-bit. Los tres lados siempre tienen la misma longitud.</p>
       <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-mass"/></svg>Peso / Q-bits necesarios <output id="cargoRequiredValue"></output><input id="cargoRequired" type="range" min="1" max="2000" step="1" value="8"></label>
@@ -704,13 +713,13 @@ input,select,textarea{font-family:var(--font-menu);}
       <div class="actions"><button id="start-puzzle" type="button">Montar puzle 01</button><button id="leave-puzzle" type="button" disabled>Volver al banco</button></div>
     </div>
     <div id="page-alpha" role="tabpanel" hidden>
-      <label>Nombre del Q-bit seleccionado<input id="qubit-name" type="text" maxlength="24" placeholder="Selecciona un Q-bit"></label><button id="rename-qubit" type="button">Guardar nombre</button>
+      <details class="tablet-options"><summary>Guardar o renombrar la selección</summary><label>Nombre del Q-bit seleccionado<input id="qubit-name" type="text" maxlength="24" placeholder="Selecciona un Q-bit"></label><button id="rename-qubit" type="button">Guardar nombre</button>
       <p>El nombre y el estado acompañan a cada pieza al unirla o separarla.</p>
-      <button id="save-shape" type="button">Guardar estructura seleccionada</button>
+      <button id="save-shape" type="button">Guardar estructura seleccionada</button></details>
       <div class="saved-library-tabs" role="tablist" aria-label="Formas guardadas"><button id="saved-library-forms-tab" type="button" role="tab" aria-selected="true" aria-controls="saved-shape-list">Formas</button><button id="saved-library-mechanisms-tab" type="button" role="tab" aria-selected="false" aria-controls="saved-library-mechanisms" tabindex="-1">Mecanismos</button></div>
-      <div id="saved-shape-list" role="tabpanel" aria-labelledby="saved-library-forms-tab"></div><div id="saved-library-mechanisms" role="tabpanel" aria-labelledby="saved-library-mechanisms-tab" hidden></div>
+      <div class="tablet-browser"><div><div id="saved-shape-list" role="tabpanel" aria-labelledby="saved-library-forms-tab"></div><div id="saved-library-mechanisms" role="tabpanel" aria-labelledby="saved-library-mechanisms-tab" hidden></div></div><div id="archive-projection"></div></div><p id="archive-empty" hidden>Guarda una estructura seleccionada para verla aquí. En Mecanismos también tienes planos iniciales.</p>
       <p>Clic derecho en el piso → Formas guardadas. Después, clic derecho en el blueprint → Integrar cercanos. Acerca Q-bits sueltos, descansados y apoyados en el piso.</p>
-      <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-range"/></svg>Radio de integración <output id="alpha-blueprintRangeValue"></output><input id="alpha-blueprintRange" type="range" min="0.5" max="3" step="0.1" value="1.5"></label>
+      <details class="tablet-options"><summary>Opciones del banco e intercambio de archivos</summary><label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-range"/></svg>Radio de integración <output id="alpha-blueprintRangeValue"></output><input id="alpha-blueprintRange" type="range" min="0.5" max="3" step="0.1" value="1.5"></label>
       <button id="export-shapes" type="button">Exportar formas</button><label>Importar copia de formas<input id="import-shapes" type="file" accept=".json,application/json"></label>
       <p>Las formas se conservan en este navegador cuando permite almacenamiento local. Exporta una copia para trasladarlas a otra versión o equipo. Importar reemplaza la lista guardada.</p>
       <label><input id="alpha-coolingOn" type="checkbox" checked> Enfriadores activos</label><button id="place-cooler" type="button">Colocar enfriador donde apunto</button>
@@ -720,7 +729,7 @@ input,select,textarea{font-family:var(--font-menu);}
       <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-time"/></svg>Calma natural al tercer enfado <output id="alpha-maxRestValue"></output><input id="alpha-maxRest" type="range" min="15" max="180" step="5" value="180"></label>
       <p>El tercer episodio cercano acumula más tensión. El recipiente acelera la vuelta a neutro y deja la energía limitada al valor de salida mientras permanezcan dentro.</p>
       <label><input id="alpha-allowPuzzleSpawn" type="checkbox"> Permitir crear Q-bits durante el puzle</label><p>Actívalo para usar N o Crear Q-bit sin salir del desafío.</p>
-      <label>Brillo sutil <output id="alpha-glowValue"></output><input id="alpha-glow" type="range" min="0" max="1" step="0.05" value="0.6"></label>
+      <label>Brillo sutil <output id="alpha-glowValue"></output><input id="alpha-glow" type="range" min="0" max="1" step="0.05" value="0.6"></label></details>
     </div>
     <div id="page-manual" role="tabpanel" aria-labelledby="tab-manual" hidden>
       <h3>Manual del banco de pruebas</h3>
@@ -829,6 +838,7 @@ input,select,textarea{font-family:var(--font-menu);}
     <details><summary>Controles</summary><p>En el banco, Q abre el catálogo de la tableta. Apunta la vista previa azul y confirma con clic izquierdo; Esc o clic derecho cancelan. Clic sin selección: tomar. Mantener C: agacharse, con las manos libres o sosteniendo una pieza. C + rueda: ajustar altura (abajo baja, arriba sube). Soltar C: levantarse. Tomar o unir piezas no cambia la postura. Con una pieza en la mano, Shift + WASD: girar sin caminar. Shift + soltar junto a una cara compatible: unir. Shift + sacudir rápidamente una estructura de un lado a otro varias veces: desarmar según Configuración → Juego; en modo inmediato la pieza tomada permanece en la mano, y por etapas las piezas bajan al suelo. Rueda: acercar o alejar, con enfoque progresivo y barras de energía visibles de cerca. El ajuste alinea caras compatibles. Dos triangulares completan una pirámide; seis pirámides o doce triangulares completan un cubo. Arrastrar con clic izquierdo desde un espacio vacío: seleccionar varias piezas visibles, hasta 4 m. Ctrl + clic sobre enganches: añadir o quitar rotores de la selección; P → Mecanismos permite crear un conjunto con nombre. Clic izquierdo con una selección activa: deseleccionar. Clic derecho en la selección → Tomar selección: levantar el conjunto; clic para soltar. Alt, apuntando a una estructura: opciones de separación. V: duplicar selección. Supr: borrar pieza. Ctrl: guía de caída. Clic derecho en el suelo → Ir a este punto: recorrido individual o en grupo. R: detener. Esc: liberar mouse.<br>La selección para órdenes respeta el límite de piezas; el peso máximo se aplica al agarre manual. La orden en el suelo mueve todas las estructuras seleccionadas. Alt cerca del pin muestra el camino y las mediciones. B prepara la vista previa de un cuerpo que solo puede arrastrar un equipo. Máximo de 2000 piezas en la sala. Selección y carga manual: hasta 2000 piezas / u, ajustables en P.</p></details>
     </div>
         </div>
+        <figure id="tablet-projector" hidden><canvas width="288" height="170" aria-hidden="true" id="projector-canvas"></canvas><figcaption id="projector-caption"></figcaption><button id="projector-place" type="button">Preparar colocación</button></figure>
         <aside class="tablet-guide"><h3>Guía</h3><p id="tablet-help"></p><p id="editing"></p></aside>
         <section id="workshop-screen" hidden role="region" aria-labelledby="workshop-title">
     <div class="workshop-shell">
@@ -851,7 +861,17 @@ input,select,textarea{font-family:var(--font-menu);}
     <header class="settings-header"><div><span class="settings-kicker">Q-bits / a tu manera</span><h2 id="settings-title">Configuración</h2></div><button id="settings-back" type="button">← Volver</button></header>
     <div class="settings-grid">
      <div><nav class="settings-tabs" role="tablist" aria-label="Configuración"><button role="tab" data-settings-tab="look" aria-selected="true" aria-controls="settings-fields">Apariencia</button><button role="tab" data-settings-tab="performance" aria-selected="false" aria-controls="settings-fields">Rendimiento</button><button role="tab" data-settings-tab="game" aria-selected="false" aria-controls="settings-fields">Juego</button><button role="tab" data-settings-tab="audio" aria-selected="false" aria-controls="settings-fields">Audio</button><button role="tab" data-settings-tab="keyboard" aria-selected="false" aria-controls="settings-fields">Teclado</button><button role="tab" data-settings-tab="mando" aria-selected="false" aria-controls="settings-fields">Mando</button><button role="tab" data-settings-tab="subtitles" aria-selected="false" aria-controls="settings-fields">Subtítulos</button></nav><div id="settings-fields" role="tabpanel" aria-label="Ajustes"></div></div>
-     <aside class="settings-preview"><div class="settings-preview-frame"><canvas id="settings-preview-canvas" aria-label="Vista previa de un Q-bit girando en una sala blanca"></canvas><span class="settings-preview-label">VISTA PREVIA EN TIEMPO REAL</span></div><div class="settings-preview-footer"><span>Una habitación. Un Q-bit.</span><span id="settings-preview-state">Original</span></div><p class="settings-note">El marcador acompaña a la selección. Colores, trazos, sombras y efectos se muestran aquí con el mismo motor del juego.</p></aside>
+     <aside id="tablet-layout-preview" hidden aria-label="Vista previa de la tableta">
+      <p class="settings-kicker">Vista previa de la tableta</p><h3 id="layout-preview-title"></h3>
+      <nav aria-label="Comparar tareas"><button type="button" id="preview-library">Guardados</button><button type="button" id="preview-route">Trayectoria</button></nav>
+      <div class="preview-case"><div class="preview-display">
+       <header>Q-bits <span>Banco</span></header>
+       <div class="preview-nav" id="preview-nav"></div><div class="preview-work">
+        <div class="preview-choices" id="preview-choices"></div><div class="preview-instrument">
+         <canvas id="preview-hologram" width="288" height="170" aria-label="Proyección de un brazo Q-bits"></canvas>
+         <svg id="preview-circuit" viewBox="0 0 160 90" role="img" aria-label="Ruta de ejemplo con dos giros"><path d="M18 68h62V25h59" fill="none" stroke="currentColor" stroke-width="3"/><g fill="currentColor"><circle cx="18" cy="68" r="5"/><circle cx="80" cy="68" r="3"/><circle cx="80" cy="25" r="3"/><rect x="134" y="20" width="10" height="10"/></g></svg>
+        </div></div><footer id="preview-instruction"></footer>
+      </div></div></aside><aside class="settings-preview"><div class="settings-preview-frame"><canvas id="settings-preview-canvas" aria-label="Vista previa de un Q-bit girando en una sala blanca"></canvas><span class="settings-preview-label">VISTA PREVIA EN TIEMPO REAL</span></div><div class="settings-preview-footer"><span>Una habitación. Un Q-bit.</span><span id="settings-preview-state">Original</span></div><p class="settings-note">El marcador acompaña a la selección. Colores, trazos, sombras y efectos se muestran aquí con el mismo motor del juego.</p></aside>
     </div>
     <footer class="settings-footer"><span id="settings-status" role="status"></span><button id="settings-reset" type="button">Restaurar estilo</button><button id="settings-save" type="button">Guardar configuración</button></footer>
    </div>
@@ -860,6 +880,7 @@ input,select,textarea{font-family:var(--font-menu);}
   <script src="assets/js/opening.js?v=20261116-block-joins-1" defer></script>
   <script src="assets/js/servo-panel.js?v=20261119-marcha-2" defer></script>
   <script src="assets/js/families-ui.js?v=20261122-families-1" defer></script>
-  <script src="assets/js/boot.js?v=20261123-tablet-graphite-1" defer></script>
+  <script src="assets/js/tablet-projector.js?v=20261123-layouts-1" defer></script>
+  <script src="assets/js/boot.js?v=20261123-layouts-1" defer></script>
 </body>
 </html>

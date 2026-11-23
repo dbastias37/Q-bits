@@ -90,7 +90,43 @@
     sample=document.createElement('p');sample.className='settings-subtitle-sample';sample.id='settings-subtitle-preview-'+channel;fields.append(sample);refresh();
    }
   }
+  const arrangements=[
+   ['guided','Guiada','Elige una tarea y confirma cada colocación.'],
+   ['studio','Taller visual','Explora los objetos junto a su proyección.'],
+   ['console','Consola','Abre cualquier página desde el índice completo.']
+  ];
+  let previewTask='library',sampleModel=null,nextProjection=0;
+  const reducedProjection=window.matchMedia('(prefers-reduced-motion: reduce)');
+  function paintArrangement(){
+   const id=tx.draft.tabletLayout,layout=arrangements.find(item=>item[0]===id),route=previewTask==='route';
+   const preview=document.querySelector('#tablet-layout-preview');preview.dataset.layout=id;preview.dataset.task=previewTask;
+   document.querySelector('#layout-preview-title').textContent=layout[1];
+   const lines=(selector,labels)=>{
+    const target=document.querySelector(selector);target.replaceChildren();
+    for(const label of labels){const line=document.createElement('span');line.textContent=label;target.appendChild(line);}
+   };
+   lines('#preview-nav',id==='guided'?['Crear objeto','Guardados','Trazar ruta']:id==='studio'?['Cuerpos','Mecanismos','Archivo']:['Catálogo','Piezas','Recorrido','Cuerpos','Mecanismos','Planos','Manual']);
+   lines('#preview-choices',route?(id==='guided'?['Elegir balizas','Marcar puntos','Asignar receptor']:['Baliza de inicio','Baliza de fin','Receptor']):['Brazo Q-bits','Cinta recta','Hélice']);
+   document.querySelector('#preview-instruction').textContent=route?'Inicio → fin · vista superior':id==='guided'?'Brazo Q-bits · preparar colocación':'Brazo Q-bits · vista de ejemplo';
+   document.querySelector('#preview-library').setAttribute('aria-pressed',String(!route));
+   document.querySelector('#preview-route').setAttribute('aria-pressed',String(route));
+   const hologram=document.querySelector('#preview-hologram');hologram.hidden=route;
+   document.querySelector('#preview-circuit').style.display=route?'block':'none';
+   if(!route&&hooks.tabletSample){sampleModel??=hooks.tabletSample();window.QBitsTabletProjector.paint(hologram,sampleModel,.65);}
+  }
+  function arrangementPicker(){
+   const picker=document.createElement('div');picker.className='layout-picker';picker.setAttribute('role','group');picker.setAttribute('aria-label','Distribución de la tableta');
+   const refresh=()=>{for(const button of picker.children)button.setAttribute('aria-pressed',String(button.dataset.layout===tx.draft.tabletLayout));paintArrangement();};
+   for(const [id,name,hint] of arrangements){
+    const button=document.createElement('button');button.type='button';button.dataset.layout=id;
+    const strong=document.createElement('strong'),small=document.createElement('small');strong.textContent=name;small.textContent=hint;button.append(strong,small);
+    button.addEventListener('click',()=>{tx.draft.tabletLayout=id;refresh();changed();});picker.appendChild(button);
+   }
+   fields.appendChild(picker);refresh();
+  }
+  for(const task of ['library','route'])document.querySelector('#preview-'+task).addEventListener('click',()=>{previewTask=task;paintArrangement();});
   function renderGameplay(){
+   arrangementPicker();
    field(tx.draft,'tabletScale','Tamaño de la tableta','range',[75,125,5,' %']);
    field(tx.draft,'tabletStyle','Estilo de la tableta','select',[[['glass','Cristal'],['alloy','Industrial']]]);
    field(tx.draft,'tabletHand','Mano de la tableta','select',[[['left','Izquierda'],['right','Derecha']]],{onChange:()=>{tx.draft.tabletX=100-tx.draft.tabletX;render();}});
@@ -109,6 +145,8 @@
   }
   function render(){
    fields.replaceChildren();
+   screen.dataset.tab=tab;
+   document.querySelector('#tablet-layout-preview').hidden=tab!=='game';
    if(tab==='keyboard'||tab==='mando')renderControls(tab==='keyboard'?'keyboard':'gamepad');
    else if(tab==='game')renderGameplay();
    else if(tab==='subtitles')renderSubtitles();
@@ -130,6 +168,9 @@
   }
   function pollPad(time){
    padFrame=0;if(!open)return;
+   if(tab==='game'&&previewTask==='library'&&sampleModel&&!document.hidden&&!reducedProjection.matches&&time>=nextProjection){
+    nextProjection=time+100;window.QBitsTabletProjector.paint(document.querySelector('#preview-hologram'),sampleModel,.65+time*.0005);
+   }
    if(tab==='mando'){
     const pads=padSnapshot(),pad=pads.find(item=>item.mapping==='standard');
     if(time-lastPadStatus>=200||!lastPadStatus){lastPadStatus=time;const node=document.querySelector('#settings-pad-status');if(node){const pressed=pad?pad.buttons.map((button,index)=>button.pressed||button.value>.5?C.buttonLabels[index]||('Botón '+index):null).filter(Boolean):[];node.textContent=pad?'Mando conectado · '+(pressed.length?pressed.join(' + '):'listo'):pads.length?'Mando detectado sin distribución estándar compatible.':'Sin mando conectado · conecta y pulsa un botón.';}}
@@ -154,11 +195,11 @@
   function close(){clearCapture();if(padFrame)cancelAnimationFrame(padFrame);padFrame=0;open=false;confirm.hidden=true;screen.hidden=true;hooks.close(returnMode);returnFocus?.focus({preventScroll:true});}
   function save(exit=false){clearCapture();try{const saved=tx.save();hooks.apply(saved);status.textContent='Configuración guardada';if(exit)close();else render();return true;}catch{status.textContent='No se pudo guardar. Revisa el almacenamiento del navegador; tus cambios siguen aquí.';return false;}}
   function requestClose(){clearCapture();changed();if(tx.dirty){confirm.hidden=false;document.querySelector('#settings-keep').focus();}else close();}
-  const api={get isOpen(){return open;},get draft(){return P.effective(tx.draft);},requestClose,open(mode){returnFocus=document.activeElement;returnMode=mode;tx=P.transaction(hooks.storage||localStorage);tx.begin();open=true;clearCapture();if(!padFrame)padFrame=requestAnimationFrame(pollPad);hooks.open();screen.hidden=false;confirm.hidden=true;status.textContent='Configuración guardada';render();document.querySelector('#settings-back').focus();}};
+  const api={get isOpen(){return open;},get tabletPreview(){return open&&tab==='game';},get draft(){return P.effective(tx.draft);},requestClose,open(mode,initialTab){if(initialTab)tab=initialTab;returnFocus=document.activeElement;returnMode=mode;tx=P.transaction(hooks.storage||localStorage);tx.begin();open=true;clearCapture();if(!padFrame)padFrame=requestAnimationFrame(pollPad);hooks.open();screen.hidden=false;confirm.hidden=true;status.textContent='Configuración guardada';render();document.querySelector('#settings-back').focus();}};
   for(const button of screen.querySelectorAll('[data-settings-tab]'))button.addEventListener('click',()=>{clearCapture();tab=button.dataset.settingsTab;render();changed();});
   document.querySelector('#settings-save').addEventListener('click',()=>save(false));
   document.querySelector('#settings-back').addEventListener('click',requestClose);
-  reset.addEventListener('click',()=>{clearCapture();const defaults=P.defaults();if(tab==='look')tx.draft.profiles[tx.draft.style]=clone(P.styles[tx.draft.style]);else if(tab==='performance'){P.setQuality(tx.draft,'balanced');tx.draft.textureScale=1;tx.draft.culling=defaults.culling;tx.draft.physicsHz=defaults.physicsHz;}else if(tab==='game'){for(const key of ['tabletScale','tabletHand','tabletStyle','tabletX','tabletY','disassemblyMode','grabSpeed','invertObjectDistance','invertPieceRotation'])tx.draft[key]=defaults[key];}else if(tab==='audio'){tx.draft.music=defaults.music;tx.draft.volume=defaults.volume;tx.draft.guideVoice=defaults.guideVoice;tx.draft.guideVolume=defaults.guideVolume;tx.draft.footsteps=defaults.footsteps;tx.draft.footstepVolume=defaults.footstepVolume;tx.draft.joinSounds=defaults.joinSounds;tx.draft.joinVolume=defaults.joinVolume;}else if(tab==='subtitles')tx.draft.subtitles=defaults.subtitles;else tx.draft.controls[tab==='keyboard'?'keyboard':'gamepad']=defaults.controls[tab==='keyboard'?'keyboard':'gamepad'];render();changed();});
+  reset.addEventListener('click',()=>{clearCapture();const defaults=P.defaults();if(tab==='look')tx.draft.profiles[tx.draft.style]=clone(P.styles[tx.draft.style]);else if(tab==='performance'){P.setQuality(tx.draft,'balanced');tx.draft.textureScale=1;tx.draft.culling=defaults.culling;tx.draft.physicsHz=defaults.physicsHz;}else if(tab==='game'){for(const key of ['tabletLayout','tabletScale','tabletHand','tabletStyle','tabletX','tabletY','disassemblyMode','grabSpeed','invertObjectDistance','invertPieceRotation'])tx.draft[key]=defaults[key];}else if(tab==='audio'){tx.draft.music=defaults.music;tx.draft.volume=defaults.volume;tx.draft.guideVoice=defaults.guideVoice;tx.draft.guideVolume=defaults.guideVolume;tx.draft.footsteps=defaults.footsteps;tx.draft.footstepVolume=defaults.footstepVolume;tx.draft.joinSounds=defaults.joinSounds;tx.draft.joinVolume=defaults.joinVolume;}else if(tab==='subtitles')tx.draft.subtitles=defaults.subtitles;else tx.draft.controls[tab==='keyboard'?'keyboard':'gamepad']=defaults.controls[tab==='keyboard'?'keyboard':'gamepad'];render();changed();});
   document.querySelector('#settings-keep').addEventListener('click',()=>{confirm.hidden=true;document.querySelector('#settings-back').focus();});
   document.querySelector('#settings-discard').addEventListener('click',()=>{tx.discard();close();});
   document.querySelector('#settings-confirm-save').addEventListener('click',()=>save(true));

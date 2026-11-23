@@ -137,3 +137,73 @@ test('the bezel weights internal motor reserves and switches to a cabled reservo
  reservoir.cell.mood.energy=0;t.frame(performance.now()+1000);
  assert.equal(el('tablet-battery-value').textContent,'0 %');
 });
+
+test('guided confirms its pinned projection while studio and console keep direct placement',()=>{
+ for(const layout of ['guided','studio','console']){
+  const {t,el,key}=lab();t.applyPreferences({tabletLayout:layout});
+  key('keydown','KeyQ');key('keyup','KeyQ');
+  assert.equal(el('panel').dataset.layout,layout);
+  const filters=el('catalog-filters');
+  filters.children.find(b=>b.textContent==='Máquinas').dispatchEvent({type:'click'});
+  const items=el('catalog-entries').children;
+  const arm=items.find(b=>b.dataset.creation==='quick-arm');
+  arm.dispatchEvent({type:'focus'});
+  assert.equal(el('projector-caption').textContent,'Brazo Q-bits');
+  assert.equal(t.groups.length,0);
+  arm.dispatchEvent({type:'click'});
+  if(layout==='guided'){
+   assert.equal(el('panel').hidden,false);
+   items[0].dispatchEvent({type:'pointerenter'});
+   assert.equal(el('projector-caption').textContent,'Brazo Q-bits');
+   el('projector-place').dispatchEvent({type:'click'});
+  }
+  assert.equal(t.getCreationPreview().id,'quick-arm');
+  assert.equal(t.groups.length,0);
+ }
+});
+
+test('each route directory opens the actual beacon, then world tracing uses the existing orthogonal editor',()=>{
+ for(const layout of ['guided','studio','console']){
+  const {t,el,middle,doc}=lab();t.applyPreferences({tabletLayout:layout});
+  const beacons=[-1,1].map(x=>{
+   const g=t.addQubit([x,.045,-1]),p=g.parts[0];
+   p.mood.trajectory={version:1,level:1,face:0,role:'beacon',routeId:null};
+   t.onTrajectoryPartChanged(g,p);return p.id;
+  });
+  middle(t.canvas);
+  const routeButton=layout==='console'?'tab-route':'task-route';
+  el(routeButton).dispatchEvent({type:'click'});assert.equal(el('page-route').hidden,false);
+  assert.equal(el('tablet-route-node').children.length,2);
+  el('tablet-route-node').value=String(beacons[0]);el('tablet-route-edit').dispatchEvent({type:'click'});
+  assert.equal(el('trajectory-screen').hidden,false);
+  assert.equal(el('trajectory-screen').dataset.layout,layout);
+  const start=el('trajectory-start-route');el('trajectory-screen').dispatchEvent({type:'click',target:start});
+  const system=t.getTrajectorySystem(),route=system.routeFor(beacons[0]);assert(route);
+  assert(system.pair(route.id,beacons[1]).ok);for(let tick=0;tick<4;tick++)system.update(.05);
+  const trace=t.trajectoryPanelAction(beacons[0],'trace');assert(trace.ok,trace.message);
+  assert.equal(t.getTrajectoryDraft().id,beacons[0]);assert.equal(doc.pointerLockElement,t.canvas);
+ }
+});
+
+test('one projector reduces large saved assemblies to bounded spatial boxes without changing the source',()=>{
+ const {t,sandbox}=lab(),p=sandbox.QBitsTabletProjector;
+ const parts=Array.from({length:2000},(_,i)=>({p:t.V(i%20,Math.floor(i/400),Math.floor(i/20)%20),q:t.Q(),shape:'tetra'}));
+ const mesh=p.build(parts,t.unitProfile);
+ assert(mesh.coarse);assert.equal(mesh.count,2000);assert(mesh.vertices.length<=125*8);
+ assert.equal(parts[1999].p.x,19);
+ assert.equal(p.build(parts.slice(0,1),t.unitProfile).vertices.length,t.unitProfile('tetra').vertices.length);
+});
+
+test('pause comparison previews both tasks and applies a layout only when saved',()=>{
+ const {sandbox,el}=lab();let applied,raw;
+ const controller=sandbox.QBitsSettings.init({open(){},close(){},apply:p=>{applied=p;},
+  storage:{getItem:()=>raw||null,setItem:(_,value)=>{raw=value;}}});
+ controller.open('pause','game');
+ const picker=el('settings-fields').children.find(n=>n.className==='layout-picker');
+ picker.children.find(b=>b.dataset.layout==='guided').dispatchEvent({type:'click'});
+ el('preview-route').dispatchEvent({type:'click'});
+ assert.equal(el('tablet-layout-preview').dataset.task,'route');
+ assert.equal(el('tablet-layout-preview').dataset.layout,'guided');assert.equal(raw,undefined);
+ el('settings-save').dispatchEvent({type:'click'});
+ assert.equal(applied.tabletLayout,'guided');assert.equal(JSON.parse(raw).tabletLayout,'guided');
+});
