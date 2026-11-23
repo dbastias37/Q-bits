@@ -286,7 +286,9 @@ La [síntesis de integración](docs/SINTESIS_INTEGRACION.md) reúne el estado de
 
 ## Cubos de trayectoria para robots y drones
 
-La mesa de trabajo permite adaptar dos cubos como **balizas de trayectoria** y otro como **receptor** del mecanismo. Marca el inicio, elige el fin y traza puntos con clics en el piso; Enter guarda y Escape conserva el recorrido anterior. Ambas balizas comparten una cara de **10 × 10 cuadros**, con su borde negro incluido, y el receptor muestra esa misma identidad.
+La mesa de trabajo permite adaptar dos cubos como **balizas de trayectoria** y otro como **receptor** del mecanismo. **Generar cara nueva** reserva una de las 144 identidades visuales disponibles; **Vincular como fin** permite adoptar la de un inicio existente. No se repiten entre recorridos reservados. Ambas balizas comparten una cara de **10 × 10 cuadros**, con su borde negro incluido, y el receptor muestra esa misma identidad.
+
+Traza puntos con clics en el piso; Enter guarda y Escape conserva el recorrido anterior. Los cables y las trayectorias comparten codos ortogonales: el dibujo, el alcance y la guía física siguen esos mismos tramos. El panel conserva los puntos elegidos por el jugador y añade los codos automáticamente. En vuelo, los cambios de altura son tramos verticales.
 
 Caras laterales activan el recorrido terrestre; caras hacia arriba habilitan vuelo y alturas de 0,15–3 m. Los niveles I/II/III alcanzan 4/12/23 m, con el límite del extremo menor. Cada punto permite pasar, esperar, aterrizar o soltar una carga mediante la pinza existente. La repetición recorre el mismo camino de ida y vuelta.
 

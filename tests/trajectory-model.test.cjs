@@ -11,12 +11,14 @@ const rotate=rows=>rows.map((_,y)=>rows.map((_,x)=>rows[9-x][y]).join(''));
 function canonical(rows){const keys=[];for(let i=0;i<4;i++){keys.push(rows.join(''));rows=rotate(rows);}return keys.sort()[0];}
 
 test('trajectory data loads in the browser without DOM, physics or timers',()=>{
- const sandbox={};vm.runInNewContext(fs.readFileSync(require.resolve('../assets/js/trajectory-model.js'),'utf8'),sandbox);
+ const sandbox={};
+ for(const name of ['route-geometry','trajectory-model'])vm.runInNewContext(fs.readFileSync(require.resolve('../assets/js/'+name+'.js'),'utf8'),sandbox);
  const browser=sandbox.QBitsTrajectoryModel;
  assert.equal(browser.VERSION,1);assert.equal(typeof browser.follow,'function');
  assert(Object.isFrozen(browser));assert(Object.isFrozen(browser.LIMITS));
  assert(Object.isFrozen(browser.LIMITS.ranges));assert(Object.isFrozen(browser.LIMITS.heights));
  assert.deepEqual(JSON.parse(JSON.stringify(browser.GLYPHS)),model.GLYPHS);
+ assert.deepEqual(JSON.parse(JSON.stringify(browser.geometry([xyz(.013,.5,.027),xyz(.267,1,.436)],'air'))),model.geometry([xyz(.013,.5,.027),xyz(.267,1,.436)],'air'));
 });
 
 test('the original reference faces retain their exact 10 by 10 user artwork',()=>{
@@ -139,6 +141,37 @@ test('trajectory part data accepts both roles without ownerId and rejects forged
  const valid={version:1,level:2,role:'receiver',routeId:null};
  for(const patch of [{version:0},{level:0},{level:4},{level:1.5},{role:'drone'},{face:-1},{face:6},{face:1.1},{routeId:''},{routeId:5},{ownerId:4}])assert.equal(model.validatePart({...valid,...patch}),null);
  assert.equal(model.validatePart(null),null);
+});
+
+test('ground and air compile the same authored supports into cardinal circuits with destination actions',()=>{
+ const input=[{...xyz(.013,.5,.027),action:'pass',wait:0},{...xyz(.267,1.2,.436),action:'drop',wait:2}],before=JSON.stringify(input);
+ const ground=model.geometry(input,'ground'),air=model.geometry(input,'air');
+ assert.deepEqual(ground,[{...xyz(.013,.012,.027),action:'pass',wait:0},{...xyz(.267,.012,.027),action:'pass',wait:0},{...xyz(.267,.012,.436),action:'drop',wait:2}]);
+ assert.deepEqual(air,[input[0],{...xyz(.267,.5,.027),action:'pass',wait:0},{...xyz(.267,.5,.436),action:'pass',wait:0},input[1]]);
+ near(model.length(ground),.254+.409);near(model.length(air),.254+.409+.7);
+ assert.equal(JSON.stringify(input),before);assert.deepEqual(model.geometry(input,'hidden'),[]);
+});
+
+test('48 authored points can compile to 142 vertices without raising the save or editor limit',()=>{
+ const authored=Array.from({length:48},(_,i)=>({...xyz((i%2)*.01,.5+(i%2)*.01,(i%2)*.02),action:'pass',wait:0}));
+ const geometry=model.geometry(authored,'air'),polyline=model.makePolyline(geometry);
+ assert.equal(model.LIMITS.points,48);assert.equal(model.LIMITS.compiledPoints,142);assert.equal(geometry.length,142);assert.equal(polyline.points.length,142);
+ near(polyline.length,47*.04);near(model.length(geometry),polyline.length);
+ assert(model.validateRoute(route({points:authored})));
+ assert.equal(model.validateRoute(route({points:geometry})),null,'derived elbows must not masquerade as saved authoring points');
+ assert.deepEqual(model.geometry([...authored,authored[0]],'air'),[]);
+ assert.equal(model.makePolyline([...geometry,geometry[0]]).points.length,0);
+ assert.equal(model.length([...geometry,geometry[0]]),0);
+ assert(model.follow(polyline,geometry.at(-1),{index:140,arrival:.001}).arrived);
+});
+
+test('compiled previews retain out-of-room endpoints for invalid feedback while imports remain bounded',()=>{
+ const input=[xyz(.013,.5,.027),xyz(29,.5,.436)],geometry=model.geometry(input,'air');
+ assert.equal(geometry.at(-1).x,29);assert.equal(geometry.length,3);
+ assert.equal(model.validateRoute(route({points:input})),null);
+ let reads=0;const point=xyz(1);Object.defineProperty(point,'x',{enumerable:true,get(){reads++;return 1;}});
+ assert.deepEqual(model.geometry([xyz(0),point]),[]);assert.equal(reads,0);
+ assert.deepEqual(model.geometry(Array(2)),[]);
 });
 
 test('polyline compilation preserves duplicate action nodes and caches immutable lengths',()=>{

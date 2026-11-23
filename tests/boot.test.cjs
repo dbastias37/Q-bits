@@ -177,7 +177,7 @@ const dependencies=[
   'reservoir-model.js','contact-sensors.js','controls.js','subtitles.js','dialogue-timing.js',
   'guide-audio.js','footsteps.js','join-audio.js','selection-hud.js','preferences.js',
   'graphics.js','culling.js','glass.js','settings.js','save-games.js',
-  'trajectory-model.js','trajectory-drive.js','trajectory-controller.js',
+  'route-geometry.js','trajectory-model.js','trajectory-drive.js','trajectory-controller.js',
   'trajectory-runtime.js','trajectory-panel.js'
 ];
 for(const module of dependencies)test(`a missing ${module} blocks game preparation, 100 percent and Comenzar even when music is ready`, async () => {

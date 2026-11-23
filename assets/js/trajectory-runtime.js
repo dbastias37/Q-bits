@@ -161,8 +161,9 @@
     ...(index===0?{x:ends.start.x,z:ends.start.z}:index===points.length-1?{x:ends.end.x,z:ends.end.z}:{})
    }));
   }
-  function geometry(points,mode){return points.map(point=>({...copyPoint(point),y:mode==='ground'?.012:point.y}));}
+  function geometry(points,mode){return Model.geometry(points,mode);}
   function geometryReason(points,mode,range){
+   if(!Array.isArray(points)||points.length<2||points.length>Model.LIMITS.compiledPoints)return 'El recorrido contiene puntos inválidos';
    if(points.some(p=>!xyz(p)||Math.abs(p.x)>13.85||Math.abs(p.z)>13.85))return 'Recorrido fuera de la sala';
    if(mode==='air'&&points.some(p=>p.y<Model.LIMITS.heights[0]||p.y>Model.LIMITS.heights[1]))return 'Ajusta la altura de vuelo entre 0,15 y 3 m';
    if(Model.length(points)>range+1e-6)return 'No alcanza · acorta el recorrido o mejora la pareja';
@@ -196,13 +197,13 @@
       // show an invalid preview. Keep the last serializable anchors until the
       // player returns it, instead of corrupting an otherwise recoverable save.
       if(authored.every(point=>Math.abs(point.x)<=28&&Math.abs(point.y)<=28&&Math.abs(point.z)<=28)&&!samePoints(route.points,authored))route.points=authored;
-      const projected=geometry(authored,route.mode);route.displayPoints=projected;
+      const generated=geometry(authored,route.mode),projected=samePoints(route.displayPoints,generated)?route.displayPoints:generated;route.displayPoints=projected;
       route.length=Model.length(projected);reason=geometryReason(projected,route.mode,route.range);
       if(!reason){
        if(!route._compiled||!samePoints(route._compiled.points,projected)){
         route._compiled=Model.makePolyline(projected);stats.rebuilds++;route.revision=(route.revision||0)+1;
        }
-       route.polyline=route._compiled;route.valid=true;
+       route.polyline=route._compiled;route.displayPoints=route.polyline.points;route.valid=true;
       }
      }
     }

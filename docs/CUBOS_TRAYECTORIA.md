@@ -20,17 +20,23 @@ La pareja usa el alcance del extremo de menor nivel. Se mide la longitud del tra
 
 La adaptación conserva la identidad, masa, materia y carga del cubo. Los niveles usan la investigación existente de mesas II y III; no añaden nuevas compras a su economía. No se combina esta adaptación con sensores, pinzas, baterías externas, materia dividida u otras mejoras de esa misma pieza. Esos módulos pueden pertenecer a otras piezas del mecanismo.
 
+**Cubo de trayectoria** prepara una baliza capaz de generar una cara nueva. **Receptor de trayectoria** prepara la pieza del vehículo que sigue una cara existente. Al cambiar la pieza objetivo del taller, una elección anterior de baliza o receptor se descarta: elige la adaptación de la nueva pieza antes de aplicarla.
+
 Las balizas y los receptores mantienen el cuerpo, la cara y el contorno alineados con su posición física. Conservan su ánimo y energía, pero no hacen los balanceos ni los saltos visuales de entusiasmo o inquietud, incluso antes de enlazarlos. Al retirar la adaptación recuperan los gestos normales del cubo.
 
 **Restaurar pieza** retira la adaptación y desvincula sus conexiones. Cambiar de nivel mantiene el enlace. Para cambiar una baliza enlazada a receptor, primero hay que desvincularla.
 
 ## Crear la pareja y dibujar
 
-1. **Clic derecho en la primera baliza → Configurar recorrido → Marcar inicio.** Se asigna una cara libre.
+1. **Clic derecho en la primera baliza → Configurar recorrido → Generar cara nueva.** Se reserva una cara libre y ese cubo pasa a ser el inicio.
 2. Pulsa **Elegir final** y haz clic en la segunda baliza. Las dos muestran la misma cara. Una baliza que ya tiene pareja no se incorpora a otra.
-3. Abre la configuración de cualquiera de las dos. El título distingue **Baliza de inicio** y **Baliza de fin**. Al emparejar, aparece un tramo directo.
-4. Pulsa **Trazar recorrido**. Cada clic en el piso añade un punto. **Clic derecho** deshace el último. **Enter**, o un clic en la baliza final, guarda; **Escape** cancela y conserva el trazado anterior.
-5. En **Puntos del recorrido**, selecciona cada punto y ajusta la acción de llegada. Para vuelo también puedes editar su altura. Los cambios del formulario se aplican con **Guardar punto**.
+3. También puedes abrir la segunda baliza sin cara, pulsar **Vincular como fin** y elegir la baliza de inicio. Ambas formas requieren una elección explícita y conservan las otras parejas.
+4. Pulsa **Trazar recorrido**. Cada clic en el piso añade un punto de apoyo; los codos se dibujan automáticamente. **Clic derecho** deshace el último punto elegido. **Enter**, o un clic en la baliza final, guarda; **Escape** cancela y conserva el trazado anterior.
+5. En **Puntos del recorrido**, selecciona cada punto y ajusta la acción de llegada. Para vuelo también puedes editar su altura. Los cambios del formulario se aplican con **Guardar punto**. El panel distingue inicio y fin; los codos automáticos no se convierten en acciones o paradas duplicadas.
+
+El recorrido sigue la misma regla ortogonal que los cables: primero un eje del piso, después el otro y, en vuelo, la altura. Cada tramo es paralelo a un eje de la sala. Las posiciones de los apoyos y de las balizas se conservan; no se desplazan las piezas a otra cuadrícula. La vista previa, el mapa, el cálculo de alcance y el mecanismo usan ese mismo circuito, sin un atajo diagonal entre los puntos.
+
+Los cambios de dirección requieren espacio físico. Un vehículo con ruedas reduce la marcha y se orienta en el codo mediante sus motores; el dron se estabiliza antes de cambiar de eje. El radio de giro, los apoyos y la inercia del montaje siguen contando: la línea indica el recorrido del chasis, no elimina su volumen ni las colisiones.
 
 Los extremos siguen las balizas; los puntos intermedios quedan donde fueron trazados. El punto de llegada queda 35 cm delante de la cara lateral, o al costado de una cara superior, para evitar que el mecanismo tenga que ocupar el volumen sólido del cubo. Si el chasis es grande, deja espacio adicional y comprueba sus dimensiones.
 
@@ -71,11 +77,15 @@ Un mecanismo y una ruta admiten un seguidor activo cada uno. El controlador comp
 
 El catálogo contiene **144 caras**: los 24 originales de las referencias y cinco variantes de cada uno. Cada cara es exactamente **10 × 10 cuadros**, incluido un borde negro de un cuadro; el interior es de 8 × 8. La carcasa clara que separa el diseño del cuerpo está fuera de esa cuadrícula.
 
-La cara identifica visualmente a la pareja; la asociación usa IDs internos persistentes. No hay lectura de cámara, reconocimiento de imágenes, QR comercial ni generación de imágenes durante la partida. Dos rutas existentes no reciben la misma cara. **Otra cara** selecciona otra libre y cambia juntos los dos extremos y sus receptores. Al desvincular una ruta, su dibujo vuelve al catálogo disponible; el contador de identidades no retrocede.
+La cara identifica visualmente a la pareja; la asociación usa IDs internos persistentes. No hay lectura de cámara, reconocimiento de imágenes, QR comercial ni generación de imágenes durante la partida. Dos rutas existentes no reciben la misma cara. **Cambiar cara**, o **Cambiar cara de la pareja**, selecciona otra libre y actualiza juntos los dos extremos y sus receptores. Al desvincular una ruta, su dibujo vuelve al catálogo disponible; el contador de identidades no retrocede.
+
+El panel muestra **Caras libres: N de 144**. Cada inicio reserva una, tenga o no un fin; los receptores y los fines vinculados comparten esa reserva. Se pueden crear las 144 identidades distintas. Cuando se agotan, generar otra queda bloqueado con una explicación, pero **Vincular como fin** sigue disponible. Desvincular un recorrido libera su cara; los demás enlaces conservan su identidad.
 
 Las balizas dormidas no consultan su posición en cada paso. Se observan al registrarlas, al despertarlas o al invalidar su enlace. El seguimiento activo se limita a 20 Hz y utiliza los pasos físicos normales del juego. La representación usa un atlas compartido de 256 × 256, una superficie por cara y geometría de rutas reutilizada; no crea un objeto por píxel ni luces dinámicas por baliza. Esto no constituye una medición de FPS ni una promesa de coste cero.
 
 El banco guarda las caras, parejas, niveles, puntos, alturas, acciones y repetición. Las familias conservan las piezas como inventario inactivo; una baliza guardada hace que su ruta espere hasta que vuelva a colocarse. Al cargar una partida, la navegación queda pausada: ruedas y patas se detienen; un dron guardado en vuelo mantiene altura con energía real. Para volver a comenzar un recorrido terminado o pausado hay que preparar el mecanismo cerca del inicio.
+
+Los recorridos guardados antes de esta corrección conservan sus puntos y acciones. Al cargarlos se añaden los codos. Si la longitud completa supera el alcance —por ejemplo, dos tramos de 3 m suman 6 m—, la ruta queda detenida y editable para acortarla o mejorar la pareja. Los codos se calculan cuando cambia el recorrido y se reutilizan en el dibujo y la guía.
 
 Como las demás adaptaciones vinculadas a identidades, se deben retirar antes de duplicar piezas o guardar una plantilla de mecanismo. Guardar la escena completa sí conserva los enlaces.
 

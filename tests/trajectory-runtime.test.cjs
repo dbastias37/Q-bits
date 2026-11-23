@@ -5,6 +5,7 @@ const Runtime=require('../assets/js/trajectory-runtime.js');
 const Model=require('../assets/js/trajectory-model.js');
 const near=(a,b)=>assert(Math.abs(a-b)<1e-8,`${a} != ${b}`);
 const point=(x,y=.012,z=0)=>({x,y,z,action:'pass',wait:0});
+const cardinal=points=>{for(let i=1;i<points.length;i++)assert(['x','y','z'].filter(axis=>Math.abs(points[i][axis]-points[i-1][axis])>1e-6).length<=1,'compiled segments must follow one world axis');};
 function fixture(){
  const poses=new Map(),held=new Set(),awake=new Set(),calls={changed:0,starts:0,stops:[],steps:[],disposed:0};
  const adapter={
@@ -43,6 +44,53 @@ test('pairing while cubes settle immediately produces a valid serializable two-p
  assert(f.runtime.pair(start.routeId,2).ok);
  const route=f.runtime.routes.get(start.routeId);assert.equal(route.points.length,2);assert.equal(route.valid,false);
  assert(f.runtime.validSnapshot(f.runtime.snapshot()));f.tick();assert.equal(route.valid,true);
+});
+
+test('nonaligned anchors and clicked supports share one cardinal display and follower path without expanding saved authoring data',()=>{
+ const f=fixture(),{a,b,route}=f.linked('ground',2);
+ Object.assign(f.poses.get(1),{x:.013,z:.027});Object.assign(f.poses.get(2),{x:1.267,z:.436});a.wake();b.wake();f.tick();
+ near(route.points[0].x,.213);near(route.points[0].z,.027);near(route.points[1].x,1.467);near(route.points[1].z,.436);
+ assert.equal(route.points.length,2);assert.equal(route.polyline.points.length,3);cardinal(route.polyline.points);
+ const middle={...point(.555,.012,1.111),action:'wait',wait:2},end={...route.points[1],action:'drop'};
+ assert(f.runtime.edit(1,[route.points[0],middle,end],true).ok);
+ assert.equal(route.points.length,3);assert.equal(route.polyline.points.length,5);assert.equal(route.loop,true);
+ assert.strictEqual(route.displayPoints,route.polyline.points);cardinal(route.displayPoints);
+ assert.deepEqual(route.polyline.points.filter(p=>p.action!=='pass'),[middle,end]);
+ near(route.length,Math.abs(.555-.213)+Math.abs(1.111-.027)+Math.abs(1.467-.555)+Math.abs(.436-1.111));
+ assert.deepEqual(f.runtime.snapshot().routes[0].points,route.points);assert.equal(f.runtime.snapshot().routes[0].points.length,3);
+ assert(f.runtime.assign(3,route.id).ok);assert(f.runtime.start(3).ok);f.tick(1);
+ assert.strictEqual(f.calls.steps.at(-1).route.polyline.points,route.displayPoints,'the adapter receives the same geometry that is displayed');
+});
+
+test('reach rejects a diagonal shortcut that exceeds the orthogonal budget and accepts the exact boundary',()=>{
+ const f=fixture(),{route}=f.linked(),before=JSON.stringify(f.runtime.snapshot());
+ const diagonal=[route.points[0],point(.2,.012,1.1),route.points[1]];assert(Model.length(diagonal)<4);
+ assert.equal(f.runtime.edit(1,diagonal,false).ok,false);assert.equal(JSON.stringify(f.runtime.snapshot()),before);
+ assert(f.runtime.edit(1,[route.points[0],point(.2,.012,1),route.points[1]],false).ok);
+ near(route.length,4);assert.equal(route.valid,true);cardinal(route.polyline.points);
+});
+
+test('air circuits separate horizontal travel from height changes and keep landing or cargo actions off generated elbows',()=>{
+ const f=fixture(),{route}=f.linked('air',2),middle={...point(1,1.5,.5),action:'wait',wait:2},drop={...middle,action:'drop',wait:0};
+ const authored=[route.points[0],middle,drop,route.points[1]];
+ assert(f.runtime.edit(1,authored,false).ok);cardinal(route.polyline.points);
+ assert.equal(route.points.length,4);assert.equal(route.polyline.points.length,8);near(route.length,5);
+ assert.deepEqual(route.polyline.points.filter(p=>p.action!=='pass').map(p=>[p.x,p.y,p.z,p.action,p.wait]),[[1,1.5,.5,'wait',2],[1,1.5,.5,'drop',0],[2,.5,0,'land',0]]);
+ for(let i=1;i<route.polyline.points.length;i++){
+  const a=route.polyline.points[i-1],b=route.polyline.points[i];
+  if(Math.abs(b.y-a.y)>1e-6){near(a.x,b.x);near(a.z,b.z);}
+ }
+ const saved=f.runtime.snapshot();assert(f.runtime.restore(saved));f.tick();
+ const restored=f.runtime.routes.get(route.id);assert.deepEqual(restored.points,authored);assert.equal(restored.polyline.points.length,8);assert.strictEqual(restored.displayPoints,restored.polyline.points);
+});
+
+test('an older diagonal save restores as a stopped cardinal route and retains editable data when its new length is out of range',()=>{
+ const f=fixture(),{b,route}=f.linked(),saved=f.runtime.snapshot();
+ Object.assign(f.poses.get(2),{x:2.4,z:2.4});saved.routes[0].points=[point(.2),point(2.6,.012,2.4)];
+ assert(Model.length(saved.routes[0].points)<4);assert(f.runtime.restore(saved));f.tick();
+ const restored=f.runtime.routes.get(route.id);assert.equal(restored.valid,false);assert.match(restored.reason,/No alcanza/);near(restored.length,4.8);cardinal(restored.displayPoints);
+ assert.equal(restored.points.length,2);assert.deepEqual(f.runtime.snapshot().routes[0].points,saved.routes[0].points);assert.equal(f.runtime.followers.size,0);
+ Object.assign(f.poses.get(2),{x:1,z:1});b.wake();f.tick();assert.equal(restored.valid,true);near(restored.length,2);assert.equal(f.calls.starts,0);
 });
 
 test('one beacon cannot belong to two pairs and route glyphs stay exclusive',()=>{
@@ -118,7 +166,7 @@ test('reach uses actual anchors and the full path, while failed edits do not mut
 });
 
 test('out-of-range routes remain saveable, restore stopped and recover when moved back',()=>{
- const f=fixture(),{b,route}=f.linked('ground',3);assert(f.runtime.edit(1,[point(0),point(10,.012,5),point(2)],false).ok);
+ const f=fixture(),{b,route}=f.linked('ground',3);assert(f.runtime.edit(1,[point(0),point(8,.012,3),point(2)],false).ok);
  f.poses.get(2).x=-10;b.wake();f.tick();assert(route.length>23);assert.equal(route.valid,false);assert.match(route.reason,/No alcanza/);
  const saved=f.runtime.snapshot();assert(f.runtime.validSnapshot(saved));assert(f.runtime.restore(saved));f.tick();assert.equal(f.runtime.followers.size,0);
  f.poses.get(2).x=2;b.wake();f.tick();assert.equal(f.runtime.routes.get(route.id).valid,true);
@@ -167,9 +215,9 @@ test('zero dt freezes existing guidance and restore deliberately discards the ru
 
 test('unchanged edit/assignment and settling after invalidation reuse the compiled geometry',()=>{
  const f=fixture(),{route}=f.linked();assert(f.runtime.assign(3,route.id).ok);
- const compiled=route.polyline,rebuilds=f.runtime.stats.rebuilds,changed=f.calls.changed;
+ const compiled=route.polyline,display=route.displayPoints,rebuilds=f.runtime.stats.rebuilds,changed=f.calls.changed;
  assert(f.runtime.assign(3,route.id).ok);assert(f.runtime.edit(1,route.points,route.loop).ok);assert.equal(f.calls.changed,changed);
- f.runtime.invalidate(route.id);f.tick();assert.strictEqual(route.polyline,compiled);assert.equal(f.runtime.stats.rebuilds,rebuilds);
+ f.runtime.invalidate(route.id);f.tick();assert.strictEqual(route.polyline,compiled);assert.strictEqual(route.displayPoints,display);assert.equal(f.runtime.stats.rebuilds,rebuilds);
  f.runtime.clear();assert.equal(f.runtime.nodes.size,0);assert.equal(f.runtime.routes.size,0);assert.equal(f.runtime.watching,0);
  const cleared={...f.runtime.stats},count=f.calls.changed;f.runtime.clear();for(let i=0;i<1000;i++)f.runtime.update(.05);assert.deepEqual(f.runtime.stats,cleared);assert.equal(f.calls.changed,count);
 });

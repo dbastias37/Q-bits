@@ -5,10 +5,10 @@
 // of every face. Variants alter an eye, bridge or mouth corner; no whole-face
 // rotation/inversion is used. Keeping the catalogue literal avoids generating
 // or testing random faces during play.
-(function(root,factory){'use strict';const model=factory();if(typeof module==='object'&&module.exports)module.exports=model;else root.QBitsTrajectoryModel=model;})(typeof globalThis!=='undefined'?globalThis:this,function(){
+(function(root,factory){'use strict';if(typeof module==='object'&&module.exports)module.exports=factory(require('./route-geometry.js'));else root.QBitsTrajectoryModel=factory(root.QBitsRouteGeometry);})(typeof globalThis!=='undefined'?globalThis:this,function(RouteGeometry){
  'use strict';
  const VERSION=1;
- const LIMITS=Object.freeze({routes:144,points:48,heights:Object.freeze([.15,3]),ranges:Object.freeze([0,4,12,23])});
+ const LIMITS=Object.freeze({routes:144,points:48,compiledPoints:142,heights:Object.freeze([.15,3]),ranges:Object.freeze([0,4,12,23])});
  const GLYPHS=Object.freeze([
   '0000000000/0111000000/0000001110/0010101010/0010001110/0010100000/0010000000/0011111100/0100000010/0000000000', // original 1
   '0000000000/0000000010/0010010110/0111011110/0000000000/0010101110/0000100000/0010110000/0000000100/0000000000', // original 2
@@ -210,15 +210,30 @@
   }
   return entries;
  }
- function point(value){
+ function point(value,bounded=true){
   const data=record(value,POINT_KEYS,['x','y','z']);
-  if(!data||!coordinate(data.x)||!coordinate(data.y)||!coordinate(data.z))return null;
+  const validCoordinate=bounded?coordinate:Number.isFinite;
+  if(!data||!validCoordinate(data.x)||!validCoordinate(data.y)||!validCoordinate(data.z))return null;
   const action=own(data,'action')?data.action:'pass',wait=own(data,'wait')?data.wait:0;
   if(!ACTIONS.includes(action)||!Number.isFinite(wait)||wait<0||wait>MAX_WAIT)return null;
   return {x:data.x,y:data.y,z:data.z,action,wait};
  }
+ function geometry(values,mode='ground'){
+  try{
+   if(!['ground','air'].includes(mode))return [];
+   const entries=arrayEntries(values,LIMITS.points);if(!entries||!entries.length)return [];
+   const points=[];
+   for(const entry of entries){
+    // Moving a beacon outside the room still needs a visible invalid preview.
+    // Storage/import remains bounded; runtime validates the resulting geometry.
+    const parsed=point(entry,false);if(!parsed)return [];
+    if(mode==='ground')parsed.y=.012;points.push(parsed);
+   }
+   return RouteGeometry.orthogonal(points);
+  }catch(_error){return [];}
+ }
  function length(points){
-  if(!Array.isArray(points)||points.length>LIMITS.points)return 0;
+  if(!Array.isArray(points)||points.length>LIMITS.compiledPoints)return 0;
   let total=0;
   for(let i=0;i<points.length;i++){
    if(!vector(points[i]))return 0;
@@ -254,7 +269,7 @@
  const EMPTY_POLYLINE=Object.freeze({points:Object.freeze([]),length:0,cumulative:Object.freeze([])});
  function makePolyline(values){
   try{
-   const entries=arrayEntries(values,LIMITS.points);
+   const entries=arrayEntries(values,LIMITS.compiledPoints);
    if(!entries||!entries.length)return EMPTY_POLYLINE;
    const points=[],cumulative=[];
    let total=0;
@@ -283,7 +298,7 @@
  // the cumulative lengths compiled only when the route changes.
  function follow(polyline,position,options={}){
   const points=polyline?.points,cumulative=polyline?.cumulative;
-  if(!vector(position)||!Array.isArray(points)||!points.length||points.length>LIMITS.points||!Array.isArray(cumulative)||cumulative.length!==points.length||!Number.isFinite(polyline.length)||polyline.length<0)return stationary(position);
+  if(!vector(position)||!Array.isArray(points)||!points.length||points.length>LIMITS.compiledPoints||!Array.isArray(cumulative)||cumulative.length!==points.length||!Number.isFinite(polyline.length)||polyline.length<0)return stationary(position);
   const config=options&&typeof options==='object'?options:{};
   const lookahead=Number.isFinite(config.lookahead)?clamp(config.lookahead,0,4):.35;
   const arrival=Number.isFinite(config.arrival)?clamp(config.arrival,.001,1):.12;
@@ -352,5 +367,5 @@
   function release(id){if(!used.has(id))return false;glyphs.delete(used.get(id));used.delete(id);return true;}
   return Object.freeze({allocate,reserve,release,size:()=>used.size,snapshot:()=>({nextSerial:Number.isSafeInteger(serial)?serial:null})});
  }
- return Object.freeze({VERSION,LIMITS,GLYPHS,glyph,range,classify,length,validateRoute,validatePart,makePolyline,follow,createAllocator});
+ return Object.freeze({VERSION,LIMITS,GLYPHS,glyph,range,classify,geometry,length,validateRoute,validatePart,makePolyline,follow,createAllocator});
 });
