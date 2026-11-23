@@ -86,6 +86,9 @@ El [estado del proyecto](docs/ESTADO_PROYECTO.md) concentra lo terminado y el si
 | Seleccionar varias piezas | Arrastrar con clic izquierdo desde un espacio vacío |
 | Dar órdenes y elegir un destino | Menú de clic derecho sobre la pieza y después sobre el suelo |
 | Tomar un grupo seleccionado | Clic derecho → Tomar selección |
+| Agrupar piezas seleccionadas | Clic derecho → Agrupar en familia… |
+| Mover una familia | Clic en el contenedor; rueda gira, clic/E confirma y Escape cancela |
+| Retirar contenido de una familia | Clic derecho → Retirar o Desagrupar familia; confirmar la guía azul |
 | Duplicar selección en el laboratorio | V |
 | Elegir Q-bit o T-bit en el laboratorio | Q → Piezas → elegir en el catálogo |
 | Crear la pieza elegida en el laboratorio | Clic izquierdo después de elegir con Q; también N o P → Piezas → Crear |
@@ -102,6 +105,14 @@ El [estado del proyecto](docs/ESTADO_PROYECTO.md) concentra lo terminado y el si
 | Pantalla completa | Botón de pantalla completa |
 
 El panel de pruebas incluye controles adicionales y ajustes del laboratorio. En campaña, las herramientas de creación requieren abrir ese panel.
+
+## Familias · organizar piezas en el suelo
+
+Selecciona piezas o conjuntos y usa **clic secundario → Agrupar en familia…**. Elige un nombre de hasta 40 caracteres y un color, incluido negro. Cada contenedor admite **hasta 100 piezas base**, conserva su inventario y muestra una etiqueta pequeña **×N**. Los módulos cuentan todas sus piezas: un rotor de dos enganches ocupa dos plazas. **Alt → Desarmar en familias** o **clic secundario → Desarmar y agrupar por tipo** recuperan componentes por tipo; **Desarmar en piezas sueltas** mantiene la alternativa anterior.
+
+Haz clic sobre el contenedor para moverlo. Su menú secundario permite retirar un elemento, hasta diez elementos o todo el contenido, renombrarlo, cambiar su color y unirlo con otra familia compatible. La guía es azul cuando cabe y roja cuando está ocupada; **rueda** gira, **clic/E/Enter** confirma y **Escape o clic secundario** cancela. Durante **Mover familia**, **Shift + varias sacudidas** reparte lotes de hasta diez piezas, conservando enteros los módulos que caben. Una familia compuesta solo por baterías muestra su carga con líquido del color elegido.
+
+El banco guarda el contenido, los nombres, los colores y las posiciones de las familias. La campaña mantiene su **punto de control por nivel** y reconstruye la escena al continuar. Consulta [Familias Q-bits](docs/FAMILIAS_QBITS.md) para los límites, la diferencia entre piezas y elementos y la recuperación de contenido.
 
 ## T-bits en el banco de pruebas
 
@@ -156,6 +167,8 @@ El [prompt maestro de campaña](docs/PROMPT_MAESTRO_CAMPANA.md) reúne el lore, 
 | `index.html` | Interfaz, estilos y apertura en negro. |
 | `assets/js/boot.js` | Presentación y progreso de precarga real. |
 | `assets/js/game.js` | Lógica, físicas, gráficos procedurales y campaña. |
+| `assets/js/families.js` | Inventario, validación y límites de las familias. |
+| `assets/js/families-ui.js`, `assets/css/families.css` | Editor de nombre/color, etiquetas de cantidad y HUD de familia activa. |
 | `assets/js/radial-menu.js` | Selector Q, figuras con las geometrías reales y descripciones animadas. |
 | `assets/css/radial-menu.css` | Paneles de cristal, fundido, desenfoque y adaptación del selector. |
 | `assets/js/cannon.min.js` | Motor Cannon.js incluido, sin dependencia de CDN. |

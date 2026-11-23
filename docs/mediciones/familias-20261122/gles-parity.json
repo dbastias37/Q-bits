@@ -1,0 +1,11 @@
+{
+  "sameSource": true,
+  "samePixels": true,
+  "frames": 18,
+  "sourceSha256": "9e55241e807593de42c19553878912863dea7952f23f6669b8d0c4257dc57d7a",
+  "latestSource": "9e55241e807593de42c19553878912863dea7952f23f6669b8d0c4257dc57d7a",
+  "commandSizes": {
+    "gles-webgl2": 53686,
+    "gles-webgl1": 53594
+  }
+}

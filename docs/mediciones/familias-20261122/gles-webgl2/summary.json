@@ -1,0 +1,1077 @@
+{
+  "backend": "webgl2",
+  "sourceSha256": "9e55241e807593de42c19553878912863dea7952f23f6669b8d0c4257dc57d7a",
+  "graphics": {
+    "version": "OpenGL ES 3.2 Mesa 25.0.7-2+deb13u1",
+    "renderer": "llvmpipe (LLVM 19.1.7, 256 bits)"
+  },
+  "width": 800,
+  "height": 600,
+  "compiledShaders": 2,
+  "linkedPrograms": 1,
+  "gpuErrors": 0,
+  "browserValidated": false,
+  "uiDomValidated": false,
+  "snapshots": [
+    {
+      "name": "family-black",
+      "kind": "shell",
+      "inventory": [
+        {
+          "id": 1,
+          "color": "#000000",
+          "count": 100,
+          "weight": 100,
+          "battery": false,
+          "fraction": null,
+          "shapes": 1
+        }
+      ],
+      "liquids": [],
+      "familyBodies": 1,
+      "livePieces": 0,
+      "effects": 0,
+      "foregroundPixels": 34316,
+      "bluePixels": 0,
+      "redPixels": 0,
+      "greenPixels": 0,
+      "cyanPixels": 0,
+      "yellowPixels": 0,
+      "darkPixels": 32017,
+      "drawCalls": 3,
+      "rgbaSha256": "7b5fba04fe89d5739af2e3b02a787c52378c9e181dc9bf8c8ba68574277bccf0",
+      "png": "family-black.png"
+    },
+    {
+      "name": "family-yellow",
+      "kind": "shell",
+      "inventory": [
+        {
+          "id": 2,
+          "color": "#e6bb42",
+          "count": 100,
+          "weight": 100,
+          "battery": false,
+          "fraction": null,
+          "shapes": 1
+        }
+      ],
+      "liquids": [],
+      "familyBodies": 1,
+      "livePieces": 0,
+      "effects": 0,
+      "foregroundPixels": 34316,
+      "bluePixels": 0,
+      "redPixels": 32017,
+      "greenPixels": 0,
+      "cyanPixels": 0,
+      "yellowPixels": 34316,
+      "darkPixels": 0,
+      "drawCalls": 3,
+      "rgbaSha256": "35422f8b2cf125f6a19f8f2c411cad691af8255abf53f6bd0f549af55ec010f3",
+      "png": "family-yellow.png"
+    },
+    {
+      "name": "family-battery-blue-0",
+      "kind": "battery",
+      "inventory": [
+        {
+          "id": 3,
+          "color": "#297ee6",
+          "count": 100,
+          "weight": 100,
+          "battery": true,
+          "fraction": 0,
+          "shapes": 1
+        }
+      ],
+      "liquids": [
+        {
+          "key": "9:-3",
+          "bodyId": 9,
+          "partIds": [
+            -3
+          ],
+          "normal": [
+            0,
+            1,
+            0
+          ],
+          "localNormal": [
+            0,
+            1,
+            0
+          ],
+          "size": [
+            0.13799999999999998,
+            0.13599999999999998,
+            0.13799999999999998
+          ],
+          "fraction": 0,
+          "meshBuilds": 0,
+          "uploads": 0,
+          "buffer": null,
+          "count": 0,
+          "surface": []
+        }
+      ],
+      "familyBodies": 1,
+      "livePieces": 0,
+      "effects": 0,
+      "foregroundPixels": 27666,
+      "bluePixels": 12043,
+      "redPixels": 0,
+      "greenPixels": 0,
+      "cyanPixels": 12043,
+      "yellowPixels": 0,
+      "darkPixels": 4795,
+      "drawCalls": 5,
+      "rgbaSha256": "081206101d28ff7ec5f5407eafa8aad03028852c354273f0d58e8590b748dd91",
+      "png": "family-battery-blue-0.png"
+    },
+    {
+      "name": "family-battery-blue-25",
+      "kind": "battery",
+      "inventory": [
+        {
+          "id": 4,
+          "color": "#297ee6",
+          "count": 100,
+          "weight": 100,
+          "battery": true,
+          "fraction": 0.25,
+          "shapes": 1
+        }
+      ],
+      "liquids": [
+        {
+          "key": "10:-4",
+          "bodyId": 10,
+          "partIds": [
+            -4
+          ],
+          "normal": [
+            0,
+            1,
+            0
+          ],
+          "localNormal": [
+            0,
+            1,
+            0
+          ],
+          "size": [
+            0.13799999999999998,
+            0.13599999999999998,
+            0.13799999999999998
+          ],
+          "fraction": 0.25,
+          "meshBuilds": 1,
+          "uploads": 1,
+          "buffer": 61,
+          "count": 36,
+          "surface": [
+            [
+              -0.0689999982714653,
+              0.046999998152256015,
+              -0.0689999982714653
+            ],
+            [
+              -0.0689999982714653,
+              0.046999998152256015,
+              0.0689999982714653
+            ],
+            [
+              0.0689999982714653,
+              0.046999998152256015,
+              0.0689999982714653
+            ],
+            [
+              -0.0689999982714653,
+              0.046999998152256015,
+              -0.0689999982714653
+            ],
+            [
+              0.0689999982714653,
+              0.046999998152256015,
+              0.0689999982714653
+            ],
+            [
+              0.0689999982714653,
+              0.046999998152256015,
+              -0.0689999982714653
+            ]
+          ]
+        }
+      ],
+      "familyBodies": 1,
+      "livePieces": 0,
+      "effects": 0,
+      "foregroundPixels": 28239,
+      "bluePixels": 14874,
+      "redPixels": 0,
+      "greenPixels": 0,
+      "cyanPixels": 14874,
+      "yellowPixels": 0,
+      "darkPixels": 2969,
+      "drawCalls": 6,
+      "rgbaSha256": "53c61472dc05cffd4597cff3c04b961b923d269e53c48d61e8e4ed308b7ca2d7",
+      "png": "family-battery-blue-25.png"
+    },
+    {
+      "name": "family-battery-blue-75",
+      "kind": "battery",
+      "inventory": [
+        {
+          "id": 5,
+          "color": "#297ee6",
+          "count": 100,
+          "weight": 100,
+          "battery": true,
+          "fraction": 0.75,
+          "shapes": 1
+        }
+      ],
+      "liquids": [
+        {
+          "key": "11:-5",
+          "bodyId": 11,
+          "partIds": [
+            -5
+          ],
+          "normal": [
+            0,
+            1,
+            0
+          ],
+          "localNormal": [
+            0,
+            1,
+            0
+          ],
+          "size": [
+            0.13799999999999998,
+            0.13599999999999998,
+            0.13799999999999998
+          ],
+          "fraction": 0.75,
+          "meshBuilds": 1,
+          "uploads": 1,
+          "buffer": 63,
+          "count": 36,
+          "surface": [
+            [
+              -0.0689999982714653,
+              0.11500000184774399,
+              -0.0689999982714653
+            ],
+            [
+              -0.0689999982714653,
+              0.11500000184774399,
+              0.0689999982714653
+            ],
+            [
+              0.0689999982714653,
+              0.11500000184774399,
+              0.0689999982714653
+            ],
+            [
+              -0.0689999982714653,
+              0.11500000184774399,
+              -0.0689999982714653
+            ],
+            [
+              0.0689999982714653,
+              0.11500000184774399,
+              0.0689999982714653
+            ],
+            [
+              0.0689999982714653,
+              0.11500000184774399,
+              -0.0689999982714653
+            ]
+          ]
+        }
+      ],
+      "familyBodies": 1,
+      "livePieces": 0,
+      "effects": 0,
+      "foregroundPixels": 33439,
+      "bluePixels": 23368,
+      "redPixels": 0,
+      "greenPixels": 0,
+      "cyanPixels": 23368,
+      "yellowPixels": 0,
+      "darkPixels": 2969,
+      "drawCalls": 6,
+      "rgbaSha256": "fe5e329ce62f7fc8da85d8f4e445ac9ed66623c6bcd07688ed59856fd65e80c7",
+      "png": "family-battery-blue-75.png"
+    },
+    {
+      "name": "family-battery-blue-100",
+      "kind": "battery",
+      "inventory": [
+        {
+          "id": 6,
+          "color": "#297ee6",
+          "count": 100,
+          "weight": 100,
+          "battery": true,
+          "fraction": 1,
+          "shapes": 1
+        }
+      ],
+      "liquids": [
+        {
+          "key": "12:-6",
+          "bodyId": 12,
+          "partIds": [
+            -6
+          ],
+          "normal": [
+            0,
+            1,
+            0
+          ],
+          "localNormal": [
+            0,
+            1,
+            0
+          ],
+          "size": [
+            0.13799999999999998,
+            0.13599999999999998,
+            0.13799999999999998
+          ],
+          "fraction": 1,
+          "meshBuilds": 1,
+          "uploads": 1,
+          "buffer": 65,
+          "count": 36,
+          "surface": []
+        }
+      ],
+      "familyBodies": 1,
+      "livePieces": 0,
+      "effects": 0,
+      "foregroundPixels": 33734,
+      "bluePixels": 23841,
+      "redPixels": 0,
+      "greenPixels": 0,
+      "cyanPixels": 23841,
+      "yellowPixels": 0,
+      "darkPixels": 2969,
+      "drawCalls": 6,
+      "rgbaSha256": "066a2980c78051121cd7cb5d43d49cb1f5f950f26a65415847ac2f3ddeacd430",
+      "png": "family-battery-blue-100.png"
+    },
+    {
+      "name": "family-battery-red-75",
+      "kind": "battery",
+      "inventory": [
+        {
+          "id": 7,
+          "color": "#e84d52",
+          "count": 100,
+          "weight": 100,
+          "battery": true,
+          "fraction": 0.75,
+          "shapes": 1
+        }
+      ],
+      "liquids": [
+        {
+          "key": "13:-7",
+          "bodyId": 13,
+          "partIds": [
+            -7
+          ],
+          "normal": [
+            0,
+            1,
+            0
+          ],
+          "localNormal": [
+            0,
+            1,
+            0
+          ],
+          "size": [
+            0.13799999999999998,
+            0.13599999999999998,
+            0.13799999999999998
+          ],
+          "fraction": 0.75,
+          "meshBuilds": 1,
+          "uploads": 1,
+          "buffer": 67,
+          "count": 36,
+          "surface": [
+            [
+              -0.0689999982714653,
+              0.11500000184774399,
+              -0.0689999982714653
+            ],
+            [
+              -0.0689999982714653,
+              0.11500000184774399,
+              0.0689999982714653
+            ],
+            [
+              0.0689999982714653,
+              0.11500000184774399,
+              0.0689999982714653
+            ],
+            [
+              -0.0689999982714653,
+              0.11500000184774399,
+              -0.0689999982714653
+            ],
+            [
+              0.0689999982714653,
+              0.11500000184774399,
+              0.0689999982714653
+            ],
+            [
+              0.0689999982714653,
+              0.11500000184774399,
+              -0.0689999982714653
+            ]
+          ]
+        }
+      ],
+      "familyBodies": 1,
+      "livePieces": 0,
+      "effects": 0,
+      "foregroundPixels": 33439,
+      "bluePixels": 0,
+      "redPixels": 23366,
+      "greenPixels": 0,
+      "cyanPixels": 0,
+      "yellowPixels": 0,
+      "darkPixels": 2969,
+      "drawCalls": 6,
+      "rgbaSha256": "d20c87d90621381e6953dc7347c12629041fcd6289a7b7be4192339a4ab6e10c",
+      "png": "family-battery-red-75.png"
+    },
+    {
+      "name": "family-battery-red-occluded",
+      "kind": "occlusion",
+      "inventory": [
+        {
+          "id": 7,
+          "color": "#e84d52",
+          "count": 100,
+          "weight": 100,
+          "battery": true,
+          "fraction": 0.75,
+          "shapes": 1
+        }
+      ],
+      "liquids": [
+        {
+          "key": "13:-7",
+          "bodyId": 13,
+          "partIds": [
+            -7
+          ],
+          "normal": [
+            0,
+            1,
+            0
+          ],
+          "localNormal": [
+            0,
+            1,
+            0
+          ],
+          "size": [
+            0.13799999999999998,
+            0.13599999999999998,
+            0.13799999999999998
+          ],
+          "fraction": 0.75,
+          "meshBuilds": 1,
+          "uploads": 1,
+          "buffer": 67,
+          "count": 36,
+          "surface": [
+            [
+              -0.0689999982714653,
+              0.11500000184774399,
+              -0.0689999982714653
+            ],
+            [
+              -0.0689999982714653,
+              0.11500000184774399,
+              0.0689999982714653
+            ],
+            [
+              0.0689999982714653,
+              0.11500000184774399,
+              0.0689999982714653
+            ],
+            [
+              -0.0689999982714653,
+              0.11500000184774399,
+              -0.0689999982714653
+            ],
+            [
+              0.0689999982714653,
+              0.11500000184774399,
+              0.0689999982714653
+            ],
+            [
+              0.0689999982714653,
+              0.11500000184774399,
+              -0.0689999982714653
+            ]
+          ]
+        }
+      ],
+      "familyBodies": 1,
+      "livePieces": 0,
+      "effects": 0,
+      "foregroundPixels": 56205,
+      "bluePixels": 0,
+      "redPixels": 6230,
+      "greenPixels": 0,
+      "cyanPixels": 0,
+      "yellowPixels": 0,
+      "darkPixels": 47710,
+      "drawCalls": 7,
+      "rgbaSha256": "914537bd41c286971dd5394de2a45da174f474e62655518d72024e0b68e46982",
+      "png": "family-battery-red-occluded.png"
+    },
+    {
+      "name": "family-battery-blue-tilted-50",
+      "kind": "battery",
+      "inventory": [
+        {
+          "id": 8,
+          "color": "#297ee6",
+          "count": 100,
+          "weight": 100,
+          "battery": true,
+          "fraction": 0.5,
+          "shapes": 1
+        }
+      ],
+      "liquids": [
+        {
+          "key": "14:-8",
+          "bodyId": 14,
+          "partIds": [
+            -8
+          ],
+          "normal": [
+            0,
+            1,
+            0
+          ],
+          "localNormal": [
+            0.7071067811865476,
+            0.7071067811865475,
+            0
+          ],
+          "size": [
+            0.13799999999999998,
+            0.13599999999999998,
+            0.13799999999999998
+          ],
+          "fraction": 0.5,
+          "meshBuilds": 1,
+          "uploads": 1,
+          "buffer": 69,
+          "count": 36,
+          "surface": [
+            [
+              0.09616652746757968,
+              0.08100000000000002,
+              0.0689999982714653
+            ],
+            [
+              0.09616652746757968,
+              0.08100000000000002,
+              -0.0689999982714653
+            ],
+            [
+              -0.09616652746757968,
+              0.08099999999999999,
+              -0.0689999982714653
+            ],
+            [
+              0.09616652746757968,
+              0.08100000000000002,
+              0.0689999982714653
+            ],
+            [
+              -0.09616652746757968,
+              0.08099999999999999,
+              -0.0689999982714653
+            ],
+            [
+              -0.09616652746757968,
+              0.08099999999999999,
+              0.0689999982714653
+            ]
+          ]
+        }
+      ],
+      "familyBodies": 1,
+      "livePieces": 0,
+      "effects": 0,
+      "foregroundPixels": 32676,
+      "bluePixels": 18524,
+      "redPixels": 0,
+      "greenPixels": 0,
+      "cyanPixels": 18524,
+      "yellowPixels": 0,
+      "darkPixels": 4060,
+      "drawCalls": 6,
+      "rgbaSha256": "9c3197145b87727f683d528647ce3f11e81a6c2a000e6198fad8b36ea07456ae",
+      "png": "family-battery-blue-tilted-50.png"
+    },
+    {
+      "name": "family-battery-blue-slosh-impulse",
+      "kind": "battery",
+      "inventory": [
+        {
+          "id": 9,
+          "color": "#297ee6",
+          "count": 100,
+          "weight": 100,
+          "battery": true,
+          "fraction": 0.5,
+          "shapes": 1
+        }
+      ],
+      "liquids": [
+        {
+          "key": "15:-9",
+          "bodyId": 15,
+          "partIds": [
+            -9
+          ],
+          "normal": [
+            0.161158770886611,
+            0.9869284931373278,
+            0
+          ],
+          "localNormal": [
+            0.161158770886611,
+            0.9869284931373278,
+            0
+          ],
+          "size": [
+            0.13799999999999998,
+            0.13599999999999998,
+            0.13799999999999998
+          ],
+          "fraction": 0.5,
+          "meshBuilds": 1,
+          "uploads": 1,
+          "buffer": 71,
+          "count": 36,
+          "surface": [
+            [
+              -0.0689999982714653,
+              0.0922672345712781,
+              -0.0689999982714653
+            ],
+            [
+              -0.0689999982714653,
+              0.0922672345712781,
+              0.0689999982714653
+            ],
+            [
+              0.0689999982714653,
+              0.06973276542872191,
+              0.0689999982714653
+            ],
+            [
+              -0.0689999982714653,
+              0.0922672345712781,
+              -0.0689999982714653
+            ],
+            [
+              0.0689999982714653,
+              0.06973276542872191,
+              0.0689999982714653
+            ],
+            [
+              0.0689999982714653,
+              0.06973276542872191,
+              -0.0689999982714653
+            ]
+          ]
+        }
+      ],
+      "familyBodies": 1,
+      "livePieces": 0,
+      "effects": 0,
+      "foregroundPixels": 32515,
+      "bluePixels": 20950,
+      "redPixels": 0,
+      "greenPixels": 0,
+      "cyanPixels": 20950,
+      "yellowPixels": 0,
+      "darkPixels": 2969,
+      "drawCalls": 6,
+      "rgbaSha256": "e94cdf24500300cc10f994279be46fbce947081797d70bcf24b7b069b3217ff3",
+      "png": "family-battery-blue-slosh-impulse.png"
+    },
+    {
+      "name": "family-battery-blue-slosh-paused",
+      "kind": "battery",
+      "inventory": [
+        {
+          "id": 9,
+          "color": "#297ee6",
+          "count": 100,
+          "weight": 100,
+          "battery": true,
+          "fraction": 0.5,
+          "shapes": 1
+        }
+      ],
+      "liquids": [
+        {
+          "key": "15:-9",
+          "bodyId": 15,
+          "partIds": [
+            -9
+          ],
+          "normal": [
+            0.161158770886611,
+            0.9869284931373278,
+            0
+          ],
+          "localNormal": [
+            0.161158770886611,
+            0.9869284931373278,
+            0
+          ],
+          "size": [
+            0.13799999999999998,
+            0.13599999999999998,
+            0.13799999999999998
+          ],
+          "fraction": 0.5,
+          "meshBuilds": 1,
+          "uploads": 1,
+          "buffer": 71,
+          "count": 36,
+          "surface": [
+            [
+              -0.0689999982714653,
+              0.0922672345712781,
+              -0.0689999982714653
+            ],
+            [
+              -0.0689999982714653,
+              0.0922672345712781,
+              0.0689999982714653
+            ],
+            [
+              0.0689999982714653,
+              0.06973276542872191,
+              0.0689999982714653
+            ],
+            [
+              -0.0689999982714653,
+              0.0922672345712781,
+              -0.0689999982714653
+            ],
+            [
+              0.0689999982714653,
+              0.06973276542872191,
+              0.0689999982714653
+            ],
+            [
+              0.0689999982714653,
+              0.06973276542872191,
+              -0.0689999982714653
+            ]
+          ]
+        }
+      ],
+      "familyBodies": 1,
+      "livePieces": 0,
+      "effects": 0,
+      "foregroundPixels": 32515,
+      "bluePixels": 20950,
+      "redPixels": 0,
+      "greenPixels": 0,
+      "cyanPixels": 20950,
+      "yellowPixels": 0,
+      "darkPixels": 2969,
+      "drawCalls": 6,
+      "rgbaSha256": "e94cdf24500300cc10f994279be46fbce947081797d70bcf24b7b069b3217ff3",
+      "png": "family-battery-blue-slosh-paused.png"
+    },
+    {
+      "name": "family-battery-blue-slosh-settled",
+      "kind": "battery",
+      "inventory": [
+        {
+          "id": 9,
+          "color": "#297ee6",
+          "count": 100,
+          "weight": 100,
+          "battery": true,
+          "fraction": 0.5,
+          "shapes": 1
+        }
+      ],
+      "liquids": [
+        {
+          "key": "15:-9",
+          "bodyId": 15,
+          "partIds": [
+            -9
+          ],
+          "normal": [
+            0,
+            1,
+            0
+          ],
+          "localNormal": [
+            0,
+            1,
+            0
+          ],
+          "size": [
+            0.13799999999999998,
+            0.13599999999999998,
+            0.13799999999999998
+          ],
+          "fraction": 0.5,
+          "meshBuilds": 2,
+          "uploads": 2,
+          "buffer": 71,
+          "count": 36,
+          "surface": [
+            [
+              -0.0689999982714653,
+              0.081,
+              -0.0689999982714653
+            ],
+            [
+              -0.0689999982714653,
+              0.081,
+              0.0689999982714653
+            ],
+            [
+              0.0689999982714653,
+              0.081,
+              0.0689999982714653
+            ],
+            [
+              -0.0689999982714653,
+              0.081,
+              -0.0689999982714653
+            ],
+            [
+              0.0689999982714653,
+              0.081,
+              0.0689999982714653
+            ],
+            [
+              0.0689999982714653,
+              0.081,
+              -0.0689999982714653
+            ]
+          ]
+        }
+      ],
+      "familyBodies": 1,
+      "livePieces": 0,
+      "effects": 0,
+      "foregroundPixels": 31643,
+      "bluePixels": 20342,
+      "redPixels": 0,
+      "greenPixels": 0,
+      "cyanPixels": 20342,
+      "yellowPixels": 0,
+      "darkPixels": 2969,
+      "drawCalls": 6,
+      "rgbaSha256": "a38a7341f6968eb7e3da114036ffd0befb089b713ff3f07eb33ef6feb26e10e4",
+      "png": "family-battery-blue-slosh-settled.png"
+    },
+    {
+      "name": "family-placement-blue",
+      "kind": "placement",
+      "inventory": [
+        {
+          "id": 10,
+          "color": "#e6bb42",
+          "count": 30,
+          "weight": 30,
+          "battery": false,
+          "fraction": null,
+          "shapes": 1
+        }
+      ],
+      "liquids": [],
+      "familyBodies": 1,
+      "livePieces": 0,
+      "effects": 0,
+      "foregroundPixels": 46207,
+      "bluePixels": 26245,
+      "redPixels": 18680,
+      "greenPixels": 0,
+      "cyanPixels": 26245,
+      "yellowPixels": 19962,
+      "darkPixels": 0,
+      "drawCalls": 4,
+      "rgbaSha256": "1da5ff42a4f371aafc3c7a73017461934dcb129ffb3cb1abc33b710778155157",
+      "png": "family-placement-blue.png"
+    },
+    {
+      "name": "family-placement-blocked",
+      "kind": "placement",
+      "inventory": [
+        {
+          "id": 10,
+          "color": "#e6bb42",
+          "count": 30,
+          "weight": 30,
+          "battery": false,
+          "fraction": null,
+          "shapes": 1
+        }
+      ],
+      "liquids": [],
+      "familyBodies": 1,
+      "livePieces": 1,
+      "effects": 0,
+      "foregroundPixels": 46207,
+      "bluePixels": 0,
+      "redPixels": 44925,
+      "greenPixels": 0,
+      "cyanPixels": 0,
+      "yellowPixels": 19962,
+      "darkPixels": 0,
+      "drawCalls": 5,
+      "rgbaSha256": "fab7531fa41423a4813f47057dec6320b31c80376f319b5d9761663a17dda6d5",
+      "png": "family-placement-blocked.png"
+    },
+    {
+      "name": "family-withdraw-blue",
+      "kind": "withdraw",
+      "inventory": [
+        {
+          "id": 10,
+          "color": "#e6bb42",
+          "count": 30,
+          "weight": 30,
+          "battery": false,
+          "fraction": null,
+          "shapes": 1
+        }
+      ],
+      "liquids": [],
+      "familyBodies": 1,
+      "livePieces": 0,
+      "effects": 0,
+      "foregroundPixels": 18875,
+      "bluePixels": 10737,
+      "redPixels": 7659,
+      "greenPixels": 0,
+      "cyanPixels": 10737,
+      "yellowPixels": 8138,
+      "darkPixels": 0,
+      "drawCalls": 13,
+      "rgbaSha256": "fdc3046f72de2270d0477ba2987ccb552f02c04558c91d67732c5a17f9906a49",
+      "png": "family-withdraw-blue.png"
+    },
+    {
+      "name": "family-animation-a",
+      "kind": "animation",
+      "inventory": [
+        {
+          "id": 11,
+          "color": "#e6bb42",
+          "count": 100,
+          "weight": 100,
+          "battery": false,
+          "fraction": null,
+          "shapes": 1
+        }
+      ],
+      "liquids": [],
+      "familyBodies": 1,
+      "livePieces": 0,
+      "effects": 8,
+      "foregroundPixels": 60117,
+      "bluePixels": 0,
+      "redPixels": 48331,
+      "greenPixels": 0,
+      "cyanPixels": 0,
+      "yellowPixels": 60117,
+      "darkPixels": 0,
+      "drawCalls": 11,
+      "rgbaSha256": "3542681e9202e05516b94e1af948b6468139dbdc71e17adcc65c6b3caec58297",
+      "png": "family-animation-a.png"
+    },
+    {
+      "name": "family-animation-b",
+      "kind": "animation",
+      "inventory": [
+        {
+          "id": 11,
+          "color": "#e6bb42",
+          "count": 100,
+          "weight": 100,
+          "battery": false,
+          "fraction": null,
+          "shapes": 1
+        }
+      ],
+      "liquids": [],
+      "familyBodies": 1,
+      "livePieces": 0,
+      "effects": 8,
+      "foregroundPixels": 35103,
+      "bluePixels": 0,
+      "redPixels": 26577,
+      "greenPixels": 0,
+      "cyanPixels": 0,
+      "yellowPixels": 35103,
+      "darkPixels": 0,
+      "drawCalls": 11,
+      "rgbaSha256": "979f949dfdad306a1944bc9798f53ff172c9dfe1ad2915e6069767b3b6a775b5",
+      "png": "family-animation-b.png"
+    },
+    {
+      "name": "family-animation-complete",
+      "kind": "animation-complete",
+      "inventory": [
+        {
+          "id": 11,
+          "color": "#e6bb42",
+          "count": 100,
+          "weight": 100,
+          "battery": false,
+          "fraction": null,
+          "shapes": 1
+        }
+      ],
+      "liquids": [],
+      "familyBodies": 1,
+      "livePieces": 0,
+      "effects": 0,
+      "foregroundPixels": 23093,
+      "bluePixels": 0,
+      "redPixels": 21648,
+      "greenPixels": 0,
+      "cyanPixels": 0,
+      "yellowPixels": 23093,
+      "darkPixels": 0,
+      "drawCalls": 3,
+      "rgbaSha256": "ebebb36b21a83d66e711d3d17bba361149b70d0aabdc1b79630eb8d50dc187c5",
+      "png": "family-animation-complete.png"
+    }
+  ]
+}

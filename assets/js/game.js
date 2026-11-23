@@ -263,8 +263,9 @@ const fragmentSource = `
       float meniscus=1.-smoothstep(.0002,.0015,abs(dot(uLiquidPlane.xyz,vLocal)-uLiquidPlane.w));
       float ripple=.025*sin(vPosition.x*170.+vPosition.z*130.+uTime*.8);
       float sheen=pow(max(0.,dot(reflect(-normalize(vec3(-.6,1.,.8)),n),view)),20.);
-      vec3 green=mix(uTint.rgb*light,vec3(.24,.96,.51),surface*.55+meniscus*.22);
-      gl_FragColor=vec4(green+vec3(.08,.16,.10)*(sheen+surface*ripple),1.);return;
+      vec3 highlight=min(vec3(1.),uTint.rgb*1.1+vec3(.18));
+      vec3 liquid=mix(uTint.rgb*light,highlight,surface*.55+meniscus*.22);
+      gl_FragColor=vec4(liquid+(vec3(.08)+uTint.rgb*.11)*(sheen+surface*ripple),1.);return;
     }
     if (uKind > 13.5) {
       // Dense black feedstock, with a neutral moving meniscus and soft reflections.
@@ -430,7 +431,7 @@ const keys = new Set();
 let gamepadActive=false,gamepadMove=[0,0],gamepadRotationCodes=new Set(),hudInputActive=false,hudReturnCapture=false;
 const controlHolds=new Map(),controller=window.QBitsControls?.gamepad();
 const keyboardInput=window.QBitsControls?.keyboard(()=>savedPreferences.controls?.keyboard||window.QBitsControls.defaults().keyboard,(id,down,event)=>dispatchControlAction(id,down,'keyboard',event));
-function gameInputActive(){return panel.hidden&&!hudInputActive&&(document.pointerLockElement===canvas||gamepadActive);}
+function gameInputActive(){return panel.hidden&&!hudInputActive&&!familyGroupingJob&&!familyUi?.isOpen()&&(document.pointerLockElement===canvas||gamepadActive);}
 function inputLabel(action){return window.QBitsControls?.labelFor(action,savedPreferences)||action;}
 function controlEvent(code,event={},source='keyboard'){return {code,repeat:false,target:canvas,clientX:event.clientX??canvas.clientWidth/2,clientY:event.clientY??canvas.clientHeight/2,altKey:altDown()||(!!event.altKey&&!/^Alt/.test(event.code||'')),ctrlKey:ctrlDown()||(!!event.ctrlKey&&!/^Control/.test(event.code||'')),shiftKey:shiftDown()||!!event.shiftKey,metaKey:!!event.metaKey,source,preventDefault(){event.preventDefault?.();},stopPropagation(){event.stopPropagation?.();}};}
 function setHudInput(enabled,source='keyboard'){
@@ -439,6 +440,9 @@ function setHudInput(enabled,source='keyboard'){
 }
 function dispatchControlAction(id,down,source='keyboard',event={}){
  if(cullingLab.benchmark)return;
+ if(down&&familyUi?.isOpen())return;
+ if(down&&familyGroupingJob){if(id==='pause'){cancelFamilyGrouping();announce('Agrupación cancelada · piezas conservadas');}return;}
+ if(down&&familyPlacement&&!['forward','backward','left','right','crouch','shift','primary','secondary','interact','pause','near','far','fullscreen'].includes(id)&&!['ShiftLeft','ShiftRight','KeyE','Enter','Escape'].includes(window.QBitsControls?.actions.find(a=>a.id===id)?.code))return;
  if(cullingLab.observer&&down&&!['forward','backward','left','right','crouch','pause','tools','fullscreen'].includes(id)){announce('Modo observador · 7 numérico para volver y manipular');return;}
  const token=source+':'+id,holders=controlHolds.get(id)||new Set();
  if(down){if(holders.has(token))return;holders.add(token);controlHolds.set(id,holders);if(holders.size>1)return;}
@@ -465,6 +469,7 @@ function dispatchControlAction(id,down,source='keyboard',event={}){
 function releaseInputSource(source){for(const [id,holders]of [...controlHolds])if(holders.has(source+':'+id))dispatchControlAction(id,false,source,{cancelled:true});}
 function resetGameInputs(){keyboardInput?.clear();releaseInputSource('gamepad');gamepadActive=false;gamepadMove=[0,0];controller?.reset();if(hudInputActive){hudReturnCapture=false;setHudInput(false);}keys.clear();}
 function onPhysicalKeyDown(event){
+ if(familyUi?.isOpen())return;
  if(cullingLab.benchmark){if(event.code==='Escape'){event.preventDefault();cancelCullingBenchmark();}return;}
  if(tabletVisible()&&!event.defaultPrevented){
   const action=window.QBitsControls?.keyboardAction(savedPreferences.controls.keyboard,event.code);
@@ -494,6 +499,8 @@ function onPhysicalKeyUp(event){
  if(tabletMovement[action])keys.delete(tabletMovement[action]);
 }
 function onPhysicalMouseDown(event){
+ if(familyGroupingJob||familyUi?.isOpen())return;
+ if(familyPlacement){onCanvasMouseDown(event);return;}
  if(!settingsScreen?.isOpen&&!robotPoseDraft&&window.QBitsControls?.keyboardAction(savedPreferences.controls.keyboard,'Mouse'+event.button)==='tablet'){event.preventDefault();toggleTablet();return;}
  robotPoseHandledClick=false;if(robotPoseDraft){robotPoseHandledClick=event.button===0;robotPoseMouse(event);return;}if(hudInputActive||settingsScreen?.isOpen||workshopPanel?.isOpen)return;gamepadActive=false;if(keyboardInput?.down('Mouse'+event.button,event))event.preventDefault();else if(!keyboardInput)onCanvasMouseDown(event);}
 function onPhysicalMouseUp(event){if(keyboardInput?.up('Mouse'+event.button,event))event.preventDefault();else if(!keyboardInput||(event.button===0&&savedPreferences.controls?.keyboard.bindings.primary==='Mouse0'&&!controlHolds.has('primary')))onCanvasMouseUp(event);}
@@ -520,7 +527,7 @@ function navigateControllerMenu(id){
 function pollGamepadInput(dt){
  if(!controller)return;let pads=[];try{pads=navigator.getGamepads?.()||[];}catch{}
  const config=savedPreferences.controls?.gamepad||window.QBitsControls.defaults().gamepad,capture=document.querySelector('#settings-screen').dataset.bindingCapture;
- const blocked=document.hidden||story.transition||document.body.dataset.booting==='true'||capture==='gamepad'||capture==='keyboard';
+ const blocked=document.hidden||story.transition||familyUi?.isOpen()||!!familyGroupingJob||document.body.dataset.booting==='true'||capture==='gamepad'||capture==='keyboard';
  const uiMode=settingsScreen?.isOpen||workshopPanel?.isOpen||story.ready&&(story.mode!=='playing'||!panel.hidden||!menu.hidden||!commandMenu.hidden||['choice','repeat'].includes(story.phase));
  const mode=blocked?'blocked':hudInputActive?'hud':radialOpen()?'radial':uiMode?'menu':'game',sample=controller.poll(pads,config,mode);
  window.qbitsInputStatus={status:sample.status,id:sample.id};
@@ -658,6 +665,7 @@ document.addEventListener('mousemove', event => {
   if (marquee) { updateMarquee(event); return; }
   noteSpeechLook(event.movementX,event.movementY);
   noteAssemblyShake(event.movementX,event.movementY,event.timeStamp);
+  noteFamilyShake(event.movementX,event.movementY,event.timeStamp);
   gamepadActive=false;
   const mouse=savedPreferences.controls?.keyboard||{sensitivity:1,invertY:false};
   yaw -= event.movementX * 0.002 * mouse.sensitivity;
@@ -726,6 +734,10 @@ function unitGroundHeight(shape){return -Math.min(...unitProfile(shape).vertices
 function unitFaces(pose){const profile=unitProfile(pose);return profile.faces.map((face,index)=>({index,kind:profile.faceKinds[index],vertices:face.map(i=>add(pose.p,pose.q.vmult(profile.vertices[i]))),center:add(pose.p,pose.q.vmult(profile.faceCenters[index])),normal:pose.q.vmult(profile.faceNormals[index])}));}
 const settings={mass:1,unitShape:'cube',gravity:9.8,bounce:.12,force:60,friction:.38,damping:.12,speed:.32,guide:'ghost',line:'dashed',maxCarry:2000,maxSelect:2000,rotationSpeed:2.8,grip:.95,cargoSide:4,cargoRequired:8,cargoColor:'#f4f4f1',haulSpeed:.2,haulForce:2};
 const disassemblyJobs=[];
+// A family owns inert inventory plus one physical shell, never hidden Q-bits.
+const families=[],familyEffects=[],familyStoredParts=new Map();
+const FAMILY_HALF=.075,FAMILY_EFFECT_LIMIT=16;
+let familySerial=0,familyPlacement=null,familyActive=null,familyUi=null,familyShake=null,familyGroupingJob=null,familyLabelCursor=0;
 const groups=[],cargos=[],rotors=[];let rotorSerial=0;
 const flightStates=new Map();
 // Only ownership and connections survive a substep. Positions, contacts and
@@ -1565,6 +1577,7 @@ function validPose(g,pos,quat,exclude=[],joiningFrames=null){
  const src=rigidQueryPoses(g,pos,quat).concat(conveyorGroupSurfaces(g,pos,quat)),entries=src.map(collisionEntry);
  if(!puzzlePoseClear(g,pos,quat,src,bb)||!alphaPoseClear(g,pos,quat)||!storyPoseClear(g,pos,quat,src,bb))return false;
  if(cargos.some(c=>boundsOverlap(bb,cargoBounds(c))&&src.some(a=>obbOverlap(a,cargoPose(c)))))return false;
+ if(families.some(f=>src.some(a=>obbOverlap(a,familyPose(f)))))return false;
  let seamEntries=null;
  return !groups.some(other=>{
   if(other===g||exclude.includes(other))return false;
@@ -1655,10 +1668,10 @@ function beginCreationPlacement(id,plan=null,options={}){
  pendingUnitCreation=id;creationPreview={id,entry,record,local,compact,surfaces,plan,elevation:options.height||0,turns:options.quarterTurns||0,valid:false,poses:[],reason:'Apunta a una superficie.'};
  updateCreationPlacement();redraw=true;announce((plan?.name||creationTitle(id))+' · rueda: girar por caras · Shift: cuadrícula y giro libre · clic: colocar · Esc: cancelar');return true;
 }
-function creationSurfaceAim(dir=direction(),exclude=[]){
+function creationSurfaceAim(dir=direction(),exclude=[],excludedFamilies=[]){
  const origin=V(...camera);let best=8,hit=null;
  // All solid surfaces occlude the ray; only upward-facing surfaces support a copy.
- const candidates=groups.filter(g=>!exclude.includes(g)&&rayPuzzleBox(origin,dir,physicalGroupBounds(g),best)!==null).flatMap(g=>physicalGroupPoses(g)).concat(cargos.map(cargoPose),storyWorld.walls.map(w=>({p:w.p,q:w.q||Q(),half:w.half})),alphaObstacles());
+ const candidates=groups.filter(g=>!exclude.includes(g)&&rayPuzzleBox(origin,dir,physicalGroupBounds(g),best)!==null).flatMap(g=>physicalGroupPoses(g)).concat(cargos.map(cargoPose),storyWorld.walls.map(w=>({p:w.p,q:w.q||Q(),half:w.half})),alphaObstacles(),families.filter(f=>!excludedFamilies.includes(f)).map(familyPose));
  for(const pose of candidates){const convex=isTBit(pose),ray=convex?rayPart(origin,dir,pose,best):null,distance=convex?ray?.distance??null:rayPuzzleBox(origin,dir,{...pose,half:pose.half||V(HALF,HALF,HALF)},best);if(distance===null||distance<.001||distance>=best)continue;
   const point=add(origin,mul(dir,distance)),local=pose.q.inverse().vmult(sub(point,pose.p)),half=pose.half||V(HALF,HALF,HALF);let axis='y',gap=Infinity;
   for(const k of ['x','y','z']){const d=Math.abs(Math.abs(local[k])-half[k]);if(d<gap){gap=d;axis=k;}}
@@ -1667,10 +1680,11 @@ function creationSurfaceAim(dir=direction(),exclude=[]){
  if(dir.y<-.015){const distance=-origin.y/dir.y;if(distance>0&&distance<best){const point=add(origin,mul(dir,distance));if(Math.max(Math.abs(point.x),Math.abs(point.z))<ROOM_SIZE/2)hit={point,normal:V(0,1,0)};}}
  return hit;
 }
-function creationPosesClear(poses,plan=false){
+function creationPosesClear(poses,plan=false,exclude={}){
+ const excludedGroups=exclude.groups?new Set(exclude.groups):null;
  const boxes=poses.map(collisionPoseBounds),extent={min:V(Infinity,Infinity,Infinity),max:V(-Infinity,-Infinity,-Infinity)};for(const box of boxes)for(const k of ['x','y','z']){extent.min[k]=Math.min(extent.min[k],box.min[k]);extent.max[k]=Math.max(extent.max[k],box.max[k]);}
  if(plan)return blueprintSiteClear({...extent,...alphaBox(mul(add(extent.min,extent.max),.5),mul(sub(extent.max,extent.min),.5))});
- const obstacles=groups.filter(g=>boundsOverlap(extent,physicalGroupBounds(g))).flatMap(g=>physicalGroupPoses(g)).concat(cargos.map(cargoPose),storyWorld.walls.map(w=>({p:w.p,q:w.q||Q(),half:w.half})),alphaObstacles(),puzzleObstacleBounds().map(w=>({p:w.p,q:w.q||Q(),half:w.half})));
+ const obstacles=groups.filter(g=>!excludedGroups?.has(g)&&boundsOverlap(extent,physicalGroupBounds(g))).flatMap(g=>physicalGroupPoses(g)).concat(cargos.map(cargoPose),storyWorld.walls.map(w=>({p:w.p,q:w.q||Q(),half:w.half})),alphaObstacles(),families.filter(f=>!exclude.families?.includes(f)).map(familyPose),puzzleObstacleBounds().map(w=>({p:w.p,q:w.q||Q(),half:w.half})));
  const entries=obstacles.map(collisionEntry).filter(box=>boundsOverlap(extent,box));
  return poses.every(pose=>{const box=collisionPoseBounds(pose);return box.min.y>=-.001&&box.max.y<=ROOM_HEIGHT&&Math.max(Math.abs(box.min.x),Math.abs(box.max.x),Math.abs(box.min.z),Math.abs(box.max.z))<ROOM_SIZE/2-.001&&!entries.some(other=>boundsOverlap(box,other)&&obbOverlap(pose,other.pose));});
 }
@@ -2390,9 +2404,290 @@ function dismantleHeldAssembly(){
 // runs once per animation frame, never once per physics substep.
 function stagedDisassemblyEnabled(){return savedPreferences.disassemblyMode==='staged'&&story.scene==='lab'&&!puzzle.active;}
 function pendingDisassemblyCount(){return disassemblyJobs.reduce((n,j)=>n+j.parts.length-j.cursor,0);}
-function scenePartCount(){return groups.reduce((n,g)=>n+g.parts.length,0)+pendingDisassemblyCount();}
+function scenePartCount(){return groups.reduce((n,g)=>n+g.parts.length,0)+pendingDisassemblyCount()+familyInventoryCount();}
 function disposePreviewMesh(mesh){for(const batch of mesh?.batches||[]){deleteRenderBuffer(batch.buffer);if(boundGeometry===batch.buffer)boundGeometry=null;}}
 function clearDisassembly(){for(const job of disassemblyJobs)disposePreviewMesh(job.mesh);disassemblyJobs.length=0;}
+function familyInventoryCount(){return families.reduce((n,f)=>n+f.count,0);}
+function familyParts(items){return items.flatMap(item=>item.groups.flatMap(g=>g.parts));}
+// Internal snapshots already own their data. Partition without revalidating and
+// copying every mood at every stage; untrusted imports still use QBitsFamilies.
+function familyPartition(items,limit){const batches=[];let batch=[],count=0;for(const item of items){const n=QBitsOrganizers.count(item);if(n>limit)throw Error('El módulo supera el límite de la familia.');if(count+n>limit){batches.push(batch);batch=[];count=0;}batch.push(item);count+=n;}if(batch.length)batches.push(batch);return batches;}
+function familyPose(f){return {p:f.body.position,q:f.body.quaternion,half:V(FAMILY_HALF,FAMILY_HALF,FAMILY_HALF),family:f};}
+function familyEnabled(){return !!window.QBitsFamilies&&['lab','campaign'].includes(story.scene)&&!puzzle.active&&!story.transition&&!certifiedAutomation();}
+function familyNotice(message){announce(message);return null;}
+function initFamilyUi(){
+ if(!familyUi)familyUi=window.QBitsFamiliesUI?.create({onEditorClose:()=>{resetGameInputs();if(story.mode==='playing'&&!story.transition&&!document.hidden)captureMouse();}});
+ return familyUi;
+}
+function familyRefresh(f){
+ const stats=QBitsFamilies.stats(f.items),parts=familyParts(f.items);f.count=stats.count;f.weight=stats.weight;f.battery=parts.length>0&&parts.every(p=>p.mood?.externalBattery);
+ for(const id of f.partIds||[])if(familyStoredParts.get(id)===f)familyStoredParts.delete(id);f.partIds=stats.ids;for(const id of f.partIds)familyStoredParts.set(id,f);
+ f.rgb=[1,3,5].map(i=>parseInt(f.color.slice(i,i+2),16)/255);f.kind=familyItemKind(f.items[0]);
+ if(f.battery){let energy=0,capacity=0;for(const p of parts){const c=externalBatteryCapacity(p);capacity+=c;energy+=p.mood.energy*c;}f.fraction=capacity?energy/capacity:0;}
+ if(f.battery){f.liquidPack=f.liquidPack||{body:f.body,parts:[{id:-f.id}],p:f.body.position,q:f.body.quaternion,size:V(.15,.15,.15),enabled:false};f.liquidPack.fraction=f.fraction;}else if(f.liquidPack){resetBatteryLiquids(f.body);delete f.liquidPack;}
+ f.body.mass=f.weight*.25;f.body.updateMassProperties();f.body.aabbNeedsUpdate=true;redraw=true;
+}
+function familyItemKind(item){
+ const parts=familyParts([item]);if(parts.every(p=>p.mood?.externalBattery))return 'Baterías';
+ if(item.joints.length===1&&parts.length===2)return item.joints[0].servo?'Servos':'Rotores';
+ if(parts.length!==1)return 'Construcciones';const p=parts[0];
+ return p.mood?.gripper?'Agarres':p.mood?.workshop?.sensor?'Sensores':({cube:'Cubos',tetra:'Triangulares',pyramid:'Pirámides',coupler:'Enganches'}[p.shape]||'Piezas');
+}
+function familySetSignature(members){return [...members].sort((a,b)=>a.aId-b.aId||a.bId-b.bId).map(m=>m.aId+'-'+m.bId).join(',');}
+// Capture common metadata once per operation. No category canonicalization or
+// traversal of all motors is repeated for each loose cube in a large selection.
+function* familySnapshotSteps(component,shared){
+ const ids=new Set(),parts=[],origin=V();let low=Infinity,processed=0;
+ for(const g of component){const list=[];parts.push(list);for(const part of g.parts){const pose=partPose(g,part),p={id:part.id,shape:unitShape(pose),p:pose.p,q:pose.q,weight:part.weight,mood:copyMood(part.mood)};list.push(p);ids.add(p.id);origin.x+=p.p.x;origin.z+=p.p.z;for(const v of corners(p))low=Math.min(low,v.y);if(++processed%32===0)yield;}}
+ origin.x/=ids.size;origin.z/=ids.size;origin.y=low;
+ const joints=shared.joints.filter(j=>ids.has(j.aId)&&ids.has(j.bId)),keys=new Set(joints.map(j=>j.aId+':'+j.bId));
+ const item={version:1,groups:component.map((g,i)=>({q:[g.body.quaternion.x,g.body.quaternion.y,g.body.quaternion.z,g.body.quaternion.w],parts:parts[i].map(p=>({id:p.id,shape:p.shape,weight:p.weight,p:[p.p.x-origin.x,p.p.y-origin.y,p.p.z-origin.z],q:[p.q.x,p.q.y,p.q.z,p.q.w],mood:p.mood}))})),joints,sets:shared.sets.map(s=>({name:s.name,familySignature:s.familySignature||familySetSignature(s.members),members:s.members.filter(m=>ids.has(m.aId)&&ids.has(m.bId))})).filter(s=>s.members.length),contacts:{sensors:shared.contacts.sensors.filter(s=>ids.has(s.id)),rotors:shared.contacts.rotors.filter(r=>keys.has(r.key.split(':').slice(0,2).join(':')))}};
+ const arms=shared.arms.filter(a=>ids.has(a.gripperId));if(arms.length)item.robotArms=arms;
+ const belts=shared.belts.filter(c=>ids.has(c.baseId));if(belts.length)item.conveyors=belts;
+ return item;
+}
+function* familyDecomposeSteps(item){
+ if(QBitsFamilies.count([item])===1)return [item];
+ const parts=familyParts([item]),owners=new Map();for(const g of item.groups)for(const p of g.parts)owners.set(p.id,g);
+ const used=new Set(),result=[],byId=new Map(parts.map(p=>[p.id,p]));let processed=0;
+ const subset=(selected,joints=[])=>{
+  const ids=new Set(selected.map(p=>p.id)),byOwner=new Map();for(const p of selected){const g=owners.get(p.id);if(!byOwner.has(g))byOwner.set(g,[]);byOwner.get(g).push(p);}const lists=[...byOwner].map(([g,parts])=>({q:g.q.slice(),parts}));
+  let x=0,z=0,y=Infinity;for(const p of selected){x+=p.p[0];z+=p.p[2];for(const v of corners({shape:p.shape,p:V(...p.p),q:shelfQuaternion(p.q)}))y=Math.min(y,v.y);}x/=selected.length;z/=selected.length;
+  return {version:1,groups:lists.map(g=>({q:g.q,parts:g.parts.map(p=>({...p,p:[p.p[0]-x,p.p[1]-y,p.p[2]-z]}))})),joints,sets:[],contacts:{sensors:(item.contacts?.sensors||[]).filter(s=>ids.has(s.id)),rotors:[]}};
+ };
+ // Recover recognized two-ended rotors/servos once; a shared endpoint cannot
+ // become two items. All remaining matter is recovered as its original piece.
+ for(const joint of item.joints){if(++processed%16===0)yield;const a=byId.get(joint.aId),b=byId.get(joint.bId);if(!a||!b||used.has(a.id)||used.has(b.id)||owners.get(a.id)===owners.get(b.id))continue;const one=subset([a,b],[joint]);if(QBitsOrganizers.validItem(one)){result.push(one);used.add(a.id);used.add(b.id);}}
+ const packs=new Map();for(const p of parts)if(!used.has(p.id)&&p.mood?.externalBattery){const key=p.mood.externalBattery.packId;if(!packs.has(key))packs.set(key,[]);packs.get(key).push(p);}
+ for(const pack of packs.values())if(pack.length<=10&&pack.every(p=>owners.get(p.id)===owners.get(pack[0].id))){result.push(subset(pack));pack.forEach(p=>used.add(p.id));if(++processed%16===0)yield;}
+ for(const p of parts)if(!used.has(p.id)){result.push(subset([p]));if(++processed%32===0)yield;}
+ return result;
+}
+function familyDecompose(item){const steps=familyDecomposeSteps(item);let step;do{step=steps.next();}while(!step.done);return step.value;}
+function familyExistingIds(exclude=[]){
+ const ids=new Set(),excluded=new Set(exclude);for(const g of groups)if(!excluded.has(g))for(const p of g.parts)ids.add(p.id);
+ for(const f of families)for(const p of familyParts(f.items))ids.add(p.id);
+ for(const job of disassemblyJobs)for(let i=job.cursor;i<job.parts.length;i++)ids.add(job.parts[i].id);
+ for(const cable of powerCables)for(const p of cable.materials||[])ids.add(p.id);
+ for(const shelf of shelves)for(const cell of shelf.cells)for(const item of cell.items)for(const p of familyParts([item]))ids.add(p.id);
+ return ids;
+}
+function createFamily(items,p,options={}){
+ const id=options.id??familySerial+1,name=QBitsFamilies.sanitizeName(options.name),color=QBitsFamilies.sanitizeColor(options.color),q=options.q||Q(),v=options.v||V(),w=options.w||V();
+ if(!options.trusted&&!QBitsFamilies.validFamily({version:1,id,name,color,items,p:[p.x,p.y,p.z],q:[q.x,q.y,q.z,q.w],v:[v.x,v.y,v.z],w:[w.x,w.y,w.z]},{usedIds:options.restoring?undefined:familyExistingIds(options.excludeGroups||[])}))return null;
+ const body=new CANNON.Body({mass:QBitsFamilies.weight(items)*.25,allowSleep:true,sleepSpeedLimit:.025,sleepTimeLimit:.6});body.addShape(new CANNON.Box(V(FAMILY_HALF,FAMILY_HALF,FAMILY_HALF)));body.position.copy(p);body.quaternion.copy(options.q||Q());body.velocity.copy(options.v||V());body.angularVelocity.copy(options.w||V());body.linearDamping=.03;body.angularDamping=.35;
+ const f={id,name,color,items:options.trusted?items:shelfClone(items),body};body.familyRef=f;familySerial=Math.max(familySerial,f.id);for(const part of familyParts(items))serial=Math.max(serial,part.id);
+ familyRefresh(f);world.addBody(body);families.push(f);return f;
+}
+function removeFamily(f){const i=families.indexOf(f);if(i<0)return;resetBatteryLiquids(f.body);world.removeBody(f.body);delete f.body.familyRef;for(const id of f.partIds||[])if(familyStoredParts.get(id)===f)familyStoredParts.delete(id);families.splice(i,1);if(familyActive===f)familyActive=null;if(familyPlacement?.family===f)familyPlacement=null;redraw=true;}
+function familyRecord(f,items=f.items){return {version:1,id:f.id,name:f.name,color:f.color,items,p:[f.body.position.x,f.body.position.y,f.body.position.z],q:[f.body.quaternion.x,f.body.quaternion.y,f.body.quaternion.z,f.body.quaternion.w],v:[f.body.velocity.x,f.body.velocity.y,f.body.velocity.z],w:[f.body.angularVelocity.x,f.body.angularVelocity.y,f.body.angularVelocity.z]};}
+function serializeFamilies(){return families.map(f=>familyRecord(f,shelfClone(f.items)));}
+function restoreFamilies(records){
+ if(!Array.isArray(records))return 0;const used=familyExistingIds(),names=new Set(families.map(f=>f.id)),valid=[];let count=scenePartCount();
+ for(const r of records){if(!QBitsFamilies.validFamily(r,{usedIds:used})||names.has(r.id)||count+QBitsFamilies.count(r.items)>MAX_QUBITS)return 0;names.add(r.id);for(const p of familyParts(r.items))used.add(p.id);count+=QBitsFamilies.count(r.items);valid.push(r);}
+ const made=[];for(const r of valid){const f=createFamily(r.items,V(...r.p),{...r,q:shelfQuaternion(r.q),v:V(...r.v),w:V(...r.w),restoring:true});if(!f){made.forEach(removeFamily);return 0;}made.push(f);}return made.length;
+}
+function clearFamilies(){cancelFamilyGrouping();cancelFamilyPlacement();for(const f of [...families])removeFamily(f);familyEffects.length=0;familyActive=null;familyShake=null;familyUi?.clear();}
+function familySpots(count,origin,excludedGroups=[],excludedFamilies=[]){
+ const out=[],width=15;for(let i=0;i<900&&out.length<count;i++){
+  const ring=Math.ceil((Math.sqrt(i+1)-1)/2),side=Math.max(1,ring*2),d=i-(2*ring-1)**2,edge=Math.floor(d/side),step=d%side;let x=0,z=0;
+  if(ring){if(edge===0){x=ring;z=-ring+step;}else if(edge===1){x=ring-step;z=ring;}else if(edge===2){x=-ring;z=ring-step;}else{x=-ring+step;z=-ring;}}
+  const p=V(origin.x+x*.24,FAMILY_HALF+.006,origin.z+z*.24);if(Math.abs(p.x)>width||Math.abs(p.z)>width||Math.hypot(position[0]-p.x,position[2]-p.z)<PLAYER_RADIUS+.12)continue;
+  const pose={p,q:Q(),half:V(FAMILY_HALF,FAMILY_HALF,FAMILY_HALF)};
+  if(creationPosesClear([pose],false,{groups:excludedGroups,families:excludedFamilies})&&!out.some(v=>Math.hypot(v.x-p.x,v.z-p.z)<.20))out.push(p);
+ }return out.length===count?out:null;
+}
+// Cleanup still runs through the game hooks. Batch only Cannon's array resize
+// and reindex, retaining the array itself, stable body order and removal events.
+function retireFamilyGroups(members){
+ const selectedSet=new Set(members),removed=new Set(),nativeRemove=world.removeBody;
+ world.removeBody=body=>{removed.add(body);};
+ try{
+  if(held&&(held.items||[held]).some(i=>selectedSet.has(i.g)))releaseQubit(false);
+  for(const c of conveyors)if(c.virtual&&selectedSet.has(c.virtual.baseGroup)&&c.virtual.records.every(r=>selectedSet.has(r.g))){for(const r of c.virtual.records){delete r.g.virtualConveyor;delete r.rotor.virtualConveyor;}c.virtual=null;}
+  for(const r of [...rotors])if(rotorGroups(r).some(g=>selectedSet.has(g)))disconnectRotor(r);
+  for(const g of members)removeGroup(g);
+  pruneConveyors();pruneRobotArms();
+ }finally{
+  world.removeBody=nativeRemove;const actual=world.bodies.filter(b=>removed.has(b));let write=0;
+  for(const body of world.bodies)if(!removed.has(body)){world.bodies[write]=body;body.index=write++;}
+  world.bodies.length=write;world.collisionMatrix.setNumObjects(write);world.broadphase.dirty=true;
+  for(const body of removed)body.world=null;
+  for(const body of actual){world.removeBodyEvent.body=body;world.dispatchEvent(world.removeBodyEvent);}
+ }
+}
+function familyEffect(from,to,shape='cube',color='#7aa7b1'){
+ if(familyEffects.length>=FAMILY_EFFECT_LIMIT)return;familyEffects.push({from:from.clone(),to:to.clone(),shape,age:0,duration:.58,color:[1,3,5].map(i=>parseInt(color.slice(i,i+2),16)/255)});
+}
+// Preparation owns no world bodies. Yield while capturing and validating data;
+// physics and editing stay frozen until one atomic transfer, or cancellation.
+function* prepareFamilyGrouping(input,options={}){
+ if(!familyEnabled())return familyNotice('Las familias están disponibles en el banco y en los niveles de construcción.');
+ if(familyPlacement||disassemblyJobs.length)return familyNotice('Termina la colocación o el desarme en curso.');
+ const live=new Set(groups),seen=new Set(),components=[];let processed=0;
+ for(const g of input||[])if(live.has(g)&&!seen.has(g)){const component=rotorConnectedGroups([g]);component.forEach(v=>seen.add(v));components.push(component);if(++processed%32===0)yield;}
+ const members=[...seen];if(!members.length)return familyNotice('Selecciona las piezas que quieres agrupar.');
+ const busy=members.some(g=>g.parts.some(p=>p.id===story.guideId||p.mood.production)||g.blueprintJob||g.haulJob||g.route||g.cooler||g.robotHeld||g.pendingMoodOrder||g.body.type!==CANNON.Body.DYNAMIC||g.storyFloat);
+ if(busy||runningConveyorForGroups(members)||[...robotGrips.values()].some(grip=>members.includes(grip.g)||members.includes(robotGripperHit(grip.id)?.g))||[...flightStates.values()].some(f=>f.enabled&&f.component?.some(g=>members.includes(g))))return familyNotice('Detén los trabajos, suelta las cargas y selecciona piezas disponibles para agrupar.');
+ syncVirtualConveyors();const shared={joints:serializeRotorState(),sets:serializeRotorSets(),contacts:serializeContactState(),arms:serializeRobotArms(),belts:serializeConveyors()},items=[],origin=members[0].body.position.clone(),visuals=[];
+ yield;
+ for(const component of components){const item=yield* familySnapshotSteps(component,shared);items.push(...(options.disassemble||QBitsFamilies.count([item])>QBitsFamilies.CAPACITY?yield* familyDecomposeSteps(item):[item]));yield;}
+ const byKind=new Map();for(const item of items){const key=options.byType?familyItemKind(item):'Familia';if(!byKind.has(key))byKind.set(key,[]);byKind.get(key).push(item);}
+ let batches=[];try{for(const [kind,list]of byKind)for(const batch of familyPartition(list,100))batches.push({items:batch,name:options.name||kind});}catch(e){return familyNotice(e.message);}
+ const poses=familySpots(batches.length,origin,members);if(!poses)return familyNotice('Libera un poco de suelo para colocar las familias.');
+ yield;
+ const used=familyExistingIds(members);for(let i=0;i<batches.length;i++){const batch=batches[i];batch.name=QBitsFamilies.sanitizeName(batch.name);batch.color=QBitsFamilies.sanitizeColor(options.color);
+  const record={version:1,id:familySerial+i+1,name:batch.name,color:batch.color,items:batch.items,p:[poses[i].x,poses[i].y,poses[i].z],q:[0,0,0,1],v:[0,0,0],w:[0,0,0]};
+  if(!QBitsFamilies.validFamily(record,{usedIds:used})||batch.items.some(item=>!storedShelfConveyorsValid(item)||item.joints.some(j=>!storedRotorOptionsValid(j))))return familyNotice('No se pudo conservar el inventario: hay datos incompatibles, repetidos o demasiado grandes.');
+  for(const p of familyParts(batch.items))used.add(p.id);yield;
+ }
+ for(const g of members){if(visuals.length>=FAMILY_EFFECT_LIMIT)break;for(const part of g.parts){const pose=partPose(g,part);visuals.push({id:part.id,p:pose.p,shape:unitShape(pose)});if(visuals.length>=FAMILY_EFFECT_LIMIT)break;}}
+ yield;
+ const made=[];try{for(let i=0;i<batches.length;i++){const b=batches[i],f=createFamily(b.items,poses[i],{name:b.name,color:b.color,restoring:true,trusted:true});if(!f)throw Error('No se pudo crear la familia.');made.push(f);}}catch(e){made.forEach(removeFamily);return familyNotice(e.message);}
+ for(const set of rotorSets){const setMembers=rotorSetMembers(set);if(setMembers.some(r=>rotorGroups(r).some(g=>seen.has(g))))set.familySignature=set.familySignature||familySetSignature(setMembers);}
+ automationIntervention();retireFamilyGroups(members);clearSelection();familyActive=made[0];
+ const destination=new Map();for(const f of made)for(const p of familyParts(f.items))destination.set(p.id,f);
+ for(const p of visuals){const f=destination.get(p.id);if(f)familyEffect(p.p,f.body.position,p.shape,f.color);}
+ if(story.ready&&storyGuide()&&!story.dialogue&&!story.familyLesson){story.familyLesson=true;say('Una familia guarda hasta cien piezas. El número indica cuántas quedan. Con clic derecho puedes nombrarla, cambiar su color y sacar piezas con la guía azul.',{after:hideStoryDialogue});}
+ announce(made.length===1?'Familia «'+made[0].name+'» · '+made[0].count+' piezas':'Agrupadas '+items.reduce((n,i)=>n+QBitsFamilies.count([i]),0)+' piezas en '+made.length+' familias · hasta 100 por familia');redraw=true;return made;
+}
+function groupIntoFamilies(input,options={}){if(familyGroupingJob)return null;const steps=prepareFamilyGrouping(input,options);let step;do{step=steps.next();}while(!step.done);return step.value;}
+function startFamilyGrouping(input,options={}){
+ if(familyGroupingJob||!familyEnabled()||familyPlacement||disassemblyJobs.length)return false;
+ familyGroupingJob={steps:prepareFamilyGrouping([...input],{...options}),scene:story.scene,level:story.level};resetGameInputs();accumulator=0;announce('Preparando familias… · Esc: cancelar');redraw=true;return true;
+}
+function cancelFamilyGrouping(){if(!familyGroupingJob)return false;familyGroupingJob.steps.return();familyGroupingJob=null;accumulator=0;redraw=true;return true;}
+function advanceFamilyGrouping(){
+ const job=familyGroupingJob;if(!job)return null;
+ if(document.hidden||story.transition||story.scene!==job.scene||story.level!==job.level||story.mode!=='playing'){cancelFamilyGrouping();return null;}
+ const start=performance.now();let steps=0;
+ try{do{const next=job.steps.next();if(next.done){familyGroupingJob=null;accumulator=0;redraw=true;return next.value;}steps++;}while(steps<64&&performance.now()-start<4);}catch(error){cancelFamilyGrouping();familyNotice('No se pudo preparar la familia. Las piezas siguen en el suelo.');}
+ return null;
+}
+function splitFamily(f,limit=10){
+ if(familyGroupingJob||!familyEnabled()||!families.includes(f)||familyPlacement||!Number.isInteger(limit)||limit<1||limit>100)return null;
+ const items=f.items.flatMap(i=>QBitsFamilies.count([i])>limit?familyDecompose(i):[i]);let batches;try{batches=familyPartition(items,limit);}catch(e){return familyNotice(e.message);}
+ if(batches.length<2)return familyNotice('Esta familia ya cabe en un lote de '+limit+'.');
+ const spots=familySpots(batches.length,f.body.position,[],[f]);if(!spots)return familyNotice('Libera espacio para separar los lotes.');
+ const made=[];for(let i=0;i<batches.length;i++){const next=createFamily(batches[i],spots[i],{name:f.name,color:f.color,restoring:true,trusted:true});if(!next){made.forEach(removeFamily);return null;}made.push(next);}
+ for(const next of made)familyEffect(f.body.position,next.body.position,'cube',f.color);removeFamily(f);familyActive=made[0];announce('Familia dividida en '+made.length+' lotes de hasta '+limit+' piezas');return made;
+}
+function mergeFamilies(target,source){
+ if(familyGroupingJob||!familyEnabled()||target===source||!families.includes(target)||!families.includes(source))return false;
+ let items;try{items=QBitsFamilies.merge(target.items,source.items);}catch(e){announce(e.message);return false;}
+ if(!QBitsFamilies.validFamily(familyRecord(target,items))){announce('El contenido combinado supera el tamaño de guardado de una familia.');return false;}
+ familyEffect(source.body.position,target.body.position,'cube',target.color);target.items=items;familyRefresh(target);target.body.wakeUp();removeFamily(source);familyActive=target;announce('Familia «'+target.name+'» · '+target.count+' piezas');return true;
+}
+function familyLayout(items){
+ const result=[],width=Math.min(5,items.length);let x=0,z=0,rowDepth=0;
+ for(let index=0;index<items.length;index++){
+  const item=items[index],bb=shelfItemBounds(item),size=sub(bb.max,bb.min);if(index&&index%width===0){x=0;z+=rowDepth+.05;rowDepth=0;}
+  const offset=V(x-bb.min.x,-bb.min.y,z-bb.min.z);for(const g of item.groups)for(const p of g.parts)result.push({shape:p.shape,p:add(V(...p.p),offset),q:shelfQuaternion(p.q),id:p.id});
+  x+=size.x+.05;rowDepth=Math.max(rowDepth,size.z);item.__familyOffset=offset;
+ }return result;
+}
+function beginFamilyPlacement(f,mode='move',limit=1){
+ if(familyGroupingJob||!familyEnabled()||!families.includes(f)||held||!['move','withdraw'].includes(mode))return false;
+ cancelFamilyPlacement();cancelUnitCreation();cancelShelfPlacement();const count=mode==='withdraw'?Math.min(f.items.length,Math.max(1,Math.floor(limit))):0,items=count?QBitsFamilies.cloneItems(f.items.slice(0,count)):[];
+ const weight=mode==='move'?f.weight:QBitsFamilies.weight(items);if(weight>settings.maxCarry){announce('Supera la capacidad de '+formatWeight(settings.maxCarry)+' u');return false;}
+ familyPlacement={family:f,mode,limit:count,items,local:mode==='move'?[{p:V(0,FAMILY_HALF,0),q:Q(),half:V(FAMILY_HALF,FAMILY_HALF,FAMILY_HALF)}]:familyLayout(items),turns:0,valid:false,poses:[],reason:'Apunta al suelo o a una superficie.'};
+ familyActive=f;familyShake=null;updateFamilyPlacement();announce(mode==='move'?'Familia · clic: colocar · rueda: girar · Shift + sacudir: lotes de 10 · Esc: cancelar':'Retirar de «'+f.name+'» · clic: colocar · rueda: girar · Esc: cancelar');return true;
+}
+function updateFamilyPlacement(hit=creationSurfaceAim(direction(),[],familyPlacement?.mode==='move'?[familyPlacement.family]:[])){
+ const draft=familyPlacement;if(!draft||!families.includes(draft.family))return false;draft.valid=false;draft.merge=null;
+ if(!hit?.point||hit.normal.y<.98){draft.poses=[];draft.reason='Apunta al suelo o a una superficie horizontal cercana.';return false;}
+ const q=Q();q.setFromAxisAngle(V(0,1,0),draft.turns*Math.PI/2);const origin=add(hit.point,V(0,.006,0));if(shiftDown()){origin.x=Math.round(origin.x/CUBE_SIZE)*CUBE_SIZE;origin.z=Math.round(origin.z/CUBE_SIZE)*CUBE_SIZE;}
+ draft.point=origin;draft.q=q;draft.poses=draft.local.map(p=>({...p,p:add(origin,q.vmult(p.p)),q:q.mult(p.q)}));
+ if(draft.mode==='move'){draft.merge=families.find(f=>f!==draft.family&&Math.hypot(f.body.position.x-origin.x,f.body.position.z-origin.z)<FAMILY_HALF*1.4&&Math.abs(f.body.position.y-hit.point.y)<FAMILY_HALF+.03&&f.count+draft.family.count<=100)||null;}
+ if(draft.merge){draft.valid=true;draft.reason='Clic: unir a «'+draft.merge.name+'» · '+(draft.merge.count+draft.family.count)+' / 100';}
+ else{draft.valid=creationPosesClear(draft.poses,false,{families:draft.mode==='move'?[draft.family]:[]});draft.reason=draft.valid?'Clic / E: colocar · rueda: girar · Esc: cancelar':'Posición ocupada · mueve la guía azul';}
+ redraw=true;return draft.valid;
+}
+function confirmFamilyPlacement(hit){
+ if(!familyPlacement||!updateFamilyPlacement(hit))return null;const draft=familyPlacement,f=draft.family;
+ if(draft.merge){const result=mergeFamilies(draft.merge,f);cancelFamilyPlacement();return result?draft.merge:null;}
+ if(draft.mode==='move'){f.body.position.copy(draft.poses[0].p);f.body.quaternion.copy(draft.q);f.body.velocity.set(0,0,0);f.body.angularVelocity.set(0,0,0);f.body.aabbNeedsUpdate=true;f.body.wakeUp();cancelFamilyPlacement();familyActive=f;return f;}
+ if(draft.limit>f.items.length)return null;
+ if(draft.items.some(item=>!storedShelfConveyorsValid(item)||item.joints.some(j=>!storedRotorOptionsValid(j))))return familyNotice('El mecanismo guardado contiene datos incompatibles. La familia se conserva.');
+ const made=[],joints=[],oldContacts=serializeContactState();try{
+  for(const item of draft.items){const offset=item.__familyOffset;
+   for(const record of item.groups){const parts=record.parts.map(p=>({id:p.id,shape:p.shape,weight:p.weight,p:add(draft.point,draft.q.vmult(add(V(...p.p),offset))),q:draft.q.mult(shelfQuaternion(p.q)),mood:shelfClone(p.mood)}));made.push(makeGroup(parts,draft.q.mult(shelfQuaternion(record.q))));}
+   for(const saved of item.joints){const r=shelfRestoreJoint(saved);if(!r)throw Error('No se pudo recuperar la articulación.');joints.push(r);}
+  }
+  if(made.some(g=>!validPose(g,g.body.position,g.body.quaternion,made)))throw Error('No hay espacio para recuperar este contenido.');
+  const sets=new Map();for(const item of draft.items)for(const saved of item.sets||[]){const signature=saved.familySignature||familySetSignature(saved.members),record=sets.get(signature)||{name:saved.name,members:[]};record.members.push(...saved.members.map(m=>joints.find(r=>r.aId===m.aId&&r.bId===m.bId)).filter(Boolean));sets.set(signature,record);}
+  for(const [signature,record]of sets){const existing=rotorSets.filter(s=>s.familySignature===signature),members=[...record.members,...existing.flatMap(rotorSetMembers)];if(members.length){const set=createRotorSet(existing[0]?.name||record.name,members);set.familySignature=signature;}}
+  restoreContactState({sensors:[...oldContacts.sensors,...draft.items.flatMap(i=>i.contacts?.sensors||[])],rotors:[...oldContacts.rotors,...draft.items.flatMap(i=>i.contacts?.rotors||[])]});
+  const arms=draft.items.flatMap(i=>i.robotArms||[]),belts=draft.items.flatMap(i=>i.conveyors||[]);restoreRobotArms(arms);restoreConveyors(belts);
+  if(arms.some(a=>!robotArms.some(r=>r.gripperId===a.gripperId))||belts.some(b=>!conveyors.some(c=>c.baseId===b.baseId)))throw Error('No se pudo recuperar el controlador del mecanismo.');
+ }catch(e){joints.forEach(disconnectRotor);made.forEach(removeGroup);pruneRobotArms();pruneConveyors();restoreContactState(oldContacts);announce(e.message);return null;}
+ f.items.splice(0,draft.limit);cancelFamilyPlacement();for(const g of made)familyEffect(f.body.position,g.body.position,g.parts[0].shape,f.color);
+ if(f.items.length)familyRefresh(f);else removeFamily(f);multiSelection=made;selected=made.length?{g:made[0],part:made[0].parts[0]}:null;announce('Contenido retirado · '+made.reduce((n,g)=>n+g.parts.length,0)+' piezas conservadas');return made;
+}
+function cancelFamilyPlacement(){familyPlacement=null;familyShake=null;redraw=true;}
+function aimFamily(dir=direction(),max=4){
+ let best=null;const origin=V(...camera);for(const f of families){const distance=rayPuzzleBox(origin,dir,familyPose(f),max);if(distance===null||distance<0||best&&distance>=best.distance)continue;best={family:f,distance,point:add(origin,mul(dir,distance))};}
+ if(!best)return null;const wall=storyWorld.walls.concat(puzzle.walls).some(w=>(rayPuzzleBox(origin,dir,w,best.distance)??Infinity)<best.distance-.002),g=aimQubit(best.distance,dir),cargo=raycastCargo(best.distance,dir);return wall||g||cargo?null:best;
+}
+function familyStoresSensorTarget(link){return familyStoredParts.has(link.aId)||familyStoredParts.has(link.bId)||!!link.signature?.split(',').some(pair=>pair.split('-').some(id=>familyStoredParts.has(Number(id))));}
+function familySelectionGroups(){return selectedRotors().length?[...new Set(selectedRotors().flatMap(rotorGroups))]:selectedTeam().length?selectedTeam():(held?.items||[]).map(i=>i.g);}
+function editFamily(f=null,members=null){
+ const ui=initFamilyUi();if(!ui)return;const selection=members||familySelectionGroups();closeCommandMenu(false);closeDetachMenu(false);pause();panel.hidden=true;resetGameInputs();
+ ui.openEditor({name:f?.name||'Familia',color:f?.color||'#202327',title:f?'Nombrar familia':'Agrupar en familia'},draft=>{
+  if(f){if(!families.includes(f))return {ok:false,message:'Esta familia ya no está disponible.'};const name=QBitsFamilies.sanitizeName(draft.name),color=QBitsFamilies.sanitizeColor(draft.color);if(!QBitsFamilies.validFamily({...familyRecord(f),name,color}))return {ok:false,message:'El nombre excede el espacio disponible en esta familia.'};f.name=name;f.color=color;familyRefresh(f);familyActive=f;return true;}
+  return startFamilyGrouping(selection,draft)?true:{ok:false,message:'No se pudo agrupar. Detén trabajos y libera espacio en el suelo.'};
+ });
+}
+function openFamilyMenu(f){
+ if(!families.includes(f))return;familyActive=f;const one=QBitsFamilies.count(f.items.slice(0,1)),near=families.filter(other=>other!==f&&other.count+f.count<=100&&other.body.position.distanceTo(f.body.position)<1);
+ const run=fn=>()=>{fn();captureMouse();};openCommandMenu(f.body.position,f.name+' · '+f.count+' / 100 piezas',[
+  {label:'Mover familia · guía azul',run:run(()=>beginFamilyPlacement(f,'move'))},
+  {label:'Retirar '+(one===1?'1 pieza':'1 elemento · '+one+' piezas'),run:run(()=>beginFamilyPlacement(f,'withdraw',1))},
+  {label:'Retirar hasta 10 elementos · guía azul',disabled:f.items.length<2,run:run(()=>beginFamilyPlacement(f,'withdraw',10))},
+  {label:'Desagrupar familia · colocar contenido',run:run(()=>beginFamilyPlacement(f,'withdraw',f.items.length))},
+  {label:'Dividir en familias de hasta 10',disabled:f.count<=10,run:run(()=>splitFamily(f,10))},
+  {label:'Nombrar familia y elegir color…',run:()=>editFamily(f)},
+  ...near.slice(0,3).map(other=>({label:'Unir con «'+other.name+'» · '+(f.count+other.count)+' / 100',run:run(()=>mergeFamilies(f,other))})),
+  {label:'Cerrar',run:()=>captureMouse()}
+ ]);
+}
+function noteFamilyShake(dx,dy,time){
+ const draft=familyPlacement;if(!draft||draft.mode!=='move'||!shiftDown()||!running||storySuspended()){familyShake=null;return;}
+ const amount=Math.abs(dx)>=Math.abs(dy)?dx:dy;if(!Number.isFinite(amount)||Math.abs(amount)<3)return;const now=Number.isFinite(time)?time:performance.now();
+ if(!familyShake||now-familyShake.last>250||now-familyShake.start>1300)familyShake={start:now,last:now,sign:Math.sign(amount),stroke:0,turns:0,travel:0};
+ const shake=familyShake;shake.last=now;shake.travel+=Math.min(Math.abs(amount),120);
+ if(Math.sign(amount)===shake.sign)shake.stroke+=Math.abs(amount);else if(Math.abs(amount)>=16&&shake.stroke>=32){shake.turns++;shake.sign=Math.sign(amount);shake.stroke=Math.abs(amount);}
+ if(shake.turns>=4&&shake.travel>=240&&now-shake.start>=120){const f=draft.family;cancelFamilyPlacement();splitFamily(f,10);}
+}
+function updateFamilies(dt){
+ if(document.hidden||storySuspended()||story.transition||!Number.isFinite(dt)||dt<=0)return;
+ for(let i=familyEffects.length-1;i>=0;i--){familyEffects[i].age+=Math.min(dt,.05);if(familyEffects[i].age>=familyEffects[i].duration)familyEffects.splice(i,1);}
+}
+function drawFamilies(){
+ const labels=[],candidates=[],eye=V(...camera),now=performance.now();for(const f of families){const p=f.body.position,q=f.body.quaternion;if(!renderSphereVisible(p,.15))continue;const at=v=>add(p,q.vmult(v)),side=FAMILY_HALF*2,rgb=f.rgb;
+  if(f.battery){drawBox(at(V(0,-.069,0)),q,V(side,.012,side),[.14,.18,.18,1]);drawBox(at(V(0,.069,0)),q,V(side,.012,side),[.28,.32,.32,1]);if(f.fraction>1e-6){const liquid=batteryLiquidMesh(f.liquidPack);if(liquid.count){gl.uniform1f(uniforms.uTime,simTime);gl.uniform3fv(uniforms.uLiquidNormal,liquid.normal);gl.uniform4f(uniforms.uLiquidPlane,...liquid.localNormal,liquid.offset);drawAsset({buffer:liquid.buffer,count:liquid.count},p,q,V(1,1,1),[...rgb,1],15);}}}
+  else drawBox(p,q,V(side,side,side),[...rgb,1]);
+  // Two slim bands identify a family from every side, including black shells.
+  const accent=rgb.map(v=>.38+v*.55);drawBox(at(V(0,-.045,0)),q,V(side+.002,.005,side+.002),[...accent,1]);drawBox(at(V(0,.045,0)),q,V(side+.002,.005,side+.002),[...accent,1]);
+  const distance=p.distanceTo(eye);if(distance<8&&!cullingLab.renderView&&candidates.length<64){const point=project(at(V(.05,.10,0)));if(point)candidates.push({f,point,distance});}
+ }
+ // Bound occlusion work independently of inventory size. Labels reuse a short
+ // visibility cache; at most four wall-ray queries are refreshed per frame.
+ let checks=0;for(let n=0;n<candidates.length&&checks<4;n++){const at=(familyLabelCursor+n)%candidates.length,{f,distance}=candidates[at],cached=f.labelVisibility;
+  if(!cached||now-cached.time>200||cached.eye.distanceTo(eye)>.1||cached.p.distanceTo(f.body.position)>.05){const dir=mul(sub(f.body.position,eye),1/Math.max(distance,.001));f.labelVisibility={time:now,eye:eye.clone(),p:f.body.position.clone(),visible:!storyWorld.walls.concat(puzzle.walls).some(w=>(rayPuzzleBox(eye,dir,w,distance)??Infinity)<distance-.12)};checks++;}
+ }if(candidates.length)familyLabelCursor=(familyLabelCursor+4)%candidates.length;
+ for(const {f,point,distance}of candidates)labels.push({id:f.id,x:point.x,y:point.y,count:f.count,color:f.color,visible:!!f.labelVisibility?.visible&&story.mode==='playing',opacity:clamp((8-distance)/2,0,1)});
+ if(familyEffects.length){gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);for(const fx of familyEffects){const t=clamp(fx.age/fx.duration,0,1),u=t*t*(3-2*t),p=add(mul(fx.from,1-u),mul(fx.to,u));p.y+=Math.sin(Math.PI*t)*.13;const mesh=unitMeshes[fx.shape]||unitMeshes.cube;drawAsset(mesh,p,Q(),V(CUBE_SIZE*(1-.85*u),CUBE_SIZE*(1-.85*u),CUBE_SIZE*(1-.85*u)),[...fx.color,1-t*.6],5);}gl.depthMask(true);gl.disable(gl.BLEND);}
+ initFamilyUi()?.updateLabels(labels);const active=familyPlacement?.family||(familyActive&&families.includes(familyActive)?familyActive:null);familyUi?.updateActive(active&&story.mode==='playing'?{name:active.name,color:active.color,count:active.count,hint:familyPlacement?.reason||'Clic derecho: familia · '+active.items.length+' elementos disponibles'}:null);
+}
+function drawFamilyGlass(){
+ const visible=families.filter(f=>f.battery&&renderSphereVisible(f.body.position,.15));if(!visible.length)return;gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
+ for(const f of visible)drawAsset({buffer:cubeGeometry,count:36},f.body.position,f.body.quaternion,V(.149,.149,.149),[.72,.84,.88,1],16);gl.depthMask(true);gl.disable(gl.BLEND);
+}
+function drawFamilyPlacement(){
+ if(!familyPlacement?.poses.length)return;gl.uniform1f(uniforms.uJitter,0);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);const color=familyPlacement.valid?[.25,.75,1,.5]:[1,.25,.2,.5];
+ for(const pose of familyPlacement.poses){if(pose.half)drawBox(pose.p,pose.q,mul(pose.half,2),color);else drawUnitMesh(pose,color,3);}gl.depthMask(true);gl.disable(gl.BLEND);gl.uniform1f(uniforms.uJitter,visuals.jitter/100);
+}
 function serializeDisassembly(){return disassemblyJobs.map(j=>({parts:j.parts.slice(j.cursor).map(p=>({id:p.id,shape:p.shape,weight:p.weight,p:[p.p.x,p.p.y,p.p.z],q:[p.q.x,p.q.y,p.q.z,p.q.w],mood:JSON.parse(JSON.stringify(p.mood))})),origin:[j.origin.x,j.origin.y,j.origin.z]}));}
 function restoreDisassembly(records){
  clearDisassembly();const ids=new Set(groups.flatMap(g=>g.parts.map(p=>p.id)));let remaining=MAX_QUBITS-scenePartCount();
@@ -5856,6 +6151,7 @@ panel.addEventListener('mousedown',event=>{if(window.QBitsControls?.keyboardActi
 for(const surface of [panel,canvas])surface.addEventListener('auxclick',event=>{if(event.button===1)event.preventDefault();});
 document.addEventListener('mouseup',onPhysicalMouseUp);
 function handleWheel(event){
+ if(familyPlacement&&gameInputActive()){event.preventDefault();familyPlacement.turns=(familyPlacement.turns+Math.sign(event.deltaY)*(savedPreferences.invertPieceRotation?-1:1)+4)%4;updateFamilyPlacement();return;}
  if(robotPoseDraft){
   event.preventDefault();const draft=robotPoseDraft;
   draft.heightCm=clamp(Math.round((draft.heightCm-Math.sign(event.deltaY)*(event.shiftKey?.5:2))*10)/10,0,ROBOT_MAX_POSE_OFFSET_CM);
@@ -5883,6 +6179,10 @@ function handleWheel(event){
 }
 canvas.addEventListener('wheel',handleWheel,{passive:false});
 function handleKey(event){
+ if(familyUi?.isOpen())return;
+ if(familyGroupingJob){event.preventDefault();if(event.code==='Escape'){cancelFamilyGrouping();announce('Agrupación cancelada · piezas conservadas');}return;}
+ if(familyPlacement&&['Escape','KeyE','Enter'].includes(event.code)){event.preventDefault();if(event.code==='Escape')cancelFamilyPlacement();else confirmFamilyPlacement();return;}
+ if(familyPlacement&&!['KeyW','KeyA','KeyS','KeyD','KeyC','ShiftLeft','ShiftRight'].includes(event.code))return;
  if(robotPoseDraft){
   if(['Escape','KeyP','Enter','KeyE'].includes(event.code)){
    event.preventDefault();if(['Enter','KeyE'].includes(event.code))confirmRobotPoseDraft();else returnRobotPosePanel();return;
@@ -5955,6 +6255,7 @@ function updateTarget(){
  }
  snap=findSnap();updateCallout();updateCargoCallout();updateMenuConnector();updateInspection();updatePuzzleHUD();updateMoodSelection();updateAlphaHUD();
  if(!gameInputActive()){targetLabel.textContent='';crosshair.classList.remove('ready');return;}
+ const familyHit=!held&&aimFamily();if(familyPlacement||familyHit){familyActive=familyPlacement?.family||familyHit.family;targetLabel.textContent=familyPlacement?.reason||familyActive.name+' · ×'+familyActive.count+' · clic: mover · clic derecho: familia';crosshair.classList.toggle('ready',familyPlacement?!!familyPlacement.valid:true);return;}
  const hit=held||aimQubit(),shelfTarget=!held&&aimShelf();crosshair.classList.toggle('ready',!!hit||!!shelfTarget);
  if(shelfPreview)targetLabel.textContent=shelfPreview.valid?(shelfPreview.snapped?'Repisa alineada · ':'')+'Clic / E · colocar · Esc · cancelar':shelfPreview.reason;
  else if(creationPreview)targetLabel.textContent=creationPreview.reason;
@@ -6085,10 +6386,12 @@ function resetBatteryLiquids(body=null){
  boundGeometry=null;
 }
 function updateBatteryLiquids(dt,paused=false){
- const alive=new Set();for(const g of groups)for(const pack of batteryVisualPacks(g)){
+ const alive=new Set(),update=pack=>{
   const entry=batteryLiquidEntry(pack),offset=sub(pack.p,pack.body.position),velocity=add(pack.body.velocity,pack.body.angularVelocity.cross(offset));alive.add(entry.key);
   entry.normal=QBitsBatteryLiquid.updateState(entry.state,{position:[pack.p.x,pack.p.y,pack.p.z],quaternion:[pack.q.x,pack.q.y,pack.q.z,pack.q.w],velocity:[velocity.x,velocity.y,velocity.z],angularVelocity:[pack.body.angularVelocity.x,pack.body.angularVelocity.y,pack.body.angularVelocity.z],dt,paused},entry.size,pack.fraction).slice();
- }
+ };
+ for(const g of groups)for(const pack of batteryVisualPacks(g))update(pack);
+ for(const f of families)if(f.liquidPack)update(f.liquidPack);
  for(const [key,entry]of batteryLiquids)if(!alive.has(key)){if(entry.buffer)deleteRenderBuffer(entry.buffer);batteryLiquids.delete(key);boundGeometry=null;}
  return batteryLiquids.size;
 }
@@ -6259,7 +6562,7 @@ function drawQubits(){
  }}
  gl.depthMask(true);gl.disable(gl.BLEND);
  for(const g of groups){if(!renderGroupVisible(g))continue;if(g.parts.some(p=>p.mood.production)){for(const p of poses(g))drawBox(p.p,p.q,V(CUBE_SIZE-.002,CUBE_SIZE-.002,CUBE_SIZE-.002),p.part.mood.production?.kind==='A'?[.27,.56,.67,1]:p.part.mood.production?[.72,.53,.26,1]:[.12,.14,.13,1]);if(g.parts.length===2)drawOutline(g.body.position,g.body.quaternion,sub(bounds(g,V(),Q()).max,bounds(g,V(),Q()).min),.8,false);}else drawGroupSolid(g);}
- drawConveyors();drawCargos();drawPuzzle();drawAlpha();drawWorkshop();drawShelves();drawDisassembly();drawCreationPlacement();drawRobotArmLights();drawRobotPoseDraft();drawPowerReservoirs();drawPowerCables();drawBatteriesTransparent();drawStructureOutlines();drawServoGuides();drawGuides();drawTaskGuides();
+ drawConveyors();drawCargos();drawPuzzle();drawAlpha();drawWorkshop();drawShelves();drawFamilies();drawDisassembly();drawCreationPlacement();drawFamilyPlacement();drawRobotArmLights();drawRobotPoseDraft();drawPowerReservoirs();drawPowerCables();drawBatteriesTransparent();drawFamilyGlass();drawStructureOutlines();drawServoGuides();drawGuides();drawTaskGuides();
 }
 addQubit([position[0]-Math.sin(yaw)*1.25,HALF+.003,position[2]-Math.cos(yaw)*1.25]);
 
@@ -6362,6 +6665,7 @@ function openDetachMenu(hit){
 function closeDetachMenu(resume=false){menu.hidden=true;detachChoice=null;if(menuConnector?.element===menu){menuConnector=null;document.querySelector('#menu-link').style.opacity='0';}if(resume)captureMouse();}
 function applyDetachMenu(all){const choice=detachChoice;closeDetachMenu(false);if(choice&&groups.includes(choice.g)){const module=!all&&conveyorForPart(choice.part.id);if(module)detachConveyorModule(module);else detachPart(choice,all);}captureMouse();}
 document.querySelector('#detach-one').addEventListener('click',()=>applyDetachMenu(false));
+document.querySelector('#detach-family').addEventListener('click',()=>{const choice=detachChoice;closeDetachMenu(false);if(choice&&groups.includes(choice.g))startFamilyGrouping([choice.g],{disassemble:true,byType:true});captureMouse();});
 document.querySelector('#detach-all').addEventListener('click',()=>applyDetachMenu(true));
 document.querySelector('#detach-cancel').addEventListener('click',()=>closeDetachMenu(true));
 canvas.addEventListener('mousemove',event=>{if(document.pointerLockElement!==canvas){const rect=canvas.getBoundingClientRect();hoverPointer={x:event.clientX-rect.left,y:event.clientY-rect.top};}});
@@ -6778,6 +7082,11 @@ function connectMenu(element,point){
  menuConnector={element,point:point.clone(),started:simTime};
 }
 function openCommandMenu(point,title,items,restartGroup=null){
+ const familyMembers=familySelectionGroups();if(familyEnabled()&&familyMembers.length&&!familyPlacement){
+  const at=items.findIndex(item=>item.label==='Cerrar');items.splice(at<0?items.length:at,0,
+   {label:'Agrupar en familia…',run:()=>editFamily(null,familyMembers)},
+   {label:'Desarmar y agrupar por tipo',run:()=>{startFamilyGrouping(familyMembers,{disassemble:true,byType:true});captureMouse();}});
+ }
  if(mechanismRun(restartGroup)||neutralWalkerRun(restartGroup)){
   const index=items.findIndex(item=>item.label==='Cerrar');
   items.splice(index<0?items.length:index,0,{label:'Reiniciar conjunto',run:()=>{restartMechanism(restartGroup);captureMouse();}});
@@ -6803,6 +7112,9 @@ function clearSelection(){
  speech.nextHud=0;document.querySelector('#selection').textContent='';
 }
 function onCanvasMouseDown(event){
+ if(familyGroupingJob||familyUi?.isOpen())return;
+ if(familyPlacement){event.preventDefault();if(event.button===2)cancelFamilyPlacement();else if(event.button===0)confirmFamilyPlacement();return;}
+ if(event.button===0&&!held&&gameInputActive()&&storyActionAllowed()){const familyHit=aimFamily();if(familyHit){event.preventDefault();clearSelection();beginFamilyPlacement(familyHit.family,'move');return;}}
  if(robotPoseDraft){robotPoseMouse(event);return;}
  if(powerDraft&&powerCableClick(event))return;
  if(workshopPanel?.isOpen)return;
@@ -6908,6 +7220,7 @@ function openWallOrganization(hit){
 function handleSecondary(event){
  const rect=canvas.getBoundingClientRect();
  const dir=gameInputActive()?direction():screenRay(clamp(event.clientX-rect.left,0,canvas.clientWidth),clamp(event.clientY-rect.top,0,canvas.clientHeight));
+ const familyHit=aimFamily(dir);if(familyHit){clearSelection();openFamilyMenu(familyHit.family);return;}
  if(powerSecondary(dir))return;
  const cargoHit=aimCargo(4,dir),hit=aimQubit(4,dir),shelfHit=aimShelf(dir,4);
  if(shelfHit&&shelfHit.distance<Math.min(cargoHit?.distance??Infinity,hit?.distance??Infinity)){openShelfMenu(shelfHit.shelf,shelfHit.cellIndex);return;}
@@ -7533,7 +7846,7 @@ function updateCargoCallout(){
 // when leaving the challenge; rewards and deliveries use a single transaction.
 const puzzleConfig={frameSeconds:12,energySeconds:8};
 function puzzleBlockedEdit(kind='edit'){if(certifiedAutomation()){announce('Ensayo certificado: usa las piezas del banco. Reinicia el nivel para restaurarlas.');return true;}if(kind==='mechanism'&&mechanismsAvailable())return false;if(story.ready&&story.scene==='campaign'&&panel.hidden){announce('La materia genera nuevos Q-bits. P abre el banco de herramientas de prueba.');return true;}if(!puzzle.active||kind==='qubit'&&alphaSettings.allowPuzzleSpawn)return false;announce('Puzle activo · los recursos se obtienen en los portales. P → Puzle para volver al banco.');return true;}
-function saveLab(options={}){syncVirtualConveyors(0);if(!options.passive)cancelPowerCable();return {workshop:workshopPlacement&&{...workshopPlacement},disassembly:serializeDisassembly(),powerNetwork:serializePowerNetwork(),mechanismDefaults:typeof mechanismDefaults==='undefined'?null:{...mechanismDefaults},rotors:serializeRotorState(),rotorSets:serializeRotorSets(),robotArms:serializeRobotArms(),conveyors:typeof serializeConveyors==='function'?serializeConveyors():[],contacts:serializeContactState(),shelves:serializeShelves(),alphaScene:alphaSceneSnapshot(),settings:{...settings},moodSettings:{...moodSettings},position:[...position],yaw,pitch,groups:groups.map(g=>({parts:worldParts(g),q:g.body.quaternion.clone(),v:g.body.velocity.clone(),w:g.body.angularVelocity.clone()})),cargos:cargos.map(c=>({id:c.id,p:c.body.position.clone(),side:c.side,required:c.required,color:c.color,...(c.robotPhysical?{robotPhysical:true,q:c.body.quaternion.clone(),v:c.body.velocity.clone(),w:c.body.angularVelocity.clone()}:{} )})),runtime:captureLabRuntime()};}
+function saveLab(options={}){syncVirtualConveyors(0);if(!options.passive)cancelPowerCable();return {workshop:workshopPlacement&&{...workshopPlacement},families:serializeFamilies(),disassembly:serializeDisassembly(),powerNetwork:serializePowerNetwork(),mechanismDefaults:typeof mechanismDefaults==='undefined'?null:{...mechanismDefaults},rotors:serializeRotorState(),rotorSets:serializeRotorSets(),robotArms:serializeRobotArms(),conveyors:typeof serializeConveyors==='function'?serializeConveyors():[],contacts:serializeContactState(),shelves:serializeShelves(),alphaScene:alphaSceneSnapshot(),settings:{...settings},moodSettings:{...moodSettings},position:[...position],yaw,pitch,groups:groups.map(g=>({parts:worldParts(g),q:g.body.quaternion.clone(),v:g.body.velocity.clone(),w:g.body.angularVelocity.clone()})),cargos:cargos.map(c=>({id:c.id,p:c.body.position.clone(),side:c.side,required:c.required,color:c.color,...(c.robotPhysical?{robotPhysical:true,q:c.body.quaternion.clone(),v:c.body.velocity.clone(),w:c.body.angularVelocity.clone()}:{} )})),runtime:captureLabRuntime()};}
 // JSON removes Cannon prototypes. Rebuild only the explicitly stored pose and
 // velocity fields, before enterLab clears the current scene. Inventory IDs are
 // unique across bodies, wire, shelves and pending disassembly, not just bodies.
@@ -7567,6 +7880,8 @@ function hydrateLabSnapshot(saved){
   for(const p of group.parts){part(p);p.p=vector(p.p);p.q=quaternion(p.q);}group.q=quaternion(group.q);group.v=vector(group.v);group.w=vector(group.w);
  }
  for(const pending of data.disassembly||[]){if(!Array.isArray(pending?.parts))return invalid();live+=pending.parts.length;for(const p of pending.parts)part(p);}
+ if(data.families!==undefined&&!Array.isArray(data.families))return invalid();
+ const familyIds=new Set();for(const f of data.families||[]){if(!QBitsFamilies.validFamily(f)||familyIds.has(f.id))return invalid();familyIds.add(f.id);live+=QBitsFamilies.count(f.items);for(const p of familyParts(f.items))part(p);}
  if(live>MAX_QUBITS)return invalid();
  for(const cable of data.powerNetwork?.cables||[])for(const p of cable.materials||[])part(p);
  for(const shelf of data.shelves||[])for(const cell of shelf.cells||[])for(const item of cell.items||[])for(const group of item.groups||[])for(const p of group.parts||[])part(p);
@@ -7656,7 +7971,7 @@ function restoreLabRuntime(saved){
 }
 function clearPuzzleScene(){
  clearMechanicalRest();sensorContactsCache=null;
- clearDisassembly();cancelUnitCreation();
+ clearDisassembly();cancelUnitCreation();clearFamilies();
  cancelPowerCable();clearPowerNetwork();
  flightStates.clear();resetBatteryLiquids();
  clearShelves();
@@ -8046,7 +8361,7 @@ function serializeRotorState(){
  if(typeof rotors==='undefined')return [];
  return rotors.filter(r=>rotorGroups(r).every(g=>g&&groups.includes(g))).map(r=>({aId:r.aId,bId:r.bId,rpm:r.rpm,direction:r.direction,moving:r.moving,...storedRotorDrive(r),enabled:r.enabled}));
 }
-function serializeRotorSets(){return rotorSets.map(set=>({name:set.name,members:rotorSetMembers(set).map(r=>({aId:r.aId,bId:r.bId}))})).filter(set=>set.members.length);}
+function serializeRotorSets(){return rotorSets.map(set=>({name:set.name,members:rotorSetMembers(set).map(r=>({aId:r.aId,bId:r.bId})),...(set.familySignature?{familySignature:set.familySignature}:{})})).filter(set=>set.members.length);}
 function restoreRotorSets(records){
  rotorSets.length=0;clearRotorSelection();if(!Array.isArray(records))return;
  const assigned=new Set();
@@ -8056,7 +8371,7 @@ function restoreRotorSets(records){
    const rotor=rotors.find(r=>r.aId===pair?.aId&&r.bId===pair?.bId);
    if(rotor&&!assigned.has(rotor.id)){members.push(rotor);assigned.add(rotor.id);}
   }
-  if(members.length)createRotorSet(record.name,members);
+  if(members.length){const set=createRotorSet(record.name,members);if(typeof record.familySignature==='string'&&record.familySignature.length<50000)set.familySignature=record.familySignature;}
  }
 }
 function restoreRotorState(data){
@@ -8094,7 +8409,7 @@ function restoreLabMechanisms(saved){
    if(storedRotorOptionsValid(candidate))mechanismDefaults[key]=storedRotorDrive(candidate)[key]??candidate[key];
   }
  }
- restorePowerNetwork(saved?.powerNetwork);const restored=restoreRotorState(saved?.rotors);restoreRotorSets(saved?.rotorSets);restoreContactState(saved?.contacts);restoreShelves(saved?.shelves);if(typeof restoreRobotArms==='function')restoreRobotArms(saved?.robotArms);if(typeof restoreConveyors==='function')restoreConveyors(saved?.conveyors);return restored;
+ restorePowerNetwork(saved?.powerNetwork);const restored=restoreRotorState(saved?.rotors);restoreRotorSets(saved?.rotorSets);restoreContactState(saved?.contacts);restoreShelves(saved?.shelves);restoreFamilies(saved?.families);if(typeof restoreRobotArms==='function')restoreRobotArms(saved?.robotArms);if(typeof restoreConveyors==='function')restoreConveyors(saved?.conveyors);return restored;
 }
 function mechanismGroups(subject){
  if(typeof rotors==='undefined')return [];
@@ -8601,7 +8916,7 @@ function updateAlphaHUD(){
  for(const machine of arms)for(const rotor of robotArmRotors(machine))for(const g of rotorGroups(rotor))if(g)machineGroups.add(g);
  for(const machine of belts)for(const rotor of conveyorRotors(machine))for(const g of rotorGroups(rotor))if(g)machineGroups.add(g);
  let qCount=0,tCount=0,mCount=0,rCount=0,materialCount=0;for(const g of groups)for(const part of g.parts){if(machineGroups.has(g)){materialCount++;continue;}if(part.mood.production){rCount++;continue;}if(unitShape(part)==='coupler')mCount++;else if(isTBit(part))tCount++;else qCount++;}
- const census=document.querySelector('#alpha-census-text');census.textContent='× '+qCount+' Q'+(tCount?' · '+tCount+' T':'')+(mCount?' · '+mCount+' M':'')+(arms.length?' · '+arms.length+' brazos':'')+(belts.length?' · '+belts.length+' cintas':'')+(rCount?' · '+rCount+' bloques de materia':'');if(pendingDisassemblyCount())census.textContent+=' · '+pendingDisassemblyCount()+' en desarme';census.title=materialCount+' piezas integradas en mecanismos; se conservan al desarmarlos y dentro del límite de la sala.';
+ const census=document.querySelector('#alpha-census-text');census.textContent='× '+qCount+' Q'+(tCount?' · '+tCount+' T':'')+(mCount?' · '+mCount+' M':'')+(arms.length?' · '+arms.length+' brazos':'')+(belts.length?' · '+belts.length+' cintas':'')+(rCount?' · '+rCount+' bloques de materia':'');if(pendingDisassemblyCount())census.textContent+=' · '+pendingDisassemblyCount()+' en desarme';if(families.length)census.textContent+=' · '+familyInventoryCount()+' en '+families.length+' familias';census.title=materialCount+' piezas integradas en mecanismos; se conservan al desarmarlos y dentro del límite de la sala.';
  if(!panel.hidden||!commandMenu.hidden||held)return;const h=alphaHit(5);if(!h)return;
  if(h.bp)targetLabel.textContent=h.bp.shape.name+' · '+h.bp.status+' · clic derecho';
  if(h.cooler){const c=h.cooler,values=[...c.entries.values()],remaining=values.length?Math.ceil(Math.max(0,...values.map(v=>(v.duration||c.coolSeconds||alphaSettings.coolSeconds)-v.elapsed))):c.coolSeconds||alphaSettings.coolSeconds;targetLabel.textContent='Enfriador · '+c.occupants+'/'+c.capacity+' · '+(!c.enabled||!alphaSettings.coolingOn?'apagado':values.length&&remaining===0?'listos · energía '+Math.round(alphaSettings.exitEnergy*100)+' %':remaining+' s');}
@@ -8924,7 +9239,7 @@ const chapters=[['00','El primer encuentro','Prólogo · tomar, mover y enfriar'
 const ui={main:document.querySelector('#main-screen'),pause:document.querySelector('#pause-screen'),levels:document.querySelector('#levels-screen'),complete:document.querySelector('#chapter-complete'),dialogue:document.querySelector('#story-dialogue'),text:document.querySelector('#story-text'),speaker:document.querySelector('#story-speaker'),choices:document.querySelector('#story-choices'),objective:document.querySelector('#story-objective'),veil:document.querySelector('#scene-veil'),top:document.querySelector('#eye-top'),bottom:document.querySelector('#eye-bottom'),cooling:document.querySelector('#cooling-track'),marker:document.querySelector('#world-label')};
 function gameMode(mode){if(story.mode!==mode)resetSimulationClock();if(mode!=='playing'){window.QBitsGuideAudio?.setPaused(true);window.QBitsFootsteps?.setPaused(true);window.QBitsJoinAudio?.setPaused(true);}if(mode!=='playing')closeUnitRadial(false);story.mode=mode;if(mode!=='playing'){cullingLab.observer=false;document.body.dataset.cullingObserver='false';cullingLab.lastFrame=null;}updateCullingHud(true);window.QBitsMusic?.setPaused(!['playing','menu','levels','codex','settings','saves'].includes(mode));document.body.dataset.gameMode=mode;for(const [key,el] of [['menu',ui.main],['pause',ui.pause],['levels',ui.levels],['complete',ui.complete],['codex',document.querySelector('#codex-screen')],['saves',document.querySelector('#saves-screen')]])el.hidden=mode!==key;document.querySelector('#pause-button').hidden=mode!=='playing';hint.hidden=true;redraw=true;}
 function gameScene(scene){story.scene=scene;document.body.dataset.gameScene=scene;const label=document.querySelector('#chapter-label');label.hidden=scene==='lab';document.querySelector('#chapter-number').textContent=scene==='intro'?'PRÓLOGO / 00':'NIVEL / '+String(story.level||1).padStart(2,'0');document.querySelector('#chapter-name').textContent=scene==='intro'?'El primer encuentro':chapters[story.level||1][1];}
-function storySuspended(){return radialOpen()||story.ready&&(story.mode!=='playing'||document.hidden);}
+function storySuspended(){return !!familyGroupingJob||!!familyUi?.isOpen()||radialOpen()||story.ready&&(story.mode!=='playing'||document.hidden);}
 function storyWalkAllowed(){return !story.ready||story.scene!=='intro'||['deliver','cooling','cooled','choice','repeat'].includes(story.phase);}
 function storyLookAllowed(){return !workshopPanel?.isOpen&&(!story.ready||story.mode==='playing'&&!['asleep','invocation','opening'].includes(story.phase));}
 function storyActionAllowed(){return !story.ready||story.mode==='playing'&&!story.transition&&!encounterLocksActions()&&(story.scene!=='intro'||['pickup','carry','deliver','cooling','cooled'].includes(story.phase));}
@@ -9102,7 +9417,7 @@ function initializeSavedGames(){
  saveSession.nextAutosave=performance.now()+AUTOSAVE_MS;
 }
 function bankSaveBlocked(){
- if(held||powerDraft||robotPoseDraft||creationPreview||shelfPreview)return 'Termina la colocación o suelta la pieza para guardar el banco.';
+ if(held||powerDraft||robotPoseDraft||creationPreview||shelfPreview||familyPlacement||familyGroupingJob||familyUi?.isOpen())return 'Termina la colocación o suelta la pieza para guardar el banco.';
  if(robotGrips.size||groups.some(g=>g.blueprintJob)||cargos.some(c=>c.job))return 'Termina la construcción o el transporte y deja las cargas libres para guardar el banco.';
  return '';
 }
@@ -9154,7 +9469,7 @@ function refreshSavedGames(){
     const checkpoint=data.checkpoint,level=checkpoint.level,count=Object.keys(data.progress).filter(key=>/^level\d+$/.test(key)&&data.progress[key]===true).length;
     summary.textContent=level===0?'Prólogo · El primer encuentro':checkpoint.completed&&level===LEVELS.length-1?'Campaña completada · '+count+' niveles':(checkpoint.completed?'Continuar en nivel '+(level+1)+' · '+chapters[level+1][1]:'Nivel '+level+' · '+chapters[level][1])+' · '+count+' completados';
    }else{
-    const snapshot=data.snapshot,count=snapshot.groups.reduce((n,g)=>n+g.parts.length,0)+(snapshot.disassembly||[]).reduce((n,job)=>n+(job.parts?.length||0),0);
+    const snapshot=data.snapshot,count=snapshot.groups.reduce((n,g)=>n+g.parts.length,0)+(snapshot.disassembly||[]).reduce((n,job)=>n+(job.parts?.length||0),0)+(snapshot.families||[]).reduce((n,f)=>n+QBitsFamilies.count(f.items),0);
     summary.textContent=count+' piezas · '+(snapshot.cargos?.length||0)+' cargas · '+(snapshot.conveyors?.length||0)+' cintas';
    }
   }else summary.textContent=record.status==='empty'?'Aún no hay una partida guardada.':record.status==='unsupported'?'Partida de una versión distinta. La copia se conserva.':record.status==='invalid'?'No se puede leer esta partida. La copia se conserva.':'Este navegador no permite acceder al guardado.';
@@ -9275,7 +9590,7 @@ function enterLab(capture=true){
  world.gravity.y=-settings.gravity;world.defaultContactMaterial.friction=settings.friction;world.defaultContactMaterial.restitution=settings.bounce;world.broadphase.dirty=true;ui.veil.style.opacity='0';setupWorkshop();if(saved?.runtime&&saveSession.restoring)saveSession.restoreWarnings=restoreLabRuntime(saved.runtime).warnings;saveSession.labActive=true;updatePanel();if(!saveSession.restoring&&!saveSession.preparing)saveCurrentGame();if(capture)captureMouse();
 }
 function showMain(){saveCurrentGame();document.querySelector('#wake-screen').hidden=true;gameMode('menu');pause(false);panel.hidden=true;document.querySelector('#main-continue').hidden=!story.started&&!['campaign','lab'].some(mode=>saveStore.read(mode).status==='ready');ui.veil.style.opacity='0';ui.top.style.height='0';ui.bottom.style.height='0';canvas.style.filter='none';document.querySelector('#main-play').focus({preventScroll:true});}
-function openPauseMenu(){if(!story.ready||story.mode!=='playing'||story.transition)return;closeWorkshopPanel(false);cancelUnitCreation();cancelShelfPlacement();document.querySelector('#wake-screen').hidden=true;gameMode('pause');pause(false);panel.hidden=true;saveCurrentGame({manual:true});document.querySelector('#pause-chapter').textContent=story.scene==='intro'?'Prólogo · El primer encuentro':story.scene==='campaign'?'Nivel '+story.level+' · '+chapters[story.level][1]:'Banco de pruebas';document.querySelector('#pause-resume').focus({preventScroll:true});}
+function openPauseMenu(){cancelFamilyGrouping();cancelFamilyPlacement();familyUi?.clear();if(!story.ready||story.mode!=='playing'||story.transition)return;closeWorkshopPanel(false);cancelUnitCreation();cancelShelfPlacement();document.querySelector('#wake-screen').hidden=true;gameMode('pause');pause(false);panel.hidden=true;saveCurrentGame({manual:true});document.querySelector('#pause-chapter').textContent=story.scene==='intro'?'Prólogo · El primer encuentro':story.scene==='campaign'?'Nivel '+story.level+' · '+chapters[story.level][1]:'Banco de pruebas';document.querySelector('#pause-resume').focus({preventScroll:true});}
 function resumeGame(){if(story.phase==='complete'){gameMode('complete');return;}gameMode('playing');if(story.scene==='intro'&&['asleep','invocation'].includes(story.phase)){ui.veil.style.opacity='1';ui.top.style.height='52%';ui.bottom.style.height='52%';ui.dialogue.hidden=!story.dialogue;if(story.phase==='asleep')showWakeButton();else{document.querySelector('#wake-screen').hidden=true;canvas.focus({preventScroll:true});}return;}if(story.phase==='choice'||story.phase==='repeat')return;captureMouse();}
 function restartCurrent(){sceneFade(()=>{if(story.scene==='intro')beginIntro();else if(story.scene==='campaign')beginCampaignLevel(story.level);else if(puzzle.active)startPuzzle();else{clearNarrativeScene();gameScene('intro');enterLab(false);}});captureForTransition();}
 function showLevelSelector(){story.returnMode=story.mode;gameMode('levels');pause(false);panel.hidden=true;const list=document.querySelector('#level-list');list.replaceChildren();for(let i=0;i<chapters.length;i++){const row=document.createElement('button');row.disabled=false;const number=document.createElement('span'),info=document.createElement('span'),name=document.createElement('strong'),detail=document.createElement('small');number.className='level-number';number.textContent=chapters[i][0];name.textContent=chapters[i][1];detail.textContent=(i===0?story.progress.intro:story.progress['level'+i])?'Completado · volver a jugar':chapters[i][2];info.append(name,detail);row.append(number,info);row.addEventListener('click',()=>{sceneFade(()=>i===0?beginIntro():beginCampaignLevel(i));captureForTransition();});list.appendChild(row);}document.querySelector('#levels-back').focus({preventScroll:true});}
@@ -10443,7 +10758,7 @@ function tickContactSensors(dt){
  if(storySuspended()||story.transition||certifiedAutomation()||!Number.isFinite(dt)||dt<=0)return;
  const live=new Set(),inputs=new Map();
  for(const g of groups)for(const part of g.parts){if(!part.mood.workshop||!QBitsWorkshop.hasSensor(part))continue;live.add(part.id);const hit={g,part,...partPose(g,part)},r=sensorTarget(part);
-  if(part.mood.sensorLink&&!r){delete part.mood.sensorLink;contactStates.delete(part.id);continue;}
+  if(part.mood.sensorLink&&!r){if(!familyStoresSensorTarget(part.mood.sensorLink))delete part.mood.sensorLink;contactStates.delete(part.id);continue;}
   if(!r){contactStates.delete(part.id);continue;}
   const cfg=sensorConfig(part),key=sensorOutputKey(r,cfg.action);
   const touching=!held?.items?.some(item=>item.g===g)&&sensorNearest(hit,r).distance<=3&&sensorReading(hit,cfg).active;
@@ -11258,6 +11573,7 @@ function frame(time=performance.now()) {
   const dt=Number.isFinite(rawDt)?Math.min(rawDt,MAX_FRAME_DT):0;
   let distance = 0;
   previousTime = time;
+  advanceFamilyGrouping();
   window.QBitsGuideAudio?.setPaused(storySuspended()||!!story.transition);window.QBitsFootsteps?.setPaused(document.hidden||storySuspended()||!!story.transition);window.QBitsJoinAudio?.setPaused(document.hidden||storySuspended()||!!story.transition);
   pollGamepadInput(dt);
   updateSelectionHud(dt);
@@ -11311,12 +11627,14 @@ function frame(time=performance.now()) {
   updateHeldFocus(dt,active);
   if(shelfPreview&&!frozen){updateShelfPlacement(wallAim());redraw=true;}
   if(creationPreview&&!frozen){updateCreationPlacement();redraw=true;}
+  if(familyPlacement&&!frozen){updateFamilyPlacement();redraw=true;}
   if(robotPoseDraft&&!frozen&&!document.hidden){accumulator=0;updateRobotPoseDraft(time);updateTarget();}
   else if (!document.hidden&&!frozen) {
     const simulationStart=cullingLab.stats?performance.now():0;
     window.QBitsFootsteps?.update(camera,yaw,walkingAudioGroups(),dt);window.QBitsJoinAudio?.update(camera,yaw,dt);
     const simulatedDt=advanceSimulation(rawDt);
     updateDisassembly(dt);
+    updateFamilies(dt);
     updateBatteryLiquids(simulatedDt);
     updateTarget();
     updateSpeechLayout();updateStoryMarker();

@@ -315,6 +315,7 @@ input,select,textarea{font-family:var(--font-menu);}
   <link rel="stylesheet" href="assets/css/culling-lab.css?v=20261117-culling-1">
   <link rel="stylesheet" href="assets/css/tablet.css?v=20261119-marcha-2">
   <link rel="stylesheet" href="assets/css/saved-games.css?v=20261121-saved-games-1">
+  <link rel="stylesheet" href="assets/css/families.css?v=20261122-families-1">
 </head>
 <body data-game-mode="boot" data-game-scene="lab" data-booting="true">
   <section id="boot-screen" aria-label="Inicio de Q-bits" data-stage="loading">
@@ -417,7 +418,7 @@ input,select,textarea{font-family:var(--font-menu);}
   <div id="route-readout" hidden></div>
   <div id="selection-rect" hidden aria-hidden="true"></div>
   <div id="callout"><svg aria-hidden="true"><path id="callout-path" d=""/></svg><div id="callout-text"><span id="callout-count"></span><small id="callout-weight"></small><div id="mood-callout" hidden><span id="mood-name"><span id="mood-unit-name"></span><span id="mood-state-description"></span></span><div id="mood-energy-track" role="progressbar" aria-label="Energía del Q-bit" aria-valuemin="0" aria-valuemax="100"><i id="mood-energy-fill"></i></div><span id="mood-energy-label"></span><span id="mood-group-count"></span></div></div></div>
-  <div id="detach-menu" hidden role="dialog" aria-label="Separar estructura"><div id="detach-title"></div><button id="detach-one" type="button">Sacar esta pieza</button><button id="detach-all" type="button">Desarmar todo</button><button id="detach-cancel" type="button">Cancelar</button></div>
+  <div id="detach-menu" hidden role="dialog" aria-label="Separar estructura"><div id="detach-title"></div><button id="detach-one" type="button">Sacar esta pieza</button><button id="detach-family" type="button">Desarmar en familias</button><button id="detach-all" type="button">Desarmar en piezas sueltas</button><button id="detach-cancel" type="button">Cancelar</button></div>
   <div id="puzzle-status" hidden></div><div id="alpha-census"><span class="mini-cube" aria-hidden="true"><i class="front"></i><i class="back"></i><i class="right"></i><i class="left"></i><i class="top"></i><i class="bottom"></i></span><span id="alpha-census-text"></span></div>
   <section id="completion-panel" hidden role="dialog" aria-modal="true" aria-labelledby="completion-title"><h2 id="completion-title">Puzle 01 completado</h2><p>Buen trabajo, equipo.</p><p id="completion-detail"></p><div><button id="completion-continue" type="button">Seguir en la sala</button><button id="completion-restart" type="button">Reintentar</button><button id="completion-lab" type="button">Volver al banco</button></div></section>
   <div id="target"></div><div id="notice" role="status"></div>
@@ -856,6 +857,7 @@ input,select,textarea{font-family:var(--font-menu);}
   </section>
   <script src="assets/js/opening.js?v=20261116-block-joins-1" defer></script>
   <script src="assets/js/servo-panel.js?v=20261119-marcha-2" defer></script>
-  <script src="assets/js/boot.js?v=20261122-sap-passive-1" defer></script>
+  <script src="assets/js/families-ui.js?v=20261122-families-1" defer></script>
+  <script src="assets/js/boot.js?v=20261122-families-1" defer></script>
 </body>
 </html>
