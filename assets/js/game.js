@@ -8526,9 +8526,9 @@ function updateMoods(dt){
 function moodVisualPose(g,pose){
  if(g.storySocket)return pose;
  if(g.parts.length!==1||g.route||g.haulJob&&groupWilling(g)||g.moodDuty||g.cooler||g.moodCarried||g.body.velocity.norm()>.03)return pose;
- // Attached pieces share their collider's pose. Independent mood gestures
- // otherwise make a stopped axle or a gripped load appear to jump apart.
- if(g.robotGrip||g.robotHeld||rotorForGroup(g))return pose;
+ // Attached pieces and trajectory markers share their collider's pose.
+ // Mood gestures would separate joints or clip a fixed pixel face.
+ if(g.parts[0].mood.trajectory||g.robotGrip||g.robotHeld||rotorForGroup(g))return pose;
  const m=g.parts[0].mood,phase=simTime*(2.1+m.personality*.4)+g.parts[0].id,joy=m.blend[1],restless=m.blend[2],pulse=Math.max(0,Math.sin(phase));
  if(joy+restless<.001)return pose;
  const q=Q();q.setFromAxisAngle(V(0,0,1),joy*Math.sin(phase)*.018+restless*Math.sin(simTime*28+phase)*(.008+.014*(m.severity||1)));

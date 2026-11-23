@@ -72,7 +72,7 @@
   function loadScript(path) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = path + '?v=20261123-trajectory-beacons-1';
+      script.src = path + '?v=20261123-trajectory-rigid-moods-1';
       script.onload = resolve;
       script.onerror = () => reject(new Error('No se pudo cargar ' + path));
       document.head.append(script);
