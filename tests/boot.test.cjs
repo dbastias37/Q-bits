@@ -96,38 +96,7 @@ function environment({ autoFonts = true, openingFailure = null, randomValue = .5
   }
   async function loadScripts() {
     await scriptResult('cannon.min.js');
-    await scriptResult('radial-menu.js');
-    await scriptResult('rotor-power.js');
-    await scriptResult('propeller-power.js');
-    await scriptResult('campaign-reconfiguration.js');
-    await scriptResult('progression.js');
-    await scriptResult('campaign-automation.js');
-    await scriptResult('campaign-production.js');
-    await scriptResult('workshop.js');
-    await scriptResult('furniture-models.js');
-    await scriptResult('tablet-model.js');
-    await scriptResult('tablet-view.js');
-    await scriptResult('organizers.js');
-    await scriptResult('families.js');
-    await scriptResult('workshop-panel.js');
-    await scriptResult('robot-arm-panel.js');
-    await scriptResult('conveyor-panel.js');
-    await scriptResult('battery-liquid.js');
-    await scriptResult('reservoir-model.js');
-    await scriptResult('contact-sensors.js');
-    await scriptResult('controls.js');
-    await scriptResult('subtitles.js');
-    await scriptResult('dialogue-timing.js');
-    await scriptResult('guide-audio.js');
-    await scriptResult('footsteps.js');
-    await scriptResult('join-audio.js');
-    await scriptResult('selection-hud.js');
-    await scriptResult('preferences.js');
-    await scriptResult('graphics.js');
-    await scriptResult('culling.js');
-    await scriptResult('glass.js');
-    await scriptResult('settings.js');
-    await scriptResult('save-games.js');
+    for(const dependency of dependencies)await scriptResult(dependency);
     await scriptResult('game.js');
     await scriptResult('music.js');
   }
@@ -198,7 +167,19 @@ function assertBlocked(e) {
   assert.notEqual(e.nodes.get('#boot-percent').textContent, '100%');
 }
 
-const dependencies=['radial-menu.js','rotor-power.js','propeller-power.js','campaign-reconfiguration.js','progression.js','campaign-automation.js','campaign-production.js','workshop.js','furniture-models.js','tablet-model.js','tablet-view.js','organizers.js','families.js','workshop-panel.js','robot-arm-panel.js','conveyor-panel.js','battery-liquid.js','reservoir-model.js','contact-sensors.js','controls.js','subtitles.js','dialogue-timing.js','guide-audio.js','footsteps.js','join-audio.js','selection-hud.js'];
+// The same ordered dependency list drives successful and failed script loads.
+// Furniture scripts load concurrently; their completion precedes organizers.
+const dependencies=[
+  'radial-menu.js','rotor-power.js','propeller-power.js','campaign-reconfiguration.js',
+  'progression.js','campaign-automation.js','campaign-production.js','workshop.js',
+  'furniture-models.js','tablet-model.js','tablet-view.js','organizers.js','families.js',
+  'workshop-panel.js','robot-arm-panel.js','conveyor-panel.js','battery-liquid.js',
+  'reservoir-model.js','contact-sensors.js','controls.js','subtitles.js','dialogue-timing.js',
+  'guide-audio.js','footsteps.js','join-audio.js','selection-hud.js','preferences.js',
+  'graphics.js','culling.js','glass.js','settings.js','save-games.js',
+  'trajectory-model.js','trajectory-drive.js','trajectory-controller.js',
+  'trajectory-runtime.js','trajectory-panel.js'
+];
 for(const module of dependencies)test(`a missing ${module} blocks game preparation, 100 percent and Comenzar even when music is ready`, async () => {
   const e=environment();
   await e.scriptResult('cannon.min.js');

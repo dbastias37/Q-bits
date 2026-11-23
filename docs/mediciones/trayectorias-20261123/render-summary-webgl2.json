@@ -1,0 +1,1355 @@
+{
+  "backend": "webgl2",
+  "sourceSha256": "898cdff35839c7f7f3c4d756b3ec7bf548832d8b6e71691957a2bf0b87d643a1",
+  "modelSha256": "aae956f7218e1dbd5af7e397f5061e0ad621da3df9e5eb34ffa0e6b57a05e548",
+  "graphics": {
+    "version": "OpenGL ES 3.0 Mesa 25.0.7-2+deb13u1",
+    "renderer": "llvmpipe (LLVM 19.1.7, 256 bits)",
+    "requestedContextVersion": 3
+  },
+  "width": 384,
+  "height": 384,
+  "compiledShaders": 2,
+  "linkedPrograms": 1,
+  "atlasUploads": 1,
+  "atlasBytes": 262144,
+  "glyphs": 144,
+  "checkedCells": 14800,
+  "gpuErrors": 0,
+  "browserValidated": false,
+  "uiDomValidated": false,
+  "snapshots": [
+    {
+      "name": "glyph-000",
+      "glyph": 0,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "d49dfd043a47e45eb0c259b6d96dd6c9ba3cd7fa5d051b3b2338a7ca65c41c6c",
+      "png": "glyph-000.png"
+    },
+    {
+      "name": "glyph-001",
+      "glyph": 1,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "8ed18b6e8ab191321841acb6ba08886881de7605729f9f478aedef940e32c3e3",
+      "png": null
+    },
+    {
+      "name": "glyph-002",
+      "glyph": 2,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "934294d7497b40758a2424d0bccc6026d8454c0abc562006a6ce943dc48d029e",
+      "png": null
+    },
+    {
+      "name": "glyph-003",
+      "glyph": 3,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "d75d937613fa5b59ad3c635914d26590b869385447f36d03416a972c9e31de6d",
+      "png": null
+    },
+    {
+      "name": "glyph-004",
+      "glyph": 4,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "f3b12e13b56b003e56d0383e3d72de940a960f92132d3c06897bce10ef39d432",
+      "png": null
+    },
+    {
+      "name": "glyph-005",
+      "glyph": 5,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "e12be4038fa838b287e6d2e8c50f2b4aa9fbc55c7980d1f54ff91bd99991b12b",
+      "png": null
+    },
+    {
+      "name": "glyph-006",
+      "glyph": 6,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "47c4f92c025040d2935a10c4e5f3e295c4cc36abd12c8262982c4ac5f8101db4",
+      "png": null
+    },
+    {
+      "name": "glyph-007",
+      "glyph": 7,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "60b8cbb6557422a9bc1294b4073f7ac2b04b46d728327436073f82ba9f6c7373",
+      "png": "glyph-007.png"
+    },
+    {
+      "name": "glyph-008",
+      "glyph": 8,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "3a0e7d143382536e506e15399a8528e9717e934a39dcc431e69bc68477b2bab9",
+      "png": null
+    },
+    {
+      "name": "glyph-009",
+      "glyph": 9,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "117ee7378f9955c050c27c95b12beb876a3cf2c8cf438109254fb6708c47a488",
+      "png": null
+    },
+    {
+      "name": "glyph-010",
+      "glyph": 10,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "ea2bca9567a07cb24710dccf2757e37fd5e608e7ea516f97a4dd92b1cf360a6e",
+      "png": null
+    },
+    {
+      "name": "glyph-011",
+      "glyph": 11,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "38cf3166fd096d9545d097954bfa2a762077405d9470066c0cf5e71fe93d705a",
+      "png": null
+    },
+    {
+      "name": "glyph-012",
+      "glyph": 12,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "70362979fb43c328d373b607229b3a409a4d95516ab0182c7b8b33d700c8fc4a",
+      "png": null
+    },
+    {
+      "name": "glyph-013",
+      "glyph": 13,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "a9d3988522e8b67e62c01ef56c15007ffdf698aa4af0a84f34c5bdc124d78dcb",
+      "png": null
+    },
+    {
+      "name": "glyph-014",
+      "glyph": 14,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "2838141fb790fbb7e6f9cd381264dbc8096bc8cffde02b36b5b8e9ff09949237",
+      "png": null
+    },
+    {
+      "name": "glyph-015",
+      "glyph": 15,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "daa0add018a3f0a871439443b35d796a6c1ce815bfbf4f003f9ece1a00540f5b",
+      "png": null
+    },
+    {
+      "name": "glyph-016",
+      "glyph": 16,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "9acc2875741cf0f69cf688b05b01fcddfe72e82b85be792ec67831fcb40022f4",
+      "png": null
+    },
+    {
+      "name": "glyph-017",
+      "glyph": 17,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "6837522642638865d6fe8f6ffbb0df6fbf23855eb59e16f7cb0ceb11001fe4a2",
+      "png": null
+    },
+    {
+      "name": "glyph-018",
+      "glyph": 18,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "b38eaa1177c1c406e44b240c3457591e0fe92ddaafa7b2849e956cffe99df521",
+      "png": null
+    },
+    {
+      "name": "glyph-019",
+      "glyph": 19,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "2446ff569ec7dfc78f858436fcc3c6d07afb4867c105dc0e890becbe0028369b",
+      "png": null
+    },
+    {
+      "name": "glyph-020",
+      "glyph": 20,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "8e028a8984933e343c4afd5712819a1266f16d6987f1b2a6e5e2f9a2a68162bb",
+      "png": null
+    },
+    {
+      "name": "glyph-021",
+      "glyph": 21,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "69f3e2f11e11f2850c26a796c5dd3ba876e7b31fe48d10ecadaed208382cd11a",
+      "png": null
+    },
+    {
+      "name": "glyph-022",
+      "glyph": 22,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "582b36f6365cd9834f062f05f682c976ae0b988995a364eaa706d7f97a30a2d3",
+      "png": null
+    },
+    {
+      "name": "glyph-023",
+      "glyph": 23,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "0623523b8d509371fd5d2b181f46ba91f5c55be8c3023887f245eee4fe8851a6",
+      "png": "glyph-023.png"
+    },
+    {
+      "name": "glyph-024",
+      "glyph": 24,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "fa8d0fb714420e663abd0cdbdd20170e551aa7c9cd57d8047f6de4b45b43fcc3",
+      "png": "glyph-024.png"
+    },
+    {
+      "name": "glyph-025",
+      "glyph": 25,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "306587895c5a76194e71da14482497fbcadfcd38088da4a22d0bcb3c49910d10",
+      "png": null
+    },
+    {
+      "name": "glyph-026",
+      "glyph": 26,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "b6302ef02db5fc63469c9f04af4bb7ab92a846d718e56cc69c5eb53e6e0eb11c",
+      "png": null
+    },
+    {
+      "name": "glyph-027",
+      "glyph": 27,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "dad0b8f93dd04435bc51b84b328ae94459654f9f830016bdb43db607612b6553",
+      "png": null
+    },
+    {
+      "name": "glyph-028",
+      "glyph": 28,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "4490989cc4aab3de0b7412ef1877e17f58df3db3d89e99ee3d810b8af8d40fc4",
+      "png": null
+    },
+    {
+      "name": "glyph-029",
+      "glyph": 29,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "0583204e5194542a674de6cce3cdcae9aa4362d88c8db45cfaadb7155c20f00f",
+      "png": null
+    },
+    {
+      "name": "glyph-030",
+      "glyph": 30,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "3f26691ad75a11da2e9e39d494aeb19639fb1da16826698e48d5a4723a4b7791",
+      "png": null
+    },
+    {
+      "name": "glyph-031",
+      "glyph": 31,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "429f7d68297b691c0d7e752a02fe9ac1be81a8ea41cf97d64df524f749446286",
+      "png": null
+    },
+    {
+      "name": "glyph-032",
+      "glyph": 32,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "894eed7994dc8f3a5ae18ec6a47d3229fa0ac4ae8315b7e56f2bca0b0cc931ef",
+      "png": null
+    },
+    {
+      "name": "glyph-033",
+      "glyph": 33,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "2428cb1fdc8721d6e09438a72e1771ed4e07e48b8df223ec4e8975d8d841906e",
+      "png": null
+    },
+    {
+      "name": "glyph-034",
+      "glyph": 34,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "2b2aaa18e496190a4f7b5ee2e1949754477aa57ad2d0689118a8d523b0113787",
+      "png": null
+    },
+    {
+      "name": "glyph-035",
+      "glyph": 35,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "97375801a3bbe3b7fe86404ef6d2530b3a526ec3e8e65e72498d944fa309dbea",
+      "png": null
+    },
+    {
+      "name": "glyph-036",
+      "glyph": 36,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "095758286929dafabd4387222d05c2fc75385d04c09e866731c2b94bd81c86f0",
+      "png": null
+    },
+    {
+      "name": "glyph-037",
+      "glyph": 37,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "af868ebda27143ec7b959c91cb42657910e2a4417e35a0da1c51aa2a497efe26",
+      "png": null
+    },
+    {
+      "name": "glyph-038",
+      "glyph": 38,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "d72ba7b151f43dbae5158a69be6bf5962b03bb18b937c62c5c7c8bd047dd1c0d",
+      "png": null
+    },
+    {
+      "name": "glyph-039",
+      "glyph": 39,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "6bb1620521dd0281096bcef1efb75d3b475d72c346faf85e3f32b5de3fbe68d7",
+      "png": null
+    },
+    {
+      "name": "glyph-040",
+      "glyph": 40,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "5bbc2e419a64c0cf794d02ad8caa125531cbe3e3e9cf93399393dc41e52fb3ce",
+      "png": null
+    },
+    {
+      "name": "glyph-041",
+      "glyph": 41,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "8e34fce57c286afe628fde85251cc69d4d0034c206474b005ce876fb5d58bbb6",
+      "png": null
+    },
+    {
+      "name": "glyph-042",
+      "glyph": 42,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "69bb10fe7b0b888d1705126d435fbf19d2fda9bdcb943b62c39e1d6093dd5c4c",
+      "png": null
+    },
+    {
+      "name": "glyph-043",
+      "glyph": 43,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "f7d98b01e21edc18b459b001d11ac6951ecfeb374b1ab70de790a8af65b652d0",
+      "png": null
+    },
+    {
+      "name": "glyph-044",
+      "glyph": 44,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "9d03ebc0610520b7cb817b9459251f48e8bd5faf33554c60630186504349fbf2",
+      "png": null
+    },
+    {
+      "name": "glyph-045",
+      "glyph": 45,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "6abc23b480a29d65e8287067641f7e8df0071066a56ac08182dd4a0b735732db",
+      "png": null
+    },
+    {
+      "name": "glyph-046",
+      "glyph": 46,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "5dd35ac2bdd01c3fa5588519f19c15a08baae41507451664e78584d75ed815e4",
+      "png": null
+    },
+    {
+      "name": "glyph-047",
+      "glyph": 47,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "5da7a99987e0ff8058872e38b3f1436f3653e240231bbb6ea06197e25539f7cd",
+      "png": null
+    },
+    {
+      "name": "glyph-048",
+      "glyph": 48,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "92a3ee0d715bf229616c8ea2d59633fec95c1ae6d6fd5733326f262e593aa1e6",
+      "png": null
+    },
+    {
+      "name": "glyph-049",
+      "glyph": 49,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "553c46e212c85a573a6344878029344f093389caceebe10f1323a90d6ea1de0b",
+      "png": null
+    },
+    {
+      "name": "glyph-050",
+      "glyph": 50,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "e50c77c851d6af81f9cfc3f795476448b571b67a50140bed6021daffd107f671",
+      "png": null
+    },
+    {
+      "name": "glyph-051",
+      "glyph": 51,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "d2ffba33a309acfc4f14df3cbd19c2c0d1368c62967c38f6ded79a7011a6c369",
+      "png": null
+    },
+    {
+      "name": "glyph-052",
+      "glyph": 52,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "bf5e291d91cf08f638e2cc0f77823aab0fb025f030be2a90b0903f2666f4b52e",
+      "png": null
+    },
+    {
+      "name": "glyph-053",
+      "glyph": 53,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "f472d0f1ad128dfd8cc280f17b49feeeb56a5e0da15139413688666ef5a45100",
+      "png": null
+    },
+    {
+      "name": "glyph-054",
+      "glyph": 54,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "733392a88569bab205e686c04ac4d86effdb9b401d6af0109620ba87c149a45f",
+      "png": null
+    },
+    {
+      "name": "glyph-055",
+      "glyph": 55,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "e014051fd35e829c61ca84bc613ab3179ab009b5c8729818992a811fa8999589",
+      "png": null
+    },
+    {
+      "name": "glyph-056",
+      "glyph": 56,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "596e75cfdfa1fcbc49d8e6753d080af33b16caf994250ff49bbbc9bfa08ebdda",
+      "png": null
+    },
+    {
+      "name": "glyph-057",
+      "glyph": 57,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "47e130e617521c82b39c838fc8b4cc852027870fad4e60bc21d02bb15e4c16df",
+      "png": null
+    },
+    {
+      "name": "glyph-058",
+      "glyph": 58,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "6088b544d46867787a16cb330a4da65542de274fbd9801f8798180491b7ee9ac",
+      "png": null
+    },
+    {
+      "name": "glyph-059",
+      "glyph": 59,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "1b2b91a724dd4c692d9146d38dca69f205690c72ad91ab0b7b3cf1562ceadb4f",
+      "png": null
+    },
+    {
+      "name": "glyph-060",
+      "glyph": 60,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "d2735690d3ef86ca784d8d9b1e5155521a6d1b89de90f96f09ea7004917d733a",
+      "png": null
+    },
+    {
+      "name": "glyph-061",
+      "glyph": 61,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "baaad157333eca2fa231ca1767af191bb2e6b1de2b6ad3032b50db7b5a499d5a",
+      "png": null
+    },
+    {
+      "name": "glyph-062",
+      "glyph": 62,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "75c392f4f5f824b0f537a7281df9f90c91d6c3ed7d5ac0a5864b869c42e90ca2",
+      "png": null
+    },
+    {
+      "name": "glyph-063",
+      "glyph": 63,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "339352bdc3749e09beaec5d91b010a39a06c0e1b8eaa4eb0253e9dbb5d10bc42",
+      "png": null
+    },
+    {
+      "name": "glyph-064",
+      "glyph": 64,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "258f20c28b56e911c38789036215e55acbd80b2b4fe06572963d6b24526f59ae",
+      "png": null
+    },
+    {
+      "name": "glyph-065",
+      "glyph": 65,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "bb0fb6d1d03ae1f5bd6c4db027a1c25cd3de672f0207fc3ad1d4aaecc217b796",
+      "png": null
+    },
+    {
+      "name": "glyph-066",
+      "glyph": 66,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "7386a7af7c751815f99da3d6599aeb30197447edbe1f11e034e7d6bd27479748",
+      "png": null
+    },
+    {
+      "name": "glyph-067",
+      "glyph": 67,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "835b21344f1c5ca601bbfba4727ae53828638fc1a53554b52ad91bbc5834b7be",
+      "png": null
+    },
+    {
+      "name": "glyph-068",
+      "glyph": 68,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "f187b3a6dce614cb689de0b1204f294547ec631d2512d896b3ac99126140019b",
+      "png": null
+    },
+    {
+      "name": "glyph-069",
+      "glyph": 69,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "0754a2201440a70e7867c7e63a3d15ff227dc4f7310021828bad51e000531a5a",
+      "png": null
+    },
+    {
+      "name": "glyph-070",
+      "glyph": 70,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "6e414ba10528ef2f4fcf0159993c94ec2d6eed971553ff0d2c673859e18666a7",
+      "png": null
+    },
+    {
+      "name": "glyph-071",
+      "glyph": 71,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "c0b6c04be2a0de891e3b1f8474b64d0e16d693561ba357d212c8fef0a47bc7f7",
+      "png": null
+    },
+    {
+      "name": "glyph-072",
+      "glyph": 72,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "bc428eba86ff67a4cf195405fac40f2ee4ce911b93e5d11791f2fde8bf531da3",
+      "png": null
+    },
+    {
+      "name": "glyph-073",
+      "glyph": 73,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "239b0b3511ba58357497252026a94fa97723bcb4f7b61ab276f749378bbcf43f",
+      "png": null
+    },
+    {
+      "name": "glyph-074",
+      "glyph": 74,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "b10e5b63eb75d6ff5b5db5b6d5e17c73a2616d12d02171edccf715f768054f42",
+      "png": null
+    },
+    {
+      "name": "glyph-075",
+      "glyph": 75,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "ef7185ab197c3e5bb24b571c0bb1424908f8c33396449af0d5b869815838ff1d",
+      "png": null
+    },
+    {
+      "name": "glyph-076",
+      "glyph": 76,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "2a8d27d2be752494d33fdc9aa306899c431e26959cb519bb421739f1718c270c",
+      "png": null
+    },
+    {
+      "name": "glyph-077",
+      "glyph": 77,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "a7e1d9b66a0a1e0335fbc600153feaa29feb816cfd730e3ee4e4fbb55ac9f264",
+      "png": null
+    },
+    {
+      "name": "glyph-078",
+      "glyph": 78,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "4bde782a3925b2dee99c58a52ff8e0faff6840f928929a12f32ed31c34c42241",
+      "png": null
+    },
+    {
+      "name": "glyph-079",
+      "glyph": 79,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "8540edb033bbacf33a2a3ece77308616fa6c5e844d6d96e2cc5da118e9b37129",
+      "png": null
+    },
+    {
+      "name": "glyph-080",
+      "glyph": 80,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "18858afed41de0003877a21a30a2ebbbf06613a60920ab49dfdc3dca760ec79f",
+      "png": null
+    },
+    {
+      "name": "glyph-081",
+      "glyph": 81,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "455664d2711dcd5cbe7990f319c86b76d124d22b6fd2cf3c4addc79c741029f8",
+      "png": null
+    },
+    {
+      "name": "glyph-082",
+      "glyph": 82,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "e05c97f42411af5b8312c5cfa67c0f1232d871f128536aa48ebdf26b746d7135",
+      "png": null
+    },
+    {
+      "name": "glyph-083",
+      "glyph": 83,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "d6ce41beeca64dd55d4781f94c92bcf3664e10349ce1c9593a91a17a3f2c295a",
+      "png": null
+    },
+    {
+      "name": "glyph-084",
+      "glyph": 84,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "57740667fbfe4b7da3cfa619eb39a5ef4463e7bb6bae9b6b3f0bb09ebe53b9d4",
+      "png": null
+    },
+    {
+      "name": "glyph-085",
+      "glyph": 85,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "12ab085b75dcfdad23a2d796ff3f7567c1394586c062f686ff366132adf2f11f",
+      "png": null
+    },
+    {
+      "name": "glyph-086",
+      "glyph": 86,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "094cb5f8695deb5c04f23ca3c9815556bfbc06e487e3e9b757c50c81aef9308c",
+      "png": null
+    },
+    {
+      "name": "glyph-087",
+      "glyph": 87,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "6ea6faf9f6bab1be81c2727b4068e490e80665b728a6867ac55d269d29e38a07",
+      "png": null
+    },
+    {
+      "name": "glyph-088",
+      "glyph": 88,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "4c7000598205262a7e4d77861e2cefa51bc54264b367cdf03017efd142d0bad4",
+      "png": null
+    },
+    {
+      "name": "glyph-089",
+      "glyph": 89,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "91eda2de3d8da4bb27f4f75cd893400c540b10bc558f69cbbf787d91da2f2504",
+      "png": null
+    },
+    {
+      "name": "glyph-090",
+      "glyph": 90,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "3a709634845f6b164a2407c2dd274cd0910703abbb1ef4536c4414146f7e7d4e",
+      "png": null
+    },
+    {
+      "name": "glyph-091",
+      "glyph": 91,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "a33d7f5afd1c1cb358386f05509f70c6c266a589da867332f1598015a3c2682e",
+      "png": null
+    },
+    {
+      "name": "glyph-092",
+      "glyph": 92,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "cb1b331d41f42c1a92e1cf9cf237f273a02a96607005f74c9c0c4da1dd1a03aa",
+      "png": null
+    },
+    {
+      "name": "glyph-093",
+      "glyph": 93,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "18c6138ae7329ceabc28c7cc8671eda864f8093f45ad417b8c19ce00c54c3903",
+      "png": null
+    },
+    {
+      "name": "glyph-094",
+      "glyph": 94,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "1d2c8e880f5be038f2745cedac9473a04bf2c9ebb9af19d0222125bac8ab425d",
+      "png": null
+    },
+    {
+      "name": "glyph-095",
+      "glyph": 95,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "64b94c1689f87fb564baf55fb3efbd2f3274d43f0e3f2ca6ab24dae3591e0cb8",
+      "png": null
+    },
+    {
+      "name": "glyph-096",
+      "glyph": 96,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "16f534826d6c2144b177d12d4079214a3164501919682602d87c188bc73c384c",
+      "png": null
+    },
+    {
+      "name": "glyph-097",
+      "glyph": 97,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "71a5ff53271dc31141b3caa4aaf1f9a63789fd35c68afdc932963ded2a194ad2",
+      "png": null
+    },
+    {
+      "name": "glyph-098",
+      "glyph": 98,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "9ba9e2add98e8d45b99b08066b3b4c1ad573e13aca98f96f712f647000c0f0ce",
+      "png": null
+    },
+    {
+      "name": "glyph-099",
+      "glyph": 99,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "5aa4978a6b93495cd1afb9388aeb054ba8a328a3ae46d83783c21fdc6e9c906e",
+      "png": null
+    },
+    {
+      "name": "glyph-100",
+      "glyph": 100,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "f44e74a05d27cf841058d7b110cf451218479996580e3c7cb314879f02e52215",
+      "png": null
+    },
+    {
+      "name": "glyph-101",
+      "glyph": 101,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "37073fff8c775738e3e6e48d7516737316a4b712ce84906c6e6c6a57bff8bf3c",
+      "png": null
+    },
+    {
+      "name": "glyph-102",
+      "glyph": 102,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "197e7d5143febc61f8e088584d6fdc57470ce49fa56ff35dfee03248e8b8d291",
+      "png": null
+    },
+    {
+      "name": "glyph-103",
+      "glyph": 103,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "5f94a931c9ca74be44f963f0198dbc0d14f70e34760be2f1c422b5b08afa1318",
+      "png": null
+    },
+    {
+      "name": "glyph-104",
+      "glyph": 104,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "b535bf874572fb26c2e3d51624dc1cef7a1f79184b8cb6e8ebb64e1fca92a085",
+      "png": null
+    },
+    {
+      "name": "glyph-105",
+      "glyph": 105,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "8efe8da40462c4b612b6648e11c8befbb49f4c32726be927e38a67b184077ecd",
+      "png": null
+    },
+    {
+      "name": "glyph-106",
+      "glyph": 106,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "e57a8a6e130aa98a6d520f594dfd92aeabe2eb6b68f394112c92a2e1970d9204",
+      "png": null
+    },
+    {
+      "name": "glyph-107",
+      "glyph": 107,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "81b012eb6875e654776a64986370556d28e9d1d0210d8c56ce09d9a6fb63841a",
+      "png": null
+    },
+    {
+      "name": "glyph-108",
+      "glyph": 108,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "ccc745a60745da5ce4607e83122d59ea8cb95abe97f7dce5c8b714e2c32b007e",
+      "png": null
+    },
+    {
+      "name": "glyph-109",
+      "glyph": 109,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "f55ba5eb6c4c58834acb2884a4eaf81c3c2ce36129f26d14b30475dc0451434c",
+      "png": null
+    },
+    {
+      "name": "glyph-110",
+      "glyph": 110,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "d821864233c9b97599c436c085dc90506d15e4b1caa2fdd3e9b4b8469a740d7b",
+      "png": null
+    },
+    {
+      "name": "glyph-111",
+      "glyph": 111,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "c9a046a677c4eab3e89f6bf80a3eec92851d7af2ebce41d71f6d1ebd24282d6c",
+      "png": null
+    },
+    {
+      "name": "glyph-112",
+      "glyph": 112,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "c5c0a998a975de6df7ccc65ee3688c249e9d6802a3e8887fdf5b6131153f32b3",
+      "png": null
+    },
+    {
+      "name": "glyph-113",
+      "glyph": 113,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "64beeb1f5173ec58824897656e539dfef5cbc81d1c9034a49aeedb11827cd2d1",
+      "png": null
+    },
+    {
+      "name": "glyph-114",
+      "glyph": 114,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "fe58b20e540bbf91a2cdce0cb40fc707fdebf169a591ebc8ac85630f41226acf",
+      "png": null
+    },
+    {
+      "name": "glyph-115",
+      "glyph": 115,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "f7256cd0cf937c91a44e16086e692f979c1c14160db1a2ff3e34bff044236d24",
+      "png": null
+    },
+    {
+      "name": "glyph-116",
+      "glyph": 116,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "c7dc1d4c0675449bc0a6c093d944a1c38f55fad6ec7f5f4456ea957caf90c182",
+      "png": null
+    },
+    {
+      "name": "glyph-117",
+      "glyph": 117,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "286952bc9bea669c2a8e6ec4db85d7829a5ab4a0ec57bbc38233622445cc7778",
+      "png": null
+    },
+    {
+      "name": "glyph-118",
+      "glyph": 118,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "47ab4c057e2352c2b0e06693546542f862d6c0abc67c215607094a9aad43a800",
+      "png": null
+    },
+    {
+      "name": "glyph-119",
+      "glyph": 119,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "2b0c97afac7172598cd0a5bb50bd7b4dc57aa4bcb740dceac7e6490b5be3efed",
+      "png": null
+    },
+    {
+      "name": "glyph-120",
+      "glyph": 120,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "1447aefd04fd7dffa342a32a2d2fae5547387535997355ae94ba8a1d4ad49b08",
+      "png": null
+    },
+    {
+      "name": "glyph-121",
+      "glyph": 121,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "217c90bb1df3f8d05c87412ddb0f89980ba368d9db44f34ea9f9e3131d21211f",
+      "png": null
+    },
+    {
+      "name": "glyph-122",
+      "glyph": 122,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "6ead07625f49206c5a755bb6c3c456158c8b53eaa64f7e9355b4a7ceab8a45b1",
+      "png": null
+    },
+    {
+      "name": "glyph-123",
+      "glyph": 123,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "3ff14e415ae968d0f6e625463db70a8ee3e559159020c2b1e3812d743eba0a96",
+      "png": null
+    },
+    {
+      "name": "glyph-124",
+      "glyph": 124,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "81515b6f10d371151f869431af89de21aeae9754806d8fdcf8baeefb759fba02",
+      "png": null
+    },
+    {
+      "name": "glyph-125",
+      "glyph": 125,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "bac32c1041ec38124411048389bb109a504a3f7be1e9649b85f8d451b88b3b5b",
+      "png": null
+    },
+    {
+      "name": "glyph-126",
+      "glyph": 126,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "bfa948a23c5d63b08197fb483940b34ca40dc8488e9a13706021e5971942c107",
+      "png": null
+    },
+    {
+      "name": "glyph-127",
+      "glyph": 127,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "b4eefa689460be6b7e6fe8fe2d3af246cfefab920f169e89c53f43beb64b3aa6",
+      "png": null
+    },
+    {
+      "name": "glyph-128",
+      "glyph": 128,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "32ccc88ecf3a7d19c413b660642426328578a9107868fcad41dc36d812599f7f",
+      "png": null
+    },
+    {
+      "name": "glyph-129",
+      "glyph": 129,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "a57583c116df445b6c2da717de817bd368d96210545c50965117f6670d2db5c0",
+      "png": null
+    },
+    {
+      "name": "glyph-130",
+      "glyph": 130,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "8ca586f2f0d165454f77ead63e96b7941aeadd39b3ec16c6b461bc690b466a02",
+      "png": null
+    },
+    {
+      "name": "glyph-131",
+      "glyph": 131,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "d5a3fe39936f50a65bf50a79e75f0d605a1ad244e514be806f89e7ba972c4156",
+      "png": null
+    },
+    {
+      "name": "glyph-132",
+      "glyph": 132,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "5e302fa07c9975c02fccf67fe8df09db8e1f9c705e81b13fa0ae4f784062e8df",
+      "png": null
+    },
+    {
+      "name": "glyph-133",
+      "glyph": 133,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "aa6e0ea4659d1a1f581e661020fe2b2709ee52211d0561ccc299f2bc196c5579",
+      "png": null
+    },
+    {
+      "name": "glyph-134",
+      "glyph": 134,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "531e83c6568dbc60c30fddcbe7aa42f32717d0c61d43aaeba7ef8440f1943f26",
+      "png": null
+    },
+    {
+      "name": "glyph-135",
+      "glyph": 135,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "c8b7dd031c4579e432cf86097359aa4d235bfea975091b82fb9bd3500de49084",
+      "png": null
+    },
+    {
+      "name": "glyph-136",
+      "glyph": 136,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "06ab11e902c9e0713ac37fc621e085e7c3427f49d19c92e13211226f90b3eac2",
+      "png": null
+    },
+    {
+      "name": "glyph-137",
+      "glyph": 137,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "0aa73c1c9d4a2f165a45fd32a60e2c2cc97a128f355ebde78cc9dcf4c03870d6",
+      "png": null
+    },
+    {
+      "name": "glyph-138",
+      "glyph": 138,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "b12e26d7fb221d9d378bdec8c8c30d2defa03ae70d07d33275bfca556cc0c43a",
+      "png": null
+    },
+    {
+      "name": "glyph-139",
+      "glyph": 139,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "801f1272af03971abf79624733c4cc7801c3a0e664f2f07591579aa614a5d3d9",
+      "png": null
+    },
+    {
+      "name": "glyph-140",
+      "glyph": 140,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "6cbc2777d26f7e2f7a91806345b1b200ee081b4dd9f056a3c1a73ab12eaf8b58",
+      "png": null
+    },
+    {
+      "name": "glyph-141",
+      "glyph": 141,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "cfda08e8132162b5540b41feb69a0f854221a59377ff97a62fb08d1502578e2d",
+      "png": null
+    },
+    {
+      "name": "glyph-142",
+      "glyph": 142,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "7ed760d33bcac04bc8add43e4613fb75a5e598956341afeb1381d447e2b62a9a",
+      "png": null
+    },
+    {
+      "name": "glyph-143",
+      "glyph": 143,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "4f1a1621fa90c8ae45ecbc936425ed9bc280338a5db1feac705df6faf192dc53",
+      "png": "glyph-143.png"
+    },
+    {
+      "name": "glyph-tilted",
+      "glyph": 79,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "bad8d9d3a3dbc9cd2fa182d6ac8d014eecf2225e1f0470f17427e88835cb6928",
+      "png": "glyph-tilted.png"
+    },
+    {
+      "name": "glyph-upward",
+      "glyph": 132,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "ad6ad6d5bbb51ec1882dcf627b85bc6195394a93e1605267ac6e38673f442baf",
+      "png": "glyph-upward.png"
+    },
+    {
+      "name": "glyph-white-shell",
+      "glyph": 7,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "a00a17fd6e1baa520b2ea532e1be87dbc74665901f93a7e3ca592e40c960f6ee",
+      "png": "glyph-white-shell.png"
+    },
+    {
+      "name": "glyph-unpaired",
+      "glyph": -1,
+      "cells": 100,
+      "housingSamples": 4,
+      "drawCalls": 3,
+      "rgbaSha256": "fb45c94bbad2b26be96c8e5d37cd4c52208d38e30c1d1622ffdea166f8f78d05",
+      "png": "glyph-unpaired.png"
+    }
+  ]
+}

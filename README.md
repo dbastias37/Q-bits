@@ -284,6 +284,14 @@ La [revisión del taller y sensor](docs/REVISION_TALLER_SENSOR.md) documenta cos
 
 La [síntesis de integración](docs/SINTESIS_INTEGRACION.md) reúne el estado de los bloques, las comprobaciones y la recuperación de errores. Al recuperar el laboratorio se conserva también si un sensor ya había reaccionado a un contacto. Reiniciar un lote suelta la materia de ese lote antes de retirarla, evitando dejar un agarre sobre un cuerpo eliminado.
 
+## Cubos de trayectoria para robots y drones
+
+La mesa de trabajo permite adaptar dos cubos como **balizas de trayectoria** y otro como **receptor** del mecanismo. Marca el inicio, elige el fin y traza puntos con clics en el piso; Enter guarda y Escape conserva el recorrido anterior. Ambas balizas comparten una cara de **10 × 10 cuadros**, con su borde negro incluido, y el receptor muestra esa misma identidad.
+
+Caras laterales activan el recorrido terrestre; caras hacia arriba habilitan vuelo y alturas de 0,15–3 m. Los niveles I/II/III alcanzan 4/12/23 m, con el límite del extremo menor. Cada punto permite pasar, esperar, aterrizar o soltar una carga mediante la pinza existente. La repetición recorre el mismo camino de ida y vuelta.
+
+Ruedas, cuadrúpedos y drones siguen usando sus motores, torque, apoyos y batería. Mover una baliza o bloquear el paso pausa el recorrido. Los enlaces y trazados se guardan; al cargar quedan pausados. Las balizas dormidas no sondean continuamente y las caras usan un único atlas. [Manual de preparación, controles y límites](docs/CUBOS_TRAYECTORIA.md).
+
 ## Configuración de juego, imagen y audio
 
 Abre **Configuración** desde el menú principal o la pausa. Apariencia permite elegir Original, PSX, Dithering + neón o Cel shading, con colores y grosores independientes para delineado y trayectoria. La punta de flecha sobre una estructura seleccionada usa el color del delineado; puedes apagarla o quitarle la flotación.

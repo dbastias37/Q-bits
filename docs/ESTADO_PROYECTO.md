@@ -2,7 +2,29 @@
 
 Actualizado: 23 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Entrega actual · agarrar las familias como cubos normales
+## Entrega actual · cubos de trayectoria para robots y drones
+
+Referencia de partida: `e02afe3d1bd9a0d116c5c915e5efc960caa5a26a`, `main` después del PR #35. Versión de carga: `20261123-trajectory-beacons-1`. Desarrollo autorizado para integrar en `main`; esta entrega pertenece al banco de pruebas y conserva los niveles de campaña existentes.
+
+El taller adapta cubos existentes como **balizas I/II/III** (4/12/23 m, usando los niveles de mesa existentes) o como **receptores de trayectoria**. Preserva IDs, materia, peso, cuerpo físico y energía. Un inicio se empareja explícitamente con un único fin libre. El receptor se une al chasis y adopta la identidad de la pareja. El catálogo contiene 144 caras: 24 originales de las referencias del usuario y cinco variantes por original. Cada cara conserva exactamente **10 × 10 cuadros, incluido su borde negro de un cuadro**; la carcasa clara queda fuera del diseño. Un atlas compartido y una superficie por cara representan esa identidad, sin analizar imágenes ni generar texturas por frame.
+
+Ambas caras hacia un lateral definen una trayectoria terrestre; ambas hacia arriba habilitan un dron. El sistema espera estabilidad, usa histéresis y detiene al seguidor si se toma, mueve, gira, retira u oculta una baliza. Los extremos siguen a sus cubos y los puntos intermedios conservan el trazado. El límite del par es el menor de los dos niveles y se mide sobre la geometría completa. Las rutas fuera de alcance quedan detenidas pero se pueden guardar y reparar.
+
+El panel permite marcar inicio, elegir fin, cambiar a otra cara libre, dibujar hasta 48 puntos, editar acciones y alturas y vincular el receptor. Clic añade puntos en el piso, secundario deshace, Enter guarda y Escape conserva el recorrido anterior, incluso con controles remapeados. El título distingue inicio y fin. El modo aéreo admite alturas de 0,15 a 3 m y pasar, esperar, aterrizar o soltar carga mediante una pinza real. **Ida y vuelta** recorre los mismos puntos en sentido inverso; no crea un segmento de cierre ni mueve el mecanismo instantáneamente.
+
+La navegación terrestre emite órdenes para los motores existentes de ruedas o la marcha de cuatro apoyos. Mantiene torque, capacidad, RPM configuradas, fases de servos, consumo y cuerpos dinámicos. El vuelo reutiliza el controlador físico, la carga y el gasto de las hélices. La comprobación local de espacio y el presupuesto de progreso detienen un mecanismo bloqueado; esta versión no calcula desvíos ni coordina tráfico. Un mecanismo y una ruta admiten un seguidor activo cada uno. Un dron detenido durante el recorrido mantiene altura con consumo real; un punto final de aterrizaje termina en contacto con el piso y un punto final de paso termina en vuelo estacionario.
+
+Las balizas dormidas salen del conjunto observado: la prueba de reposo verifica 1.000 ticks sin nuevas lecturas de pose, reconstrucciones ni notificaciones. Solo los receptores activos reciben guía a 20 Hz. La geometría del trazado se reutiliza y las consultas de obstáculos están acotadas al mecanismo activo. Esto no constituye un benchmark de CPU ni una promesa de FPS.
+
+Guardado, familias y reconstrucción de grupos conservan parejas, dibujos, alturas y acciones. Al cargar una partida, la navegación queda pausada; los actuadores terrestres frenan y un dron guardado en vuelo conserva un vuelo estacionario físico. Una baliza almacenada deja su ruta a la espera, reservando su identidad hasta retirarla. Las adaptaciones enlazadas siguen la regla existente de retirarse antes de duplicar o guardar plantillas. Un contador persistente impide reutilizar IDs de rutas eliminadas, mientras las caras liberadas pueden reutilizarse deliberadamente.
+
+**Verificación:** 1.464 pruebas globales aprobadas, cero fallos, canceladas u omitidas. Incluyen 106 pruebas específicas de trayectoria y 11 casos nuevos del arranque con dependencias fallidas. Hay ensayos con Cannon de carro con cuatro motores, cuadrúpedo con ocho servos, ida y vuelta física, vuelo de extremo a extremo, aterrizaje, entrega con pinza real, interrupción al mover una baliza y guardado aéreo. La prueba EGL/GLES comprueba 148 escenas por backend, 29.600 celdas en total, las 148 parejas de imágenes idénticas y cero errores GL. Pasa también el validador general de shaders, foco y postproceso.
+
+Guía vigente: [Cubos de trayectoria](CUBOS_TRAYECTORIA.md). Evidencia reproducible, hashes de fuente y muestras: [Trayectorias del 23 de noviembre](mediciones/trayectorias-20261123/README.md). Los ensayos de Node usan DOM simulado y las imágenes son reproducción GLES de comandos reales. Chromium no pudo abrir su socket en el entorno (`Operation not permitted`); no se ha certificado una partida en navegador ni la ergonomía con mecanismos arbitrarios del usuario.
+
+**Punto de continuación:** probar en el navegador del jugador el montaje de balizas, la lectura de las caras, las curvas de sus mecanismos y la edición de alturas. Ajustar 4/12/23 m y tolerancias a partir de esa prueba. La coordinación de varios vehículos y el cálculo de desvíos permanecen fuera de esta entrega.
+
+## Entrega anterior · agarrar las familias como cubos normales
 
 Referencia de integración: `a0477707a03ca1ed2ca006a628c716d70e3f5175`, merge del PR #34. Versión de carga `20261123-family-grab-1`. Entrega en el [PR #35](https://github.com/dbastias37/Q-bits/pull/35), que conserva la revisión y el commit exactos de integración.
 

@@ -9,7 +9,7 @@
  function validRoute(route){
   return !!route&&typeof route.loop==='boolean'&&Array.isArray(route.points)&&route.points.length<=maxPoints&&route.points.every(p=>
    p&&[p.x,p.z].every(n=>Number.isFinite(n)&&Math.abs(n)<=28)&&Number.isFinite(p.height)&&p.height>=.15&&p.height<=SPEC.maxHeight&&
-   ['pass','wait','land'].includes(p.action)&&Number.isFinite(p.wait)&&p.wait>=0&&p.wait<=120);
+   ['pass','wait','land','drop'].includes(p.action)&&Number.isFinite(p.wait)&&p.wait>=0&&p.wait<=120);
  }
  function config(value={}){return {height:clamp(finite(value.height,.5),.15,SPEC.maxHeight),speed:clamp(finite(value.speed,0),0,SPEC.maxSpeed),heading:clamp(finite(value.heading,0),-Math.PI,Math.PI),...(validRoute(value.route)?{route:{loop:value.route.loop,points:value.route.points.map(({x,z,height,action,wait})=>({x,z,height,action,wait}))}}:{})};}
  function validConfig(v){return !!v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).every(k=>['height','speed','heading','route'].includes(k))&&(v.route===undefined||validRoute(v.route))&&['height','speed','heading'].every(k=>Number.isFinite(v[k])&&config(v)[k]===v[k]);}

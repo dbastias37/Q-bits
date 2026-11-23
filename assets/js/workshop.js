@@ -22,7 +22,8 @@
   grip:Object.freeze({1:1,2:.9,3:.8}),
   load:Object.freeze({1:1,2:.85,3:.7}),
   speed:Object.freeze({1:1,2:1.1,3:1.2}),
-  movementEnergy:Object.freeze({1:1,2:1.15,3:1.35})
+  movementEnergy:Object.freeze({1:1,2:1.15,3:1.35}),
+  trajectoryRange:Object.freeze({1:4,2:12,3:23})
  });
  function benchFrom(research){return research.includes('bench3')?3:research.includes('bench2')?2:1;}
  function completed(progress,n){return record(progress)&&own(progress,'level'+n)&&progress['level'+n]===true;}
@@ -74,7 +75,12 @@
  function hasSensor(part){const raw=part?.mood?.workshop;return raw?.sensor===true&&stateValid(part,raw);}
  function batteryCapacity(part){return SPEC.battery[partState(part).battery];}
  function movementFactors(part){const state=partState(part);return {speed:SPEC.speed[state.movement],energy:SPEC.movementEnergy[state.movement],grip:SPEC.grip[state.lightweight],load:SPEC.load[state.lightweight]};}
- function hasAdaptation(part){const raw=part?.mood?.workshop;if(!raw)return false;if(!stateValid(part,raw))return true;return raw.sensor||raw.battery>1||raw.lightweight>1||raw.movement>1;}
+ function hasAdaptation(part){if(part?.mood?.trajectory!==undefined)return true;const raw=part?.mood?.workshop;if(!raw)return false;if(!stateValid(part,raw))return true;return raw.sensor||raw.battery>1||raw.lightweight>1||raw.movement>1;}
+ function trajectoryState(part){
+  const data=part?.mood?.trajectory;if(!record(data)||data.version!==1||!Number.isInteger(data.level)||data.level<1||data.level>3||!['beacon','receiver'].includes(data.role)||!Number.isInteger(data.face)||data.face<0||data.face>5||data.routeId!==null&&(typeof data.routeId!=='string'||!/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$/.test(data.routeId)))return null;
+  if(Object.keys(data).some(key=>!['version','level','face','role','routeId'].includes(key)))return null;
+  return {version:1,level:data.level,face:data.face,role:data.role,routeId:data.routeId};
+ }
  function materialBalance(part){const state=partState(part);return {piece:part?.weight,bench:state.ballast,total:(part?.weight||0)+state.ballast,base:state.baseWeight};}
  /**
   * Research is paid once globally. Fitting is reversible and costs no additional
@@ -88,14 +94,30 @@
   if(part.mood.production)return fail('La materia de los pedidos no admite adaptaciones.');
   if(part.mood.gripper)return fail('El cubo de agarre mantiene su función. Usa un cubo normal para otra adaptación.');
   if(part.mood.externalBattery)return fail('Usa los controles de batería: una batería externa no admite adaptaciones de Q-bit.');
-  if(!record(patch)||Object.keys(patch).some(key=>!['sensor','battery','lightweight','movement'].includes(key)))return fail('Adaptación desconocida.');
+  if(!record(patch)||Object.keys(patch).some(key=>!['sensor','battery','lightweight','movement','trajectory'].includes(key)))return fail('Adaptación desconocida.');
   const saved=part.mood.workshop;if(saved&&!stateValid(part,saved))return fail('La calibración guardada no corresponde a esta pieza.');
-  const before=partState(part),next={...before},profile=normalizeProfile(rawProfile);
+  const before=partState(part),next={...before},profile=normalizeProfile(rawProfile),hasTrajectory=part.mood.trajectory!==undefined,oldTrajectory=trajectoryState(part),changingTrajectory=own(patch,'trajectory');
+  let trajectory=oldTrajectory;
+  if(hasTrajectory&&!oldTrajectory&&!(changingTrajectory&&patch.trajectory===null))return fail('La adaptación de trayectoria no es válida. Restaura primero la pieza.');
   for(const key of Object.keys(patch)){
+   if(key==='trajectory')continue;
    const value=patch[key];if(key==='sensor'){if(typeof value!=='boolean')return fail('El sensor debe estar activado o desactivado.');}
    else if(!Number.isInteger(value)||value<1||value>3)return fail('El nivel de adaptación debe estar entre I y III.');
    next[key]=value;
   }
+  if(changingTrajectory){
+   const value=patch.trajectory;
+   if(value===null)trajectory=null;
+   else{
+    if(!record(value)||Object.keys(value).some(key=>!['role','level'].includes(key))||!['beacon','receiver'].includes(value.role)||!Number.isInteger(value.level)||value.level<1||value.level>3)return fail('Elige baliza o receptor y un nivel de trayectoria válido.');
+    if((part.shape||'cube')!=='cube'||part.mood.matter||part.mood.flight)return fail('Usa un cubo normal y completo para la trayectoria.');
+    if(value.role==='receiver'&&value.level!==1)return fail('El receptor no necesita niveles de alcance.');
+    if(value.role==='beacon'&&value.level>profile.bench)return fail('Requiere mesa de trabajo '+value.level+' para este alcance.');
+    if(oldTrajectory?.routeId&&oldTrajectory.role!==value.role)return fail('Desvincula primero la ruta antes de cambiar la función del cubo.');
+    trajectory={version:1,level:value.level,face:oldTrajectory?.face??0,role:value.role,routeId:oldTrajectory?.routeId??null};
+   }
+  }
+  if(trajectory&&(next.sensor||next.battery>1||next.lightweight>1||next.movement>1))return fail('La trayectoria ocupa esta adaptación. Restaura la pieza antes de combinar otra mejora.');
   if(next.sensor&&!profile.research.includes('sensor'))return fail('Investiga primero el sensor configurable.');
   for(const key of ['battery','lightweight','movement'])if(next[key]>1&&!profile.research.includes(key+next[key]))return fail('Investiga primero la mejora '+key+' '+next[key]+'.');
   if(next.lightweight>1&&part.mood.matter)return fail('Recompón y retira las adaptaciones antes de aligerar materia dividida.');
@@ -103,8 +125,9 @@
   if(storedJ>capacity+EPS)return fail('La batería menor no puede guardar la energía actual. Utiliza energía antes de cambiarla.');
   const weight=next.baseWeight*SPEC.mass[next.lightweight];next.ballast=next.baseWeight-weight;
   const mood={...part.mood,energy:Math.min(1,storedJ/capacity),workshop:next};if(Array.isArray(part.mood.blend))mood.blend=[...part.mood.blend];
+  if(trajectory)mood.trajectory={...trajectory};else if(changingTrajectory)delete mood.trajectory;
   if(!next.sensor&&next.battery===1&&next.lightweight===1&&next.movement===1)delete mood.workshop;
   return {part:{...part,weight,mood},materialDelta:part.weight-weight,material:{piece:weight,bench:next.ballast,total:next.baseWeight},storedJ,capacity,cost:0};
  }
- return Object.freeze({VERSION,CREDIT_PER_LEVEL,MAX_LEVEL,RESEARCH,SPEC,normalizeProfile,awardCompleted,researchStatus,purchase,availableResearch,partState,hasSensor,batteryCapacity,movementFactors,hasAdaptation,materialBalance,planPartUpgrade});
+ return Object.freeze({VERSION,CREDIT_PER_LEVEL,MAX_LEVEL,RESEARCH,SPEC,normalizeProfile,awardCompleted,researchStatus,purchase,availableResearch,partState,hasSensor,batteryCapacity,movementFactors,hasAdaptation,trajectoryState,materialBalance,planPartUpgrade});
 });

@@ -1,0 +1,12 @@
+{
+  "identicalFrames": 148,
+  "checkedCells": 29600,
+  "pngs": 18,
+  "sourceSha256": "898cdff35839c7f7f3c4d756b3ec7bf548832d8b6e71691957a2bf0b87d643a1",
+  "sourceStillCurrent": true,
+  "browserValidated": false,
+  "glesVersions": [
+    "OpenGL ES 2.0 Mesa 25.0.7-2+deb13u1",
+    "OpenGL ES 3.0 Mesa 25.0.7-2+deb13u1"
+  ]
+}
