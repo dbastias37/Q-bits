@@ -2,7 +2,13 @@
 
 Actualizado: 23 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Entrega actual · identidades explícitas y circuitos ortogonales
+## Entrega actual · tableta grafito
+
+La carcasa lleva asa lateral y las pantallas de Banco y Mesa conservan sus controles. Las barras tienen tarjetas rectangulares e iconos. El indicador del bisel muestra la reserva de la selección, del paquete de batería o de la pieza identificada por la mesa. El cálculo usa la capacidad en julios y cuenta una sola vez cada fuente compartida. Con 16–35 % la lectura es ámbar. Con 15 % o menos pulsa en rojo y respeta la preferencia de movimiento reducido. Un guion indica que falta una lectura.
+
+Verificación en Node y Cannon: 1.506 pruebas aprobadas, incluidas la descarga hasta cero, recuperación, batería apagada y alimentación por cable. Los shaders de la tableta compilan y enlazan en GLES. Queda por comprobar la legibilidad del bisel durante una partida en un equipo físico.
+
+## Entrega anterior · identidades explícitas y circuitos ortogonales
 
 Base de la corrección: `f0ecff1f8f90ea2bccd1dfcb1d3230ec8c7fe247`, integración del PR #38. Versión de carga: `20261123-trajectory-circuits-1`.
 

@@ -13,7 +13,7 @@
 #panel.tablet[hidden][data-stowing="true"] {display:block!important;pointer-events:none}
 #panel.tablet * {box-sizing:border-box}
 .tablet-projection {
-  position:absolute; inset:4.5% 3.5% 9.2%; container:tablet / inline-size;
+  position:absolute; inset:4.7% 9.2% 10.8% 2.6%; container:tablet / inline-size;
   display:grid;grid-template-rows:auto minmax(0,1fr) auto;
 }
 .tablet-projection::before {content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(135deg,transparent 0 5px,#9ffbff06 5px 6px);border-radius:inherit}
@@ -110,4 +110,37 @@
  #panel.tablet select,#panel.tablet select::picker(select) {appearance:base-select}
  #panel.tablet select,#panel.tablet option {white-space:normal;word-break:normal}
  #panel.tablet option {padding:5px 7px}
+}
+
+#panel.tablet label:has(input[type="range"]),
+#panel.tablet #page-mechanisms label:has(input[type="number"]) {
+  margin:6px 0; padding:6px 9px;
+  border:1px solid var(--edge); background:#10242a80;
+}
+#panel.tablet .tablet-field-hint {
+  display:block; margin-top:3px; font-size:11px; color:#b6ced2;
+}
+.tablet-icon {
+  display:inline-block; width:1.25em; height:1.25em; margin-right:.4em;
+  color:var(--aqua); vertical-align:-.24em; pointer-events:none;
+}
+#tablet-battery {
+  position:absolute; right:10.4%; bottom:2.2%; height:6.7%; display:flex;
+  align-items:center; gap:.35em; padding:0 .55em; border:1px solid var(--edge);
+  background:#111c20; color:var(--aqua); white-space:nowrap;
+  font:600 clamp(9px,1.3vw,13px)/1 var(--font-info); font-variant-numeric:tabular-nums;
+}
+#tablet-battery .tablet-icon {margin:0;color:inherit}
+#tablet-battery[data-level="normal"] {color:#8df7dc}
+#tablet-battery[data-level="low"] {color:#ffd494}
+#tablet-battery[data-level="none"] {color:#abbdc0}
+#tablet-battery[data-level="critical"] {
+  color:#ffd5cf; border-color:#ff8078; background:#692e34;
+}
+#tablet-battery[data-level="critical"] .tablet-icon {color:#ff8981}
+@media (prefers-reduced-motion:no-preference) {
+  #tablet-battery[data-level="critical"] {animation:tablet-low-charge 1.4s ease-in-out infinite}
+}
+@keyframes tablet-low-charge {
+  50% {background:#361c22;border-color:#be5f5b}
 }
