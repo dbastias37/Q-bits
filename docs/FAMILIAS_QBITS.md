@@ -29,9 +29,15 @@ Con **clic secundario → Nombrar familia y elegir color…** puedes cambiar el 
 
 Una familia compuesta solo por baterías usa una carcasa con vidrio y líquido del color elegido. La altura visible corresponde a la carga agregada; la superficie responde al movimiento y vuelve a nivelarse con la gravedad. Las baterías guardadas conservan sus julios y su ajuste de encendido; almacenarlas no las llena ni convierte el contenedor en una batería conectada a las máquinas. Retíralas para volver a alimentar las máquinas.
 
-## Mover, retirar y colocar con la guía
+## Tomar y soltar como una pieza normal
 
-Haz **clic izquierdo** sobre una familia para moverla, o elige **Mover familia · guía azul** en su menú secundario. Para extraer contenido, abre ese menú y elige una de estas acciones:
+Las familias se agarran físicamente igual que los cubos de cada escena. En el **banco**, mantén **clic izquierdo** sobre el contenedor para llevarlo y suelta el botón para dejarlo. En **campaña**, un **clic izquierdo** lo toma y el siguiente lo suelta. El menú secundario ofrece también **Tomar familia**: queda sostenida hasta el siguiente clic, sin tener que mantener pulsado el botón.
+
+Mientras llevas una familia, la **rueda** acerca o aleja la mano y **Shift + WASD** gira el contenedor. **Ctrl** muestra la proyección de caída con el tamaño real de la familia. Al acercarla, se activa el mismo enfoque de inspección de las piezas; el indicador inferior conserva el nombre y **×N**. El contenedor conserva su colisión con el suelo y los obstáculos. Todo el peso almacenado cuenta para la capacidad de carga manual configurada.
+
+## Retirar contenido y colocar con la guía
+
+Para posicionar el contenedor mediante una vista previa, suéltalo y elige **clic secundario → Colocar familia · guía azul**. Para extraer contenido, abre ese menú y elige una de estas acciones:
 
 | Opción | Resultado |
 | --- | --- |
@@ -53,9 +59,9 @@ La confirmación vuelve a comprobar el espacio. Si hay un obstáculo, mueve la v
 
 ## Unir familias y repartir lotes pequeños
 
-Para juntar dos familias, mueve una hacia la otra. Si la suma no supera **100 piezas base**, la guía indica **Unir a…** y el total resultante. Al confirmar, el contenedor de destino conserva su nombre y color. El menú secundario también ofrece familias compatibles cercanas. Las piezas pasan al inventario resultante, sin crear contenedores anidados.
+Para juntar dos familias, elige **Colocar familia · guía azul** y apunta hacia la otra. Si la suma no supera **100 piezas base**, la guía indica **Unir a…** y el total resultante. Al confirmar, el contenedor de destino conserva su nombre y color. El menú secundario también ofrece familias compatibles cercanas. Las piezas pasan al inventario resultante, sin crear contenedores anidados.
 
-Para repartir una familia grande, elige **Dividir en familias de hasta 10**. También puedes iniciar **Mover familia**, mantener **Shift** y sacudir el mouse de lado a lado varias veces. Una vibración pequeña o un giro normal no bastan. El reparto prepara lotes de hasta diez piezas base y conserva nombre y color; necesita espacio libre para todos los contenedores.
+Para repartir una familia grande, elige **Dividir en familias de hasta 10**. También puedes tomarla físicamente, mantener **Shift** y sacudir el mouse de lado a lado varias veces. Funciona igualmente durante **Colocar familia · guía azul**. Una vibración pequeña o un giro normal no bastan. El gesto suelta la familia antes de preparar el reparto. Los lotes conservan nombre y color, tienen hasta diez piezas base y necesitan espacio libre para todos los contenedores.
 
 Las construcciones grandes se desarman para preparar estos lotes, conservando los módulos reconocidos que caben. El límite de diez no corta un módulo indivisible. Esta acción es diferente de **Retirar hasta 10 elementos**: repartir deja el material almacenado en familias pequeñas; retirar lo coloca en el mundo.
 
@@ -69,6 +75,6 @@ La **campaña conserva su guardado por punto de control de nivel**. Al continuar
 
 ## Alcance de la optimización
 
-Mientras está almacenado, el contenido se conserva como datos. Cada contenedor mantiene un cuerpo físico y su colisión; las piezas internas recuperan cuerpos al retirarlas. La animación utiliza un número limitado de representaciones temporales y las etiquetas reutilizan sus elementos visuales.
+Mientras está almacenado, el contenido se conserva como datos. Cada contenedor mantiene **un cuerpo físico y una forma de colisión**. Tomarlo añade únicamente el anclaje temporal de la mano y su unión física; ambos se retiran al soltarlo. La cantidad de piezas guardadas no añade cuerpos, colisiones ni actividad individual al agarre. Las piezas internas recuperan cuerpos al retirarlas. La animación utiliza un número limitado de representaciones temporales y las etiquetas reutilizan sus elementos visuales.
 
-Esto reduce el número de objetos físicos activos en el suelo. El ahorro total depende de la escena, de cuántas piezas se retiren y de los mecanismos que sigan funcionando; no se promete un porcentaje de CPU ni una tasa de FPS. Las mediciones y las comprobaciones del render se documentan por separado en [la evidencia de familias](mediciones/familias-20261122/gles-README.md).
+Esto reduce el número de objetos físicos activos en el suelo. El ahorro total depende de la escena, de cuántas piezas se retiren y de los mecanismos que sigan funcionando; no se promete un porcentaje de CPU ni una tasa de FPS. Las mediciones y las comprobaciones del render se documentan por separado en [la evidencia inicial de familias](mediciones/familias-20261122/gles-README.md) y en [la validación gráfica del agarre](mediciones/familias-agarre-20261123/gles-README.md).

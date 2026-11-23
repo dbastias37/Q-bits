@@ -3,7 +3,7 @@
 const fs=require('node:fs'),path=require('node:path'),createGame=require('./game-harness.cjs');
 const output=process.argv[2]||'/tmp/qbits-families/commands.json',width=Number(process.argv[3])||800,height=Number(process.argv[4])||600;
 const renderBackend=process.env.QBITS_RENDER_BACKEND||'webgl1';
-const constants={VERTEX_SHADER:0x8b31,FRAGMENT_SHADER:0x8b30,COMPILE_STATUS:0x8b81,LINK_STATUS:0x8b82,ARRAY_BUFFER:0x8892,STATIC_DRAW:0x88e4,DYNAMIC_DRAW:0x88e8,FLOAT:0x1406,TRIANGLES:4,LINES:1,DEPTH_TEST:0xb71,BLEND:0xbe2,CULL_FACE:0xb44,COLOR_BUFFER_BIT:0x4000,DEPTH_BUFFER_BIT:0x100,SRC_ALPHA:0x302,ONE_MINUS_SRC_ALPHA:0x303,ONE:1,ZERO:0,LESS:0x201,LEQUAL:0x203,MAX_TEXTURE_SIZE:0xd33,FRAMEBUFFER:0x8d40,TEXTURE0:0x84c0,TEXTURE_2D:0xde1};
+const constants={VERTEX_SHADER:0x8b31,FRAGMENT_SHADER:0x8b30,COMPILE_STATUS:0x8b81,LINK_STATUS:0x8b82,ARRAY_BUFFER:0x8892,STATIC_DRAW:0x88e4,DYNAMIC_DRAW:0x88e8,FLOAT:0x1406,TRIANGLES:4,TRIANGLE_STRIP:5,LINES:1,DEPTH_TEST:0xb71,BLEND:0xbe2,CULL_FACE:0xb44,COLOR_BUFFER_BIT:0x4000,DEPTH_BUFFER_BIT:0x100,SRC_ALPHA:0x302,ONE_MINUS_SRC_ALPHA:0x303,ONE:1,ZERO:0,LESS:0x201,LEQUAL:0x203,MAX_TEXTURE_SIZE:0xd33,MAX_RENDERBUFFER_SIZE:0x84e8,NO_ERROR:0,FRAMEBUFFER:0x8d40,RENDERBUFFER:0x8d41,FRAMEBUFFER_COMPLETE:0x8cd5,DEPTH_COMPONENT16:0x81a5,COLOR_ATTACHMENT0:0x8ce0,DEPTH_ATTACHMENT:0x8d00,TEXTURE0:0x84c0,TEXTURE1:0x84c1,TEXTURE_2D:0xde1,TEXTURE_MIN_FILTER:0x2801,TEXTURE_MAG_FILTER:0x2800,TEXTURE_WRAP_S:0x2802,TEXTURE_WRAP_T:0x2803,LINEAR:0x2601,CLAMP_TO_EDGE:0x812f,RGBA:0x1908,UNSIGNED_BYTE:0x1401};
 let next=0,commands=[],bound=null,current=null,depthWritable=true;
 const locations=new Map(),attributeKeys=new Map(),buffers=new Map(),validation=[];
 let attributes=new Map(),enabled=new Set(),activeArray=null;
@@ -20,11 +20,12 @@ const gl=new Proxy({...constants,...(renderBackend==='webgl2'?vertexArrayAPI:{})
  if(name==='getShaderParameter'||name==='getProgramParameter')return()=>true;
  if(name==='getShaderInfoLog'||name==='getProgramInfoLog')return()=>'';
  if(name==='getError')return()=>0;
+ if(name==='checkFramebufferStatus')return(...args)=>{record(name,args);return constants.FRAMEBUFFER_COMPLETE;};
  if(name==='getParameter')return()=>8192;
  if(name==='getExtension')return name=>name==='OES_vertex_array_object'&&renderBackend==='webgl1-vao'?{createVertexArrayOES:vertexArrayAPI.createVertexArray,bindVertexArrayOES:vertexArrayAPI.bindVertexArray,deleteVertexArrayOES:vertexArrayAPI.deleteVertexArray}:null;
  if(name==='getSupportedExtensions')return()=>[];
  if(name==='isContextLost')return()=>false;
- if(name==='createShader'||name==='createProgram'||name==='createBuffer')return(...args)=>{const id=++next;record(name,[id,...args]);return id;};
+ if(['createShader','createProgram','createBuffer','createTexture','createFramebuffer','createRenderbuffer'].includes(name))return(...args)=>{const id=++next;record(name,[id,...args]);return id;};
  if(name==='getUniformLocation'||name==='getAttribLocation')return(program,key)=>{const signature=program+':'+key;if(name==='getAttribLocation'&&attributeKeys.has(signature))return attributeKeys.get(signature);const id=++next;record(name,[id,program,key]);if(name==='getUniformLocation')locations.set(key,id);else attributeKeys.set(signature,id);return id;};
  if(name==='bindBuffer')return(...args)=>{bound=args[1];record(name,args);};
  if(name==='bufferData')return(...args)=>{buffers.set(bound,args[1].byteLength);record(name,args);};
@@ -43,17 +44,20 @@ const gl=new Proxy({...constants,...(renderBackend==='webgl2'?vertexArrayAPI:{})
 // Expose renderer entry points to this fixture without changing game code or
 // the general harness. The injected object contains references, not substitutes.
 const source=fs.readFileSync(path.join(__dirname,'../assets/js/game.js'),'utf8');
-const gameSource=source.replace(/\}\)\(\);\s*$/, 'window.__familyRender={drawFamilies,drawFamilyGlass,drawFamilyPlacement,familyEffect,familyRefresh,familyEffects};})();');
+const gameSource=source.replace(/\}\)\(\);\s*$/, 'window.__familyRender={drawFamilies,drawFamilyGlass,drawFamilyPlacement,drawGuides,familyEffect,familyRefresh,familyEffects,ensureFocusPass,compositeHeldFocus,focusPass};})();');
 if(gameSource===source)throw Error('Game closure not found');
 const {t,sandbox}=createGame({gl,graphics:false,webgl2:renderBackend==='webgl2',gameSource});
 const render=sandbox.__familyRender;if(!render)throw Error('Missing family render entry points');
+Object.assign(t.canvas,{width,height,clientWidth:width,clientHeight:height});
+render.focusPass.nativeOnly=true;
+if(!render.ensureFocusPass())throw Error('Focus framebuffer setup failed');
 const init=commands;commands=[];const snapshots=[];
 function uniform(name,value){if(!locations.has(name))throw Error('Missing uniform '+name);gl.uniform1f(locations.get(name),value);}
-function lab(){t.clearNarrativeScene();t.clearFamilies();Object.assign(t.story,{ready:true,mode:'playing',scene:'lab',phase:'idle',transition:null});sandbox.document.hidden=false;sandbox.document.body.dataset.booting='false';t.setRunning(true);t.position.splice(0,3,3,1.66,3);}
+function lab(){t.clearNarrativeScene();t.clearFamilies();Object.assign(t.story,{ready:true,mode:'playing',scene:'lab',phase:'idle',transition:null});sandbox.document.hidden=false;sandbox.document.body.dataset.booting='false';sandbox.document.pointerLockElement=t.canvas;t.setRunning(true);t.position.splice(0,3,3,1.66,3);}
 function item(battery=false,level=.75){const id=t.allocateUnitId();return {version:1,groups:[{q:[0,0,0,1],parts:[{id,shape:'cube',weight:1,p:[0,.045,0],q:[0,0,0,1],mood:{name:'Q-bit '+id,energy:level,...(battery?{externalBattery:{version:1,ownerId:id,packId:id,enabled:false}}:{})}}]}],joints:[],sets:[],contacts:{sensors:[],rotors:[]}};}
 function family(color,battery=false,level=.75,count=100){const f=t.createFamily(Array.from({length:count},()=>item(battery,level)),t.V(0,.081,0),{name:battery?'Baterías':'Familia de prueba',color});if(!f)throw Error('Family fixture rejected');if(battery)t.updateBatteryLiquids(1/60);return f;}
 function capture(name,draw,details={},eye=[.30,.23,.48],target=[0,.08,0]){
- commands=[];gl.viewport(0,0,width,height);gl.depthMask(true);gl.enable(gl.DEPTH_TEST);gl.disable(gl.BLEND);gl.disable(gl.CULL_FACE);gl.clearColor(.93,.95,.94,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+ commands=[];gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,width,height);gl.depthMask(true);gl.enable(gl.DEPTH_TEST);gl.disable(gl.BLEND);gl.disable(gl.CULL_FACE);gl.clearColor(.93,.95,.94,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
  const delta=target.map((v,i)=>v-eye[i]),distance=Math.hypot(...delta),yaw=Math.atan2(-delta[0],-delta[2]),pitch=Math.asin(delta[1]/distance);t.setLook({camera:eye,yaw,pitch});
  gl.uniform3fv(locations.get('uCamera'),eye);gl.uniform2f(locations.get('uLook'),yaw,pitch);uniform('uAspect',width/height);uniform('uFocal',1.9);uniform('uFocusMask',0);uniform('uTextureMix',0);uniform('uTextureScale',1);uniform('uWarp',0);uniform('uCel',0);uniform('uJitter',0);uniform('uLighting',.5);uniform('uGlow',0);uniform('uTime',1);
  gl.uniform2f(locations.get('uResolution'),width,height);gl.uniform3fv(locations.get('uLightPos[0]'),Array(12).fill(0));gl.uniform3fv(locations.get('uLightColor[0]'),Array(12).fill(0));
@@ -82,5 +86,37 @@ lab();f=family('#e6bb42',false,.75,100);for(let i=0;i<8;i++)render.familyEffect(
 t.updateFamilies(.05);capture('family-animation-a',draw,{kind:'animation'},[.35,.34,.58],[-.035,.11,-.02]);
 for(let i=0;i<5;i++)t.updateFamilies(.05);capture('family-animation-b',draw,{kind:'animation'},[.35,.34,.58],[-.035,.11,-.02]);
 for(let i=0;i<10;i++)t.updateFamilies(.05);capture('family-animation-complete',draw,{kind:'animation-complete'},[.35,.34,.58],[-.035,.11,-.02]);
+
+// Physical pickup must reuse one shell and protect its whole silhouette from
+// inspection blur. Exercise the actual framebuffer/mask/composite functions.
+lab();f=family('#e6bb42',false,.75,100);
+if(!t.grabFamily({family:f,point:f.body.position.clone(),distance:.35}))throw Error('Physical family pickup failed');
+const held=t.getHeld(),inventoryBefore=JSON.stringify(f.items),bodyCount=t.world.bodies.length;
+for(let i=0;i<30;i++)t.updateHeldFocus(1/60);
+if(!t.heldFocus.active||!t.heldFocus.groups.includes(held.g))throw Error('Held family did not enter the ordinary inspection focus');
+const focusDetails={kind:'held-focus',heldCount:f.count,handAnchors:held.items.length,handConstraints:held.items.filter(item=>item.joint).length};
+function focused(mask=false){
+ gl.bindFramebuffer(gl.FRAMEBUFFER,render.focusPass.scene.framebuffer);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+ draw();render.compositeHeldFocus();
+ if(mask)gl.bindFramebuffer(gl.FRAMEBUFFER,render.focusPass.mask.framebuffer);
+}
+capture('family-held-focus',()=>focused(),focusDetails);
+capture('family-held-focus-mask',()=>focused(true),{...focusDetails,kind:'held-mask'});
+// A solid outer box with both identifying bands is the silhouette reference,
+// independent of its inventory. Shared scene depth must not exclude the bands.
+capture('family-held-mask-reference',()=>{gl.clearColor(0,0,0,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);uniform('uFocusMask',1);t.drawBox(f.body.position,f.body.quaternion,t.V(.15,.15,.15),[1,1,1,1]);for(const y of [-.045,.045])t.drawBox(f.body.position.vadd(t.V(0,y,0)),f.body.quaternion,t.V(.152,.005,.152),[1,1,1,1]);uniform('uFocusMask',0);},{...focusDetails,kind:'held-mask-reference'});
+f.body.position.y=.40;f.body.aabbNeedsUpdate=true;t.keys.add('ControlLeft');t.settings.line='none';t.settings.guide='ghost';
+const ghostEye=[.38,.44,.62],ghostTarget=[0,.21,0];
+capture('family-held-drop-ghost',()=>render.drawGuides(),{...focusDetails,kind:'held-ghost'},ghostEye,ghostTarget);
+const ghostPose=t.poses(held.g,t.V(0,.077,0))[0];
+capture('family-held-drop-reference',()=>{gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);t.drawBox(ghostPose.p,ghostPose.q,t.V(.15,.15,.15),[.14,.3,.31,.18]);gl.depthMask(true);gl.disable(gl.BLEND);},{...focusDetails,kind:'held-ghost-reference'},ghostEye,ghostTarget);
+if(JSON.stringify(f.items)!==inventoryBefore||t.world.bodies.length!==bodyCount||t.groups.length)throw Error('Rendering physical pickup changed stored inventory or bodies');
+t.keys.delete('ControlLeft');t.releaseQubit();
+lab();f=family('#297ee6',true,.75,100);
+if(!t.grabFamily({family:f,point:f.body.position.clone(),distance:.35}))throw Error('Physical battery family pickup failed');
+for(let i=0;i<30;i++)t.updateHeldFocus(1/60);
+capture('family-held-battery-focus',()=>focused(),{...focusDetails,kind:'held-battery-focus'});
+capture('family-held-battery-mask',()=>focused(true),{...focusDetails,kind:'held-battery-mask'});
+t.releaseQubit();
 fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,JSON.stringify({width,height,backend:renderBackend,sourceSha256:require('node:crypto').createHash('sha256').update(source).digest('hex'),init,snapshots,validation}));
 console.log(JSON.stringify({output,frames:snapshots.length,validationErrors:validation.length}));if(validation.length)process.exitCode=1;
