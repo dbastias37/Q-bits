@@ -87,7 +87,8 @@ El [estado del proyecto](docs/ESTADO_PROYECTO.md) concentra lo terminado y el si
 | Dar órdenes y elegir un destino | Menú de clic derecho sobre la pieza y después sobre el suelo |
 | Tomar un grupo seleccionado | Clic derecho → Tomar selección |
 | Agrupar piezas seleccionadas | Clic derecho → Agrupar en familia… |
-| Mover una familia | Clic en el contenedor; rueda gira, clic/E confirma y Escape cancela |
+| Tomar y soltar una familia | Banco: mantener y soltar clic izquierdo. Campaña: clic para tomar y otro para soltar |
+| Posicionar una familia con vista previa | Clic derecho → Colocar familia · guía azul; rueda gira, clic/E confirma y Escape cancela |
 | Retirar contenido de una familia | Clic derecho → Retirar o Desagrupar familia; confirmar la guía azul |
 | Duplicar selección en el laboratorio | V |
 | Elegir Q-bit o T-bit en el laboratorio | Q → Piezas → elegir en el catálogo |
@@ -110,7 +111,9 @@ El panel de pruebas incluye controles adicionales y ajustes del laboratorio. En 
 
 Selecciona piezas o conjuntos y usa **clic secundario → Agrupar en familia…**. Elige un nombre de hasta 40 caracteres y un color, incluido negro. Cada contenedor admite **hasta 100 piezas base**, conserva su inventario y muestra una etiqueta pequeña **×N**. Los módulos cuentan todas sus piezas: un rotor de dos enganches ocupa dos plazas. **Alt → Desarmar en familias** o **clic secundario → Desarmar y agrupar por tipo** recuperan componentes por tipo; **Desarmar en piezas sueltas** mantiene la alternativa anterior.
 
-Haz clic sobre el contenedor para moverlo. Su menú secundario permite retirar un elemento, hasta diez elementos o todo el contenido, renombrarlo, cambiar su color y unirlo con otra familia compatible. La guía es azul cuando cabe y roja cuando está ocupada; **rueda** gira, **clic/E/Enter** confirma y **Escape o clic secundario** cancela. Durante **Mover familia**, **Shift + varias sacudidas** reparte lotes de hasta diez piezas, conservando enteros los módulos que caben. Una familia compuesta solo por baterías muestra su carga con líquido del color elegido.
+Las familias se agarran físicamente como las piezas normales: en el **banco**, mantén **clic izquierdo** y suéltalo para dejarlas; en **campaña**, un clic las toma y otro las suelta. **Rueda** ajusta la distancia y **Shift + WASD** gira. **Clic secundario → Tomar familia** mantiene el agarre hasta el siguiente clic. El contenedor conserva un cuerpo físico y una colisión; la mano solo añade un anclaje y una unión temporales, mientras las piezas internas siguen almacenadas como datos.
+
+El menú secundario permite **Colocar familia · guía azul**, retirar un elemento, hasta diez elementos o todo el contenido, renombrarla, cambiar su color y unirla con otra familia compatible. En la vista previa, **azul** indica espacio válido y **rojo** un obstáculo; **rueda** gira, **clic/E/Enter** confirma y **Escape o clic secundario** cancela. **Shift + varias sacudidas**, al sostener la familia o usar su guía de colocación, reparte lotes de hasta diez piezas, conservando enteros los módulos que caben. Una familia compuesta solo por baterías muestra su carga con líquido del color elegido.
 
 El banco guarda el contenido, los nombres, los colores y las posiciones de las familias. La campaña mantiene su **punto de control por nivel** y reconstruye la escena al continuar. Consulta [Familias Q-bits](docs/FAMILIAS_QBITS.md) para los límites, la diferencia entre piezas y elementos y la recuperación de contenido.
 

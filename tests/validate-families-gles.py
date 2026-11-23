@@ -5,6 +5,7 @@ This validates GLSL, draw commands and rendered pixels, not browser input or UI.
 """
 import ctypes as C
 import gzip, hashlib, json, subprocess, sys, struct, zlib, os
+from collections import Counter
 from pathlib import Path
 OUT=Path(sys.argv[1]) if len(sys.argv)>1 else Path('/tmp/qbits-families')
 OUT.mkdir(parents=True,exist_ok=True)
@@ -38,17 +39,22 @@ signatures={
  'createShader':(U,U),'createProgram':(U,),
  'compileShader':(None,U),'attachShader':(None,U,U),'linkProgram':(None,U),
  'bindBuffer':(None,U,U),'useProgram':(None,U),'bindVertexArray':(None,U),
+ 'bindTexture':(None,U,U),'bindFramebuffer':(None,U,U),'bindRenderbuffer':(None,U,U),
+ 'activeTexture':(None,U),'texParameteri':(None,U,U,I),'texImage2D':(None,U,I,I,I,I,I,U,U,P),
+ 'renderbufferStorage':(None,U,U,I,I),'framebufferTexture2D':(None,U,U,U,U,I),
+ 'framebufferRenderbuffer':(None,U,U,U,U),'checkFramebufferStatus':(U,U),
  'getAttribLocation':(I,U,C.c_char_p),'getUniformLocation':(I,U,C.c_char_p),
  'enableVertexAttribArray':(None,U),'disableVertexAttribArray':(None,U),
  'vertexAttribPointer':(None,U,I,U,C.c_ubyte,I,P),
- 'uniform1f':(None,I,F),'uniform2f':(None,I,F,F),'uniform3f':(None,I,F,F,F),'uniform4f':(None,I,F,F,F,F),
+ 'uniform1f':(None,I,F),'uniform1i':(None,I,I),'uniform2f':(None,I,F,F),'uniform3f':(None,I,F,F,F),'uniform4f':(None,I,F,F,F,F),
  'viewport':(None,I,I,I,I),'clearColor':(None,F,F,F,F),'clear':(None,U),
- 'enable':(None,U),'disable':(None,U),'depthMask':(None,C.c_ubyte),'blendFunc':(None,U,U),
+ 'enable':(None,U),'disable':(None,U),'depthMask':(None,C.c_ubyte),'depthFunc':(None,U),'blendFunc':(None,U,U),
  'drawArrays':(None,U,I,I),
 }
 for name,(result,*args) in signatures.items():functions[name]=gl('gl'+name[0].upper()+name[1:],result,*args)
 shaderSource=gl('glShaderSource',None,U,I,C.POINTER(C.c_char_p),C.POINTER(I))
 genBuffers=gl('glGenBuffers',None,I,C.POINTER(U))
+genObjects={name:gl('glGen'+name+'s',None,I,C.POINTER(U)) for name in ['Texture','Framebuffer','Renderbuffer']}
 genVertexArrays=gl('glGenVertexArrays',None,I,C.POINTER(U))
 deleteVertexArrays=gl('glDeleteVertexArrays',None,I,C.POINTER(U))
 bufferData=gl('glBufferData',None,U,C.c_ssize_t,P,U)
@@ -67,6 +73,8 @@ def replay(command):
   key=args.pop(0);handles[key]=functions[name](*args)
  elif name=='createBuffer':
   b=U();genBuffers(1,C.byref(b));handles[args[0]]=b.value
+ elif name in ('createTexture','createFramebuffer','createRenderbuffer'):
+  b=U();genObjects[name[6:]](1,C.byref(b));handles[args[0]]=b.value
  elif name=='createVertexArray':
   b=U();genVertexArrays(1,C.byref(b));handles[args[0]]=b.value
  elif name=='deleteVertexArray':
@@ -88,14 +96,16 @@ def replay(command):
  else:
   if name in ('compileShader','linkProgram','useProgram'):args[0]=handles[args[0]]
   elif name=='attachShader':args=[handles[x] for x in args]
-  elif name=='bindBuffer':args[1]=handles[args[1]]
+  elif name in ('bindBuffer','bindTexture','bindFramebuffer','bindRenderbuffer'):args[1]=handles[args[1]] if args[1] is not None else 0
+  elif name in ('framebufferTexture2D','framebufferRenderbuffer'):args[3]=handles[args[3]] if args[3] is not None else 0
   elif name=='bindVertexArray':args[0]=handles[args[0]] if args[0] is not None else 0
   elif name.startswith('uniform'):args[0]=locations[args[0]]
   elif name in ('enableVertexAttribArray','disableVertexAttribArray','vertexAttribPointer'):
    args[0]=attributeLocations[args[0]]
    if name=='vertexAttribPointer':args[-1]=P(args[-1])
   if name not in functions:raise RuntimeError('Unimplemented '+name)
-  functions[name](*args)
+  value=functions[name](*args)
+  if name=='checkFramebufferStatus':assert value==0x8cd5,('incomplete framebuffer',hex(value))
   if name in ('compileShader','linkProgram'):
    status=I();log=C.create_string_buffer(8192)
    if name=='compileShader':getShader(args[0],0x8b81,C.byref(status));shaderLog(args[0],len(log),None,log);compiled+=1
@@ -129,7 +139,9 @@ for shot in data['snapshots']:
  assert shot['effects']<=16,(shot['name'],'visual effect budget exceeded')
  assert len(shot['liquids'])==sum(f['battery'] for f in shot['inventory']),(shot['name'],'liquid vessel count differs from battery families')
  assert all(len(liquid['partIds'])==1 for liquid in shot['liquids']),(shot['name'],'internal battery pieces became individual liquid vessels')
- if shot['kind'] in ('shell','battery','occlusion','animation','animation-complete'):assert shot['livePieces']==0,(shot['name'],'stored pieces materialized during rendering')
+ if shot['kind'] in ('shell','battery','occlusion','animation','animation-complete') or shot['kind'].startswith('held-'):assert shot['livePieces']==0,(shot['name'],'stored pieces materialized during rendering')
+ if shot['kind'].startswith('held-'):
+  assert shot['heldCount']==100 and shot['handAnchors']==1 and shot['handConstraints']==1,(shot['name'],'physical hand materialized inventory')
  results.append({key:shot[key] for key in ['name','kind','inventory','liquids','familyBodies','livePieces','effects']}|{'foregroundPixels':foreground,'bluePixels':blue,'redPixels':red,'greenPixels':green,'cyanPixels':cyan,'yellowPixels':yellow,'darkPixels':dark,'drawCalls':sum(command[0]=='drawArrays' for command in shot['commands']),'rgbaSha256':hashlib.sha256(raw).hexdigest(),'png':shot['name']+'.png'})
 by_name={result['name']:result for result in results}
 assert by_name['family-black']['darkPixels']>1000,'black family missing'
@@ -159,8 +171,26 @@ assert by_name['family-placement-blocked']['redPixels']>by_name['family-placemen
 assert by_name['family-placement-blocked']['cyanPixels']==0,'blocked guide retains the valid blue tint'
 assert all_pixels['family-animation-a']!=all_pixels['family-animation-b'],'grouping animation frames do not change'
 assert by_name['family-animation-complete']['effects']==0,'animation did not release temporary pieces'
+mask=all_pixels['family-held-focus-mask'];reference=all_pixels['family-held-mask-reference']
+mask_pixels={i for i in range(W*H) if mask[i*4]>240}
+reference_pixels={i for i in range(W*H) if reference[i*4]>240}
+assert len(mask_pixels)>1000,'held family missing from production foreground mask'
+coverage=len(mask_pixels&reference_pixels)/len(reference_pixels)
+assert mask==reference,('held family mask misses its outer shell or identifying bands',coverage)
+assert all_pixels['family-held-drop-ghost']==all_pixels['family-held-drop-reference'],'Ctrl ghost differs from the actual 15 cm family box'
+focus=all_pixels['family-held-focus'];unfocused=all_pixels['family-yellow']
+foreground_error=max(abs(focus[i*4+c]-unfocused[i*4+c]) for i in mask_pixels for c in range(3))
+assert foreground_error<=1,('inspection blurs the held family',foreground_error)
+shell_color=Counter(tuple(unfocused[i*4:i*4+3]) for i in reference_pixels).most_common(1)[0][0]
+shell_pixels={i for i in reference_pixels if tuple(unfocused[i*4:i*4+3])==shell_color}
+band_pixels=reference_pixels-shell_pixels
+assert band_pixels and band_pixels<=mask_pixels,'identifying bands remain outside the inspection mask'
+assert all_pixels['family-held-battery-mask']==reference,'battery family inspection mask differs from its whole shell'
+battery_focus=all_pixels['family-held-battery-focus'];battery_unfocused=all_pixels['family-battery-blue-75']
+battery_error=max(abs(battery_focus[i*4+c]-battery_unfocused[i*4+c]) for i in mask_pixels for c in range(3))
+assert battery_error<=1,('inspection blurs the held battery family',battery_error)
 assert not data['validation'],'invalid attributes or depth clear'
-summary={'backend':data['backend'],'sourceSha256':data['sourceSha256'],'graphics':graphics,'width':W,'height':H,'compiledShaders':compiled,'linkedPrograms':linked,'gpuErrors':0,'browserValidated':False,'uiDomValidated':False,'snapshots':results}
+summary={'backend':data['backend'],'sourceSha256':data['sourceSha256'],'graphics':graphics,'width':W,'height':H,'compiledShaders':compiled,'linkedPrograms':linked,'gpuErrors':0,'browserValidated':False,'uiDomValidated':False,'heldMaskCoverage':coverage,'heldMaskShellPixels':len(shell_pixels),'heldMaskBandPixels':len(band_pixels),'heldForegroundMaxError':foreground_error,'heldBatteryMaxError':battery_error,'heldGhostMatches15cmBox':True,'snapshots':results}
 (OUT/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')
 (OUT/'commands.json.gz').write_bytes(gzip.compress((OUT/'commands.json').read_bytes(),mtime=0))
 (OUT/'commands.json').unlink()

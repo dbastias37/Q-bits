@@ -1,8 +1,28 @@
 # Q-bits — punto de continuación
 
-Actualizado: 22 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
+Actualizado: 23 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Entrega actual · familias para organizar y recuperar piezas
+## Entrega actual · agarrar las familias como cubos normales
+
+Referencia de integración: `a0477707a03ca1ed2ca006a628c716d70e3f5175`, merge del PR #34. Versión de carga `20261123-family-grab-1`. Entrega en el [PR #35](https://github.com/dbastias37/Q-bits/pull/35), que conserva la revisión y el commit exactos de integración.
+
+El clic principal ahora conecta el contenedor al mismo sistema de mano física de los cubos. En el banco se mantiene el botón izquierdo para sostenerlo y se suelta para dejarlo; en campaña se toma con un clic y se suelta con otro. **Tomar familia** en el menú secundario permite llevarla hasta el siguiente clic. La rueda ajusta la distancia, **Shift + WASD** gira y **Ctrl** muestra la caída prevista con las dimensiones exteriores correctas. Se conserva el nombre y **×N** en el indicador inferior. La explicación existente del NPC incluye el agarre normal.
+
+La familia mantiene un cuerpo físico y una sola forma de colisión. La mano añade un anclaje y una restricción temporales, como en las piezas normales; al soltar retira ambos. El proxy de agarre queda fuera de los grupos de piezas y no activa ni recorre el inventario. Todo el peso guardado cuenta para la capacidad manual. Movimiento, rotación, barrido contra obstáculos, suelo y mesas usan la caja exterior de 15 cm; las familias también obstaculizan el agarre de cubos normales. La pausa conserva el agarre congelado y permite retomarlo según las reglas existentes.
+
+La guía permanece en **Colocar familia · guía azul** y en las opciones de retirada. Unir familias sigue siendo una operación explícita. **Shift + varias sacudidas** funciona desde el agarre físico y desde la guía; libera la mano antes de repartir lotes. Retirar o unir inventario mientras está sostenido queda bloqueado para conservar la materia y los anclajes. La familia visible tiene prioridad sobre el menú remoto de un dron situado detrás.
+
+El enfoque de inspección protege la carcasa, sus dos bandas y, en baterías, las tapas exactas. Las pruebas de píxeles detectaron bandas desenfocadas y tres píxeles de borde de una tapa; se corrigieron reproduciendo esa geometría en la máscara, sin ampliar su silueta hacia el fondo. El cambio no añade simulación interna.
+
+Guía vigente: [Familias Q-bits](FAMILIAS_QBITS.md). Evidencia y reproducción de este ajuste: [Agarre de familias](mediciones/familias-agarre-20261123/README.md).
+
+Validación: **1.347 pruebas globales** y **49 dirigidas**, incluidas 19 nuevas de agarre. Se comprueban cero lecturas del inventario y de sus estados internos al tomar, simular y soltar, sin materializar piezas. Las capturas EGL/GLES pasan **25 escenas por ruta**, 50 PNG y cero errores GL; los 25 pares WebGL 1/2 son idénticos y las 18 escenas anteriores mantienen sus píxeles. Pasa también el validador general de foco y postproceso. Fuente final `game.js` SHA-256 `c6eb37fc126a165a3b774a157aac392ef23cb4d23b5bd7e1418953cdf8bbb2e0`.
+
+En tres repeticiones alternadas de agarre, la mediana de CPU por frame sintético de un cubo de igual masa frente a una familia pasa de **0,25962 a 0,15097 ms** con diez piezas almacenadas y de **0,18650 a 0,17371 ms** con cien. La pared p95 empeora ligeramente: **0,17511 a 0,18232 ms** y **0,17090 a 0,18035 ms**, respectivamente. Se mantienen ocho cuerpos del fixture (seis fijos, contenedor y mano), una forma exterior y una restricción. Se mide simulación con Cannon, sin render, GPU ni FPS; no es otra medición de ahorro contra cientos de cubos sueltos.
+
+**Punto de continuación vigente:** comprobar la interacción completa en un navegador habilitado y con escenas del usuario. Las verificaciones automáticas de lógica, física y render GLES se distinguen de una partida de navegador; no atribuir FPS ni otro porcentaje global de CPU a este ajuste. Mantener la simulación interna de las familias inactiva hasta retirar contenido.
+
+## Entrega anterior · familias para organizar y recuperar piezas
 
 Referencia de integración: `f045a96e812c1142f77008b0a113debb994b91bb`, merge del PR #33. Familias implementadas y verificadas con versión de carga `20261122-families-1`. Entrega en el [PR #34](https://github.com/dbastias37/Q-bits/pull/34), que conserva la revisión y el commit exactos de integración.
 
@@ -28,7 +48,7 @@ En tres repeticiones alternadas con dos pasos de física a 120 Hz por frame sint
 
 Preparar 2.000 piezas sueltas requiere una mediana de **192,95 ms de trabajo repartido en 54 avances**, con un tramo máximo observado de **19,916 ms**; desarmar un compuesto de 2.000 requiere **174,99 ms en 26 avances**, con pico de **13,236 ms**. El presupuesto de cuatro milisegundos es un objetivo, no un techo: la validación de un lote y la transferencia final son indivisibles. El número de avances medidos consecutivamente no representa duración ni FPS de navegador. [Datos, costes y reproducción](mediciones/familias-20261122/benchmark-README.md).
 
-**Punto de continuación vigente:** probar la interacción visual de editor, etiquetas, HUD y captura de mouse en un navegador habilitado, y ajustar la experiencia con escenas reales del usuario. Chromium no pudo crear sockets en este entorno; la lógica y el render GLES sí están verificados por separado. No ampliar capacidades ni atribuir FPS o un porcentaje global de CPU a estas mediciones. Si se modifica `game.js`, regenerar evidencia sobre esa fuente antes de presentarla como verificada.
+**Continuación registrada en aquella entrega (histórica):** probar la interacción visual de editor, etiquetas, HUD y captura de mouse en un navegador habilitado, y ajustar la experiencia con escenas reales del usuario. Chromium no pudo crear sockets en este entorno; la lógica y el render GLES sí están verificados por separado. No ampliar capacidades ni atribuir FPS o un porcentaje global de CPU a estas mediciones. Si se modifica `game.js`, regenerar evidencia sobre esa fuente antes de presentarla como verificada.
 
 ## Entrega anterior · consultas geométricas sólo cuando existen botones de presión
 

@@ -1,0 +1,62 @@
+{
+  "capturedAt": "2026-11-23T04:27:33.745602+00:00",
+  "node": "v24.22.3",
+  "sourceSha256": "c6eb37fc126a165a3b774a157aac392ef23cb4d23b5bd7e1418953cdf8bbb2e0",
+  "filesSha256": {
+    "assets/js/game.js": "c6eb37fc126a165a3b774a157aac392ef23cb4d23b5bd7e1418953cdf8bbb2e0",
+    "assets/js/families.js": "5bf27891ca4cec8defdecd9ee5b1c8397af119042917a3e24268730339efda7e",
+    "tests/game-harness.cjs": "e0330c0873ad8decfaa044860a9a5ba253642f6d2c6211c9466faf3a97085e63",
+    "tests/family-grab.test.cjs": "b9e22f50ae4662bed6f8a99659d6a8b7b50873b82835bb38e5f62cd2af0f36e1",
+    "tests/benchmark-family-grab.cjs": "54762b353465232be6d9d998ae1bba844c3f53fe8e39f322b4f2f2337478fe45"
+  },
+  "scope": "Real game handlers and Cannon physics using the project harness; DOM and WebGL simulated. This suite does not certify a browser play session or rendered appearance. Separate GLES evidence covers rendering.",
+  "environmentNote": "The first global attempt could not load tracked audio manifests omitted by sparse checkout. Existing footsteps, guide dialogue and join audio directories were included from HEAD without changing repository content. Their 17 tests passed, then the global suite was repeated.",
+  "runs": {
+    "global": {
+      "command": "node --test --test-reporter=tap tests/*.test.cjs",
+      "tap": "validation-global.tap.gz",
+      "tapSha256": "9930347882ee5d55d93931232e5abb0544780a38d81973f9cd63a137cf59f3af",
+      "tests": 1347,
+      "pass": 1347,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 52272.74361,
+      "initialSourceSha256": "c6eb37fc126a165a3b774a157aac392ef23cb4d23b5bd7e1418953cdf8bbb2e0",
+      "finalSourceSha256": "c6eb37fc126a165a3b774a157aac392ef23cb4d23b5bd7e1418953cdf8bbb2e0",
+      "sourceChangedDuringRun": false,
+      "note": "Final global run after the source was frozen. Game, model, harness, new regression tests and benchmark instrument hashes checked before and after."
+    },
+    "targeted": {
+      "command": "node --test --test-reporter=tap tests/family-grab.test.cjs tests/families-integration.test.cjs tests/family-sets.test.cjs",
+      "tap": "validation-targeted.tap.gz",
+      "tapSha256": "78613f723ffbb1cf847e86a2ff64d280f33f7f4c6cb57c89a8a053b0d568dc34",
+      "tests": 49,
+      "pass": 49,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 3503.451432,
+      "sourceSha256": "c6eb37fc126a165a3b774a157aac392ef23cb4d23b5bd7e1418953cdf8bbb2e0",
+      "newFamilyGrabTests": 19
+    }
+  },
+  "priorGlobalDuringSourceChange": {
+    "command": "node --test --test-reporter=tap tests/*.test.cjs",
+    "tap": "validation-global-transition.tap.gz",
+    "tapSha256": "214625b10dd8de4ad188b799ebeb7a9313653fcd1d2ee3cd264e15b05bda1930",
+    "tests": 1347,
+    "pass": 1347,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "durationMs": 51850.200195,
+    "initialSourceSha256": "a19d0fad0172ed1835c33c56db2bbf356a854163e4ecbd053e146e26923ec55e",
+    "finalSourceSha256": "c6eb37fc126a165a3b774a157aac392ef23cb4d23b5bd7e1418953cdf8bbb2e0",
+    "sourceChangedDuringRun": true,
+    "note": "During the global suite, two exact battery-cap mask draws were added to focus rendering. No grab/physics behavior changed. This run is not certified as an immutable capture of one source hash; the targeted suite, benchmark and final GLES capture were repeated after the final source was frozen."
+  }
+}

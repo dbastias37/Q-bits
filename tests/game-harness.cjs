@@ -96,6 +96,7 @@ module.exports = function createGame(options = {}) {
   if (fs.existsSync(gameFile)) scripts.splice(scripts.length-1,0,fs.readFileSync(path.join(root,'assets/js/save-games.js'),'utf8'));
   const hook = `window.__testGame={
     ...(typeof groupIntoFamilies==='function'?{families,createFamily,groupIntoFamilies,familyInventoryCount,serializeFamilies,restoreFamilies,splitFamily,mergeFamilies,beginFamilyPlacement,updateFamilyPlacement,confirmFamilyPlacement,cancelFamilyPlacement,getFamilyPlacement:()=>familyPlacement,updateFamilies,clearFamilies,openFamilyMenu,drawFamilies,drawFamilyGlass,drawFamilyPlacement,familyEffects}:{}),
+    ...(typeof grabFamily==='function'?{grabFamily,removeFamily,aimFamily}:{}),
     ...(typeof startFamilyGrouping==='function'?{startFamilyGrouping,advanceFamilyGrouping,cancelFamilyGrouping,getFamilyGroupingJob:()=>familyGroupingJob}:{}),
     saveStore,saveSession,saveCurrentGame,continueSavedGame,newSavedGame,showSavedGames,refreshSavedGames,requestNewSavedGame,closeSavedGames,autosaveGame,
     getPhysicsStep:()=>FIXED_STEP,

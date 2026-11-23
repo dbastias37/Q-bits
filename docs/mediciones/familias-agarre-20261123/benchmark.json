@@ -1,0 +1,315 @@
+{
+  "capturedAt": "2026-11-23T04:23:28.152Z",
+  "sourceSha256": "c6eb37fc126a165a3b774a157aac392ef23cb4d23b5bd7e1418953cdf8bbb2e0",
+  "supportingSources": {
+    "harness": "e0330c0873ad8decfaa044860a9a5ba253642f6d2c6211c9466faf3a97085e63",
+    "families": "5bf27891ca4cec8defdecd9ee5b1c8397af119042917a3e24268730339efda7e"
+  },
+  "node": "v24.22.3",
+  "cpu": "AMD EPYC 9V74 80-Core Processor",
+  "repetitions": 3,
+  "warmupFrames": 120,
+  "measuredFrames": 240,
+  "physicsHz": 120,
+  "scope": "Current game with one physically held ordinary cube versus one family containing 10 or 100 pieces. Both controls have the same aggregate mass, one dynamic shape, one hand anchor and one constraint; ordinary cube geometry is 9 cm and family shell 15 cm. Two simulation substeps (real Cannon and the game's normal logic cadence) per synthetic frame plus family animation update. DOM/GPU simulated. Setup/packing excluded. Zero inventory or stored mood reads checked through pickup, simulation and release; inventory unchanged after release. No browser FPS, rendering or GPU measurement.",
+  "results": [
+    {
+      "count": 10,
+      "median": {
+        "cube": {
+          "cpuMsPerFrame": 0.2596208333333333,
+          "wallP50": 0.10232200000007197,
+          "wallP95": 0.17511100000001534,
+          "bodies": 8,
+          "constraints": 1,
+          "storedStateReads": 0,
+          "inventoryReads": 0
+        },
+        "family": {
+          "cpuMsPerFrame": 0.15097083333333333,
+          "wallP50": 0.08515699999998105,
+          "wallP95": 0.18232100000000173,
+          "bodies": 8,
+          "constraints": 1,
+          "storedStateReads": 0,
+          "inventoryReads": 0
+        }
+      },
+      "runs": {
+        "cube": [
+          {
+            "mode": "cube",
+            "count": 10,
+            "mass": 2.5,
+            "cpuMsPerFrame": 0.31525833333333336,
+            "wallMsPerFrame": {
+              "p50": 0.1273999999999944,
+              "p95": 0.2836330000000089,
+              "max": 0.8944610000000353
+            },
+            "physicsSteps": 480,
+            "simulatedSeconds": 4.000000000000092,
+            "bodies": 8,
+            "shapes": 1,
+            "constraints": 1,
+            "liveGroups": 1,
+            "storedPieces": 0,
+            "storedStateReads": 0,
+            "inventoryReads": 0
+          },
+          {
+            "mode": "cube",
+            "count": 10,
+            "mass": 2.5,
+            "cpuMsPerFrame": 0.14809166666666668,
+            "wallMsPerFrame": {
+              "p50": 0.09409999999991214,
+              "p95": 0.17511100000001534,
+              "max": 0.8926579999999831
+            },
+            "physicsSteps": 480,
+            "simulatedSeconds": 4.000000000000092,
+            "bodies": 8,
+            "shapes": 1,
+            "constraints": 1,
+            "liveGroups": 1,
+            "storedPieces": 0,
+            "storedStateReads": 0,
+            "inventoryReads": 0
+          },
+          {
+            "mode": "cube",
+            "count": 10,
+            "mass": 2.5,
+            "cpuMsPerFrame": 0.2596208333333333,
+            "wallMsPerFrame": {
+              "p50": 0.10232200000007197,
+              "p95": 0.1608090000000857,
+              "max": 1.1549679999999398
+            },
+            "physicsSteps": 480,
+            "simulatedSeconds": 4.000000000000092,
+            "bodies": 8,
+            "shapes": 1,
+            "constraints": 1,
+            "liveGroups": 1,
+            "storedPieces": 0,
+            "storedStateReads": 0,
+            "inventoryReads": 0
+          }
+        ],
+        "family": [
+          {
+            "mode": "family",
+            "count": 10,
+            "mass": 2.5,
+            "cpuMsPerFrame": 0.13021666666666668,
+            "wallMsPerFrame": {
+              "p50": 0.08381400000001804,
+              "p95": 0.1393370000000118,
+              "max": 0.5181610000000205
+            },
+            "physicsSteps": 480,
+            "simulatedSeconds": 4.000000000000092,
+            "bodies": 8,
+            "shapes": 1,
+            "constraints": 1,
+            "liveGroups": 0,
+            "storedPieces": 10,
+            "storedStateReads": 0,
+            "inventoryReads": 0
+          },
+          {
+            "mode": "family",
+            "count": 10,
+            "mass": 2.5,
+            "cpuMsPerFrame": 0.15097083333333333,
+            "wallMsPerFrame": {
+              "p50": 0.08515699999998105,
+              "p95": 0.18232100000000173,
+              "max": 0.9161440000000312
+            },
+            "physicsSteps": 480,
+            "simulatedSeconds": 4.000000000000092,
+            "bodies": 8,
+            "shapes": 1,
+            "constraints": 1,
+            "liveGroups": 0,
+            "storedPieces": 10,
+            "storedStateReads": 0,
+            "inventoryReads": 0
+          },
+          {
+            "mode": "family",
+            "count": 10,
+            "mass": 2.5,
+            "cpuMsPerFrame": 0.2495,
+            "wallMsPerFrame": {
+              "p50": 0.11915699999997287,
+              "p95": 0.4389740000000302,
+              "max": 1.5353140000000849
+            },
+            "physicsSteps": 480,
+            "simulatedSeconds": 4.000000000000092,
+            "bodies": 8,
+            "shapes": 1,
+            "constraints": 1,
+            "liveGroups": 0,
+            "storedPieces": 10,
+            "storedStateReads": 0,
+            "inventoryReads": 0
+          }
+        ]
+      }
+    },
+    {
+      "count": 100,
+      "median": {
+        "cube": {
+          "cpuMsPerFrame": 0.18649583333333333,
+          "wallP50": 0.09577200000012454,
+          "wallP95": 0.17090400000006412,
+          "bodies": 8,
+          "constraints": 1,
+          "storedStateReads": 0,
+          "inventoryReads": 0
+        },
+        "family": {
+          "cpuMsPerFrame": 0.17370833333333333,
+          "wallP50": 0.08665900000005422,
+          "wallP95": 0.18034799999986717,
+          "bodies": 8,
+          "constraints": 1,
+          "storedStateReads": 0,
+          "inventoryReads": 0
+        }
+      },
+      "runs": {
+        "cube": [
+          {
+            "mode": "cube",
+            "count": 100,
+            "mass": 25,
+            "cpuMsPerFrame": 0.263125,
+            "wallMsPerFrame": {
+              "p50": 0.10638799999992443,
+              "p95": 0.17090400000006412,
+              "max": 1.8540189999999939
+            },
+            "physicsSteps": 480,
+            "simulatedSeconds": 4.000000000000092,
+            "bodies": 8,
+            "shapes": 1,
+            "constraints": 1,
+            "liveGroups": 1,
+            "storedPieces": 0,
+            "storedStateReads": 0,
+            "inventoryReads": 0
+          },
+          {
+            "mode": "cube",
+            "count": 100,
+            "mass": 25,
+            "cpuMsPerFrame": 0.18649583333333333,
+            "wallMsPerFrame": {
+              "p50": 0.09577200000012454,
+              "p95": 0.22081900000011956,
+              "max": 1.5406920000000355
+            },
+            "physicsSteps": 480,
+            "simulatedSeconds": 4.000000000000092,
+            "bodies": 8,
+            "shapes": 1,
+            "constraints": 1,
+            "liveGroups": 1,
+            "storedPieces": 0,
+            "storedStateReads": 0,
+            "inventoryReads": 0
+          },
+          {
+            "mode": "cube",
+            "count": 100,
+            "mass": 25,
+            "cpuMsPerFrame": 0.1607375,
+            "wallMsPerFrame": {
+              "p50": 0.09559199999989687,
+              "p95": 0.15044399999987945,
+              "max": 1.3665529999998398
+            },
+            "physicsSteps": 480,
+            "simulatedSeconds": 4.000000000000092,
+            "bodies": 8,
+            "shapes": 1,
+            "constraints": 1,
+            "liveGroups": 1,
+            "storedPieces": 0,
+            "storedStateReads": 0,
+            "inventoryReads": 0
+          }
+        ],
+        "family": [
+          {
+            "mode": "family",
+            "count": 100,
+            "mass": 25,
+            "cpuMsPerFrame": 0.16368749999999999,
+            "wallMsPerFrame": {
+              "p50": 0.08531699999980447,
+              "p95": 0.14559600000006867,
+              "max": 2.389656000000059
+            },
+            "physicsSteps": 480,
+            "simulatedSeconds": 4.000000000000092,
+            "bodies": 8,
+            "shapes": 1,
+            "constraints": 1,
+            "liveGroups": 0,
+            "storedPieces": 100,
+            "storedStateReads": 0,
+            "inventoryReads": 0
+          },
+          {
+            "mode": "family",
+            "count": 100,
+            "mass": 25,
+            "cpuMsPerFrame": 0.18324583333333333,
+            "wallMsPerFrame": {
+              "p50": 0.0875900000000911,
+              "p95": 0.2041239999998652,
+              "max": 3.073133999999982
+            },
+            "physicsSteps": 480,
+            "simulatedSeconds": 4.000000000000092,
+            "bodies": 8,
+            "shapes": 1,
+            "constraints": 1,
+            "liveGroups": 0,
+            "storedPieces": 100,
+            "storedStateReads": 0,
+            "inventoryReads": 0
+          },
+          {
+            "mode": "family",
+            "count": 100,
+            "mass": 25,
+            "cpuMsPerFrame": 0.17370833333333333,
+            "wallMsPerFrame": {
+              "p50": 0.08665900000005422,
+              "p95": 0.18034799999986717,
+              "max": 3.7230200000001332
+            },
+            "physicsSteps": 480,
+            "simulatedSeconds": 4.000000000000092,
+            "bodies": 8,
+            "shapes": 1,
+            "constraints": 1,
+            "liveGroups": 0,
+            "storedPieces": 100,
+            "storedStateReads": 0,
+            "inventoryReads": 0
+          }
+        ]
+      }
+    }
+  ]
+}
