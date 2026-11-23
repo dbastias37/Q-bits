@@ -2,7 +2,23 @@
 
 Actualizado: 23 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Corrección actual · cubos de trayectoria sin gestos emocionales
+## Entrega actual · identidades explícitas y circuitos ortogonales
+
+Base de la corrección: `f0ecff1f8f90ea2bccd1dfcb1d3230ec8c7fe247`, integración del PR #38. Versión de carga: `20261123-trajectory-circuits-1`.
+
+El ensayo real del taller y runtime confirma 144 inicios con IDs y caras distintos; el intento 145 informa que el catálogo está agotado. No existía un límite de cuatro. La interfaz ahora distingue **Generar cara nueva**, **Vincular como fin** y **Cambiar cara de la pareja**, muestra las caras disponibles y no ofrece cambiar una cara inexistente. Un receptor explica que sigue una identidad ya creada. Si cambia la pieza objetivo del taller mientras estaba elegida una adaptación de baliza o receptor, se descarta esa elección y se exige elegir para la nueva pieza. La aplicación sigue siendo explícita. Crear otra identidad no empareja cubos ni modifica parejas existentes.
+
+`route-geometry.js` comparte la regla de codos **X → Z → Y** entre cables y trayectorias. Conserva anclas y apoyos exactos, con tolerancia de ruido de 1e-6, y no añade redondeo métrico global. La retícula de rodado de cubos sigue siendo relativa a su propio origen. El runtime conserva hasta 48 puntos del jugador y deriva hasta 142 vértices para representar y seguir todos los codos. La vista previa, el mapa, el alcance y los controles físicos usan esa misma geometría. Las acciones permanecen en sus destinos originales; los codos no duplican esperas, aterrizajes ni entregas.
+
+Los vehículos frenan ante cambios de eje; las ruedas se orientan mediante tracción diferencial y el vuelo se estabiliza en los codos. El dron conserva su configuración editable de 48 puntos y utiliza la expansión únicamente en su viaje activo. Ida y vuelta invierte el mismo circuito. Mover las balizas, guardar/cargar y pausar mantienen las reglas físicas existentes. Una ruta antigua cuyo trazado ortogonal exceda el alcance queda detenida y editable, con sus puntos y acciones conservados.
+
+La geometría se compila al cambiar la ruta o el borrador y se reutilizan los buffers. Se mantienen la observación de balizas despiertas y la guía activa a 20 Hz. Esta entrega no introduce búsqueda automática de desvíos ni una nueva medición de FPS o CPU.
+
+**Verificación:** 1.504 pruebas globales aprobadas, sin fallos, canceladas ni omitidas; 36 casos nuevos respecto de `main`. Hay ensayos del catálogo de 144 caras, intento 145, enlace con catálogo lleno, liberación y guardado; también cuarto/quinto cubo, cambio de objetivo del taller y mapa con codos. Los ensayos Cannon cubren giro de 90°, tramo de 3 cm, anclas casi alineadas, obstáculo físico en el segundo eje e ida/vuelta con ruedas. Las tolerancias de esos dos recorridos son menores de 9 cm y 15 cm respectivamente: no se presenta la guía como un riel exacto. El vuelo recorre esquinas horizontales y verticales, conserva acciones coincidentes y guarda 48 puntos de autor con 141 vértices derivados, recargando pausado en vuelo estacionario con consumo. El viaje compilado no se serializa como una ruta manual. Pasa el validador general de shaders/foco/postproceso en EGL/GLES. Los tests de Node usan DOM y llamadas de GPU instrumentadas; no se ha certificado una partida en navegador.
+
+**Punto de continuación:** comprobar en la escena del jugador la preparación consecutiva de balizas y receptores, el dibujo por los ejes y el giro de sus mecanismos. La línea marca el recorrido del chasis; su volumen, inercia y radio de giro siguen requiriendo espacio. Se conserva la diferencia entre ensayos de lógica/física, validación GLES y una partida en navegador.
+
+## Corrección anterior · cubos de trayectoria sin gestos emocionales
 
 Base de la corrección: `1a809c1da1c087147e22ef17e5a6e8759d57ac23`, integración del PR #37. Versión de carga: `20261123-trajectory-rigid-moods-1`.
 

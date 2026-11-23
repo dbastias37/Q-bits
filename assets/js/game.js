@@ -2096,7 +2096,8 @@ function requestFlightLanding(f){
 }
 function flightGuidance(f,center,height,velocity,dt){
  const trip=f.trip,point=trip.points[trip.index],x=trip.origin.x+point.x,z=trip.origin.z+point.z;
- const reach=Math.hypot(center.x-x,center.z-z)<.065&&Math.abs(height-point.height)<.065;
+ const arrival=trip.trajectory?.arrivals?.[trip.index]||.065,corner=!!trip.trajectory?.corners?.[trip.index];
+ const reach=Math.hypot(center.x-x,center.z-z)<arrival&&Math.abs(height-point.height)<arrival;
  const down=trip.phase==='descend'||trip.phase==='ground';
  const lift=trip.phase==='lift',dx=(lift?trip.depart.x:x)-center.x,dz=(lift?trip.depart.z:z)-center.z;
  const speed=f.modules[0].hub.mood.flight.speed||.5,factor=Math.min(1.6,speed/Math.max(.001,Math.hypot(dx,dz)));
@@ -2109,6 +2110,7 @@ function flightGuidance(f,center,height,velocity,dt){
  }
  const guidance={targetHeight,targetVx:dx*factor,targetVz:dz*factor,landing:down,enabled:f.enabled&&trip.phase!=='ground'};
  if(dt<=0)return guidance;
+ if(corner&&trip.phase==='travel')trip.cornerSettled=reach&&Math.hypot(velocity.x,velocity.y,velocity.z)<.045?(trip.cornerSettled||0)+dt:0;
  function advance(){
   if(trip.trajectory){
    const direction=trip.trajectory.direction||1,last=direction>0?trip.index===trip.points.length-1:trip.index===0;
@@ -2119,10 +2121,10 @@ function flightGuidance(f,center,height,velocity,dt){
    }trip.trajectory.direction=-direction;}
    trip.index+=trip.trajectory.direction||1;
   }else{trip.index++;if(trip.index===trip.points.length){if(!trip.loop){requestFlightLanding(f);return;}trip.index=0;}}
-  trip.phase=trip.trajectory&&trip.phase!=='ground'?'travel':'lift';trip.depart=center.clone();
+  trip.phase=trip.trajectory&&trip.phase!=='ground'?'travel':'lift';trip.depart=center.clone();trip.cornerSettled=0;
  }
  if(lift&&Math.abs(height-point.height)<.055)trip.phase='travel';
- else if(trip.phase==='travel'&&reach){
+ else if(trip.phase==='travel'&&reach&&(!corner||trip.cornerSettled>=.12)){
   trip.remaining=point.wait;
   if(point.action==='land')trip.phase='descend';
   else if(point.action==='wait')trip.phase='wait';
@@ -5719,9 +5721,7 @@ function powerCircuitRoute(start,finish,bends=[],surfaceEnd=false){
  if(!surfaceEnd){if(route[route.length-1].y>.02)route.push(powerFloor(route[route.length-1]));route.push(powerFloor(finish));}
  // Cardinal elbows match the cube route grid. Explicit surface supports stay
  // fixed; old saved cable geometry is never silently lengthened on restore.
- const circuit=[route[0]];
- for(const point of route.slice(1)){const cursor=circuit[circuit.length-1].clone();for(const axis of ['x','z','y'])if(Math.abs(cursor[axis]-point[axis])>1e-6){cursor[axis]=point[axis];circuit.push(cursor.clone());}}
- return circuit;
+ return QBitsRouteGeometry.orthogonal(route).map(point=>V(point.x,point.y,point.z));
 }
 function powerAimPort(dir=direction(),max=4){
  const origin=V(...camera),hit=aimQubit(max,dir);let best=hit&&powerPartConnectable(hit)?{endpoint:{kind:'part',id:hit.part.id},point:powerPort({kind:'part',id:hit.part.id}),distance:hit.distance,hit}:null;
@@ -7998,13 +7998,28 @@ function startTrajectoryFollower(node,route){
  if(route.mode==='ground')return groundTrajectoryController().start(node,route);
  const flight=flightForGroup(node.g);if(!flight)return {ok:false,message:'La cara hacia arriba requiere un dron con hélice y batería.'};
  if(flight.enabled)return {ok:false,message:'Aterriza y detén el vuelo manual antes de iniciar el recorrido.'};
- const state=flightSnapshot(flight),first=route.points[0];
+ const points=route.polyline?.points;if(!points?.length)return {ok:false,message:'El recorrido todavía no está preparado.'};
+ const state=flightSnapshot(flight),first=points[0];
  if(Math.hypot(state.center.x-first.x,state.center.z-first.z)>.6)return {ok:false,message:'Coloca el dron a menos de 60 cm del punto de inicio.'};
- const previous=flightConfig(flight),points=route.points.map(p=>({x:p.x-state.center.x,z:p.z-state.center.z,height:p.y,action:p.action,wait:p.wait}));
- configureFlight(flight,{height:first.y,speed:Math.min(.5,previous.speed||.5),route:{points,loop:false}},true);
+ const previous=flightConfig(flight),relative=p=>({x:p.x-state.center.x,z:p.z-state.center.z,height:p.y,action:p.action,wait:p.wait});
+ // Keep the saved/editor configuration at 48 authored points. The live trip
+ // follows the same bounded, compiled elbows as the ribbon and ground drive.
+ configureFlight(flight,{height:first.y,speed:Math.min(.5,previous.speed||.5),route:{points:route.points.map(relative),loop:false}},true);
  if(!startFlight(flight)){configureFlight(flight,previous,true);return {ok:false,message:flight.status};}
- flight.trip.trajectory={routeId:route.id,receiverId:node.part.id,loop:route.loop,direction:1};
- const drive={kind:'air',node,component,flight,previous,stuck:0,progress:Infinity,lastIndex:-1,lastPhase:'',lastHeight:state.height};
+ const incoming=[],corners=[],arrivals=[];let segment=null;
+ for(let i=0;i<points.length;i++){
+  if(i){const a=points[i-1],p=points[i],x=p.x-a.x,y=p.y-a.y,z=p.z-a.z,length=Math.hypot(x,y,z);if(length>1e-6)segment={x:x/length,y:y/length,z:z/length,length};}incoming[i]=segment;
+ }
+ // Coincident commands retain their actions and inherit the surrounding turn.
+ // Looking past zero-length spans prevents wait/pass pairs hiding an elbow.
+ segment=null;
+ for(let i=points.length-1;i>=0;i--){
+  if(i<points.length-1){const p=points[i],b=points[i+1],x=b.x-p.x,y=b.y-p.y,z=b.z-p.z,length=Math.hypot(x,y,z);if(length>1e-6)segment={x:x/length,y:y/length,z:z/length,length};}
+  const a=incoming[i],b=segment,turn=!!(a&&b&&a.x*b.x+a.y*b.y+a.z*b.z<.99);
+  corners[i]=turn;arrivals[i]=turn?clamp(Math.min(a.length,b.length)*.25,.01,.035):.065;
+ }
+ flight.trip.points=points.map(relative);flight.trip.trajectory={routeId:route.id,receiverId:node.part.id,loop:route.loop,direction:1,corners,arrivals};
+ const drive={kind:'air',node,component,flight,previous,points,stuck:0,progress:Infinity,lastIndex:-1,lastPhase:'',lastHeight:state.height};
  return {ok:true,drive};
 }
 function stepTrajectoryFollower(drive,route,dt){
@@ -8015,7 +8030,7 @@ function stepTrajectoryFollower(drive,route,dt){
  if(f.trajectoryError)return {error:true,message:f.trajectoryError};
  if(f.landing)return {};
  if(!f.trip?.trajectory)return {done:true,message:'Recorrido terminado'};
- const trip=f.trip,point=route.points[trip.index],state=f.power||flightSnapshot(f),center=state.center;
+ const trip=f.trip,point=drive.points[trip.index],state=f.power||flightSnapshot(f),center=state.center;
  if(!point)return {error:true,message:'Recorrido modificado · vuelve a iniciarlo'};
  if(trip.phase==='travel'||trip.phase==='lift'){
   const target=trip.phase==='lift'?{x:center.x,y:point.y,z:center.z}:point,blocked=trajectoryObstacle(drive,target);if(blocked)return {error:true,message:blocked};
@@ -8037,11 +8052,13 @@ function stopTrajectoryFollower(drive,reason){
 function trajectoryPanelSnapshot(id){
  const system=getTrajectorySystem(),node=system.nodes.get(id);if(!node)return null;
  const meta=node.part.mood.trajectory,route=system.routeFor(id);if(route)system.refresh(route);
- const active=system.followers.has(id),mode=route?.mode||node.mode,reason=route?.reason||'Crea un inicio o vincula este receptor.';
+ const availableGlyphs=QBitsTrajectoryModel.GLYPHS.length-system.routes.size;
+ const active=system.followers.has(id),mode=route?.mode||node.mode,reason=route?.reason||(meta.role==='receiver'?'Este receptor sigue la cara de una pareja existente.':availableGlyphs?'Genera una cara nueva o vincula este cubo como fin.':'No quedan caras libres. Puedes vincular este cubo como fin o desvincular un recorrido.');
  return {title:meta.role==='receiver'?'Receptor de trayectoria':route?(route.startId===id?'Baliza de inicio':'Baliza de fin'):'Cubo de trayectoria',role:meta.role,level:meta.level,
   routeId:route?.id||null,routeLabel:route?route.id.replace('route-','Recorrido '):'',glyph:route?QBitsTrajectoryModel.glyph(route.glyph):null,
   status:active?'En recorrido':node.status||reason,mode,range:route?.range||QBitsTrajectoryModel.range(meta.level),length:route?.length||0,
-  paired:!!route?.endId,points:route?.points.map(p=>({...p}))||[],running:active,canStart:meta.role==='receiver'&&!!route?.valid&&!active,reason,
+  paired:!!route?.endId,points:route?.points.map(p=>({...p}))||[],displayPoints:route?.displayPoints?.map(p=>({...p}))||[],running:active,canStart:meta.role==='receiver'&&!!route?.valid&&!active,reason,
+  availableGlyphs,glyphCapacity:QBitsTrajectoryModel.GLYPHS.length,canCreate:meta.role==='beacon'&&!route&&!meta.routeId&&availableGlyphs>0,
   loop:!!route?.loop,minHeight:.15,maxHeight:3,maxWait:60};
 }
 function openTrajectoryPanel(id){
@@ -8058,8 +8075,9 @@ function trajectoryPanelAction(id,action,payload={}){
  if(action==='glyph-next')return system.nextGlyph(id);
  if(action==='run')return system.start(id);
  if(action==='stop'){system.stop(id,'Recorrido detenido');return {ok:true,message:'Recorrido detenido'};}
- if(['pair','trace','assign'].includes(action)){
+ if(['pair','link-route','trace','assign'].includes(action)){
   if(held)return fail('Suelta la pieza antes de seleccionar en el mundo.');
+  if(action==='link-route'&&(node.part.mood.trajectory.role!=='beacon'||route||node.part.mood.trajectory.routeId))return fail('Elige una baliza sin cara para vincularla como fin.');
   if(action==='pair'&&(!route||route.endId))return fail('Crea un inicio sin pareja antes de elegir el fin.');
   if(action==='trace'&&(!route?.valid))return fail(route?.reason||'Vincula ambos cubos antes de trazar.');
   system.stopRoute(route?.id,'Editando recorrido');cancelPowerCable();cancelTrajectoryDraft();
@@ -8089,7 +8107,7 @@ function showTrajectoryMenu(hit){
 }
 function trajectoryDraftHint(){
  if(!trajectoryDraft)return '';
- return trajectoryDraft.type==='pair'?'Trayectoria · clic en otro cubo para marcar el fin · Esc: cancelar':trajectoryDraft.type==='assign'?'Receptor · clic en una baliza de la pareja · Esc: cancelar':'Trazado · clic en el piso: punto · clic en el fin o Enter: guardar · clic derecho: deshacer · Esc: cancelar';
+ return trajectoryDraft.type==='pair'?'Trayectoria · clic en otro cubo para marcar el fin · Esc: cancelar':trajectoryDraft.type==='link-route'?'Vincular como fin · clic en una baliza de inicio sin pareja · Esc: cancelar':trajectoryDraft.type==='assign'?'Receptor · clic en una baliza de la pareja · Esc: cancelar':'Trazado por la grilla · clic: punto · Enter: guardar · clic derecho: deshacer · Esc: cancelar';
 }
 function cancelTrajectoryDraft(){if(trajectoryDraft){clearPowerRibbonCache(trajectoryDraft);trajectoryDraft=null;redraw=true;}}
 function finishTrajectoryDraft(){
@@ -8103,9 +8121,10 @@ function trajectoryWorldClick(event){
  if(event.button===2){if(draft.type==='trace'&&draft.points.length){draft.points.pop();draft.drawVersion=(draft.drawVersion||0)+1;redraw=true;}else cancelTrajectoryDraft();return true;}
  if(event.button!==0)return true;
  const rect=canvas.getBoundingClientRect(),dir=gameInputActive()?direction():screenRay(event.clientX-rect.left,event.clientY-rect.top),hit=aimQubit(12,dir),system=getTrajectorySystem();
- if(draft.type==='pair'||draft.type==='assign'){
+ if(draft.type==='pair'||draft.type==='link-route'||draft.type==='assign'){
   if(!hit?.part.mood.trajectory||hit.part.mood.trajectory.role!=='beacon'){announce('Apunta a un cubo de trayectoria.');return true;}
-  const result=draft.type==='pair'?system.pair(draft.routeId,hit.part.id):system.assign(draft.id,hit.part.mood.trajectory.routeId);announce(result.message);if(result.ok)cancelTrajectoryDraft();return true;
+  const target=system.routeFor(hit.part.id);
+  const result=draft.type==='pair'?system.pair(draft.routeId,hit.part.id):draft.type==='link-route'?(target&&target.startId===hit.part.id&&target.endId===null?system.pair(target.id,draft.id):{ok:false,message:'Elige una baliza que ya tenga cara y todavía no tenga fin.'}):system.assign(draft.id,hit.part.mood.trajectory.routeId);announce(result.message);if(result.ok)cancelTrajectoryDraft();return true;
  }
  const route=system.routes.get(draft.routeId);if(!route)return cancelTrajectoryDraft(),true;
  if(hit?.part.id===route.endId){finishTrajectoryDraft();return true;}
@@ -8115,7 +8134,7 @@ function trajectoryWorldClick(event){
  if(storyWorld.walls.concat(puzzle.walls).some(w=>(rayPuzzleBox(V(...camera),dir,w,distance)??Infinity)<distance-.01)){announce('Apunta a un punto del piso que puedas ver.');return true;}
  const point={x:p.x,y:route.mode==='air'?draft.height:.012,z:p.z,action:'pass',wait:0},previous=draft.points[draft.points.length-1]||route.points[0];
  if(Math.hypot(point.x-previous.x,point.z-previous.z)<.035)return true;
- const length=QBitsTrajectoryModel.length([route.points[0],...draft.points,point,route.points[route.points.length-1]]);
+ const length=QBitsTrajectoryModel.length(QBitsTrajectoryModel.geometry([route.points[0],...draft.points,point,route.points[route.points.length-1]],route.mode));
  if(length>route.range){announce('No alcanza · '+length.toFixed(2)+' / '+route.range+' m');return true;}
  draft.points.push(point);draft.drawVersion=(draft.drawVersion||0)+1;redraw=true;return true;
 }
@@ -8142,7 +8161,11 @@ function drawTrajectories(){
   for(const id of [route.startId,route.endId]){const node=trajectorySystem.nodes.get(id);if(!node)continue;const p=partPose(node.g,node.part).p;if(!renderSphereVisible(p,.32))continue;drawBox(add(p,V(0,.18,0)),Q(),V(.003,.25,.003),[...color.slice(0,3),1]);}
  }
  if(trajectoryDraft?.type==='trace'){
-  const route=trajectorySystem.routes.get(trajectoryDraft.routeId);if(route?.points.length){const points=[route.points[0],...trajectoryDraft.points,route.points[route.points.length-1]].map(p=>V(p.x,p.y,p.z));drawCachedPowerRibbon(trajectoryDraft,points,[.95,.63,.12,.95],trajectoryDraft.drawVersion||0);}
+  const route=trajectorySystem.routes.get(trajectoryDraft.routeId);if(route?.points.length){
+   const version=trajectoryDraft.drawVersion||0;
+   if(trajectoryDraft.compiledVersion!==version||trajectoryDraft.compiledRoute!==route.revision){trajectoryDraft.compiledVersion=version;trajectoryDraft.compiledRoute=route.revision;trajectoryDraft.compiledRevision=(trajectoryDraft.compiledRevision||0)+1;trajectoryDraft.drawPoints=QBitsTrajectoryModel.geometry([route.points[0],...trajectoryDraft.points,route.points[route.points.length-1]],route.mode).map(p=>V(p.x,p.y,p.z));}
+   drawCachedPowerRibbon(trajectoryDraft,trajectoryDraft.drawPoints,[.95,.63,.12,.95],trajectoryDraft.compiledRevision);
+  }
  }
 }
 
@@ -8208,7 +8231,9 @@ function captureLabRuntime(){
   servos:rotors.filter(r=>r.servo&&r.enabled&&!servoMarchFor(r)).map(r=>({...pair(r),goal:r.servoGoal??r.servo.target,settled:r.servoSettled||0,stuck:r.servoStuck||0})),
   marches:[...servoMarches].map(m=>({members:m.members.map(pair),phase:m.phase,elapsed:m.elapsed,period:m.period,strideRamp:m.strideRamp||0,settled:m.settled,blocked:m.blocked})),
   arms:robotArms.filter(a=>a.running||a.jogging).map(a=>({gripperId:a.gripperId,state:a.state,jogging:!!a.jogging,destination:copy(a.destination||a.target),cycles:a.cycles||0,scan:a.scan||0})),
-  flights:[...flightStates.values()].filter(f=>f.enabled).map(f=>({id:f.id,landing:!!f.landing,spool:f.spool,phase:f.phase,hold:xyz(f.hold),trip:f.trip?{...copy(f.trip),remaining:Math.max(0,f.trip.remaining||0),origin:xyz(f.trip.origin),depart:xyz(f.trip.depart)}:null,contact:copy(f.contact),contact_start:copy(f.contact_start),contact_stop:copy(f.contact_stop)})),
+  // Paired routes reload paused via trajectoryReceivers. Their compiled elbows
+  // are transient, not a manual flight route to restore or validate as 48 points.
+  flights:[...flightStates.values()].filter(f=>f.enabled).map(f=>({id:f.id,landing:!!f.landing,spool:f.spool,phase:f.phase,hold:xyz(f.hold),trip:f.trip&&!f.trip.trajectory?{...copy(f.trip),remaining:Math.max(0,f.trip.remaining||0),origin:xyz(f.trip.origin),depart:xyz(f.trip.depart)}:null,contact:copy(f.contact),contact_start:copy(f.contact_start),contact_stop:copy(f.contact_stop)})),
   routes:groups.filter(g=>!g.haulJob&&!g.blueprintJob&&(g.route?.goal||g.pendingMoodOrder?.goal)).map(g=>({id:g.parts[0].id,goal:xyz(g.route?.goal||g.pendingMoodOrder.goal)})),
   coolers:coolers.map(c=>({p:[c.p.x,c.p.z],entries:[...c.entries].map(([id,e])=>({id,elapsed:e.elapsed,done:!!e.done}))}))
  };

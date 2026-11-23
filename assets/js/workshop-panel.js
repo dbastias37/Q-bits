@@ -33,18 +33,27 @@
  }
  function create(hooks){
   const screen=document.querySelector('#workshop-screen'),get=id=>document.querySelector('#workshop-'+id);
-  let opened=false,draft=defaults('batteries'),lastModel=null,busy=false;
+  let opened=false,draft=defaults('batteries'),lastModel=null,busy=false,lastTargetId,needsTrajectoryChoice=false;
   const element=(tag,className,text)=>{const el=document.createElement(tag);if(className)el.className=className;if(text!==undefined)el.textContent=text;return el;};
-  function choose(choice){draft.choice=choice;get('feedback').textContent='';render();}
+  function choose(choice){lastTargetId=hooks.snapshot().target?.id??null;needsTrajectoryChoice=false;draft.choice=choice;get('feedback').textContent='';render();}
+  function inspect(snapshot){
+   const targetId=snapshot.target?.id??null;
+   if(lastTargetId!==undefined&&lastTargetId!==targetId&&draft.tab==='upgrades'&&draft.mode==='adapt'&&['upgrade:trajectory','upgrade:receiver'].includes(draft.choice)){
+    draft.choice='';delete draft.trajectoryTier;needsTrajectoryChoice=true;
+   }
+   lastTargetId=targetId;const model=hooks.inspect(draft,snapshot);
+   if(needsTrajectoryChoice&&draft.tab==='upgrades'&&draft.mode==='adapt')return {...model,title:'Elige una adaptación',description:snapshot.target?.name||'Selecciona una pieza de la mesa',allowed:false,action:null,fields:[],facts:[],error:'La pieza de la mesa cambió. Elige la adaptación para esta pieza antes de aplicar.',help:'Elige Cubo de trayectoria para crear una cara o Receptor de trayectoria para seguir una existente.',preview:{...model.preview,sensor:false,caption:'Selecciona la adaptación de esta pieza'}};
+   return model;
+  }
   function render(keepFields=false){
-   if(!opened)return;const snapshot=hooks.snapshot(),model=hooks.inspect(draft,snapshot);lastModel=model;
+   if(!opened)return;const snapshot=hooks.snapshot(),model=inspect(snapshot);lastModel=model;
    get('target').textContent=snapshot.target?.summary||'Mesa vacía · coloca una pieza para trabajar';get('credits').textContent=(snapshot.credits??0)+' créditos';
    for(const tab of TABS){const button=get('tab-'+tab);button.setAttribute('aria-selected',String(tab===draft.tab));button.tabIndex=tab===draft.tab?0:-1;}
    get('content').setAttribute('aria-labelledby','workshop-tab-'+draft.tab);
-   const modes=get('modes');modes.replaceChildren();for(const mode of model.modes||[]){const button=element('button','workshop-mode',mode.label);button.type='button';button.setAttribute('aria-pressed',String(draft.mode===mode.id));button.addEventListener('click',()=>{draft.mode=mode.id;draft.choice=mode.id==='research'?'research:sensor':'upgrade:sensor';get('feedback').textContent='';render();});modes.append(button);}
+   const modes=get('modes');modes.replaceChildren();for(const mode of model.modes||[]){const button=element('button','workshop-mode',mode.label);button.type='button';button.setAttribute('aria-pressed',String(draft.mode===mode.id));button.addEventListener('click',()=>{get('feedback').textContent='';setMode(mode.id);});modes.append(button);}
    get('intro').textContent=model.intro||'';
    const options=get('options');options.replaceChildren();for(const option of model.options||[]){const button=element('button','workshop-choice');button.type='button';button.dataset.choice=option.id;button.setAttribute('aria-pressed',String(option.id===draft.choice));button.append(element('strong','',option.title),element('span','',option.subtitle||''));if(option.note)button.append(element('small','',option.note));button.addEventListener('click',()=>choose(option.id));options.append(button);}
-   const fields=get('fields');if(!keepFields){fields.replaceChildren();for(const field of model.fields||[]){const label=element('label','workshop-field',field.label),input=element(field.options?'select':'input');input.id='workshop-field-'+field.id;label.htmlFor=input.id;
+   const fields=get('fields');if(!keepFields||needsTrajectoryChoice){fields.replaceChildren();for(const field of model.fields||[]){const label=element('label','workshop-field',field.label),input=element(field.options?'select':'input');input.id='workshop-field-'+field.id;label.htmlFor=input.id;
     if(field.options)for(const [value,text]of field.options){const option=element('option','',text);option.value=value;input.append(option);}else{input.type='range';input.min=field.min;input.max=field.max;input.step=field.step||1;}
     input.value=field.value;const output=element('output','',String(field.value));output.htmlFor=input.id;
     input.addEventListener(field.options?'change':'input',()=>{const value=Number(input.value);if(!Number.isFinite(value))return;if(field.id.startsWith('dimension-'))draft.dimensions[field.id.slice(10)]=value;else draft[field.id]=value;output.textContent=String(value);get('feedback').textContent='';render(true);});label.append(output,input);fields.append(label);
@@ -55,16 +64,16 @@
    get('help').textContent=model.help||'La vista previa no cambia las piezas. El resultado queda sobre la mesa.';
   }
   function open(tab='batteries'){
-   const wasOpen=opened;opened=true;screen.hidden=false;if(!wasOpen||draft.tab!==tab){draft=defaults(tab);const target=hooks.snapshot().target;if(tab==='bodies'&&target?.dimensions)draft.dimensions={...target.dimensions};if(tab==='batteries'&&target?.count>=1&&target.count<=3)draft.choice=target.battery?'battery:keep':'battery:'+target.count;}
+   const wasOpen=opened;opened=true;screen.hidden=false;if(!wasOpen||draft.tab!==tab){draft=defaults(tab);lastTargetId=undefined;needsTrajectoryChoice=false;const target=hooks.snapshot().target;if(tab==='bodies'&&target?.dimensions)draft.dimensions={...target.dimensions};if(tab==='batteries'&&target?.count>=1&&target.count<=3)draft.choice=target.battery?'battery:keep':'battery:'+target.count;}
    get('feedback').textContent='';render();get('tab-'+draft.tab).focus({preventScroll:true});
   }
-  function close(){opened=false;screen.hidden=true;lastModel=null;busy=false;}
+  function close(){opened=false;screen.hidden=true;lastModel=null;busy=false;lastTargetId=undefined;needsTrajectoryChoice=false;}
   get('close').addEventListener('click',()=>hooks.onClose?.());get('return').addEventListener('click',()=>hooks.onClose?.());
   screen.addEventListener('click',event=>{if(event.target===screen)hooks.onClose?.();});
   for(const tab of TABS)get('tab-'+tab).addEventListener('click',()=>open(tab));
   get('apply').addEventListener('click',()=>{
    if(busy||!opened||!lastModel?.allowed)return;busy=true;
-   const current=hooks.inspect(draft,hooks.snapshot());if(!current.allowed||current.action?.kind!=='research'&&current.targetId!==lastModel.targetId){busy=false;render();get('feedback').textContent=current.error||'La pieza de la mesa cambió. Revisa el resultado antes de aplicar.';return;}
+   const current=inspect(hooks.snapshot());if(!current.allowed||current.action?.kind!=='research'&&current.targetId!==lastModel.targetId){busy=false;render();get('feedback').textContent=current.error||'La pieza de la mesa cambió. Revisa el resultado antes de aplicar.';return;}
    let result;try{result=hooks.apply(JSON.parse(JSON.stringify(draft)),current);}catch(error){result={ok:false,message:'No se pudo aplicar. Revisa la pieza e inténtalo de nuevo.'};}
    busy=false;if(result?.choice)draft.choice=result.choice;render();get('feedback').dataset.error=String(!result?.ok);get('feedback').textContent=result?.message||(result?.ok?'Aplicado · el resultado queda sobre la mesa.':'No se pudo aplicar el cambio.');
   });
@@ -73,7 +82,7 @@
    if(event.code==='Tab'){const nodes=Array.from(screen.querySelectorAll('button,input,select')).filter(el=>!el.disabled&&!el.hidden&&el.getClientRects?.().length);if(!nodes.length)return;const at=nodes.indexOf(document.activeElement);if(event.shiftKey&&at<=0){event.preventDefault();nodes.at(-1).focus();}else if(!event.shiftKey&&at===nodes.length-1){event.preventDefault();nodes[0].focus();}}
    const tab=TABS.find(id=>get('tab-'+id)===event.target);if(tab&&['ArrowLeft','ArrowRight'].includes(event.code)){event.preventDefault();const next=TABS[(TABS.indexOf(tab)+(event.code==='ArrowRight'?1:2))%TABS.length];open(next);}
   });
-  function setMode(mode){draft.mode=mode==='research'?'research':'adapt';draft.choice=draft.mode==='research'?'research:sensor':'upgrade:sensor';render();}
+  function setMode(mode){needsTrajectoryChoice=false;draft.mode=mode==='research'?'research':'adapt';draft.choice=draft.mode==='research'?'research:sensor':'upgrade:sensor';render();}
   return {open,close,refresh:render,choose,setMode,get isOpen(){return opened;},get draft(){return JSON.parse(JSON.stringify(draft));},get model(){return lastModel;}};
  }
  root.QBitsWorkshopPanel={create,drawPreview};

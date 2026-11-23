@@ -125,7 +125,8 @@ test('air point heights survive a ground orientation and snapshot roundtrip',()=
  const saved=t.hydrateLabSnapshot(plain(t.saveLab()));t.story.scene='campaign';t.story.lab=saved;t.enterLab(false);settle(system);
  const loaded=system.routes.get(route.id);assert.deepEqual(plain(loaded.points.map(p=>p.y)),authored);
  for(const id of [a.id,b.id]){const g=system.nodes.get(id).g;g.body.quaternion.setFromAxisAngle(t.V(0,0,1),Math.PI/2);g.body.wakeUp();}settle(system,4);
- assert(loaded.valid,loaded.reason);assert.equal(loaded.mode,'air');assert.deepEqual(plain(loaded.polyline.points.map(p=>p.y)),authored);
+ assert(loaded.valid,loaded.reason);assert.equal(loaded.mode,'air');assert.deepEqual(plain(loaded.points.map(p=>p.y)),authored);
+ assert.deepEqual(plain(loaded.polyline.points.map(p=>p.y)),[authored[0],authored[0],authored[1]],'travel at the departure height, then rise at the destination');
 });
 
 test('a real wheeled receiver keeps dynamic Cannon bodies and moving a beacon stops its motors',()=>{
@@ -258,4 +259,45 @@ test('render uploads exact 10 by 10 source faces once and uses a blank unpaired 
  const points=[route.points[0],{x:0,y:.012,z:-.7,action:'pass',wait:0},route.points[1]];assert(t.getTrajectorySystem().edit(a.id,points,false).ok);
  t.drawTrajectories();assert.equal(t.powerRibbonCaches.get(route).buffer,cache.buffer);assert.equal(capture.uploads.length,uploads+1);
  assert(t.trajectoryPanelAction(a.id,'unlink').ok);assert.equal(t.powerRibbonCaches.has(route),false);assert.equal(capture.buffers.has(cache.buffer),false);
+});
+
+test('paired trajectories share cable elbows and count the complete floor circuit for reach',()=>{
+ const {t}=lab(),a=beacon(t,-1,-1),b=beacon(t,1,1),route=pair(t,a,b);
+ assert(route.valid,route.reason);assert.equal(route.points.length,2,'automatic elbows are not extra editable commands');
+ const points=route.polyline.points;assert.equal(points.length,3);
+ assert.deepEqual(plain(points.map(p=>[p.x,p.z])),[[-.65,-1],[1.35,-1],[1.35,1]]);
+ assert(Math.abs(route.length-4)<1e-9,'4 m along the two axes, rather than the 2.83 m diagonal');
+ const cable=t.powerCircuitRoute(t.V(-.65,.012,-1),t.V(1.35,.012,1));
+ assert.deepEqual(plain(cable.map(p=>[p.x,p.z])),plain(points.map(p=>[p.x,p.z])),'the cable and trajectory use the same ordered bends');
+ const snapshot=t.trajectoryPanelSnapshot(a.id);assert.deepEqual(plain(snapshot.displayPoints),plain(points));assert.equal(snapshot.points.length,2);
+ const before=plain(t.getTrajectorySystem().snapshot());assert(t.trajectoryPanelAction(a.id,'trace').ok);
+ assert(click(t,t.V(-.75,.012,0)));assert.equal(t.getTrajectoryDraft().points.length,0,'a 4.2 m circuit is rejected even though its diagonal shortcut would fit');
+ t.cancelTrajectoryDraft();assert.deepEqual(plain(t.getTrajectorySystem().snapshot()),before);
+});
+
+test('floor drawing previews, saves and reuses the same orthogonal circuit without changing the clicked points',()=>{
+ const capture=instrumentGL(),{t}=lab({gl:capture.gl}),a=beacon(t,-1,-1,{level:2}),b=beacon(t,1,1,{level:2}),route=pair(t,a,b);
+ t.renderVisibility.active=false;t.renderVisibility.enabled=false;
+ const authoredBefore=plain(route.points);assert(t.trajectoryPanelAction(a.id,'trace').ok);
+ assert(click(t,t.V(-.4,.012,-.2)));assert(click(t,t.V(.5,.012,.6)));
+ const draft=t.getTrajectoryDraft(),clicked=plain(draft.points);assert.equal(clicked.length,2);
+ t.drawTrajectories();const preview=plain(draft.drawPoints),cache=t.powerRibbonCaches.get(draft),uploads=capture.uploads.length;
+ assert(preview.length>clicked.length+2);assert(cache);
+ for(let i=1;i<preview.length;i++)assert(['x','y','z'].filter(k=>Math.abs(preview[i][k]-preview[i-1][k])>1e-6).length<=1,'no diagonal preview segment');
+ for(let i=0;i<4;i++)t.drawTrajectories();assert.equal(capture.uploads.length,uploads,'unchanged drafts reuse their compiled geometry and GPU buffer');
+ assert.deepEqual(plain(route.points),authoredBefore,'a preview has not changed the saved route');
+ assert(t.finishTrajectoryDraft());assert.equal(t.getTrajectoryDraft(),null);assert.equal(t.powerRibbonCaches.has(draft),false);
+ assert.deepEqual(plain(route.points.slice(1,-1)),clicked,'keep exact player supports and action slots');
+ assert.deepEqual(plain(route.polyline.points.map(({x,y,z})=>({x,y,z}))),preview,'guidance follows exactly the circuit previewed');
+ const saved=t.hydrateLabSnapshot(plain(t.saveLab()));assert.equal(saved.trajectories.routes[0].points.length,4,'save authored points, not synthetic elbows');
+});
+
+test('moving a paired beacon recompiles cardinal endpoints while preserving the authored support and actions',()=>{
+ const {t}=lab(),a=beacon(t,-1,-1,{level:2}),b=beacon(t,1,1,{level:2}),route=pair(t,a,b),system=t.getTrajectorySystem();
+ const support={x:0,y:.012,z:-.4,action:'wait',wait:.2};assert(system.edit(a.id,[route.points[0],support,route.points[1]],true).ok);
+ const before=route.polyline;b.g.body.position.z+=.3;b.g.body.wakeUp();settle(system,4);
+ assert(route.valid,route.reason);assert.notEqual(route.polyline,before);assert.deepEqual(plain(route.points[1]),support);
+ assert.equal(route.polyline.points.filter(p=>p.action==='wait').length,1,'the support action is never copied to a bend');
+ for(let i=1;i<route.polyline.points.length;i++)assert(['x','y','z'].filter(k=>Math.abs(route.polyline.points[i][k]-route.polyline.points[i-1][k])>1e-6).length<=1);
+ assert.equal(route.loop,true);
 });

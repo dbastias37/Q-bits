@@ -1,13 +1,36 @@
 (function (root, factory) {
   'use strict';
-  if (typeof module === 'object' && module.exports) module.exports=factory(require('./trajectory-drive.js'));
-  else root.QBitsTrajectoryController=factory(root.QBitsTrajectoryDrive);
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (Drive) {
+  if (typeof module === 'object' && module.exports) module.exports=factory(require('./trajectory-drive.js'),require('./trajectory-model.js'));
+  else root.QBitsTrajectoryController=factory(root.QBitsTrajectoryDrive,root.QBitsTrajectoryModel);
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (Drive,Model) {
   'use strict';
   const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
   const finite=(n,fallback)=>Number.isFinite(n)?n:fallback;
   const vector=p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&Number.isFinite(p.z);
   const fail=message=>({ok:false,message});
+  const PHYSICAL_TOLERANCE=.005,clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+
+  // Compile once per explicit start. Repeated author points may carry actions,
+  // so keep them and find the neighbouring nonzero directions in two passes.
+  function turns(points) {
+    const incoming=[],outgoing=[],corners=[],span=[],firstLeg=[],direct=[];
+    let segment=null;
+    for(let i=0;i<points.length;i++) {
+      if(i){const x=points[i].x-points[i-1].x,z=points[i].z-points[i-1].z,length=Math.hypot(x,z);direct[i]=length;if(length>PHYSICAL_TOLERANCE)segment={x:x/length,z:z/length,length};}
+      incoming[i]=segment;firstLeg[i]=segment===null;
+    }
+    segment=null;
+    for(let i=points.length-1;i>=0;i--) {
+      if(i<points.length-1){const x=points[i+1].x-points[i].x,z=points[i+1].z-points[i].z,length=Math.hypot(x,z);if(length>PHYSICAL_TOLERANCE)segment={x:x/length,z:z/length,length};}
+      outgoing[i]=segment;
+      const a=incoming[i],b=outgoing[i];
+      // Sharp elbows need a stop. Gentle legacy paths retain their continuous
+      // steering; cardinal X/Z turns always satisfy this threshold.
+      corners[i]=!!(direct[i]>PHYSICAL_TOLERANCE&&a&&b&&a.x*b.x+a.z*b.z<.85);
+      span[i]=Math.min(a?.length??Infinity,b?.length??Infinity);
+    }
+    return {corners,span,firstLeg};
+  }
 
   /**
    * Adapter callbacks own all activation, physics, collision and cargo actions.
@@ -50,7 +73,7 @@
       if (route?.mode && route.mode!=='ground') return fail('Este controlador sigue recorridos terrestres.');
       if (route?.valid===false) return fail(route.reason||'Revisa el recorrido.');
       const points=route?.polyline?.points || route?.points;
-      if (!Array.isArray(points)||points.length<2||points.length>48||points.some(p=>!vector(p)||!['pass','wait','drop'].includes(p.action||'pass')||!Number.isFinite(p.wait??0)||(p.wait??0)<0||(p.wait??0)>60)) return fail('Revisa los puntos: Aterrizar requiere un dron.');
+      if (!Number.isSafeInteger(Model?.LIMITS?.compiledPoints)||!Array.isArray(points)||points.length<2||points.length>Model.LIMITS.compiledPoints||points.some(p=>!vector(p)||!['pass','wait','drop'].includes(p.action||'pass')||!Number.isFinite(p.wait??0)||(p.wait??0)<0||(p.wait??0)>60)) return fail('Revisa los puntos: Aterrizar requiere un dron.');
       let length=0;for(let i=1;i<points.length;i++)length+=distance(points[i-1],points[i]);
       if (length<.02) return fail('Separa el inicio y el fin del recorrido.');
       const component=adapter.component(node.g);
@@ -87,6 +110,8 @@
         }
         drive.tolerance=description.kind==='walk'?.08:.065;
         drive.passTolerance=description.kind==='walk'?.12:.09;
+        drive.cornerTolerance=description.kind==='walk'?.04:.025;
+        const layout=turns(points);drive.corners=layout.corners;drive.spans=layout.span;drive.firstLeg=layout.firstLeg;
         drive.stamps=component.map(g=>({g,body:g.body,parts:g.parts,count:g.parts.length}));
         drive.joints=drive.started.map(r=>({r,a:r.aId,b:r.bId,constraint:r.constraint}));
         drive.graph=new Set(rotors);drive.groupSet=new Set(component);
@@ -100,13 +125,21 @@
     function advance(drive) {
       const last=drive.points.length-1,terminal=drive.direction>0?drive.index===last:drive.index===0;
       if (terminal && !drive.loop) return finish(drive,'Recorrido terminado.',true);
+      const previousIndex=drive.index,align=drive.alignAfterCorner||terminal||drive.corners[previousIndex]||drive.firstLeg[previousIndex];
       if (terminal) drive.direction*=-1;
       drive.index+=drive.direction;drive.phase='follow';drive.bestDistance=Infinity;drive.bestHeading=Infinity;drive.stuck=0;drive.settled=0;drive.actionTime=0;
+      if(align&&drive.description.kind==='wheels') {
+        const from=drive.points[previousIndex],to=drive.points[drive.index],x=to.x-from.x,z=to.z-from.z,length=Math.hypot(x,z);
+        if(length>PHYSICAL_TOLERANCE){
+          drive.alignAfterCorner=false;const aim={x:x/length,z:z/length},facing=Drive.forward(drive.description);
+          if(!facing||facing.x*aim.x+facing.z*aim.z<Math.cos(.075)||Math.abs(drive.description.chassis.body.angularVelocity.y)>.2){drive.phase='turn';drive.turnVector=aim;drive.turnSettled=0;command(drive,{brake:true});}
+        }else drive.alignAfterCorner=true;
+      }
       return {message:drive.direction>0?'En recorrido':'Regresando por el recorrido'};
     }
     function reach(drive) {
       const point=drive.points[drive.index],terminal=drive.direction>0?drive.index===drive.points.length-1:drive.index===0;
-      if ((point.action||'pass')==='pass' && !terminal) return advance(drive);
+      if ((point.action||'pass')==='pass' && !terminal && !drive.corners[drive.index]) return advance(drive);
       drive.phase='settle';drive.settled=0;drive.actionTime=0;command(drive,{brake:true});return {message:'Deteniendo el mecanismo'};
     }
     function step(drive,route,dt) {
@@ -149,17 +182,48 @@
         if ((target.action==='wait'||target.action==='drop')&&(target.wait||0)>0) {drive.phase='wait';drive.waitRemaining=target.wait;return {message:'Esperando en el punto'};}
         return advance(drive);
       }
+      if(drive.phase==='turn') {
+        const blocked=adapter.blocked?.(drive,target);
+        if(blocked)return finish(drive,typeof blocked==='string'?blocked:'Recorrido bloqueado: despeja el camino.');
+        const facing=Drive.forward(drive.description),aim=drive.turnVector;
+        if(!facing||!aim)return finish(drive,'No se reconoce la orientación del mecanismo.');
+        const error=Math.atan2(facing.z*aim.x-facing.x*aim.z,clamp(facing.x*aim.x+facing.z*aim.z,-1,1));
+        const heading=Math.abs(error),angular=finite(body.angularVelocity?.y,0);
+        if(heading<drive.bestHeading-.025){drive.bestHeading=heading;drive.stuck=0;}else drive.stuck+=elapsed;
+        if(drive.stuck>stuckLimit)return finish(drive,'El mecanismo no puede girar en este codo: revisa apoyos y espacio.');
+        if(heading<=.075) {
+          command(drive,{brake:true});
+          const stable=Math.hypot(body.velocity.x,body.velocity.z)<.06&&Math.abs(angular)<.2;
+          drive.turnSettled=stable?drive.turnSettled+elapsed:0;
+          if(drive.turnSettled>=.1){drive.phase='follow';drive.bestDistance=Infinity;drive.bestHeading=Infinity;drive.stuck=0;}
+        }else{
+          drive.turnSettled=0;
+          // Differential traction turns real wheels at the reached elbow.
+          // Never rotate a body directly or add thrust to make a turn possible.
+          command(drive,{throttle:0,turn:clamp(error-angular*.4,-.5,.5),brake:false});
+        }
+        return {message:'Girando en el codo'};
+      }
       const terminal=drive.direction>0?drive.index===drive.points.length-1:drive.index===0;
-      const stopAtPoint=terminal||(target.action||'pass')!=='pass',arrival=stopAtPoint?drive.tolerance:drive.passTolerance;
+      const corner=drive.corners[drive.index],stopAtPoint=terminal||corner||(target.action||'pass')!=='pass';
+      const baseTolerance=corner?drive.cornerTolerance:stopAtPoint?drive.tolerance:drive.passTolerance;
+      // A fixed 9/12cm pass radius can swallow an entire short axis segment.
+      // Above the 5mm physical floor, quarter-segment radii keep meaningful
+      // short legs distinct in either direction next to a much longer one.
+      const arrival=Math.max(PHYSICAL_TOLERANCE,Math.min(baseTolerance,drive.spans[drive.index]*.25));
       const dist=distance(position,target);
-      let reached=dist<=arrival;
+      // Static wheel friction may settle a fraction of a millimetre before
+      // the mathematical radius. This half-millimetre capture band keeps
+      // significant short legs distinct without asking for microscopic poses.
+      const capture=arrival+Math.min(.0005,arrival*.1);
+      let reached=dist<=capture;
       if (!reached&&!stopAtPoint) {
         const previous=drive.points[drive.index-drive.direction];
         if (previous) {
           const x=target.x-previous.x,z=target.z-previous.z,squared=x*x+z*z;
           const past=squared>1e-8&&((position.x-target.x)*x+(position.z-target.z)*z)>=0;
           const lateral=squared>1e-8?Math.abs((position.x-previous.x)*z-(position.z-previous.z)*x)/Math.sqrt(squared):Infinity;
-          reached=past&&lateral<=arrival;
+          reached=past&&lateral<=capture;
         }
       }
       if (reached) return reach(drive);

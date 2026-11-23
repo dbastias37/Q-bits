@@ -30,9 +30,10 @@
   const routeLabel=element('strong','trajectory-route-label','','route-label'),kind=element('span','trajectory-kind','','kind'),orientation=element('p','trajectory-orientation','','orientation');
   const facts=element('dl','trajectory-facts'),reachRow=element('div'),lengthRow=element('div'),rangeValue=element('dd','', '', 'range'),lengthValue=element('dd','', '', 'length');
   reachRow.append(element('dt','', 'Alcance'),rangeValue);lengthRow.append(element('dt','', 'Trazado'),lengthValue);facts.append(reachRow,lengthRow);
-  const changeGlyph=button('glyph-next','Otra cara','trajectory-subtle');identity.append(glyph,routeLabel,kind,orientation,facts,changeGlyph);
+  const availability=element('p','trajectory-guide','','availability');
+  const changeGlyph=button('glyph-next','Cambiar cara','trajectory-subtle');identity.append(glyph,routeLabel,kind,orientation,facts,availability,changeGlyph);
   const controls=element('div','trajectory-controls'),guide=element('p','trajectory-guide','','guide'),actions=element('div','trajectory-actions');
-  actions.append(button('start-route','Marcar inicio','trajectory-primary'),button('pair','Elegir final','trajectory-primary'),button('trace','Trazar recorrido','trajectory-primary'),button('assign','Elegir ruta','trajectory-primary'),button('run','Iniciar recorrido','trajectory-primary'),button('stop','Detener recorrido','trajectory-stop'));
+  actions.append(button('start-route','Generar cara nueva','trajectory-primary'),button('link-route','Vincular como fin','trajectory-primary'),button('pair','Elegir final','trajectory-primary'),button('trace','Trazar recorrido','trajectory-primary'),button('assign','Elegir ruta','trajectory-primary'),button('run','Iniciar recorrido','trajectory-primary'),button('stop','Detener recorrido','trajectory-stop'));
   const preview=element('div','trajectory-preview'),map=svg('svg',{viewBox:'0 0 420 150',role:'img','aria-label':'Vista superior del recorrido'});map.id='trajectory-map';
   const mapEmpty=element('p','trajectory-preview-empty','El trazado aparecerá aquí.','map-empty');preview.append(map,mapEmpty);
   const routeOptions=element('div','trajectory-route-options'),loop=element('input','',undefined,'loop');loop.type='checkbox';focusable.push(loop);
@@ -58,14 +59,15 @@
   function accepted(result){return result===true||result?.ok===true;}
   function permission(type,s){
    if(!s)return false;const linked=hasRoute(s),beacon=s.role!=='receiver',stopped=!s.running;
-   if(type==='start-route')return beacon&&!linked&&stopped;
+   if(type==='start-route')return beacon&&!linked&&stopped&&s.canCreate!==false&&s.availableGlyphs!==0;
+   if(type==='link-route')return beacon&&!linked&&stopped;
    if(type==='pair')return beacon&&linked&&!s.paired&&stopped;
    if(type==='trace')return beacon&&linked&&s.paired&&stopped;
    if(type==='assign')return !beacon&&stopped;
    if(type==='run')return !beacon&&!!s.canStart&&stopped;
    if(type==='stop')return !!s.running;
    if(type==='unlink')return linked&&stopped;
-   if(type==='glyph-next')return beacon&&stopped;
+   if(type==='glyph-next')return beacon&&linked&&stopped&&s.availableGlyphs!==0;
    if(type==='loop')return beacon&&linked&&s.paired&&stopped;
    if(['clear-points','point-update','point-remove'].includes(type))return beacon&&linked&&s.paired&&stopped&&!!s.points?.length;
    return false;
@@ -85,12 +87,13 @@
    if(valid)for(let y=0;y<10;y++)for(let x=0;x<10;x++)if(!['0','.',' '].includes(rows[y][x]))nodes.push(svg('rect',{x:x+2,y:y+2,width:1,height:1,fill:'#f5f7ee'}));
    glyph.replaceChildren(...nodes);glyph.setAttribute('aria-label',valid?'Identidad visual de la ruta':'Cara sin identidad asignada');
   }
-  function drawMap(points){
-   const stamp=points.map(p=>[p.x,p.z].join(',')).join(';')+'|'+selectedPoint;if(stamp===mapStamp)return;mapStamp=stamp;
-   const valid=points.length>1&&points.every(p=>finite(p.x)&&finite(p.z));preview.dataset.empty=String(!valid);mapEmpty.hidden=valid;map.hidden=!valid;if(!valid){map.replaceChildren();return;}
-   const xs=points.map(p=>p.x),zs=points.map(p=>p.z),minX=Math.min(...xs),maxX=Math.max(...xs),minZ=Math.min(...zs),maxZ=Math.max(...zs),scale=Math.min(364/Math.max(.1,maxX-minX),96/Math.max(.1,maxZ-minZ));
-   const coords=points.map(p=>[210+(p.x-(minX+maxX)/2)*scale,75+(p.z-(minZ+maxZ)/2)*scale]);
-   const nodes=[svg('path',{d:'M 24 38 H 396 M 24 75 H 396 M 24 112 H 396 M 72 20 V 130 M 164 20 V 130 M 256 20 V 130 M 348 20 V 130',stroke:'#8fa99c','stroke-opacity':'.18',fill:'none'}),svg('polyline',{points:coords.map(p=>p.join(',')).join(' '),fill:'none',stroke:'#4b8c76','stroke-width':3,'stroke-linejoin':'round','stroke-linecap':'round'})];
+  function drawMap(points,linePoints=points){
+   const signature=list=>list.map(p=>[p.x,p.z].join(',')).join(';');
+   const stamp=signature(linePoints)+'|'+signature(points)+'|'+selectedPoint;if(stamp===mapStamp)return;mapStamp=stamp;
+   const valid=linePoints.length>1&&linePoints.concat(points).every(p=>finite(p.x)&&finite(p.z));preview.dataset.empty=String(!valid);mapEmpty.hidden=valid;map.hidden=!valid;if(!valid){map.replaceChildren();return;}
+   const all=linePoints.concat(points),xs=all.map(p=>p.x),zs=all.map(p=>p.z),minX=Math.min(...xs),maxX=Math.max(...xs),minZ=Math.min(...zs),maxZ=Math.max(...zs),scale=Math.min(364/Math.max(.1,maxX-minX),96/Math.max(.1,maxZ-minZ));
+   const project=p=>[210+(p.x-(minX+maxX)/2)*scale,75+(p.z-(minZ+maxZ)/2)*scale],coords=points.map(project);
+   const nodes=[svg('path',{d:'M 24 38 H 396 M 24 75 H 396 M 24 112 H 396 M 72 20 V 130 M 164 20 V 130 M 256 20 V 130 M 348 20 V 130',stroke:'#8fa99c','stroke-opacity':'.18',fill:'none'}),svg('polyline',{points:linePoints.map(project).map(p=>p.join(',')).join(' '),fill:'none',stroke:'#4b8c76','stroke-width':3,'stroke-linejoin':'round','stroke-linecap':'round'})];
    coords.forEach(([x,y],index)=>{nodes.push(svg('circle',{cx:x,cy:y,r:index===selectedPoint?6:4,fill:index===selectedPoint?'#295f4d':'#f6fff8',stroke:'#4b8c76','stroke-width':2}));const label=svg('text',{x:x+9,y:y-8,fill:'#46695c','font-size':11});label.textContent=String(index+1);nodes.push(label);});map.replaceChildren(...nodes);
   }
   function updatePointFields(s){
@@ -108,18 +111,21 @@
    if(lastRouteId!==s?.routeId){dirty=false;draft=null;selectedPoint=0;pointStamp=null;}lastRouteId=s?.routeId;
    const beacon=s?.role!=='receiver',linked=hasRoute(s),paired=linked&&!!s?.paired,points=Array.isArray(s?.points)?s.points:[];
    setText(title,s?.title||(beacon?'Cubo de trayectoria':'Receptor de trayectoria'));setText(status,s?.status||(s?'Prepara el recorrido':'Esta pieza ya no está disponible.'));status.dataset.running=String(!!s?.running);
-   setText(routeLabel,s?.routeLabel||(linked?'Ruta enlazada':'Sin ruta'));setText(kind,(beacon?'Baliza':'Receptor')+(beacon&&finite(s?.level)?' · Nivel '+(['I','II','III'][s.level-1]||s.level):''));
+   setText(routeLabel,s?.routeLabel||(linked?'Ruta enlazada':'Sin ruta'));setText(kind,(beacon?'Baliza':'Receptor · sigue una cara existente')+(beacon&&finite(s?.level)?' · Nivel '+(['I','II','III'][s.level-1]||s.level):''));
    setText(orientation,s?.mode==='air'?'Cara hacia arriba · vuelo':s?.mode==='ground'?'Cara lateral · suelo':'Orienta la cara hacia un costado o hacia arriba.');
    setText(rangeValue,finite(s?.range)?'Hasta '+metres(s.range):'—');setText(lengthValue,linked&&finite(s?.length)?metres(s.length):'Sin trazado');lengthRow.hidden=!linked;
    drawGlyph(s?.glyph);
-   setText(guide,!s?'Cierra este panel y selecciona una pieza disponible.':beacon?!linked?'Marca este cubo como inicio y elige otro cubo para cerrar el recorrido.':!paired?'Elige una baliza libre como final. Las dos compartirán la misma cara.':'Traza el camino en la sala. Después, asigna esta ruta al receptor del mecanismo.':!linked?'Elige una baliza para indicarle al mecanismo qué ruta seguir.':s.running?'El mecanismo sigue la ruta asignada. Puedes detenerlo desde aquí.':'La ruta está asignada. Inicia el recorrido cuando el mecanismo esté preparado.');
-   const show={'start-route':beacon&&!linked,pair:beacon&&linked&&!paired,trace:beacon&&paired,assign:!beacon,run:!beacon&&!s?.running,stop:!!s?.running,unlink:linked,'glyph-next':beacon,'clear-points':beacon&&paired&&points.length>0};
+   availability.hidden=!beacon||!finite(s?.availableGlyphs);
+   const capacity=finite(s?.glyphCapacity)?s.glyphCapacity:144;
+   setText(availability,s?.availableGlyphs===0?'No quedan caras libres (0 de '+capacity+'). '+(!linked?'Puedes vincular este cubo como fin de un inicio existente.':'Desvincula un recorrido para liberar su cara.'):'Caras libres: '+s?.availableGlyphs+' de '+capacity+'.');
+   setText(guide,!s?'Cierra este panel y selecciona una pieza disponible.':beacon?!linked?'Genera una cara nueva para iniciar otro recorrido, o vincula este cubo como fin de un inicio existente.':!paired?'Esta cara ya está reservada. Elige una baliza libre como final para que ambas compartan la identidad.':'Traza el camino en la sala. Después, asigna esta ruta al receptor del mecanismo.':!linked?'Este receptor sigue una cara existente. Elige una baliza de la ruta. Para generar una cara nueva, conviértelo en baliza desde el taller.':s.running?'El mecanismo sigue la ruta asignada. Puedes detenerlo desde aquí.':'La ruta está asignada. Inicia el recorrido cuando el mecanismo esté preparado.');
+   const show={'start-route':beacon&&!linked,'link-route':beacon&&!linked,pair:beacon&&linked&&!paired,trace:beacon&&paired,assign:!beacon,run:!beacon&&!s?.running,stop:!!s?.running,unlink:linked,'glyph-next':beacon&&linked,'clear-points':beacon&&paired&&points.length>0};
    for(const [type,shown]of Object.entries(show)){const node=buttons.get(type);node.hidden=!shown;node.disabled=busy||!permission(type,s);}
-   setText(buttons.get('assign'),linked?'Cambiar ruta':'Elegir ruta');routeOptions.hidden=!beacon||!paired;loop.checked=!!s?.loop;loop.disabled=busy||!permission('loop',s);
+   setText(changeGlyph,paired?'Cambiar cara de la pareja':'Cambiar cara');setText(buttons.get('assign'),linked?'Cambiar ruta':'Elegir ruta');routeOptions.hidden=!beacon||!paired;loop.checked=!!s?.loop;loop.disabled=busy||!permission('loop',s);
    selectedPoint=Math.max(0,Math.min(selectedPoint,points.length-1));
    const stamp=points.map(pointKey).join(';');if(stamp!==pointStamp){pointStamp=stamp;const options=points.map((p,index)=>{const option=element('option','', 'Punto '+(index+1)+' · '+(POINT_ACTIONS[p.action]||'Pasar'));option.value=String(index);return option;});pointSelect.replaceChildren(...options);}
    pointSelect.value=String(selectedPoint);pointSelect.disabled=!points.length;setText(summary,'Puntos del recorrido'+(points.length?' · '+points.length:''));details.hidden=!beacon||!paired||!points.length;
-   updatePointFields(s);drawMap(points);preview.hidden=!linked;setText(reason,s?.reason||'');reason.hidden=!s?.reason;return !!s;
+   updatePointFields(s);drawMap(points,Array.isArray(s?.displayPoints)?s.displayPoints:points);preview.hidden=!linked;setText(reason,s?.reason||'');reason.hidden=!s?.reason;return !!s;
   }
   function savePoint(){
    if(!last||busy||!opened)return false;const current=snapshot(),point=current?.points?.[selectedPoint];

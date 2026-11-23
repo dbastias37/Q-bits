@@ -32,11 +32,11 @@ function fixture(initial={},options={}){
  return {doc,ui,get,dispatch,previous,calls,countListeners,setState(next){state=next;},get state(){return state;},get reads(){return reads;},get closed(){return closed;},click(id){return dispatch('click',get(id));},change(id,value){get(id).value=String(value);return dispatch('change',get(id));}};
 }
 const glyph=Array.from({length:10},(_,i)=>i===2?'0110000110':i===7?'0011111100':'0000000000');
-const beacon=()=>({title:'Cubo de trayectoria',status:'Listo',role:'beacon',routeId:null,glyph,level:1,mode:'ground',range:4,length:0,paired:false,points:[],running:false,canStart:false,reason:''});
-const route=()=>({...beacon(),routeId:'ruta-a',routeLabel:'Camino del taller',paired:true,length:2.2,mode:'air',points:[{x:0,y:.5,z:0,action:'pass',wait:0},{x:1,y:.8,z:1,action:'wait',wait:2}]});
+const beacon=()=>({title:'Cubo de trayectoria',status:'Listo',role:'beacon',routeId:null,glyph:null,level:1,mode:'ground',range:4,length:0,paired:false,points:[],running:false,canStart:false,canCreate:true,availableGlyphs:144,glyphCapacity:144,reason:''});
+const route=()=>({...beacon(),routeId:'ruta-a',routeLabel:'Camino del taller',glyph,canCreate:false,availableGlyphs:143,paired:true,length:2.2,mode:'air',points:[{x:0,y:.5,z:0,action:'pass',wait:0},{x:1,y:.8,z:1,action:'wait',wait:2}]});
 
 test('the panel creates a literal, accessible identity and does not mutate a route by opening',()=>{
- const p=fixture({...beacon(),title:'<b>Ruta</b>'});assert.equal(p.ui.isOpen,false);assert.equal(p.reads,0);p.ui.open(15);
+ const p=fixture({...beacon(),glyph,title:'<b>Ruta</b>'});assert.equal(p.ui.isOpen,false);assert.equal(p.reads,0);p.ui.open(15);
  assert.equal(p.ui.isOpen,true);assert.equal(p.ui.partId,15);assert.equal(p.get('title').textContent,'<b>Ruta</b>');assert.equal(p.get('screen').getAttribute('role'),'dialog');assert.equal(p.get('screen').getAttribute('aria-modal'),'true');
  assert.equal(p.get('glyph').getAttribute('viewBox'),'0 0 14 14');assert.equal(p.get('glyph').children.length,13);assert.equal(p.get('range').textContent,'Hasta 4 m');assert.match(p.get('orientation').textContent,/lateral/);assert.equal(p.calls.length,0);
  p.ui.close();assert.equal(p.doc.activeElement,p.previous);assert.equal(p.closed,0);const reads=p.reads;p.ui.refresh();assert.equal(p.reads,reads);
@@ -46,6 +46,49 @@ test('a free beacon progresses through explicit start, pair and trace commands',
  const p=fixture(beacon(),{action(id,action,payload,state){if(action==='start-route')state.routeId='ruta-a';if(action==='pair')state.paired=true;return {ok:true};}});p.ui.open(23);
  assert.equal(p.get('start-route').hidden,false);assert.equal(p.get('pair').hidden,true);p.click('start-route');assert.equal(p.get('start-route').hidden,true);assert.equal(p.get('pair').hidden,false);
  p.click('pair');assert.equal(p.get('trace').hidden,false);p.click('trace');assert.deepEqual(p.calls.map(c=>c.action),['start-route','pair','trace']);assert(p.calls.every(c=>c.id===23));assert(p.ui.isOpen);
+});
+
+test('a free beacon offers generation or intentional linking and hides changing a nonexistent face',()=>{
+ const p=fixture(beacon());p.ui.open(4);
+ assert.equal(p.get('start-route').textContent,'Generar cara nueva');assert.equal(p.get('start-route').disabled,false);
+ assert.equal(p.get('link-route').textContent,'Vincular como fin');assert.equal(p.get('link-route').hidden,false);assert.equal(p.get('link-route').disabled,false);
+ assert.equal(p.get('glyph-next').hidden,true);assert.match(p.get('availability').textContent,/144 de 144/);assert.equal(p.get('glyph').getAttribute('aria-label'),'Cara sin identidad asignada');
+ p.click('glyph-next');assert.equal(p.calls.length,0);p.click('link-route');assert.deepEqual(p.calls,[{id:4,action:'link-route'}]);
+});
+
+test('the exhausted catalogue blocks generation and changing faces while still allowing an explicit end link',()=>{
+ const state={...beacon(),canCreate:false,availableGlyphs:0},p=fixture(state);p.ui.open(145);
+ assert.equal(p.get('start-route').hidden,false);assert.equal(p.get('start-route').disabled,true);assert.equal(p.get('link-route').disabled,false);
+ assert.match(p.get('availability').textContent,/No quedan caras libres.*0 de 144/);assert.match(p.get('availability').textContent,/vincular.*fin/);
+ p.click('start-route');assert.equal(p.calls.length,0);p.click('link-route');assert.equal(p.calls[0].action,'link-route');
+ p.setState({...route(),availableGlyphs:0});p.ui.open(1);assert.equal(p.get('glyph-next').hidden,false);assert.equal(p.get('glyph-next').disabled,true);assert.equal(p.get('glyph-next').textContent,'Cambiar cara de la pareja');
+});
+
+test('new fourth and fifth selections do not inherit a previous route or lose creation controls',()=>{
+ const p=fixture({...route(),paired:false});p.ui.open(3);assert.equal(p.get('pair').hidden,false);assert.equal(p.get('glyph-next').textContent,'Cambiar cara');
+ for(const id of [4,5]){p.setState({...beacon(),availableGlyphs:144-id});p.ui.open(id);assert.equal(p.get('start-route').hidden,false);assert.equal(p.get('start-route').disabled,false);assert.equal(p.get('pair').hidden,true);assert.equal(p.get('glyph-next').hidden,true);assert.equal(p.ui.partId,id);}
+ assert.equal(p.calls.length,0);
+});
+
+test('a stale creation click rechecks catalogue availability instead of sending a forbidden command',()=>{
+ const state={...beacon(),availableGlyphs:1},p=fixture(state);p.ui.open(144);assert.equal(p.get('start-route').disabled,false);
+ state.availableGlyphs=0;state.canCreate=false;p.click('start-route');assert.equal(p.calls.length,0);assert.equal(p.get('start-route').disabled,true);assert.equal(p.get('link-route').disabled,false);
+});
+
+test('a receiver explains its existing-face role and points to the workshop for conversion',()=>{
+ const p=fixture({...beacon(),role:'receiver',canCreate:false});p.ui.open(6);
+ assert.match(p.get('kind').textContent,/Receptor.*cara existente/);assert.match(p.get('guide').textContent,/generar.*baliza.*taller/);
+ assert.equal(p.get('start-route').hidden,true);assert.equal(p.get('link-route').hidden,true);assert.equal(p.get('glyph-next').hidden,true);assert.equal(p.get('assign').hidden,false);
+});
+
+test('the map follows compiled geometry while markers and editing keep the authored points',()=>{
+ const state=route();state.displayPoints=[state.points[0],{x:.5,y:.5,z:0},{x:.5,y:.8,z:1},state.points[1]];
+ const p=fixture(state);p.ui.open(7);const children=p.get('map').children,line=children.find(node=>node.tagName==='POLYLINE'),markers=children.filter(node=>node.tagName==='CIRCLE');
+ assert.equal(line.getAttribute('points').split(' ').length,4);assert.equal(markers.length,2);assert.equal(p.get('point').children.length,2);
+ const option=p.get('point').children[1];p.change('point',1);assert.equal(p.get('height').value,'0.8');assert.equal(p.get('point-action').value,'wait');
+ const selectedLine=p.get('map').children.find(node=>node.tagName==='POLYLINE');state.displayPoints[1]={x:.8,y:.5,z:0};p.ui.refresh();
+ assert.notEqual(p.get('map').children.find(node=>node.tagName==='POLYLINE'),selectedLine);assert.equal(p.get('point').children[1],option);assert.equal(p.get('point').children.length,2);
+ p.click('point-save');assert.equal(p.calls[0].payload.index,1);assert.equal(p.calls[0].payload.patch.y,.8);
 });
 
 test('receiver commands expose run or stop and recheck capability before sending a stale click',()=>{
