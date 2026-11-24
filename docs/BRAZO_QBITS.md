@@ -40,6 +40,12 @@ La carga predeterminada del agarre es **4 u**. El plano usa rotores del banco co
 
 El alcance de toma es ajustable de 1,8 a 5 cm frente a la cara y empieza en 5 cm. Rechaza objetivos propios, objetos sujetos por otro agarre o por el jugador, huecos de formas y objetos tapados por una pared. El agarre usa una restricción física con fuerza limitada y consume energía al tomar y sostener. Los ejes frenados mantienen su postura; los que se mueven respetan el torque y el consumo de los rotores. Una carga excesiva, falta de energía, pérdida de agarre o trayecto bloqueado exige corregir la causa y reiniciar.
 
+## Orientar el brazo para montar piezas
+
+Puedes tomar el brazo desde la base, una articulación o la pinza para orientar el montaje. **Shift + W/S** lo inclina y **Shift + A/D** lo gira; la rueda acerca o aleja la mano. Levántalo hasta tener espacio alrededor para darle la vuelta y acceder a las caras donde montarás las hélices. Se conserva la postura entre sus cuatro ejes mientras lo sostienes.
+
+La mano resuelve el giro junto con las articulaciones físicas, con esfuerzo limitado. Los cuerpos conservan su masa y sus colisiones. Una mesa, el suelo, las paredes o el techo limitan el recorrido; al retirar el brazo de la superficie vuelve a quedar espacio para girarlo. Una pequeña penetración previa puede corregirse moviéndolo hacia dentro de la sala. Soltar retira la sujeción temporal y el brazo vuelve a apoyarse físicamente.
+
 ## Trabajar desde un dron
 
 Un brazo con hélices y alimentación suficiente puede ejecutar sus posturas mientras el conjunto vuela. Puedes despegar primero y usar **Ir a A**, **Ir a B** o **Iniciar secuencia**, o iniciar el brazo y después despegar. Terminar el movimiento, esperar un objeto o detener el brazo mantiene la sustentación y el consumo de las hélices. Los ejes siguen usando sus motores, torque y batería.

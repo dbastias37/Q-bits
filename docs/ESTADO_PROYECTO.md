@@ -2,6 +2,18 @@
 
 Actualizado: 24 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
+## Corrección · tomar y dar vuelta el brazo
+
+Base comprobada: `3218e029b1c2f1512fc38bc43c5f4e8dbe3ff0d3`, con las correcciones de mecanismos en vuelo y líneas QR integradas. Versión de recursos: `20261124-arm-grab-1`.
+
+Tomar el brazo original por una articulación pequeña o por la pinza podía lanzar el montaje incluso antes de girarlo. El control de la mano aplicaba a ese cuerpo el torque calculado con la inercia de todo el brazo, amplificando la respuesta antes de que las bisagras repartieran el esfuerzo. El fallo también se reprodujo sin hélices y antes del cambio de vuelo. Ahora la orientación se resuelve junto con las bisagras dentro de la misma sujeción manual, con esfuerzo y adelanto angular acotados. Se comprueba la posición y orientación combinadas del ancla, además del recorrido de giro. Se conservan los cuerpos, masas, identidades, cuatro ejes, colisiones y controles. El refinamiento del solver reutiliza el presupuesto existente y restaura sus iteraciones al terminar cada paso; soltar retira toda la restricción temporal.
+
+El barrido de la mano permite reducir una penetración inicial contra el techo o cada pared sin profundizarla ni habilitar una nueva salida de la sala. Así una pequeña superposición no bloquea todos los intentos de retirar el objeto hacia dentro. El control anterior de cubos sueltos, estructuras rígidas y familias se conserva.
+
+**Verificación:** `node --test tests/*.test.cjs` aprobó **1.671/1.671** pruebas, cero fallos, cancelaciones u omisiones. Las 19 nuevas cubren entradas reales de teclado/ratón, base/articulación/pinza a 60/120/240 Hz, giro efectivo de 180°, mesa, rueda, liberación/reagarre, sala con exceso de contactos, ajustes repetidos y movimiento combinado contra un panel de 12 mm; también límites de las seis caras de la sala, esquina y extensión completa del brazo. La matriz independiente de ocho ciclos conserva masa e identidades y alcanza un error máximo de orientación de 0,02435 grados. La prueba del muro inspecciona 480 objetivos completos por velocidad de agarre, sin ninguno inseguro. Sintaxis, diff, foco y posprocesado EGL/GLES pasan. [Evidencia y reproducción](mediciones/agarre-brazo-20261124/README.md).
+
+**Siguiente paso:** comprobar en el equipo del jugador la orientación de su montaje y la instalación de hélices. La física y lógica verificadas no certifican una partida visual ni FPS del navegador. Se mantienen las correcciones anteriores de mecanismos en vuelo y líneas QR.
+
 ## Corrección · mecanismos en vuelo y líneas bajo las balizas QR
 
 Base comprobada: `99e4425c6427b2573bc134c61ff9ca10ae28551d`, con las correcciones de cámara y menú secundario integradas. Versión de recursos: `20261124-flight-mechanisms-1`.
