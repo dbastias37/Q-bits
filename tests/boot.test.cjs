@@ -176,7 +176,7 @@ const dependencies=[
   'workshop-panel.js','robot-arm-panel.js','conveyor-panel.js','battery-liquid.js',
   'reservoir-model.js','contact-sensors.js','controls.js','subtitles.js','dialogue-timing.js',
   'guide-audio.js','footsteps.js','join-audio.js','selection-hud.js','preferences.js',
-  'graphics.js','culling.js','glass.js','settings.js','save-games.js',
+  'graphics.js','culling.js','glass.js','settings.js','campaign-supply.js','factory-passage.js','save-games.js',
   'route-geometry.js','trajectory-model.js','trajectory-drive.js','trajectory-controller.js',
   'trajectory-runtime.js','trajectory-panel.js'
 ];

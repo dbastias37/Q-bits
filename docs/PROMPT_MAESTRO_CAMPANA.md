@@ -8,6 +8,14 @@ La base revisada tiene prólogo y doce misiones: movimiento, órdenes, botones, 
 
 La experiencia principal será aprender a construir mecanismos y coordinarlos para completar encargos de producción. La campaña llevará gradualmente desde ejercicios breves hasta problemas abiertos. El giro narrativo futuro revela que los cubos aprovecharon esa cooperación para recuperar su producción y retener al jugador trabajando; el tramo final usa lo aprendido para escapar. Después, desafíos de dominio y encargos variables mantendrán útiles los inventos del jugador, con un encuadre por decidir que respete esa liberación. Este giro solo está documentado: no está implementado.
 
+## Inicio y paseo · decisión vigente del 24 de noviembre de 2026
+
+El propósito de la instalación y de la preparación del jugador no se explica en diálogos, carteles, objetivos ni comentarios sobre lo que vendrá. El jugador lo interpreta mediante acciones, relaciones espaciales y actividad visible. La galería entre los ciclos 1 y 2 introduce ventanales a una fábrica animada, giro a la izquierda y dos descensos con un descanso. La invitación del guía es «Acompáñame». Su conocimiento y lealtad siguen abiertos.
+
+La escenografía de la galería no aporta recursos ni simula una misión de automatización: carece de cuerpos físicos y de inventario. Las misiones posteriores siguen requiriendo mecanismos reales. Las indicaciones de controles y los estados operativos permanecen legibles, remapeables y consultables al ritmo del jugador.
+
+El primer incremento integra petición sin vencimiento, agarre/colocación, devolución explícita y cierre simple antes de la misión de órdenes existente. El lote para una construcción conocida espera a que se enseñe unión. Observar retorno de ofertas, cierre entre inventarios y ciclo 12 integrador son trabajo posterior; diez segundos no se activa como regla del primer suministro. Contrato, guiones, dependencias y evidencia: [Inicio y paseo](INICIO_Y_PASEO_20261124.md).
+
 ## Apertura cinematográfica y acceso a campaña
 
 La apertura precede al menú y a la campaña. Fondo negro desde el primer cuadro; un cubo transparente de vidrio se llena de blanco desde abajo, acompañado únicamente por el porcentaje. La presentación usa un avance deliberadamente irregular con tres pausas breves sorteadas en cada inicio (unos 2,4–4,2 s de presentación) y no permite empezar hasta completar también los recursos reales. Al 100 %, iluminar por detrás y mostrar «Comenzar» sin marco.
@@ -32,7 +40,7 @@ Los presupuestos distinguen materia, cantidad de cuerpos y número de mecanismos
 
 ## Lore y personaje guía
 
-La versión inicial presentada al jugador es que la instalación guarda un conocimiento de construcción que se ha fragmentado. La veracidad y las omisiones de esa explicación se revisarán al escribir el giro. Las reglas de materia permanecen: los Q-bits son materia organizada alrededor de un patrón de identidad. La forma cúbica es compacta y estable; las divisiones permiten distribuir esa misma materia en funciones diferentes. Las partes recuerdan su origen. Recombinar recupera la forma sin borrar el nombre, los recuerdos narrativos, la energía ni un descanso pendiente.
+El guion de trabajo considera una instalación cuyo conocimiento de construcción se ha fragmentado. Esta hipótesis de autor no se expone al jugador; su veracidad y sus omisiones siguen sujetas a revisión. Las reglas de materia permanecen: los Q-bits son materia organizada alrededor de un patrón de identidad. La forma cúbica es compacta y estable; las divisiones permiten distribuir esa misma materia en funciones diferentes. Las partes recuerdan su origen. Recombinar recupera la forma sin borrar el nombre, los recuerdos narrativos, la energía ni un descanso pendiente.
 
 La fuente transforma materia externa en nuevos compañeros. La cámara de reconfiguración reorganiza a un compañero existente. Haz visible esa diferencia: producir, dividir, ensamblar y recomponer son acciones distintas.
 
@@ -46,9 +54,9 @@ Ejemplos de tono, para adaptar a la situación:
 - «Más fuerza puede ayudar. También puede vaciar la batería antes de que termine nuestra conversación».
 - «Esta vez no tengo un dibujo. Tenemos un encargo, unas piezas y bastante información sobre lo que no conviene hacer».
 
-Cada descubrimiento debe seguir esta secuencia: situación concreta, observación breve del NPC, experimento del jugador, consecuencia visible, explicación corta y registro en el catálogo. Los diálogos importantes avanzan a petición del jugador. Separa las intervenciones ambientales, evita repetir pistas y deja silencio durante la construcción. El NPC puede reconocer una solución inesperada sin afirmar que comprende un mecanismo que el juego no ha analizado.
+Cada descubrimiento debe seguir esta secuencia: situación concreta, observación breve del NPC, experimento del jugador, consecuencia visible y registro consultable en el catálogo. La ayuda operativa se ofrece a petición; no explica el propósito oculto del recorrido. Los diálogos importantes avanzan a petición del jugador. Separa las intervenciones ambientales, evita repetir pistas y deja silencio durante la construcción. El NPC puede reconocer una solución inesperada sin afirmar que comprende un mecanismo que el juego no ha analizado.
 
-Explica gradualmente qué son los personajes, por qué comparten materia, cómo se unen, qué conservan al dividirse, por qué una cara incompleta falla y qué cambia al pasar de una unión rígida a una articulación. El misterio de la instalación debe avanzar con pruebas y pequeños descubrimientos, no mediante una exposición inicial de todo el mundo.
+Haz observables las reglas de materia, unión, división y articulación mediante sus consecuencias físicas y estados consultables. El misterio de la instalación avanza con pequeños descubrimientos; nunca se explica al jugador el propósito de su preparación.
 
 ### Giro narrativo y fuga
 

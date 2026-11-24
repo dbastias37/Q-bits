@@ -1,8 +1,24 @@
 # Q-bits — punto de continuación
 
-Actualizado: 23 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
+Actualizado: 24 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Entrega actual · tableta grafito y selección en la sala
+## Primer ciclo · inicio, reserva y paseo 01 → 02
+
+Base comprobada al comenzar: `0d0b8df77be0fa19bf592d371273ee5f7c346d04`, la misma revisión de la auditoría del 23 de noviembre. Los tres documentos de diseño del 24 de noviembre se usan como antecedente; esta implementación empieza por un tramo coherente. Versión de recursos: `20261124-opening-walk-1`. El usuario autorizó su integración en `main` el 24 de noviembre de 2026. La disponibilidad del sitio publicado se comprueba por separado.
+
+Se conserva despertar, encuentro, agarre y cuidado antes de introducir la escotilla. La primera petición asigna un único compañero presupuestado, sin vencimiento. El jugador lo toma y coloca; después lo devuelve físicamente a la bandeja y confirma la recepción. Se conservan ID, materia, carga y cansancio. El regreso no repone energía ni genera otra pieza. El cierre comprueba reserva real, separada de sala y tránsito, y deja al guía fuera del manifiesto. La pieza devuelta permanece archivada al continuar.
+
+El guardado opcional del tramo conserva solicitudes, reclamaciones, transacciones, hechos reales y piezas. Cargar una pieza que estaba sostenida no concede colocación automáticamente: hay que retomarla y soltarla. La recuperación técnica conserva estado sin conceder acciones. Las operaciones del banco que borrarían, crearían, cambiarían materia o regalarían energía quedan protegidas en este tramo y en el paseo; la mano, unión y separación se conservan. Los guardados antiguos siguen siendo compatibles. Los IDs de la reserva permanecen apartados aunque sus piezas no estén materializadas, también al recargar una devolución cerrada, entrar desde el selector y volver del banco. Un intento pendiente guardado exige el aviso de reinicio incluso antes de pulsar Continuar; cancelarlo conserva la reclamación y la copia previa. El guardado rechaza una identidad presente a la vez en reserva y escena.
+
+Al terminar la misión existente 1, el mismo guía invita «Acompáñame». La galería blanca muestra dos cintas, dos brazos y dos drones decorativos a través de ventanas; giro, dos escaleras y descanso llevan a la misión existente 2. La fábrica no añade cuerpos Cannon ni suministro. El guía espera al jugador y el reloj de animación se conserva al guardar. Menú, pausa, lectura modal y pestaña oculta suspenden la situación; la tableta operativa no pausa por sí misma. La arquitectura y la actividad visible anticipan el mundo sin explicar su propósito.
+
+**Alcance pendiente:** S03 de oferta/retorno, S04 de lote después de unión, S05 de cierre entre inventarios y el ciclo 12 integrador de la propuesta. La hipótesis de diez segundos permanece desactivada. El nivel 12 anterior no se presenta como esa integración futura. Guiones, dependencias y evaluación: [Inicio y paseo](INICIO_Y_PASEO_20261124.md).
+
+**Verificación:** 1.584/1.584 pruebas aprobadas, sin fallos ni omisiones; foco y posprocesado GLES aprobados; 13 capturas de producción, 2 shaders compilados, 1 programa enlazado y 0 errores GL. Ver [evidencia de la apertura y galería](mediciones/inicio-paseo-20261124/README.md). Node/Cannon comprueban lógica y física con interfaz instrumentada; GLES reproduce shaders, geometría y poses concretas. Chromium volvió a fallar al crear su socket (`Operation not permitted`), por lo que no se certifican audio audible, controles visuales, comodidad, FPS ni ausencia de tirones en navegador.
+
+**Siguiente paso:** jugar este tramo en el dispositivo del jugador, comprobar lectura espacial y ritmo, y revisar esos resultados antes de activar S03 o ampliar construcción. Mantener la regla de no explicar el propósito de la instalación ni la preparación del jugador.
+
+## Entrega anterior · tableta grafito y selección en la sala
 
 La tableta usa la malla de 100 triángulos del modelo «Q-bits Tableta Grafito 3D», con su asa, su carcasa mate y la ranura de carga en el borde inferior derecho. Banco y Mesa conservan la información y los controles del juego. La barra ocupa la ranura de la carcasa. El rayo y el porcentaje se alinean junto a ella. A partir del 35 % hacia abajo pasa a ámbar y al llegar al 15 % pulsa en rojo, incluido el 0 %. Con movimiento reducido el rojo permanece fijo.
 

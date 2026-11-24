@@ -44,7 +44,7 @@ function updatePosture(dt, active, crouching) {
   }
   const previous=posture.height;
   posture.height+=(target-posture.height)*(1-Math.exp(-11*dt));
-  position[1]=posture.height;
+  position[1]=posture.height+openingFloorHeight();
   if(Math.abs(posture.height-previous)>.000001) redraw=true;
 }
 
@@ -443,7 +443,9 @@ let gamepadActive=false,gamepadMove=[0,0],gamepadRotationCodes=new Set(),hudInpu
 const controlHolds=new Map(),controller=window.QBitsControls?.gamepad();
 const keyboardInput=window.QBitsControls?.keyboard(()=>savedPreferences.controls?.keyboard||window.QBitsControls.defaults().keyboard,(id,down,event)=>dispatchControlAction(id,down,'keyboard',event));
 function gameInputActive(){return panel.hidden&&!hudInputActive&&!familyGroupingJob&&!familyUi?.isOpen()&&!trajectoryPanel?.isOpen&&(document.pointerLockElement===canvas||gamepadActive);}
-function inputLabel(action){return window.QBitsControls?.labelFor(action,savedPreferences)||action;}
+function inputLabel(action){return window.QBitsControls?.labelFor(action,savedPreferences,gamepadActive?'gamepad':'keyboard')||action;}
+function walkingInputLabel(){return gamepadActive?'stick izquierdo':['forward','left','backward','right'].map(inputLabel).join(' / ');}
+function lookingInputLabel(){return gamepadActive?'stick derecho':'mouse';}
 function controlEvent(code,event={},source='keyboard'){return {code,repeat:false,target:canvas,clientX:event.clientX??canvas.clientWidth/2,clientY:event.clientY??canvas.clientHeight/2,altKey:altDown()||(!!event.altKey&&!/^Alt/.test(event.code||'')),ctrlKey:ctrlDown()||(!!event.ctrlKey&&!/^Control/.test(event.code||'')),shiftKey:shiftDown()||!!event.shiftKey,metaKey:!!event.metaKey,source,preventDefault(){event.preventDefault?.();},stopPropagation(){event.stopPropagation?.();}};}
 function setHudInput(enabled,source='keyboard'){
  if(enabled){if(hudInputActive||!window.qbitsSelectionHud?.available||story.mode!=='playing'||story.transition||!panel.hidden||!menu.hidden||!commandMenu.hidden)return;hudInputActive=true;hudReturnCapture=document.pointerLockElement===canvas;keys.clear();gamepadMove=[0,0];window.qbitsSelectionHud.setHint?.(source==='gamepad'?window.QBitsControls.gamepadHint(savedPreferences.controls.gamepad,'hud'):'← → · elegir · Enter · aislar · Ctrl + clic · quitar');window.qbitsSelectionHud.setInteractive(true,source);if(hudReturnCapture){story.intentionalUnlock=true;story.preserveGrip=true;document.exitPointerLock();}}
@@ -1366,6 +1368,7 @@ function partPose(g,p,pos=g.body.position,quat=g.body.quaternion){if(g.virtualCo
 function poses(g,pos,quat){return g.family?[familyPose(g.family,pos,quat)]:g.parts.map(p=>partPose(g,p,pos,quat));}
 function worldParts(g){return poses(g).map(o=>({id:o.part.id,weight:o.part.weight,shape:unitShape(o),p:o.p,q:o.q,mood:copyMood(o.part.mood)}));}
 function allocateUnitId(){return ++serial;}
+function reserveStoredUnitIds(parts=[]){for(const part of parts)serial=Math.max(serial,part.id);}
 // Compact only exact rectangular runs of aligned cubes. Material identities,
 // concave gaps and articulated bodies remain separate. Sensors keep their own
 // contact shape so a neighbouring cell cannot activate their face.
@@ -1610,7 +1613,7 @@ function validPose(g,pos,quat,exclude=[],joiningFrames=null){
  });
 }
 function mechanismsUnlocked(){return Object.keys(story.progress).some(key=>/^level\d+$/.test(key)&&Number(key.slice(5))>=5&&story.progress[key]);}
-function mechanismsAvailable(){return !certifiedAutomation()&&!puzzle.active&&(story.scene==='lab'||story.scene==='campaign'&&mechanismsUnlocked());}
+function mechanismsAvailable(){return !openingProtected()&&!certifiedAutomation()&&!puzzle.active&&(story.scene==='lab'||story.scene==='campaign'&&mechanismsUnlocked());}
 function isMechanismChoice(id){return id==='coupler'||id==='rotor';}
 function normalizeCreationChoice(id){return id==='rotor'?'rotor':normalizeUnitShape(id);}
 function creationChoiceAllowed(id){if(typeof id==='string'&&id.startsWith('quick-'))return story.scene==='lab'&&!puzzle.active&&quickEntries.has(id);return ['cube','tetra','pyramid','coupler','rotor'].includes(id)&&(isMechanismChoice(id)?mechanismsAvailable():story.scene==='lab'&&!puzzle.active);}
@@ -1657,10 +1660,12 @@ function creationRecord(id){
  return {version:1,type:'rotor',name:'Rotor',groups:[{parts:[{key:0,shape:'coupler',weight:settings.mass,p:[0,unitGroundHeight('coupler'),0],q:[0,0,0,1]}]},{parts:[{key:1,shape:'coupler',weight:settings.mass,p:[0,unitGroundHeight('coupler')+2*CUBE_SIZE*51/56,0],q:[flip.x,flip.y,flip.z,flip.w]}]}],joints:[{a:0,b:1,...mechanismDefaults,enabled:false}]};
 }
 function beginBlueprintPlacement(shape,options={}){
+ if(openingProtected())return false;
  if(shape?.mechanism?!mechanismsAvailable()||!savedMechanismValid(shape.mechanism):!savedShapeValid(shape))return false;
  panel.hidden=true;captureMouse();return beginCreationPlacement('construction-plan',shape,options);
 }
 function beginCreationPlacement(id,plan=null,options={}){
+ if(openingProtected())return false;
  if(!plan&&!creationPlacementAllowed(id))return false;
  cancelUnitCreation();const entry=quickEntries.get(id);
  if(entry?.action==='shelf')return beginShelfPlacement(wallAim());
@@ -1813,7 +1818,7 @@ function initUnitRadial(){
  }).concat(catalogue.map(quickProfile))});
 }
 function unitRadialAllowed(){
- return running&&gameInputActive()&&story.ready&&story.mode==='playing'&&(story.scene==='lab'||story.scene==='campaign'&&mechanismsUnlocked())&&!puzzle.active&&!story.transition&&!document.hidden&&document.body.dataset.booting!=='true'&&panel.hidden&&menu.hidden&&commandMenu.hidden&&!held&&!marquee&&!pendingPickup&&!moveChoice&&!pendingCargo&&!editableTarget(document.activeElement);
+ return running&&gameInputActive()&&story.ready&&story.mode==='playing'&&(story.scene==='lab'||story.scene==='campaign'&&mechanismsUnlocked())&&!story.firstCycle&&!story.passage&&!puzzle.active&&!story.transition&&!document.hidden&&document.body.dataset.booting!=='true'&&panel.hidden&&menu.hidden&&commandMenu.hidden&&!held&&!marquee&&!pendingPickup&&!moveChoice&&!pendingCargo&&!editableTarget(document.activeElement);
 }
 function openUnitRadial(){
  if(trajectoryDraft){announce('Termina el trazado o pulsa Esc antes de abrir Q.');return false;}
@@ -2472,7 +2477,7 @@ function grabFamily(hit=aimFamily(direction(),2.7)){
 }
 function takeFamily(f){if(!families.includes(f)||held)return;pendingPickup={family:f};if(gameInputActive())completePendingPickup();else captureMouse();}
 function familyHandHint(){return (held?.latched?'Clic: soltar':'Suelta el clic para dejarla')+' · rueda: acercar · Shift + WASD: girar · Shift + sacudir: lotes de 10';}
-function familyEnabled(){return !!window.QBitsFamilies&&['lab','campaign'].includes(story.scene)&&!puzzle.active&&!story.transition&&!certifiedAutomation();}
+function familyEnabled(){return !!window.QBitsFamilies&&['lab','campaign'].includes(story.scene)&&!puzzle.active&&!story.transition&&!story.firstCycle&&!story.passage&&!certifiedAutomation();}
 function familyNotice(message){announce(message);return null;}
 function initFamilyUi(){
  if(!familyUi)familyUi=window.QBitsFamiliesUI?.create({onEditorClose:()=>{resetGameInputs();if(story.mode==='playing'&&!story.transition&&!document.hidden)captureMouse();}});
@@ -5401,6 +5406,7 @@ function stopRoute(g,clearPin=true){
  if(clearPin){g.pin=null;g.pendingMoodOrder=null;}
 }
 function startRoute(g,goal,quiet=false,remember=!quiet){
+ if(story.passage){if(!quiet)announce('Guía · acompañando');return false;}
  if(!quiet)automationIntervention();
  if(!g||!groups.includes(g))return false;
  if(g.parts.some(p=>p.mood?.externalBattery)){if(!quiet)announce('La batería es pasiva: muévela a mano o móntala en un vehículo.');return false;}
@@ -6173,11 +6179,13 @@ function updatePanel(){
  document.querySelector('#editing').textContent=selected?unitLabel(selected.part)+' '+selected.part.id+' · estructura de '+selected.g.parts.length+' · '+totalWeight(selected.g)+' u en total.':'Selecciona con clic derecho para ajustar una pieza.';
  for(const name of ['mass','gravity','bounce','force','friction','damping','speed','maxCarry','maxSelect','rotationSpeed','grip']){
   const input=document.querySelector('#'+name);if(name==='mass'){input.min=selected?.part.mood?.matter?String(.25/12):'.25';input.step=selected?.part.mood?.matter?'any':'.25';}input.value=name==='mass'&&selected?selected.part.weight:settings[name];
+  input.disabled=openingProtected();
   document.querySelector('#'+name+'Value').textContent=Number(input.value).toFixed(name==='mass'?2:2)+({mass:' u',gravity:' m/s²',force:' N',speed:' m/s',maxCarry:' u',maxSelect:' piezas',rotationSpeed:' rad/s'}[name]||'');
  }
  for(const name of ['guide','line'])document.querySelector('#'+name).value=settings[name];
  updateCargoPanel();updatePuzzlePanel();updateMoodPanel();updateAlphaPanel();updateMechanismPanel();
- document.querySelector('#remove').disabled=puzzle.active||!selected;document.querySelector('#split').disabled=!selected||selected.g.parts.length===1;
+ document.querySelector('#remove').disabled=openingProtected()||puzzle.active||!selected;document.querySelector('#split').disabled=!selected||selected.g.parts.length===1;
+ for(const id of ['create','place-cooler'])document.querySelector('#'+id).disabled=openingProtected();
  if(!panel.hidden)refreshTabletCharge(performance.now(),true);
 }
 function showArmControls(){
@@ -6202,6 +6210,7 @@ function openPanel(){
  else if(selectedCargo)switchPanelTab('cargo');
 }
 for(const name of ['mass','gravity','bounce','force','friction','damping','speed','maxCarry','maxSelect','rotationSpeed','grip'])document.querySelector('#'+name).addEventListener('input',event=>{
+ if(openingProtected()){updatePanel();return;}
  if(story.scene==='campaign'&&story.campaign?.automation){announce('Ensayo certificado: masa y físicas permanecen fijas. Ajusta el motor.');updatePanel();return;}
  automationIntervention();settings[name]=Number(event.target.value);
  if(name==='mass'&&puzzle.active){settings.mass=1;updatePanel();return;}
@@ -7161,7 +7170,7 @@ function connectMenu(element,point){
  const p=project(point)||{x:canvas.clientWidth/2,y:canvas.clientHeight/2},side=p.x<canvas.clientWidth/2?1:-1;
  element.style.left=clamp(p.x+(side>0?115:-285),16,Math.max(16,canvas.clientWidth-225))+'px';element.hidden=false;const menuHeight=element.offsetHeight||250;element.style.top=clamp(p.y-25,20,Math.max(20,canvas.clientHeight-menuHeight-20))+'px';
  element.style.transformOrigin=side>0?'left center':'right center';element.hidden=false;
- menuConnector={element,point:point.clone(),started:simTime};
+ menuConnector={element,point:point.clone(),started:simTime};updateMenuConnector();
 }
 function openCommandMenu(point,title,items,restartGroup=null){
  const familyMembers=familySelectionGroups();if(familyEnabled()&&familyMembers.length&&!familyPlacement){
@@ -7183,7 +7192,7 @@ function updateMenuConnector(){
  const svg=document.querySelector('#menu-link');if(!menuConnector||menuConnector.element.hidden){svg.style.opacity='0';return;}
  const state=menuConnector,p=project(state.point)||{x:canvas.clientWidth/2,y:canvas.clientHeight/2};
  const x=parseFloat(state.element.style.left),y=parseFloat(state.element.style.top)+7,side=x>p.x?1:-1,endX=side>0?x-10:x+208;
- const elbow={x:p.x+side*22,y},a=Math.hypot(elbow.x-p.x,y-p.y),b=Math.abs(endX-elbow.x),progress=clamp((simTime-state.started)/.22,0,1),length=(a+b)*(1-(1-progress)**3);
+ const elbow={x:p.x+side*22,y},a=Math.hypot(elbow.x-p.x,y-p.y),b=Math.abs(endX-elbow.x),progress=storySuspended()?1:clamp((simTime-state.started)/.22,0,1),length=(a+b)*(1-(1-progress)**3);
  let path='M '+p.x+' '+p.y;if(length<a){const k=length/Math.max(a,.001);path+=' L '+(p.x+(elbow.x-p.x)*k)+' '+(p.y+(y-p.y)*k);}else path+=' L '+elbow.x+' '+y+' L '+(elbow.x+(endX-elbow.x)*clamp((length-a)/Math.max(b,.001),0,1))+' '+y;
  document.querySelector('#menu-link-path').setAttribute('d',path);svg.style.opacity='1';state.element.style.opacity=String(clamp((progress-.7)/.3,0,1));
 }
@@ -8375,7 +8384,7 @@ function drawTrajectories(){
 // The first puzzle lives in the laboratory. Its previous contents are restored
 // when leaving the challenge; rewards and deliveries use a single transaction.
 const puzzleConfig={frameSeconds:12,energySeconds:8};
-function puzzleBlockedEdit(kind='edit'){if(certifiedAutomation()){announce('Ensayo certificado: usa las piezas del banco. Reinicia el nivel para restaurarlas.');return true;}if(kind==='mechanism'&&mechanismsAvailable())return false;if(story.ready&&story.scene==='campaign'&&panel.hidden){announce('La materia genera nuevos Q-bits. P abre el banco de herramientas de prueba.');return true;}if(!puzzle.active||kind==='qubit'&&alphaSettings.allowPuzzleSpawn)return false;announce('Puzle activo · los recursos se obtienen en los portales. P → Puzle para volver al banco.');return true;}
+function puzzleBlockedEdit(kind='edit'){if(openingProtected()){announce('Piezas conservadas · las herramientas de creación están en el banco.');return true;}if(certifiedAutomation()){announce('Ensayo certificado: usa las piezas del banco. Reinicia el nivel para restaurarlas.');return true;}if(kind==='mechanism'&&mechanismsAvailable())return false;if(story.ready&&story.scene==='campaign'&&panel.hidden){announce('La materia genera nuevos Q-bits. P abre el banco de herramientas de prueba.');return true;}if(!puzzle.active||kind==='qubit'&&alphaSettings.allowPuzzleSpawn)return false;announce('Puzle activo · los recursos se obtienen en los portales. P → Puzle para volver al banco.');return true;}
 function saveLab(options={}){syncVirtualConveyors(0);if(!options.passive)cancelPowerCable();return {workshop:workshopPlacement&&{...workshopPlacement},families:serializeFamilies(),disassembly:serializeDisassembly(),powerNetwork:serializePowerNetwork(),trajectories:trajectorySystem?.snapshot()||{version:1,serial:0,routes:[]},mechanismDefaults:typeof mechanismDefaults==='undefined'?null:{...mechanismDefaults},rotors:serializeRotorState(),rotorSets:serializeRotorSets(),robotArms:serializeRobotArms(),conveyors:typeof serializeConveyors==='function'?serializeConveyors():[],contacts:serializeContactState(),shelves:serializeShelves(),alphaScene:alphaSceneSnapshot(),settings:{...settings},moodSettings:{...moodSettings},position:[...position],yaw,pitch,groups:groups.map(g=>({parts:worldParts(g),q:g.body.quaternion.clone(),v:g.body.velocity.clone(),w:g.body.angularVelocity.clone()})),cargos:cargos.map(c=>({id:c.id,p:c.body.position.clone(),side:c.side,required:c.required,color:c.color,...(c.robotPhysical?{robotPhysical:true,q:c.body.quaternion.clone(),v:c.body.velocity.clone(),w:c.body.angularVelocity.clone()}:{} )})),runtime:captureLabRuntime()};}
 // JSON removes Cannon prototypes. Rebuild only the explicitly stored pose and
 // velocity fields, before enterLab clears the current scene. Inventory IDs are
@@ -8529,6 +8538,7 @@ function puzzleWall(p,half,portal=null){
  const wall={p,half,body,portal,min:sub(p,half),max:add(p,half)};puzzle.walls.push(wall);return wall;
 }
 function startPuzzle(){
+ if(openingProtected()&&!saveCurrentGame().ok)return;
  if(story.ready&&story.scene!=='lab')enterLab(false);
  if(!puzzle.active)puzzle.savedLab=saveLab();removeWorkshop();contactStates.clear();rotorContactStates.clear();clearPuzzleScene();puzzle.active=true;puzzle.stage=0;puzzle.complete=false;puzzle.delivery=null;puzzle.earned=0;puzzle.run++;
  settings.mass=1;settings.maxCarry=Math.max(settings.maxCarry,4);settings.maxSelect=Math.max(settings.maxSelect,12);
@@ -8644,7 +8654,7 @@ function updatePuzzleHUD(){
 function updatePuzzlePanel(){
  document.querySelector('#puzzle-description').textContent=puzzle.active?(puzzle.complete?'Primera cadena completada. Puedes reiniciarla o volver a tu banco.':'Calipso → Violeta → Ámbar. Cada material entregado crea cuatro Q-bits. En el último portal reserva uno para el marco y dos para la energía; el resto arrastra.'):'Monta la primera cadena dentro de la sala. Al salir se recupera el contenido de tu banco de pruebas.';
  document.querySelector('#start-puzzle').textContent=puzzle.active?'Reiniciar puzle':'Montar puzle 01';document.querySelector('#leave-puzzle').disabled=!puzzle.active;
- for(const id of ['mass','cargoRequired','cargoColor','create','create-cargo','remove','delete-cargo'])document.querySelector('#'+id).disabled=puzzle.active;document.querySelector('#create').disabled=puzzle.active&&!alphaSettings.allowPuzzleSpawn;
+ for(const id of ['mass','cargoRequired','cargoColor','create','create-cargo','remove','delete-cargo'])document.querySelector('#'+id).disabled=puzzle.active||openingProtected();document.querySelector('#create').disabled=openingProtected()||puzzle.active&&!alphaSettings.allowPuzzleSpawn;
  for(const key of ['frameSeconds','energySeconds']){document.querySelector('#'+key).value=puzzleConfig[key];document.querySelector('#'+key+'Value').textContent=puzzleConfig[key]+' s';}
 }
 function resolvePuzzlePlayer(oldX,oldZ){
@@ -8715,12 +8725,12 @@ function updateMoods(dt){
   const working=!carried&&!resting&&(!!g.route||!!job&&!waiting&&job.phase!=='bloqueado');
   const blocked=!carried&&!resting&&((g.pendingMoodOrder?.reason==='bloqueo')||!!job&&job.phase==='bloqueado'||working&&!moving&&!g.route?.align&&!slot?.ready);
   const effort=job?1+Math.min(1,job.cargo.required/Math.max(1,job.slots.reduce((n,s)=>n+groupWorkUnits(s.g),0)))*.65:1;
-  for(const part of g.parts){const m=part.mood;if(m.production||isExternalBattery(part))continue;
+  for(const part of g.parts){const m=part.mood;if(m.production||isExternalBattery(part)||story.passage||story.firstCycle&&g.storyEmerging)continue;
    if(g.moodHadTask&&!task){m.calm=2;m.idle=0;m.fullTime=0;if(m.state!=='restless')m.state='neutral';}
    m.calm=Math.max(0,m.calm-dt);
    if(!externalInternals.has(part.id)){
     if(working&&moving){m.energy=clamp(m.energy-travel*moodSettings.drain*effort*QBitsWorkshop.movementFactors(part).energy*20/gameBatteryCapacity(part)-dt*.0015*20/gameBatteryCapacity(part),0,1);m.idle=0;m.boredOnce=false;}
-    else if(!rotorForPart(part.id)?.powerActive&&!robotWorkingParts.has(part))m.energy=clamp(m.energy+dt*moodSettings.recovery*(.9+.2*m.personality)*20/gameBatteryCapacity(part),0,1);
+    else if(!openingOwnsPart(part.id)&&!rotorForPart(part.id)?.powerActive&&!robotWorkingParts.has(part))m.energy=clamp(m.energy+dt*moodSettings.recovery*(.9+.2*m.personality)*20/gameBatteryCapacity(part),0,1);
    }
    if(task||carried||duty||rotorForPart(part.id)?.powerActive){m.idle=0;m.boredOnce=false;}else m.idle+=dt;
    m.blocked=blocked?m.blocked+dt:Math.max(0,m.blocked-dt*2);
@@ -8824,13 +8834,15 @@ function updateMoodSelection(){
 }
 function updateMoodPanel(){
  for(const key of ['drain','recovery','idleSeconds']){document.querySelector('#mood-'+key).value=moodSettings[key];document.querySelector('#mood-'+key+'Value').textContent=key==='idleSeconds'?moodSettings[key]+' s':Math.round(moodSettings[key]*1000)/10+' % / '+(key==='drain'?'m':'s');}
- for(const key of ['tired','rested'])document.querySelector('#mood-test-'+key).disabled=!selected||puzzle.active||certifiedAutomation();
+ for(const key of ['tired','rested'])document.querySelector('#mood-test-'+key).disabled=!selected||puzzle.active||openingProtected()||certifiedAutomation();
+ for(const key of ['drain','recovery','idleSeconds'])document.querySelector('#mood-'+key).disabled=openingProtected();
 }
 function testMood(tired){
+ if(openingProtected())return;
  if(certifiedAutomation()){announce('La energía del ensayo solo se recupera con descanso.');return;}
  if(puzzle.active||!selected)return;const m=selected.part.mood;m.energy=tired?.01:1;m.agitation=tired?.75:0;m.state=tired?'restless':'neutral';m.reason=tired?'agotado':'';m.restLeft=tired?3:0;m.fullTime=0;m.calm=tired?0:1;updateMoodPanel();
 }
-for(const key of ['drain','recovery','idleSeconds'])document.querySelector('#mood-'+key).addEventListener('input',e=>{if(certifiedAutomation()){updateMoodPanel();return;}const value=Number(e.target.value);if(Number.isFinite(value))moodSettings[key]=clamp(value,...({drain:[.005,.08],recovery:[.02,.15],idleSeconds:[45,180]}[key]));updateMoodPanel();});
+for(const key of ['drain','recovery','idleSeconds'])document.querySelector('#mood-'+key).addEventListener('input',e=>{if(openingProtected()||certifiedAutomation()){updateMoodPanel();return;}const value=Number(e.target.value);if(Number.isFinite(value))moodSettings[key]=clamp(value,...({drain:[.005,.08],recovery:[.02,.15],idleSeconds:[45,180]}[key]));updateMoodPanel();});
 document.querySelector('#mood-test-tired').addEventListener('click',()=>testMood(true));
 document.querySelector('#mood-test-rested').addEventListener('click',()=>testMood(false));
 
@@ -8857,6 +8869,7 @@ function alphaSupport(g,center,q){
  }return level;
 }
 function createCooler(p){
+ if(openingProtected()){announce('Estaciones de este tramo · sin cambios.');return null;}
  if(certifiedAutomation()){announce('El ensayo usa las estaciones existentes.');return null;}
  if(coolers.length>=12){announce('Máximo de 12 enfriadores en esta sala.');return null;}
  if(!p||Math.max(Math.abs(p.x),Math.abs(p.z))>13.4||!cargoPlacementClear(p,.84)||coolers.some(c=>c.p.distanceTo(p)<.9)){announce('Busca un espacio libre para el enfriador.');return null;}
@@ -9369,6 +9382,7 @@ function blueprintSiteClear(box){
  return !(box.min.y<-.001||box.max.y>ROOM_HEIGHT||Math.max(Math.abs(box.min.x),Math.abs(box.max.x),Math.abs(box.min.z),Math.abs(box.max.z))>13.85||cargos.some(c=>obbOverlap(box,cargoPose(c)))||puzzleObstacleBounds().some(w=>obbOverlap(box,{p:w.p,q:w.q||Q(),half:w.half}))||alphaObstacles().some(w=>obbOverlap(box,w))||blueprints.some(other=>obbOverlap(box,blueprintBox(other))));
 }
 function placeBlueprint(shape,p,placement={}){
+ if(openingProtected())return null;
  if(shape?.mechanism?.conveyors&&story.scene!=='lab'){announce('Las cintas modulares se construyen en el banco de pruebas.');return null;}
  automationIntervention();
  if((shape?.mechanism?!savedMechanismValid(shape.mechanism)||!mechanismsAvailable():!savedShapeValid(shape))||!p||![p.x,p.z].every(Number.isFinite)||blueprints.length>=12){announce('No se puede colocar otro blueprint aquí.');return null;}
@@ -9524,8 +9538,8 @@ document.querySelector('#save-shape').addEventListener('click',()=>saveShape(sel
 document.querySelector('#place-cooler').addEventListener('click',()=>{const p=floorAim()||V(position[0]-Math.sin(yaw)*1.3,0,position[2]-Math.cos(yaw)*1.3);createCooler(p);});
 document.querySelector('#export-shapes').addEventListener('click',exportShapes);
 document.querySelector('#import-shapes').addEventListener('change',async e=>{try{const file=e.target.files?.[0];if(!file)return;if(file.size>1000000)throw new Error('Archivo demasiado grande');const count=importShapesData(JSON.parse(await file.text()));announce(count+' formas importadas');}catch(error){announce('No se pudo importar: '+error.message);}e.target.value='';});
-for(const key of ['maxRest','coolSeconds','capacity','blueprintRange','exitEnergy','glow'])document.querySelector('#alpha-'+key).addEventListener('input',e=>{if(certifiedAutomation()){updateAlphaPanel();return;}const n=Number(e.target.value),ranges={maxRest:[15,180],coolSeconds:[5,60],capacity:[1,MAX_QUBITS],blueprintRange:[.5,3],exitEnergy:[.25,.75],glow:[0,1]};if(Number.isFinite(n))alphaSettings[key]=clamp(n,...ranges[key]);updateAlphaPanel();});
-for(const key of ['coolingOn','allowPuzzleSpawn'])document.querySelector('#alpha-'+key).addEventListener('change',e=>{if(certifiedAutomation()){updateAlphaPanel();return;}alphaSettings[key]=!!e.target.checked;updatePuzzlePanel();updateAlphaPanel();});
+for(const key of ['maxRest','coolSeconds','capacity','blueprintRange','exitEnergy','glow'])document.querySelector('#alpha-'+key).addEventListener('input',e=>{if(openingProtected()||certifiedAutomation()){updateAlphaPanel();return;}const n=Number(e.target.value),ranges={maxRest:[15,180],coolSeconds:[5,60],capacity:[1,MAX_QUBITS],blueprintRange:[.5,3],exitEnergy:[.25,.75],glow:[0,1]};if(Number.isFinite(n))alphaSettings[key]=clamp(n,...ranges[key]);updateAlphaPanel();});
+for(const key of ['coolingOn','allowPuzzleSpawn'])document.querySelector('#alpha-'+key).addEventListener('change',e=>{if(openingProtected()||certifiedAutomation()){updateAlphaPanel();return;}alphaSettings[key]=!!e.target.checked;updatePuzzlePanel();updateAlphaPanel();});
 document.querySelector('#completion-continue').addEventListener('click',()=>{document.querySelector('#completion-panel').hidden=true;captureMouse();});
 document.querySelector('#completion-restart').addEventListener('click',()=>{document.querySelector('#completion-panel').hidden=true;startPuzzle();captureMouse();});
 document.querySelector('#completion-lab').addEventListener('click',()=>{document.querySelector('#completion-panel').hidden=true;leavePuzzle();showTablet();switchPanelTab('puzzle');});
@@ -9786,21 +9800,24 @@ const chapters=[['00','El primer encuentro','Prólogo · tomar, mover y enfriar'
 const ui={main:document.querySelector('#main-screen'),pause:document.querySelector('#pause-screen'),levels:document.querySelector('#levels-screen'),complete:document.querySelector('#chapter-complete'),dialogue:document.querySelector('#story-dialogue'),text:document.querySelector('#story-text'),speaker:document.querySelector('#story-speaker'),choices:document.querySelector('#story-choices'),objective:document.querySelector('#story-objective'),veil:document.querySelector('#scene-veil'),top:document.querySelector('#eye-top'),bottom:document.querySelector('#eye-bottom'),cooling:document.querySelector('#cooling-track'),marker:document.querySelector('#world-label')};
 function gameMode(mode){if(story.mode!==mode)resetSimulationClock();if(mode!=='playing'){window.QBitsGuideAudio?.setPaused(true);window.QBitsFootsteps?.setPaused(true);window.QBitsJoinAudio?.setPaused(true);}if(mode!=='playing')closeUnitRadial(false);story.mode=mode;if(mode!=='playing'){cullingLab.observer=false;document.body.dataset.cullingObserver='false';cullingLab.lastFrame=null;}updateCullingHud(true);window.QBitsMusic?.setPaused(!['playing','menu','levels','codex','settings','saves'].includes(mode));document.body.dataset.gameMode=mode;for(const [key,el] of [['menu',ui.main],['pause',ui.pause],['levels',ui.levels],['complete',ui.complete],['codex',document.querySelector('#codex-screen')],['saves',document.querySelector('#saves-screen')]])el.hidden=mode!==key;document.querySelector('#pause-button').hidden=mode!=='playing';hint.hidden=true;redraw=true;}
 function gameScene(scene){story.scene=scene;document.body.dataset.gameScene=scene;const label=document.querySelector('#chapter-label');label.hidden=scene==='lab';document.querySelector('#chapter-number').textContent=scene==='intro'?'PRÓLOGO / 00':'NIVEL / '+String(story.level||1).padStart(2,'0');document.querySelector('#chapter-name').textContent=scene==='intro'?'El primer encuentro':chapters[story.level||1][1];}
-function storySuspended(){return !!trajectoryPanel?.isOpen||!!familyGroupingJob||!!familyUi?.isOpen()||radialOpen()||story.ready&&(story.mode!=='playing'||document.hidden);}
+function storySuspended(){return !!story.dialogue?.modal||!menu.hidden||!commandMenu.hidden||!!trajectoryPanel?.isOpen||!!familyGroupingJob||!!familyUi?.isOpen()||radialOpen()||story.ready&&(story.mode!=='playing'||document.hidden);}
+function modalReadingActive(){return !!story.dialogue?.modal&&story.mode==='playing'&&!document.hidden&&panel.hidden&&menu.hidden&&commandMenu.hidden&&!settingsScreen?.isOpen&&!radialOpen()&&!trajectoryPanel?.isOpen&&!familyUi?.isOpen();}
+function guideNarrationPaused(){return storySuspended()&&!modalReadingActive()||!!story.transition;}
 function storyWalkAllowed(){return !story.ready||story.scene!=='intro'||['deliver','cooling','cooled','choice','repeat'].includes(story.phase);}
-function storyLookAllowed(){return !workshopPanel?.isOpen&&(!story.ready||story.mode==='playing'&&!['asleep','invocation','opening'].includes(story.phase));}
-function storyActionAllowed(){return !story.ready||story.mode==='playing'&&!story.transition&&!encounterLocksActions()&&(story.scene!=='intro'||['pickup','carry','deliver','cooling','cooled'].includes(story.phase));}
-function storyObjective(text){ui.objective.textContent=text;ui.objective.hidden=!text;}
-function say(text,{after=null,hold=false,mysterious=false,choices=null,onComplete=null}={}){
+function storyLookAllowed(){return !story.dialogue?.modal&&!workshopPanel?.isOpen&&(!story.ready||story.mode==='playing'&&!['asleep','invocation','opening'].includes(story.phase));}
+function storyActionAllowed(){return !story.ready||story.mode==='playing'&&!story.dialogue?.modal&&!story.transition&&!encounterLocksActions()&&(story.scene!=='intro'||['pickup','carry','deliver','cooling','cooled'].includes(story.phase));}
+function storyObjective(text){if(ui.objective.textContent!==text)ui.objective.textContent=text;ui.objective.hidden=!text;}
+function say(text,{after=null,hold=false,mysterious=false,choices=null,onComplete=null,modal=false,system=false}={}){
  const timing=window.QBitsDialogueTiming.create(text);
- window.QBitsGuideAudio?.begin(text,{voice:!mysterious,timing});
+ window.QBitsGuideAudio?.begin(text,{voice:!mysterious&&!system,timing});
  ui.dialogue.style.opacity='1';
- story.dialogue={text,timing,time:0,count:-1,after,hold,choices,onComplete,done:false};ui.text.textContent='';ui.text.classList.add('typing');ui.dialogue.hidden=false;ui.dialogue.classList.toggle('mysterious',mysterious);ui.speaker.textContent=mysterious?'UNA VOZ…':'Q-BIT';ui.choices.hidden=true;ui.choices.replaceChildren();ui.cooling.hidden=true;document.querySelector('#dialogue-hint').textContent=after?'E · continuar':choices?'Elige una respuesta':'';
+ story.dialogue={text,timing,time:0,count:-1,after,hold:hold||modal,choices,onComplete,done:false,modal};ui.text.textContent='';ui.text.classList.add('typing');ui.dialogue.hidden=false;ui.dialogue.classList.toggle('mysterious',mysterious);ui.speaker.textContent=system?'INSTALACIÓN':mysterious?'UNA VOZ…':'Q-BIT';ui.choices.hidden=true;ui.choices.replaceChildren();ui.cooling.hidden=true;document.querySelector('#dialogue-hint').textContent=after?inputLabel('interact')+' · continuar':choices?'Elige una respuesta':'';
 }
 function hideStoryDialogue(){window.QBitsGuideAudio?.stop();story.dialogue=null;ui.dialogue.hidden=true;ui.choices.hidden=true;ui.cooling.hidden=true;}
 function advanceDialogue(){const d=story.dialogue;if(!d||story.mode!=='playing'||!panel.hidden)return;const end=d.timing.duration;if(d.time<end){window.QBitsGuideAudio?.reveal(d.text.length,{skip:true});d.time=end;renderDialogue(0);return;}if(d.after){const after=d.after;d.after=null;after();}}
 function renderDialogue(dt){
  const d=story.dialogue;if(!d)return;d.time+=dt;const count=d.timing.countAt(d.time);if(count!==d.count){window.QBitsGuideAudio?.reveal(count);ui.text.textContent=d.text.slice(0,count);d.count=count;ui.text.classList.toggle('typing',count<d.text.length);}
+ if(d.after)document.querySelector('#dialogue-hint').textContent=inputLabel('interact')+' · continuar';
  if(count===d.text.length&&!d.done){d.done=true;if(d.choices){ui.choices.hidden=false;for(const choice of d.choices){const button=document.createElement('button');button.textContent=choice.label;button.addEventListener('click',choice.run);ui.choices.appendChild(button);}document.querySelector('#dialogue-hint').textContent='Elige una respuesta';story.intentionalUnlock=true;pause(false);ui.choices.querySelector('button')?.focus({preventScroll:true});}if(d.onComplete){const complete=d.onComplete;d.onComplete=null;complete();}}
  if(!d.hold&&d.after&&d.time>d.timing.duration+2.6){const after=d.after;d.after=null;after();}
 }
@@ -9875,15 +9892,18 @@ function buildWhiteRooms(){
 function storyPoseClear(g,pos,q,src=poses(g,pos,q),bb=bounds(g,pos,q)){return !storyWorld.walls.some(w=>boundsOverlap(bb,w)&&src.some(a=>obbOverlap(a,{p:w.p,q:w.q||Q(),half:w.half})));}
 function resolveStoryPlayer(oldX,oldZ){const r=PLAYER_RADIUS;const blocked=(x,z)=>storyWorld.walls.some(w=>w.min.y<posture.height+.15&&w.max.y>.15&&x>w.min.x-r&&x<w.max.x+r&&z>w.min.z-r&&z<w.max.z+r&&obbOverlap({p:V(x,posture.height/2,z),q:Q(),half:V(r,posture.height/2,r)},{p:w.p,q:w.q||Q(),half:w.half},0));if(blocked(position[0],oldZ))position[0]=oldX;if(blocked(position[0],position[2]))position[2]=oldZ;}
 function drawStoryWorld(){
+ if(story.passage){drawFactoryPassage(false);return;}
  if(!storyWorld.walls.length)return;
  gl.disable(gl.BLEND);gl.depthMask(true);
  for(const w of storyWorld.walls)if(!w.glass&&w.furniture!=='power-reservoir')drawAsset({buffer:cubeGeometry,count:36},w.p,w.q||Q(),mul(w.half,2),[...w.color.slice(0,3),1]);
  for(const d of storyWorld.details)drawAsset({buffer:cubeGeometry,count:36},d.p,Q(),d.size,[...d.color,1]);
  const door=storyWorld.door;if(door)drawBox(add(door.p,V(.66,.45,.059)),Q(),V(.012,.28,.004),storyWorld.doorProgress>.8?[.37,.68,.55,1]:[.68,.74,.70,1]);
  drawCampaignOpaque();
+ if(story.firstCycle)drawOpeningSupply();
  if(storyWorld.target){const p=storyWorld.target;drawAsset(storyTargetMesh,p,Q(),V(.25,1,.25),[.36,.69,.58,1],3);drawRing(add(p,V(0,.003,0)),.275,.7);}
 }
 function drawStoryGlass(){
+ if(story.passage){drawFactoryPassage(true);return;}
  if(!storyWorld.walls.length)return;gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
  const glass=storyWorld.walls.filter(w=>w.glass).sort((a,b)=>b.p.distanceTo(V(...camera))-a.p.distanceTo(V(...camera)));
  for(const w of glass){drawAsset({buffer:cubeGeometry,count:36},w.p,Q(),mul(w.half,2),[...w.color,.075],3);drawBox(add(w.p,V(0,.92,.02)),Q(),V(w.half.x*1.65,.007,.002),[.82,.94,.89,.26]);}
@@ -9891,6 +9911,7 @@ function drawStoryGlass(){
 }
 const storyTargetMesh=buildLathe([[.88,.006],[1,.006]],72);
 function clearNarrativeScene(){
+ clearOpeningScene();
  clearMechanicalRest();sensorContactsCache=null;
  resetSimulationClock(performance.now(),true);
  cancelCullingBenchmark();cullingLab.observer=false;cullingLab.lastFrame=null;document.body.dataset.cullingObserver='false';
@@ -9909,29 +9930,226 @@ function ensureTutorialCooler(){if(!story.cooler||!coolers.includes(story.cooler
 function beginIntro(replay=false){
  rememberLab();clearNarrativeScene();applyStageDefaults();gameScene('intro');gameMode('playing');story.phase=replay?'pickup':'invocation';story.elapsed=0;story.started=true;story.moved=false;story.guideSeen=0;story.cooler=null;spawnGuide();ensureTutorialCooler();position.splice(0,3,0,EYE_HEIGHT,1.3);yaw=replay?Math.PI:0;pitch=replay?-.16:0;camera.splice(0,3,...position);story.moveOrigin=null;document.querySelector('#notice').textContent='';
  buildWhiteRooms();
- if(replay){ui.veil.style.opacity='0';askPickup('Va de nuevo. Esta vez sin crear el universo: apunta hacia mí y haz clic para tomarme.');}
+ if(replay){ui.veil.style.opacity='0';askPickup('Va de nuevo. Esta vez sin crear el universo.');}
  else{ui.veil.style.opacity='1';ui.top.style.height='52%';ui.bottom.style.height='52%';beginCreationNarration();}
  updatePanel();persistCampaignCheckpoint(0,false);
 }
-function askPickup(text='Hola. ¿Cómo estás? Soy un Q-bit. Apunta hacia mí y haz clic izquierdo para tomarme.'){
- story.phase='pickup';storyObjective('Apunta al Q-bit y haz clic izquierdo.');say(text,{hold:true});
+function askPickup(text='Hola. ¿Cómo estás? Soy un Q-bit. ¿Me tomas?'){
+ story.phase='pickup';storyObjective('Apunta al Q-bit · '+inputLabel('primary')+' para tomar.');say(text,{hold:true});
 }
 function storyOnGrab(g){
+ if(story.firstCycle)for(const part of g.parts)if(openingOwnsPart(part.id)){if(window.QBitsCampaignSupply.noteTaken(story.firstCycle.ledger,part.id).ok)story.firstCycle.requiresPlacement=false;}
+ if(story.passage&&g===storyGuide()){g.body.type=CANNON.Body.DYNAMIC;g.body.updateMassProperties();}
  if(story.scene==='campaign'){held.latched=true;return;}
  if(story.scene!=='intro'||g!==storyGuide())return;
  g.storyFloat=false;g.body.type=CANNON.Body.DYNAMIC;g.body.updateMassProperties();held.latched=true;
- if(story.phase==='pickup'){story.phase='carry';story.moved=false;story.moveOrigin=g.body.position.clone();story.grabYaw=yaw;story.grabPitch=pitch;storyObjective('Mueve el mouse para mover al Q-bit.\nClic izquierdo · soltar');say('Bien. Ahora mueve el mouse un poco. Yo voy contigo.',{hold:true});}
+ if(story.phase==='pickup'){story.phase='carry';story.moved=false;story.moveOrigin=g.body.position.clone();story.grabYaw=yaw;story.grabPitch=pitch;storyObjective('Mueve '+lookingInputLabel()+' para mover al Q-bit.\n'+inputLabel('primary')+' · soltar');say('Bien. Yo voy contigo.',{hold:true});}
 }
 function tutorialGripTarget(target){
+ if(story.passage&&held?.g===storyGuide()){const point=window.QBitsFactoryPassage.constrainMove([position[0],openingFloorHeight(),position[2]],[target.x,target.y,target.z]);return V(point[0],Math.max(target.y,point[1]+HALF+.02),point[2]);}
  const care=encounterCoolerTarget(target);if(care)return care;
  story.dropAligned=false;if(story.scene!=='intro'||story.phase!=='deliver'||held?.g!==storyGuide()||!story.cooler)return target;
  const c=story.cooler,hit=rayPuzzleBox(V(...camera),direction(),alphaBox(add(c.p,V(0,.18,0)),V(.34,.22,.34)),2.8);
  if(hit===null)return target;story.dropAligned=true;return add(c.p,V(0,.23,0));
 }
 function tutorialFloat(dt){if(story.scene!=='intro')return;const g=storyGuide();if(!g?.storyFloat)return;g.body.position.set(0,1.49+Math.sin(story.elapsed*1.65)*.035,2.45);g.body.quaternion.setFromEuler(.10*Math.sin(story.elapsed),story.elapsed*.24,.05);g.body.velocity.set(0,0,0);g.body.angularVelocity.set(0,0,0);g.body.aabbNeedsUpdate=true;}
-function readyQuestion(){story.phase='choice';storyObjective('');say('Ya estás preparado. ¿Quieres empezar los niveles?',{hold:true,choices:[{label:'Sí, empecemos',run:()=>{saveStoryProgress('intro');sceneFade(()=>{beginLevelOne();});captureForTransition();}},{label:'No, todavía no',run:()=>{ui.choices.hidden=true;story.phase='repeat';say('¿Cómo que no? Si hasta enfriar a un cubo te salió bien. ¿Repetimos la práctica?',{hold:true,choices:[{label:'Sí, repetir',run:()=>{sceneFade(()=>beginIntro(true));captureForTransition();}},{label:'Ya, vamos a los niveles',run:()=>{saveStoryProgress('intro');sceneFade(()=>beginLevelOne());captureForTransition();}}]});}}]});}
+function readyQuestion(){
+ story.phase='choice';storyObjective('');const continueOpening=()=>openingResetPrompt(()=>{const guide=worldParts(storyGuide());saveStoryProgress('intro');sceneFade(()=>beginOpeningSupply(null,guide));captureForTransition();},{archive:true});
+ say('¿Seguimos?',{hold:true,choices:[{label:'Vamos',run:continueOpening},{label:'Me quedo un momento',run:()=>{ui.choices.hidden=true;story.phase='repeat';say('Claro. Estoy aquí.',{hold:true,choices:[{label:'Ahora sí',run:continueOpening},{label:'Repetir la práctica',run:()=>{sceneFade(()=>beginIntro(true));captureForTransition();}}]});}}]});
+}
 function captureForTransition(){story.allowTransitionCapture=true;captureMouse();story.allowTransitionCapture=false;}
 function beginLevelOne(){beginCampaignLevel(1);}
+
+// Opening practice: a finite reservation, two deliberate actions, then the
+// existing first route. Background machinery belongs only to the passage view.
+const openingSupply={hatch:[0,.08,-1.45],pad:[.85,.006,.35],duration:.65};
+let passageRender=null;
+function openingFloorHeight(){return story.passage?window.QBitsFactoryPassage.floorAt(position[0],position[2]):0;}
+function openingProtected(){return !!story.firstCycle||!!story.passage;}
+function openingOwnsPart(id){return !!story.firstCycle&&!!window.QBitsCampaignSupply.record(story.firstCycle.ledger,id);}
+function openingPartGroup(id=story.firstCycle?.ledger.records[0].id){return groups.find(g=>g.parts.some(p=>p.id===id));}
+function openingGroupHeld(g){return !!g&&!!held&&(held.items||[held]).some(item=>item.g===g);}
+function clearOpeningScene(){
+ if(passageRender)for(const batch of passageRender.batches)deleteRenderBuffer(batch.mesh.buffer);
+ passageRender=null;story.firstCycle=null;story.passage=null;
+ const status=document.querySelector('#opening-status');if(status)status.hidden=true;
+}
+function openingReading(text,step){
+ if(story.firstCycle)story.firstCycle.dialogueStep=step;
+ say(text,{modal:true,after:()=>{if(story.firstCycle)story.firstCycle.dialogueStep=null;if(story.passage)story.passage.invitationPending=false;hideStoryDialogue();resetSimulationClock();}});
+}
+function openingInstruction(step){
+ const lines={request:'¿Me ayudas? Hay un compañero en la escotilla.',take:'Ahí está. Puedes dejarlo en el aro.',return:'Ahora, de vuelta a la bandeja. Tú confirmas la devolución.',closing:'Todo en su sitio. Por aquí.'};
+ openingReading(lines[step]||lines.request,step);
+}
+function beginOpeningSupply(saved=null,guideParts=null){
+ const previous=saved?null:guideParts||worldParts(storyGuide());
+ clearNarrativeScene();applyStageDefaults();story.level=1;story.phase='supply';story.started=true;story.elapsed=0;gameScene('campaign');gameMode('playing');buildWhiteRooms();
+ document.querySelector('#chapter-number').textContent='CICLO / 01';document.querySelector('#chapter-name').textContent='Un lugar para dos';
+ storyWall(V(0,.035,-1.45),V(.29,.035,.29),{color:[.77,.83,.80]});
+ if(saved){
+  const s=saved.snapshot;reserveStoredUnitIds(saved.reserveParts);Object.assign(settings,s.settings);Object.assign(moodSettings,s.moodSettings);Object.assign(alphaSettings,saved.alphaSettings);
+  for(const g of s.groups)makeGroup(g.parts,g.q,g.v,g.w);
+  story.firstCycle={version:1,phase:saved.phase,guideId:saved.guideId,ledger:window.QBitsCampaignSupply.restore(saved.ledger),reserveParts:saved.reserveParts,stable:0,transferTime:saved.transferTime,time:saved.time,dialogueStep:saved.dialogueStep,requiresPlacement:saved.requiresPlacement};
+  story.guideId=saved.guideId;position.splice(0,3,...s.position);yaw=s.yaw;pitch=s.pitch;
+  const transfer=story.firstCycle.ledger.transfer;if(transfer){const g=openingPartGroup(transfer.id);g.storyEmerging=true;g.body.type=CANNON.Body.KINEMATIC;g.body.updateMassProperties();}
+ }else{
+  const guide=makeGroup(previous.map(p=>({...p,p:V(-.7,HALF+.004,.7),q:Q()})));story.guideId=guide.parts[0].id;
+  const id=allocateUnitId(),part={id,weight:1,shape:'cube',p:V(0,.36,-1.45),q:Q(),mood:newMood(id)};part.mood.name='Q-bit';part.mood.energy=.68;
+  story.firstCycle={version:1,phase:'request',guideId:story.guideId,ledger:window.QBitsCampaignSupply.create([{id,origin:'reserva-inicial',weight:1,destination:'reserve'}],{attemptId:'inicio-'+id,offerSeconds:null}),reserveParts:[part],stable:0,transferTime:0,time:0,dialogueStep:'request',requiresPlacement:false};
+  position.splice(0,3,0,EYE_HEIGHT,2.3);yaw=0;pitch=-.46;
+ }
+ camera.splice(0,3,...position);ui.veil.style.opacity='0';updatePanel();updateOpeningObjective();
+ if(story.firstCycle.dialogueStep)openingInstruction(story.firstCycle.dialogueStep);
+ persistCampaignCheckpoint(1,false);
+}
+function openingPayload(){
+ const c=story.firstCycle;if(!c)return null;
+ return {version:1,phase:c.phase,guideId:c.guideId,ledger:window.QBitsCampaignSupply.snapshot(c.ledger),reserveParts:c.reserveParts,snapshot:{...saveLab({passive:true}),workshop:null},alphaSettings:{...alphaSettings},stable:c.stable,transferTime:c.transferTime,time:c.time,dialogueStep:c.dialogueStep,requiresPlacement:c.requiresPlacement||openingGroupHeld(openingPartGroup())};
+}
+function hydrateOpeningPayload(saved){
+ const combined={...saved.snapshot,groups:[...saved.snapshot.groups,...saved.reserveParts.map(part=>({parts:[part],q:Q(),v:V(),w:V()}))]};
+ const hydrated=hydrateLabSnapshot(combined),count=saved.snapshot.groups.length;
+ return {...saved,snapshot:{...hydrated,groups:hydrated.groups.slice(0,count)},reserveParts:hydrated.groups.slice(count).flatMap(g=>g.parts),ledger:window.QBitsCampaignSupply.restore(saved.ledger)};
+}
+function openingInventory(){
+ const c=story.firstCycle;if(!c)return [];
+ return [...c.reserveParts.map(p=>({id:p.id,weight:p.weight,origin:'reserva-inicial',location:'reserve'})),...groups.flatMap(g=>g.parts.map(p=>({id:p.id,weight:p.weight,origin:'reserva-inicial',location:g.storyEmerging?'transit':'room'})))];
+}
+function openingLocationLabel(g){if(!g)return 'sin localizar';if(openingGroupHeld(g))return 'en la mano';if(openingStableAt(openingSupply.hatch))return 'bandeja, por confirmar';const p=g.body.position;return p.z>1?'sala, junto a la entrada':p.z<-.8?'sala, junto a la escotilla':p.x<-.3?'sala, a la izquierda':p.x>.3?'sala, junto al aro':'centro de la sala';}
+function openingDestinations(){return story.firstCycle?window.QBitsCampaignSupply.checkDestinations(story.firstCycle.ledger,openingInventory()):null;}
+function updateOpeningObjective(){
+ const c=story.firstCycle;if(!c)return;const record=c.ledger.records[0],key=inputLabel('interact');
+ const text={request:'Escotilla · '+key+' para pedir un compañero.',take:inputLabel('primary')+' · tomar y soltar\nDéjalo sobre el aro.',return:'Devuélvelo a la bandeja.\n'+key+' · confirmar devolución',closing:'Reserva completa. Cruza la puerta cuando quieras.'};
+ storyObjective(text[c.phase]);const status=document.querySelector('#opening-status');status.hidden=false;
+ const reserve=c.reserveParts.length,room=groups.reduce((n,g)=>n+g.parts.filter(p=>p.id===record.id&&!g.storyEmerging).length,0),transit=c.ledger.transfer?1:0;
+ let statusText='Reserva '+reserve+' · Sala '+room+' · Tránsito '+transit+'\n1 pieza · 1 u de materia';
+ if(c.phase==='return'&&record.location==='room')statusText+='\nPendiente: compañero · '+openingLocationLabel(openingPartGroup());
+ if(status.textContent!==statusText)status.textContent=statusText;
+}
+function openingStableAt(point){
+ const g=openingPartGroup();if(!g||g.parts.length!==1||openingGroupHeld(g)||g.route||g.storyEmerging)return false;
+ const b=bounds(g),surface=point===openingSupply.hatch ? .07 : 0;
+ return b.min.y>=surface-.02&&b.max.y<=surface+CUBE_SIZE+.025&&Math.abs(g.body.position.x-point[0])<.20&&Math.abs(g.body.position.z-point[2])<.20&&g.body.velocity.length()<.035&&g.body.angularVelocity.length()<.22;
+}
+function openingHatchAimed(){
+ const point=V(...openingSupply.hatch),delta=sub(add(point,V(0,.14,0)),V(...camera));
+ return delta.length()<3&&rayPuzzleBox(V(...camera),direction(),alphaBox(add(point,V(0,.18,0)),V(.34,.3,.34)),3)!==null;
+}
+function requestOpeningCompanion(){
+ const c=story.firstCycle;if(!c||c.phase!=='request')return false;
+ const result=window.QBitsCampaignSupply.request(c.ledger,'primera-peticion',[c.ledger.records[0].id]);if(!result.ok)return false;
+ c.phase='take';c.stable=0;hideStoryDialogue();c.dialogueStep=null;updateOpeningObjective();return true;
+}
+function returnOpeningCompanion(){
+ const c=story.firstCycle;if(!c||c.phase!=='return')return false;
+ if(!openingStableAt(openingSupply.hatch)||c.stable<.5){announce(openingGroupHeld(openingPartGroup())?'Suelta al compañero sobre la bandeja.':'Bandeja pendiente · coloca al compañero dentro y deja que se estabilice.');return false;}
+ const g=openingPartGroup(),result=window.QBitsCampaignSupply.beginReturn(c.ledger,g.parts[0].id,'voluntary');if(!result.ok)return false;
+ g.storyEmerging=true;g.body.type=CANNON.Body.KINEMATIC;g.body.updateMassProperties();g.body.velocity.set(0,0,0);g.body.angularVelocity.set(0,0,0);c.transferTime=0;c.stable=0;hideStoryDialogue();return true;
+}
+function openingInteract(){
+ if(!story.firstCycle||!openingHatchAimed())return false;
+ if(story.firstCycle.phase==='request')requestOpeningCompanion();else if(story.firstCycle.phase==='return')returnOpeningCompanion();else announce(story.firstCycle.phase==='closing'?'Reserva: 1 · recibido.':'Compañero asignado · sin vencimiento.');
+ return true;
+}
+function recoverOpeningCompanion(){
+ const c=story.firstCycle,g=openingPartGroup();if(!c||!g||!['emitting','room','returning'].includes(c.ledger.records[0].location))return false;
+ if(openingGroupHeld(g))releaseQubit();const id=c.ledger.records[0].id,parts=worldParts(g),part=parts.find(p=>p.id===id);if(!part)return false;
+ const others=parts.filter(p=>p.id!==id);removeGroup(g);if(others.length)makeGroup(others);
+ makeGroup([{...part,p:V(.5,HALF+.004,1.1),q:Q()}]);window.QBitsCampaignSupply.recover(c.ledger,id);c.stable=0;c.transferTime=0;
+ announce('Compañero recuperado junto a la entrada. Los pasos pendientes siguen pendientes.');updateOpeningObjective();return true;
+}
+function tickOpeningSupply(dt){
+ const c=story.firstCycle;if(!c)return;c.time+=dt;const S=window.QBitsCampaignSupply,id=c.ledger.records[0].id;
+ if(c.ledger.queue.length&&!c.ledger.transfer){
+  const occupied=groups.some(g=>boundsOverlap(bounds(g),{min:V(-.28,.06,-1.73),max:V(.28,.55,-1.17)}));
+  if(!occupied){const part=c.reserveParts.find(p=>p.id===id);if(part&&S.beginEmission(c.ledger,id).ok){const g=makeGroup([{...part,p:V(0,.36,-1.45),q:Q()}]);c.reserveParts=c.reserveParts.filter(p=>p.id!==id);g.storyEmerging=true;g.body.type=CANNON.Body.KINEMATIC;g.body.updateMassProperties();c.transferTime=0;}}
+ }
+ const transfer=c.ledger.transfer;
+ if(transfer){
+  const g=openingPartGroup(transfer.id);if(!g)return;const t=Math.min(1,c.transferTime/openingSupply.duration),e=t*t*(3-2*t),returning=transfer.kind==='return';
+  g.body.position.set(0,returning?.116+e*.244:.36-e*.244,-1.45);g.body.velocity.set(0,0,0);g.body.angularVelocity.set(0,0,0);g.body.aabbNeedsUpdate=true;c.transferTime+=dt;
+  if(t===1){
+   if(returning){const part=worldParts(g)[0];removeGroup(g);c.reserveParts.push(part);S.acceptReturn(c.ledger,id);c.phase='closing';c.transferTime=0;if(openingDestinations().complete)openingInstruction('closing');}
+   else{S.finishEmission(c.ledger,id);g.storyEmerging=false;g.body.type=CANNON.Body.DYNAMIC;g.body.updateMassProperties();g.body.wakeUp();c.transferTime=0;openingInstruction('take');}
+  }
+ }else if(c.phase==='take'){
+  c.stable=!c.requiresPlacement&&openingStableAt(openingSupply.pad)&&c.ledger.facts.taken.includes(id)?c.stable+dt:0;
+  if(c.stable>=.5){S.notePlaced(c.ledger,id);c.phase='return';c.stable=0;openingInstruction('return');}
+ }else if(c.phase==='return')c.stable=openingStableAt(openingSupply.hatch)?c.stable+dt:0;
+ else if(c.phase==='closing'&&openingDestinations().complete){
+  openStoryDoor(dt);if(storyWorld.doorProgress===1&&position[2]<-4.25){
+   story.openingReserve={version:1,ledger:S.snapshot(c.ledger),reserveParts:c.reserveParts};const guide=worldParts(storyGuide());
+   sceneFade(()=>beginCampaignLevel(1,guide));captureForTransition();
+  }
+ }
+ const g=openingPartGroup();if(g&&(g.body.position.y<-.5||Math.abs(g.body.position.x)>3.1||g.body.position.z<-7.3||g.body.position.z>3.4))recoverOpeningCompanion();
+ updateOpeningObjective();
+}
+function drawOpeningSupply(){
+ const c=story.firstCycle;if(!c)return;
+ drawBox(V(0,.41,-1.65),Q(),V(.58,.72,.12),[.88,.91,.89,1]);drawBox(V(0,.43,-1.58),Q(),V(.24,.23,.018),[.08,.13,.12,1]);
+ const t=c.ledger.transfer?Math.min(1,c.transferTime/openingSupply.duration):0,open=c.ledger.transfer?Math.sin(t*Math.PI):0;
+ drawBox(V(.19*open,.43,-1.565),Q(),V(.24*(1-open),.23,.018),[.64,.72,.69,1]);
+ drawBox(V(.22,.64,-1.57),Q(),V(.035,.018,.012),c.phase==='closing'?[.25,.72,.48,1]:[.63,.75,.69,1]);
+ if(c.phase==='take')drawAsset(storyTargetMesh,V(...openingSupply.pad),Q(),V(.25,1,.25),[.30,.65,.52,1],3);
+}
+function openingResetPrompt(run,{archive=false}={}){
+ const previousMode=story.mode,stored=!story.firstCycle&&!liveSavedGame('campaign')?saveStore.read('campaign'):null,pending=stored?.status==='ready'&&!!stored.save.data.firstCycle;
+ if(!story.firstCycle&&!pending&&!(archive&&story.openingReserve)){run();return;}
+ gameMode('playing');say('Reiniciar este intento devuelve la pieza a su reserva inicial y borra los pasos de esta práctica.',{modal:true,system:true,choices:[{label:'Reiniciar el intento',run:()=>{story.openingReserve=null;hideStoryDialogue();run();}},{label:'Seguir aquí',run:()=>{hideStoryDialogue();if(pending){gameMode(previousMode);if(previousMode==='levels')document.querySelector('#levels-back').focus({preventScroll:true});}else captureMouse();}}]});
+}
+function beginFactoryPassage(saved=null){
+ const guide=saved?.guide||{parts:worldParts(storyGuide()),q:Q(),v:V(),w:V()};
+ clearNarrativeScene();applyStageDefaults();story.level=1;story.phase='passage';story.started=true;gameScene('campaign');gameMode('playing');
+ const F=window.QBitsFactoryPassage,state=saved?F.restore(saved.state):F.create({guideId:guide.parts[0].id});
+ const pose=F.sampleRoute(state.guideDistance);const g=makeGroup(guide.parts.map(p=>({...p,p:saved?p.p:V(pose.p[0],pose.p[1]+HALF+.004,pose.p[2]),q:saved?p.q:Q()})),guide.q,guide.v,guide.w);
+ story.guideId=g.parts[0].id;g.body.type=CANNON.Body.KINEMATIC;g.body.updateMassProperties();
+ story.passage={state,invitationPending:saved?saved.invitationPending:true};
+ const point=saved?.player||F.START;position.splice(0,3,point[0],point[1]+EYE_HEIGHT,point[2]);yaw=saved?.yaw??0;pitch=saved?.pitch??-.55;camera.splice(0,3,...position);
+ const colors=new Map(),glass=[];for(const box of F.staticBoxes()){if(box.glass){glass.push(box);continue;}const key=(box.section||'corridor')+':'+box.color.join(',');if(!colors.has(key))colors.set(key,{color:box.color,section:box.section,boxes:[]});colors.get(key).boxes.push([V(...box.p),V(...box.size)]);}
+ passageRender={batches:[...colors.values()].map(batch=>({...batch,mesh:buildBoxAssembly(batch.boxes)})),glass};
+ document.querySelector('#chapter-number').textContent='01 → 02';document.querySelector('#chapter-name').textContent='';storyObjective('');ui.veil.style.opacity='0';
+ if(story.passage.invitationPending)openingReading('Acompáñame.',null);
+ persistCampaignCheckpoint(1,true);updatePanel();
+}
+function passagePayload(){
+ if(!story.passage)return null;const g=storyGuide();return {version:1,state:window.QBitsFactoryPassage.snapshot(story.passage.state),player:[position[0],openingFloorHeight(),position[2]],yaw,pitch,guide:{parts:worldParts(g),q:g.body.quaternion.clone(),v:V(),w:V()},invitationPending:story.passage.invitationPending};
+}
+function hydratePassagePayload(saved){
+ const data=hydrateLabSnapshot({settings:{...settings},moodSettings:{...moodSettings},position:[...saved.player],yaw:saved.yaw,pitch:saved.pitch,groups:[saved.guide],cargos:[],trajectories:{version:1,serial:0,routes:[]}});
+ return {...saved,guide:data.groups[0],state:window.QBitsFactoryPassage.restore(saved.state)};
+}
+function tickFactoryPassage(dt){
+ const p=story.passage,g=storyGuide();if(!p||!g)return;const F=window.QBitsFactoryPassage,previous=F.sampleRoute(p.state.guideDistance),target=V(previous.p[0],previous.p[1]+HALF+.004,previous.p[2]);
+ const carried=openingGroupHeld(g),returning=g.body.position.distanceTo(target)>.20;
+ F.tick(p.state,dt,[position[0],openingFloorHeight(),position[2]],{escortPaused:carried||returning});
+ if(!carried){
+  if(g.body.type!==CANNON.Body.KINEMATIC){g.body.type=CANNON.Body.KINEMATIC;g.body.updateMassProperties();}
+  const pose=F.sampleRoute(p.state.guideDistance),goal=V(pose.p[0],pose.p[1]+HALF+.004,pose.p[2]),delta=sub(goal,g.body.position),length=delta.length();
+  g.body.position.vadd(mul(delta,length?Math.min(1,dt*1.5/length):0),g.body.position);g.body.quaternion.setFromEuler(0,pose.yaw,0);g.body.velocity.set(0,0,0);g.body.angularVelocity.set(0,0,0);g.body.aabbNeedsUpdate=true;
+ }
+ if(p.state.arrived&&Math.hypot(position[0]-F.EXIT[0],position[2]-F.EXIT[2])<.7&&!carried){const guide=worldParts(g);sceneFade(()=>beginCampaignLevel(2,guide));captureForTransition();}
+}
+function drawFactoryPassage(glass){
+ if(!passageRender||!story.passage)return;
+ if(glass){gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);for(const box of passageRender.glass)drawBox(V(...box.p),Q(),V(...box.size),box.color.length===4?box.color:[...box.color,.08]);gl.depthMask(true);gl.disable(gl.BLEND);return;}
+ gl.disable(gl.BLEND);gl.depthMask(true);const bound=window.QBitsFactoryPassage.FACTORY_BOUNDS,visible=renderSphereVisible(V(...bound.p),bound.radius);
+ for(const batch of passageRender.batches)if(batch.section!=='factory'||visible)drawAsset(batch.mesh,V(),Q(),V(1,1,1),batch.color.length===4?batch.color:[...batch.color,1]);
+ if(visible)for(const box of window.QBitsFactoryPassage.scenery(story.passage.state.time)){const q=Q(),r=box.rotation;if(r)q.setFromEuler(r.pitch||0,r.yaw||0,r.roll||0);drawBox(V(...box.p),q,V(...box.size),box.color.length===4?box.color:[...box.color,1]);}
+}
+function campaignSaveData(checkpoint=saveSession.checkpoint){
+ const data={checkpoint:{...checkpoint},progress:{...story.progress}};
+ if(story.firstCycle)data.firstCycle=openingPayload();else if(story.openingReserve)data.openingReserve=story.openingReserve;
+ if(story.passage)data.passage=passagePayload();return data;
+}
+function writeCampaignSave(checkpoint=saveSession.checkpoint){
+ if(!story.firstCycle&&story.openingReserve){
+  const occupied=familyExistingIds();
+  if(story.openingReserve.reserveParts.some(part=>occupied.has(part.id)))return {ok:false,error:'Una pieza de la reserva inicial aparece también en la escena. La partida anterior se conserva.'};
+ }
+ return saveStore.write('campaign',campaignSaveData(checkpoint));
+}
 
 function openStoryDoor(dt){const d=storyWorld.door;if(!d)return;storyWorld.doorProgress=Math.min(1,storyWorld.doorProgress+dt/.95);const t=storyWorld.doorProgress,u=t*t*(3-2*t);d.p.y=d.initialY+2.65*u;d.body.position.copy(d.p);d.min=sub(d.p,d.half);d.max=add(d.p,d.half);d.body.aabbNeedsUpdate=true;}
 // Persistent slots own JSON data. Live Cannon bodies and narrative callbacks
@@ -9953,6 +10171,7 @@ function initializeSavedGames(){
  saveSession.labLoaded=lab.status==='ready';saveSession.labActive=false;saveSession.campaignActive=false;
  if(campaign.status==='ready'){
   story.progress=normalizedCampaignProgress(campaign.save.data.progress);saveSession.checkpoint={...campaign.save.data.checkpoint};
+  story.openingReserve=campaign.save.data.openingReserve||null;reserveStoredUnitIds(story.openingReserve?.reserveParts);reserveStoredUnitIds(campaign.save.data.firstCycle?.reserveParts);
  }else if(campaign.status==='empty'&&Object.keys(story.progress).length){
   const completed=Array.from({length:LEVELS.length-1},(_,i)=>i+1).filter(n=>story.progress['level'+n]);
   const last=completed.length?Math.max(...completed):0,level=last?Math.min(LEVELS.length-1,last+1):story.progress.intro?1:0;
@@ -9972,7 +10191,7 @@ function persistCampaignCheckpoint(level=story.scene==='campaign'?story.level:0,
  if(saveSession.preparing)return {ok:false,deferred:true};
  saveSession.checkpoint={scene:level?'campaign':'intro',level:level||0,completed:!!completed};saveSession.campaignActive=true;
  if(saveSession.restoring||!story.ready||!story.started)return {ok:false,deferred:true};
- const result=saveStore.write('campaign',{checkpoint:{...saveSession.checkpoint},progress:{...story.progress}});
+ const result=writeCampaignSave();
  if(!result.ok)savedGameStatus('No se pudo guardar la campaña. La partida anterior se conserva. '+(result.error||''));
  return result;
 }
@@ -9991,7 +10210,7 @@ function saveCurrentGame(options={}){
   if(result.ok){story.lab=hydrated;story.labAlpha={...result.save.data.alphaSettings};saveSession.labLoaded=true;saveSession.labActive=true;}
  }else{
   const checkpoint=saveSession.checkpoint||{scene:story.scene,level:story.scene==='campaign'?story.level:0,completed:story.phase==='complete'};
-  result=saveStore.write('campaign',{checkpoint:{...checkpoint},progress:{...story.progress}});
+  result=writeCampaignSave(checkpoint);
  }
  saveSession.nextAutosave=performance.now()+AUTOSAVE_MS;
  if(result.ok)savedGameStatus((mode==='lab'?'Banco de pruebas':'Campaña')+' guardado'+(puzzle.active?' · se conserva el banco anterior al puzle':'')+'.');
@@ -10014,7 +10233,7 @@ function refreshSavedGames(){
    const data=record.save.data;date.textContent='Guardado: '+new Date(record.save.savedAt).toLocaleString('es-CL',{dateStyle:'medium',timeStyle:'short'});
    if(mode==='campaign'){
     const checkpoint=data.checkpoint,level=checkpoint.level,count=Object.keys(data.progress).filter(key=>/^level\d+$/.test(key)&&data.progress[key]===true).length;
-    summary.textContent=level===0?'Prólogo · El primer encuentro':checkpoint.completed&&level===LEVELS.length-1?'Campaña completada · '+count+' niveles':(checkpoint.completed?'Continuar en nivel '+(level+1)+' · '+chapters[level+1][1]:'Nivel '+level+' · '+chapters[level][1])+' · '+count+' completados';
+    summary.textContent=data.firstCycle?'Ciclo 1 · Un lugar para dos · estado conservado':data.passage?'Camino del ciclo 1 al 2 · posición conservada':level===0?'Prólogo · El primer encuentro':checkpoint.completed&&level===LEVELS.length-1?'Campaña completada · '+count+' niveles':(checkpoint.completed?'Continuar en nivel '+(level+1)+' · '+chapters[level+1][1]:'Nivel '+level+' · '+chapters[level][1])+' · '+count+' completados';
    }else{
     const snapshot=data.snapshot,count=snapshot.groups.reduce((n,g)=>n+g.parts.length,0)+(snapshot.disassembly||[]).reduce((n,job)=>n+(job.parts?.length||0),0)+(snapshot.families||[]).reduce((n,f)=>n+QBitsFamilies.count(f.items),0);
     summary.textContent=count+' piezas · '+(snapshot.cargos?.length||0)+' cargas · '+(snapshot.conveyors?.length||0)+' cintas';
@@ -10058,7 +10277,7 @@ function requestNewSavedGame(mode){
  const record=saveStore.read(mode);
  if(record.status==='empty'&&!liveSavedGame(mode))return newSavedGame(mode,{fade:true});
  saveSession.confirmation=mode;document.querySelector('#saves-confirm').hidden=false;
- document.querySelector('#saves-confirm-text').textContent=mode==='lab'?'Se reemplazará la construcción guardada del banco. Tu campaña y tus planos se conservarán.':'La campaña volverá al prólogo y se reiniciarán sus niveles completados. Tu banco, planos e investigaciones del taller se conservarán.';
+ document.querySelector('#saves-confirm-text').textContent=mode==='lab'?'Se reemplazará la construcción guardada del banco. Tu campaña y tus planos se conservarán.':'La campaña volverá al prólogo: se reinician los intentos, sus piezas y los niveles completados. Tu banco, planos e investigaciones del taller se conservarán.';
  document.querySelector('#saves-confirm-cancel').focus({preventScroll:true});return true;
 }
 function saveBeforeSwitch(discardMode=null){
@@ -10076,7 +10295,7 @@ function continueSavedGame(mode,options={}){
  if(liveSavedGame(mode)){resumeGame();return true;}
  if(!saveBeforeSwitch(mode)){refreshSavedGames();return false;}
  const record=saveStore.read(mode);if(record.status!=='ready'){savedGameStatus('No hay una partida válida para continuar. La copia guardada se conserva.');refreshSavedGames();return false;}
- let snapshot;try{if(mode==='lab')snapshot=hydrateLabSnapshot(record.save.data.snapshot);}catch{savedGameStatus('No se pudo restaurar el banco. La partida actual y la copia guardada se conservan.');return false;}
+ let snapshot,opening,passage;try{if(mode==='lab')snapshot=hydrateLabSnapshot(record.save.data.snapshot);else if(record.save.data.firstCycle)opening=hydrateOpeningPayload(record.save.data.firstCycle);else if(record.save.data.passage)passage=hydratePassagePayload(record.save.data.passage);}catch{savedGameStatus('No se pudo restaurar la partida. La situación actual y la copia guardada se conservan.');return false;}
  return runSavedGame(()=>{
   const data=record.save.data;
   if(mode==='lab'){
@@ -10088,7 +10307,8 @@ function continueSavedGame(mode,options={}){
   }else{
    story.progress=normalizedCampaignProgress(data.progress);writeLegacyCampaignProgress();
    const checkpoint=data.checkpoint,level=checkpoint.completed?Math.min(LEVELS.length-1,checkpoint.level+1):checkpoint.level;
-   if(level)beginCampaignLevel(level);else beginIntro();
+   story.openingReserve=data.openingReserve||null;reserveStoredUnitIds(story.openingReserve?.reserveParts);
+   if(opening)beginOpeningSupply(opening);else if(passage)beginFactoryPassage(passage);else if(level)beginCampaignLevel(level);else beginIntro();
    if(checkpoint.completed&&checkpoint.level===LEVELS.length-1){
     saveSession.checkpoint={...checkpoint};story.phase='complete';hideStoryDialogue();storyObjective('');gameMode('complete');pause(false);
     document.querySelector('#complete-eyebrow').textContent='CAMPAÑA COMPLETADA';document.querySelector('#complete-title').textContent='Cada pieza cuenta.';
@@ -10096,7 +10316,7 @@ function continueSavedGame(mode,options={}){
     document.querySelector('#complete-description').textContent='Tu progreso está guardado: '+completed+' niveles completados. Puedes volver a jugarlos o continuar construyendo en el banco.';
     document.querySelector('#complete-next').hidden=true;document.querySelector('#complete-repeat').focus({preventScroll:true});
    }
-   savedGameStatus('Campaña restaurada desde el inicio del nivel guardado.');
+   savedGameStatus(opening?'Práctica restaurada con la misma pieza y sus pasos pendientes.':passage?'Paseo restaurado. Continúa cuando quieras.':'Campaña restaurada desde el inicio del nivel guardado.');
   }
  },options.fade===true);
 }
@@ -10123,7 +10343,7 @@ function newSavedGame(mode,options={}){
   }else{
    // Workshop research and its one-time credit ledger belong to the player,
    // not to a campaign slot; restarting cannot erase or farm those rewards.
-   story.progress={};writeLegacyCampaignProgress();beginIntro();
+   story.progress={};story.openingReserve=null;writeLegacyCampaignProgress();beginIntro();
   }
   savedGameStatus('Nueva '+(mode==='lab'?'partida del banco':'campaña')+' guardada.');
  },options.fade===true);
@@ -10137,10 +10357,14 @@ function enterLab(capture=true){
  world.gravity.y=-settings.gravity;world.defaultContactMaterial.friction=settings.friction;world.defaultContactMaterial.restitution=settings.bounce;world.broadphase.dirty=true;ui.veil.style.opacity='0';setupWorkshop();if(saved?.runtime&&saveSession.restoring)saveSession.restoreWarnings=restoreLabRuntime(saved.runtime).warnings;saveSession.labActive=true;updatePanel();if(!saveSession.restoring&&!saveSession.preparing)saveCurrentGame();if(capture)captureMouse();
 }
 function showMain(){saveCurrentGame();document.querySelector('#wake-screen').hidden=true;gameMode('menu');pause(false);panel.hidden=true;document.querySelector('#main-continue').hidden=!story.started&&!['campaign','lab'].some(mode=>saveStore.read(mode).status==='ready');ui.veil.style.opacity='0';ui.top.style.height='0';ui.bottom.style.height='0';canvas.style.filter='none';document.querySelector('#main-play').focus({preventScroll:true});}
-function openPauseMenu(){cancelFamilyGrouping();cancelFamilyPlacement();familyUi?.clear();if(!story.ready||story.mode!=='playing'||story.transition)return;closeWorkshopPanel(false);cancelUnitCreation();cancelShelfPlacement();document.querySelector('#wake-screen').hidden=true;gameMode('pause');pause(false);panel.hidden=true;saveCurrentGame({manual:true});document.querySelector('#pause-chapter').textContent=story.scene==='intro'?'Prólogo · El primer encuentro':story.scene==='campaign'?'Nivel '+story.level+' · '+chapters[story.level][1]:'Banco de pruebas';document.querySelector('#pause-resume').focus({preventScroll:true});}
+function openPauseMenu(){cancelFamilyGrouping();cancelFamilyPlacement();familyUi?.clear();if(!story.ready||story.mode!=='playing'||story.transition)return;closeWorkshopPanel(false);cancelUnitCreation();cancelShelfPlacement();document.querySelector('#wake-screen').hidden=true;gameMode('pause');pause(false);panel.hidden=true;saveCurrentGame({manual:true});document.querySelector('#pause-opening-help').hidden=!story.firstCycle;document.querySelector('#pause-opening-recover').hidden=!story.firstCycle||!openingPartGroup();document.querySelector('#pause-chapter').textContent=story.firstCycle?'Ciclo 1 · Un lugar para dos':story.passage?'Camino del ciclo 1 al 2':story.scene==='intro'?'Prólogo · El primer encuentro':story.scene==='campaign'?'Nivel '+story.level+' · '+chapters[story.level][1]:'Banco de pruebas';document.querySelector('#pause-resume').focus({preventScroll:true});}
 function resumeGame(){if(story.phase==='complete'){gameMode('complete');return;}gameMode('playing');if(story.scene==='intro'&&['asleep','invocation'].includes(story.phase)){ui.veil.style.opacity='1';ui.top.style.height='52%';ui.bottom.style.height='52%';ui.dialogue.hidden=!story.dialogue;if(story.phase==='asleep')showWakeButton();else{document.querySelector('#wake-screen').hidden=true;canvas.focus({preventScroll:true});}return;}if(story.phase==='choice'||story.phase==='repeat')return;captureMouse();}
-function restartCurrent(){sceneFade(()=>{if(story.scene==='intro')beginIntro();else if(story.scene==='campaign')beginCampaignLevel(story.level);else if(puzzle.active)startPuzzle();else{clearNarrativeScene();gameScene('intro');enterLab(false);}});captureForTransition();}
-function showLevelSelector(){story.returnMode=story.mode;gameMode('levels');pause(false);panel.hidden=true;const list=document.querySelector('#level-list');list.replaceChildren();for(let i=0;i<chapters.length;i++){const row=document.createElement('button');row.disabled=false;const number=document.createElement('span'),info=document.createElement('span'),name=document.createElement('strong'),detail=document.createElement('small');number.className='level-number';number.textContent=chapters[i][0];name.textContent=chapters[i][1];detail.textContent=(i===0?story.progress.intro:story.progress['level'+i])?'Completado · volver a jugar':chapters[i][2];info.append(name,detail);row.append(number,info);row.addEventListener('click',()=>{sceneFade(()=>i===0?beginIntro():beginCampaignLevel(i));captureForTransition();});list.appendChild(row);}document.querySelector('#levels-back').focus({preventScroll:true});}
+function restartCurrent(){
+ if(story.firstCycle){openingResetPrompt(()=>{const guide=worldParts(storyGuide());sceneFade(()=>beginOpeningSupply(null,guide));captureForTransition();});return;}
+ if(story.passage){sceneFade(()=>beginFactoryPassage());captureForTransition();return;}
+ sceneFade(()=>{if(story.scene==='intro')beginIntro();else if(story.scene==='campaign')beginCampaignLevel(story.level);else if(puzzle.active)startPuzzle();else{clearNarrativeScene();gameScene('intro');enterLab(false);}});captureForTransition();
+}
+function showLevelSelector(){story.returnMode=story.mode;gameMode('levels');pause(false);panel.hidden=true;const list=document.querySelector('#level-list');list.replaceChildren();for(let i=0;i<chapters.length;i++){const row=document.createElement('button');row.disabled=false;const number=document.createElement('span'),info=document.createElement('span'),name=document.createElement('strong'),detail=document.createElement('small');number.className='level-number';number.textContent=chapters[i][0];name.textContent=chapters[i][1];detail.textContent=(i===0?story.progress.intro:story.progress['level'+i])?'Completado · volver a jugar':chapters[i][2];info.append(name,detail);row.append(number,info);row.addEventListener('click',()=>openingResetPrompt(()=>{sceneFade(()=>i===0?beginIntro():beginCampaignLevel(i));captureForTransition();},{archive:i===0}));list.appendChild(row);}document.querySelector('#levels-back').focus({preventScroll:true});}
 function backFromLevels(){gameMode(story.returnMode||'menu');if(story.mode==='playing')resumeGame();}
 function storyInput(event){
  if(document.body.dataset.booting==='true')return true;
@@ -10158,10 +10382,14 @@ function storyInput(event){
  return false;
 }
 function tickStory(dt,advanceSlowSystems=true){
- window.QBitsGuideAudio?.setPaused(storySuspended()||!!story.transition);window.QBitsFootsteps?.setPaused(document.hidden||storySuspended()||!!story.transition);window.QBitsJoinAudio?.setPaused(document.hidden||storySuspended()||!!story.transition);
- if(story.transition){if(panel.hidden)tickSceneFade(dt);return;}if(storySuspended())return;
+ const reading=modalReadingActive();
+ window.QBitsGuideAudio?.setPaused(guideNarrationPaused());window.QBitsFootsteps?.setPaused(document.hidden||storySuspended()||!!story.transition);window.QBitsJoinAudio?.setPaused(document.hidden||storySuspended()||!!story.transition);
+ if(story.transition){if(panel.hidden)tickSceneFade(dt);return;}if(reading){renderDialogue(dt);return;}if(storySuspended())return;
  story.elapsed+=dt;story.phaseTime+=dt;renderDialogue(dt);
+ if(story.firstCycle){tickOpeningSupply(dt);return;}if(story.passage){tickFactoryPassage(dt);return;}
  if(story.scene==='intro'){
+  if(story.phase==='pickup')storyObjective('Apunta al Q-bit · '+inputLabel('primary')+' para tomar.');
+  if(story.phase==='carry')storyObjective('Mueve '+lookingInputLabel()+' para mover al Q-bit.\n'+inputLabel('primary')+' · soltar');
   if(['asleep','invocation'].includes(story.phase))ui.veil.style.opacity='1';
   if(story.phase==='asleep'){
    if(story.dialogue){const fade=clamp((story.phaseTime-1.4)/1.2,0,1);ui.dialogue.style.opacity=String(1-fade*fade*(3-2*fade));if(fade===1)hideStoryDialogue();}
@@ -10169,7 +10397,7 @@ function tickStory(dt,advanceSlowSystems=true){
   }
   if(story.phase==='opening'){
    const t=clamp(story.phaseTime/2.8,0,1),u=t*t*(3-2*t);ui.veil.style.opacity=String(1-u);ui.top.style.height=(52*(1-u))+'%';ui.bottom.style.height=(52*(1-u))+'%';canvas.style.filter='blur('+((1-u)*13).toFixed(2)+'px)';
-   if(t===1){story.phase='light';canvas.style.filter='none';say('Bueno, era broma. Estoy acá atrás. Detrás tuyo.',{after:()=>{story.phase='look';storyObjective('Mueve el mouse para mirar detrás de ti.\nPor ahora, solo puedes mirar.');}});}
+   if(t===1){story.phase='light';canvas.style.filter='none';say('Bueno, era broma. Estoy acá atrás. Detrás tuyo.',{hold:true,after:()=>{story.phase='look';storyObjective('Mueve '+lookingInputLabel()+' para mirar detrás de ti.');}});}
   }
   let g=storyGuide();if(!g){story.lost+=dt;if(story.lost>1){spawnGuide();story.lost=0;askPickup('Volví. Las herramientas de prueba hacen cosas curiosas. Tómame otra vez.');}return;}story.lost=0;
   if(story.phase==='look'){
@@ -10177,22 +10405,24 @@ function tickStory(dt,advanceSlowSystems=true){
    if(story.guideSeen>.35){askPickup();}
   }
   if(story.phase==='carry'){
-   if(held?.g!==g){story.phase='pickup';storyObjective('Apunta al Q-bit y haz clic para retomarlo.');say('Casi. Tómame otra vez y mueve el mouse conmigo.',{hold:true});}
-   else if(g.body.position.distanceTo(story.moveOrigin)>.18||Math.abs(yaw-story.grabYaw)+Math.abs(pitch-story.grabPitch)>.25){story.moved=true;if(story.dialogue?.done){story.phase='deliver';held.distance=Math.max(held.distance,1.8);storyObjective('Ahora puedes caminar con WASD.\nApunta al interior del enfriador y suéltame.');say('Uf, estoy acalorado. Esa canasta es un enfriador. Déjame dentro, por favor. Ya puedes caminar; clic otra vez para soltarme.',{hold:true});}}
+   if(held?.g!==g){story.phase='pickup';storyObjective('Apunta al Q-bit · '+inputLabel('primary')+' para retomarlo.');say('Aquí sigo. ¿Otra vez?',{hold:true});}
+   else if(g.body.position.distanceTo(story.moveOrigin)>.18||Math.abs(yaw-story.grabYaw)+Math.abs(pitch-story.grabPitch)>.25){story.moved=true;if(story.dialogue?.done){story.phase='deliver';held.distance=Math.max(held.distance,1.8);storyObjective(walkingInputLabel()+' · caminar\nApunta al enfriador · '+inputLabel('primary')+' para soltar.');say('Uf, estoy acalorado. ¿Me dejas en esa canasta, por favor?',{hold:true});}}
   }
   if(['deliver','cooling'].includes(story.phase)){
    ensureTutorialCooler();const c=story.cooler;const entry=c?.entries.get(story.guideId);
-   if(story.dropAligned&&held?.g===g)storyObjective('Enfriador alineado. Clic izquierdo para soltar.');else if(story.phase==='deliver')storyObjective('WASD · acercarte | rueda · distancia\nApunta al interior del enfriador y haz clic.');
+   if(story.dropAligned&&held?.g===g)storyObjective('Enfriador alineado · '+inputLabel('primary')+' para soltar.');else if(story.phase==='deliver')storyObjective(walkingInputLabel()+' · acercarte\nApunta al enfriador · '+inputLabel('primary')+' para soltar.');
    if(entry&&g.cooler===c){if(story.phase!=='cooling'){story.phase='cooling';storyObjective('Déjalo descansar un momento.');say('Ah… mucho mejor. Dame unos segundos. Hasta los cubos necesitamos bajar un cambio.',{hold:true});}ui.cooling.hidden=false;const pct=Math.round(entry.elapsed/(c.coolSeconds||alphaSettings.coolSeconds)*100);ui.cooling.querySelector('i').style.width=pct+'%';ui.cooling.querySelector('span').textContent='Enfriando · '+pct+'%';
-    if(entry.done){story.phase='cooled';ui.cooling.hidden=true;storyObjective('');say('Listo. Ya sabes mirar, tomarme, moverme y ayudarme a descansar. Nada mal para alguien que acaba de abrir los ojos.',{after:readyQuestion});}
+    if(entry.done){story.phase='cooled';ui.cooling.hidden=true;storyObjective('');say('Ah. Mucho mejor. Gracias.',{hold:true,after:readyQuestion});}
    }else if(story.phase==='cooling'){story.phase='deliver';ui.cooling.hidden=true;say('Un poquito más dentro. Todavía me falta enfriarme.',{hold:true});}
   }
  }
- if(story.scene==='campaign'){tickBlockTwo(dt,advanceSlowSystems);if(advanceSlowSystems)tickReconfiguration(dt);if(!story.encounter)tickCampaign(dt);}
+ if(story.scene==='campaign'){tickBlockTwo(dt,advanceSlowSystems);if(advanceSlowSystems)tickReconfiguration(dt);if(!story.encounter)tickCampaign(dt);if(story.level<=2)updateCampaignObjective();}
 }
 function updateStoryMarker(){
  updateCampaignLabels();layoutEncounterBubbles();ui.marker.hidden=true;if(story.mode!=='playing'||!panel.hidden||story.transition)return;
- let point=null,label='';if(story.scene==='intro'&&['deliver','cooling'].includes(story.phase)&&story.cooler){point=add(story.cooler.p,V(0,.24,0));label=story.dropAligned?'CLIC · SOLTAR':'ENFRIADOR';}
+ let point=null,label='';if(story.scene==='intro'&&['deliver','cooling'].includes(story.phase)&&story.cooler){point=add(story.cooler.p,V(0,.24,0));label=story.dropAligned?inputLabel('primary')+' · SOLTAR':'ENFRIADOR';}
+ if(story.firstCycle&&openingHatchAimed()){point=V(0,.66,-1.45);label=story.firstCycle.phase==='request'?inputLabel('interact')+' · PEDIR 1':story.firstCycle.phase==='return'?inputLabel('interact')+' · DEVOLVER':'ESCOTILLA';}
+ if(story.firstCycle?.phase==='return'&&!point){const g=openingPartGroup();if(g&&!openingGroupHeld(g)){point=add(g.body.position,V(0,.17,0));label='COMPAÑERO · DEVOLUCIÓN PENDIENTE';}}
  if(point){const p=project(point);if(p&&p.x>35&&p.x<canvas.clientWidth-35&&p.y>100&&p.y<canvas.clientHeight-195){ui.marker.style.left=p.x+'px';ui.marker.style.top=(p.y-18)+'px';ui.marker.textContent=label;ui.marker.hidden=false;}}
 }
 function initStory(){
@@ -10202,6 +10432,7 @@ function initStory(){
  for(const mode of ['campaign','lab']){click('saves-'+mode+'-continue',()=>continueSavedGame(mode,{fade:true}));click('saves-'+mode+'-new',()=>requestNewSavedGame(mode));}
  click('saves-back',closeSavedGames);click('saves-confirm-cancel',()=>{const mode=saveSession.confirmation;saveSession.confirmation=null;document.querySelector('#saves-confirm').hidden=true;document.querySelector('#saves-'+(mode||saveSession.focusMode)+'-new').focus({preventScroll:true});});
  click('saves-confirm-new',()=>{if(saveSession.confirmation)newSavedGame(saveSession.confirmation,{fade:true});});
+ click('pause-opening-help',()=>{if(story.firstCycle){gameMode('playing');openingInstruction(story.firstCycle.phase);captureMouse();}});click('pause-opening-recover',()=>{if(story.firstCycle){gameMode('playing');recoverOpeningCompanion();captureMouse();}});
  click('main-codex',showCodex);click('pause-codex',showCodex);click('codex-back',closeCodex);initTitleGreeting();gameScene('lab');gameMode('boot');
 }
 
@@ -10303,7 +10534,7 @@ function socketIsPressed(socket){const g=socket?.occupant;if(!g||!groups.include
 function updateCampaignPressure(dt){if(story.scene!=='campaign'||!story.campaign)return;for(const b of storyWorld.buttons){b.load=buttonLoad(b);b.pressed+=(Math.min(1,b.load/b.required)-b.pressed)*(1-Math.exp(-12*dt));}}
 function moveCampaignDoor(gate,dt){if(!gate.solved)return;gate.open=Math.min(1,gate.open+dt/.95);const t=gate.open,u=t*t*(3-2*t),d=gate.door;d.p.y=d.initialY+2.65*u;d.body.position.copy(d.p);d.min=sub(d.p,d.half);d.max=add(d.p,d.half);d.body.aabbNeedsUpdate=true;}
 function campaignOrder(g){if(story.scene==='campaign'&&story.campaign)for(const part of g.parts)story.campaign.ordered.add(part.id);}
-function beginCampaignLevel(number){
+function beginCampaignLevel(number,guideParts=null){
  number=clamp(Math.floor(number),1,LEVELS.length-1);const carry=number===9&&story.level===8&&story.phase==='complete'?groups.flatMap(g=>worldParts(g)):null;rememberLab();clearNarrativeScene();applyStageDefaults();story.level=number;story.phase='challenge';story.started=true;story.elapsed=0;gameScene('campaign');gameMode('playing');position.splice(0,3,0,EYE_HEIGHT,2.3);yaw=0;pitch=number<=4?-.6:-.25;camera.splice(0,3,...position);
  const definition=LEVELS[number],zs=definition.gates.map((_,i)=>definition.gates.length===1?-3.4:-1.6-i*4),c={number,definition,stage:0,gates:[],crew:[],ordered:new Set(),labelsAt:0,hintAt:0};story.campaign=c;storyWorld.buttons=[];campaignBoundary(zs);
  definition.gates.forEach((def,index)=>{const gate=campaignGate(zs[index],index,def);c.gates.push(gate);
@@ -10311,9 +10542,9 @@ function beginCampaignLevel(number){
   if(def.form)buildSocket(gate,FORMS[def.form]);
   if(def.targets)for(let i=0;i<def.targets;i++)gate.targets.push({p:V(def.targets===1?-.85:i===0?-1.35:1.35,.003,gate.z+1.8),assigned:null,ready:false,index:i});
  });
- for(let i=0;i<definition.count;i++){const x=definition.count===1?-.85:(i%3-1)*.30,z=.55+Math.floor(i/3)*.3,g=carry?.[i]?makeGroup([{...carry[i],p:V(x,HALF+.004,z),q:Q()}]):addQubit([x,HALF+.004,z],1);c.crew.push(g.parts[0].id);g.parts[0].mood.name='Q-bit '+(i+1);if(i===0)story.guideId=g.parts[0].id;}
+ for(let i=0;i<definition.count;i++){const x=definition.count===1?-.85:(i%3-1)*.30,z=.55+Math.floor(i/3)*.3,part=i===0&&guideParts?guideParts[0]:carry?.[i],g=part?makeGroup([{...part,p:V(x,HALF+.004,z),q:Q()}]):addQubit([x,HALF+.004,z],1);c.crew.push(g.parts[0].id);if(!part)g.parts[0].mood.name='Q-bit '+(i+1);if(i===0)story.guideId=g.parts[0].id;}
  if(number<=2)c.gates[0].targets.forEach((t,i)=>t.assigned=c.crew[i]);makeButtonPhysics(storyWorld.buttons);storyWorld.door=c.gates[0].door;storyWorld.doorProgress=0;world.broadphase.dirty=true;
- setupBlockTwo(c);setupReconfiguration(c);setupAutomation(c);setupProduction(c);updateCampaignObjective();if(number===9)beginEncounter();else if(definition.lines)chapterDialogue(definition.lines);else say(definition.line,{after:hideStoryDialogue});updatePanel();persistCampaignCheckpoint(number,false);
+ setupBlockTwo(c);setupReconfiguration(c);setupAutomation(c);setupProduction(c);updateCampaignObjective();if(number===9)beginEncounter();else if(definition.lines)chapterDialogue(definition.lines);else say(number===1?'Puedo ir por mi cuenta. '+inputLabel('secondary')+' sobre mí: «Elegir destino en el suelo». Después, en el círculo: «Ir a este punto».':definition.line,{hold:number<=2,after:hideStoryDialogue});updatePanel();persistCampaignCheckpoint(number,false);
 }
 function updateCampaignObjective(){
  const c=story.campaign;if(!c)return;const gate=c.gates[c.stage],part=c.gates.length>1?'Sala '+(c.stage+1)+' / '+c.gates.length+' · ':'';let text='';
@@ -10321,7 +10552,7 @@ function updateCampaignObjective(){
  if(c.automation){storyObjective(automationObjective(c));return;}
  if(c.production){storyObjective(productionObjective(c));return;}
  if(gate.solved){text=c.number>=5?'Puerta abierta. Retira y reutiliza los Q-bits.\nCruza para continuar.':'Puerta abierta. Cruza para continuar.';}
- else if(gate.kind==='routes')text=gate.targets.length===1?'Lleva al Q-bit al círculo de luz.\nClic derecho · seleccionar y elegir destino':'Un Q-bit en cada destino.\nDales órdenes por separado: 1 → A, 2 → B.';
+ else if(gate.kind==='routes')text=gate.targets.length===1?'Lleva al Q-bit al círculo de luz.\n'+inputLabel('secondary')+' · seleccionar y elegir destino':'Un Q-bit en cada destino.\nDales órdenes por separado: 1 → A, 2 → B.';
  else if(gate.kind==='generation')text='Entrega materia al desintegrador '+(gate.index+1)+'.\n'+gate.generatedRequired+' unidades → '+gate.generatedRequired+' Q-bits.\nApunta al material y pulsa E para asignar un equipo.';
  else if(gate.kind==='buttons')text=gate.pads.length===2?'Mantén un Q-bit sobre cada botón.':'Coloca dos Q-bits en el mismo botón.\nEl aro muestra 50 % y 100 %.';
  else {text=gate.socket.form.name+' · '+gate.socket.targets.length+' Q-bits unidos\nShift + soltar · unir | Alt · separar';if(gate.kind==='combo')text+='\nAdemás, mantén dos Q-bits en el botón.';}
@@ -10354,6 +10585,7 @@ function tickCampaign(dt){
 }
 function finishCampaignLevel(){
  if(story.phase==='finishing'||story.phase==='complete'||story.transition)return;
+ if(story.level===1){story.phase='finishing';sceneFade(()=>{saveStoryProgress('level1');awardWorkshopCredits();beginFactoryPassage();});captureForTransition();return;}
  story.phase='finishing';sceneFade(showCampaignResults,{out:2.1,black:.65,inTime:.9,loading:false,kind:'results'});
 }
 function showCampaignResults(){
@@ -10489,7 +10721,7 @@ function sendMaterial(cargo,chosen=null){
  if(count<cargo.required){announce('Se necesitan '+cargo.required+' Q-bits disponibles en el suelo. Libera al equipo de sus otras tareas.');return false;}
  const success=beginHaul(cargo,team,cargo.source.intake);if(success){hideStoryDialogue();storyObjective('Equipo en camino · '+cargo.required+' Q-bits\nPuedes acompañarlos o preparar el siguiente mecanismo.');}return success;
 }
-function interactMaterial(){if(openWorkshopMenu())return;if(story.scene!=='campaign'||story.encounter)return;if(openReconfigurationMenu()||openProductionMenu())return;const hit=aimCargo(4);if(hit?.cargo.source){if(hit.cargo.job)announce('El equipo ya está trabajando. Clic derecho para cambiar o detener la orden.');else sendMaterial(hit.cargo);}}
+function interactMaterial(){if(openingInteract())return;if(openWorkshopMenu())return;if(story.scene!=='campaign'||story.encounter)return;if(openReconfigurationMenu()||openProductionMenu())return;const hit=aimCargo(4);if(hit?.cargo.source){if(hit.cargo.job)announce('El equipo ya está trabajando. Clic derecho para cambiar o detener la orden.');else sendMaterial(hit.cargo);}}
 function onCampaignPad(g){
  const buttons=activePressureButtons();
  // Most lab scenes have no pressure pads; they need no group geometry here.
@@ -12158,7 +12390,7 @@ function frame(time=performance.now()) {
   let distance = 0;
   previousTime = time;
   advanceFamilyGrouping();
-  window.QBitsGuideAudio?.setPaused(storySuspended()||!!story.transition);window.QBitsFootsteps?.setPaused(document.hidden||storySuspended()||!!story.transition);window.QBitsJoinAudio?.setPaused(document.hidden||storySuspended()||!!story.transition);
+  window.QBitsGuideAudio?.setPaused(guideNarrationPaused());window.QBitsFootsteps?.setPaused(document.hidden||storySuspended()||!!story.transition);window.QBitsJoinAudio?.setPaused(document.hidden||storySuspended()||!!story.transition);
   pollGamepadInput(dt);
   updateSelectionHud(dt);
   if(radialGlassFrame(time).stamp!==radialGlassStamp)redraw=true;
@@ -12191,6 +12423,7 @@ function frame(time=performance.now()) {
       const analogSpeed=Math.min(1,Math.hypot(forward,sideways));
       movePlayer(position, yaw, forward, sideways, dt,(posture.height<EYE_HEIGHT-.1?.58:1)*analogSpeed);
       resolvePuzzlePlayer(oldX,oldZ);resolveStoryPlayer(oldX,oldZ);
+      if(story.passage){const p=window.QBitsFactoryPassage.constrainMove([oldX,openingFloorHeight(),oldZ],position);position[0]=p[0];position[1]=p[1]+posture.height;position[2]=p[2];}
       distance = Math.hypot(position[0] - oldX, position[2] - oldZ);
       redraw = true;
     }
@@ -12207,7 +12440,7 @@ function frame(time=performance.now()) {
   bobSide = Math.abs(nextSide) < 0.000001 ? 0 : nextSide;
   const cameraLimit = ROOM_SIZE / 2 - PLAYER_RADIUS;
   camera[0] = Math.max(-cameraLimit, Math.min(cameraLimit, position[0] + Math.cos(yaw) * bobSide));
-  camera[1] = posture.height + bobHeight;
+  camera[1] = openingFloorHeight() + posture.height + bobHeight;
   camera[2] = Math.max(-cameraLimit, Math.min(cameraLimit, position[2] - Math.sin(yaw) * bobSide));
   updateHeldFocus(dt,active);
   if(shelfPreview&&!frozen){updateShelfPlacement(wallAim());redraw=true;}

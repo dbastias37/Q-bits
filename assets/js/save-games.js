@@ -1,9 +1,9 @@
 (function (root, factory) {
   'use strict';
-  const model = factory();
+  const model = factory(root, typeof module === 'object' && module.exports ? require : null);
   if (typeof module === 'object' && module.exports) module.exports = model;
   else root.QBitsSavedGames = model;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (root, load) {
   'use strict';
 
   const VERSION = 1;
@@ -22,6 +22,11 @@
   const arrayVector = (value, length) => Array.isArray(value) && value.length === length && value.every(finite);
   const check = (condition, message) => { if (!condition) throw new Error(message); };
   const message = (error, fallback) => error && typeof error.message === 'string' ? error.message : fallback;
+
+  // Older checkpoints need no scene modules. Resolve the optional adapters only
+  // when the save actually contains a first-cycle or passage snapshot.
+  const supplyModel = () => load ? load('./campaign-supply.js') : root.QBitsCampaignSupply;
+  const passageModel = () => load ? load('./factory-passage.js') : root.QBitsFactoryPassage;
 
   // Inspect before JSON.stringify: JSON would otherwise turn NaN into null,
   // omit functions, or invoke accessors and custom toJSON methods. Optional
@@ -102,6 +107,17 @@
     }
   }
 
+  function checkWorldPart(part, unitIds) {
+    check(record(part) && positiveId(part.id) && !unitIds.has(part.id), 'Hay un identificador de pieza inválido o repetido.');
+    unitIds.add(part.id);
+    check(SHAPES.has(part.shape) && finite(part.weight) && part.weight > 0, 'La forma o masa de una pieza no es válida.');
+    check(vector(part.p) && quaternion(part.q), 'La posición u orientación de una pieza no es válida.');
+    if (own(part, 'mood')) {
+      check(record(part.mood), 'El estado de una pieza no es válido.');
+      if (own(part.mood, 'energy')) check(finite(part.mood.energy) && part.mood.energy >= 0 && part.mood.energy <= 1, 'La energía de una pieza no es válida.');
+    }
+  }
+
   function checkLab(data) {
     check(record(data) && record(data.snapshot) && record(data.alphaSettings), 'Faltan los datos del banco de pruebas.');
     const snapshot = data.snapshot;
@@ -112,16 +128,7 @@
     for (const group of snapshot.groups) {
       check(record(group) && Array.isArray(group.parts) && group.parts.length > 0, 'Hay un grupo de piezas inválido.');
       check(quaternion(group.q) && vector(group.v) && vector(group.w), 'La postura o velocidad de un grupo no es válida.');
-      for (const part of group.parts) {
-        check(record(part) && positiveId(part.id) && !unitIds.has(part.id), 'Hay un identificador de pieza inválido o repetido.');
-        unitIds.add(part.id);
-        check(SHAPES.has(part.shape) && finite(part.weight) && part.weight > 0, 'La forma o masa de una pieza no es válida.');
-        check(vector(part.p) && quaternion(part.q), 'La posición u orientación de una pieza no es válida.');
-        if (own(part, 'mood')) {
-          check(record(part.mood), 'El estado de una pieza no es válido.');
-          if (own(part.mood, 'energy')) check(finite(part.mood.energy) && part.mood.energy >= 0 && part.mood.energy <= 1, 'La energía de una pieza no es válida.');
-        }
-      }
+      for (const part of group.parts) checkWorldPart(part, unitIds);
     }
     // Cargo and part IDs belong to separate namespaces. Neither is assumed to
     // be contiguous or related to a counter from the previous browser session.
@@ -143,6 +150,113 @@
     }
   }
 
+  function checkOpeningPart(part, ids) {
+    checkWorldPart(part, ids);
+    // These are new full snapshots, not the historical checkpoint format. An
+    // omitted mood would be regenerated on load and grant charge or erase rest.
+    check(record(part.mood) && finite(part.mood.energy) && part.mood.energy >= 0 && part.mood.energy <= 1 &&
+      finite(part.mood.restLeft) && part.mood.restLeft >= 0, 'Faltan la carga o el cansancio de una pieza del inicio.');
+  }
+
+  function emptyOpeningList(object, key) {
+    check(!own(object, key) || Array.isArray(object[key]) && object[key].length === 0,
+      'El primer ciclo contiene un inventario o mecanismo que no admite: '+key+'.');
+  }
+
+  function checkOpeningRoom(snapshot) {
+    // This first slice has two actors and no secondary inventories. Existing
+    // joining remains available; group roots still identify runtime motion.
+    // Rejecting unsupported containers is safer than accepting hidden material
+    // that its scene adapter would silently omit when it restores the room.
+    for (const key of ['cargos', 'families', 'disassembly', 'rotors', 'rotorSets', 'robotArms', 'conveyors', 'shelves']) emptyOpeningList(snapshot, key);
+    check(snapshot.workshop === undefined || snapshot.workshop === null, 'El primer ciclo no admite un taller guardado.');
+    for (const [key, lists] of Object.entries({powerNetwork:['reservoirs', 'cables'], contacts:['sensors', 'rotors'], alphaScene:['coolers', 'blueprints'], trajectories:['routes']})) {
+      if (!own(snapshot, key)) continue;
+      check(record(snapshot[key]), 'El estado de '+key+' del inicio no es válido.');
+      for (const list of lists) emptyOpeningList(snapshot[key], list);
+    }
+    const live = new Map();
+    for (const group of snapshot.groups) {
+      live.set(group.parts[0].id, group);
+    }
+    if (own(snapshot, 'runtime')) {
+      const runtime = snapshot.runtime;
+      check(record(runtime) && runtime.version === 1 && finite(runtime.time) && runtime.time >= 0 && runtime.blocked === null,
+        'El estado de simulación del primer ciclo no es válido.');
+      for (const key of ['trajectoryReceivers', 'conveyors', 'servos', 'marches', 'arms', 'flights', 'coolers']) emptyOpeningList(runtime, key);
+      for (const [key, fields] of [['motion', ['v', 'w']], ['routes', ['goal']]]) {
+        if (!own(runtime, key)) continue;
+        check(Array.isArray(runtime[key]), 'El movimiento guardado del inicio no es válido.');
+        const seen = new Set();
+        for (const entry of runtime[key]) {
+          check(record(entry) && live.has(entry.id) && !seen.has(entry.id) && fields.every(field => arrayVector(entry[field], 3)),
+            'El movimiento guardado no corresponde a una pieza única del inicio.');
+          seen.add(entry.id);
+        }
+      }
+    }
+  }
+
+  function checkOpeningInventory(value, liveParts = [], guideId = null, closed = false) {
+    check(record(value) && value.version === 1 && Array.isArray(value.reserveParts), 'Faltan los datos de la reserva inicial.');
+    const supply = supplyModel();
+    check(supply && typeof supply.validate === 'function', 'No está disponible el validador de la reserva inicial.');
+    const validation = supply.validate(value.ledger);
+    check(validation.ok, validation.error || 'El inventario inicial no es válido.');
+    const ledger = value.ledger;
+    check(ledger.records.length === 1 && ledger.offerSeconds === null && ledger.records.every(entry => entry.destination === 'reserve' && !entry.offered) && ledger.requests.every(request => !request.offered),
+      'El primer ciclo necesita un compañero finito sin retorno automático.');
+    check(guideId === null || positiveId(guideId) && !ledger.records.some(entry => entry.id === guideId), 'El guía no pertenece a la reserva del ejercicio.');
+    const ids = new Set(), reserve = new Map(), live = new Map();
+    for (const part of value.reserveParts) { checkOpeningPart(part, ids); reserve.set(part.id, part); }
+    for (const part of liveParts) { checkOpeningPart(part, ids); live.set(part.id, part); }
+    check(ids.size === ledger.records.length + (guideId === null ? 0 : 1) && (guideId === null || live.has(guideId)),
+      'Falta una pieza del inicio o hay materia ajena a su manifiesto.');
+    for (const entry of ledger.records) {
+      const stored = ['reserve', 'queued'].includes(entry.location), part = (stored ? reserve : live).get(entry.id);
+      check(part && Math.abs(part.weight - entry.weight) <= 1e-8, 'La ubicación o materia de una pieza no coincide con la reserva inicial.');
+    }
+    if (closed) {
+      check(ledger.queue.length === 0 && ledger.transfer === null && ledger.records.every(entry => entry.location === 'reserve'),
+        'El cierre todavía tiene piezas fuera de su destino.');
+      const id = ledger.records[0].id;
+      check(['requested', 'taken', 'placed', 'voluntaryReturns'].every(key => ledger.facts[key].includes(id)),
+        'El cierre no conserva las acciones físicas de la práctica.');
+    }
+    return ids;
+  }
+
+  function checkFirstCycle(value, checkpoint) {
+    check(checkpoint.scene === 'campaign' && checkpoint.level === 1 && !checkpoint.completed,
+      'El primer ciclo no coincide con el punto de continuación.');
+    check(record(value) && ['request', 'take', 'return', 'closing'].includes(value.phase) && positiveId(value.guideId),
+      'La fase del primer ciclo no es válida.');
+    for (const key of ['stable', 'transferTime', 'time']) check(finite(value[key]) && value[key] >= 0, 'El reloj del primer ciclo no es válido.');
+    check(value.stable <= 1e6, 'La estabilidad guardada excede el límite del primer ciclo.');
+    check(value.dialogueStep === null || typeof value.dialogueStep === 'string', 'La lectura guardada del primer ciclo no es válida.');
+    check(typeof value.requiresPlacement === 'boolean', 'Falta la comprobación de colocación tras recuperar la práctica.');
+    checkLab(value);
+    checkOpeningRoom(value.snapshot);
+    checkOpeningInventory(value, value.snapshot.groups.flatMap(group => group.parts), value.guideId, value.phase === 'closing');
+  }
+
+  function checkPassage(value, checkpoint, reserveIds) {
+    check(checkpoint.scene === 'campaign' && checkpoint.level === 1 && checkpoint.completed,
+      'El pasaje no coincide con el cierre del primer ciclo.');
+    check(record(value) && value.version === 1 && arrayVector(value.player, 3) && finite(value.yaw) && finite(value.pitch) && typeof value.invitationPending === 'boolean',
+      'La posición o invitación del pasaje no es válida.');
+    const passage = passageModel();
+    check(passage && typeof passage.restore === 'function' && passage.restore(value.state), 'El recorrido guardado del pasaje no es válido.');
+    const safe = passage.constrainMove(value.player, value.player);
+    check(safe.every((coordinate, index) => Math.abs(coordinate - value.player[index]) <= 1e-6),
+      'La posición guardada queda fuera del suelo transitable del pasaje.');
+    const guide = value.guide;
+    check(record(guide) && Array.isArray(guide.parts) && guide.parts.length === 1 && quaternion(guide.q) && vector(guide.v) && vector(guide.w),
+      'Falta el estado físico del guía en el pasaje.');
+    checkOpeningPart(guide.parts[0], new Set(reserveIds));
+    check(value.state.guideId === guide.parts[0].id, 'La identidad del guía no coincide con el recorrido.');
+  }
+
   function checkCampaign(data) {
     check(record(data) && record(data.checkpoint) && record(data.progress), 'Faltan el punto de continuación o el progreso de campaña.');
     const checkpoint = data.checkpoint;
@@ -152,6 +266,14 @@
     for (const key of Object.keys(data.progress)) {
       if (key === 'torqueTier') check(Number.isInteger(data.progress[key]) && data.progress[key] >= 1 && data.progress[key] <= 3, 'El nivel de torque guardado no es válido.');
       else if (key === 'intro' || /^level\d+$/.test(key) || key.startsWith('lore.')) check(typeof data.progress[key] === 'boolean', 'El progreso de campaña no es válido.');
+    }
+    const firstCycle = data.firstCycle !== undefined, reserve = data.openingReserve !== undefined, passage = data.passage !== undefined;
+    check(!firstCycle || !reserve && !passage, 'El guardado duplica el primer ciclo con su cierre o pasaje.');
+    if (firstCycle) checkFirstCycle(data.firstCycle, checkpoint);
+    const reserveIds = reserve ? checkOpeningInventory(data.openingReserve, [], null, true) : new Set();
+    if (reserve) check(checkpoint.scene === 'campaign', 'La reserva cerrada no coincide con el progreso de campaña.');
+    if (passage) {
+      checkPassage(data.passage, checkpoint, reserveIds);
     }
   }
 

@@ -1,0 +1,462 @@
+{
+  "compiledShaders": 2,
+  "linkedPrograms": 1,
+  "gpuErrors": 0,
+  "renderer": "llvmpipe (LLVM 19.1.7, 256 bits)",
+  "width": 960,
+  "height": 720,
+  "factoryPhaseChangedPixels": 8354,
+  "snapshots": [
+    {
+      "name": "01-supply-room",
+      "eye": [
+        0,
+        1.68,
+        2.3
+      ],
+      "target": [
+        0,
+        0.42,
+        -1.45
+      ],
+      "yaw": 0,
+      "pitch": -0.32414863133447175,
+      "scene": "campaign",
+      "phase": "supply",
+      "parts": 1,
+      "physicalBodies": 25,
+      "guideId": 2,
+      "metrics": {
+        "calls": 33,
+        "triangles": 398,
+        "groups": 1,
+        "culled": 0,
+        "pieces": 1,
+        "hiddenPieces": 0
+      },
+      "draws": 33,
+      "fixture": "initial supply room; no HUD in this GLES capture",
+      "foregroundPixels": 350803,
+      "darkPixels": 1091,
+      "colors": 100,
+      "path": "01-supply-room.png"
+    },
+    {
+      "name": "02-supply-hatch-closed",
+      "eye": [
+        0.58,
+        0.78,
+        -0.2
+      ],
+      "target": [
+        0,
+        0.31,
+        -1.45
+      ],
+      "yaw": 0.43443514228098423,
+      "pitch": -0.32869963312600925,
+      "scene": "campaign",
+      "phase": "supply",
+      "parts": 1,
+      "physicalBodies": 25,
+      "guideId": 2,
+      "metrics": {
+        "calls": 28,
+        "triangles": 336,
+        "groups": 1,
+        "culled": 1,
+        "pieces": 1,
+        "hiddenPieces": 1
+      },
+      "draws": 28,
+      "fixture": "crouched inspection of the existing hatch geometry",
+      "foregroundPixels": 341225,
+      "darkPixels": 257,
+      "colors": 29,
+      "path": "02-supply-hatch-closed.png"
+    },
+    {
+      "name": "03-supply-hatch-offering",
+      "eye": [
+        0.58,
+        0.78,
+        -0.2
+      ],
+      "target": [
+        0,
+        0.31,
+        -1.45
+      ],
+      "yaw": 0.43443514228098423,
+      "pitch": -0.32869963312600925,
+      "scene": "campaign",
+      "phase": "supply",
+      "parts": 2,
+      "physicalBodies": 26,
+      "guideId": 2,
+      "metrics": {
+        "calls": 32,
+        "triangles": 518,
+        "groups": 2,
+        "culled": 1,
+        "pieces": 2,
+        "hiddenPieces": 1
+      },
+      "draws": 32,
+      "fixture": "production transfer sampled during its animation",
+      "transfer": {
+        "kind": "emission",
+        "id": 3,
+        "cause": "request"
+      },
+      "foregroundPixels": 341225,
+      "darkPixels": 8092,
+      "colors": 52,
+      "path": "03-supply-hatch-offering.png"
+    },
+    {
+      "name": "04-supply-offered",
+      "eye": [
+        0.58,
+        0.78,
+        -0.2
+      ],
+      "target": [
+        0,
+        0.19,
+        -1.45
+      ],
+      "yaw": 0.43443514228098423,
+      "pitch": -0.4045398765056426,
+      "scene": "campaign",
+      "phase": "supply",
+      "parts": 2,
+      "physicalBodies": 26,
+      "guideId": 2,
+      "metrics": {
+        "calls": 27,
+        "triangles": 458,
+        "groups": 2,
+        "culled": 1,
+        "pieces": 2,
+        "hiddenPieces": 1
+      },
+      "draws": 27,
+      "fixture": "offered companion on the receiving tray",
+      "foregroundPixels": 300680,
+      "darkPixels": 1876,
+      "colors": 56,
+      "path": "04-supply-offered.png"
+    },
+    {
+      "name": "05-passage-start",
+      "eye": [
+        0,
+        4.68,
+        7.5
+      ],
+      "target": [
+        0,
+        3.111938313208022,
+        4.942426433821483
+      ],
+      "yaw": 0,
+      "pitch": -0.55,
+      "scene": "campaign",
+      "phase": "passage",
+      "parts": 1,
+      "physicalBodies": 7,
+      "guideId": 2,
+      "metrics": {
+        "calls": 19,
+        "triangles": 1356,
+        "groups": 1,
+        "culled": 0,
+        "pieces": 1,
+        "hiddenPieces": 0
+      },
+      "draws": 19,
+      "fixture": "actual entry heading and eye height; invitation UI is not captured",
+      "foregroundPixels": 452475,
+      "darkPixels": 4029,
+      "colors": 30,
+      "path": "05-passage-start.png"
+    },
+    {
+      "name": "06-passage-start-look-down",
+      "eye": [
+        0,
+        4.68,
+        7.5
+      ],
+      "target": [
+        0,
+        3.05,
+        5.6
+      ],
+      "yaw": 0,
+      "pitch": -0.7090595476638158,
+      "scene": "campaign",
+      "phase": "passage",
+      "parts": 1,
+      "physicalBodies": 7,
+      "guideId": 2,
+      "metrics": {
+        "calls": 20,
+        "triangles": 1358,
+        "groups": 1,
+        "culled": 0,
+        "pieces": 1,
+        "hiddenPieces": 0
+      },
+      "draws": 20,
+      "fixture": "player looks down towards the same guide",
+      "foregroundPixels": 391493,
+      "darkPixels": 3927,
+      "colors": 45,
+      "path": "06-passage-start-look-down.png"
+    },
+    {
+      "name": "07-factory-phase-a",
+      "eye": [
+        0.55,
+        4.68,
+        5.2
+      ],
+      "target": [
+        6.8,
+        2.4,
+        4.4
+      ],
+      "yaw": -1.4434885849240424,
+      "pitch": -0.34719040436055487,
+      "scene": "campaign",
+      "phase": "passage",
+      "parts": 1,
+      "physicalBodies": 7,
+      "guideId": 2,
+      "metrics": {
+        "calls": 49,
+        "triangles": 1704,
+        "groups": 1,
+        "culled": 1,
+        "pieces": 1,
+        "hiddenPieces": 1
+      },
+      "draws": 49,
+      "fixture": "gallery window; fixed camera, animation phase A",
+      "animationTime": 1.5,
+      "foregroundPixels": 689684,
+      "darkPixels": 25619,
+      "colors": 29,
+      "path": "07-factory-phase-a.png"
+    },
+    {
+      "name": "08-factory-phase-b",
+      "eye": [
+        0.55,
+        4.68,
+        5.2
+      ],
+      "target": [
+        6.8,
+        2.4,
+        4.4
+      ],
+      "yaw": -1.4434885849240424,
+      "pitch": -0.34719040436055487,
+      "scene": "campaign",
+      "phase": "passage",
+      "parts": 1,
+      "physicalBodies": 7,
+      "guideId": 2,
+      "metrics": {
+        "calls": 49,
+        "triangles": 1704,
+        "groups": 1,
+        "culled": 1,
+        "pieces": 1,
+        "hiddenPieces": 1
+      },
+      "draws": 49,
+      "fixture": "same gallery window; animation phase B",
+      "animationTime": 6.5,
+      "foregroundPixels": 689920,
+      "darkPixels": 26231,
+      "colors": 29,
+      "path": "08-factory-phase-b.png"
+    },
+    {
+      "name": "09-left-turn",
+      "eye": [
+        0,
+        4.68,
+        0.7
+      ],
+      "target": [
+        -3,
+        3.5,
+        0.7
+      ],
+      "yaw": 1.5707963267948966,
+      "pitch": -0.37474607216072603,
+      "scene": "campaign",
+      "phase": "passage",
+      "parts": 1,
+      "physicalBodies": 7,
+      "guideId": 2,
+      "metrics": {
+        "calls": 15,
+        "triangles": 1308,
+        "groups": 1,
+        "culled": 0,
+        "pieces": 1,
+        "hiddenPieces": 0
+      },
+      "draws": 15,
+      "fixture": "left turn before descending",
+      "foregroundPixels": 546777,
+      "darkPixels": 1092,
+      "colors": 15,
+      "path": "09-left-turn.png"
+    },
+    {
+      "name": "10-first-descent",
+      "eye": [
+        -3,
+        4.68,
+        -0.2
+      ],
+      "target": [
+        -3,
+        1.6,
+        -3.8
+      ],
+      "yaw": 0,
+      "pitch": -0.7077105214679019,
+      "scene": "campaign",
+      "phase": "passage",
+      "parts": 1,
+      "physicalBodies": 7,
+      "guideId": 2,
+      "metrics": {
+        "calls": 9,
+        "triangles": 878,
+        "groups": 1,
+        "culled": 0,
+        "pieces": 1,
+        "hiddenPieces": 0
+      },
+      "draws": 9,
+      "fixture": "first flight from its upper landing",
+      "foregroundPixels": 546814,
+      "darkPixels": 560,
+      "colors": 32,
+      "path": "10-first-descent.png"
+    },
+    {
+      "name": "11-middle-landing",
+      "eye": [
+        -3,
+        3.18,
+        -4
+      ],
+      "target": [
+        -3,
+        0.25,
+        -8.1
+      ],
+      "yaw": 0,
+      "pitch": -0.6204801664862268,
+      "scene": "campaign",
+      "phase": "passage",
+      "parts": 1,
+      "physicalBodies": 7,
+      "guideId": 2,
+      "metrics": {
+        "calls": 9,
+        "triangles": 878,
+        "groups": 1,
+        "culled": 0,
+        "pieces": 1,
+        "hiddenPieces": 0
+      },
+      "draws": 9,
+      "fixture": "flat landing between the two flights",
+      "foregroundPixels": 544337,
+      "darkPixels": 704,
+      "colors": 26,
+      "path": "11-middle-landing.png"
+    },
+    {
+      "name": "12-second-descent",
+      "eye": [
+        -3,
+        2.43,
+        -6.2
+      ],
+      "target": [
+        -3,
+        0.65,
+        -9.3
+      ],
+      "yaw": 0,
+      "pitch": -0.5212279988167903,
+      "scene": "campaign",
+      "phase": "passage",
+      "parts": 1,
+      "physicalBodies": 7,
+      "guideId": 2,
+      "metrics": {
+        "calls": 9,
+        "triangles": 878,
+        "groups": 1,
+        "culled": 0,
+        "pieces": 1,
+        "hiddenPieces": 0
+      },
+      "draws": 9,
+      "fixture": "second flight from the player floor height",
+      "foregroundPixels": 574694,
+      "darkPixels": 642,
+      "colors": 61,
+      "path": "12-second-descent.png"
+    },
+    {
+      "name": "13-lower-door",
+      "eye": [
+        -3,
+        1.68,
+        -8.8
+      ],
+      "target": [
+        -3,
+        1.25,
+        -10.3
+      ],
+      "yaw": 0,
+      "pitch": -0.2791799404678767,
+      "scene": "campaign",
+      "phase": "passage",
+      "parts": 1,
+      "physicalBodies": 7,
+      "guideId": 2,
+      "metrics": {
+        "calls": 7,
+        "triangles": 842,
+        "groups": 1,
+        "culled": 1,
+        "pieces": 1,
+        "hiddenPieces": 1
+      },
+      "draws": 7,
+      "fixture": "lower corridor and cycle two threshold",
+      "foregroundPixels": 687958,
+      "darkPixels": 0,
+      "colors": 10,
+      "path": "13-lower-door.png"
+    }
+  ],
+  "scope": "Production renderScene, shaders, buffers and draw stream; fixed camera fixtures with simulated DOM; no UI, browser input or FPS claim.",
+  "reproduce": "python3 tests/validate-factory-passage-gles.py /tmp/qbits-opening-review 960 720"
+}

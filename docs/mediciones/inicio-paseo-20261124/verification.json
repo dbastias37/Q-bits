@@ -1,0 +1,54 @@
+{
+  "date": "2026-11-24",
+  "baseCommit": "0d0b8df77be0fa19bf592d371273ee5f7c346d04",
+  "assetVersion": "20261124-opening-walk-1",
+  "node": {
+    "command": "node --test tests/*.test.cjs",
+    "tests": 1584,
+    "pass": 1584,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "duration_ms": 50056.790464
+  },
+  "focusGles": {
+    "command": "python3 tests/validate-focus-gles.py",
+    "pixelFixture": "PASS",
+    "graphicsPixelFixture": "PASS"
+  },
+  "passageGles": {
+    "command": "python3 tests/validate-factory-passage-gles.py /tmp/qbits-opening-main-review 960 720",
+    "frames": 13,
+    "width": 960,
+    "height": 720,
+    "compiledShaders": 2,
+    "linkedPrograms": 1,
+    "glErrors": 0,
+    "factoryPhaseChangedPixels": 8354,
+    "renderer": "llvmpipe (LLVM 19.1.7, 256 bits)"
+  },
+  "browser": "Not verified: Chromium socket creation failed with Operation not permitted",
+  "sourceSha256": {
+    "assets/js/game.js": "d78d86a11a724873880af9c7f05ecb85622ac6ad318c36ced74d9800ba92807d",
+    "assets/js/campaign-supply.js": "e7166adc62ecda1a6e276bdc1b44a47c466feb600437ec9754a2e50787959ba6",
+    "assets/js/factory-passage.js": "18cda7e2bb810e32b364d56ae6f57d2a32aa0091cd7c5fd249cd49f557cc80d6",
+    "assets/js/save-games.js": "9b96b65927d03f84d764853aa666394bb62d66fb7188d49dfcd165206e3de8fe",
+    "assets/js/boot.js": "a804ef6ba273c2d4b3168edc62320ab9d0e076a5bf70f7813ae46cdc436fdf9d",
+    "index.html": "3be157f5b6c54bf4b4abf13e8a0502e60f0307db2f8c6854e4c12724720477f8",
+    "tests/capture-factory-passage-frame.cjs": "9c8bd8d1bd65c95bbef0f683ec34fc9d3320df36837b47936079df1b0aff26ed",
+    "tests/validate-factory-passage-gles.py": "4e0c23676cec32ba4217cb989cf65cbb829918e7ac3b0b8b3c8fbce9b2b0d465",
+    "tests/opening-campaign-integration.test.cjs": "45ab9bf596aab5e138908ddc22965a4e7898c81852c1e852a762c93cf9cd4ca4"
+  },
+  "integrationReview": {
+    "authorizedDate": "2026-11-24",
+    "target": "main",
+    "newRegressionCases": 4,
+    "contracts": [
+      "Reserve archived IDs before materializing later scenes; preserve archive through cold chapter selection and bank visits.",
+      "Reject archive/physical-inventory ID collisions without replacing the prior save.",
+      "Require an explicit announced reset before replacing a cold saved attempt with a claimed piece; cancellation preserves the prior slot."
+    ],
+    "finalGlesPngsUnchanged": 13
+  }
+}

@@ -1,12 +1,16 @@
 # Q-bits
 
+### Primer ciclo y paseo · 24 de noviembre de 2026
+
+La campaña nueva conserva el despertar y el cuidado, incorpora una primera petición y devolución con reserva finita, y conecta las misiones 1 y 2 mediante una galería acompañada con ventanas a una fábrica decorativa y dos descensos. La instalación se muestra sin explicar su propósito. [Guiones, alcance y pendientes](docs/INICIO_Y_PASEO_20261124.md) · [Verificación de esta entrega](docs/mediciones/inicio-paseo-20261124/README.md). Integración en `main` autorizada el 24 de noviembre de 2026; la comprobación de manejo y fluidez en el dispositivo del jugador sigue pendiente.
+
 ### Prueba de culling · 17 de noviembre de 2026
 
 Configuración → Rendimiento permite activar/desactivar el descarte fuera de cámara. En el banco, **Num7** abre una vista externa con avatar y campo de visión, **Num8** muestra mediciones y **Num9** compara la misma escena OFF/ON. **M3 → Ayuda → Manual → Prueba de rendimiento** ofrece botones equivalentes. La física y las máquinas continúan fuera de pantalla. [Uso, mediciones y límites](docs/CULLING_QBITS.md).
 
 Juego de puzles en primera persona, ambientado en salas blancas minimalistas. Mueve y une Q-bits, organiza al equipo, activa circuitos y transforma materia para abrir nuevas rutas.
 
-Versión actualizada el 16 de noviembre de 2026: prólogo, 20 niveles y laboratorio de pruebas.
+Base de campaña: prólogo, 20 niveles y laboratorio de pruebas; primer incremento del inicio y paseo del 24 de noviembre de 2026.
 
 ## Jugar
 

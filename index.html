@@ -277,6 +277,8 @@ input,select,textarea{font-family:var(--font-menu);}
 .menu-subtitle{font-size:10px;line-height:1.9;max-width:620px;}
 .menu-foot{font-size:8px;line-height:1.9;max-width:min(680px,90vw);}
 #story-objective{font-size:10px;line-height:1.9;max-width:340px;}
+#opening-status{position:fixed;left:24px;top:154px;z-index:22;max-width:290px;white-space:pre-line;font:10px/1.8 var(--font-menu);color:#4c6257;background:#f5faf5dd;border-left:2px solid #9bb3a4;padding:8px 12px;pointer-events:none;}
+body:not([data-game-mode='playing']) #opening-status,body[data-transitioning='true'] #opening-status{display:none!important;}
 #callout-text{width:210px;}#callout-weight,#route-readout{font-size:9px;line-height:1.9;}
 #tools,#notice,#target,#hint{font-size:10px;line-height:1.8;}
 #panel p,#panel label,#panel details{font-size:9px;line-height:1.9;}
@@ -314,7 +316,7 @@ input,select,textarea{font-family:var(--font-menu);}
 <link rel="stylesheet" href="assets/css/conveyor-panel.css?v=20261116-quick-catalogue-1">
 <link rel="stylesheet" href="assets/css/servo-panel.css?v=20261117-culling-1">
   <link rel="stylesheet" href="assets/css/culling-lab.css?v=20261117-culling-1">
-  <link rel="stylesheet" href="assets/css/tablet.css?v=20261123-tablet-live-2">
+  <link rel="stylesheet" href="assets/css/tablet.css?v=20261124-opening-walk-1">
   <link rel="stylesheet" href="assets/css/saved-games.css?v=20261121-saved-games-1">
   <link rel="stylesheet" href="assets/css/families.css?v=20261122-families-1">
 </head>
@@ -343,6 +345,8 @@ input,select,textarea{font-family:var(--font-menu);}
     <div class="menu-actions">
       <button id="pause-resume" class="primary">Continuar <span class="menu-arrow" aria-hidden="true"></span></button>
       <button id="pause-save" type="button" aria-describedby="pause-save-status">Guardar partida</button>
+      <button id="pause-opening-help" type="button" hidden>Releer la indicación</button>
+      <button id="pause-opening-recover" type="button" hidden>Recuperar al compañero</button>
       <small id="pause-save-status" role="status" aria-live="polite" aria-atomic="true"></small>
       <button id="pause-restart">Reiniciar nivel</button><button id="pause-levels">Seleccionar nivel</button><button id="pause-main">Menú principal</button><button id="pause-lab">Banco de pruebas</button><button id="pause-codex">Catálogo de materia</button><button id="pause-settings">Configuración</button>
     </div>
@@ -399,7 +403,8 @@ input,select,textarea{font-family:var(--font-menu);}
   <div id="chapter-label" hidden><span id="chapter-number"></span><strong id="chapter-name"></strong></div>
   <button id="pause-button" hidden aria-label="Pausar" title="Pausa · Esc">Ⅱ</button>
   <div id="story-objective" hidden></div><div id="world-label" hidden aria-hidden="true"></div><div id="campaign-labels" hidden aria-hidden="true"></div>
-  <section id="story-dialogue" hidden aria-label="Diálogo del Q-bit"><div class="dialogue-portrait" aria-hidden="true"><div class="portrait-cube"><i></i><i></i><i></i><i></i><i></i><i></i></div></div><div class="dialogue-content"><div class="dialogue-header"><span id="story-speaker">Q-BIT</span><span id="dialogue-hint">E · continuar</span></div><p id="story-text"></p><div id="story-choices" hidden></div><div id="cooling-track" hidden><i></i><span></span></div></div></section>
+  <section id="story-dialogue" hidden aria-label="Diálogo del Q-bit"><div class="dialogue-portrait" aria-hidden="true"><div class="portrait-cube"><i></i><i></i><i></i><i></i><i></i><i></i></div></div><div class="dialogue-content"><div class="dialogue-header"><span id="story-speaker">Q-BIT</span><span id="dialogue-hint">Continuar</span></div><p id="story-text"></p><div id="story-choices" hidden></div><div id="cooling-track" hidden><i></i><span></span></div></div></section>
+  <div id="opening-status" hidden aria-live="polite"></div>
   <section id="codex-screen" class="game-screen frosted" hidden role="dialog" aria-modal="true" aria-labelledby="codex-title"><div class="codex-content"><p class="eyebrow">ARCHIVO DE LA INSTALACIÓN</p><h2 id="codex-title">La materia recuerda</h2><p id="codex-progress" class="menu-subtitle"></p><div id="codex-entries"></div><p class="codex-note">Los blueprints guardan una forma. Para construirla debes aportar las piezas indicadas.</p><button id="codex-back" class="back-button">← Volver</button></div></section>
   <section id="chapter-complete" class="game-screen frosted" hidden role="dialog" aria-modal="true" aria-label="Nivel completado"><p id="complete-eyebrow" class="eyebrow">01 / PRIMER CONTACTO</p><h2 id="complete-title">Una puerta más.</h2><p id="complete-description" class="menu-subtitle"></p><div class="menu-actions"><button id="complete-next" class="primary">Siguiente nivel <span class="menu-arrow" aria-hidden="true"></span></button><button id="complete-repeat">Volver a jugar <span class="menu-arrow" aria-hidden="true"></span></button><button id="complete-levels">Seleccionar nivel</button><button id="complete-lab">Banco de pruebas</button><button id="complete-main">Menú principal</button></div></section>
 
@@ -861,6 +866,6 @@ input,select,textarea{font-family:var(--font-menu);}
   <script src="assets/js/opening.js?v=20261116-block-joins-1" defer></script>
   <script src="assets/js/servo-panel.js?v=20261119-marcha-2" defer></script>
   <script src="assets/js/families-ui.js?v=20261122-families-1" defer></script>
-  <script src="assets/js/boot.js?v=20261123-tablet-live-2" defer></script>
+  <script src="assets/js/boot.js?v=20261124-opening-walk-1" defer></script>
 </body>
 </html>
