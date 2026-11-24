@@ -4,6 +4,8 @@ Disponible dentro del juego en **P → Manual** y desde **Guía paso a paso** en
 
 Empieza con una máquina y un cubo. P muestra los ajustes mientras la simulación sigue en marcha. Los controles indicados son los predeterminados; si los cambiaste, revisa Configuración → Teclado.
 
+**Clic secundario:** las listas de órdenes y de separación mantienen el mundo en marcha, con vuelo, movimiento y consumo de energía. El cursor queda libre para elegir una orden; abrir o cancelar «Separar…» conserva la actividad del montaje. **Esc** cierra primero la lista; otro **Esc** abre la pausa del juego. Perder el foco o cambiar de pestaña sigue pausando.
+
 Para alimentar máquinas separadas desde un depósito grande, consulta [Cables y depósito de energía](CABLES_ENERGIA_QBITS.md): creación con Q → Equipo, tendido, extensión, inspección y recuperación del material.
 
 ## Colocar y conectar desde el banco rápido

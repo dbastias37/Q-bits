@@ -2,6 +2,18 @@
 
 Actualizado: 24 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
+## Corrección · clic secundario con simulación en marcha
+
+Base comprobada: `caac904a369e50b73ef3ec7fa93da43269b2d13e`, con la corrección de cámara ya integrada. Versión de recursos: `20261124-live-context-menu-1`.
+
+Las listas de órdenes y separación ya no suspenden el mundo. El clic secundario libera el cursor para elegir controles; vuelo, rutas, motores, física, consumo de batería y relojes de campaña siguen avanzando. La mirada y el movimiento del jugador quedan bloqueados mientras la lista está visible, incluso si el navegador tarda en liberar Pointer Lock. Escape cierra primero la lista; un segundo Escape abre la pausa real. Menú principal, pausa explícita, pérdida de foco, pestaña oculta, lecturas modales y editores que ya suspendían conservan sus reglas.
+
+Abrir o cancelar «Separar…» conserva la ruta, el vuelo y la secuencia del brazo. La intervención física y la detención del montaje ocurren al confirmar la separación. Los botones de vuelo, brazo y marcha de servos conservan la intención de su etiqueta: un «Aterrizar» abierto antes de terminar una ruta no se convierte en «Despegar» si el dron ya aterrizó.
+
+**Verificación:** `node --test tests/*.test.cjs` aprobó **1.630/1.630** pruebas, cero fallos, cancelaciones u omisiones. Las 13 regresiones nuevas ejecutan clic, teclado, RAF y Cannon reales con DOM, GPU y Pointer Lock instrumentados. Incluyen 120 pasos físicos y 30 lógicos en dos segundos con el menú del dron abierto, sustentación, consumo, caída de otra pieza, aterrizaje de ruta finita, inversión/parada de rotor, cancelación de desarme, Escape, pérdida de foco y liberación asíncrona del cursor. Ocho de esas pruebas fallan contra la base anterior; las cinco protecciones existentes pasan en ambas. Sintaxis y diff correctos; sin cambios de shaders ni geometría.
+
+**Siguiente paso:** comprobar la interacción en el equipo del jugador con un dron y un mecanismo en marcha. Estas pruebas verifican lógica y física; no certifican una partida visual ni FPS del navegador.
+
 ## Corrección de cámara · cadencia de dibujo y captura del ratón
 
 Base comprobada: `2786aa8617f1712fd38f03d84f6d971acc2fcac3`. El `game.js` servido por `q-bits.onrender.com` coincidía byte a byte con esa revisión al comenzar. Versión de recursos: `20261124-camera-stability-1`.
@@ -22,7 +34,7 @@ Se conserva despertar, encuentro, agarre y cuidado antes de introducir la escoti
 
 El guardado opcional del tramo conserva solicitudes, reclamaciones, transacciones, hechos reales y piezas. Cargar una pieza que estaba sostenida no concede colocación automáticamente: hay que retomarla y soltarla. La recuperación técnica conserva estado sin conceder acciones. Las operaciones del banco que borrarían, crearían, cambiarían materia o regalarían energía quedan protegidas en este tramo y en el paseo; la mano, unión y separación se conservan. Los guardados antiguos siguen siendo compatibles. Los IDs de la reserva permanecen apartados aunque sus piezas no estén materializadas, también al recargar una devolución cerrada, entrar desde el selector y volver del banco. Un intento pendiente guardado exige el aviso de reinicio incluso antes de pulsar Continuar; cancelarlo conserva la reclamación y la copia previa. El guardado rechaza una identidad presente a la vez en reserva y escena.
 
-Al terminar la misión existente 1, el mismo guía invita «Acompáñame». La galería blanca muestra dos cintas, dos brazos y dos drones decorativos a través de ventanas; giro, dos escaleras y descanso llevan a la misión existente 2. La fábrica no añade cuerpos Cannon ni suministro. El guía espera al jugador y el reloj de animación se conserva al guardar. Menú, pausa, lectura modal y pestaña oculta suspenden la situación; la tableta operativa no pausa por sí misma. La arquitectura y la actividad visible anticipan el mundo sin explicar su propósito.
+Al terminar la misión existente 1, el mismo guía invita «Acompáñame». La galería blanca muestra dos cintas, dos brazos y dos drones decorativos a través de ventanas; giro, dos escaleras y descanso llevan a la misión existente 2. La fábrica no añade cuerpos Cannon ni suministro. El guía espera al jugador y el reloj de animación se conserva al guardar. El menú principal, la pausa, la lectura modal y la pestaña oculta suspenden la situación; la tableta y las listas del clic secundario mantienen la actividad. La arquitectura y la actividad visible anticipan el mundo sin explicar su propósito.
 
 **Alcance pendiente:** S03 de oferta/retorno, S04 de lote después de unión, S05 de cierre entre inventarios y el ciclo 12 integrador de la propuesta. La hipótesis de diez segundos permanece desactivada. El nivel 12 anterior no se presenta como esa integración futura. Guiones, dependencias y evaluación: [Inicio y paseo](INICIO_Y_PASEO_20261124.md).
 

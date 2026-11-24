@@ -124,15 +124,15 @@ for(const scene of ['firstCycle','passage'])test(scene+': previous unlocks canno
  assert.deepEqual(partState(t),before);assert.equal(t.blueprints.length,0);
 });
 
-test('contextual orders appear fully while the world clock is suspended',async()=>{
+test('contextual orders finish opening while the world and practice clock keep running',async()=>{
  const game=await setup(),{t,el}=game;const group=emitted(game);
  t.setSelected({g:group,part:group.parts[0]});t.openFloorOrders(t.V(.4,0,.4));
  const menu=el('command-menu');
- assert.equal(menu.hidden,false);assert.equal(menu.style.opacity,'1');assert(t.storySuspended());
+ assert.equal(menu.hidden,false);assert.equal(t.storySuspended(),false);
  const before={sim:t.getSimTime(),practice:t.story.firstCycle.time,position:plain(group.body.position)};
- t.resetSimulationClock(1000,true);for(let i=1;i<=8;i++)t.frame(1000+i*20);
- assert.equal(menu.style.opacity,'1');assert.equal(t.getSimTime(),before.sim);
- assert.equal(t.story.firstCycle.time,before.practice);assert.deepEqual(plain(group.body.position),before.position);
+ t.resetSimulationClock(1000,true);for(let i=1;i<=15;i++)t.frame(1000+i*20);
+ assert.equal(menu.style.opacity,'1');assert(t.getSimTime()>before.sim);
+ assert(t.story.firstCycle.time>before.practice);assert.notDeepEqual(plain(group.body.position),before.position);
  const close=el('command-actions').children.find(button=>button.textContent==='Cerrar');assert(close);close.click();
  assert.equal(menu.hidden,true);assert.equal(t.storySuspended(),false);
 });
