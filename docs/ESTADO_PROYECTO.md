@@ -2,6 +2,20 @@
 
 Actualizado: 24 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
+## Corrección · mecanismos en vuelo y líneas bajo las balizas QR
+
+Base comprobada: `99e4425c6427b2573bc134c61ff9ca10ae28551d`, con las correcciones de cámara y menú secundario integradas. Versión de recursos: `20261124-flight-mechanisms-1`.
+
+El anclaje automático de la base del brazo convertía su chasis a cinemático al iniciar una postura. El controlador de vuelo lo interpretaba como fijo y apagaba la sustentación; al terminar el brazo se liberaba la base y el conjunto caía. Ahora vuelo y herramientas a bordo funcionan simultáneamente, tanto al iniciar el mecanismo después del despegue como al despegar con él funcionando. Se liberan únicamente los anclajes automáticos, después de validar el despegue. Los rotores explícitamente fijos siguen bloqueándolo. Terminar una postura, detener el brazo o recibir un sensor dirigido a sus ejes conserva el vuelo. La recuperación del banco restaura primero el portador aéreo y después sus herramientas.
+
+Una carga de un cubo en la pinza reveló además que el coeficiente fijo de actitud no compensaba su momento y terminaba inclinando las hélices. La respuesta y la amortiguación se ajustan al empuje e inercia del portador dentro del mismo límite de torque asistido. No se cambian poses, velocidades, masas ni fuerza máxima de las hélices. Las cintas trabajan respecto de la traslación y rotación de su base; aplican la reacción a un chasis libre y conservan gasto de batería. Tras aterrizar solo recuperan el anclaje si se comprueba apoyo físico actual. Apagado, agotamiento, obstrucción y límites de carga mantienen sus consecuencias físicas.
+
+La línea terrestre de los QR y la proyección de las rutas aéreas continúan hasta debajo del centro de ambas balizas, también durante el trazado provisional. Se conservan codos ortogonales, alturas, acciones, alcance, puntos físicos de llegada separados 35 cm del cubo y datos guardados. Las extensiones reutilizan buffers y coordenadas ya observadas; no añaden lecturas físicas por fotograma. Este bloque no amplía el reconocimiento de seguidores QR: la restricción previa para componentes con brazo o cinta registrados permanece.
+
+**Verificación:** `node --test tests/*.test.cjs` aprobó **1.652/1.652** pruebas, cero fallos, cancelaciones u omisiones. Las 22 nuevas incluyen el brazo original de cuatro ejes con cuatro hélices, A/B, hombro/codo/muñeca, ciclo compacto que recoge y entrega un cubo de 1 u, ambos órdenes de arranque, parada independiente, sensor, agotamiento, aterrizaje, guardado y transporte en cinta móvil. Quince de las dieciséis regresiones de vuelo y las cuatro de dibujo fallan contra la base; las dos de tracción fallan al revertir solo esa función. Revertir solo la actitud reproduce la caída del ciclo con carga. Las pruebas gráficas reproducen 151 escenas por backend, idénticas en WebGL 1 y 2, con 29.600 celdas de identidad verificadas, 72 muestras de continuidad y 12 de oclusión, sin errores GLES. Foco, posprocesado, sintaxis y diff también pasan. [Evidencia reproducible](mediciones/vuelo-mecanismos-20261124/README.md).
+
+**Siguiente paso:** comprobar en el dispositivo del jugador su brazo con cuatro hélices, el paso por A/B y el inicio/fin de la línea QR. Node/Cannon y las imágenes GLES verifican física, lógica y dibujo; no certifican una partida completa en navegador ni FPS.
+
 ## Corrección · clic secundario con simulación en marcha
 
 Base comprobada: `caac904a369e50b73ef3ec7fa93da43269b2d13e`, con la corrección de cámara ya integrada. Versión de recursos: `20261124-live-context-menu-1`.

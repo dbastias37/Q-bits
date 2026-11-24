@@ -301,3 +301,67 @@ test('moving a paired beacon recompiles cardinal endpoints while preserving the 
  for(let i=1;i<route.polyline.points.length;i++)assert(['x','y','z'].filter(k=>Math.abs(route.polyline.points[i][k]-route.polyline.points[i-1][k])>1e-6).length<=1);
  assert.equal(route.loop,true);
 });
+
+function assertFloorRibbon(t,capture,owner,route,a,b){
+ const points=owner.projectedPoints,y=route.mode==='air'?.009:.012;
+ const start=t.trajectoryPose(a),end=t.trajectoryPose(b);
+ assert(Array.isArray(points)&&points.length>1,'the route or tracing preview has a floor ribbon');
+ assert.deepEqual(plain(points[0]),{x:start.x,y,z:start.z},'the floor ribbon starts underneath the first cube');
+ assert.deepEqual(plain(points.at(-1)),{x:end.x,y,z:end.z},'the floor ribbon ends underneath the second cube');
+ for(let i=1;i<points.length;i++){
+  assert.equal(points[i].y,y);
+  assert(['x','y','z'].filter(k=>Math.abs(points[i][k]-points[i-1][k])>1e-6).length<=1,'the visual extensions preserve cardinal elbows');
+ }
+ const mesh=t.powerRibbonCaches.get(route.mode==='air'?owner.projection:owner),data=capture.buffers.get(mesh?.buffer);
+ assert(data?.length>=36,'the extended floor ribbon is uploaded, not merely stored in a JS object');
+ const first=[0,1,2].map(k=>(data[k]+data[6+k])/2),last=[0,1,2].map(k=>(data[data.length-24+k]+data[data.length-6+k])/2);
+ for(const [actual,expected]of [[first,[start.x,y,start.z]],[last,[end.x,y,end.z]]])actual.forEach((v,i)=>assert(Math.abs(v-expected[i])<1e-6,'uploaded ribbon endpoint lies below the cube centre'));
+ return mesh;
+}
+
+test('floor ribbons continue under rotated QR cubes without moving travel pads or actions',()=>{
+ const capture=instrumentGL(),{t}=lab({gl:capture.gl}),a=beacon(t,-1,-1,{level:2}),b=beacon(t,1,1,{level:2});
+ a.g.body.quaternion.setFromAxisAngle(t.V(0,1,0),.6);b.g.body.quaternion.setFromAxisAngle(t.V(0,1,0),-1.2);
+ const route=pair(t,a,b),system=t.getTrajectorySystem();assert(route.valid,route.reason);
+ assert(system.edit(a.id,[{...route.points[0],action:'wait',wait:.2},{x:0,y:.012,z:-.2,action:'drop',wait:.4},route.points[1]],true).ok);
+ const saved=plain(system.snapshot()),polyline=route.polyline,length=route.length;
+ t.renderVisibility.active=false;t.renderVisibility.enabled=false;t.drawTrajectories();
+ assertFloorRibbon(t,capture,route,route,a,b);
+ for(const [node,p]of [[a,route.points[0]],[b,route.points.at(-1)]]){const centre=t.trajectoryPose(node);assert(Math.abs(Math.hypot(p.x-centre.x,p.z-centre.z)-.35)<1e-9,'the physical pad keeps its arrival clearance');}
+ assert.equal(route.polyline,polyline);assert.equal(route.length,length);assert.deepEqual(plain(system.snapshot()),saved,'visual extensions do not create commands, change reach or enter saves');
+});
+
+test('air ribbons connect their floor projection under both QR cubes while retaining flight heights and landing',()=>{
+ const capture=instrumentGL(),{t}=lab({gl:capture.gl}),a=beacon(t,-1,-1,{level:2,air:true}),b=beacon(t,1,1,{level:2,air:true}),route=pair(t,a,b),system=t.getTrajectorySystem();
+ assert.equal(route.mode,'air');assert(system.edit(a.id,[{...route.points[0],y:.8},{x:0,y:1.2,z:0,action:'wait',wait:.3},{...route.points[1],y:.3,action:'land',wait:.4}],false).ok);
+ const saved=plain(system.snapshot()),polyline=route.polyline;
+ t.renderVisibility.active=false;t.renderVisibility.enabled=false;t.drawTrajectories();
+ assertFloorRibbon(t,capture,route,route,a,b);
+ assert.deepEqual(plain(route.drawPoints),plain(polyline.points.map(({x,y,z})=>({x,y,z}))),'the actual aerial line still matches the physical flight');
+ assert.equal(route.polyline,polyline);assert.deepEqual(plain(system.snapshot()),saved);
+ const flightBuffer=t.powerRibbonCaches.get(route).buffer,floorBuffer=t.powerRibbonCaches.get(route.projection).buffer;
+ assert(system.unlink(a.id).ok);assert.equal(capture.buffers.has(flightBuffer),false);assert.equal(capture.buffers.has(floorBuffer),false);
+});
+
+test('QR tracing previews extend under cubes, reuse unchanged buffers and release both preview layers on cancel',()=>{
+ for(const air of [false,true]){
+  const capture=instrumentGL(),{t}=lab({gl:capture.gl}),a=beacon(t,-1,-1,{level:2,air}),b=beacon(t,1,1,{level:2,air}),route=pair(t,a,b),system=t.getTrajectorySystem();
+  t.renderVisibility.active=false;t.renderVisibility.enabled=false;const saved=plain(system.snapshot());
+  assert(t.trajectoryPanelAction(a.id,'trace').ok);assert(click(t,t.V(-.3,.012,.2)));const draft=t.getTrajectoryDraft();assert.equal(draft.points.length,1);
+  t.drawTrajectories();assertFloorRibbon(t,capture,draft,route,a,b);
+  const uploads=capture.uploads.length,buffer=t.powerRibbonCaches.get(draft).buffer,projectionBuffer=t.powerRibbonCaches.get(draft.projection)?.buffer;
+  for(let i=0;i<5;i++){system.update(.05);t.drawTrajectories();}
+  assert.equal(capture.uploads.length,uploads,'identical sampled positions reuse geometry and buffers');
+  t.cancelTrajectoryDraft();assert.deepEqual(plain(system.snapshot()),saved);assert.equal(capture.buffers.has(buffer),false);
+  assert.equal(t.powerRibbonCaches.has(draft.projection),false);if(air)assert.equal(capture.buffers.has(projectionBuffer),false);
+ }
+});
+
+test('moving a QR cube updates its floor extension in the existing buffer and keeps intermediate commands',()=>{
+ const capture=instrumentGL(),{t}=lab({gl:capture.gl}),a=beacon(t,-1,-1,{level:2}),b=beacon(t,1,1,{level:2}),route=pair(t,a,b),system=t.getTrajectorySystem();
+ const support={x:0,y:.012,z:-.4,action:'wait',wait:.2};assert(system.edit(a.id,[route.points[0],support,route.points[1]],true).ok);
+ t.renderVisibility.active=false;t.renderVisibility.enabled=false;t.drawTrajectories();const cache=assertFloorRibbon(t,capture,route,route,a,b),uploads=capture.uploads.length;
+ b.g.body.position.z+=.2;b.g.body.wakeUp();settle(system,4);assert(route.valid,route.reason);t.drawTrajectories();
+ assert.equal(assertFloorRibbon(t,capture,route,route,a,b),cache);assert.equal(capture.uploads.length,uploads+1);
+ assert.deepEqual(plain(route.points[1]),support);assert.equal(route.loop,true);
+});

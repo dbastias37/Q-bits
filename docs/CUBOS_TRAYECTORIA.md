@@ -38,7 +38,9 @@ El recorrido sigue la misma regla ortogonal que los cables: primero un eje del p
 
 Los cambios de dirección requieren espacio físico. Un vehículo con ruedas reduce la marcha y se orienta en el codo mediante sus motores; el dron se estabiliza antes de cambiar de eje. El radio de giro, los apoyos y la inercia del montaje siguen contando: la línea indica el recorrido del chasis, no elimina su volumen ni las colisiones.
 
-Los extremos siguen las balizas; los puntos intermedios quedan donde fueron trazados. El punto de llegada queda 35 cm delante de la cara lateral, o al costado de una cara superior, para evitar que el mecanismo tenga que ocupar el volumen sólido del cubo. Si el chasis es grande, deja espacio adicional y comprueba sus dimensiones.
+Los extremos siguen las balizas; los puntos intermedios quedan donde fueron trazados. La línea del piso continúa hasta debajo del centro de ambos cubos, también mientras se edita el recorrido. En vuelo, esa conexión aparece en la proyección sobre el piso; la línea elevada conserva las alturas programadas. Los cubos ocultan la parte de la línea que queda debajo de ellos.
+
+El punto físico de llegada queda 35 cm delante de la cara lateral, o al costado de una cara superior, para evitar que el mecanismo tenga que ocupar el volumen sólido del cubo. La prolongación visual une la baliza con ese punto y conserva las acciones, el alcance y las partidas anteriores. Si el chasis es grande, deja espacio adicional y comprueba sus dimensiones.
 
 El trazado admite hasta **48 puntos**, incluidos los extremos. Un nuevo trazado fuera de alcance se rechaza sin sustituir el anterior. Si mover una baliza deja una ruta existente fuera de alcance, esta queda detenida, se puede guardar y se puede reparar acercando el cubo, acortando la ruta o mejorando ambos extremos.
 

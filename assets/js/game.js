@@ -2107,6 +2107,12 @@ function flightForGroup(g){const component=rotorConnectedGroups([g]),modules=pro
  if(!flight){flight={id:key,enabled:false,landing:false,spool:0,phase:0,status:'Apagado',contact:null};flightStates.set(key,flight);}
  flight.component=component;flight.modules=modules;return flight;
 }
+function activeFlightForGroup(g){for(const flight of flightStates.values())if(flight.enabled&&flight.component?.includes(g))return flight;return null;}
+function releaseFlightBaseAnchors(flight){
+ // Arm/conveyor stabilization is automatic, unlike an explicitly fixed rotor.
+ // Release every owner of a shared base without changing its pose or momentum.
+ for(const g of flight.component){const pin=conveyorPins.get(g.body);if(pin?.type===CANNON.Body.DYNAMIC)for(const owner of [...pin.owners])conveyorReleaseBase(owner);}
+}
 function stopFlight(flight,reason='Apagado'){if(!flight)return;flight.trip=null;flight.hold=null;flight.enabled=false;flight.landing=false;flight.spool=0;flight.power=null;flight.status=reason;}
 function flightStopForGroups(list){for(const flight of flightStates.values())if(flight.component?.some(g=>list.includes(g)))stopFlight(flight,'Detenido para manipular');}
 function flightConfig(flight){return QBitsPropellerPower.config(flight.modules[0]?.hub.mood.flight);}
@@ -2121,7 +2127,7 @@ function propellerObstruction(module){
  for(const wall of storyWorld.walls)if(intersects(wall))return 'solid';
  return tip.y<.001?'solid':null;
 }
-function flightSnapshot(flight,dt=0){
+function flightSnapshot(flight,dt=0,starting=false){
  const {component,modules}=flight,config=modules[0].hub.mood.flight||QBitsPropellerPower.config(),supply=externalBatterySummary(component),load=component.reduce((n,g)=>n+totalWeight(g),0)+robotGripLoad(component),mass=load*.25;
  const height=Math.max(0,Math.min(...component.map(g=>bounds(g).min.y))),baseMass=component.reduce((n,g)=>n+g.body.mass,0),velocity=component.reduce((sum,g)=>add(sum,mul(g.body.velocity,g.body.mass/Math.max(.001,baseMass))),V());
  const targetSpeed=flight.landing?0:config.speed,rotorWatts=rotors.filter(r=>r.enabled&&rotorGroups(r).some(g=>component.includes(g))).reduce((n,r)=>n+rotorPowerState(r).inputWatts,0),gripWatts=[...robotGrips.values()].filter(grip=>component.includes(robotGripperHit(grip.id)?.g)).reduce((n,grip)=>n+.08+.08*grip.weight,0),otherWatts=rotorWatts+gripWatts;
@@ -2129,7 +2135,7 @@ function flightSnapshot(flight,dt=0){
  let obstruction=null;
  for(const module of modules){obstruction=partPose(module.g,module.hub).q.vmult(V(0,1,0)).y<.65?'tilt':propellerObstruction(module);if(obstruction)break;}
  const state={targetHeight:config.height,height,count:modules.length,mass,gravity:Math.abs(world.gravity.y),cells:supply.powerCells,availableWatts:Math.max(0,supply.powerCells*QBitsPropellerPower.SPEC.wattsPerCell-otherWatts),energy:Math.max(0,supply.storedJ-rotorWatts*Math.max(0,dt)),vx:velocity.x,vy:velocity.y,vz:velocity.z,targetVx:flight.landing?0:targetSpeed?-Math.sin(config.heading)*targetSpeed:clamp((flight.hold.x-center.x)*1.5,-.4,.4),targetVz:flight.landing?0:targetSpeed?-Math.cos(config.heading)*targetSpeed:clamp((flight.hold.z-center.z)*1.5,-.4,.4),enabled:flight.enabled,landing:flight.landing,spool:flight.spool,
- held:component.some(g=>cubeIsHeld(g)||g.blueprintJob||g.robotHeld),fixed:component.some(g=>g.body.type!==CANNON.Body.DYNAMIC)||rotors.some(r=>r.enabled&&r.mount==='fixed'&&rotorGroups(r).some(g=>component.includes(g))),blocked:!!obstruction};
+ held:component.some(g=>cubeIsHeld(g)||g.blueprintJob||g.robotHeld),fixed:component.some(g=>g.body.type!==CANNON.Body.DYNAMIC&&!(starting&&conveyorPins.get(g.body)?.type===CANNON.Body.DYNAMIC))||rotors.some(r=>r.enabled&&r.mount==='fixed'&&rotorGroups(r).some(g=>component.includes(g))),blocked:!!obstruction};
  if(flight.trip&&!flight.landing)Object.assign(state,flightGuidance(flight,center,height,velocity,dt));
  const power=QBitsPropellerPower.evaluate(state,dt),totalWatts=power.inputWatts+otherWatts;
  return {...power,center,obstruction,remainingSeconds:totalWatts>0?Math.max(0,supply.storedJ-power.spentJoules)/totalWatts:null,height,config,supply,baseMass,velocity};
@@ -2201,7 +2207,7 @@ function flightTouchdown(f,height,velocity){
 function startFlight(flight){
  if(!flight||!mechanismsAvailable())return false;
  if(flight.enabled)return false;
- const snapshot=flightSnapshot(flight);if(!snapshot.canLift){flight.status=flightProblem(snapshot);
+ const snapshot=flightSnapshot(flight,0,true);if(!snapshot.canLift){flight.status=flightProblem(snapshot);
   announce(flight.status);return false;}
  const config=flightConfig(flight),route=config.route;
  if(route?.points.length){
@@ -2212,6 +2218,7 @@ function startFlight(flight){
   }
   flight.trip={...route,index:0,phase:'lift',origin:origin.clone(),depart:origin.clone(),remaining:0};
  }else flight.trip=null;
+ releaseFlightBaseAnchors(flight);
  for(const g of flight.component){stopRoute(g);leaveHaul(g);g.body.wakeUp();}
  configureFlight(flight,config);flight.enabled=true;flight.landing=false;flight.spool=0;flight.hold=null;flight.contact=null;flight.status='Despegando';rememberMechanismRun(flight.component[0],'flight',flight);announce('Dron · altura '+flightConfig(flight).height.toFixed(2)+' m');return true;
 }
@@ -2233,7 +2240,12 @@ function updateFlights(dt){
   // Assisted attitude holds the carrier upright; the rigid assemblies and
   // articulated arm retain their Cannon bodies, payload and collision response.
   const roots=new Set(f.modules.map(m=>m.g));for(const root of roots){const hub=f.modules.find(m=>m.g===root).hub,up=partPose(root,hub).q.vmult(V(0,1,0)),axis=up.cross(V(0,1,0)),b=root.body,budget=Math.hypot(s.fx,s.fy,s.fz)*.1/roots.size;
-   const torque=V(axis.x*.5-b.angularVelocity.x*.04,-b.angularVelocity.y*.025,axis.z*.5-b.angularVelocity.z*.04),size=torque.norm();if(size>budget)torque.scale(budget/size,torque);b.torque.vadd(torque,b.torque);
+   // Scale the controller with the available thrust and carrier inertia: a
+   // fixed 0.5 N·m gain cannot balance even one cube on an extended gripper.
+   // The same thrust-derived torque ceiling still applies, including at zero
+   // power; this changes forces, never the bodies' poses or angular velocity.
+   const stiffness=Math.max(.5,budget),inertia=Math.max(.0001,b.inertia.x,b.inertia.y,b.inertia.z),damping=2*Math.sqrt(stiffness*inertia);
+   const torque=V(axis.x*stiffness-b.angularVelocity.x*damping,-b.angularVelocity.y*damping*.35,axis.z*stiffness-b.angularVelocity.z*damping),size=torque.norm();if(size>budget)torque.scale(budget/size,torque);b.torque.vadd(torque,b.torque);
   }
   f.phase=(f.phase+s.rpm*Math.PI/30*dt)%(Math.PI*2);f.status=s.reason==='overload'?flightProblem(s):f.landing?'Aterrizando':f.trip?({lift:'Despegue o ajuste de altura',travel:'En ruta',wait:'Parada en vuelo',descend:'Descenso',ground:'Parada en tierra'}[f.trip.phase]+' · punto '+(f.trip.index+1)+'/'+f.trip.points.length):s.height<s.config.height-.06?'Subiendo':'En vuelo';
   if(s.exhausted)stopFlight(f,'Batería agotada · sin sustentación');
@@ -3733,9 +3745,15 @@ function conveyorDriveSurface(conveyor,dt){
   // bounded lateral correction keeps loads on the lane; walls still collide.
   let target=add(nearest.point,mul(nearest.axis,Math.max(.05,conveyor.speed*.5)));
   if(nearest.index<points.length-2&&remaining<.07){const next=points[nearest.index+2],axis=sub(next,points[nearest.index+1]);axis.normalize();target=add(points[nearest.index+1],mul(axis,.07-remaining));}
-  const delta=V(target.x-local.x,0,target.z-local.z);if(delta.norm()<1e-8)continue;delta.normalize();const desired=pose.q.vmult(mul(delta,conveyor.speed)),velocity=body.velocity,up=pose.q.vmult(V(0,1,0)),relative=sub(sub(desired,velocity),mul(up,sub(desired,velocity).dot(up))),force=mul(relative,body.mass*24),limit=Math.min(body.mass*settings.gravity*.9,forceBudget*(load?item.weight/load:1)),length=force.norm();if(length>limit)force.scale(limit/length,force);
+  const delta=V(target.x-local.x,0,target.z-local.z);if(delta.norm()<1e-8)continue;delta.normalize();
+  // Belt speed is relative to its carrier. Include translation and rotation
+  // at the load's position so a flying chassis cannot slide out from under it.
+  const desired=pose.q.vmult(mul(delta,conveyor.speed)),base=hit.g.body,carrierVelocity=base.getVelocityAtWorldPoint(body.position,V()),velocity=sub(body.velocity,carrierVelocity),up=pose.q.vmult(V(0,1,0)),relative=sub(sub(desired,velocity),mul(up,sub(desired,velocity).dot(up))),force=mul(relative,body.mass*24),limit=Math.min(body.mass*settings.gravity*.9,forceBudget*(load?item.weight/load:1)),length=force.norm();if(length>limit)force.scale(limit/length,force);
   const watts=Math.max(0,force.dot(desired))/.7+force.norm()*.005;if(!conveyorSpendTraction(conveyor,watts*dt)){stopConveyor(conveyor,'Sin energía');return;}
   conveyor.tractionWatts+=watts;body.force.vadd(force,body.force);body.wakeUp();
+  // A free carrier takes the opposite impulse; fixed installations retain
+  // their existing support reaction. Apply the pair at the same world point.
+  if(base.type===CANNON.Body.DYNAMIC){base.applyForce(mul(force,-1),body.position);base.wakeUp();}
  }
 }
 function conveyorFrictionPairs(physicsWorld){
@@ -3834,7 +3852,7 @@ function conveyorReleaseBase(conveyor){
  const pin=conveyor.pin;if(!pin)return;conveyor.pin=null;pin.owners.delete(conveyor);if(pin.owners.size)return;
  conveyorPins.delete(pin.body);const {body,type,fixedRotation}=pin;body.type=type;body.fixedRotation=fixedRotation;body.updateMassProperties();body.wakeUp();
 }
-function conveyorAcquireBase(conveyor,body){let pin=conveyorPins.get(body);if(!pin){pin={body,type:body.type,fixedRotation:body.fixedRotation,p:body.position.clone(),q:body.quaternion.clone(),owners:new Set()};conveyorPins.set(body,pin);}pin.owners.add(conveyor);conveyor.pin=pin;}
+function conveyorAcquireBase(conveyor,body){if(activeFlightForGroup(body.qubitGroup))return;let pin=conveyorPins.get(body);if(!pin){pin={body,type:body.type,fixedRotation:body.fixedRotation,p:body.position.clone(),q:body.quaternion.clone(),owners:new Set()};conveyorPins.set(body,pin);}pin.owners.add(conveyor);conveyor.pin=pin;}
 
 function createConveyor(options={}){
  const base=rotorPart(options.baseId),source=options.joints;if(!base||!Array.isArray(source)||source.length<1||source.length>16||!['straight','left','right'].includes(options.kind)||options.direction!==undefined&&![1,-1].includes(options.direction)||options.capacity!==undefined&&(!Number.isInteger(options.capacity)||options.capacity<1||options.capacity>MAX_QUBITS)||!conveyorPortsValid(options.ports))return null;
@@ -3862,6 +3880,7 @@ function configureConveyor(conveyor,patch={}){
 function conveyorSupportReady(conveyor){
  const base=rotorPart(conveyor?.baseId);if(!base)return false;
  const up=base.q.vmult(V(0,1,0));if(up.y<.98){conveyor.supportStatus='Coloca la cinta horizontal antes de iniciar';return false;}
+ if(activeFlightForGroup(base.g)){conveyor.support=null;return true;}
  const grounded=body=>{const g=body.qubitGroup;if(!g||!groups.includes(g))return false;const bottom=bounds(g).min.y;return bottom>=-.02&&bottom<=.008;};
  if(grounded(base.g.body)){conveyor.support={base:base.g.body,chain:[]};return true;}
  const previous=conveyor.support;
@@ -3977,7 +3996,9 @@ function updateConveyors(dt){
   const base=rotorPart(conveyor.baseId),members=conveyorRotors(conveyor);if(!base||!conveyorComplete(conveyor)||members.some(r=>!rotorGroups(r).includes(base.g))){stopConveyor(conveyor,'Cinta incompleta');conveyorRemoveSurfaces(conveyor);conveyors.splice(conveyors.indexOf(conveyor),1);continue;}
   if(!conveyorEnsureSurfaces(conveyor)){stopConveyor(conveyor,'Revisa la superficie de la cinta');continue;}if(!conveyor.virtual)virtualizeConveyor(conveyor);conveyorReadLoad(conveyor);if(!conveyor.running)continue;
   if(!conveyorSupportReady(conveyor)){stopConveyor(conveyor,conveyor.supportStatus);continue;}
-  if(conveyor.pin?.body!==base.g.body){stopConveyor(conveyor,'Detenida para ajustar el montaje');continue;}
+  if(conveyor.pin&&conveyor.pin.body!==base.g.body){stopConveyor(conveyor,'Detenida para ajustar el montaje');continue;}
+  // Once landed, only a freshly verified physical support may anchor again.
+  if(!conveyor.pin&&!activeFlightForGroup(base.g))conveyorAcquireBase(conveyor,base.g.body);
   if((held?.items||(held?[held]:[])).some(item=>rotorConnectedGroups([base.g]).includes(item.g))){stopConveyor(conveyor,'Detenida para manipular');continue;}
   const supply=externalBatterySummary(base.g);if(!supply.active||supply.storedJ<=.001){stopConveyor(conveyor,'Sin batería activa o sin energía');continue;}
   if(conveyor.load>conveyor.capacity){stopConveyor(conveyor,'Sobrecarga · '+formatWeight(conveyor.load)+' / '+conveyor.capacity+' u');continue;}
@@ -3986,6 +4007,7 @@ function updateConveyors(dt){
  }
 }
 function driveConveyors(dt){
+ for(const flight of flightStates.values())if(flight.enabled)releaseFlightBaseAnchors(flight);
  for(const pin of conveyorPins.values()){const b=pin.body;
   if(b.type!==CANNON.Body.KINEMATIC||!b.fixedRotation){b.type=CANNON.Body.KINEMATIC;b.fixedRotation=true;b.updateMassProperties();}
   b.position.copy(pin.p);b.quaternion.copy(pin.q);b.velocity.set(0,0,0);b.angularVelocity.set(0,0,0);b.force.set(0,0,0);b.torque.set(0,0,0);b.aabbNeedsUpdate=true;
@@ -8363,7 +8385,7 @@ function trajectoryDraftHint(){
  if(!trajectoryDraft)return '';
  return trajectoryDraft.type==='pair'?'Trayectoria · clic en otro cubo para marcar el fin · Esc: cancelar':trajectoryDraft.type==='link-route'?'Vincular como fin · clic en una baliza de inicio sin pareja · Esc: cancelar':trajectoryDraft.type==='assign'?'Receptor · clic en una baliza de la pareja · Esc: cancelar':'Trazado por la grilla · clic: punto · Enter: guardar · clic derecho: deshacer · Esc: cancelar';
 }
-function cancelTrajectoryDraft(){if(trajectoryDraft){clearPowerRibbonCache(trajectoryDraft);trajectoryDraft=null;redraw=true;}}
+function cancelTrajectoryDraft(){if(trajectoryDraft){clearPowerRibbonCache(trajectoryDraft);if(trajectoryDraft.projection)clearPowerRibbonCache(trajectoryDraft.projection);trajectoryDraft=null;redraw=true;}}
 function finishTrajectoryDraft(){
  const draft=trajectoryDraft,system=getTrajectorySystem(),route=draft&&system.routes.get(draft.routeId);if(draft?.type!=='trace'||!route)return false;
  if(!route.valid||route.revision!==draft.revision){announce('Las balizas cambiaron · cancela y vuelve a trazar.');return false;}
@@ -8399,6 +8421,18 @@ function ensureTrajectoryAtlas(){
  trajectoryAtlas=gl.createTexture();gl.activeTexture(gl.TEXTURE0+3);gl.bindTexture(gl.TEXTURE_2D,trajectoryAtlas);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,256,256,0,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
  const data=[],corners=[[0,-.5,.5],[0,-.5,-.5],[0,.5,-.5],[0,.5,.5]];for(const i of [0,1,2,0,2,3])data.push(...corners[i],1,0,0);trajectoryFaceMesh={buffer:buffer(data),count:6};gl.activeTexture(gl.TEXTURE0);
 }
+function prepareTrajectoryRibbon(owner,route,points){
+ const start=trajectorySystem.nodes.get(route.startId)?.pose,end=trajectorySystem.nodes.get(route.endId)?.pose;
+ if(owner.drawSource===points&&owner.drawMode===route.mode&&owner.drawStartX===start?.x&&owner.drawStartZ===start?.z&&owner.drawEndX===end?.x&&owner.drawEndZ===end?.z)return;
+ owner.drawSource=points;owner.drawMode=route.mode;owner.drawStartX=start?.x;owner.drawStartZ=start?.z;owner.drawEndX=end?.x;owner.drawEndZ=end?.z;owner.drawRevision=(owner.drawRevision||0)+1;
+ owner.drawPoints=points.map(p=>V(p.x,p.y,p.z));owner.projection=owner.projection||{};
+ // The travel/landing pads stay beside the solid beacons. Only the floor
+ // ribbon continues under their centres, so the visual link has no gap and
+ // never orders a mechanism to drive into a beacon or changes its actions.
+ const y=route.mode==='air'?.009:.012,floor=points.map(p=>V(p.x,y,p.z));
+ if(start)floor.unshift(V(start.x,y,start.z));if(end)floor.push(V(end.x,y,end.z));
+ owner.projectedPoints=QBitsRouteGeometry.orthogonal(floor).map(p=>V(p.x,p.y,p.z));
+}
 function drawTrajectories(){
  if(!trajectorySystem?.nodes.size)return;ensureTrajectoryAtlas();gl.activeTexture(gl.TEXTURE0+3);gl.bindTexture(gl.TEXTURE_2D,trajectoryAtlas);gl.uniform1i(uniforms.uTrajectoryAtlas,3);gl.activeTexture(gl.TEXTURE0);
  const activeRoutes=new Set();for(const run of trajectorySystem.followers.values())activeRoutes.add(run.routeId);
@@ -8408,17 +8442,19 @@ function drawTrajectories(){
  }
  for(const route of trajectorySystem.routes.values()){
   const displayed=route.displayPoints||route.polyline?.points;if(!route.endId||!displayed?.length||!renderPointsVisible(displayed,.4))continue;
-  if(route.drawSource!==displayed){route.drawSource=displayed;route.drawRevision=(route.drawRevision||0)+1;route.drawPoints=displayed.map(p=>V(p.x,p.y,p.z));route.projection=route.projection||{};route.projectedPoints=displayed.map(p=>V(p.x,.009,p.z));}
+  prepareTrajectoryRibbon(route,route,displayed);
   const active=activeRoutes.has(route.id),color=route.valid?(route.mode==='air'?[.2,.56,.8,active?.95:.62]:[.08,.65,.47,active?.95:.62]):[.82,.35,.22,.6];
-  drawCachedPowerRibbon(route,route.drawPoints,color,route.drawRevision);
+  drawCachedPowerRibbon(route,route.mode==='air'?route.drawPoints:route.projectedPoints,color,route.drawRevision);
   if(route.mode==='air')drawCachedPowerRibbon(route.projection,route.projectedPoints,[...color.slice(0,3),.22],route.drawRevision);
   for(const id of [route.startId,route.endId]){const node=trajectorySystem.nodes.get(id);if(!node)continue;const p=partPose(node.g,node.part).p;if(!renderSphereVisible(p,.32))continue;drawBox(add(p,V(0,.18,0)),Q(),V(.003,.25,.003),[...color.slice(0,3),1]);}
  }
  if(trajectoryDraft?.type==='trace'){
   const route=trajectorySystem.routes.get(trajectoryDraft.routeId);if(route?.points.length){
    const version=trajectoryDraft.drawVersion||0;
-   if(trajectoryDraft.compiledVersion!==version||trajectoryDraft.compiledRoute!==route.revision){trajectoryDraft.compiledVersion=version;trajectoryDraft.compiledRoute=route.revision;trajectoryDraft.compiledRevision=(trajectoryDraft.compiledRevision||0)+1;trajectoryDraft.drawPoints=QBitsTrajectoryModel.geometry([route.points[0],...trajectoryDraft.points,route.points[route.points.length-1]],route.mode).map(p=>V(p.x,p.y,p.z));}
-   drawCachedPowerRibbon(trajectoryDraft,trajectoryDraft.drawPoints,[.95,.63,.12,.95],trajectoryDraft.compiledRevision);
+   if(trajectoryDraft.compiledVersion!==version||trajectoryDraft.compiledRoute!==route.revision){trajectoryDraft.compiledVersion=version;trajectoryDraft.compiledRoute=route.revision;trajectoryDraft.compiledRevision=(trajectoryDraft.compiledRevision||0)+1;trajectoryDraft.compiledPoints=QBitsTrajectoryModel.geometry([route.points[0],...trajectoryDraft.points,route.points[route.points.length-1]],route.mode);}
+   prepareTrajectoryRibbon(trajectoryDraft,route,trajectoryDraft.compiledPoints);
+   drawCachedPowerRibbon(trajectoryDraft,route.mode==='air'?trajectoryDraft.drawPoints:trajectoryDraft.projectedPoints,[.95,.63,.12,.95],trajectoryDraft.drawRevision);
+   if(route.mode==='air')drawCachedPowerRibbon(trajectoryDraft.projection,trajectoryDraft.projectedPoints,[.95,.63,.12,.22],trajectoryDraft.drawRevision);
   }
  }
 }
@@ -8500,6 +8536,23 @@ function restoreLabRuntime(saved){
  const pair=record=>record&&Number.isSafeInteger(record.aId)&&Number.isSafeInteger(record.bId)?rotorForPair(record):null;
  const group=id=>Number.isSafeInteger(id)?rotorPart(id)?.g:null;
  const timer=(value,maximum=1e6)=>finite(value)&&value>=0?Math.min(value,maximum):0;
+ // Restore the carrier first so onboard tools never acquire a world anchor.
+ for(const record of array(saved.flights)){
+  const g=group(record?.id),f=g&&flightForGroup(g),hold=record?.hold===null?null:vec(record?.hold);
+  if(!f||f.id!==record.id||!finite(record.spool)||record.spool<0||record.spool>1||!finite(record.phase)||record.hold!==null&&!hold||typeof record.landing!=='boolean'){fail('No se pudo recuperar el estado de un dron.');continue;}
+  let trip=null;
+  if(record.trip){
+   const r=record.trip,origin=vec(r.origin),depart=vec(r.depart),route={loop:r.loop,points:r.points};
+   if(!origin||!depart||!QBitsPropellerPower.validConfig({...flightConfig(f),route})||!r.points.length||!Number.isInteger(r.index)||r.index<0||r.index>=r.points.length||!['lift','travel','wait','descend','ground'].includes(r.phase)||!finite(r.remaining)||r.remaining<0){fail('La trayectoria guardada del dron no es válida.');continue;}
+   trip={loop:r.loop,points:r.points.map(p=>({...p})),index:r.index,phase:r.phase,remaining:r.remaining,origin,depart};
+  }
+  // Do not call startFlight: it moves the route origin to the current position
+  // and ramps thrust from zero. The next physical step performs normal power
+  // and obstruction checks before applying any force or energy debit.
+  f.enabled=true;f.landing=record.landing;f.spool=record.spool;f.phase=record.phase;f.hold=hold;f.trip=trip;f.power=null;f.status=f.landing?'Aterrizando':'Vuelo reanudado';
+  for(const key of ['contact','contact_start','contact_stop']){const state=record[key];f[key]=state&&typeof state.latched==='boolean'&&finite(state.clearSeconds)&&state.clearSeconds>=0&&state.clearSeconds<=.08?{latched:state.latched,clearSeconds:state.clearSeconds}:null;}
+  for(const member of f.component)member.body.wakeUp();
+ }
  for(const record of array(saved.conveyors)){
   const c=conveyors.find(c=>c.baseId===record?.baseId);if(!c){fail('Falta un tramo de la cinta guardada.');continue;}
   if(!startConveyor(c)){fail('Cinta detenida: '+c.status);continue;}if(finite(record.phase))c.phase=record.phase;
@@ -8523,22 +8576,6 @@ function restoreLabRuntime(saved){
   }
   if(!robotBeginMotion(arm,record.destination,record.jogging===true)){fail('Brazo detenido: '+arm.status);continue;}
   arm.state=record.state;arm.cycles=Number.isSafeInteger(record.cycles)&&record.cycles>=0?record.cycles:0;arm.scan=timer(record.scan,.1);arm.status=record.state==='wait'?'Esperando objeto compatible bajo la cara de agarre':'Programa reanudado';
- }
- for(const record of array(saved.flights)){
-  const g=group(record?.id),f=g&&flightForGroup(g),hold=record?.hold===null?null:vec(record?.hold);
-  if(!f||f.id!==record.id||!finite(record.spool)||record.spool<0||record.spool>1||!finite(record.phase)||record.hold!==null&&!hold||typeof record.landing!=='boolean'){fail('No se pudo recuperar el estado de un dron.');continue;}
-  let trip=null;
-  if(record.trip){
-   const r=record.trip,origin=vec(r.origin),depart=vec(r.depart),route={loop:r.loop,points:r.points};
-   if(!origin||!depart||!QBitsPropellerPower.validConfig({...flightConfig(f),route})||!r.points.length||!Number.isInteger(r.index)||r.index<0||r.index>=r.points.length||!['lift','travel','wait','descend','ground'].includes(r.phase)||!finite(r.remaining)||r.remaining<0){fail('La trayectoria guardada del dron no es válida.');continue;}
-   trip={loop:r.loop,points:r.points.map(p=>({...p})),index:r.index,phase:r.phase,remaining:r.remaining,origin,depart};
-  }
-  // Do not call startFlight: it moves the route origin to the current position
-  // and ramps thrust from zero. The next physical step performs normal power
-  // and obstruction checks before applying any force or energy debit.
-  f.enabled=true;f.landing=record.landing;f.spool=record.spool;f.phase=record.phase;f.hold=hold;f.trip=trip;f.power=null;f.status=f.landing?'Aterrizando':'Vuelo reanudado';
-  for(const key of ['contact','contact_start','contact_stop']){const state=record[key];f[key]=state&&typeof state.latched==='boolean'&&finite(state.clearSeconds)&&state.clearSeconds>=0&&state.clearSeconds<=.08?{latched:state.latched,clearSeconds:state.clearSeconds}:null;}
-  for(const member of f.component)member.body.wakeUp();
  }
  for(const record of array(saved.motion)){
   const g=group(record?.id),v=vec(record?.v),w=vec(record?.w);if(!g||g.virtualConveyor||!v||!w)continue;

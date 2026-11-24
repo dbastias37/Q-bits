@@ -99,6 +99,37 @@ capture('glyph-tilted',79,[.35,.7,.22],[.24,.035,.04],.025,true);
 capture('glyph-upward',132,[0,0,Math.PI/2],[.24,.025,.04],.025,true);
 capture('glyph-white-shell',7,[0,.35,0],[.22,.025,.05],.95,true);
 capture('glyph-unpaired',-1,[0,0,0],[.22,0,0],.95,true);
+// Pixel evidence for the link under both cubes, including the live draft.
+// The underlying travel pads and authored route remain the production ones.
+function captureRibbon(name,{air=false,preview=false}={}){
+ t.clearNarrativeScene();Object.assign(t.story,{ready:true,mode:'playing',scene:'lab',phase:'idle',transition:null});
+ // A supported display width keeps the core above one pixel in this 384px
+ // fixture; otherwise subpixel alignment would test aliasing, not continuity.
+ t.getVisuals().pathWidth=4;
+ const runtime=t.getTrajectorySystem(),a=t.addQubit([0,.045,0]),b=t.addQubit([.9,.045,0]);
+ if(air){a.body.quaternion.setFromEuler(0,0,Math.PI/2);b.body.quaternion.setFromEuler(0,Math.PI,Math.PI/2);}
+ else b.body.quaternion.setFromEuler(0,Math.PI,0);
+ for(const group of [a,b]){const p=group.parts[0];p.mood.trajectory={version:1,level:1,role:'beacon',face:0,routeId:null};if(!t.onTrajectoryPartChanged(group,p))throw Error('Ribbon beacon registration failed');}
+ const made=runtime.createStart(a.parts[0].id);if(!made.ok||!runtime.pair(made.routeId,b.parts[0].id).ok)throw Error('Ribbon pair failed');
+ for(let i=0;i<4;i++)runtime.update(.05);
+ const line=runtime.routes.get(made.routeId);if(!line.valid)throw Error(line.reason);
+ if(preview&&!t.trajectoryPanelAction(a.parts[0].id,'trace').ok)throw Error('Ribbon draft failed');
+ const eye=[.45,1.8,0],yaw=0,pitch=-Math.PI/2;
+ commands=[];gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,width,height);gl.depthMask(true);gl.enable(gl.DEPTH_TEST);gl.disable(gl.BLEND);gl.disable(gl.CULL_FACE);gl.clearColor(.93,.95,.94,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+ t.setLook({camera:eye,yaw,pitch});gl.uniform3fv(locations.get('uCamera'),eye);gl.uniform2f(locations.get('uLook'),yaw,pitch);
+ for(const [key,value]of Object.entries({uAspect:1,uFocal:1.9,uFocusMask:0,uTextureMix:0,uTextureScale:1,uWarp:0,uCel:0,uJitter:0,uLighting:.5,uGlow:0,uTime:1}))uniform(key,value);
+ gl.uniform2f(locations.get('uResolution'),width,height);gl.uniform3fv(locations.get('uLightPos[0]'),Array(12).fill(0));gl.uniform3fv(locations.get('uLightColor[0]'),Array(12).fill(0));
+ t.drawBox(t.V(.45,-.01,0),t.Q(),t.V(1.8,.02,1.2),[.94,.94,.94,1]);
+ for(const group of [a,b])t.drawBox(group.body.position,group.body.quaternion,t.V(.09,.09,.09),[.8,.8,.8,1]);
+ render.drawTrajectories();
+ const groundY=air?.009:.012;
+ const samples=air?[...[.065,.09,.15,.25,.32].map(z=>[0,groundY,z]),...[.065,.09,.15,.25,.32].map(z=>[.9,groundY,-z])]:[.055,.075,.10,.15,.25,.33,.45,.57,.65,.75,.80,.825,.845].map(x=>[x,groundY,0]);
+ snapshots.push({name,kind:'ribbon',air,preview,eye,yaw,pitch,samples,occluded:[[.02,.091,0],[.88,.091,0]],save:true,commands});
+ if(preview)t.cancelTrajectoryDraft(false);
+}
+captureRibbon('ribbon-ground');
+captureRibbon('ribbon-ground-preview',{preview:true});
+captureRibbon('ribbon-air-projection',{air:true});
 fs.writeFileSync(output,JSON.stringify({width,height,backend,contextVersion:render.renderContext.version,sourceSha256:crypto.createHash('sha256').update(source).digest('hex'),modelSha256:crypto.createHash('sha256').update(fs.readFileSync(path.join(root,'assets/js/trajectory-model.js'))).digest('hex'),glyphs:model.GLYPHS,init,snapshots,validation}));
 """
 capture_file = OUT / 'capture.cjs'
@@ -259,7 +290,8 @@ for command in data['init']:
     replay(command)
 results = []; checked_cells = 0
 for shot in data['snapshots']:
-    assert sum(command[0] == 'drawArrays' for command in shot['commands']) == 3, 'Expected cube, housing and glyph draws'
+    if shot.get('kind') != 'ribbon':
+        assert sum(command[0] == 'drawArrays' for command in shot['commands']) == 3, 'Expected cube, housing and glyph draws'
     for command in shot['commands']:
         replay(command)
     pixels = (C.c_ubyte * (W * H * 4))()
@@ -268,6 +300,18 @@ for shot in data['snapshots']:
     raw = bytes(pixels)
     if shot['save']:
         png(OUT / (shot['name'] + '.png'), raw)
+    if shot.get('kind') == 'ribbon':
+        for world in shot['samples']:
+            r, g, b = value = sample(raw, world, shot)
+            visible = r > g + 20 and g > b + 30 if shot['preview'] else b > r + 15 and g > r + 10 if shot['air'] else g > r + 35 and g > b + 10
+            assert visible, (shot['name'], 'Gap in floor ribbon', world, value)
+        for world in shot['occluded']:
+            value = sample(raw, world, shot)
+            housing = all(abs(channel - expected) <= 1 for channel, expected in zip(value, [191, 204, 204]))
+            assert max(value) - min(value) <= 3 or housing, (shot['name'], 'Ribbon shows through cube', world, value)
+        results.append({'name': shot['name'], 'ribbonSamples': len(shot['samples']), 'occlusionSamples': len(shot['occluded']),
+                        'rgbaSha256': hashlib.sha256(raw).hexdigest(), 'png': shot['name'] + '.png'})
+        continue
     rows = data['glyphs'][shot['glyph']] if shot['glyph'] >= 0 else ['0' * 10] * 10
     for cell, world in enumerate(shot['centres']):
         expected = 242 if rows[cell // 10][cell % 10] == '1' else 2
