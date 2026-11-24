@@ -248,7 +248,7 @@ test('loading a held piece over the work target cannot award the pending placeme
   assert.deepEqual(plain(r.story.firstCycle.ledger.facts.placed), [id(r)]);
 });
 
-test('modal reading, pause and menus freeze the transaction and physics; the operational tablet keeps it running', () => {
+test('modal reading and pause freeze the transaction; contextual menus and the tablet keep it running', () => {
   const instance = opening(), {t, sandbox} = instance;
   t.requestOpeningCompanion(); t.tickStory(.2);
   const captured = () => plain({time:t.story.firstCycle.time, transfer:t.story.firstCycle.transferTime,
@@ -264,8 +264,10 @@ test('modal reading, pause and menus freeze the transaction and physics; the ope
   assert.deepEqual(captured(), before);
   t.resumeGame();
   const menu = sandbox.document.querySelector('#command-menu'); menu.hidden = false;
-  before = captured(); t.tickStory(30); t.advanceSimulation(30);
-  assert.deepEqual(captured(), before);
+  before = captured(); t.tickStory(.05); t.advanceSimulation(.05);
+  assert(t.story.firstCycle.time > before.time);
+  assert(t.story.firstCycle.transferTime > before.transfer);
+  assert(t.getSimTime() > before.sim);
   menu.hidden = true;
   const event = {code:'KeyP', repeat:false, preventDefault(){}};
   t.storyInput(event);

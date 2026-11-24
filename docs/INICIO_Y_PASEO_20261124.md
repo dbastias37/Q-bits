@@ -79,7 +79,7 @@ Detrás del vidrio hay dos cintas, dos brazos y dos drones. Son geometría anima
 
 Las máquinas decorativas cumplen una función de ambientación. Una futura misión de automatización tendrá que usar mecanismos físicos reales y validación propia; esta vista no constituye esa integración.
 
-Menú, lectura modal, pausa y pestaña oculta suspenden guía, fase decorativa, física y evaluación. La tableta operativa mantiene la situación activa. El guardado conserva el punto del paseo, el reloj y el mismo guía; el tiempo fuera de la aplicación no se aplica al volver.
+El menú principal, la lectura modal, la pausa y la pestaña oculta suspenden guía, fase decorativa, física y evaluación. La tableta operativa y las listas del clic secundario mantienen la situación activa. El guardado conserva el punto del paseo, el reloj y el mismo guía; el tiempo fuera de la aplicación no se aplica al volver.
 
 ## Ayudas y controles
 
@@ -87,7 +87,7 @@ Menú, lectura modal, pausa y pestaña oculta suspenden guía, fase decorativa, 
 - «Recuperar al compañero» es una recuperación técnica identificada como tal.
 - Las acciones existentes de tomar, soltar, unir y separar siguen disponibles. Las etiquetas nuevas usan el dispositivo y las asignaciones vigentes.
 - Durante la práctica finita y el paseo, las herramientas del banco que crearían, borrarían, cambiarían masa o regalarían energía están protegidas en sus operaciones reales y en la interfaz. El banco conserva su comportamiento fuera de estos tramos.
-- La tableta no introduce una pausa por sí misma. Un diálogo modal abierto sí mantiene la suspensión correspondiente.
+- La tableta y las listas del clic secundario no introducen una pausa por sí mismas. Un diálogo modal abierto sí mantiene la suspensión correspondiente.
 
 ## Dependencias del siguiente incremento
 

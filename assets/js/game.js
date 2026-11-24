@@ -445,7 +445,7 @@ const keys = new Set();
 let gamepadActive=false,gamepadMove=[0,0],gamepadRotationCodes=new Set(),hudInputActive=false,hudReturnCapture=false;
 const controlHolds=new Map(),controller=window.QBitsControls?.gamepad();
 const keyboardInput=window.QBitsControls?.keyboard(()=>savedPreferences.controls?.keyboard||window.QBitsControls.defaults().keyboard,(id,down,event)=>dispatchControlAction(id,down,'keyboard',event));
-function gameInputActive(){return panel.hidden&&!hudInputActive&&!familyGroupingJob&&!familyUi?.isOpen()&&!trajectoryPanel?.isOpen&&(document.pointerLockElement===canvas||gamepadActive);}
+function gameInputActive(){return panel.hidden&&menu.hidden&&commandMenu.hidden&&!hudInputActive&&!familyGroupingJob&&!familyUi?.isOpen()&&!trajectoryPanel?.isOpen&&(document.pointerLockElement===canvas||gamepadActive);}
 function inputLabel(action){return window.QBitsControls?.labelFor(action,savedPreferences,gamepadActive?'gamepad':'keyboard')||action;}
 function walkingInputLabel(){return gamepadActive?'stick izquierdo':['forward','left','backward','right'].map(inputLabel).join(' / ');}
 function lookingInputLabel(){return gamepadActive?'stick derecho':'mouse';}
@@ -2326,11 +2326,13 @@ function openFlightPanel(hit,editor=false){
 }
 function showFlightMenu(hit,flight){
  clearRotorSelection();selected=hit;multiSelection=[];selectedCargo=null;
+ // Keep the displayed action even if the live flight finishes before the click.
+ const landing=flight.enabled;
  const items=[{label:'Crear trayectoria',run:()=>openFlightPanel(hit,true)},{label:'Vuelo · altura, velocidad y batería…',run:()=>openFlightPanel(hit)},
-  {label:flight.enabled?'Aterrizar':'Despegar',run:()=>{if(flight.enabled)requestFlightLanding(flight);else startFlight(flight);captureMouse();}}];
+  {label:landing?'Aterrizar':'Despegar',run:()=>{if(landing){if(flight.enabled)requestFlightLanding(flight);}else startFlight(flight);captureMouse();}}];
  if(hit.distance<=4)items.push({label:'Guardar mecanismo',disabled:flight.enabled,run:()=>{saveMechanism(hit.g);captureMouse();}},
   {label:'Tomar dron',disabled:hit.distance>2.8||!canCarry(flight.component),run:()=>takeSelection(hit)},
-  {label:'Separar pieza…',run:()=>{stopFlight(flight);openDetachMenu(hit);}});
+  {label:'Separar pieza…',run:()=>openDetachMenu(hit)});
  items.push({label:'Cerrar',run:()=>captureMouse()});openCommandMenu(hit.point||partPose(hit.g,hit.part).p,'Dron '+flight.id+' · '+flight.status,items,hit.g);
 }
 function flightPanelAction(action){const f=flightPanelSubject();if(!f)return false;
@@ -6785,7 +6787,7 @@ function openDetachMenu(hit){
  const module=conveyorForPart(hit.part.id);
  document.querySelector('#detach-one').textContent=module?'Separar módulo completo':'Separar esta pieza';
  if(!module&&hit.g.parts.length===1){announce('Este '+unitLabel(hit.part)+' ya es una pieza independiente.');return;}
- closeCommandMenu(false);detachChoice={g:hit.g,part:hit.part};selected=hit;pause();stopRoute(hit.g);panel.hidden=true;
+ closeCommandMenu(false);detachChoice={g:hit.g,part:hit.part};selected=hit;pause();panel.hidden=true;
  const projected=project(partPose(hit.g,hit.part).p)||{x:canvas.clientWidth/2,y:canvas.clientHeight/2};
  const right=projected.x<canvas.clientWidth/2;
  menu.style.left=clamp(projected.x+(right?30:-218),12,Math.max(12,canvas.clientWidth-214))+'px';menu.style.top=clamp(projected.y-30,12,Math.max(12,canvas.clientHeight-160))+'px';
@@ -7405,13 +7407,14 @@ function handleSecondary(event){
   const arm=ownedConveyor&&!hit.part.mood.gripper?null:robotArmForGroup(hit.g,hit.part.id),gripperId=arm?.gripperId||(hit.part.mood.gripper?hit.part.id:null);
   if(gripperId){
    robotPanelGripperId=gripperId;
+   const stopping=arm&&(arm.running||arm.jogging);
    openCommandMenu(partPose(hit.g,hit.part).p,arm?'Brazo Q-bits · '+robotArmStatus(arm):'Cubo de agarre',[
     {label:'Configurar agarre y secuencia…',run:()=>{closeCommandMenu(false);pause();showTablet();updatePanel();showArmControls();}},
-    ...(arm?[{label:arm.running||arm.jogging?'Detener brazo':'Iniciar secuencia',run:()=>{if(arm.running||arm.jogging)stopRobotArm(arm);else startRobotArm(arm);captureMouse();}}]:[{label:'Tomar objeto compatible',run:()=>{gripperGrab(gripperId);captureMouse();}}]),
+    ...(arm?[{label:stopping?'Detener brazo':'Iniciar secuencia',run:()=>{if(stopping)stopRobotArm(arm);else startRobotArm(arm);captureMouse();}}]:[{label:'Tomar objeto compatible',run:()=>{gripperGrab(gripperId);captureMouse();}}]),
     {label:'Soltar objeto',run:()=>{if(arm?.running)stopRobotArm(arm);releaseGripper(gripperId);captureMouse();}},
     {label:'Tomar mecanismo',disabled:!canCarry(rotorConnectedGroups([hit.g]))||hit.distance>2.8,run:()=>takeSelection(hit)},
     {label:'Guardar mecanismo',run:()=>{saveMechanism(hit.g);captureMouse();}},
-    {label:'Separar pieza…',run:()=>{if(arm)stopRobotArm(arm);openDetachMenu(hit);}},
+    {label:'Separar pieza…',run:()=>openDetachMenu(hit)},
     {label:'Cerrar',run:()=>captureMouse()}
    ],hit.g);return;
   }
@@ -7438,7 +7441,7 @@ function handleSecondary(event){
   if(QBitsWorkshop.hasSensor(hit.part))items.unshift({label:'Configurar sensor…',run:()=>showSensorMenu(hit)});
   const rotor=rotorForPart(hit.part.id)||rotorForGroup(hit.g);
   if(rotor&&rotorSetFor(rotor)&&!QBitsWorkshop.hasSensor(hit.part)){selectRotorSet(rotorSetFor(rotor));showRotorSetMenu();return;}
-  if(rotor?.servo)items.unshift({label:servoMarchFor(rotor)?'Detener marcha del conjunto':'Iniciar marcha del conjunto',run:()=>{if(servoMarchFor(rotor))stopServoMarch(servoMarchFor(rotor));else startServoMarch(rotor);captureMouse();}});
+  if(rotor?.servo){const stopping=!!servoMarchFor(rotor);items.unshift({label:stopping?'Detener marcha del conjunto':'Iniciar marcha del conjunto',run:()=>{if(stopping)stopServoMarch(servoMarchFor(rotor));else startServoMarch(rotor);captureMouse();}});}
   if(rotor){items.splice(items.findIndex(item=>item.label==='Guardar forma'),1);items.unshift({label:rotor.servo?'Configurar '+servoLabel(rotor)+'…':'Rotación…',run:()=>rotor.servo?openRotorControls():showRotorRotation(rotor,partPose(hit.g,hit.part).p)});items.push({label:'Guardar mecanismo · Rotor',run:()=>{saveMechanism(rotor);captureMouse();}},{label:'Separar enganches del rotor',run:()=>{disconnectRotor(rotor);captureMouse();}});}
   else if(hit.g.parts.some(part=>unitShape(part)==='coupler'))items.unshift({label:'Guardar mecanismo · Enganche',run:()=>{saveMechanism(hit.g);captureMouse();}},{label:hit.g.parts.some(p=>p.shape==='coupler'&&propellerHasBlade(p.id))?'Hélice incompleta · conecta otro triangular a la punta':'Enganche · Shift + otra punta: rotor; Shift + 2 triangulares: hélice',disabled:true,run:()=>{}});
   if(!rotor&&story.scene==='lab'&&unitShape(hit)==='pyramid')items.unshift(...[['pivot','Preparar Servo pivote'],['hinge','Preparar Servo bisagra']].map(([kind,label])=>({label,run:()=>{prepareServoPart(hit,kind);captureMouse();}})));
@@ -9839,11 +9842,12 @@ const chapters=[['00','El primer encuentro','Prólogo · tomar, mover y enfriar'
 const ui={main:document.querySelector('#main-screen'),pause:document.querySelector('#pause-screen'),levels:document.querySelector('#levels-screen'),complete:document.querySelector('#chapter-complete'),dialogue:document.querySelector('#story-dialogue'),text:document.querySelector('#story-text'),speaker:document.querySelector('#story-speaker'),choices:document.querySelector('#story-choices'),objective:document.querySelector('#story-objective'),veil:document.querySelector('#scene-veil'),top:document.querySelector('#eye-top'),bottom:document.querySelector('#eye-bottom'),cooling:document.querySelector('#cooling-track'),marker:document.querySelector('#world-label')};
 function gameMode(mode){if(story.mode!==mode)resetSimulationClock();if(mode!=='playing'){window.QBitsGuideAudio?.setPaused(true);window.QBitsFootsteps?.setPaused(true);window.QBitsJoinAudio?.setPaused(true);}if(mode!=='playing')closeUnitRadial(false);story.mode=mode;if(mode!=='playing'){cullingLab.observer=false;document.body.dataset.cullingObserver='false';cullingLab.lastFrame=null;}updateCullingHud(true);window.QBitsMusic?.setPaused(!['playing','menu','levels','codex','settings','saves'].includes(mode));document.body.dataset.gameMode=mode;for(const [key,el] of [['menu',ui.main],['pause',ui.pause],['levels',ui.levels],['complete',ui.complete],['codex',document.querySelector('#codex-screen')],['saves',document.querySelector('#saves-screen')]])el.hidden=mode!==key;document.querySelector('#pause-button').hidden=mode!=='playing';hint.hidden=true;redraw=true;}
 function gameScene(scene){story.scene=scene;document.body.dataset.gameScene=scene;const label=document.querySelector('#chapter-label');label.hidden=scene==='lab';document.querySelector('#chapter-number').textContent=scene==='intro'?'PRÓLOGO / 00':'NIVEL / '+String(story.level||1).padStart(2,'0');document.querySelector('#chapter-name').textContent=scene==='intro'?'El primer encuentro':chapters[story.level||1][1];}
-function storySuspended(){return !!story.dialogue?.modal||!menu.hidden||!commandMenu.hidden||!!trajectoryPanel?.isOpen||!!familyGroupingJob||!!familyUi?.isOpen()||radialOpen()||story.ready&&(story.mode!=='playing'||document.hidden);}
+// Context menus release input capture, but their machines and the world stay live.
+function storySuspended(){return !!story.dialogue?.modal||!!trajectoryPanel?.isOpen||!!familyGroupingJob||!!familyUi?.isOpen()||radialOpen()||story.ready&&(story.mode!=='playing'||document.hidden);}
 function modalReadingActive(){return !!story.dialogue?.modal&&story.mode==='playing'&&!document.hidden&&panel.hidden&&menu.hidden&&commandMenu.hidden&&!settingsScreen?.isOpen&&!radialOpen()&&!trajectoryPanel?.isOpen&&!familyUi?.isOpen();}
 function guideNarrationPaused(){return storySuspended()&&!modalReadingActive()||!!story.transition;}
 function storyWalkAllowed(){return !story.ready||story.scene!=='intro'||['deliver','cooling','cooled','choice','repeat'].includes(story.phase);}
-function storyLookAllowed(){return !story.dialogue?.modal&&!workshopPanel?.isOpen&&(!story.ready||story.mode==='playing'&&!['asleep','invocation','opening'].includes(story.phase));}
+function storyLookAllowed(){return menu.hidden&&commandMenu.hidden&&!story.dialogue?.modal&&!workshopPanel?.isOpen&&(!story.ready||story.mode==='playing'&&!['asleep','invocation','opening'].includes(story.phase));}
 function storyActionAllowed(){return !story.ready||story.mode==='playing'&&!story.dialogue?.modal&&!story.transition&&!encounterLocksActions()&&(story.scene!=='intro'||['pickup','carry','deliver','cooling','cooled'].includes(story.phase));}
 function storyObjective(text){if(ui.objective.textContent!==text)ui.objective.textContent=text;ui.objective.hidden=!text;}
 function say(text,{after=null,hold=false,mysterious=false,choices=null,onComplete=null,modal=false,system=false}={}){
