@@ -2,6 +2,18 @@
 
 Actualizado: 24 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
+## Corrección de cámara · cadencia de dibujo y captura del ratón
+
+Base comprobada: `2786aa8617f1712fd38f03d84f6d971acc2fcac3`. El `game.js` servido por `q-bits.onrender.com` coincidía byte a byte con esa revisión al comenzar. Versión de recursos: `20261124-camera-stability-1`.
+
+Se reprodujo un defecto de `visualFrameDue`: con 600 callbacks a 60 Hz y variación alternante de ±0,6 ms, el límite de 60 FPS autorizaba solo 300 dibujos. Su margen fijo de 0,5 ms descartaba un callback y el siguiente adelantaba dos períodos, repitiendo la pérdida. El nuevo planificador conserva la fase, admite el refresco más cercano y retiene como máximo un período pendiente; después de una pausa larga inicia una fase nueva. Los mismos casos dan 600/600 a 60 Hz y 1.200/1.200 a 120 Hz. Se verifican también frecuencias no divisibles, pausas y límites distintos del refresco. Son decisiones del planificador ante tiempos sintéticos, no una medición de FPS de GPU.
+
+La captura pide movimiento sin aceleración del sistema y vuelve a Pointer Lock convencional solo si la opción no está soportada. La negociación conserva una recogida pendiente y respeta errores, timeout, pausa y respuestas tardías. Una solicitud autorizada para la transición conserva su permiso hasta la respuesta del navegador. El ratón rechaza datos no finitos y no mueve la mirada durante suspensión o fundido. Los desplazamientos válidos se mantienen completos e inmediatos, incluidos giros rápidos; no se añade suavizado ni se cambia la física, la postura o el apuntado.
+
+**Verificación:** 1.617/1.617 pruebas Node/Cannon aprobadas, cero fallos, cancelaciones u omisiones; incluye 34 pruebas de cámara/captura y cuatro escenarios de giro con el render instrumentado. Sintaxis y diff correctos. Los shaders y fixtures de foco/posprocesado pasan EGL/GLES. Evidencia y reproducción: [Cámara del 24 de noviembre](mediciones/camera-20261124/README.md).
+
+**Límite y siguiente paso:** el navegador remoto abrió el sitio, pero falló la creación de WebGL, incluso al reintentar. No se certifica una partida visual ni que el dispositivo del jugador emita desplazamientos espurios. Verificar la versión publicada en el equipo del jugador, girar quieto, caminar/agacharse girando y sostener un cubo; comprobar también pausa y regreso. No atribuir a un recentrado automático o al cruce de ±π un defecto que las pruebas no muestran.
+
 ## Primer ciclo · inicio, reserva y paseo 01 → 02
 
 Base comprobada al comenzar: `0d0b8df77be0fa19bf592d371273ee5f7c346d04`, la misma revisión de la auditoría del 23 de noviembre. Los tres documentos de diseño del 24 de noviembre se usan como antecedente; esta implementación empieza por un tramo coherente. Versión de recursos: `20261124-opening-walk-1`. El usuario autorizó su integración en `main` el 24 de noviembre de 2026. La disponibilidad del sitio publicado se comprueba por separado.
