@@ -1,0 +1,99 @@
+{
+  "revision": "current",
+  "pick": 4,
+  "hz": 60,
+  "axis": "pitch",
+  "phaseMetrics": {
+    "settle": {
+      "peakJointGap": 0.0018670630172109579,
+      "peakSpeed": 1.0560009037298448,
+      "peakSpin": 1.8488585089292549
+    },
+    "lift": {
+      "peakJointGap": 0.005981966698784753,
+      "peakSpeed": 1.4058558873738765,
+      "peakSpin": 1.4719429302360085
+    },
+    "turn": {
+      "peakJointGap": 0.008796054304774995,
+      "peakSpeed": 1.6855287485392185,
+      "peakSpin": 3.1590466849240424
+    },
+    "hold": {
+      "peakJointGap": 0.003431040898670286,
+      "peakSpeed": 0.09004782238655676,
+      "peakSpin": 0.0005741991674572292
+    },
+    "drop": {
+      "peakJointGap": 0.03349005426152335,
+      "peakSpeed": 4.542410299925774,
+      "peakSpin": 4.813812446241511
+    },
+    "regrab": {
+      "peakJointGap": 0.006861094663298735,
+      "peakSpeed": 1.4896428995048139,
+      "peakSpin": 2.0543069392720303
+    },
+    "drop-again": {
+      "peakJointGap": 0.007067671823643212,
+      "peakSpeed": 4.864172558848025,
+      "peakSpin": 8.795010858530201
+    }
+  },
+  "peakHeight": 2.18285270747941,
+  "peakSpeed": 4.864172558848025,
+  "peakSpin": 8.795010858530201,
+  "peakJointGap": 0.03349005426152335,
+  "checkpoints": [
+    {
+      "name": "lifted",
+      "height": 1.494595388710564,
+      "rotationError": 0.023225091096378894,
+      "spin": 4.475231120737583e-06,
+      "speed": 0.08403701954009929,
+      "handDistance": 0.005618310691512797
+    },
+    {
+      "name": "inverted",
+      "height": 1.4943248990791562,
+      "rotationError": 0.02435026793185287,
+      "spin": 1.2578704710441717e-06,
+      "speed": 0.09004916380962513,
+      "handDistance": 0.006017970131179955
+    },
+    {
+      "name": "held",
+      "height": 1.4943250168162991,
+      "rotationError": 0.02435021668278548,
+      "spin": 3.712792255881999e-08,
+      "speed": 0.09004479902412722,
+      "handDistance": 0.006017775170435371
+    },
+    {
+      "name": "released",
+      "height": 0.18283032220488477,
+      "rotationError": null,
+      "spin": 0.005894707655533087,
+      "speed": 0.010650687200117585,
+      "handDistance": null
+    },
+    {
+      "name": "regrabbed",
+      "height": 1.492658234111419,
+      "rotationError": 0.02401639278563667,
+      "spin": 2.942481722261826e-05,
+      "speed": 0.11008180444884856,
+      "handDistance": 0.007362862828893381
+    },
+    {
+      "name": "released-again",
+      "height": 0.18339478968436562,
+      "rotationError": null,
+      "spin": 0.6219796969709699,
+      "speed": 0.30366394572702815,
+      "handDistance": null
+    }
+  ],
+  "identitiesPreserved": true,
+  "massDelta": 0
+}

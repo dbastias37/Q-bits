@@ -4869,9 +4869,10 @@ world.solver.solve=function(dt,physicsWorld){
  if(story.scene==='lab')settleSupportedGroups(dt,physicsWorld.contacts,driven,articulated);
  const footLimits=walkingFootFriction(physicsWorld,dt),productionLimits=productionContactFriction(physicsWorld,dt),skinPairs=conveyorFrictionPairs(physicsWorld),changed=[];for(const eq of physicsWorld.frictionEquations){if(skinPairs.get(eq.bi)?.has(eq.bj)||skinPairs.get(eq.bj)?.has(eq.bi)){changed.push([eq,eq.minForce,eq.maxForce]);eq.minForce=0;eq.maxForce=0;}else if(footLimits?.has(eq)||productionLimits?.has(eq)){changed.push([eq,eq.minForce,eq.maxForce]);eq.maxForce=footLimits?.get(eq)??productionLimits.get(eq);eq.minForce=-eq.maxForce;}else if(driven.has(eq.bi)||driven.has(eq.bj)){changed.push([eq,eq.minForce,eq.maxForce]);eq.minForce*=dt;eq.maxForce*=dt;}}
  conveyorImpactConstraints(dt,physicsWorld,this);
- // A brief 60 Hz settling pass may converge a quiet small assembly. Recheck
- // the total after predictive belt contacts; large contact scenes keep 24.
- const originalIterations=this.iterations;if(mechanicalRestRefine&&physicsWorld.contacts.length<=64&&this.equations.length<=256)this.iterations=Math.max(originalIterations,96);
+ // Refinement also keeps a small held chain's hinge pivots together while
+ // its hand turns it. Recheck after predictive contacts; large scenes keep 24.
+ const heldChain=(held?.items||[]).some(item=>item.orientationGrip?.equations.some(equation=>equation.enabled));
+ const originalIterations=this.iterations;if((mechanicalRestRefine||heldChain)&&physicsWorld.contacts.length<=64&&this.equations.length<=256)this.iterations=Math.max(originalIterations,96);
  try{return solveRotorContacts.call(this,dt,physicsWorld);}finally{this.iterations=originalIterations;for(const [eq,min,max]of changed){eq.minForce=min;eq.maxForce=max;}}
 };
 // Completed conveyor rollers are motor records plus a visual angle. The
@@ -5204,6 +5205,7 @@ function gripTranslatedDepth(contact,shift){
 // same complete mechanism; SAT spans are shared, not rebuilt for each roller.
 let gripFrameSnapshot=null;
 function gripDrivenGroups(item){return [item.g,...(held?.items||[]).filter(other=>other.passiveGrip&&!other.g.virtualConveyor&&other.gripDriver===item.g).map(other=>other.g)];}
+function gripDrivenForce(item){return manualGripForce(held.weight)*gripDrivenGroups(item).reduce((sum,g)=>sum+workshopGrip(g)*g.body.mass,0)/(held.weight*.25);}
 function gripDrivenPoses(item,p=item.g.body.position,q=item.g.body.quaternion){
  const body=item.g.body,delta=q.mult(body.quaternion.inverse());
  return gripDrivenGroups(item).map(g=>g===item.g?{g,p,q}:{g,p:add(p,delta.vmult(sub(g.body.position,body.position))),q:delta.mult(g.body.quaternion)});
@@ -5213,6 +5215,27 @@ function gripDrivenInertia(item){
  for(const g of gripDrivenGroups(item))if(g!==item.g){const offset=inverse.vmult(sub(g.body.position,body.position)),q=inverse.mult(g.body.quaternion),localAxes=axes.map(axis=>q.vmult(axis));
   for(const [i,k]of ['x','y','z'].entries())inertia[k]+=localAxes.reduce((sum,axis,j)=>sum+axis[k]*axis[k]*g.body.inertia[['x','y','z'][j]],0)+g.body.mass*(offset.norm2()-offset[k]*offset[k]);
  }return inertia;
+}
+function applyArticulatedGripOrientation(item,desired,dt){
+ const body=item.g.body,anchor=item.anchorBody,joint=item.joint;
+ if(!item.orientationGrip){
+  // Resolve the held assembly's orientation alongside its hinges. Applying
+  // the whole arm's inertia as an explicit torque on a tiny wrist can amplify
+  // angular feedback by thousands before the constraint solver can share it.
+  const locals=[V(1,0,0),V(0,1,0),V(0,0,1)],equations=locals.map(()=>new CANNON.RotationalEquation(body,anchor));
+  for(const equation of equations)setPhysicsEquation(equation,1e7,4);
+  const update=joint.update;joint.equations.push(...equations);
+  joint.update=function(){update.call(this);for(let i=0;i<3;i++){body.quaternion.vmult(locals[i],equations[i].axisA);anchor.quaternion.vmult(locals[(i+1)%3],equations[i].axisB);}};
+  anchor.quaternion.copy(body.quaternion);item.orientationGrip={equations,torque:0};
+ }
+ const advance=(from,to,limit)=>{const dot=Math.min(1,Math.abs(from.x*to.x+from.y*to.y+from.z*to.z+from.w*to.w)),angle=2*Math.acos(dot);return angle>limit?slerp(from,to,limit/angle):to;};
+ // A bounded target follows the existing rotation input. It cannot store a
+ // half-turn of spring error behind a wall, table or the floor.
+ const target=advance(body.quaternion,advance(anchor.quaternion,desired,Math.max(.1,settings.rotationSpeed)*dt),.18);
+ anchor.quaternion.copy(safeGripRotation(item,target));
+ const inertia=gripDrivenInertia(item),mass=item.gripMass||body.mass,radius=Math.max(HALF,Math.sqrt((inertia.x+inertia.y+inertia.z)/Math.max(.0001,mass)));
+ item.orientationGrip.torque=gripDrivenForce(item)*radius;
+ for(const equation of item.orientationGrip.equations){equation.enabled=true;equation.maxForce=item.orientationGrip.torque*dt;equation.minForce=-equation.maxForce;}
 }
 function gripAssemblySnapshot(item){
  if(gripFrameSnapshot?.snapshot)return gripFrameSnapshot.snapshot;
@@ -5246,7 +5269,13 @@ function gripPoseClear(context,p,q){
  const {item,obstacles,assembly,sharedBounds,driven}=context,bb=context.drivenTree?gripTreeBounds(context.drivenTree,p,q):physicalGroupBounds(item.g,p,q),shift=sub(p,item.g.body.position);
  let drivenPoses=null;
  if(assembly.members.length>1)for(const k of ['x','y','z']){bb.min[k]=Math.min(bb.min[k],sharedBounds.min[k]+shift[k]);bb.max[k]=Math.max(bb.max[k],sharedBounds.max[k]+shift[k]);}
- if(bb.min.y<Math.min(-.0003,context.bb.min.y)-1e-7||bb.max.y>ROOM_HEIGHT-.001||Math.max(Math.abs(bb.min.x),Math.abs(bb.max.x),Math.abs(bb.min.z),Math.abs(bb.max.z))>ROOM_SIZE/2-.001)return false;
+ // A contact correction may leave a small boundary overlap. Permit movement
+ // back into the room without increasing the existing overlap on any face.
+ // Otherwise the first sweep sample is rejected and the hand cannot recover.
+ for(const k of ['x','y','z']){
+  const low=k==='y'?-.0003:-ROOM_SIZE/2+.001,high=k==='y'?ROOM_HEIGHT-.001:ROOM_SIZE/2-.001;
+  if(bb.min[k]<Math.min(low,context.bb.min[k])-1e-7||bb.max[k]>Math.max(high,context.bb.max[k])+1e-7)return false;
+ }
  if(coolers.length){drivenPoses=gripDrivenPoses(item,p,q);if(drivenPoses.some(pose=>!alphaPoseClear(pose.g,pose.p,pose.q)))return false;}
  const nearby=obstacles.filter(o=>boundsOverlap(bb,o.bb));if(!nearby.length)return true;
  const current=item.g.body.quaternion,translation=q.x===current.x&&q.y===current.y&&q.z===current.z&&q.w===current.w,zero=V();
@@ -5289,10 +5318,10 @@ function gripRotationRadius(g){
  if(cache&&cache.parts===g.parts&&cache.sources.length===sources.length&&sources.every((s,i)=>s===cache.sources[i]))return cache.radius;
  const radius=Math.max(...physicalGroupPoses(g,V(),Q()).flatMap(corners).map(v=>v.norm()));g.gripRadiusCache={parts:g.parts,sources,radius};return radius;
 }
-function safeGripRotation(item,desired){
+function safeGripRotation(item,desired,center=item.g.body.position){
  const b=item.g.body,dot=Math.min(1,Math.abs(b.quaternion.x*desired.x+b.quaternion.y*desired.y+b.quaternion.z*desired.z+b.quaternion.w*desired.w)),angle=2*Math.acos(dot);if(angle<1e-7)return desired;
  let radius=gripRotationRadius(item.g);for(const g of gripDrivenGroups(item))if(g!==item.g){const box=physicalGroupBounds(g),x=Math.max(Math.abs(box.min.x-b.position.x),Math.abs(box.max.x-b.position.x)),y=Math.max(Math.abs(box.min.y-b.position.y),Math.abs(box.max.y-b.position.y)),z=Math.max(Math.abs(box.min.z-b.position.z),Math.abs(box.max.z-b.position.z));radius=Math.max(radius,Math.hypot(x,y,z));}
- const extent=V(radius,radius,radius),context=gripCollisionContext(item,{min:sub(b.position,extent),max:add(b.position,extent)});
+ const extent=V(radius,radius,radius),context=gripCollisionContext(item,{min:sub(center,extent),max:add(center,extent)}),shift=sub(center,b.position);
  // Bound the entire shortest-arc rotation, not just its endpoints. For an
  // axis u and any vertex within radius r, coordinate k moves by at most
  // 2*r*sin(angle/2)*sqrt(1-u[k]^2). Yaw therefore needs no vertical padding.
@@ -5300,12 +5329,12 @@ function safeGripRotation(item,desired){
  if(!coolers.length){
   const turn=desired.mult(b.quaternion.inverse());if(turn.w<0)turn.set(-turn.x,-turn.y,-turn.z,-turn.w);const axis=V(turn.x,turn.y,turn.z);axis.normalize();
   const envelope={min:V(Infinity,Infinity,Infinity),max:V(-Infinity,-Infinity,-Infinity)},travel=2*radius*Math.sin(angle/2);
-  for(const g of context.driven){const box=context.assembly.boxes.get(g);for(const k of ['x','y','z']){envelope.min[k]=Math.min(envelope.min[k],box.min[k]);envelope.max[k]=Math.max(envelope.max[k],box.max[k]);}}
+  for(const g of context.driven){const box=context.assembly.boxes.get(g);for(const k of ['x','y','z']){envelope.min[k]=Math.min(envelope.min[k],box.min[k]+shift[k]);envelope.max[k]=Math.max(envelope.max[k],box.max[k]+shift[k]);}}
   for(const k of ['x','y','z']){const padding=travel*Math.sqrt(Math.max(0,1-axis[k]*axis[k]))+1e-8;envelope.min[k]-=padding;envelope.max[k]+=padding;}
   if(envelope.min.y>=Math.min(-.0003,context.bb.min.y)-1e-7&&envelope.max.y<=ROOM_HEIGHT-.001&&Math.max(Math.abs(envelope.min.x),Math.abs(envelope.max.x),Math.abs(envelope.min.z),Math.abs(envelope.max.z))<=ROOM_SIZE/2-.001&&!context.obstacles.some(obstacle=>boundsOverlap(envelope,obstacle.bb)))return desired;
  }
  const steps=Math.max(1,Math.min(96,Math.ceil(angle*Math.max(radius,HALF)/.006)));let safe=b.quaternion.clone();
- for(let i=1;i<=steps;i++){const q=slerp(b.quaternion,desired,i/steps);if(!gripPoseClear(context,b.position,q))break;safe=q;}return safe;
+ for(let i=1;i<=steps;i++){const q=slerp(b.quaternion,desired,i/steps);if(!gripPoseClear(context,center,q))break;safe=q;}return safe;
 }
 function updateGrab(dt){
  if(!held)return;held.age+=dt;gripFrameSnapshot=story.dockCandidate?null:{};
@@ -5318,6 +5347,7 @@ function updateGrab(dt){
  const snapPoses=snap&&snap.source===held.g?mechanismSnapPoses(held.g,snap.position,snap.quaternion):[];
  for(const item of held.items||[held]){
   const b=item.g.body;b.wakeUp();b.angularDamping=.85+settings.grip*.1499;
+  if(item.orientationGrip)for(const equation of item.orientationGrip.equations)equation.enabled=false;
   if(item.passiveGrip){item.floorLocked=false;if(!item.g.virtualConveyor&&b.fixedRotation){b.fixedRotation=false;b.updateMassProperties();}continue;}
   let target=add(rootTarget,rotationDelta.vmult(item.relative||V())),desired=null,strength=160;
   const snapped=snapPoses.find(pose=>pose.g===item.g);
@@ -5336,18 +5366,22 @@ function updateGrab(dt){
   if(b.fixedRotation!==lockFloor){b.fixedRotation=lockFloor;b.updateMassProperties();}
   item.floorLocked=lockFloor;if(lockFloor){b.angularVelocity.set(0,0,0);b.torque.set(0,0,0);if(!turning)item.restQ=b.quaternion.clone();}
   if(desired&&!lockFloor){
-   applyOrientation(item.g,safeGripRotation(item,desired),strength,gripDrivenInertia(item));
+   if(gripDrivenGroups(item).length>1)applyArticulatedGripOrientation(item,desired,dt);
+   else applyOrientation(item.g,safeGripRotation(item,desired),strength);
   }
   if(item.anchorBody){
    const delta=sub(target,item.anchorBody.position),distance=delta.norm(),step=Math.min(distance*(1-Math.exp(-16*grabSpeed*dt)),2.8*grabSpeed*dt);
    if(distance>1e-8)item.anchorBody.position.vadd(mul(delta,step/distance),item.anchorBody.position);
    item.anchorBody.position.copy(safeGripSweep(item,safeGripTarget(item,item.anchorBody.position,[b.quaternion])));
-   const force=manualGripForce(held.weight)*gripDrivenGroups(item).reduce((sum,g)=>sum+workshopGrip(g)*g.body.mass,0)/(held.weight*.25);
+   // Translation and rotation may each be clear while their combined target
+   // clips a corner. Check the hand's final position before solving its turn.
+   if(item.orientationGrip){const center=sub(item.anchorBody.position,item.anchorBody.quaternion.vmult(item.anchor));item.anchorBody.quaternion.copy(safeGripRotation(item,item.anchorBody.quaternion,center));}
+   const force=gripDrivenForce(item);
    // Match the physical body's positional response to the faster hand target.
    // Keep the original coefficients once: switching back to slow is exact, and
    // repeated frames never compound the multiplier or increase the grip force.
    item.gripResponseBase||=item.joint.equations.map(equation=>equation.a);
-   for(let i=0;i<item.joint.equations.length;i++){const equation=item.joint.equations[i];equation.a=item.gripResponseBase[i]*grabSpeed;equation.maxForce=force;equation.minForce=-force;}
+   for(let i=0;i<item.joint.equations.length;i++){const equation=item.joint.equations[i];if(item.orientationGrip?.equations.includes(equation))continue;equation.a=item.gripResponseBase[i]*grabSpeed;equation.maxForce=force;equation.minForce=-force;}
   }
  }
  gripFrameSnapshot=null;

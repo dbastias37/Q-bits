@@ -21,6 +21,8 @@ Las repisas siguen colocándose en paredes. Depósitos, enfriadores y cuerpos s�
 
 Las estructuras se sujetan desde su centro para evitar giros provocados por tirar de un extremo. Su masa sigue siendo la suma de sus piezas; soltar elimina el giro residual de la mano. Las estructuras rígidas libres amortiguan más el giro y rebotan menos que los cubos sueltos. Los motores conservan su amortiguación calibrada, límites de carga y consumo.
 
+Los brazos articulados pueden tomarse también desde la pinza o cualquiera de sus tramos. **Shift + WASD** orienta el montaje completo y mantiene sus ejes unidos, por ejemplo para acceder a la cara inferior al instalar hélices. El giro necesita espacio alrededor: si toca una superficie, aparta el montaje y continúa. Las pequeñas penetraciones contra techo o paredes permiten retirar el objeto hacia el interior de la sala.
+
 ## Agrupar en familias
 
 Selecciona varias piezas y abre **clic secundario → Agrupar en familia…**. Escribe un nombre y elige un color, incluido negro. Cada familia guarda hasta **100 piezas base**, muestra **×N** y puede contener módulos completos: un rotor de dos enganches sigue contando como dos piezas. La animación reúne el material en el contenedor.
