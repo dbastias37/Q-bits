@@ -1,0 +1,23 @@
+{
+  "tests": 1617,
+  "suites": 0,
+  "pass": 1617,
+  "fail": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "todo": 0,
+  "duration_ms": 52730.349135,
+  "base_sha": "2786aa8617f1712fd38f03d84f6d971acc2fcac3",
+  "resources_version": "20261124-camera-stability-1",
+  "command": "node --test tests/*.test.cjs",
+  "scope": "Real Node/Cannon logic, DOM and GPU calls instrumented; not a browser play session.",
+  "camera_tests": 34,
+  "gles": {
+    "command": "python3 tests/validate-focus-gles.py",
+    "shaders_compiled": 7,
+    "programs_linked": 4,
+    "focus_fixture": "PASS",
+    "postprocessing_fixture": "PASS",
+    "renderer": "llvmpipe (LLVM 19.1.7, 256 bits)"
+  }
+}

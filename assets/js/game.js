@@ -15,7 +15,7 @@ let unitRadial=null,pendingUnitCreation=null;
 let trajectorySystem=null,trajectoryPanel=null,trajectoryDraft=null,trajectoryGroundController=null,trajectoryAtlas=null,trajectoryFaceMesh=null;
 let radialGlassStamp='',radialGlassAllocated=false;
 const preferences=window.QBitsPreferences;
-let savedPreferences=preferences.load(window.localStorage),visuals=preferences.effective(savedPreferences),settingsScreen=null,lastVisualFrame=0,previewViewport=null;
+let savedPreferences=preferences.load(window.localStorage),visuals=preferences.effective(savedPreferences),settingsScreen=null,lastVisualFrame=0,lastVisualCheck=null,previewViewport=null;
 let selectionHud=null,selectionHudClock=0,selectionHudStamp='',selectionHudItems=[];
 const selectionHudGeometry=new WeakMap();
 const reducedHudMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)');
@@ -435,6 +435,9 @@ let yaw = 0.46;
 let pitch = -Math.atan2(EYE_HEIGHT - 0.045, 1.25);
 let locked = false;
 let lockPending = false;
+let lockRequestSerial = 0;
+let lockPromisePending = false;
+let lockTransition = null;
 let redraw = true;
 let running = true;
 const keys = new Set();
@@ -583,10 +586,17 @@ function showHint(message) {
   hint.hidden = false;
 }
 
+function resetMouseCaptureRequest() {
+  clearTimeout(lockTimeout);
+  lockRequestSerial++;
+  lockPending = false;
+  lockPromisePending = false;
+  lockTransition = null;
+}
+
 function lockFailed() {
   closeUnitRadial(false);
-  clearTimeout(lockTimeout);
-  lockPending = false;
+  resetMouseCaptureRequest();
   if (document.pointerLockElement === canvas) return;
   locked = false;
   pendingPickup=null;
@@ -598,6 +608,7 @@ function lockFailed() {
 function pause(release=true) {
   window.QBitsGuideAudio?.setPaused(true);window.QBitsFootsteps?.setPaused(true);window.QBitsJoinAudio?.setPaused(true);
   resetAssemblyShake();
+  resetMouseCaptureRequest();
   closeUnitRadial(false);
   if(story.ready){story.preserveGrip=!release;if(document.pointerLockElement===canvas)story.intentionalUnlock=true;}
   resetGameInputs();
@@ -636,13 +647,31 @@ async function captureMouse() {
     return;
   }
   lockPending = true;
+  lockTransition = story.allowTransitionCapture ? story.transition : null;
+  const requestSerial = ++lockRequestSerial;
   // Keep pending until the browser confirms capture, including legacy APIs
   // that return undefined instead of a Promise.
-  lockTimeout = setTimeout(lockFailed, 2500);
+  lockTimeout = setTimeout(() => { if(requestSerial===lockRequestSerial)lockFailed(); }, 2500);
+  const requestLock = options => {
+    // Promise APIs can emit pointerlockerror before rejecting unsupported raw
+    // input. Let the rejection negotiate the fallback without losing a pickup.
+    lockPromisePending = true;
+    const result = options ? canvas.requestPointerLock(options) : canvas.requestPointerLock();
+    if(requestSerial===lockRequestSerial)lockPromisePending = !!result && typeof result.then === 'function';
+    return result;
+  };
   try {
-    await canvas.requestPointerLock();
+    try {
+      await requestLock({unadjustedMovement:true});
+    } catch (error) {
+      if(requestSerial!==lockRequestSerial)return;
+      if(error?.name!=='NotSupportedError')throw error;
+      await requestLock();
+    }
   } catch (error) {
-    lockFailed();
+    if(requestSerial===lockRequestSerial)lockFailed();
+  } finally {
+    if(requestSerial===lockRequestSerial)lockPromisePending = false;
   }
 }
 
@@ -657,9 +686,16 @@ document.addEventListener('contextmenu',blockNativeContext,true);
 document.addEventListener('dragstart',blockNativeContext,true);
 document.addEventListener('selectstart',blockNativeContext,true);
 document.addEventListener('pointerlockchange', () => {
-  clearTimeout(lockTimeout);
-  lockPending = false;
+  const transitionCapture = lockPending && lockTransition && lockTransition === story.transition;
+  resetMouseCaptureRequest();
   locked = document.pointerLockElement === canvas;
+  // A browser may finish a pending request after Escape, blur or a scene menu.
+  // Do not recapture the player behind that pause.
+  if(locked&&(document.hidden||story.ready&&story.mode!=='playing'&&!transitionCapture)){
+    story.intentionalUnlock=true;
+    document.exitPointerLock();
+    return;
+  }
   resetAssemblyShake();
   if(!locked)closeUnitRadial(false);
   if(locked||panel.hidden||!tabletVisible())keys.clear();
@@ -671,16 +707,19 @@ document.addEventListener('pointerlockchange', () => {
     if((!story.ready||story.mode==='playing')&&panel.hidden&&menu.hidden&&commandMenu.hidden&&!['asleep','invocation','choice','repeat'].includes(story.phase))showHint(pausedHint);else hint.hidden=true;
   }
 });
-document.addEventListener('pointerlockerror', lockFailed);
+document.addEventListener('pointerlockerror', () => { if(!lockPromisePending)lockFailed(); });
 document.addEventListener('mousemove', event => {
-  if(cullingLab.benchmark)return;
+  if(cullingLab.benchmark||document.hidden)return;
+  // A malformed sample must not contaminate yaw/pitch or any gesture state.
+  // Valid large movements remain intact: fast turns are intentional input.
+  if(!Number.isFinite(event.movementX)||!Number.isFinite(event.movementY))return;
   if(radialOpen()){
     if(document.pointerLockElement===canvas)unitRadial.moveBy(event.movementX,event.movementY);
     else unitRadial.moveTo(event.clientX,event.clientY);
     return;
   }
   // Never simulate capture by merely hiding the cursor.
-  if (document.pointerLockElement !== canvas || !storyLookAllowed()) return;
+  if (document.pointerLockElement !== canvas || !storyLookAllowed() || storySuspended() || story.transition) return;
   if (marquee) { updateMarquee(event); return; }
   noteSpeechLook(event.movementX,event.movementY);
   noteAssemblyShake(event.movementX,event.movementY,event.timeStamp);
@@ -12331,14 +12370,18 @@ function renderScene(time=performance.now()){
    updateCullingHud();
   }
 }
-// Keep the fractional time between display refreshes. Resetting the clock
-// to "now" on every draw makes a 60 FPS cap run at 48 on a 144 Hz screen.
+// Keep the cap's phase, but accept the nearest refresh and retain at most one
+// frame of short-term debt. A fixed 0.5 ms margin plus skipping every elapsed
+// period turned 60 Hz with alternating +/-0.6 ms timestamps into 30 FPS.
+// Long gaps start a fresh phase rather than causing a burst after a pause.
 function visualFrameDue(time,fps){
+ if(!Number.isFinite(time)||lastVisualCheck!==null&&time<=lastVisualCheck)return false;
+ const gap=lastVisualCheck===null?time:time-lastVisualCheck;
+ lastVisualCheck=time;
  if(!fps){lastVisualFrame=time;return true;}
  const period=1000/fps,elapsed=time-lastVisualFrame;
- const periods=Math.floor((elapsed+.5)/period);
- if(periods<1)return false;
- lastVisualFrame+=periods*period;
+ if(elapsed+period/2+1e-7<period)return false;
+ lastVisualFrame=gap>Math.max(100,period*4)?time:Math.max(lastVisualFrame+period,time-period);
  return true;
 }
 let panelNextRead=0,panelActiveStamp='';

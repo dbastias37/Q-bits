@@ -1,0 +1,567 @@
+{
+  "base_sha": "2786aa8617f1712fd38f03d84f6d971acc2fcac3",
+  "measured_at_utc": "2026-11-24T14:39:09.098Z",
+  "reproduction_command": "node docs/mediciones/camera-20261124/measure.cjs",
+  "harness": "tests/game-harness.cjs: real game source with DOM/GPU stubs",
+  "scope": "Synthetic timestamp inputs to visualFrameDue. Counts are presentation decisions, not measured browser or GPU FPS. No visual play session is certified.",
+  "source_identification": {
+    "baseline_scheduler_sha256": "40e49e73812ce4b8f72f38c5ffc20953682e4338aa75fbf2e4d818b65afd306f",
+    "current_scheduler_sha256": "636d9f1f9b3144af1bb30854b0cee4c4bb567a01bebb4f5c04418f0c7da3b790",
+    "note": "Only visualFrameDue is hashed; changes to unrelated input-capture code do not change these hashes."
+  },
+  "metric_definitions": {
+    "count": "Number of callbacks for which the actual game scheduler returns true.",
+    "duration_ms": "Nominal input window; alternating jitter can place its last callback slightly before this boundary.",
+    "max_gap_ms": "Largest gap between consecutive callbacks accepted for presentation; excludes time before the first accepted callback.",
+    "hypothetical_angular_step": "Derived, not observed: max_gap_ms * 90 degrees/second / 1000. Assumes a constant hypothetical turn and is not a measured camera angle.",
+    "callback_formula": "sample * 1000 / nominal_refresh_hz + (sample % 2 ? jitter_ms : -jitter_ms)"
+  },
+  "cases": [
+    {
+      "id": "60hz_cap60_jitter0ms",
+      "nominal_refresh_hz": 60,
+      "configured_cap": 60,
+      "alternating_timestamp_jitter_ms": 0,
+      "sample_count": 600,
+      "nominal_duration_ms": 10000,
+      "last_callback_ms": 10000,
+      "baseline": {
+        "count": 600,
+        "duration_ms": 10000,
+        "first_presentation_ms": 16.666666667,
+        "last_presentation_ms": 10000,
+        "max_gap_ms": 16.666666667,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 1.5
+      },
+      "current": {
+        "count": 600,
+        "duration_ms": 10000,
+        "first_presentation_ms": 16.666666667,
+        "last_presentation_ms": 10000,
+        "max_gap_ms": 16.666666667,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 1.5
+      }
+    },
+    {
+      "id": "60hz_cap60_jitter0_6ms",
+      "nominal_refresh_hz": 60,
+      "configured_cap": 60,
+      "alternating_timestamp_jitter_ms": 0.6,
+      "sample_count": 600,
+      "nominal_duration_ms": 10000,
+      "last_callback_ms": 9999.4,
+      "baseline": {
+        "count": 300,
+        "duration_ms": 10000,
+        "first_presentation_ms": 17.266666667,
+        "last_presentation_ms": 9983.933333333,
+        "max_gap_ms": 33.333333333,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 3
+      },
+      "current": {
+        "count": 600,
+        "duration_ms": 10000,
+        "first_presentation_ms": 17.266666667,
+        "last_presentation_ms": 9999.4,
+        "max_gap_ms": 17.866666667,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 1.608
+      }
+    },
+    {
+      "id": "60hz_cap60_jitter1ms",
+      "nominal_refresh_hz": 60,
+      "configured_cap": 60,
+      "alternating_timestamp_jitter_ms": 1,
+      "sample_count": 600,
+      "nominal_duration_ms": 10000,
+      "last_callback_ms": 9999,
+      "baseline": {
+        "count": 300,
+        "duration_ms": 10000,
+        "first_presentation_ms": 17.666666667,
+        "last_presentation_ms": 9984.333333333,
+        "max_gap_ms": 33.333333333,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 3
+      },
+      "current": {
+        "count": 600,
+        "duration_ms": 10000,
+        "first_presentation_ms": 17.666666667,
+        "last_presentation_ms": 9999,
+        "max_gap_ms": 18.666666667,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 1.68
+      }
+    },
+    {
+      "id": "60hz_cap60_jitter2ms",
+      "nominal_refresh_hz": 60,
+      "configured_cap": 60,
+      "alternating_timestamp_jitter_ms": 2,
+      "sample_count": 600,
+      "nominal_duration_ms": 10000,
+      "last_callback_ms": 9998,
+      "baseline": {
+        "count": 300,
+        "duration_ms": 10000,
+        "first_presentation_ms": 18.666666667,
+        "last_presentation_ms": 9985.333333333,
+        "max_gap_ms": 33.333333333,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 3
+      },
+      "current": {
+        "count": 600,
+        "duration_ms": 10000,
+        "first_presentation_ms": 18.666666667,
+        "last_presentation_ms": 9998,
+        "max_gap_ms": 20.666666667,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 1.86
+      }
+    },
+    {
+      "id": "120hz_cap120_jitter0_6ms",
+      "nominal_refresh_hz": 120,
+      "configured_cap": 120,
+      "alternating_timestamp_jitter_ms": 0.6,
+      "sample_count": 1200,
+      "nominal_duration_ms": 10000,
+      "last_callback_ms": 9999.4,
+      "baseline": {
+        "count": 600,
+        "duration_ms": 10000,
+        "first_presentation_ms": 8.933333333,
+        "last_presentation_ms": 9992.266666667,
+        "max_gap_ms": 16.666666667,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 1.5
+      },
+      "current": {
+        "count": 1200,
+        "duration_ms": 10000,
+        "first_presentation_ms": 8.933333333,
+        "last_presentation_ms": 9999.4,
+        "max_gap_ms": 9.533333333,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 0.858
+      }
+    },
+    {
+      "id": "120hz_cap120_jitter2ms",
+      "nominal_refresh_hz": 120,
+      "configured_cap": 120,
+      "alternating_timestamp_jitter_ms": 2,
+      "sample_count": 1200,
+      "nominal_duration_ms": 10000,
+      "last_callback_ms": 9998,
+      "baseline": {
+        "count": 600,
+        "duration_ms": 10000,
+        "first_presentation_ms": 10.333333333,
+        "last_presentation_ms": 9993.666666667,
+        "max_gap_ms": 16.666666667,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 1.5
+      },
+      "current": {
+        "count": 1200,
+        "duration_ms": 10000,
+        "first_presentation_ms": 10.333333333,
+        "last_presentation_ms": 9998,
+        "max_gap_ms": 12.333333333,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 1.11
+      }
+    },
+    {
+      "id": "120hz_cap60_jitter0_6ms",
+      "nominal_refresh_hz": 120,
+      "configured_cap": 60,
+      "alternating_timestamp_jitter_ms": 0.6,
+      "sample_count": 1200,
+      "nominal_duration_ms": 10000,
+      "last_callback_ms": 9999.4,
+      "baseline": {
+        "count": 599,
+        "duration_ms": 10000,
+        "first_presentation_ms": 25.6,
+        "last_presentation_ms": 9992.266666667,
+        "max_gap_ms": 16.666666667,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 1.5
+      },
+      "current": {
+        "count": 600,
+        "duration_ms": 10000,
+        "first_presentation_ms": 8.933333333,
+        "last_presentation_ms": 9992.266666667,
+        "max_gap_ms": 16.666666667,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 1.5
+      }
+    },
+    {
+      "id": "144hz_cap60_jitter0ms",
+      "nominal_refresh_hz": 144,
+      "configured_cap": 60,
+      "alternating_timestamp_jitter_ms": 0,
+      "sample_count": 1440,
+      "nominal_duration_ms": 10000,
+      "last_callback_ms": 10000,
+      "baseline": {
+        "count": 600,
+        "duration_ms": 10000,
+        "first_presentation_ms": 20.833333333,
+        "last_presentation_ms": 10000,
+        "max_gap_ms": 20.833333333,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 1.875
+      },
+      "current": {
+        "count": 600,
+        "duration_ms": 10000,
+        "first_presentation_ms": 13.888888889,
+        "last_presentation_ms": 9993.055555556,
+        "max_gap_ms": 20.833333333,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 1.875
+      }
+    },
+    {
+      "id": "165hz_cap120_jitter0ms",
+      "nominal_refresh_hz": 165,
+      "configured_cap": 120,
+      "alternating_timestamp_jitter_ms": 0,
+      "sample_count": 1650,
+      "nominal_duration_ms": 10000,
+      "last_callback_ms": 10000,
+      "baseline": {
+        "count": 1200,
+        "duration_ms": 10000,
+        "first_presentation_ms": 12.121212121,
+        "last_presentation_ms": 10000,
+        "max_gap_ms": 12.121212121,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 1.090909091
+      },
+      "current": {
+        "count": 1200,
+        "duration_ms": 10000,
+        "first_presentation_ms": 6.060606061,
+        "last_presentation_ms": 10000,
+        "max_gap_ms": 12.121212121,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 1.090909091
+      }
+    },
+    {
+      "id": "165hz_cap120_jitter2ms",
+      "nominal_refresh_hz": 165,
+      "configured_cap": 120,
+      "alternating_timestamp_jitter_ms": 2,
+      "sample_count": 1650,
+      "nominal_duration_ms": 10000,
+      "last_callback_ms": 9998,
+      "baseline": {
+        "count": 1050,
+        "duration_ms": 10000,
+        "first_presentation_ms": 8.060606061,
+        "last_presentation_ms": 9995.939393939,
+        "max_gap_ms": 12.121212121,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 1.090909091
+      },
+      "current": {
+        "count": 1200,
+        "duration_ms": 10000,
+        "first_presentation_ms": 8.060606061,
+        "last_presentation_ms": 9998,
+        "max_gap_ms": 12.121212121,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 1.090909091
+      }
+    },
+    {
+      "id": "144hz_cap120_jitter2ms",
+      "nominal_refresh_hz": 144,
+      "configured_cap": 120,
+      "alternating_timestamp_jitter_ms": 2,
+      "sample_count": 1440,
+      "nominal_duration_ms": 10000,
+      "last_callback_ms": 9998,
+      "baseline": {
+        "count": 960,
+        "duration_ms": 10000,
+        "first_presentation_ms": 8.944444444,
+        "last_presentation_ms": 9995.055555556,
+        "max_gap_ms": 13.888888889,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 1.25
+      },
+      "current": {
+        "count": 1200,
+        "duration_ms": 10000,
+        "first_presentation_ms": 8.944444444,
+        "last_presentation_ms": 9998,
+        "max_gap_ms": 13.888888889,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 1.25
+      }
+    },
+    {
+      "id": "90hz_cap60_jitter4ms",
+      "nominal_refresh_hz": 90,
+      "configured_cap": 60,
+      "alternating_timestamp_jitter_ms": 4,
+      "sample_count": 900,
+      "nominal_duration_ms": 10000,
+      "last_callback_ms": 9996,
+      "baseline": {
+        "count": 599,
+        "duration_ms": 10000,
+        "first_presentation_ms": 18.222222222,
+        "last_presentation_ms": 9992.888888889,
+        "max_gap_ms": 22.222222222,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 2
+      },
+      "current": {
+        "count": 600,
+        "duration_ms": 10000,
+        "first_presentation_ms": 15.111111111,
+        "last_presentation_ms": 9996,
+        "max_gap_ms": 22.222222222,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 2
+      }
+    },
+    {
+      "id": "75hz_cap30_jitter0ms",
+      "nominal_refresh_hz": 75,
+      "configured_cap": 30,
+      "alternating_timestamp_jitter_ms": 0,
+      "sample_count": 750,
+      "nominal_duration_ms": 10000,
+      "last_callback_ms": 10000,
+      "baseline": {
+        "count": 300,
+        "duration_ms": 10000,
+        "first_presentation_ms": 40,
+        "last_presentation_ms": 10000,
+        "max_gap_ms": 40,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 3.6
+      },
+      "current": {
+        "count": 300,
+        "duration_ms": 10000,
+        "first_presentation_ms": 26.666666667,
+        "last_presentation_ms": 9986.666666667,
+        "max_gap_ms": 40,
+        "max_hypothetical_angular_step_deg_at_90_deg_per_s": 3.6
+      }
+    }
+  ],
+  "pause_cases": [
+    {
+      "id": "144hz_cap30_long_pause",
+      "nominal_refresh_hz_before_pause": 144,
+      "configured_cap": 30,
+      "warmup_duration_ms": 3000,
+      "resumed_at_ms": 15000,
+      "probe_offsets_ms": [
+        0,
+        0,
+        0.1,
+        0.2,
+        0.5,
+        1,
+        33.333333333
+      ],
+      "note": "The repeated timestamp and submillisecond probes check that missed frames are not replayed. The intentional pause is excluded from the post-resume gap and angular-step metrics.",
+      "baseline": {
+        "warmup": {
+          "count": 90,
+          "duration_ms": 3000,
+          "first_presentation_ms": 34.722222222,
+          "last_presentation_ms": 3000,
+          "max_gap_ms": 34.722222222,
+          "max_hypothetical_angular_step_deg_at_90_deg_per_s": 3.125
+        },
+        "decisions": [
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true
+        ],
+        "renders_during_duplicate_and_early_probes": 0,
+        "post_resume": {
+          "count": 2,
+          "duration_ms": 33.333333333,
+          "first_presentation_ms": 0,
+          "last_presentation_ms": 33.333333333,
+          "max_gap_ms": 33.333333333,
+          "max_hypothetical_angular_step_deg_at_90_deg_per_s": 3
+        }
+      },
+      "current": {
+        "warmup": {
+          "count": 90,
+          "duration_ms": 3000,
+          "first_presentation_ms": 20.833333333,
+          "last_presentation_ms": 2986.111111111,
+          "max_gap_ms": 34.722222222,
+          "max_hypothetical_angular_step_deg_at_90_deg_per_s": 3.125
+        },
+        "decisions": [
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true
+        ],
+        "renders_during_duplicate_and_early_probes": 0,
+        "post_resume": {
+          "count": 2,
+          "duration_ms": 33.333333333,
+          "first_presentation_ms": 0,
+          "last_presentation_ms": 33.333333333,
+          "max_gap_ms": 33.333333333,
+          "max_hypothetical_angular_step_deg_at_90_deg_per_s": 3
+        }
+      }
+    },
+    {
+      "id": "144hz_cap60_long_pause",
+      "nominal_refresh_hz_before_pause": 144,
+      "configured_cap": 60,
+      "warmup_duration_ms": 3000,
+      "resumed_at_ms": 15000,
+      "probe_offsets_ms": [
+        0,
+        0,
+        0.1,
+        0.2,
+        0.5,
+        1,
+        16.666666667
+      ],
+      "note": "The repeated timestamp and submillisecond probes check that missed frames are not replayed. The intentional pause is excluded from the post-resume gap and angular-step metrics.",
+      "baseline": {
+        "warmup": {
+          "count": 180,
+          "duration_ms": 3000,
+          "first_presentation_ms": 20.833333333,
+          "last_presentation_ms": 3000,
+          "max_gap_ms": 20.833333333,
+          "max_hypothetical_angular_step_deg_at_90_deg_per_s": 1.875
+        },
+        "decisions": [
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true
+        ],
+        "renders_during_duplicate_and_early_probes": 0,
+        "post_resume": {
+          "count": 2,
+          "duration_ms": 16.666666667,
+          "first_presentation_ms": 0,
+          "last_presentation_ms": 16.666666667,
+          "max_gap_ms": 16.666666667,
+          "max_hypothetical_angular_step_deg_at_90_deg_per_s": 1.5
+        }
+      },
+      "current": {
+        "warmup": {
+          "count": 180,
+          "duration_ms": 3000,
+          "first_presentation_ms": 13.888888889,
+          "last_presentation_ms": 2993.055555556,
+          "max_gap_ms": 20.833333333,
+          "max_hypothetical_angular_step_deg_at_90_deg_per_s": 1.875
+        },
+        "decisions": [
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true
+        ],
+        "renders_during_duplicate_and_early_probes": 0,
+        "post_resume": {
+          "count": 2,
+          "duration_ms": 16.666666667,
+          "first_presentation_ms": 0,
+          "last_presentation_ms": 16.666666667,
+          "max_gap_ms": 16.666666667,
+          "max_hypothetical_angular_step_deg_at_90_deg_per_s": 1.5
+        }
+      }
+    },
+    {
+      "id": "144hz_cap120_long_pause",
+      "nominal_refresh_hz_before_pause": 144,
+      "configured_cap": 120,
+      "warmup_duration_ms": 3000,
+      "resumed_at_ms": 15000,
+      "probe_offsets_ms": [
+        0,
+        0,
+        0.1,
+        0.2,
+        0.5,
+        1,
+        8.333333333
+      ],
+      "note": "The repeated timestamp and submillisecond probes check that missed frames are not replayed. The intentional pause is excluded from the post-resume gap and angular-step metrics.",
+      "baseline": {
+        "warmup": {
+          "count": 360,
+          "duration_ms": 3000,
+          "first_presentation_ms": 13.888888889,
+          "last_presentation_ms": 3000,
+          "max_gap_ms": 13.888888889,
+          "max_hypothetical_angular_step_deg_at_90_deg_per_s": 1.25
+        },
+        "decisions": [
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true
+        ],
+        "renders_during_duplicate_and_early_probes": 0,
+        "post_resume": {
+          "count": 2,
+          "duration_ms": 8.333333333,
+          "first_presentation_ms": 0,
+          "last_presentation_ms": 8.333333333,
+          "max_gap_ms": 8.333333333,
+          "max_hypothetical_angular_step_deg_at_90_deg_per_s": 0.75
+        }
+      },
+      "current": {
+        "warmup": {
+          "count": 360,
+          "duration_ms": 3000,
+          "first_presentation_ms": 6.944444444,
+          "last_presentation_ms": 3000,
+          "max_gap_ms": 13.888888889,
+          "max_hypothetical_angular_step_deg_at_90_deg_per_s": 1.25
+        },
+        "decisions": [
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true
+        ],
+        "renders_during_duplicate_and_early_probes": 0,
+        "post_resume": {
+          "count": 2,
+          "duration_ms": 8.333333333,
+          "first_presentation_ms": 0,
+          "last_presentation_ms": 8.333333333,
+          "max_gap_ms": 8.333333333,
+          "max_hypothetical_angular_step_deg_at_90_deg_per_s": 0.75
+        }
+      }
+    }
+  ]
+}
