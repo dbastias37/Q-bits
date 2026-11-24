@@ -40,6 +40,14 @@ La carga predeterminada del agarre es **4 u**. El plano usa rotores del banco co
 
 El alcance de toma es ajustable de 1,8 a 5 cm frente a la cara y empieza en 5 cm. Rechaza objetivos propios, objetos sujetos por otro agarre o por el jugador, huecos de formas y objetos tapados por una pared. El agarre usa una restricción física con fuerza limitada y consume energía al tomar y sostener. Los ejes frenados mantienen su postura; los que se mueven respetan el torque y el consumo de los rotores. Una carga excesiva, falta de energía, pérdida de agarre o trayecto bloqueado exige corregir la causa y reiniciar.
 
+## Trabajar desde un dron
+
+Un brazo con hélices y alimentación suficiente puede ejecutar sus posturas mientras el conjunto vuela. Puedes despegar primero y usar **Ir a A**, **Ir a B** o **Iniciar secuencia**, o iniciar el brazo y después despegar. Terminar el movimiento, esperar un objeto o detener el brazo mantiene la sustentación y el consumo de las hélices. Los ejes siguen usando sus motores, torque y batería.
+
+La estabilización automática que mantiene quieta la base de un brazo en el suelo se libera al despegar. El chasis permanece como cuerpo físico dinámico durante el vuelo; detenerlo o quedarse sin energía no lo deja suspendido por ese anclaje. Conserva las palas libres y orientadas hacia arriba. El peso del conjunto y del objeto sostenido, la potencia disponible y los anclajes fijos explícitos siguen limitando el vuelo. Para bajar, utiliza **Aterrizar** en los controles del dron.
+
+La estabilización de actitud responde al empuje disponible y a la inercia del portador, dentro del mismo límite de torque asistido. Esto permite compensar una carga descentrada en la pinza sin fijar la orientación por código. El programa del brazo comprueba también el bastidor del propio dron: una postura que atraviesa sus piezas sigue bloqueada y debe volver a enseñarse con espacio libre.
+
 ## Guardar y recuperar
 
 **Formas guardadas** contiene dos categorías: **Formas**, con las anteriores, y **Mecanismos**, con rotores, baterías, agarres y montajes articulados. Guardar una estructura con mecanismos conserva cuerpos, conexiones, filtros y posiciones enseñadas. Colocar una plantilla desde el catálogo crea un blueprint que requiere existencias; la duplicación explícita del banco sigue siendo una herramienta de prueba independiente.
