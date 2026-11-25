@@ -1982,6 +1982,49 @@ function aimQubit(max=2.7,dir=direction()){
 function carrySet(hit){return rotorConnectedGroups(multiSelection.includes(hit.g)&&multiSelection.length>1?multiSelection.filter(g=>groups.includes(g)):[hit.g]);}
 function manualGripForce(weight){return Math.max(settings.force,weight*.25*(settings.gravity+12));}
 function canCarry(list){return rotorConnectedGroups(list).reduce((n,g)=>n+totalWeight(g),0)<=settings.maxCarry+.0001;}
+function beginHeldRotation(){
+ if(!held||held.faceTurn)return;
+ if(!held.stable){
+  // Rotate around the physical centre without moving the current hand target.
+  const item=held.items[0],offset=item.g.body.quaternion.vmult(item.anchor);
+  held.rootOffset.vsub(offset,held.rootOffset);item.anchorBody.position.vsub(offset,item.anchorBody.position);
+  item.anchor.set(0,0,0);item.joint.pivotA.set(0,0,0);
+ }
+ held.rotation=held.g.body.quaternion.clone();held.initialRotation=held.rotation.clone();
+ for(const item of held.items||[held]){item.initialQ=item.g.body.quaternion.clone();item.relative=sub(item.g.body.position,held.g.body.position);item.restQ=null;}
+}
+function turnHeldFace(code){
+ if(!held)return;
+ if(!held.faceTurn||snap||story.dockCandidate){held.faceTurn=null;beginHeldRotation();}
+ const frame=Q(),turn=Q(),partQ=held.part?.q||Q();frame.setFromAxisAngle(V(0,1,0),yaw);
+ // The selected piece defines the faces; a welded body's local axes can differ.
+ // Ignore camera pitch so each destination has an upright, front-facing face.
+ const current=held.faceTurn?.target||held.rotation,straight=nearestRelative(frame,current.mult(partQ));
+ turn.setFromAxisAngle(code==='KeyR'?V(Math.cos(yaw),0,-Math.sin(yaw)):V(0,1,0),code==='KeyE'?-Math.PI/2:Math.PI/2);
+ const target=turn.mult(straight).mult(partQ.inverse());target.normalize();
+ const motion=held.faceTurn||(held.faceTurn={from:held.rotation.clone(),target:held.rotation.clone(),queue:[],elapsed:0,active:true});
+ motion.queue.push(target);motion.target=target;motion.active=true;
+ // A deliberate face switch takes precedence over nearby magnetic targets.
+ snap=null;story.dockCandidate=null;resetAssemblyShake();speech.lastInput=simTime;redraw=true;
+}
+function updateHeldFaceTurn(dt){
+ const motion=held?.faceTurn;if(!motion)return;
+ // Keep separate presses in order, including four fast taps that make a full
+ // turn. Releasing Shift does not strand the object between two faces.
+ const duration=.14;let remaining=dt;
+ while(motion.queue.length&&remaining>0){
+  const step=Math.min(remaining,duration-motion.elapsed);motion.elapsed+=step;remaining-=step;
+  const t=clamp(motion.elapsed/duration,0,1);held.rotation=slerp(motion.from,motion.queue[0],t*t*(3-2*t));
+  if(t<1)break;
+  // Heavy articulated bodies can lag behind the hand. Visit each requested
+  // face physically before advancing, otherwise four taps can skip the turn
+  // and take the shortest arc back to the initial pose at lower physics rates.
+  if(qSimilarity(held.g.body.quaternion,motion.queue[0])<Math.cos(.1/2))break;
+  held.rotation=motion.queue.shift().clone();motion.from=held.rotation.clone();motion.elapsed=0;
+ }
+ if(!motion.queue.length&&qSimilarity(held.g.body.quaternion,motion.target)>Math.cos(.01/2))motion.active=false;
+}
+function heldRotationHint(){return inputLabel('rotate')+' + '+inputLabel('radial')+'/'+inputLabel('interact')+' · caras · '+inputLabel('rotate')+' + '+inputLabel('stop')+' · voltear';}
 function stopRotorsForManipulation(list){
  const included=new Set(list);if(!rotors.some(rotor=>rotorGroups(rotor).some(g=>included.has(g))))return;
  // robotStopForGroups has already stopped each controller. Revalidate hinges
@@ -2037,6 +2080,7 @@ function grabQubit(hitOverride=null){
   items.push({g,anchor:local,anchorBody,joint,passiveGrip,gripDriver:passive.get(g)||null,gripMass:mass,relative:sub(point,rootPoint),initialQ:g.body.quaternion.clone(),restQ:null});
  }
  held={...hit,...items[0],pickedPartId,items,weight,stable,rootOffset:stable?sub(rootPoint,hit.point):V(),age:0,distance:clamp(hit.distance,.3,2.5),rotation:hit.g.body.quaternion.clone(),initialRotation:hit.g.body.quaternion.clone(),tiltAxis:V(Math.cos(yaw),0,-Math.sin(yaw))};
+ if(shiftDown())beginHeldRotation();
  storyOnGrab(hit.g);
  speech.shake=null;queueSpeech(hit.g,'close',{part:hit.part,kind:'pickup',priority:62,cooldown:18});
 }
@@ -2526,10 +2570,11 @@ function grabFamily(hit=aimFamily(direction(),2.7)){
  const joint=new CANNON.PointToPointConstraint(b,local,anchorBody,V(),manualGripForce(f.weight));joint.collideConnected=false;world.addBody(anchorBody);world.addConstraint(joint);
  const item={g,anchor:local,anchorBody,joint,passiveGrip:false,gripDriver:null,gripMass:b.mass,relative:V(),initialQ:b.quaternion.clone(),restQ:null};
  clearSelection();held={...item,family:f,part:null,items:[item],weight:f.weight,stable:false,rootOffset:V(),age:0,distance:clamp(distance,.3,2.5),rotation:b.quaternion.clone(),initialRotation:b.quaternion.clone(),tiltAxis:V(Math.cos(yaw),0,-Math.sin(yaw)),familyDamping:b.angularDamping,latched:story.scene==='campaign'};
+ if(shiftDown())beginHeldRotation();
  b.wakeUp();familyActive=f;familyShake=null;snap=null;story.dockCandidate=null;redraw=true;return true;
 }
 function takeFamily(f){if(!families.includes(f)||held)return;pendingPickup={family:f};if(gameInputActive())completePendingPickup();else captureMouse();}
-function familyHandHint(){return (held?.latched?'Clic: soltar':'Suelta el clic para dejarla')+' · rueda: acercar · Shift + WASD: girar · Shift + sacudir: lotes de 10';}
+function familyHandHint(){return (held?.latched?'Clic: soltar':'Suelta el clic para dejarla')+' · '+heldRotationHint()+' · '+inputLabel('rotate')+' + '+walkingInputLabel()+' · giro libre · sacudir: lotes de 10';}
 function familyEnabled(){return !!window.QBitsFamilies&&['lab','campaign'].includes(story.scene)&&!puzzle.active&&!story.transition&&!story.firstCycle&&!story.passage&&!certifiedAutomation();}
 function familyNotice(message){announce(message);return null;}
 function initFamilyUi(){
@@ -5064,7 +5109,7 @@ function settleSnappedMechanisms(source,target){
  for(const g of members){g.body.velocity.set(0,0,0);g.body.angularVelocity.set(0,0,0);g.body.force.set(0,0,0);g.body.torque.set(0,0,0);g.body.wakeUp();}
 }
 function findSnap(){
- if(!held||held.shakeSeparated||!shiftDown()||!heldMechanismCanSnap())return null;
+ if(!held||held.shakeSeparated||held.faceTurn?.active||!shiftDown()||!heldMechanismCanSnap())return null;
  const source=held.g,part=partPose(source,held.part),connected=new Set(rotorConnectedGroups([source])),sourceBox=bounds(source),margin=V(.15,.15,.15),nearSource={min:sub(sourceBox.min,margin),max:add(sourceBox.max,margin)};let candidate=null,best=.055;
  for(const target of groups){if(target.route||target.haulJob||connected.has(target)||!boundsOverlap(nearSource,bounds(target)))continue;
   const blade=findPropellerSnap(source,target,best);if(blade){candidate=blade;best=blade.score;}
@@ -5231,7 +5276,8 @@ function applyArticulatedGripOrientation(item,desired,dt){
  const advance=(from,to,limit)=>{const dot=Math.min(1,Math.abs(from.x*to.x+from.y*to.y+from.z*to.z+from.w*to.w)),angle=2*Math.acos(dot);return angle>limit?slerp(from,to,limit/angle):to;};
  // A bounded target follows the existing rotation input. It cannot store a
  // half-turn of spring error behind a wall, table or the floor.
- const target=advance(body.quaternion,advance(anchor.quaternion,desired,Math.max(.1,settings.rotationSpeed)*dt),.18);
+ const speed=held?.faceTurn?10:Math.max(.1,settings.rotationSpeed);
+ const target=advance(body.quaternion,advance(anchor.quaternion,desired,speed*dt),.18);
  anchor.quaternion.copy(safeGripRotation(item,target));
  const inertia=gripDrivenInertia(item),mass=item.gripMass||body.mass,radius=Math.max(HALF,Math.sqrt((inertia.x+inertia.y+inertia.z)/Math.max(.0001,mass)));
  item.orientationGrip.torque=gripDrivenForce(item)*radius;
@@ -5341,25 +5387,26 @@ function updateGrab(dt){
  const grabSpeed=savedPreferences.grabSpeed||1;
  if(shiftDown()){
   const tilt=Number(keys.has('KeyW'))-Number(keys.has('KeyS')),turn=Number(keys.has('KeyA'))-Number(keys.has('KeyD'));
-  if(tilt||turn){const axis=add(mul(held.tiltAxis||V(1,0,0),tilt),V(0,turn,0));axis.normalize();const q=Q();q.setFromAxisAngle(axis,dt*settings.rotationSpeed*(savedPreferences.invertPieceRotation?-1:1));held.rotation=q.mult(held.rotation);}
+  if(tilt||turn){if(held.faceTurn){held.faceTurn=null;beginHeldRotation();}const axis=add(mul(held.tiltAxis||V(1,0,0),tilt),V(0,turn,0));axis.normalize();const q=Q();q.setFromAxisAngle(axis,dt*settings.rotationSpeed*(savedPreferences.invertPieceRotation?-1:1));held.rotation=q.mult(held.rotation);}
  }
+ updateHeldFaceTurn(dt);
  const handTarget=add(add(V(...camera),mul(direction(),held.distance)),held.rootOffset||V()),rootTarget=held.family?handTarget:campaignDockTarget(tutorialGripTarget(handTarget)),rotationDelta=held.rotation.mult(held.initialRotation.inverse());
  const snapPoses=snap&&snap.source===held.g?mechanismSnapPoses(held.g,snap.position,snap.quaternion):[];
  for(const item of held.items||[held]){
   const b=item.g.body;b.wakeUp();b.angularDamping=.85+settings.grip*.1499;
   if(item.orientationGrip)for(const equation of item.orientationGrip.equations)equation.enabled=false;
   if(item.passiveGrip){item.floorLocked=false;if(!item.g.virtualConveyor&&b.fixedRotation){b.fixedRotation=false;b.updateMassProperties();}continue;}
-  let target=add(rootTarget,rotationDelta.vmult(item.relative||V())),desired=null,strength=160;
+  let target=add(rootTarget,rotationDelta.vmult(item.relative||V())),desired=null,strength=held.faceTurn?400:160;
   const snapped=snapPoses.find(pose=>pose.g===item.g);
   if(snapped){target=add(snapped.p,snapped.q.vmult(item.anchor));desired=snapped.q;item.restQ=null;}
   else if(story.dockCandidate&&item.g===held.g){desired=story.dockCandidate.quaternion;item.restQ=null;}
-  else if(shiftDown()){desired=rotationDelta.mult(item.initialQ||held.initialRotation);item.restQ=null;}
+  else if(shiftDown()||held.faceTurn){desired=rotationDelta.mult(item.initialQ||held.initialRotation);item.restQ=null;}
   else if(held.stable||held.age>.22){if(!item.restQ)item.restQ=held.stable?rotationDelta.mult(item.initialQ):b.quaternion.clone();desired=item.restQ;strength=held.stable?160:30+settings.grip*35;}
   const rotations=[b.quaternion];
   if(desired){for(let i=1;i<=8;i++)rotations.push(slerp(b.quaternion,desired,i/8));}
   target=safeGripTarget(item,target,rotations);
   const currentFloor=physicalGroupBounds(item.g).min.y;
-  const turning=shiftDown()||!!snap,turnClear=desired?physicalGroupBounds(item.g,b.position,desired).min.y>=.004:true;
+  const turning=shiftDown()||!!held.faceTurn||!!snap,turnClear=desired?physicalGroupBounds(item.g,b.position,desired).min.y>=.004:true;
   const docking=!!story.dockCandidate&&item.g===held.g;
   if(docking){b.quaternion.copy(slerp(b.quaternion,story.dockCandidate.quaternion,1-Math.exp(-8*dt)));b.aabbNeedsUpdate=true;}
   const lockFloor=docking||currentFloor<.015&&(!turning||!turnClear);
@@ -6364,6 +6411,9 @@ function handleWheel(event){
 canvas.addEventListener('wheel',handleWheel,{passive:false});
 function handleKey(event){
  if(familyUi?.isOpen())return;
+ if(held&&shiftDown()&&['KeyQ','KeyE','KeyR'].includes(event.code)&&!event.altKey&&!event.ctrlKey&&!event.metaKey&&gameInputActive()&&storyActionAllowed()&&!storySuspended()&&!story.transition&&!robotPoseDraft&&!trajectoryDraft&&!shelfPreview){
+  event.preventDefault();if(!event.repeat)turnHeldFace(event.code);return;
+ }
  if(held?.family&&!['Escape','KeyP','KeyW','KeyA','KeyS','KeyD','KeyC','ShiftLeft','ShiftRight','ControlLeft','ControlRight'].includes(event.code)){event.preventDefault();return;}
  if(familyGroupingJob){event.preventDefault();if(event.code==='Escape'){cancelFamilyGrouping();announce('Agrupación cancelada · piezas conservadas');}return;}
  if(familyPlacement&&['Escape','KeyE','Enter'].includes(event.code)){event.preventDefault();if(event.code==='Escape')cancelFamilyPlacement();else confirmFamilyPlacement();return;}
@@ -6407,21 +6457,7 @@ function handleKey(event){
  if(event.code.startsWith('Alt')&&!held&&!marquee&&!event.repeat){if(powerInspectionAvailable()){event.preventDefault();keys.add(event.code);redraw=true;return;}const inspection=inspectionNearPin();if(inspection){event.preventDefault();routeInspection=inspection;keys.add(event.code);return;}const hit=aimQubit()||selected;if(hit?.g.parts.length>1){event.preventDefault();openDetachMenu(hit);return;}}
  if(['ShiftLeft','ShiftRight','ControlLeft','ControlRight','AltLeft','AltRight','KeyW','KeyA','KeyS','KeyD','KeyC'].includes(event.code)){
   event.preventDefault();
-  if(event.code.startsWith('Shift')&&held&&!shiftDown()){
-   if(!held.stable){
-    // A face remains a natural grab point for dragging. During rotation
-    // move the hand constraint to the centre and preserve its world target.
-    const item=held.items[0],offset=item.g.body.quaternion.vmult(item.anchor);
-    held.rootOffset.vsub(offset,held.rootOffset);
-    item.anchorBody.position.vsub(offset,item.anchorBody.position);
-    item.anchor.set(0,0,0);item.joint.pivotA.set(0,0,0);
-   }
-   held.rotation=held.g.body.quaternion.clone();held.initialRotation=held.rotation.clone();
-   for(const item of held.items||[held]){
-    item.initialQ=item.g.body.quaternion.clone();
-    item.relative=sub(item.g.body.position,held.g.body.position);
-   }
-  }
+  if(event.code.startsWith('Shift')&&held&&!shiftDown())beginHeldRotation();
   keys.add(event.code);return;
  }
  if(event.repeat)return;
@@ -6448,8 +6484,8 @@ function updateTarget(){
  if(shelfPreview)targetLabel.textContent=shelfPreview.valid?(shelfPreview.snapped?'Repisa alineada · ':'')+'Clic / E · colocar · Esc · cancelar':shelfPreview.reason;
  else if(creationPreview)targetLabel.textContent=creationPreview.reason;
  else if(marquee)targetLabel.textContent='Suelta para seleccionar · hasta '+settings.maxSelect+' piezas';
- else if(held?.latched)targetLabel.textContent='Clic · soltar selección · Shift + WASD · girar'+(heldAssemblyGroups().length?' · Shift + sacudir · desarmar':' · rueda · enfocar');
- else if(held)targetLabel.textContent=snap?(snap.propellerTip?'Pala alineada · suelta para unir a la hélice':snap.rotorTip?(snap.servoKind?'Servo alineado · suelta para unir':'Puntas alineadas · suelta para formar Rotor'):snap.wholeFace?'Cara completa · suelta para unir':'Suelta para unir esta cara'):shiftDown()?'WASD · girar'+(heldAssemblyGroups().length?' · sacudir varias veces · desarmar':''):'Shift · girar / unir · rueda · enfocar · Ctrl · caída';
+ else if(held?.latched)targetLabel.textContent='Clic · soltar selección · '+heldRotationHint()+' · '+inputLabel('rotate')+' + '+walkingInputLabel()+' · giro libre';
+ else if(held)targetLabel.textContent=snap?(snap.propellerTip?'Pala alineada · suelta para unir a la hélice':snap.rotorTip?(snap.servoKind?'Servo alineado · suelta para unir':'Puntas alineadas · suelta para formar Rotor'):snap.wholeFace?'Cara completa · suelta para unir':'Suelta para unir esta cara'):shiftDown()?inputLabel('radial')+'/'+inputLabel('interact')+' · caras · '+inputLabel('stop')+' · arriba/abajo · '+walkingInputLabel()+' · giro libre'+(heldAssemblyGroups().length?' · sacudir · desarmar':''):heldRotationHint()+' · rueda · enfocar · '+inputLabel('drop')+' · caída';
  else if(hit&&isExternalBattery(hit.part)){const info=externalBatteryPackInfo(hit.part.id);targetLabel.textContent=info.label+' · '+info.percent+' % · '+(info.enabled?'activa':'apagada')+' · clic derecho: batería';}
  else if(shelfTarget&&(!hit||shelfTarget.distance<(hit.distance??Infinity))){const cell=shelfTarget.shelf.cells[shelfTarget.cellIndex];targetLabel.textContent='Compartimento '+(shelfTarget.cellIndex+1)+' · '+(cell.category?.label||'Vacío')+' · '+cell.items.length+'/50 · clic derecho: organizar';}
  else if(selectedRotors().length)targetLabel.textContent=(activeRotorSet()?.name||'Selección de rotores')+' · '+selectedRotors().length+' · Ctrl + clic: añadir / quitar · clic derecho o P: controles';
@@ -10641,7 +10677,7 @@ function socketFit(g,socket){
 }
 function undockCampaignGroup(g){if(!g?.storySocket)return;const socket=g.storySocket;socket.occupant=null;g.storySocket=null;g.body.type=CANNON.Body.DYNAMIC;g.body.updateMassProperties();g.body.wakeUp();}
 function campaignDockTarget(target){
- story.dockCandidate=null;story.socketHint=null;const c=story.campaign;if(story.scene!=='campaign'||!c||!held||held.items.length!==1)return target;const gate=c.gates[c.stage],socket=gate?.socket;if(!socket||gate.solved&&socket.occupant)return target;
+ story.dockCandidate=null;story.socketHint=null;const c=story.campaign;if(story.scene!=='campaign'||!c||!held||held.faceTurn?.active||held.items.length!==1)return target;const gate=c.gates[c.stage],socket=gate?.socket;if(!socket||gate.solved&&socket.occupant)return target;
  const hit=rayPuzzleBox(V(...camera),direction(),socket,2.8);if(hit===null)return target;
  const fit=socketFit(held.g,socket);story.socketHint={socket,text:fit?'Acerca la forma al hueco':held.g.parts.length!==socket.targets.length?socket.targets.length+' Q-bits unidos · '+socket.form.name:'La forma todavía no coincide'};
  if(!fit||socket.occupant&&socket.occupant!==held.g)return target;

@@ -2,6 +2,20 @@
 
 Actualizado: 25 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
+## Manipulación · giro por caras de la pieza sostenida
+
+Base comprobada: `c245359a98acdd2d8c0a94cbb227f3c1fb0e3729`, con la selección y el segundo clic de arrastre integrados. Versión de recursos: `20261125-face-turn-1`.
+
+Con una pieza, familia o conjunto en la mano, **Shift + Q/E** pasa a la cara izquierda/derecha. Cada destino queda recto respecto de la mirada horizontal del jugador, sin heredar la inclinación de la cámara o de la pieza. En una estructura soldada se usa la orientación local de la pieza elegida, no unos ejes arbitrarios del cuerpo. **Shift + R** avanza una cara en vertical: 90° por pulsación, dos pulsaciones para invertir y cuatro para completar la vuelta. Esta interpretación permite presentar también la cara superior e inferior; Q/E más un R de 180° sólo permitiría recorrer cuatro caras frontales.
+
+El agarre continúa durante el cambio y soltar Shift no lo interrumpe. Las pulsaciones independientes se encolan y la repetición automática de una tecla no suma pasos. Cada objetivo usa una transición mínima de 0,14 s y espera la llegada física a esa cara antes de avanzar: una cola basada sólo en tiempo omitía parte de la vuelta del brazo a 60/120 Hz. La duración real depende del montaje y del solver. Shift + WASD cancela los pasos pendientes y devuelve el giro libre; soltar la pieza retira la sujeción como antes. Recoger con Shift ya pulsado también recentra el ancla sin desplazar su objetivo.
+
+Los giros reutilizan los mismos cuerpos, masas, identidades, articulaciones y barridos de colisión. El seguimiento del modo por caras tiene una respuesta más rápida, conservando el límite de adelanto angular y torque del brazo. Una pared puede detener el paso; se puede apartar el objeto o volver al giro libre. Los imanes y huecos de campaña ceden prioridad durante el cambio y recuperan su funcionamiento al asentarse. Q/E/R conservan sus funciones normales fuera del acorde de manipulación; se respetan las teclas reasignadas. La ayuda de la mira y el manual del banco describen los nuevos controles.
+
+**Verificación:** `node --test tests/*.test.cjs` aprobó **1.703/1.703** pruebas, sin fallos, cancelaciones ni omisiones. Las 19 nuevas están en `tests/held-face-rotation.test.cjs` y comprueban inclinación inicial, mirada oblicua, ciclos, las seis caras, pulsaciones rápidas, liberación temprana de Shift, recogida con Shift, vuelta al giro libre, controles reasignados, contextos bloqueados, soldado, familia, brazo, diálogo, pared y recuperación del imán. Al retirar sólo la espera física de cada paso, las vueltas rápidas del brazo fallan a 60/120 Hz. La revisión independiente comprobó además barras ante pared y suelo, y multiselección sin pérdida de distancia. Sintaxis y diff correctos. Estas pruebas ejecutan entrada y física Cannon con DOM/GPU simulados. Chromium no pudo iniciarse porque `/usr/bin/chromium` es un lanzador cuyo ejecutable real no está instalado; no se certifica una partida visual ni la percepción de rapidez.
+
+**Siguiente paso:** comprobar en el equipo del jugador la comodidad de cambiar las seis caras con Q/E/R, especialmente al colocar hélices en el brazo, y ajustar el ritmo sólo a partir de esa experiencia.
+
 ## Corrección · seleccionar y volver a arrastrar
 
 Base comprobada: `d63f62d18b87a42ee53f6d208e4f816ca8ff93d5`, con la estabilización del agarre del brazo integrada. Versión de recursos: `20261125-selection-drag-1`.
