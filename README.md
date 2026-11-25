@@ -312,7 +312,7 @@ Rendimiento ofrece presets y ajustes de resolución, muestreo, escala y filtrado
 
 Con las manos libres, **Ctrl + clic** sobre cualquiera de las mitades añade o quita ese rotor, incluso si comparte chasis con otros. La acción de selección **T / △** también funciona. Los contornos y marcadores identifican los ejes elegidos.
 
-Abre **P → Mecanismos**, escribe un nombre y pulsa **Crear conjunto**. Puedes usar uno, cuatro, veinte o más rotores, hasta el límite disponible. Clic derecho sobre un miembro vuelve al menú del conjunto; la lista «Conjuntos de esta sala» también permite recuperarlo. **G** o clic izquierdo deselecciona.
+Abre **P → Mecanismos**, escribe un nombre y pulsa **Crear conjunto**. Puedes usar uno, cuatro, veinte o más rotores, hasta el límite disponible. Clic derecho sobre un miembro vuelve al menú del conjunto; la lista «Conjuntos de esta sala» también permite recuperarlo. **G** o clic izquierdo en un espacio vacío deselecciona.
 
 - **Iniciar marcha**, **Detener** e **Invertir marcha** controlan todos los miembros. Iniciar conserva el sentido y lado de cada eje; invertir cambia cada sentido. El arranque se rechaza completo si un miembro no tiene batería, supera la carga o usa un montaje fijo incompatible.
 - **Velocidad**, **Fuerza** y **Carga máxima** usan enteros y se aplican a todos los elegidos. «Varios» indica ajustes distintos; abrir el menú no los iguala. Fuerza 40 equivale al antiguo torque 0,40. Los detalles físicos están en «Montaje y ajustes avanzados».

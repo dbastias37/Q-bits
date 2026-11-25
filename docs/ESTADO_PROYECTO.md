@@ -1,6 +1,20 @@
 # Q-bits — punto de continuación
 
-Actualizado: 24 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
+Actualizado: 25 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
+
+## Corrección · seleccionar y volver a arrastrar
+
+Base comprobada: `d63f62d18b87a42ee53f6d208e4f816ca8ff93d5`, con la estabilización del agarre del brazo integrada. Versión de recursos: `20261125-selection-drag-1`.
+
+En el banco, un clic breve deja la pieza seleccionada. El siguiente clic sostenido sobre esa pieza vuelve a tomarla; soltar el botón termina el agarre y conserva la selección. También se puede mantener desde el primer clic. La secuencia no depende de un intervalo de doble clic. Antes, cualquier clic con una selección activa la borraba y salía del manejador antes de intentar el agarre.
+
+Tomar un miembro de una selección múltiple conserva el equipo completo. Apuntar a otra pieza sustituye la selección anterior; apuntar al vacío la limpia y permite comenzar el rectángulo de selección. La acción Deseleccionar (G por defecto) y Ctrl + clic para añadir o quitar rotores conservan su función. Al comenzar una nueva manipulación se cancelan las órdenes pendientes sin perder el equipo que se va a tomar. La ayuda de la mira usa las teclas configuradas, y el manual del banco explica la nueva secuencia.
+
+Se reutiliza el agarre físico existente: no cambian cuerpos, masas, identidades, colisiones ni articulaciones. Campaña, prólogo y las órdenes de menú «Tomar selección» y «Tomar familia» mantienen su agarre hasta otro clic.
+
+**Verificación:** `node --test tests/*.test.cjs` aprobó **1.684/1.684** pruebas, sin fallos, cancelaciones ni omisiones. Las 13 regresiones de `tests/selection-drag.test.cjs` pasan; contra el `game.js` de la base, nueve fallan y cuatro pasan. Incluyen movimiento real de Cannon, cubos y estructuras compuestas, multiselección, cambio de objetivo, clics repetidos, salida del canvas, pérdida de foco, reasignación de controles y límites de carga. Una revisión independiente comprobó además órdenes de carga pendientes, toma desde menú, ausencia de captura y prioridad de familias. Sintaxis y diff correctos. El harness simula DOM, GPU y captura del puntero; no certifica una partida visual. Chromium no pudo iniciarse porque falta el ejecutable del navegador en este entorno.
+
+**Siguiente paso:** comprobar la comodidad de seleccionar, soltar, volver a tomar y colocar en el equipo del jugador. La corrección anterior de estabilidad del brazo permanece vigente.
 
 ## Corrección · tomar y dar vuelta el brazo
 

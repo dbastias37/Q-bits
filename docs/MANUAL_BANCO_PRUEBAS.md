@@ -90,7 +90,7 @@ En el taller también puedes fabricar baterías con uno, dos o tres cubos normal
 ## 4 · Tomar, unir, separar y mover
 
 - Crear: abre Q, elige una categoría y un objeto y confirma con clic. Esc cancela la creación pendiente.
-- Tomar: clic sobre una pieza, con la mano libre y sin una selección previa. Otro clic la suelta. La rueda acerca o aleja; C te agacha.
+- Tomar: en el banco, un clic breve deja la pieza seleccionada. Mantén el clic sobre ella para moverla, aunque ya esté seleccionada; suelta el botón para dejarla. También puedes mantener desde el primer clic. Si tomas un miembro de una selección múltiple, se mueve el equipo completo. Clic en un espacio vacío o G deselecciona. La rueda acerca o aleja; C te agacha.
 - Unir: sostén la pieza, acerca caras compatibles y suelta con Shift cuando veas el encaje. Shift + WASD gira la pieza sostenida.
 - Separar: Alt apuntando a una pieza abre las opciones. Shift + varias sacudidas desarma una estructura sostenida. Se conservan sus piezas.
 - Dar un destino: selecciona el equipo; clic derecho en el suelo → Ir a este punto. R detiene esa orden. Un objeto con una ruta activa no queda disponible para la pinza hasta detenerlo.

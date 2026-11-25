@@ -6454,7 +6454,7 @@ function updateTarget(){
  else if(shelfTarget&&(!hit||shelfTarget.distance<(hit.distance??Infinity))){const cell=shelfTarget.shelf.cells[shelfTarget.cellIndex];targetLabel.textContent='Compartimento '+(shelfTarget.cellIndex+1)+' · '+(cell.category?.label||'Vacío')+' · '+cell.items.length+'/50 · clic derecho: organizar';}
  else if(selectedRotors().length)targetLabel.textContent=(activeRotorSet()?.name||'Selección de rotores')+' · '+selectedRotors().length+' · Ctrl + clic: añadir / quitar · clic derecho o P: controles';
  else if(aimWorkshop()){targetLabel.textContent=hit?'Clic derecho · propiedades de la pieza | E · mesa de trabajo':'E · mesa de trabajo | clic derecho · retirar';crosshair.classList.add('ready');}
- else if(selectedTeam().length)targetLabel.textContent='Clic derecho en el suelo · dar destino | clic izquierdo · deseleccionar';
+ else if(selectedTeam().length)targetLabel.textContent=(story.scene==='lab'?'Mantén '+inputLabel('primary')+' · mover selección':inputLabel('primary')+' · tomar selección')+' | '+inputLabel('clear')+' · deseleccionar';
  else if(hit)targetLabel.textContent=totalWeight(hit.g)>settings.maxCarry?'Supera la capacidad de '+formatWeight(settings.maxCarry)+' u':'Clic · tomar | clic derecho · seleccionar';else targetLabel.textContent=aimCargo(4)?'Clic derecho · órdenes del cuerpo':wallAim()?'Clic derecho · organización de pared':'';
  if(!held&&!pendingUnitCreation&&!marquee&&story.scene==='lab'&&!puzzle.active){const text=powerTargetText();if(text)targetLabel.textContent=text;}
  if(pendingCargo)targetLabel.textContent='Clic derecho en el suelo · destino de la carga';
@@ -7293,7 +7293,7 @@ function updateMenuConnector(){
  let path='M '+p.x+' '+p.y;if(length<a){const k=length/Math.max(a,.001);path+=' L '+(p.x+(elbow.x-p.x)*k)+' '+(p.y+(y-p.y)*k);}else path+=' L '+elbow.x+' '+y+' L '+(elbow.x+(endX-elbow.x)*clamp((length-a)/Math.max(b,.001),0,1))+' '+y;
  document.querySelector('#menu-link-path').setAttribute('d',path);svg.style.opacity='1';state.element.style.opacity=String(clamp((progress-.7)/.3,0,1));
 }
-// Selection is persistent for orders; a primary click clears it.
+// Selection persists after release and can be grabbed again with the primary action.
 function clearSelection(){
  clearRotorSelection();
  multiSelection=[];selected=null;selectedCargo=null;pendingCargo=null;pendingPickup=null;moveChoice=null;routeInspection=null;
@@ -7350,10 +7350,17 @@ function onCanvasMouseDown(event){
  if(!held&&gameInputActive()&&!aimFamily(direction(),2.7)){
   const hit=aimQubit(ROOM_SIZE*1.5),f=hit&&flightForGroup(hit.g);if(f&&(hit.distance>2.7||f.enabled)){showFlightMenu(hit,f);return;}
  }
- const hadSelection=selectedTeam().length>0||selectedRotors().length>0;
+ const team=selectedTeam(),rotorSelection=selectedRotors().length>0;
  if(!menu.hidden||!commandMenu.hidden){closeDetachMenu(false);closeCommandMenu(false);}
- if(hadSelection){clearSelection();if(document.pointerLockElement===canvas&&!aimQubit()&&!aimCargo(3)&&!aimFamily(direction(),2.7))startMarquee();return;}
  if(!gameInputActive())return;
+ if(team.length||rotorSelection){
+  const hit=aimQubit(),keepTeam=!rotorSelection&&hit&&team.includes(hit.g);
+  // A new hold cancels pending orders, but keeps the selected physical team
+  // when the player presses on one of its members. Empty space clears it;
+  // another piece starts a fresh selection through the ordinary grab path.
+  clearSelection();
+  if(keepTeam){multiSelection=team;selected=hit;}
+ }
  grabQubit();
 }
 function onCanvasMouseUp(event){
