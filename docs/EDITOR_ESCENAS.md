@@ -7,8 +7,8 @@ El menú principal ofrece **Editor de escenas** junto a Campaña y Banco de prue
 ## Uso actualizado · motor nativo de autoría
 
 1. En el menú principal selecciona **Editor de escenas → Nueva escena vacía**. El motor entra directamente en la sala con **cero piezas, cero cargas y sin mesa de trabajo preinstalada**. No se abre el selector de partidas normales.
-2. Coloca, agrupa, gira y configura objetos usando las herramientas normales de Q-bits. En este modo de edición es posible crear materia para diseñar; **una campaña no obtiene derecho de creación por importar una escena**.
-3. Pulsa **Capturar y guardar escena** en la barra del editor. Esta operación consulta directamente el mundo físico y sus configuraciones, verifica el resultado y lo guarda en la biblioteca independiente. **No necesitas abrir Esc ni guardar la partida del banco.**
+2. Presiona **F8** para desplegar el catálogo lateral. Selecciona un elemento y pulsa **Colocar con la mira en 3D**. La vista previa aparece en el mundo sin crear todavía ninguna pieza física. Camina y mira a una superficie: **azul indica colocación válida y rojo indica posición bloqueada**.
+3. **Rueda del ratón** gira el fantasma en pasos de 90°; **Shift + rueda** permite giro libre; **Shift** al apuntar al suelo ajusta a la cuadrícula. **Clic izquierdo** confirma una colocación real y mantiene la herramienta para colocar más. **Clic derecho o Esc** cancela. Cuando termines, pulsa **Guardar montaje** en la barra del editor. Esta operación consulta directamente el mundo físico y sus configuraciones, verifica el resultado y lo guarda en la biblioteca independiente. **No necesitas abrir Esc ni guardar la partida del banco.**
 4. En **Códigos / Exportar** puedes seleccionar versiones, editar marcadores, copiar el inventario, copiar el código completo o descargar un archivo `.qbits-scene.json`.
 5. Para recuperar un diseño elige **Continuar escena guardada**. El motor descarta la instancia anterior y restaura exactamente los cuerpos, configuraciones y material persistido por el formato del banco.
 6. Para trasladar escenas entre equipos importa el archivo o pega el código completo `QBSCENE1:...`.
@@ -21,7 +21,7 @@ Además existe una **copia de recuperación automática cada 60 segundos** cuand
 
 La nueva escena reutiliza la sala blanca, cámara, física y controles del banco. Las herramientas de creación no alteran el sistema de piezas; no se inyectan máquinas industriales decorativas ni colores ajenos. La mesa nativa del banco **no aparece por defecto**.
 
-El panel **Catálogo de construcción nativa** permite colocar directamente elementos mediante posición X/Y/Z y rotación del blueprint alrededor del eje vertical. Incluye:
+El panel **Catálogo de construcción nativa** sólo selecciona la pieza o blueprint: **ya no hay campos de coordenadas para colocar objetos**. La sala utiliza la mira, rayos contra superficies, fantasma 3D con color de validez, giro y una confirmación mediante clic. El catálogo incluye:
 
 - **Piezas:** Q-bit cúbico, pirámide, T-bit tetraédrico y enganche.
 - **Blueprints físicos:** brazo robótico articulado, servo pivote, servo bisagra, hélice, dron con batería descargada y cintas rectas o de esquina izquierda/derecha.
@@ -34,7 +34,7 @@ El editor no introduce aún una herramienta para crear geometría de suelo, dise
 
 ## Marcadores de diseño y vínculos
 
-El editor permite marcar **inicio del jugador, origen de materia, destino, recepción, zona de trabajo y referencia visual**. Cada marca tiene ID único estable, nombre, posición XYZ, función y opcionalmente un **ID de pieza asociada**. Se puede añadir, editar y eliminar y visualizar en un plano orientativo X/Z del diseño. El plano no sustituye una vista de ingeniería con las dimensiones reales de la sala.
+El editor permite marcar **inicio del jugador, origen de materia, destino, recepción, zona de trabajo y referencia visual**. Desde F8 eliges el nombre y la función y pulsas **Marcar en el mundo 3D**. Apuntas a una superficie y confirmas con clic; un indicador ligero muestra el lugar. Si el rayo apunta a una pieza, la marca se enlaza a su ID nativo. Cada marca tiene identidad única, posición guardada y función, puede editarse o retirarse y aparece también en el plano orientativo X/Z. No es necesario escribir coordenadas. El plano no sustituye una vista de ingeniería con las dimensiones reales de la sala.
 
 Al usar un ID asociado, el archivo valida que ese ID exista entre las piezas físicas de la escena. Una exportación no puede acreditar un receptor cuyo objeto no existe. Los marcadores son **datos semánticos de autoría**; todavía no activan una misión, disparan un sensor ni mueven físicamente una máquina. La futura integración de reglas debe resolver los IDs de objetos y sus transformaciones en el motor.
 
