@@ -1,15 +1,16 @@
 (function(root,factory){
   'use strict';
-  const api=factory(root.QBitsSavedGames);
+  const api=factory(root);
   if(typeof module==='object'&&module.exports)module.exports=api;
   else root.QBitsSceneFiles=api;
-})(typeof globalThis!=='undefined'?globalThis:this,function(saves){
+})(typeof globalThis!=='undefined'?globalThis:this,function(root){
   'use strict';
   const FORMAT='qbits-scene',VERSION=1,MAX_BYTES=8*1024*1024;
   const KEY='qbits.editor.scene.v1';
   const own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
   function fail(message){throw new Error(message);}
   function verifyData(data){
+    const saves=root.QBitsSavedGames||(typeof require==='function'?require('./save-games.js'):null);
     if(!saves||!saves.validate||!saves.validate('lab',data).ok)
       fail('La escena no contiene un guardado válido del banco de pruebas.');
     return data;
