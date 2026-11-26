@@ -15,9 +15,18 @@ El menú principal ofrece **Editor de escenas** junto a Campaña y Banco de prue
 
 La sesión de edición **no escribe en la ranura nativa del banco**. Los autoguardados de banco se suspenden en autoría; salir al menú o ir a selección de nivel abandona el mundo del editor, preservando los guardados del banco y la campaña.
 
-## Sala inicial y catálogo
+## Sala inicial y catálogo físico
 
-La nueva escena reutiliza la sala blanca, cámara, física, controles y catálogo de piezas y mecanismos del banco. Las herramientas de creación no alteran el sistema de piezas; no se inyectan máquinas industriales decorativas ni colores ajenos. La mesa nativa del banco **no aparece por defecto**, ya que el jugador debe decidir qué infraestructura colocar.
+La nueva escena reutiliza la sala blanca, cámara, física y controles del banco. Las herramientas de creación no alteran el sistema de piezas; no se inyectan máquinas industriales decorativas ni colores ajenos. La mesa nativa del banco **no aparece por defecto**.
+
+El panel **Catálogo de construcción nativa** permite colocar directamente elementos mediante posición X/Y/Z y rotación del blueprint alrededor del eje vertical. Incluye:
+
+- **Piezas:** Q-bit cúbico, pirámide, T-bit tetraédrico y enganche.
+- **Blueprints físicos:** brazo robótico articulado, servo pivote, servo bisagra, hélice, dron con batería descargada y cintas rectas o de esquina izquierda/derecha.
+
+Los blueprints no son mallas falsas: el motor ejecuta la ruta `spawnSavedMechanism` y reconstruye cuerpos, masa, enganches, articulaciones y controladores. El verificador de geometría comprueba límites de habitación, otras construcciones, suelo y espacio antes de aceptar la colocación. El creador puede rotar y cambiar los mecanismos después con los controles normales.
+
+En modo autoría la materia se puede generar libremente para **diseñar**. Esto no autoriza el comando de creación de piezas en una misión ni acredita energía gratuita. La colocación de un blueprint grande agrega la cantidad real de partes al archivo y se refleja en su manifiesto. Sus baterías empiezan descargadas cuando así lo define la plantilla. No se ofrecen todavía estaciones industriales especiales que no existan como construcciones nativas válidas.
 
 El editor no introduce aún una herramienta para crear geometría de suelo, diseñar edificios de varios tamaños ni un catálogo de estaciones industriales hechas completamente con planos de construcción. Esas estaciones deben tener recetas, puertos y capacidades reales antes de ponerse a disposición.
 
@@ -31,7 +40,7 @@ El código corto identifica tanto el guardado de piezas como el conjunto de marc
 
 ## Principio de fabricación del nivel
 
-No se crea un segundo catálogo de estructuras decorativas que aparente ser una fábrica. Los objetos jugables siguen siendo los grupos físicos, materiales y blueprints que admite el banco. Para añadir estaciones industriales faltantes primero habrá que implementar las recetas y puertos en el motor, y sólo después incorporarlas al catálogo de autoría. La edición no otorga masa ni energía a una partida de campaña.
+No se crea un segundo catálogo de estructuras decorativas que aparente ser una fábrica. Los objetos jugables siguen siendo los grupos físicos, materiales y blueprints que admite el banco. Para añadir estaciones industriales faltantes primero habrá que implementar las recetas y puertos en el motor, y sólo después incorporarlas al catálogo de autoría. La edición no otorga masa ni energía a una partida de campaña. La construcción en el editor no impone todavía presupuesto inicial: el control estricto de cuota y la fabricación real son responsabilidad del modo misión.
 
 ## Contrato del archivo
 
@@ -59,4 +68,4 @@ Para el siguiente bloque deben implementarse estaciones como blueprints hechos c
 
 `node --test tests/scene-files.test.cjs` cubre ida y vuelta del formato, checksum, importación alterada, aislamiento de ranuras y estabilidad frente al orden de claves. Las comprobaciones de sintaxis y la verificación de empaquetado se pueden ejecutar por separado. **No se afirma una prueba completa en Chromium ni la suite del juego en este entorno**, que sólo dispone del código obtenido mediante el conector de GitHub.
 
-Las pruebas nuevas de autoría están en `tests/scene-authoring.test.cjs`. Comprueban el formato real de guardado vacío, referencias de marcador, retrocompatibilidad e integridad. Su ejecución en la suite completa y una sesión gráfica siguen pendientes de certificación. La rama `main` mantiene las modificaciones aisladas en módulos nuevos y el registro de sus scripts en `index.html`.
+Las pruebas nuevas de autoría están en `tests/scene-authoring.test.cjs` y `tests/scene-editor-native.test.cjs`. Comprueban el formato real de guardado vacío, referencias de marcador, retrocompatibilidad e integridad. Su ejecución en la suite completa y una sesión gráfica siguen pendientes de certificación. La rama `main` mantiene las modificaciones aisladas en módulos nuevos y el registro de sus scripts en `index.html`.
