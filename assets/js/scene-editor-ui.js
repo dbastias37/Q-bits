@@ -5,7 +5,7 @@
  const $=id=>document.getElementById(id);
  // Recover the ordinary bank slot if a previous editor session ended unexpectedly.
  try {const raw=sessionStorage.getItem(BACKUP);if(raw!==null){const old=JSON.parse(raw);if(old.exists)localStorage.setItem(LAB_KEY,old.raw);else localStorage.removeItem(LAB_KEY);sessionStorage.removeItem(BACKUP);}}catch(e){console.error('Escena: recuperación de banco pendiente',e);}
- let active=false,selected=null;
+ let active=false,selected=null,lastCheckpointRaw=null;
  const style=document.createElement('style');
  style.textContent=`
  #scene-editor-dialog{position:fixed;inset:0;z-index:135;background:#f8faf9f7;color:#293c36;display:grid;place-items:center;padding:16px;font:13px/1.55 var(--font-menu),Arial,sans-serif}
@@ -78,7 +78,7 @@
   const state=JSON.parse(saved);
   if(state.exists)localStorage.setItem(LAB_KEY,state.raw);else localStorage.removeItem(LAB_KEY);
   sessionStorage.removeItem(BACKUP);
-  active=false;toolbar.hidden=true;
+  active=false;lastCheckpointRaw=null;toolbar.hidden=true;
  }
  function prepareSceneFromFile(doc){
   const time=Date.now();
@@ -95,6 +95,7 @@
     if(!doc)throw Error('No hay escena guardada. Crea una nueva o importa un archivo.');
     prepareSceneFromFile(doc);selected=doc;
   }
+  lastCheckpointRaw=localStorage.getItem(LAB_KEY);
   active=true;toolbar.hidden=false;close();
   // The native lab selection owns its existing new/continue confirmation flow.
   entry.click();
@@ -134,11 +135,11 @@
  $('scene-editor-capture').addEventListener('click',()=>act(()=>{
   if(!active)throw Error('Abre primero el modo Editor de escenas.');
   const raw=localStorage.getItem(LAB_KEY);
-  if(!raw)throw Error('Guarda primero desde Esc → Guardar partida.');
+  if(!raw||raw===lastCheckpointRaw)throw Error('No hay un guardado nuevo de esta edición. Usa Esc → Guardar partida y luego captura.');
   let envelope;try{envelope=JSON.parse(raw);}catch{throw Error('Guardado del banco ilegible.');}
   if(envelope.mode!=='lab'||envelope.format!=='qbits-save')throw Error('El guardado actual no corresponde al banco.');
   const doc=MODEL().pack($('scene-editor-name').value,envelope.data,$('scene-editor-notes').value);
-  selected=MODEL().save(localStorage,doc);
+  selected=MODEL().save(localStorage,doc);lastCheckpointRaw=raw;
   $('scene-editor-code').textContent=selected.code+' · '+selected.inventory.pieces+' piezas';
   feedback('Escena capturada y guardada. '+selected.code);
  }));
