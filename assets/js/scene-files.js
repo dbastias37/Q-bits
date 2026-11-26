@@ -53,9 +53,15 @@
       objects.push(item);
       for(const p of members)readPart(p);
     }
-    for(const family of snap.families||[]){
-      for(const item of family.items||[])for(const p of item.parts||[])readPart(p);
+    const stored={families:0,disassembly:0,cables:0,shelves:0};
+    function addStored(p,kind){const count=pieces;readPart(p);if(pieces!==count)stored[kind]++;}
+    for(const family of snap.families||[])for(const item of family.items||[]){
+      for(const group of item.groups||[])for(const p of group.parts||[])addStored(p,'families');
+      for(const p of item.parts||[])addStored(p,'families');
     }
+    for(const job of snap.disassembly||[])for(const p of job.parts||[])addStored(p,'disassembly');
+    for(const cable of snap.powerNetwork?.cables||[])for(const p of cable.materials||[])addStored(p,'cables');
+    for(const shelf of snap.shelves||[])for(const cell of shelf.cells||[])for(const item of cell.items||[])for(const group of item.groups||[])for(const p of group.parts||[])addStored(p,'shelves');
     const systems={},mechanisms=[];
     for(const k of ['rotors','rotorSets','powerNetwork','conveyors','robotArms','shelves','contacts','alphaScene','families','workshop']){
       if(!own(snap,k))continue;
@@ -70,7 +76,9 @@
         mechanisms.push(ref);
       }
     }
-    return {pieces,activeGroups,shapes,components,objects,mechanisms,systems,uniqueIds:ids.size,
+    const cargos=(snap.cargos||[]).map(c=>({id:c.id,side:c.side,required:c.required,color:c.color,position:c.p}));
+    if(snap.powerNetwork){systems.cables=(snap.powerNetwork.cables||[]).length;systems.reservoirs=(snap.powerNetwork.reservoirs||[]).length;}
+    return {pieces,activeGroups,shapes,components,objects,mechanisms,cargos,stored,systems,uniqueIds:ids.size,
       totalMass:Number(totalMass.toFixed(6)),
       notes:'La carga por pieza se expresa como fracción de 0 a 1; no son julios. No se asigna energía ficticia.'};
   }
@@ -180,6 +188,8 @@
       'Formas: '+Object.entries(inv.shapes).map(([k,v])=>k+' '+v).join(', '),
       'Sistemas: '+Object.entries(inv.systems).map(([k,v])=>k+' '+v).join(', '),
       'Masa total nominal: '+inv.totalMass,
+      'Piezas en reservas: '+Object.entries(inv.stored).map(([k,v])=>k+'='+v).join(', '),
+      'Cargas independientes: '+inv.cargos.map(o=>'#'+o.id+' lado='+o.side+' cuota='+o.required+' color='+o.color).join('; '),
       'Grupos: '+inv.objects.map(o=>'grupo '+o.rootId+' @ '+(o.position||[]).join(',')+' · '+o.parts.map(p=>p.shape+'#'+p.id+'('+p.weight+' masa; '+(p.energyFraction??'—')+' carga)').join('+')).join('; '),
       'Mecanismos: '+inv.mechanisms.map(m=>Object.entries(m).map(([k,v])=>k+'='+v).join(',')).join('; '),
       'Componentes configurados: '+inv.components.map(c=>c.id+':'+c.features.join('+')).join('; '),
