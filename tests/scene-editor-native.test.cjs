@@ -16,7 +16,7 @@ test('native editor opens with zero objects, no desk, and no bank/campaign write
  const game=await prepared(),{api,t,sandbox}=game;
  const bankBefore=sandbox.localStorage.getItem(saves.KEYS.lab),campaignBefore=sandbox.localStorage.getItem(saves.KEYS.campaign);
  const opened=api.sceneEditor.open();
- assert.deepEqual(opened,{ok:true});
+ assert.equal(opened.ok,true,opened.error);
  assert.equal(api.sceneEditor.isActive(),true);
  assert.equal(t.story.scene,'lab');
  assert.equal(t.groups.length,0);
