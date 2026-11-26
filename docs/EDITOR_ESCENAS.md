@@ -9,7 +9,7 @@ El menú principal ofrece **Editor de escenas** junto a Campaña y Banco de prue
 1. En el menú principal selecciona **Editor de escenas** y **Nueva escena en el banco**.
 2. En la selección nativa del banco elige **Nueva**. Coloca y configura las piezas con los controles habituales.
 3. Abre **Esc → Guardar partida** para registrar el estado físico actual. Después utiliza la barra **Capturar y guardar escena**. Se genera un archivo de autoría independiente de la ranura de partida del banco.
-4. Pulsa **Códigos / Exportar** para consultar el inventario, copiar su resumen, copiar el código completo o descargar el archivo `.qbits-scene.json`.
+4. Elige entre las versiones anteriores mediante **Biblioteca de escenas → Abrir versión seleccionada**. Cada versión se reconoce por su código y no sustituye automáticamente a las otras. Pulsa **Códigos / Exportar** para consultar el inventario, copiar su resumen, copiar el código completo o descargar el archivo `.qbits-scene.json`.
 5. En otra sesión, importa ese archivo o pega el código completo `QBSCENE1:...`. La opción **Continuar escena guardada** instala temporalmente ese estado en el banco y abre la selección nativa; elige **Continuar**.
 6. Al regresar al menú o cerrar la pestaña, el editor recupera la ranura de banco anterior. La campaña no utiliza ni acepta el archivo de escena.
 
@@ -25,7 +25,7 @@ El código largo es una representación Base64 URL de los datos completos. El re
 
 ## Integración de seguridad
 
-- Se usa `qbits.editor.scene.v1` para la escena; las ranuras `qbits.save.lab.v1` y `qbits.save.campaign.v1` no son el destino permanente de los archivos.
+- Se usan `qbits.editor.scene.v1` como selector, `qbits.editor.library.v1` como índice y `qbits.editor.document.<código>` para las versiones. La cantidad depende del espacio de almacenamiento disponible en el navegador; no equivale a una copia de seguridad. Las ranuras `qbits.save.lab.v1` y `qbits.save.campaign.v1` no son el destino permanente de los archivos.
 - La ranura de banco anterior se conserva temporalmente en `sessionStorage` mientras el editor utiliza el banco. Cuando el usuario vuelve al menú o abandona la página, se restaura el contenido original.
 - Un archivo inválido se rechaza antes de reemplazar la escena almacenada. La importación no añade recursos a una partida en campaña o galpón.
 - La exportación descarga JSON localmente sin hacer ninguna petición a un servidor; el texto copiado permanece bajo control del usuario.
