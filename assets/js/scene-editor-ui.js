@@ -9,9 +9,9 @@
  let draftMarkers=[],editingMarkerId=null;
  const style=document.createElement('style');
  style.textContent=`
- #scene-editor-dialog{position:fixed;inset:0;z-index:135;background:#f8faf9f7;color:#293c36;display:grid;place-items:center;padding:16px;font:13px/1.55 var(--font-menu),Arial,sans-serif}
+ #scene-editor-dialog{position:fixed;inset:0;z-index:135;background:#111c164d;color:#293c36;display:flex;align-items:center;justify-content:flex-end;padding:12px;font:13px/1.55 var(--font-menu),Arial,sans-serif}
  #scene-editor-dialog[hidden],#scene-editor-toolbar[hidden]{display:none!important}
- .scene-editor-shell{width:min(720px,96vw);max-height:90vh;overflow:auto;background:white;border:1px solid #c9d7cd;padding:24px;box-shadow:0 18px 70px #19282029}
+ .scene-editor-shell{width:min(420px,95vw);max-height:96vh;overflow:auto;background:#fffffff5;border:1px solid #c9d7cd;padding:18px;box-shadow:0 18px 70px #19282029}
  .scene-editor-shell h2{font-size:22px;margin:0 0 6px}.scene-editor-shell p{margin:8px 0 13px}
  .scene-editor-shell textarea,.scene-editor-shell input[type=text]{width:100%;border:1px solid #bfcfc5;background:#fff;padding:9px;font:inherit;user-select:text}
  .scene-editor-shell textarea{height:105px;resize:vertical}
@@ -39,11 +39,9 @@
  <p>Q-BITS / HERRAMIENTAS DE CREACIÓN</p><h2>Editor de escenas</h2>
  <p>Comienza con una sala vacía y utiliza las piezas, mecanismos y blueprints nativos. El editor no modifica tus partidas de campaña ni de banco.</p>
  <h3>Catálogo de construcción nativa</h3>
- <p>Coloca piezas reales y mecanismos completos hechos con sus blueprints nativos. Son recursos libres sólo durante la autoría, no en misiones.</p>
+ <p>Elige una pieza y vuelve inmediatamente a la sala. Apunta con la mira: fantasma azul = espacio libre; rojo = bloqueado. Rueda = girar; Shift = cuadrícula; clic = colocar; clic derecho/Esc = terminar.</p>
  <label>Elemento<select id="scene-editor-catalog" aria-label="Piezas y blueprints"></select></label>
- <div class="scene-marker-grid"><label>X<input id="scene-place-x" type="number" value="0" step=".1"></label><label>Altura base (Y)<input id="scene-place-y" type="number" value="0" step=".1"></label><label>Z<input id="scene-place-z" type="number" value="0" step=".1"></label></div>
- <label>Rotación del blueprint en grados<input id="scene-place-angle" type="number" value="0" min="-360" max="360" step="15"></label>
- <div class="scene-editor-actions"><button id="scene-place-button" class="primary">Colocar en escena</button></div>
+ <div class="scene-editor-actions"><button id="scene-place-button" class="primary">Colocar con la mira en 3D</button></div>
  <label>Biblioteca de escenas<select id="scene-editor-library" aria-label="Escenas guardadas"></select></label>
  <div class="scene-editor-actions"><button id="scene-editor-choose">Abrir versión seleccionada</button><button id="scene-editor-recover">Recuperar último borrador</button></div>
  <label>Nombre de escena<input id="scene-editor-name" type="text" maxlength="90" value="Mi escena inicial"></label>
@@ -54,12 +52,10 @@
  <button id="scene-editor-import">Importar archivo</button>
  <button id="scene-editor-close">Volver</button></div>
  <h3>Marcas del nivel</h3>
- <p>Define puntos de aparición, fuentes, destinos y receptores. Sus coordenadas se conservan aunque muevas las máquinas; las reglas futuras podrán identificarlos por código.</p>
+ <p>Coloca también las marcas en el espacio 3D, apuntando al suelo o a una pieza. Si apuntas a una pieza, la marca se vincula automáticamente a su identidad.</p>
  <label>Nombre de marca<input id="scene-marker-name" type="text" maxlength="80" placeholder="Receptor de productos"></label>
  <label>Función<select id="scene-marker-role"><option value="spawn">Inicio del jugador</option><option value="source">Origen de materia</option><option value="destination">Destino</option><option value="receiver">Recepción</option><option value="workzone">Zona de trabajo</option><option value="note">Referencia visual</option></select></label>
- <label>ID de pieza asociada (opcional)<input id="scene-marker-unit" type="number" min="1" step="1" placeholder="Ej.: 42"></label>
- <div class="scene-marker-grid"><label>X<input id="scene-marker-x" type="number" step=".1" value="0"></label><label>Y<input id="scene-marker-y" type="number" step=".1" value="0"></label><label>Z<input id="scene-marker-z" type="number" step=".1" value="0"></label></div>
- <div class="scene-editor-actions"><button id="scene-marker-from-player">Usar posición del jugador guardada</button><button id="scene-marker-add">Añadir marca</button><button id="scene-markers-save">Guardar marcas en la escena</button></div>
+ <div class="scene-editor-actions"><button id="scene-marker-add">Marcar en el mundo 3D</button><button id="scene-markers-save">Guardar marcas y montaje</button></div>
  <div id="scene-editor-marker-list" aria-live="polite"></div>
  <svg id="scene-editor-map" viewBox="0 0 360 220" role="img" aria-label="Plano orientativo X/Z de los marcadores" style="width:100%;max-height:240px;background:#f5f8f6;border:1px solid #d0dcd4"></svg>
  <div class="scene-editor-actions">
@@ -75,9 +71,9 @@
  </div>`;
  document.body.append(dialog);
  const toolbar=document.createElement('div');toolbar.id='scene-editor-toolbar';toolbar.hidden=true;
- toolbar.innerHTML=`<strong>Editor de escenas · Banco 3D</strong>
- <div class="scene-editor-actions"><button id="scene-editor-capture">Capturar y guardar escena</button><button id="scene-editor-manage">Catálogo / Códigos / Exportar</button></div>
- <small>F8 · abrir catálogo y códigos. Capturar lee directamente el montaje del motor; no hace falta guardar el banco.</small><small id="scene-editor-recovery-status" aria-live="polite"></small>`;
+ toolbar.innerHTML=`<strong>Editor de escenas · Modo 3D</strong>
+ <div class="scene-editor-actions"><button id="scene-editor-capture">Guardar montaje</button><button id="scene-editor-manage">F8 · Catálogo y exportar</button></div>
+ <small id="scene-editor-live-hint">Camina y apunta · F8 elegir · rueda girar · clic colocar · Esc cancelar</small><small id="scene-editor-recovery-status" aria-live="polite"></small>`;
  document.body.append(toolbar);
  function feedback(text){$('scene-editor-feedback').textContent=text;}
  function show(){try{selected=MODEL().read(localStorage);}catch(e){selected=null;feedback(e.message);}
@@ -91,11 +87,13 @@
  for(const item of items){const option=document.createElement('option');option.value=item.code;option.textContent=item.name+' · '+item.code;select.append(option);}
  if(selected&&items.some(item=>item.code===selected.code))select.value=selected.code;
  $('scene-editor-code').textContent=selected?'Versión de escena: '+selected.code+' · '+selected.inventory.pieces+' piezas':'Sin escena capturada';
- if(selected){$('scene-editor-name').value=selected.name;$('scene-editor-notes').value=selected.notes;}
- draftMarkers=(selected?.design?.markers||[]).map(m=>({...m,position:m.position.slice()}));editingMarkerId=null;renderMarkers();
+ if(selected&&!active){$('scene-editor-name').value=selected.name;$('scene-editor-notes').value=selected.notes;}
+ if(!active){draftMarkers=(selected?.design?.markers||[]).map(m=>({...m,position:m.position.slice()}));editingMarkerId=null;}
+ renderMarkers();
  dialog.hidden=false;$('scene-editor-name').focus();}
  function close(){dialog.hidden=true;}
  function renderMarkers(){
+  if(active)window.QBitsGame?.sceneEditor?.setMarkers?.(draftMarkers);
   const list=$('scene-editor-marker-list');list.replaceChildren();
   if(!draftMarkers.length)list.textContent='Sin marcas todavía.';
   for(const mark of draftMarkers){
@@ -103,12 +101,10 @@
    line.textContent=mark.label+' ['+mark.role+'] · '+mark.position.join(', ')+(mark.unitId?' · pieza '+mark.unitId:'')+' · '+mark.id;
    const edit=document.createElement('button');edit.textContent='Editar';edit.type='button';edit.addEventListener('click',()=>{
     editingMarkerId=mark.id;$('scene-marker-name').value=mark.label;$('scene-marker-role').value=mark.role;
-    ['x','y','z'].forEach((axis,i)=>{$('scene-marker-'+axis).value=String(mark.position[i]);});
-    $('scene-marker-unit').value=mark.unitId?String(mark.unitId):'';
-    $('scene-marker-add').textContent='Actualizar marca';
+    $('scene-marker-add').textContent='Reubicar marca en 3D';
    });
    const remove=document.createElement('button');remove.textContent='Quitar';remove.type='button';
-   remove.addEventListener('click',()=>{draftMarkers=draftMarkers.filter(m=>m.id!==mark.id);if(editingMarkerId===mark.id){editingMarkerId=null;$('scene-marker-add').textContent='Añadir marca';}renderMarkers();});
+   remove.addEventListener('click',()=>{draftMarkers=draftMarkers.filter(m=>m.id!==mark.id);if(editingMarkerId===mark.id){editingMarkerId=null;$('scene-marker-add').textContent='Marcar en el mundo 3D';}renderMarkers();});
    line.append(edit,remove);list.append(line);
   }
   const svg=$('scene-editor-map'),ns='http://www.w3.org/2000/svg';svg.replaceChildren();
@@ -126,9 +122,6 @@
    node('text',{x:x+8,y:y-7,fill:'#283e32','font-size':'10'},mark.label.slice(0,24));
   }
  }
- function getSavedBank(){const raw=localStorage.getItem(LAB_KEY);if(!raw)throw Error('Guarda una partida nueva del banco antes de continuar.');
-  const obj=JSON.parse(raw);if(obj.format!=='qbits-save'||obj.mode!=='lab')throw Error('El archivo de banco no es válido.');
-  const check=window.QBitsSavedGames.validate('lab',obj.data);if(!check.ok)throw Error(check.error);return {raw,data:obj.data};}
  function storeScene(data){const doc=MODEL().pack($('scene-editor-name').value,data,$('scene-editor-notes').value,{phase:'authoring',markers:draftMarkers});
   selected=MODEL().save(localStorage,doc);$('scene-editor-code').textContent=doc.code+' · '+doc.inventory.pieces+' piezas';return doc;}
  function restoreBank(){
@@ -144,7 +137,9 @@
   if(active&&game.isActive?.()&&!window.confirm('Vas a sustituir el montaje que está en pantalla. ¿Continuar sin capturarlo?'))return;
   const result=game.open(doc?doc.data:null);
   if(!result.ok)throw Error(result.error||'No se pudo entrar a la escena.');
-  active=true;toolbar.hidden=false;close();
+  active=true;toolbar.hidden=false;
+  draftMarkers=mode==='open'?(doc.design?.markers||[]).map(m=>({...m,position:m.position.slice()})):[];
+  editingMarkerId=null;renderMarkers();close();
  }
  function getAuthoringData(){
   const result=window.QBitsGame?.sceneEditor?.capture?.();
@@ -158,6 +153,21 @@
  function current(){
   const d=MODEL().read(localStorage);if(!d)throw Error('No hay escena guardada.');
   return d;
+ }
+ function exportable(){return active&&window.QBitsGame?.sceneEditor?.isActive?.()?storeScene(getAuthoringData()):current();}
+ function onWorldMarkerPlaced(point){
+  try{
+   const label=$('scene-marker-name').value.trim(),role=$('scene-marker-role').value;
+   const nextId=()=>('m-'+Math.random().toString(36).slice(2,12)+Date.now().toString(36));
+   let id=editingMarkerId||nextId();while(draftMarkers.some(m=>m.id===id)&&id!==editingMarkerId)id=nextId();
+   const mark={id,role,label,position:point.position.slice()};
+   if(point.unitId)mark.unitId=point.unitId;
+   const candidate=draftMarkers.filter(m=>m.id!==id).concat(mark);
+   MODEL().validateDesign({phase:'authoring',markers:candidate});
+   draftMarkers=candidate;editingMarkerId=null;$('scene-marker-add').textContent='Marcar en el mundo 3D';
+   renderMarkers();$('scene-editor-live-hint').textContent='Marca «'+label+'» colocada · F8 para revisar · Guardar montaje para conservar';
+   return true;
+  }catch(e){console.warn('Marca rechazada:',e);return false;}
  }
  function base64(text){
   const bytes=new TextEncoder().encode(text);let bin='';
@@ -188,12 +198,11 @@
  },true);
  $('scene-editor-close').addEventListener('click',close);
  $('scene-place-button').addEventListener('click',()=>act(()=>{
-  if(!active||!window.QBitsGame?.sceneEditor?.isActive?.())throw Error('Abre primero Nueva escena vacía o Continuar escena.');
-  const input=key=>{const field=$('scene-place-'+key);return field.value.trim()===''?NaN:Number(field.value);};
-  const xyz=['x','y','z'].map(input),angle=input('angle');
-  const response=window.QBitsGame.sceneEditor.spawn($('scene-editor-catalog').value,xyz,angle);
-  if(!response.ok)throw Error(response.error||'No se pudo colocar.');
-  feedback(response.name+' colocado con piezas reales · '+response.pieces+' piezas en escena. Puedes cerrar el panel para inspeccionarlo.');
+  if(!active||!window.QBitsGame?.sceneEditor?.isActive?.())throw Error('Inicia primero Nueva escena vacía o Continuar escena.');
+  const response=window.QBitsGame.sceneEditor.beginPlacement($('scene-editor-catalog').value);
+  if(!response.ok)throw Error(response.error||'No se pudo preparar la vista previa.');
+  $('scene-editor-live-hint').textContent=response.name+' · apunta para colocar · rueda: girar · clic derecho/Esc: cancelar';
+  close();
  }));
  $('scene-editor-recover').addEventListener('click',()=>act(()=>{
   const raw=localStorage.getItem(RECOVERY);if(!raw)throw Error('No hay un borrador automático guardado.');
@@ -208,30 +217,21 @@
   const data=getAuthoringData(),doc=storeScene(data);
   feedback('Escena capturada desde el motor y guardada. '+doc.code);
  }));
- $('scene-marker-from-player').addEventListener('click',()=>act(()=>{const data=selected?.data||getSavedBank().data;
-  const p=data.snapshot.position;if(!Array.isArray(p)||p.length!==3)throw Error('No hay posición de jugador guardada.');
-  ['x','y','z'].forEach((axis,i)=>{$('scene-marker-'+axis).value=String(p[i]);});feedback('Posición de jugador recuperada del guardado.');
- }));
  $('scene-marker-add').addEventListener('click',()=>act(()=>{
+  if(!active||!window.QBitsGame?.sceneEditor?.isActive?.())throw Error('Abre una escena del editor para colocar marcas en 3D.');
   const label=$('scene-marker-name').value.trim(),role=$('scene-marker-role').value;
-  const position=['x','y','z'].map(k=>{const field=$('scene-marker-'+k);return field.value.trim()===''?NaN:Number(field.value);});
-  const key=()=>('m-'+Math.random().toString(36).slice(2,12)+Date.now().toString(36));
-  let next=key();while(draftMarkers.some(m=>m.id===next))next=key();
-  const marker={id:editingMarkerId||next,role,label,position};
-  const attached=$('scene-marker-unit').value.trim();
-  if(attached!==''){marker.unitId=Number(attached);}
-  const updated=draftMarkers.filter(m=>m.id!==marker.id).concat(marker);
-  MODEL().validateDesign({phase:'authoring',markers:updated});
-  draftMarkers=updated;editingMarkerId=null;$('scene-marker-add').textContent='Añadir marca';
-  renderMarkers();feedback('Marca preparada. Pulsa Guardar marcas para incluirla en el archivo.');
+  MODEL().validateDesign({phase:'authoring',markers:[{id:editingMarkerId||'m-preview',role,label,position:[0,0,0]}]});
+  const result=window.QBitsGame.sceneEditor.beginMarker(role,label);
+  if(!result.ok)throw Error(result.error||'No se pudo activar la marca.');
+  $('scene-editor-live-hint').textContent='Marca '+label+' · apunta y haz clic · Esc para cancelar';
+  close();
  }));
  $('scene-markers-save').addEventListener('click',()=>act(()=>{
-  const doc=current(),next=MODEL().withDesign(doc,{phase:'authoring',markers:draftMarkers});selected=MODEL().save(localStorage,next);
-  show();feedback('Marcas guardadas; nuevo código '+selected.code);
+  const doc=exportable();selected=doc;feedback('Montaje y marcas guardados: '+doc.code);
  }));
- $('scene-editor-copy').addEventListener('click',()=>act(async()=>{const doc=current();await copy(MODEL().explain(doc));feedback('Resumen copiado. Puedes pegarlo en el chat.');}));
- $('scene-editor-copy-full').addEventListener('click',()=>act(async()=>{const doc=current();await copy('QBSCENE1:'+base64(JSON.stringify(doc)));feedback('Código completo copiado. Contiene la escena entera.');}));
- $('scene-editor-export').addEventListener('click',()=>act(()=>{download(current());feedback('Archivo exportado.');}));
+ $('scene-editor-copy').addEventListener('click',()=>act(async()=>{const doc=exportable();await copy(MODEL().explain(doc));feedback('Resumen copiado. Puedes pegarlo en el chat.');}));
+ $('scene-editor-copy-full').addEventListener('click',()=>act(async()=>{const doc=exportable();await copy('QBSCENE1:'+base64(JSON.stringify(doc)));feedback('Código completo copiado. Contiene la escena entera.');}));
+ $('scene-editor-export').addEventListener('click',()=>act(()=>{download(exportable());feedback('Archivo exportado.');}));
  $('scene-editor-import').addEventListener('click',()=>$('scene-editor-file').click());
  $('scene-editor-import-code').addEventListener('click',()=>act(()=>{
   const raw=$('scene-editor-paste').value.trim();
@@ -262,5 +262,5 @@
    $('scene-editor-recovery-status').textContent='Borrador recuperable · '+doc.code;
   }catch(error){$('scene-editor-recovery-status').textContent='Recuperación automática no disponible: '+(error.message||error);}
  },60000);
- window.QBitsSceneEditor=Object.freeze({open:show,capture:()=>$('scene-editor-capture').click(),restoreBank});
+ window.QBitsSceneEditor=Object.freeze({open:show,capture:()=>$('scene-editor-capture').click(),restoreBank,onWorldMarkerPlaced,getMarkers:()=>draftMarkers.map(m=>({...m,position:m.position.slice()}))});
 })();
