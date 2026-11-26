@@ -10112,7 +10112,7 @@ function drawStoryGlass(){
 const storyTargetMesh=buildLathe([[.88,.006],[1,.006]],72);
 function clearNarrativeScene(){
  clearOpeningScene();
- cutterRuns.clear();cutterPassParts.clear();cutterEffects.length=0;
+ cutterRuns.clear();cutterPassParts.clear();cutterEffects.length=0;cutterManualOff.clear();cutterAutoScanLeft=0;
  clearMechanicalRest();sensorContactsCache=null;
  resetSimulationClock(performance.now(),true);
  cancelCullingBenchmark();cullingLab.observer=false;cullingLab.lastFrame=null;document.body.dataset.cullingObserver='false';
@@ -11785,8 +11785,9 @@ function tickContactSensors(dt){
 }
 // Each stripe performs one atomic contact cut. Passage marks belong to the
 // material, so another emitter on the same stripe or a reload cannot recut it.
-const cutterRuns=new Map(),cutterPassParts=new Set(),cutterEffects=[];
-const CUTTER_RANGE=.5,CUTTER_HALF_HEIGHT=.052,CUTTER_JOULES=8,CUTTER_FLASH_SECONDS=.48;
+const cutterRuns=new Map(),cutterPassParts=new Set(),cutterEffects=[],cutterManualOff=new Set();
+let cutterAutoScanLeft=0;
+const CUTTER_RANGE=1.5,CUTTER_HALF_HEIGHT=.052,CUTTER_JOULES=8,CUTTER_FLASH_SECONDS=.48;
 function validCutterConfig(c){
  if(!c||typeof c!=='object'||Array.isArray(c)||!Number.isInteger(c.face)||c.face<0||c.face>=6)return false;
  return c.version===2?Object.keys(c).every(k=>['version','face'].includes(k)):c.version===1&&[25,50,100].includes(c.range)&&['cube','pyramid'].includes(c.mode)&&Object.keys(c).every(k=>['version','face','range','mode'].includes(k));
@@ -11809,25 +11810,40 @@ function cutterPose(hit){
  const rotation=Q();rotation.setFromVectors(V(1,0,0),normal);return {origin,axis,q:pose.q.mult(rotation),pose};
 }
 function cutterBusy(g){return !!(g.robotHeld||g.blueprintJob||g.haulJob||g.route||g.pendingMoodOrder||g.cooler||g.storySocket||(held?.items||[]).some(i=>i.g===g));}
+function cutterEmitterBusy(g){
+ // Routes and active mechanisms are valid cutter mounts; hands and unfinished
+ // blueprint/cargo jobs are not.
+ return !!(g.robotHeld||g.blueprintJob||g.haulJob||g.pendingMoodOrder||g.storySocket||(held?.items||[]).some(i=>i.g===g));
+}
 function cutterMaterial(target){
  return !!target&&target.g.body.world===world&&target.g.parts.length===1&&['cube','pyramid','tetra'].includes(target.part.shape)&&!cutterBusy(target.g)&&!rotorForGroup(target.g)&&!target.part.mood.gripper&&!target.part.mood.externalBattery&&!target.part.mood.production&&!QBitsWorkshop.hasAdaptation(target.part);
 }
 function cutterBeam(hit,opposite=null){
- const frame=cutterPose(hit),distance=opposite?sub(cutterPose(opposite).origin,frame.origin).dot(frame.axis):CUTTER_RANGE;
- return {...frame,distance,end:add(frame.origin,mul(frame.axis,distance)),up:frame.q.vmult(V(0,1,0)),normal:frame.q.vmult(V(0,0,1))};
+ const frame=cutterPose(hit);
+ if(!opposite)return {...frame,distance:CUTTER_RANGE,end:add(frame.origin,mul(frame.axis,CUTTER_RANGE)),up:frame.q.vmult(V(0,1,0)),normal:frame.q.vmult(V(0,0,1))};
+ const end=cutterPose(opposite).origin,delta=sub(end,frame.origin),distance=delta.length(),axis=mul(delta,1/distance);
+ const correction=Q();correction.setFromVectors(frame.axis,axis);
+ const q=correction.mult(frame.q);
+ return {...frame,axis,q,distance,end,up:q.vmult(V(0,1,0)),normal:q.vmult(V(0,0,1))};
 }
-// Only one emitter cuts. The opposing orange face completes the circuit.
+// Search across individual pieces, including BOTH heads inside one welded body.
 function cutterPairGeometry(hit,other){
  if(!hit||!other||hit.part.id===other.part.id||!validCutterConfig(other.part.mood.cutter))return null;
  const a=cutterPose(hit),b=cutterPose(other),delta=sub(b.origin,a.origin),distance=delta.dot(a.axis);
- if(distance<=.002||distance>CUTTER_RANGE+1e-4||a.axis.dot(b.axis)>-.995)return null;
- return sub(delta,mul(a.axis,distance)).length()<=.015?distance:null;
+ if(distance<=.002||distance>CUTTER_RANGE+1e-4||a.axis.dot(b.axis)>-.98)return null;
+ return sub(delta,mul(a.axis,distance)).length()<=.028?distance:null;
 }
-function cutterOpposite(hit){
+function cutterPairMounted(hit,other){
+ return hit.g===other.g?hit.g.parts.length>1:!!mechanicalComponentGroups(hit.g)?.includes(other.g);
+}
+function cutterOpposite(hit,mountedOnly=false){
  let chosen=null,nearest=Infinity;
- for(const g of groups){if(g===hit.g||cutterBusy(g))continue;
-  for(const part of g.parts){if(!validCutterConfig(part.mood.cutter))continue;
-   const receiver={g,part},distance=cutterPairGeometry(hit,receiver);
+ for(const g of groups){if(cutterEmitterBusy(g))continue;
+  for(const part of g.parts){
+   if(part.id===hit.part.id||!validCutterConfig(part.mood.cutter)||cutterRuns.get(part.id)?.enabled)continue;
+   const receiver={g,part};
+   if(mountedOnly&&(!cutterPairMounted(hit,receiver)||cutterManualOff.has(part.id)))continue;
+   const distance=cutterPairGeometry(hit,receiver);
    if(distance!==null&&distance<nearest){nearest=distance;chosen=receiver;}
   }
  }return chosen;
@@ -11866,31 +11882,56 @@ function cutterRayDistance(hit,beam,height,distance=CUTTER_RANGE,ignore=null,rec
  const start=add(beam.origin,mul(beam.up,height));let stop=distance;
  world.raycastAll(start,add(start,mul(beam.axis,distance)),{skipBackfaces:false},result=>{
   if(!result.body.collisionFilterGroup)return;const g=result.body.qubitGroup;
-  if(g){if(g===ignore||g===receiver?.g||g.parts.every(part=>part.id===hit.part.id||cutterMaterial({g,part})))return;
-   for(const pose of physicalGroupPoses(g)){if(pose.part?.id===hit.part.id)continue;const ray=pose.half?rayPuzzleBox(start,beam.axis,pose,distance):rayPart(start,beam.axis,pose,distance)?.distance;if(ray!==null&&ray!==undefined)stop=Math.min(stop,ray);}
+  if(g){if(g===ignore||g.parts.every(part=>part.id===hit.part.id||part.id===receiver?.part.id||cutterMaterial({g,part})))return;
+   for(const pose of physicalGroupPoses(g)){if(pose.part?.id===hit.part.id||pose.part?.id===receiver?.part.id)continue;const ray=pose.half?rayPuzzleBox(start,beam.axis,pose,distance):rayPart(start,beam.axis,pose,distance)?.distance;if(ray!==null&&ray!==undefined)stop=Math.min(stop,ray);}
   }else stop=Math.min(stop,result.distance);
  });return stop;
 }
-function cutterOccluded(hit,target,beam,contact){
+function cutterOccluded(hit,target,beam,contact,opposite){
  const local=beam.q.inverse().vmult(sub(contact.p,beam.origin)),height=Math.max(-CUTTER_HALF_HEIGHT+.001,Math.min(CUTTER_HALF_HEIGHT-.001,local.y)),distance=Math.max(0,Math.min(beam.distance,local.x));
- return cutterRayDistance(hit,beam,height,distance,target.g)<distance-1e-6;
+ return cutterRayDistance(hit,beam,height,distance,target.g,opposite)<distance-1e-6;
 }
-function setCutterEnabled(id,enabled){
+function setCutterEnabled(id,enabled,options={}){
  const hit=rotorPart(id);if(!hit||!validCutterConfig(hit.part.mood.cutter)||story.scene!=='lab'||puzzle.active)return false;
  if(!enabled){
-  const current=cutterRuns.get(id);cutterRuns.delete(id);
+  const current=cutterRuns.get(id);
+  if(options.manualStop){cutterManualOff.add(id);if(current?.pairId!==undefined)cutterManualOff.add(current.pairId);}
+  cutterRuns.delete(id);
   if(current?.pairId!==undefined&&cutterRuns.get(current.pairId)?.pairId===id)cutterRuns.delete(current.pairId);
   redraw=true;return true;
  }
  if(cutterRuns.get(id)?.enabled)return true;
- if(cutterBusy(hit.g)){announce('Suelta el láser y termina su movimiento antes de iniciar.');return false;}
- const opposite=cutterOpposite(hit);
- if(!opposite){announce('Se necesitan 2 cubos láser enfrentados para activarse · alinea las caras naranjas (máximo 50 cm).');return false;}
- if(cutterRuns.get(opposite.part.id)?.enabled){announce('El cubo láser opuesto ya pertenece a otra pareja activa.');return false;}
- if(gripperSupply(hit).storedJ<CUTTER_JOULES){announce('Láser sin energía · requiere 8 J por corte.');return false;}
- cutterRuns.set(id,{enabled:true,role:'source',pairId:opposite.part.id,previous:new Map(),beam:null,status:'Esperando pieza · corte automático'});
- cutterRuns.set(opposite.part.id,{enabled:true,role:'receiver',pairId:id,status:'Receptor activo · corte automático'});
+ if(cutterEmitterBusy(hit.g)){if(!options.automatic)announce('Suelta el láser y termina su movimiento antes de iniciar.');return false;}
+ const opposite=cutterOpposite(hit,!!options.automatic);
+ if(!opposite){
+  if(!options.automatic)announce('Se necesitan 2 cubos láser enfrentados · alinea las caras naranjas (máximo 1,5 m).');
+  return false;
+ }
+ if(options.automatic&&cutterManualOff.has(id))return false;
+ let source=hit,receiver=opposite;
+ if(gripperSupply(source).storedJ+1e-10<CUTTER_JOULES&&gripperSupply(receiver).storedJ+1e-10>=CUTTER_JOULES){
+  source=opposite;receiver=hit;
+ }
+ if(gripperSupply(source).storedJ+1e-10<CUTTER_JOULES){
+  if(!options.automatic)announce('Láser sin energía · conecta una batería activa o carga el cubo (8 J por corte).');
+  return false;
+ }
+ cutterManualOff.delete(source.part.id);cutterManualOff.delete(receiver.part.id);
+ cutterRuns.set(source.part.id,{enabled:true,role:'source',pairId:receiver.part.id,previous:new Map(),beam:null,status:'Circuito activo · esperando pieza'});
+ cutterRuns.set(receiver.part.id,{enabled:true,role:'receiver',pairId:source.part.id,status:'Receptor activo · corte automático'});
+ if(options.automatic)announce('Circuito láser conectado · dos cabezales enfrentados y energía disponible.');
  redraw=true;return true;
+}
+function cutterAutoPairs(dt){
+ if(story.scene!=='lab'||puzzle.active)return;
+ cutterAutoScanLeft-=dt;if(cutterAutoScanLeft>0)return;cutterAutoScanLeft=.2;
+ // Limited to 5 checks/s; standalone heads still use the manual switch.
+ const heads=[];
+ for(const g of groups)if(!cutterEmitterBusy(g))for(const part of g.parts)
+  if(validCutterConfig(part.mood.cutter)&&!cutterManualOff.has(part.id)&&!cutterRuns.get(part.id)?.enabled)heads.push({g,part});
+ heads.sort((a,b)=>a.part.id-b.part.id);
+ for(const hit of heads)if(!cutterRuns.get(hit.part.id)?.enabled&&cutterOpposite(hit,true))
+  setCutterEnabled(hit.part.id,true,{automatic:true});
 }
 function tickCutters(dt){
  if(!Number.isFinite(dt)||dt<=0||simulationSuspended())return;
@@ -11899,6 +11940,7 @@ function tickCutters(dt){
   const p=partPose(hit.g,hit.part).p;hit.part.mood.cutPasses=(hit.part.mood.cutPasses||[]).filter(mark=>Math.abs(sub(p,V(...mark.origin)).dot(V(...mark.normal)))<.15);
   if(!hit.part.mood.cutPasses.length){delete hit.part.mood.cutPasses;cutterPassParts.delete(id);}
  }
+ cutterAutoPairs(dt);
  for(const [id,run]of cutterRuns){
   if(run.role==='receiver')continue;
   const hit=rotorPart(id);
@@ -11910,7 +11952,7 @@ function tickCutters(dt){
    if(peer){peer.enabled=false;peer.status=run.status;}
    announce('Láser detenido · vuelve a enfrentar las dos caras naranjas.');redraw=true;continue;
   }
-  if(story.scene!=='lab'||puzzle.active||cutterBusy(hit.g)||cutterBusy(opposite.g)){
+  if(story.scene!=='lab'||puzzle.active||cutterEmitterBusy(hit.g)||cutterEmitterBusy(opposite.g)){
    run.enabled=false;run.beam=null;run.status='Detenido · vuelve a iniciar al soltar';
    peer.enabled=false;peer.status=run.status;continue;
   }
@@ -11930,7 +11972,7 @@ function tickCutters(dt){
    if(!cutterMaterial(target))continue;
    const pose=partPose(target.g,target.part);if(nearby.has(target.g))run.previous.set(target.part.id,{g:target.g,p:pose.p.clone(),q:pose.q.clone()});
    if((target.part.mood.cutPasses||[]).some(mark=>cutterSameStripe(mark,beam)))continue;
-   const contact=cutterContact(target,beam,previous.get(target.part.id));if(!contact||cutterOccluded(hit,target,beam,contact))continue;
+   const contact=cutterContact(target,beam,previous.get(target.part.id));if(!contact||cutterOccluded(hit,target,beam,contact,opposite))continue;
    const plan=cutterInputPlan(target);if(!plan)continue;const output=cutterOutputPoses(target,plan);
    if(scenePartCount()-1+output.length>MAX_QUBITS||output.length&&!creationPosesClear(output,false,{groups:[target.g],tolerance:.002})){run.status='Salida ocupada · libera espacio';continue;}
    if(gripperSupply(hit).storedJ+1e-10<CUTTER_JOULES){run.enabled=false;run.beam=null;run.status='Sin energía · carga y vuelve a iniciar';break;}
@@ -11950,9 +11992,9 @@ function showCutterMenu(hit){
  const live=rotorPart(hit.part.id);if(!live||!validCutterConfig(live.part.mood.cutter))return;
  const run=cutterRuns.get(live.part.id),active=!!run?.enabled,point=partPose(live.g,live.part).p;
  openCommandMenu(point,'Láser de corte · '+(run?.status||'Apagado'),[
-  {label:active?'Detener láser':'Iniciar láser',run:()=>{setCutterEnabled(live.part.id,!active);captureMouse();}},
+  {label:active?'Detener láser':'Iniciar láser',run:()=>{setCutterEnabled(live.part.id,!active,{manualStop:active});captureMouse();}},
   {label:'Automático: cubo → pirámide → triangular → desaparición',disabled:true,run:()=>{}},
-  {label:'Dos caras láser enfrentadas · máximo 50 cm · 8 J por corte',disabled:true,run:()=>{}},
+  {label:'Dos caras enfrentadas · máximo 1,5 m · 8 J por corte',disabled:true,run:()=>{}},
   {label:'Tomar cubo / conjunto',disabled:!canCarry(rotorConnectedGroups([live.g]))||hit.distance>2.8,run:()=>{setCutterEnabled(live.part.id,false);takeSelection({...live,point,distance:hit.distance});}},
   {label:'Guardar mecanismo',run:()=>{saveMechanism(live.g);captureMouse();}},
   {label:'Retirar láser · conservar cubo',run:()=>{setCutterEnabled(live.part.id,false);delete live.part.mood.cutter;captureMouse();redraw=true;}},

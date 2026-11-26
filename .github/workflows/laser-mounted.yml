@@ -1,0 +1,25 @@
+name: Q-bits · láser montado
+on:
+  push:
+    branches: [main, fix/laser-mounted-circuit-20261126]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  cutter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Sintaxis de motor y pruebas
+        run: |
+          node --check assets/js/game.js
+          node --check tests/laser-cutter.test.cjs
+          node --check tests/capture-cutter-frame.cjs
+      - name: Físicas, alimentación, soldadura y corte en cinta
+        run: node --test tests/laser-cutter.test.cjs
+      - name: Render reproducible del cortador
+        run: node tests/capture-cutter-frame.cjs /tmp/qbits-cutter-verify.json

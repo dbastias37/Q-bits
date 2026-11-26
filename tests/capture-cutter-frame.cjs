@@ -58,7 +58,7 @@ battery.mood.externalBattery={version:1,ownerId:battery.id,packId:battery.id,ena
 if(!t.weld({source:cell,target:hit.g,position:cell.body.position.clone(),quaternion:cell.body.quaternion.clone()}))throw Error('No battery');t.stepPhysics(1/240);
 hit=t.rotorPart(conveyor.baseId);const points=conveyor.path.map(p=>hit.p.vadd(hit.q.vmult(p))),emitters=[];
 for(const x of [-.11,.055,.21]){const g=t.addQubit([x,points[0].y+.048,-.4]),part=g.parts[0];t.adaptCutter({g,part});part.mood.cutter.face=t.unitProfile('cube').faceNormals.findIndex(n=>n.z>.9);part.mood.energy=1;emitters.push(g);
- const receiver=t.addQubit([x,points[0].y+.048,.1]),opposite=receiver.parts[0];t.adaptCutter({g:receiver,part:opposite});opposite.mood.cutter.face=t.unitProfile('cube').faceNormals.findIndex(n=>n.z<-.9);
+ const receiver=t.addQubit([x,points[0].y+.048,.35]),opposite=receiver.parts[0];t.adaptCutter({g:receiver,part:opposite});opposite.mood.cutter.face=t.unitProfile('cube').faceNormals.findIndex(n=>n.z<-.9);
  t.storyWall(t.V(x,points[0].y/2,-.4),t.V(.045,points[0].y/2,.045));}
 const load=t.addQubit([points[0].x+.055,points[0].y+.055,0]),root=load.parts[0].id;
 const draw=()=>{for(const g of t.groups)t.drawGroupSolid(g);t.drawConveyors();t.drawCutters();for(const w of t.storyWorld.walls)t.drawBox(w.p,w.q||t.Q(),w.half.scale(2),[.72,.76,.74,1]);};

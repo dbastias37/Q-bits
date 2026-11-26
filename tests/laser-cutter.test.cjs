@@ -114,7 +114,7 @@ test('powered conveyor carries one real cube through three mounted stripes: six 
  assert(t.weld({source:cell,target:hit.g,position:cell.body.position.clone(),quaternion:cell.body.quaternion.clone()}));t.stepPhysics(1/240);
  hit=t.rotorPart(conveyor.baseId);const path=conveyor.path.map(p=>hit.p.vadd(hit.q.vmult(p))),emitters=[];
  for(const x of [-.11,.055,.21]){const g=t.addQubit([x,path[0].y+.048,-.4]);assert(t.adaptCutter({g,part:g.parts[0]}));g.parts[0].mood.cutter.face=t.unitProfile('cube').faceNormals.findIndex(n=>n.z>.9);g.parts[0].mood.energy=1;
-  const receiver=t.addQubit([x,path[0].y+.048,.1]);assert(t.adaptCutter({g:receiver,part:receiver.parts[0]}));receiver.parts[0].mood.cutter.face=t.unitProfile('cube').faceNormals.findIndex(n=>n.z<-.9);emitters.push(g);
+  const receiver=t.addQubit([x,path[0].y+.048,.35]);assert(t.adaptCutter({g:receiver,part:receiver.parts[0]}));receiver.parts[0].mood.cutter.face=t.unitProfile('cube').faceNormals.findIndex(n=>n.z<-.9);emitters.push(g);
   t.storyWall(t.V(x,path[0].y/2,-.4),t.V(.045,path[0].y/2,.045));}
  const load=t.addQubit([path[0].x+.055,path[0].y+.055,0]),root=load.parts[0].id,descendants=()=>t.groups.filter(g=>g.parts[0].id===root||g.parts[0].mood.matter?.root===root);let six=false,twelve=false,done=false;
  assert(t.startConveyor(conveyor));for(const g of emitters)assert(t.setCutterEnabled(g.parts[0].id,true));
@@ -129,7 +129,7 @@ test('one laser cannot activate alone; facing receiver shares exactly one cuttin
  const receiver=t.addQubit([.5,.048,0]);assert(t.adaptCutter({g:receiver,part:receiver.parts[0]}));
  receiver.parts[0].mood.cutter.face=t.unitProfile('cube').faceNormals.findIndex(n=>n.x<-.9);
  assert(t.setCutterEnabled(id,true));tick(t);assert.equal(t.cutterRuns.size,2);
- const beam=t.cutterRuns.get(id).beam;assert(Math.abs(beam.distance-.386)<.008);
+ const beam=t.cutterRuns.get(id).beam;assert(Math.abs(beam.distance-.396)<.008);
  assert.equal(t.cutterRuns.get(receiver.parts[0].id).role,'receiver');
  assert(t.setCutterEnabled(receiver.parts[0].id,false));assert.equal(t.cutterRuns.size,0);
 });
@@ -140,4 +140,51 @@ test('the opposite cube must face the source and remain aligned while activated'
  other.body.position.z-=.06;assert(t.setCutterEnabled(id,true));tick(t);
  other.body.position.z+=.08;tick(t);
  assert.equal(t.cutterRuns.get(id).enabled,false);assert.equal(t.cutterRuns.get(other.parts[0].id).enabled,false);
+});
+
+function mountedRig(t,{powered=true}={}){
+ const source=laser(t,0,0,.23),opposite=t.groups.find(g=>g!==source&&g.parts[0].mood.cutter);
+ const id=source.parts[0].id,otherId=opposite.parts[0].id;
+ const cell=t.addQubit([-.09,.23,-.09]),battery=cell.parts[0];
+ battery.mood.externalBattery={version:1,ownerId:battery.id,packId:battery.id,enabled:powered};
+ battery.mood.energy=1;
+ source.parts[0].mood.energy=0;opposite.parts[0].mood.energy=0;
+ // makeGroup is also the final rigid-body operation used by the real weld.
+ const parts=[...t.worldParts(source),...t.worldParts(opposite),...t.worldParts(cell)];
+ for(const g of [source,opposite,cell])t.removeGroup(g);
+ const mounted=t.makeGroup(parts,t.Q(),t.V(),t.V());
+ assert.equal(t.rotorPart(id).g,mounted);
+ assert.equal(t.rotorPart(otherId).g,mounted);
+ return {mounted,id,otherId,battery:mounted.parts.find(part=>part.id===battery.id)};
+}
+test('two laser faces welded into one powered rigid mechanism connect automatically and cut free material',()=>{
+ const {t}=lab(),{id,otherId,battery}=mountedRig(t),material=t.addQubit([.25,.23,0]),before=battery.mood.energy;
+ assert.equal(t.cutterRuns.size,0);tick(t,.25);
+ const source=t.cutterRuns.get(id),receiver=t.cutterRuns.get(otherId);
+ assert(source?.enabled&&receiver?.enabled);
+ assert.equal(source.role,'source');assert.equal(receiver.role,'receiver');
+ assert.equal(t.groups.filter(g=>g.parts[0].shape==='pyramid').length,6,source.status);
+ assert(battery.mood.energy<before,'shared battery supplies the welded cutters');
+});
+test('mounted laser circuit waits for energy, then starts without an extra click',()=>{
+ const {t}=lab(),{id,otherId,battery}=mountedRig(t,{powered:false});
+ tick(t,.3);assert.equal(t.cutterRuns.size,0);
+ battery.mood.externalBattery.enabled=true;tick(t,.3);
+ assert.equal(t.cutterRuns.get(id)?.enabled,true);
+ assert.equal(t.cutterRuns.get(otherId)?.enabled,true);
+});
+test('manual stop on either welded head keeps the automatic circuit off until restarted',()=>{
+ const {t}=lab(),{id,otherId}=mountedRig(t);tick(t,.3);
+ assert(t.setCutterEnabled(otherId,false,{manualStop:true}));
+ tick(t,.7);assert.equal(t.cutterRuns.size,0);
+ assert(t.setCutterEnabled(otherId,true));tick(t);
+ assert.equal(t.cutterRuns.size,2);
+});
+test('two loose heads still require manual activation and an external receiver can supply the power',()=>{
+ const {t}=lab(),source=laser(t),opposite=t.groups.find(g=>g!==source&&g.parts[0].mood.cutter);
+ source.parts[0].mood.energy=0;opposite.parts[0].mood.energy=1;
+ tick(t,.5);assert.equal(t.cutterRuns.size,0);
+ assert(t.setCutterEnabled(source.parts[0].id,true));
+ assert.equal(t.cutterRuns.get(opposite.parts[0].id).role,'source');
+ assert.equal(t.cutterRuns.get(source.parts[0].id).role,'receiver');
 });
