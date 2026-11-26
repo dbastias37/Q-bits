@@ -4,28 +4,22 @@
 
 El menú principal ofrece **Editor de escenas** junto a Campaña y Banco de pruebas. El montaje se realiza en el banco 3D existente: no se inventan máquinas ni cuerpos decorativos, y se conservan los controles nativos de creación, selección, rotación, blueprint y configuración. Es un **modo de autoría basado en el banco**, no un tercer motor gráfico ni un nuevo simulador.
 
-## Uso
+## Uso actualizado · motor nativo de autoría
 
-1. En el menú principal selecciona **Editor de escenas** y **Nueva escena en el banco**.
-2. En la selección nativa del banco elige **Nueva**. Coloca y configura las piezas con los controles habituales.
-3. Abre **Esc → Guardar partida** para registrar el estado físico actual. Después utiliza la barra **Capturar y guardar escena**. Se genera un archivo de autoría independiente de la ranura de partida del banco.
-4. Elige entre las versiones anteriores mediante **Biblioteca de escenas → Abrir versión seleccionada**. Cada versión se reconoce por su código y no sustituye automáticamente a las otras. Pulsa **Códigos / Exportar** para consultar el inventario, copiar su resumen, copiar el código completo o descargar el archivo `.qbits-scene.json`.
-5. En otra sesión, importa ese archivo o pega el código completo `QBSCENE1:...`. La opción **Continuar escena guardada** instala temporalmente ese estado en el banco y abre la selección nativa; elige **Continuar**.
-6. Al regresar al menú o cerrar la pestaña, el editor recupera la ranura de banco anterior. La campaña no utiliza ni acepta el archivo de escena.
+1. En el menú principal selecciona **Editor de escenas → Nueva escena vacía**. El motor entra directamente en la sala con **cero piezas, cero cargas y sin mesa de trabajo preinstalada**. No se abre el selector de partidas normales.
+2. Coloca, agrupa, gira y configura objetos usando las herramientas normales de Q-bits. En este modo de edición es posible crear materia para diseñar; **una campaña no obtiene derecho de creación por importar una escena**.
+3. Pulsa **Capturar y guardar escena** en la barra del editor. Esta operación consulta directamente el mundo físico y sus configuraciones, verifica el resultado y lo guarda en la biblioteca independiente. **No necesitas abrir Esc ni guardar la partida del banco.**
+4. En **Códigos / Exportar** puedes seleccionar versiones, editar marcadores, copiar el inventario, copiar el código completo o descargar un archivo `.qbits-scene.json`.
+5. Para recuperar un diseño elige **Continuar escena guardada**. El motor descarta la instancia anterior y restaura exactamente los cuerpos, configuraciones y material persistido por el formato del banco.
+6. Para trasladar escenas entre equipos importa el archivo o pega el código completo `QBSCENE1:...`.
 
-**Importante:** el botón de captura usa el último guardado válido del banco. Debes guardar desde Esc inmediatamente antes de capturar; no se presenta una captura antigua como una lectura instantánea de la escena activa.
+La sesión de edición **no escribe en la ranura nativa del banco**. Los autoguardados de banco se suspenden en autoría; salir al menú o ir a selección de nivel abandona el mundo del editor, preservando los guardados del banco y la campaña.
 
-## Escena realmente vacía
+## Sala inicial y catálogo
 
-**Flujo seguro de la primera versión:**
+La nueva escena reutiliza la sala blanca, cámara, física, controles y catálogo de piezas y mecanismos del banco. Las herramientas de creación no alteran el sistema de piezas; no se inyectan máquinas industriales decorativas ni colores ajenos. La mesa nativa del banco **no aparece por defecto**, ya que el jugador debe decidir qué infraestructura colocar.
 
-1. En **Editor de escenas → Nueva escena en el banco**, abre una partida nueva del banco. El editor utiliza los controles y el catálogo nativo de construcción del banco, sin dar permisos de creación a una misión.
-2. Desde el banco, abre **Esc → Guardar partida**. Ese guardado sirve como plantilla válida de sala, controles, configuración y posición del jugador.
-3. En la barra del editor abre **Códigos / Exportar** y elige **Crear escena realmente vacía**. Confirma. El proceso copia la plantilla, elimina todas las piezas, cuerpos, trabajos y estructuras asociados y valida el resultado con el validador real de banco. **No borra el banco normal.**
-4. Selecciona **Continuar escena guardada → Continuar** en las opciones del banco para entrar a la sala sin piezas iniciales. Construye con el catálogo de Q-bits.
-5. Para conservar las construcciones, guarda otra vez desde Esc y usa **Capturar y guardar escena**. El código de versión cambia cuando cambia el estado.
-   
-Esta acción parte de un guardado nativo existente porque la sala 3D tiene parámetros de ambiente y cámara que no deben inventarse. Las piezas desaparecen del nuevo archivo autoral; la dotación de la partida normal vuelve a su valor previo al regresar al menú.
+El editor no introduce aún una herramienta para crear geometría de suelo, diseñar edificios de varios tamaños ni un catálogo de estaciones industriales hechas completamente con planos de construcción. Esas estaciones deben tener recetas, puertos y capacidades reales antes de ponerse a disposición.
 
 ## Marcadores de diseño y vínculos
 
@@ -50,14 +44,14 @@ El código largo es una representación Base64 URL de los datos completos. El re
 ## Integración de seguridad
 
 - Se usan `qbits.editor.scene.v1` como selector, `qbits.editor.library.v1` como índice y `qbits.editor.document.<código>` para las versiones. La cantidad depende del espacio de almacenamiento disponible en el navegador; no equivale a una copia de seguridad. Las ranuras `qbits.save.lab.v1` y `qbits.save.campaign.v1` no son el destino permanente de los archivos.
-- La ranura de banco anterior se conserva temporalmente en `sessionStorage` mientras el editor utiliza el banco. Cuando el usuario vuelve al menú o abandona la página, se restaura el contenido original.
+- El motor no escribe la ranura del banco durante la edición. Las copias de autoría se guardan en su biblioteca propia. Un respaldo temporal de versiones antiguas se recupera una única vez si existe.
 - Un archivo inválido se rechaza antes de reemplazar la escena almacenada. La importación no añade recursos a una partida en campaña o galpón.
 - La exportación descarga JSON localmente sin hacer ninguna petición a un servidor; el texto copiado permanece bajo control del usuario.
 - Los límites del navegador (almacenamiento o permiso de portapapeles) se informan como errores; el guardado independiente no sustituye un respaldo descargado.
 
 ## Límites y siguiente bloque
 
-Esta primera integración **no es aún un editor profesional completo de niveles**: usa la geometría y el espacio iniciales del banco, no tiene un catálogo nuevo de objetos de escenario ni creación arbitraria de terreno; las marcas de misión existen como datos verificables, pero todavía no ejecutan objetivos, activadores o condiciones de victoria. La escena vacía requiere crear primero un guardado nativo del banco y reabrir la versión limpia. Tampoco se ha cambiado el galpón A/B, que sigue en su rama separada. La entrada **Nueva** utiliza el procedimiento nativo del banco y, por tanto, hereda cualquier dotación inicial que ese modo proporcione.
+Esta primera integración **no es aún un editor profesional completo de niveles**: usa la geometría y el espacio iniciales del banco, no tiene un catálogo nuevo de objetos de escenario ni creación arbitraria de terreno; las marcas de misión existen como datos verificables, pero todavía no ejecutan objetivos, activadores o condiciones de victoria. La escena vacía se crea directamente en el motor y su captura no requiere un guardado previo. Tampoco se ha cambiado el galpón A/B, que sigue en su rama separada. La entrada **Nueva** utiliza el procedimiento nativo del banco y, por tanto, hereda cualquier dotación inicial que ese modo proporcione.
 
 Para el siguiente bloque deben implementarse estaciones como blueprints hechos con piezas, puertos semánticos de entrada/salida, colocación visual directa de marcadores en 3D, validación de presupuesto de material y el conversor escena→misión. Los marcadores actuales documentan posiciones y referencias a identidades nativas, sin gobernar aún la lógica del nivel. La futura importación de escenas de gran tamaño requiere un flujo de archivos en lugar de únicamente Web Storage.
 
