@@ -11,6 +11,8 @@ const story={ready:false,mode:'menu',scene:'lab',phase:'idle',started:false,elap
 const saveStore=window.QBitsSavedGames.createStore({storage:()=>window.localStorage});
 const saveSession={preparing:false,restoring:false,restoreWarnings:[],labActive:false,labLoaded:false,campaignActive:false,checkpoint:null,nextAutosave:0,returnMode:'menu',focusMode:'campaign',confirmation:null,message:''};
 const AUTOSAVE_MS=15000;
+// Native scene authoring is an isolated, unsaved bank runtime.
+let sceneAuthoringActive=false;
 let unitRadial=null,pendingUnitCreation=null;
 let trajectorySystem=null,trajectoryPanel=null,trajectoryDraft=null,trajectoryGroundController=null,trajectoryAtlas=null,trajectoryFaceMesh=null;
 let radialGlassStamp='',radialGlassAllocated=false;
@@ -10353,6 +10355,7 @@ function persistCampaignCheckpoint(level=story.scene==='campaign'?story.level:0,
  return result;
 }
 function saveCurrentGame(options={}){
+ if(sceneAuthoringActive){const error='El Editor guarda escenas con Capturar y guardar, no en la ranura del banco.';if(options.manual)savedGameStatus(error);return {ok:false,deferred:true,error};}
  if(!story.ready||!story.started||saveSession.preparing||saveSession.restoring)return {ok:false,deferred:true};
  if(story.transition){const error='Espera a que termine el cambio de escena.';if(options.manual)savedGameStatus(error);return {ok:false,deferred:true,error};}
  const mode=savedGameMode();let result;
@@ -10375,12 +10378,13 @@ function saveCurrentGame(options={}){
  return result;
 }
 function autosaveGame(time=performance.now()){
+ if(sceneAuthoringActive)return;
  if(story.mode!=='playing'||document.hidden||story.transition||saveSession.preparing||saveSession.restoring||!story.started||time<saveSession.nextAutosave)return;
  saveSession.nextAutosave=time+AUTOSAVE_MS;const result=saveCurrentGame();
  // An unfinished gesture is transient; retry shortly without cancelling it.
  if(result.deferred)saveSession.nextAutosave=time+1000;
 }
-function liveSavedGame(mode){return story.started&&!saveSession.preparing&&savedGameMode()===mode&&(mode==='lab'?saveSession.labActive:saveSession.campaignActive);}
+function liveSavedGame(mode){return !sceneAuthoringActive&&story.started&&!saveSession.preparing&&savedGameMode()===mode&&(mode==='lab'?saveSession.labActive:saveSession.campaignActive);}
 function refreshSavedGames(){
  for(const mode of ['campaign','lab']){
   const record=saveStore.read(mode),live=liveSavedGame(mode),summary=document.querySelector('#saves-'+mode+'-summary'),date=document.querySelector('#saves-'+mode+'-date');
@@ -10438,6 +10442,7 @@ function requestNewSavedGame(mode){
  document.querySelector('#saves-confirm-cancel').focus({preventScroll:true});return true;
 }
 function saveBeforeSwitch(discardMode=null){
+ if(sceneAuthoringActive)return true;
  if(!story.started||saveSession.preparing||discardMode===savedGameMode())return true;
  const result=saveCurrentGame();return result.ok;
 }
@@ -10453,6 +10458,7 @@ function continueSavedGame(mode,options={}){
  if(!saveBeforeSwitch(mode)){refreshSavedGames();return false;}
  const record=saveStore.read(mode);if(record.status!=='ready'){savedGameStatus('No hay una partida válida para continuar. La copia guardada se conserva.');refreshSavedGames();return false;}
  let snapshot,opening,passage;try{if(mode==='lab')snapshot=hydrateLabSnapshot(record.save.data.snapshot);else if(record.save.data.firstCycle)opening=hydrateOpeningPayload(record.save.data.firstCycle);else if(record.save.data.passage)passage=hydratePassagePayload(record.save.data.passage);}catch{savedGameStatus('No se pudo restaurar la partida. La situación actual y la copia guardada se conservan.');return false;}
+ sceneAuthoringActive=false;
  return runSavedGame(()=>{
   const data=record.save.data;
   if(mode==='lab'){
@@ -10493,6 +10499,7 @@ function newSavedGame(mode,options={}){
  const result=saveStore.write(mode,data,{replace:true});
  if(!result.ok){savedGameStatus('No se pudo crear la partida. La anterior se conserva. '+(result.error||''));refreshSavedGames();return false;}
  if(mode==='campaign')window.QBitsMusic?.next?.();
+ sceneAuthoringActive=false;
  return runSavedGame(()=>{
   if(mode==='lab'){
    story.lab=hydrateLabSnapshot(result.save.data.snapshot);story.labAlpha={...data.alphaSettings};saveSession.labLoaded=true;
@@ -10513,7 +10520,9 @@ function enterLab(capture=true){
  if(saved){Object.assign(settings,saved.settings);Object.assign(moodSettings,saved.moodSettings||{});Object.assign(alphaSettings,story.labAlpha||{});position.splice(0,3,...saved.position);yaw=saved.yaw;pitch=saved.pitch;camera.splice(0,3,...position);for(const g of saved.groups)makeGroup(g.parts,g.q,g.v,g.w);restoreLabMechanisms(saved);for(const c of saved.cargos)restoreLabCargo(c);restoreAlphaScene(saved.alphaScene);}else{settings.maxCarry=MAX_QUBITS;settings.maxSelect=MAX_QUBITS;addQubit([0,HALF+.003,0]);}
  world.gravity.y=-settings.gravity;world.defaultContactMaterial.friction=settings.friction;world.defaultContactMaterial.restitution=settings.bounce;world.broadphase.dirty=true;ui.veil.style.opacity='0';setupWorkshop();if(saved?.runtime&&saveSession.restoring)saveSession.restoreWarnings=restoreLabRuntime(saved.runtime).warnings;saveSession.labActive=true;updatePanel();if(!saveSession.restoring&&!saveSession.preparing)saveCurrentGame();if(capture)captureMouse();
 }
-function showMain(){saveCurrentGame();document.querySelector('#wake-screen').hidden=true;gameMode('menu');pause(false);panel.hidden=true;document.querySelector('#main-continue').hidden=!story.started&&!['campaign','lab'].some(mode=>saveStore.read(mode).status==='ready');ui.veil.style.opacity='0';ui.top.style.height='0';ui.bottom.style.height='0';canvas.style.filter='none';document.querySelector('#main-play').focus({preventScroll:true});}
+function showMain(){
+ if(sceneAuthoringActive){sceneAuthoringActive=false;clearNarrativeScene();story.lab=null;saveSession.labActive=false;saveSession.campaignActive=false;gameScene('intro');story.started=false;}
+ saveCurrentGame();document.querySelector('#wake-screen').hidden=true;gameMode('menu');pause(false);panel.hidden=true;document.querySelector('#main-continue').hidden=!story.started&&!['campaign','lab'].some(mode=>saveStore.read(mode).status==='ready');ui.veil.style.opacity='0';ui.top.style.height='0';ui.bottom.style.height='0';canvas.style.filter='none';document.querySelector('#main-play').focus({preventScroll:true});}
 function openPauseMenu(){cancelFamilyGrouping();cancelFamilyPlacement();familyUi?.clear();if(!story.ready||story.mode!=='playing'||story.transition)return;closeWorkshopPanel(false);cancelUnitCreation();cancelShelfPlacement();document.querySelector('#wake-screen').hidden=true;gameMode('pause');pause(false);panel.hidden=true;saveCurrentGame({manual:true});document.querySelector('#pause-opening-help').hidden=!story.firstCycle;document.querySelector('#pause-opening-recover').hidden=!story.firstCycle||!openingPartGroup();document.querySelector('#pause-chapter').textContent=story.firstCycle?'Ciclo 1 · Un lugar para dos':story.passage?'Camino del ciclo 1 al 2':story.scene==='intro'?'Prólogo · El primer encuentro':story.scene==='campaign'?'Nivel '+story.level+' · '+chapters[story.level][1]:'Banco de pruebas';document.querySelector('#pause-resume').focus({preventScroll:true});}
 function resumeGame(){if(story.phase==='complete'){gameMode('complete');return;}gameMode('playing');if(story.scene==='intro'&&['asleep','invocation'].includes(story.phase)){ui.veil.style.opacity='1';ui.top.style.height='52%';ui.bottom.style.height='52%';ui.dialogue.hidden=!story.dialogue;if(story.phase==='asleep')showWakeButton();else{document.querySelector('#wake-screen').hidden=true;canvas.focus({preventScroll:true});}return;}if(story.phase==='choice'||story.phase==='repeat')return;captureMouse();}
 function restartCurrent(){
@@ -12627,9 +12636,47 @@ function frame(time=performance.now()) {
   }
   requestAnimationFrame(frame);
 }
+// The authoring session owns bodies and gameplay controls, never a native save slot.
+function openAuthoringScene(data=null){
+ if(!gamePrepared||story.transition||saveSession.preparing||saveSession.restoring)return {ok:false,error:'El juego todavía no admite cambios de escena.'};
+ let payload,hydrated;
+ try{
+  if(data){
+   const valid=window.QBitsSavedGames?.validate('lab',data);
+   if(!valid?.ok)throw Error(valid?.error||'La escena no supera la validación nativa.');
+   payload=JSON.parse(JSON.stringify(data));
+  }else{
+   payload=freshSavedLab();payload.snapshot.groups=[];payload.snapshot.workshop=null;
+  }
+  hydrated=hydrateLabSnapshot(payload.snapshot);
+ }catch(error){return {ok:false,error:error.message||'No se pudo leer la escena.'};}
+ try{
+  runSavedGame(()=>{
+   sceneAuthoringActive=true;
+   story.lab=hydrated;story.labAlpha={...payload.alphaSettings};
+   if(story.scene==='lab')gameScene('intro');
+   enterLab(false);
+   saveSession.labActive=false;saveSession.campaignActive=false;
+  },false);
+  return {ok:true};
+ }catch(error){sceneAuthoringActive=false;return {ok:false,error:error.message||'No se pudo abrir la escena.'};}
+}
+function captureAuthoringScene(){
+ if(!sceneAuthoringActive||story.scene!=='lab'||!story.started||story.transition||saveSession.restoring||saveSession.preparing)return {ok:false,error:'No hay una escena del editor lista para capturar.'};
+ const blocked=bankSaveBlocked();
+ if(blocked)return {ok:false,error:blocked};
+ try{
+  const data={snapshot:saveLab({passive:true}),alphaSettings:{...alphaSettings}};
+  const valid=window.QBitsSavedGames?.validate('lab',data);
+  if(!valid?.ok)throw Error(valid?.error||'El montaje no puede guardarse.');
+  hydrateLabSnapshot(data.snapshot);
+  return {ok:true,data};
+ }catch(error){return {ok:false,error:error.message||'No se pudo capturar la escena.'};}
+}
 let gamePrepared=false;
 const nextPaint=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
 window.QBitsGame={
+  sceneEditor:Object.freeze({open:openAuthoringScene,capture:captureAuthoringScene,isActive:()=>sceneAuthoringActive,exit:()=>{if(!sceneAuthoringActive)return false;showMain();return true;}}),
   culling:{toggle:toggleCulling,toggleObserver:toggleCullingObserver,toggleStats:toggleCullingStats,benchmark:startCullingBenchmark,cancel:cancelCullingBenchmark,snapshot:()=>({enabled:visuals.culling!==false,observer:cullingLab.observer,stats:cullingLab.stats,benchmark:!!cullingLab.benchmark,last:cullingLab.last,result:cullingLab.result})},
   quickWake,
   applyPreferences:()=>applyPreferences(savedPreferences),
