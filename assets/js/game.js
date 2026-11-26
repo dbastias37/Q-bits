@@ -10372,8 +10372,9 @@ function initializeSavedGames(){
  if(lab.status==='ready')try{story.lab=hydrateLabSnapshot(lab.save.data.snapshot);story.labAlpha={...lab.save.data.alphaSettings};}catch{savedGameStatus('No se pudo restaurar el banco guardado. La copia original se conserva.');}
  saveSession.nextAutosave=performance.now()+AUTOSAVE_MS;
 }
-function bankSaveBlocked(){
- if(held||powerDraft||trajectoryDraft||robotPoseDraft||creationPreview||shelfPreview||familyPlacement||familyGroupingJob||familyUi?.isOpen())return 'Termina la colocación o suelta la pieza para guardar el banco.';
+function bankSaveBlocked({ignoreAuthoringGhost=false}={}){
+ const pendingCreation=creationPreview&&!(ignoreAuthoringGhost&&sceneAuthoringActive&&creationPreview.authoring);
+ if(held||powerDraft||trajectoryDraft||robotPoseDraft||pendingCreation||shelfPreview||familyPlacement||familyGroupingJob||familyUi?.isOpen())return 'Termina la colocación o suelta la pieza para guardar el banco.';
  if(robotGrips.size||groups.some(g=>g.blueprintJob)||cargos.some(c=>c.job))return 'Termina la construcción o el transporte y deja las cargas libres para guardar el banco.';
  return '';
 }
@@ -12830,7 +12831,9 @@ function spawnSceneAuthoringItem(id,xyz,angle=0){
 }
 function captureAuthoringScene(){
  if(!sceneAuthoringActive||story.scene!=='lab'||!story.started||story.transition||saveSession.restoring||saveSession.preparing)return {ok:false,error:'No hay una escena del editor lista para capturar.'};
- const blocked=bankSaveBlocked();
+ // The transparent placement ghost owns no physics body or material, and may
+ // remain active while the editor snapshots the completed world underneath.
+ const blocked=bankSaveBlocked({ignoreAuthoringGhost:true});
  if(blocked)return {ok:false,error:blocked};
  try{
   const data={snapshot:saveLab({passive:true}),alphaSettings:{...alphaSettings}};
