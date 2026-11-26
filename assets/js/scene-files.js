@@ -104,7 +104,11 @@
     const raw=storage.getItem(KEY);
     if(!raw)return null;
     // Backward-compatible with the first single-scene layout.
-    return raw[0]==='{'?parse(raw):select(storage,raw);
+    if(raw[0]==='{')return parse(raw);
+    if(!/^QBSC1-[0-9A-F]{16}$/.test(raw))fail('Selector de escena dañado.');
+    const doc=storage.getItem(PREFIX+raw);
+    if(!doc)fail('No existe la versión de escena indicada.');
+    return parse(doc);
   }
   function explain(doc){
     const inv=doc.inventory;
