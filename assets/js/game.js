@@ -13,6 +13,7 @@ const saveSession={preparing:false,restoring:false,restoreWarnings:[],labActive:
 const AUTOSAVE_MS=15000;
 // Native scene authoring is an isolated, unsaved bank runtime.
 let sceneAuthoringActive=false;
+let sceneAuthoringPlacement=null;
 let unitRadial=null,pendingUnitCreation=null;
 let trajectorySystem=null,trajectoryPanel=null,trajectoryDraft=null,trajectoryGroundController=null,trajectoryAtlas=null,trajectoryFaceMesh=null;
 let radialGlassStamp='',radialGlassAllocated=false;
@@ -1783,7 +1784,7 @@ function updateCreationPlacement(hit=creationSurfaceAim()){
  redraw=true;return preview.valid;
 }
 function confirmCreationPlacement(){
- if(!creationPreview||!creationPreview.plan&&!creationPlacementAllowed(creationPreview.id))return null;
+ if(!creationPreview||!creationPreview.plan&&!creationPlacementAllowed(creationPreview.id)&&!(sceneAuthoringActive&&creationPreview.authoring))return null;
  // Refresh on the actual click: a moving obstacle or released Shift invalidates old previews.
  if(!updateCreationPlacement()){announce(creationPreview.reason);return null;}
  const preview=creationPreview,{entry,record,point,q}=preview,before=new Set(groups);let made=null;
@@ -1803,11 +1804,11 @@ function confirmCreationPlacement(){
   if(entry?.action==='sensor'){const part=made.parts[0];part.mood.workshop={version:1,ownerId:part.id,sensor:true,battery:1,lightweight:1,movement:1,baseWeight:1,ballast:0};}
  }
  if(!made){announce('No se pudo colocar. Revisa el espacio libre.');return null;}
- const added=groups.filter(g=>!before.has(g));for(const g of added){g.body.velocity.set(0,0,0);g.body.angularVelocity.set(0,0,0);for(const part of g.parts)if(isExternalBattery(part))part.mood.energy=1;}
+ const added=groups.filter(g=>!before.has(g));for(const g of added){g.body.velocity.set(0,0,0);g.body.angularVelocity.set(0,0,0);for(const part of g.parts)if(isExternalBattery(part))part.mood.energy=preview.authoring?0:1;}
  if(!record&&made.parts){selected={g:made,part:made.parts[0]};multiSelection=[];}
  const connected=preview.link?!!joinCompletedConveyorBlueprint({conveyorLink:preview.link},added):false;
  cancelUnitCreation();if(entry?.action==='power-cable'){beginPowerCable([made]);return made;}
- announce(creationTitle(preview.id)+(connected?' colocado y conectado':preview.link?' colocado · no se pudo unir; revisa las caras':' colocado')+(record?' · motores detenidos':''));redraw=true;return made;
+ announce((preview.authoringName||creationTitle(preview.id))+(connected?' colocado y conectado':preview.link?' colocado · no se pudo unir; revisa las caras':' colocado')+(record?' · motores detenidos':''));redraw=true;return made;
 }
 function drawCreationPlacement(){
  if(!creationPreview?.poses.length)return;
@@ -1880,7 +1881,7 @@ function closeUnitRadial(commit=false){
  if(valid){if(!choice.startsWith('quick-'))settings.unitShape=choice;syncUnitControls();beginCreationPlacement(choice);}
  redraw=true;return valid;
 }
-function cancelUnitCreation(){pendingUnitCreation=null;creationPreview=null;redraw=true;}
+function cancelUnitCreation(){pendingUnitCreation=null;creationPreview=null;sceneAuthoringPlacement=null;redraw=true;}
 function handleKeyUp(event){
  keys.delete(event.code);
  if(event.code.startsWith('Alt'))routeInspection=null;
@@ -6412,6 +6413,10 @@ function handleWheel(event){
 }
 canvas.addEventListener('wheel',handleWheel,{passive:false});
 function handleKey(event){
+ if(sceneAuthoringActive&&sceneAuthoringPlacement&&creationPreview?.authoring){
+  if(event.code==='Escape'&&!event.repeat){event.preventDefault();cancelSceneAuthoringPlacement();return;}
+  if(event.code==='KeyN'&&!event.repeat){event.preventDefault();const choice=sceneAuthoringPlacement.id;const made=confirmCreationPlacement();if(made)beginSceneAuthoringPlacement(choice);return;}
+ }
  if(familyUi?.isOpen())return;
  if(held&&shiftDown()&&['KeyQ','KeyE','KeyR'].includes(event.code)&&!event.altKey&&!event.ctrlKey&&!event.metaKey&&gameInputActive()&&storyActionAllowed()&&!storySuspended()&&!story.transition&&!robotPoseDraft&&!trajectoryDraft&&!shelfPreview){
   event.preventDefault();if(!event.repeat)turnHeldFace(event.code);return;
@@ -6482,7 +6487,7 @@ function updateTarget(){
  snap=findSnap();updateCallout();updateCargoCallout();updateMenuConnector();updateInspection();updatePuzzleHUD();updateMoodSelection();updateAlphaHUD();
  if(!gameInputActive()){targetLabel.textContent='';crosshair.classList.remove('ready');return;}
  const familyHit=!held&&aimFamily();if(held?.family||familyPlacement||familyHit){familyActive=held?.family||familyPlacement?.family||familyHit.family;targetLabel.textContent=held?.family?familyHandHint():familyPlacement?.reason||familyActive.name+' · ×'+familyActive.count+' · clic: tomar · clic derecho: familia';crosshair.classList.toggle('ready',familyPlacement?!!familyPlacement.valid:true);return;}
- const hit=held||aimQubit(),shelfTarget=!held&&aimShelf();crosshair.classList.toggle('ready',!!hit||!!shelfTarget);
+ const hit=held||aimQubit(),shelfTarget=!held&&aimShelf();crosshair.classList.toggle('ready',creationPreview?.authoring?!!creationPreview.valid:!!hit||!!shelfTarget);
  if(shelfPreview)targetLabel.textContent=shelfPreview.valid?(shelfPreview.snapped?'Repisa alineada · ':'')+'Clic / E · colocar · Esc · cancelar':shelfPreview.reason;
  else if(creationPreview)targetLabel.textContent=creationPreview.reason;
  else if(marquee)targetLabel.textContent='Suelta para seleccionar · hasta '+settings.maxSelect+' piezas';
@@ -7338,6 +7343,14 @@ function clearSelection(){
  speech.nextHud=0;document.querySelector('#selection').textContent='';
 }
 function onCanvasMouseDown(event){
+ if(sceneAuthoringActive&&sceneAuthoringPlacement&&creationPreview?.authoring&&[0,2].includes(event.button)){
+  event.preventDefault();if(!gameInputActive())return;
+  if(event.button===2){cancelSceneAuthoringPlacement();return;}
+  const choice=sceneAuthoringPlacement.id;
+  const made=confirmCreationPlacement();
+  if(made)beginSceneAuthoringPlacement(choice);
+  return;
+ }
  if(familyGroupingJob||familyUi?.isOpen())return;
  if(familyPlacement){event.preventDefault();if(event.button===2)cancelFamilyPlacement();else if(event.button===0)confirmFamilyPlacement();return;}
  if(robotPoseDraft){robotPoseMouse(event);return;}
@@ -7402,6 +7415,7 @@ function onCanvasMouseDown(event){
  grabQubit();
 }
 function onCanvasMouseUp(event){
+ if(sceneAuthoringActive&&sceneAuthoringPlacement&&creationPreview?.authoring){event.preventDefault();return;}
  if(tabletAcceptsSelection())return;
  if(trajectoryDraft||trajectoryPanel?.isOpen)return;
  if(powerDraft)return;
@@ -12677,6 +12691,52 @@ const SCENE_AUTHORING_CATALOG=Object.freeze([
  {id:'belt-left',label:'Cinta · esquina izquierda',category:'Mecanismos',kind:'blueprint'},
  {id:'belt-right',label:'Cinta · esquina derecha',category:'Mecanismos',kind:'blueprint'}
 ].map(entry=>Object.freeze(entry)));
+// Authoring uses the same live 3D placement as the native Q-bits creator.
+// A visual preview is not a physical body; only the confirmed click allocates IDs.
+function sceneAuthoringRecipe(id){
+ return id==='arm'?robotArmBlueprintTemplate():
+  id==='servo-pivot'?servoBlueprintTemplate('pivot'):
+  id==='servo-hinge'?servoBlueprintTemplate('hinge'):
+  id==='propeller'?propellerBlueprintTemplate(false):
+  id==='drone'?propellerBlueprintTemplate(true):
+  id==='belt-straight'?conveyorBlueprintTemplate('straight',true):
+  id==='belt-left'?conveyorBlueprintTemplate('left',true):
+  id==='belt-right'?conveyorBlueprintTemplate('right',true):null;
+}
+function beginSceneAuthoringPlacement(id){
+ if(!sceneAuthoringActive||story.scene!=='lab'||story.mode!=='playing'||story.transition)
+  return {ok:false,error:'Abre la escena antes de seleccionar una construcción.'};
+ const item=SCENE_AUTHORING_CATALOG.find(entry=>entry.id===id);
+ if(!item)return {ok:false,error:'Pieza o plano desconocido.'};
+ if(held||familyPlacement||powerDraft||robotPoseDraft||trajectoryDraft||workshopPanel?.isOpen)
+  return {ok:false,error:'Termina el agarre o la herramienta anterior antes de construir.'};
+ let started=false;
+ if(item.kind==='piece')started=beginCreationPlacement(id);
+ else{
+  const recipe=sceneAuthoringRecipe(id);
+  if(!recipe||!savedMechanismValid(recipe))return {ok:false,error:'El blueprint nativo no es válido.'};
+  // Build the native ghost's physical profiles; the editor materializes the
+  // tested mechanism only on click, rather than leaving an unbuilt mission plan.
+  started=beginCreationPlacement('construction-plan',{mechanism:recipe,name:item.label});
+  if(started&&creationPreview){
+   creationPreview.plan=null;
+   creationPreview.id='scene-editor-'+id;
+   pendingUnitCreation=creationPreview.id;
+  }
+ }
+ if(!started||!creationPreview)return {ok:false,error:'No se pudo activar la vista previa 3D.'};
+ creationPreview.authoring=true;
+ creationPreview.authoringName=item.label;
+ sceneAuthoringPlacement={id,name:item.label};
+ updateCreationPlacement();
+ captureMouse();
+ announce(item.label+' · mueve la cámara para ubicar · rueda para girar · clic para colocar · clic derecho o Esc para salir');
+ return {ok:true,name:item.label};
+}
+function cancelSceneAuthoringPlacement(){
+ if(!sceneAuthoringPlacement)return false;
+ cancelUnitCreation();announce('Colocación terminada · F8 para elegir otra pieza');return true;
+}
 function spawnSceneAuthoringItem(id,xyz,angle=0){
  if(!sceneAuthoringActive||story.scene!=='lab'||story.mode!=='playing'||story.transition)return {ok:false,error:'Entra al Editor de escenas y vuelve a la simulación para colocar piezas.'};
  const item=SCENE_AUTHORING_CATALOG.find(entry=>entry.id===id);
@@ -12721,7 +12781,7 @@ function captureAuthoringScene(){
 let gamePrepared=false;
 const nextPaint=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
 window.QBitsGame={
-  sceneEditor:Object.freeze({open:openAuthoringScene,capture:captureAuthoringScene,catalog:()=>SCENE_AUTHORING_CATALOG.map(entry=>({...entry})),spawn:spawnSceneAuthoringItem,isActive:()=>sceneAuthoringActive,exit:()=>{if(!sceneAuthoringActive)return false;showMain();return true;}}),
+  sceneEditor:Object.freeze({open:openAuthoringScene,capture:captureAuthoringScene,catalog:()=>SCENE_AUTHORING_CATALOG.map(entry=>({...entry})),beginPlacement:beginSceneAuthoringPlacement,cancelPlacement:cancelSceneAuthoringPlacement,placement:()=>sceneAuthoringPlacement?{...sceneAuthoringPlacement,valid:!!creationPreview?.valid,reason:creationPreview?.reason}:null,spawn:spawnSceneAuthoringItem,isActive:()=>sceneAuthoringActive,exit:()=>{if(!sceneAuthoringActive)return false;showMain();return true;}}),
   culling:{toggle:toggleCulling,toggleObserver:toggleCullingObserver,toggleStats:toggleCullingStats,benchmark:startCullingBenchmark,cancel:cancelCullingBenchmark,snapshot:()=>({enabled:visuals.culling!==false,observer:cullingLab.observer,stats:cullingLab.stats,benchmark:!!cullingLab.benchmark,last:cullingLab.last,result:cullingLab.result})},
   quickWake,
   applyPreferences:()=>applyPreferences(savedPreferences),
