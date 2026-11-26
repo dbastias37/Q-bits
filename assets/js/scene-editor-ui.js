@@ -37,14 +37,13 @@
  dialog.id='scene-editor-dialog';dialog.hidden=true;dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-label','Editor de escenas');
  dialog.innerHTML=`<div class="scene-editor-shell">
  <p>Q-BITS / HERRAMIENTAS DE CREACIÓN</p><h2>Editor de escenas</h2>
- <p>Diseña en el banco de pruebas utilizando sus piezas, mecanismos y blueprints nativos. El archivo de escena es independiente de tus partidas y guarda el montaje completo.</p>
+ <p>Comienza con una sala vacía y utiliza las piezas, mecanismos y blueprints nativos. El editor no modifica tus partidas de campaña ni de banco.</p>
  <label>Biblioteca de escenas<select id="scene-editor-library" aria-label="Escenas guardadas"></select></label>
  <div class="scene-editor-actions"><button id="scene-editor-choose">Abrir versión seleccionada</button></div>
  <label>Nombre de escena<input id="scene-editor-name" type="text" maxlength="90" value="Mi escena inicial"></label>
  <label>Notas de diseño<textarea id="scene-editor-notes" placeholder="Intención, elementos iniciales, restricciones, objetivos..."></textarea></label>
  <div class="scene-editor-actions">
- <button id="scene-editor-new" class="primary">Nueva escena en el banco</button>
- <button id="scene-editor-blank">Crear escena realmente vacía</button>
+ <button id="scene-editor-new" class="primary">Nueva escena vacía</button>
  <button id="scene-editor-open">Continuar escena guardada</button>
  <button id="scene-editor-import">Importar archivo</button>
  <button id="scene-editor-close">Volver</button></div>
@@ -72,7 +71,7 @@
  const toolbar=document.createElement('div');toolbar.id='scene-editor-toolbar';toolbar.hidden=true;
  toolbar.innerHTML=`<strong>Editor de escenas · Banco 3D</strong>
  <div class="scene-editor-actions"><button id="scene-editor-capture">Capturar y guardar escena</button><button id="scene-editor-manage">Códigos / Exportar</button></div>
- <small>Coloca las piezas con los controles normales. Para una captura fiable, abre Esc → Guardar partida antes de capturar.</small>`;
+ <small>Coloca las piezas con los controles habituales. Capturar lee directamente el montaje del motor; no hace falta guardar el banco.</small>`;
  document.body.append(toolbar);
  function feedback(text){$('scene-editor-feedback').textContent=text;}
  function show(){try{selected=MODEL().read(localStorage);}catch(e){selected=null;feedback(e.message);}
@@ -120,38 +119,24 @@
   const check=window.QBitsSavedGames.validate('lab',obj.data);if(!check.ok)throw Error(check.error);return {raw,data:obj.data};}
  function storeScene(data){const doc=MODEL().pack($('scene-editor-name').value,data,$('scene-editor-notes').value,{phase:'authoring',markers:draftMarkers});
   selected=MODEL().save(localStorage,doc);$('scene-editor-code').textContent=doc.code+' · '+doc.inventory.pieces+' piezas';return doc;}
- function stashBank(){
-  if(sessionStorage.getItem(BACKUP)!==null)return;
-  const raw=localStorage.getItem(LAB_KEY);
-  sessionStorage.setItem(BACKUP,JSON.stringify({exists:raw!==null,raw}));
- }
  function restoreBank(){
-  const saved=sessionStorage.getItem(BACKUP);if(!saved)return;
-  const state=JSON.parse(saved);
-  if(state.exists)localStorage.setItem(LAB_KEY,state.raw);else localStorage.removeItem(LAB_KEY);
-  sessionStorage.removeItem(BACKUP);
+  // Native editor sessions never write the original bank save slot.
   active=false;lastCheckpointRaw=null;toolbar.hidden=true;
  }
- function prepareSceneFromFile(doc){
-  const time=Date.now();
-  const envelope={format:'qbits-save',version:1,mode:'lab',savedAt:time,createdAt:time,data:doc.data};
-  const valid=window.QBitsSavedGames.validate('lab',doc.data);
-  if(!valid.ok)throw Error(valid.error);
-  localStorage.setItem(LAB_KEY,JSON.stringify(envelope));
- }
  function enter(mode){
-  const model=MODEL();if(!model)throw Error('Las herramientas de escena aún no están cargadas.');
-  stashBank();
-  if(mode==='open'){
-    const doc=model.read(localStorage);
-    if(!doc)throw Error('No hay escena guardada. Crea una nueva o importa un archivo.');
-    prepareSceneFromFile(doc);selected=doc;
-  }
-  lastCheckpointRaw=localStorage.getItem(LAB_KEY);
+  if(!MODEL())throw Error('Las herramientas de escena aún no están cargadas.');
+  const game=window.QBitsGame?.sceneEditor;
+  if(!game?.open)throw Error('El editor nativo todavía no está disponible.');
+  let doc=null;
+  if(mode==='open'){doc=current();selected=doc;}
+  const result=game.open(doc?doc.data:null);
+  if(!result.ok)throw Error(result.error||'No se pudo entrar a la escena.');
   active=true;toolbar.hidden=false;close();
-  // The native lab selection owns its existing new/continue confirmation flow.
-  entry.click();
-  feedback('Elige '+(mode==='open'?'Continuar':'Nueva')+' en Banco de pruebas.');
+ }
+ function getAuthoringData(){
+  const result=window.QBitsGame?.sceneEditor?.capture?.();
+  if(!result?.ok)throw Error(result?.error||'Abre una escena del editor para capturar.');
+  return result.data;
  }
  async function copy(text){
   if(navigator.clipboard&&window.isSecureContext)await navigator.clipboard.writeText(text);
@@ -182,22 +167,12 @@
  $('scene-editor-close').addEventListener('click',close);
  $('scene-editor-choose').addEventListener('click',()=>act(()=>{const code=$('scene-editor-library').value;if(!code)throw Error('No hay versiones en la biblioteca.');selected=MODEL().select(localStorage,code);show();feedback('Versión seleccionada: '+selected.code); }));
  $('scene-editor-new').addEventListener('click',()=>act(()=>enter('new')));
- $('scene-editor-blank').addEventListener('click',()=>act(()=>{
-  const bank=getSavedBank();const data=MODEL().emptyData(bank.data);
-  if(!confirm('Crear una escena vacía desde el estado del banco guardado. No modifica tu partida original. ¿Continuar?'))return;
-  draftMarkers=[];const doc=storeScene(data);show();feedback('Escena vacía creada ('+doc.code+'). Selecciona Continuar escena guardada y luego Continuar en Banco de pruebas.');
- }));
  $('scene-editor-open').addEventListener('click',()=>act(()=>enter('open')));
  $('scene-editor-manage').addEventListener('click',()=>act(show));
  $('scene-editor-capture').addEventListener('click',()=>act(()=>{
-  if(!active)throw Error('Abre primero el modo Editor de escenas.');
-  const raw=localStorage.getItem(LAB_KEY);
-  if(!raw||raw===lastCheckpointRaw)throw Error('No hay un guardado nuevo de esta edición. Usa Esc → Guardar partida y luego captura.');
-  let envelope;try{envelope=JSON.parse(raw);}catch{throw Error('Guardado del banco ilegible.');}
-  if(envelope.mode!=='lab'||envelope.format!=='qbits-save')throw Error('El guardado actual no corresponde al banco.');
-  const doc=storeScene(envelope.data);lastCheckpointRaw=raw;
-  $('scene-editor-code').textContent=selected.code+' · '+selected.inventory.pieces+' piezas';
-  feedback('Escena capturada y guardada. '+selected.code);
+  if(!active)throw Error('Abre primero el Editor de escenas.');
+  const data=getAuthoringData(),doc=storeScene(data);
+  feedback('Escena capturada desde el motor y guardada. '+doc.code);
  }));
  $('scene-marker-from-player').addEventListener('click',()=>act(()=>{const data=selected?.data||getSavedBank().data;
   const p=data.snapshot.position;if(!Array.isArray(p)||p.length!==3)throw Error('No hay posición de jugador guardada.');
@@ -238,11 +213,9 @@
  }));
  // Restore the user's independent bank checkpoint when returning to the menu.
  new MutationObserver(()=>{
-  if(active&&!$('main-screen').hidden){
-   try{restoreBank();}catch(e){console.error('No se pudo restaurar el guardado del banco',e);}
-  }
+  if(active&&!$('main-screen').hidden)restoreBank();
  }).observe($('main-screen'),{attributes:true,attributeFilter:['hidden']});
- window.addEventListener('pagehide',()=>{if(active)try{restoreBank();}catch(e){console.error(e);}});
+ window.addEventListener('pagehide',()=>{if(active)restoreBank();});
  for(const id of ['pause-main','pause-levels','main-play','main-levels']) $(id)?.addEventListener('click',()=>{if(active)try{restoreBank();}catch(e){console.error(e);}}, {capture:true});
  window.QBitsSceneEditor=Object.freeze({open:show,capture:()=>$('scene-editor-capture').click(),restoreBank});
 })();
