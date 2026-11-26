@@ -2,6 +2,12 @@
 
 Actualizado: 25 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
+## Editor de escenas · sala vacía y marcadores (26 nov 2026)
+
+Sobre la primera integración de autoría en `main`, se añadió `emptyData`, que elimina del guardado de sala las piezas, mecanismos y tareas y conserva únicamente los parámetros nativos que requiere el banco. No toma material prestado de la campaña. Se añadieron marcadores de aparición, fuente, destino, recepción, zona de trabajo y nota: identidad estable, XYZ, etiqueta, edición, plano orientativo X/Z y anclaje opcional a una identidad de pieza existente. Las modificaciones de marca se incorporan al código de escena y a las exportaciones, con control de integridad y compatibilidad con archivos sin marcas.
+
+**Importante:** para crear la sala vacía aún se necesita guardar primero una escena nativa del banco, elegir `Crear escena realmente vacía` y reabrir la versión exportable con Continuar. No hay todavía un botón que inicie directamente una escena 3D vacía, catálogo propio de estaciones industrializadas ni conversor automático a misión. Las marcas no ejecutan reglas. La batería de pruebas nueva `tests/scene-authoring.test.cjs` comprueba el esquema de guardado, pero queda pendiente ejecutar la suite y verificar el flujo visual completo en un navegador. Ver [manual](EDITOR_ESCENAS.md).
+
 ## Editor de escenas · autoría y exportación inicial (26 nov 2026)
 
 Integrado en `main` un acceso `Editor de escenas` desde el menú principal. Reutiliza el banco 3D y su catálogo nativo, permite conservar una escena independiente de campaña y banco, importar/exportar `.qbits-scene.json`, copiar un resumen de materia y configuraciones o un código completo `QBSCENE1:`, y comparar un identificador corto `QBSC1-...`. La escena se valida mediante el guardado nativo; al salir se restituye la ranura de banco anterior. Ver [EDITOR_ESCENAS.md](EDITOR_ESCENAS.md).
