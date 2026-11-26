@@ -6,7 +6,7 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(root){
   'use strict';
   const FORMAT='qbits-scene',VERSION=1,MAX_BYTES=8*1024*1024;
-  const KEY='qbits.editor.scene.v1';
+  const KEY='qbits.editor.scene.v1',LIBRARY='qbits.editor.library.v1',PREFIX='qbits.editor.document.';
   const own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
   function fail(message){throw new Error(message);}
   function verifyData(data){
@@ -77,11 +77,34 @@
     // Never trust the inventory supplied by a file; regenerate it.
     return pack(doc.name,doc.data,doc.notes||'');
   }
+  function list(storage){
+    let value;try{value=JSON.parse(storage.getItem(LIBRARY)||'[]');}catch{value=[];}
+    if(!Array.isArray(value))return [];
+    return value.filter(item=>item&&typeof item.code==='string'&&/^QBSC1-[0-9A-F]{16}$/.test(item.code)&&typeof item.name==='string')
+      .slice(0,24).map(item=>({code:item.code,name:item.name,updatedAt:Number(item.updatedAt)||0}));
+  }
   function save(storage,doc){
-    const verified=parse(JSON.stringify(doc));storage.setItem(KEY,JSON.stringify(verified));return verified;
+    const verified=parse(JSON.stringify(doc)),serialized=JSON.stringify(verified),code=verified.code;
+    const items=list(storage).filter(item=>item.code!==code);
+    // Store one complete copy per version; the active key is just its pointer.
+    storage.setItem(PREFIX+code,serialized);
+    items.unshift({code,name:verified.name,updatedAt:Date.now()});
+    storage.setItem(LIBRARY,JSON.stringify(items.slice(0,24)));
+    storage.setItem(KEY,code);
+    return verified;
+  }
+  function select(storage,code){
+    if(typeof code!=='string'||!/^QBSC1-[0-9A-F]{16}$/.test(code))fail('Identificador de escena inválido.');
+    const raw=storage.getItem(PREFIX+code);
+    if(!raw)fail('No existe esa escena guardada en este navegador.');
+    const doc=parse(raw);if(doc.code!==code)fail('Identidad de escena incoherente.');
+    storage.setItem(KEY,code);return doc;
   }
   function read(storage){
-    const raw=storage.getItem(KEY);return raw?parse(raw):null;
+    const raw=storage.getItem(KEY);
+    if(!raw)return null;
+    // Backward-compatible with the first single-scene layout.
+    return raw[0]==='{'?parse(raw):select(storage,raw);
   }
   function explain(doc){
     const inv=doc.inventory;
@@ -93,5 +116,5 @@
       'Notas: '+doc.notes,
       'Para reconstruir la escena exactamente, adjunta el archivo .qbits-scene.json; el código identifica y comprueba el archivo, pero no reemplaza sus datos.'].join('\n');
   }
-  return Object.freeze({FORMAT,VERSION,KEY,MAX_BYTES,pack,parse,save,read,inventory,codeFor,explain});
+  return Object.freeze({FORMAT,VERSION,KEY,LIBRARY,MAX_BYTES,pack,parse,save,read,list,select,inventory,codeFor,explain});
 });
