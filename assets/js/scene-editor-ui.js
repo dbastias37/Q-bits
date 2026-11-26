@@ -33,6 +33,8 @@
  dialog.innerHTML=`<div class="scene-editor-shell">
  <p>Q-BITS / HERRAMIENTAS DE CREACIÓN</p><h2>Editor de escenas</h2>
  <p>Diseña en el banco de pruebas utilizando sus piezas, mecanismos y blueprints nativos. El archivo de escena es independiente de tus partidas y guarda el montaje completo.</p>
+ <label>Biblioteca de escenas<select id="scene-editor-library" aria-label="Escenas guardadas"></select></label>
+ <div class="scene-editor-actions"><button id="scene-editor-choose">Abrir versión seleccionada</button></div>
  <label>Nombre de escena<input id="scene-editor-name" type="text" maxlength="90" value="Mi escena inicial"></label>
  <label>Notas de diseño<textarea id="scene-editor-notes" placeholder="Intención, elementos iniciales, restricciones, objetivos..."></textarea></label>
  <div class="scene-editor-actions">
@@ -59,6 +61,9 @@
  document.body.append(toolbar);
  function feedback(text){$('scene-editor-feedback').textContent=text;}
  function show(){try{selected=MODEL().read(localStorage);}catch(e){selected=null;feedback(e.message);}
+ const items=MODEL().list(localStorage),select=$('scene-editor-library');select.replaceChildren();
+ for(const item of items){const option=document.createElement('option');option.value=item.code;option.textContent=item.name+' · '+item.code;select.append(option);}
+ if(selected&&items.some(item=>item.code===selected.code))select.value=selected.code;
  $('scene-editor-code').textContent=selected?'Versión de escena: '+selected.code+' · '+selected.inventory.pieces+' piezas':'Sin escena capturada';
  if(selected){$('scene-editor-name').value=selected.name;$('scene-editor-notes').value=selected.notes;}
  dialog.hidden=false;$('scene-editor-name').focus();}
@@ -122,6 +127,7 @@
  async function act(fn){try{await fn();}catch(e){feedback(e.message||String(e));}}
  mainButton.addEventListener('click',()=>act(show));
  $('scene-editor-close').addEventListener('click',close);
+ $('scene-editor-choose').addEventListener('click',()=>act(()=>{const code=$('scene-editor-library').value;if(!code)throw Error('No hay versiones en la biblioteca.');selected=MODEL().select(localStorage,code);show();feedback('Versión seleccionada: '+selected.code); }));
  $('scene-editor-new').addEventListener('click',()=>act(()=>enter('new')));
  $('scene-editor-open').addEventListener('click',()=>act(()=>enter('open')));
  $('scene-editor-manage').addEventListener('click',()=>act(show));
