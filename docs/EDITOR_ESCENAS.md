@@ -45,7 +45,7 @@ Formato `qbits-scene`, versión 1. Contiene nombre, notas, resumen de piezas y c
 
 Un archivo importado se valida con `QBitsSavedGames.validate('lab', ...)`, conserva límites de tamaño (8 MiB) y se comprueba contra un checksum estable de 64 bits. El checksum **no es una firma criptográfica** y no demuestra autoría. Identifica cambios accidentales y permite asociar una versión de la escena con la conversación. Para reconstruirla se requiere el archivo completo o el texto largo `QBSCENE1:`; un identificador corto no puede contener toda la información espacial y física.
 
-El código largo es una representación Base64 URL de los datos completos. El resumen incluye piezas, formas, componentes marcados por configuraciones y subsistemas detectados. Para revisarlo aquí, adjunta preferentemente el archivo: el código largo de una escena compleja puede superar el límite de texto de algunos chats.
+El código largo es una representación Base64 URL de los datos completos. El resumen incluye piezas, formas, grupos con sus identidades y posiciones, masa nominal, fracción de carga por pieza, componentes configurados y referencias de los mecanismos encontrados. No convierte fracciones de carga en julios ni deduce automáticamente recetas a partir de objetos sin tipado. Para revisarlo aquí, adjunta preferentemente el archivo: el código largo de una escena compleja puede superar el límite de texto de algunos chats.
 
 ## Integración de seguridad
 
