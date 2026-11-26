@@ -115,7 +115,8 @@ test('powered conveyor carries one real cube through three mounted stripes: six 
  hit=t.rotorPart(conveyor.baseId);const path=conveyor.path.map(p=>hit.p.vadd(hit.q.vmult(p))),emitters=[];
  for(const x of [-.11,.055,.21]){const g=t.addQubit([x,path[0].y+.048,-.4]);assert(t.adaptCutter({g,part:g.parts[0]}));g.parts[0].mood.cutter.face=t.unitProfile('cube').faceNormals.findIndex(n=>n.z>.9);g.parts[0].mood.energy=1;
   const receiver=t.addQubit([x,path[0].y+.048,.35]);assert(t.adaptCutter({g:receiver,part:receiver.parts[0]}));receiver.parts[0].mood.cutter.face=t.unitProfile('cube').faceNormals.findIndex(n=>n.z<-.9);emitters.push(g);
-  t.storyWall(t.V(x,path[0].y/2,-.4),t.V(.045,path[0].y/2,.045));}
+  t.storyWall(t.V(x,path[0].y/2,-.4),t.V(.045,path[0].y/2,.045));
+  t.storyWall(t.V(x,path[0].y/2,.35),t.V(.045,path[0].y/2,.045));}
  const load=t.addQubit([path[0].x+.055,path[0].y+.055,0]),root=load.parts[0].id,descendants=()=>t.groups.filter(g=>g.parts[0].id===root||g.parts[0].mood.matter?.root===root);let six=false,twelve=false,done=false;
  assert(t.startConveyor(conveyor));for(const g of emitters)assert(t.setCutterEnabled(g.parts[0].id,true));
  for(let i=0;i<240*6;i++){t.stepPhysics(1/240);const remaining=descendants();six||=remaining.length===6&&remaining.every(g=>g.parts[0].shape==='pyramid');twelve||=remaining.length===12&&remaining.every(g=>g.parts[0].shape==='tetra');
