@@ -32,31 +32,48 @@
     return 'QBSC1-'+a.toString(16).toUpperCase().padStart(16,'0');
   }
   function inventory(data){
-    const snap=data.snapshot||{}, shapes={}, ids=new Set(), components=[];
-    let pieces=0, activeGroups=0;
+    const snap=data.snapshot||{},shapes={},ids=new Set(),components=[],objects=[];
+    let pieces=0,activeGroups=0,totalMass=0;
     function readPart(p){
       if(!p||typeof p!=='object'||!Number.isSafeInteger(p.id)||!p.shape||ids.has(p.id))return;
       ids.add(p.id);pieces++;shapes[p.shape]=(shapes[p.shape]||0)+1;
+      if(Number.isFinite(p.weight))totalMass+=p.weight;
       const features=[];
-      for(const k of ['workshop','trajectory','gripper','externalBattery','rotor','sensor'])
+      for(const k of ['workshop','trajectory','gripper','externalBattery','rotor','sensor','flight','matter'])
         if(p.mood&&p.mood[k])features.push(k);
       if(features.length)components.push({id:p.id,shape:p.shape,features});
     }
     for(const group of snap.groups||[]){
       activeGroups++;
-      for(const p of group.parts||[])readPart(p);
+      const members=(group.parts||[]).filter(p=>p&&Number.isSafeInteger(p.id));
+      const item={rootId:members[0]?.id??null,parts:members.map(p=>({id:p.id,shape:p.shape,weight:p.weight,
+        energyFraction:p.mood&&Number.isFinite(p.mood.energy)?p.mood.energy:null})),
+        position:members[0]?.p&&['x','y','z'].every(k=>Number.isFinite(members[0].p[k]))?
+          [members[0].p.x,members[0].p.y,members[0].p.z]:null};
+      objects.push(item);
+      for(const p of members)readPart(p);
     }
     for(const family of snap.families||[]){
       for(const item of family.items||[])for(const p of item.parts||[])readPart(p);
     }
-    const systems={};
-    for(const k of ['rotors','powerNetwork','conveyors','robotArms','trajectoryRuntime','families','cargo','machines'])
-      if(own(snap,k))systems[k]=Array.isArray(snap[k])?snap[k].length:
-        snap[k]&&typeof snap[k]==='object'?Object.keys(snap[k]).length:0;
-    return {pieces,activeGroups,shapes,components,systems,uniqueIds:ids.size,
-      notes:'Inventario descriptivo; el archivo de escena contiene también orientaciones, energía, conexiones y configuraciones.'};
+    const systems={},mechanisms=[];
+    for(const k of ['rotors','rotorSets','powerNetwork','conveyors','robotArms','shelves','contacts','alphaScene','families','workshop']){
+      if(!own(snap,k))continue;
+      const value=snap[k];
+      systems[k]=Array.isArray(value)?value.length:value&&typeof value==='object'?Object.keys(value).length:0;
+      if(Array.isArray(value))for(const entry of value){
+        if(!entry||typeof entry!=='object')continue;
+        const ref={type:k};
+        for(const name of ['id','baseId','ownerId','kind','type','status','name']){
+          if(['string','number'].includes(typeof entry[name]))ref[name]=entry[name];
+        }
+        mechanisms.push(ref);
+      }
+    }
+    return {pieces,activeGroups,shapes,components,objects,mechanisms,systems,uniqueIds:ids.size,
+      totalMass:Number(totalMass.toFixed(6)),
+      notes:'La carga por pieza se expresa como fracción de 0 a 1; no son julios. No se asigna energía ficticia.'};
   }
-
   const MARKER_ROLES=new Set(['spawn','source','destination','receiver','workzone','note']);
   function validateDesign(design){
     if(design===undefined||design===null)return null;
@@ -162,6 +179,9 @@
       'Piezas: '+inv.pieces+' | Grupos activos: '+inv.activeGroups,
       'Formas: '+Object.entries(inv.shapes).map(([k,v])=>k+' '+v).join(', '),
       'Sistemas: '+Object.entries(inv.systems).map(([k,v])=>k+' '+v).join(', '),
+      'Masa total nominal: '+inv.totalMass,
+      'Grupos: '+inv.objects.map(o=>'grupo '+o.rootId+' @ '+(o.position||[]).join(',')+' · '+o.parts.map(p=>p.shape+'#'+p.id+'('+p.weight+' masa; '+(p.energyFraction??'—')+' carga)').join('+')).join('; '),
+      'Mecanismos: '+inv.mechanisms.map(m=>Object.entries(m).map(([k,v])=>k+'='+v).join(',')).join('; '),
       'Componentes configurados: '+inv.components.map(c=>c.id+':'+c.features.join('+')).join('; '),
       'Marcadores: '+(doc.design?.markers||[]).map(m=>m.id+' ['+m.role+'] '+m.label+' @ '+m.position.join(',')+(m.unitId?' · pieza '+m.unitId:'')).join('; '),
       'Notas: '+doc.notes,
