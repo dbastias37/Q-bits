@@ -14,6 +14,8 @@ const AUTOSAVE_MS=15000;
 // Native scene authoring is an isolated, unsaved bank runtime.
 let sceneAuthoringActive=false;
 let sceneAuthoringPlacement=null;
+let sceneAuthoringMarkerDraft=null;
+let sceneAuthoringMarkers=[];
 let unitRadial=null,pendingUnitCreation=null;
 let trajectorySystem=null,trajectoryPanel=null,trajectoryDraft=null,trajectoryGroundController=null,trajectoryAtlas=null,trajectoryFaceMesh=null;
 let radialGlassStamp='',radialGlassAllocated=false;
@@ -6413,6 +6415,7 @@ function handleWheel(event){
 }
 canvas.addEventListener('wheel',handleWheel,{passive:false});
 function handleKey(event){
+ if(sceneAuthoringActive&&sceneAuthoringMarkerDraft&&event.code==='Escape'&&!event.repeat){event.preventDefault();cancelSceneAuthoringMarker();return;}
  if(sceneAuthoringActive&&sceneAuthoringPlacement&&creationPreview?.authoring){
   if(event.code==='Escape'&&!event.repeat){event.preventDefault();cancelSceneAuthoringPlacement();return;}
   if(event.code==='KeyN'&&!event.repeat){event.preventDefault();const choice=sceneAuthoringPlacement.id;const made=confirmCreationPlacement();if(made)beginSceneAuthoringPlacement(choice);return;}
@@ -6476,6 +6479,7 @@ function handleKey(event){
  if(event.code==='Delete'||event.code==='Backspace'){event.preventDefault();const c=aimCargo(4);if(c)deleteCargo(c.cargo);else deleteQubit(held||aimQubit()||selected);}
 }
 function updateTarget(){
+ if(sceneAuthoringActive&&sceneAuthoringMarkerDraft){const hit=sceneAuthoringMarkerPoint();crosshair.classList.toggle('ready',!!hit);targetLabel.textContent=hit?'Marca '+sceneAuthoringMarkerDraft.label+' · clic: colocar · clic derecho/Esc: cancelar':'Apunta a una superficie para colocar la marca';return;}
  const previousAimCache=targetAimCache;targetAimCache=[];
  try{
  if(robotPoseDraft){
@@ -6793,7 +6797,7 @@ function drawQubits(){
  }}
  gl.depthMask(true);gl.disable(gl.BLEND);
  for(const g of groups){if(!renderGroupVisible(g))continue;if(g.parts.some(p=>p.mood.production)){for(const p of poses(g))drawBox(p.p,p.q,V(CUBE_SIZE-.002,CUBE_SIZE-.002,CUBE_SIZE-.002),p.part.mood.production?.kind==='A'?[.27,.56,.67,1]:p.part.mood.production?[.72,.53,.26,1]:[.12,.14,.13,1]);if(g.parts.length===2)drawOutline(g.body.position,g.body.quaternion,sub(bounds(g,V(),Q()).max,bounds(g,V(),Q()).min),.8,false);}else drawGroupSolid(g);}
- drawConveyors();drawCargos();drawPuzzle();drawAlpha();drawWorkshop();drawShelves();drawFamilies();drawDisassembly();drawCreationPlacement();drawFamilyPlacement();drawRobotArmLights();drawRobotPoseDraft();drawPowerReservoirs();drawPowerCables();drawTrajectories();drawBatteriesTransparent();drawFamilyGlass();drawStructureOutlines();drawServoGuides();drawGuides();drawTaskGuides();
+ drawConveyors();drawCargos();drawPuzzle();drawAlpha();drawWorkshop();drawShelves();drawFamilies();drawDisassembly();drawCreationPlacement();drawSceneAuthoringMarkers();drawFamilyPlacement();drawRobotArmLights();drawRobotPoseDraft();drawPowerReservoirs();drawPowerCables();drawTrajectories();drawBatteriesTransparent();drawFamilyGlass();drawStructureOutlines();drawServoGuides();drawGuides();drawTaskGuides();
 }
 addQubit([position[0]-Math.sin(yaw)*1.25,HALF+.003,position[2]-Math.cos(yaw)*1.25]);
 
@@ -7343,6 +7347,16 @@ function clearSelection(){
  speech.nextHud=0;document.querySelector('#selection').textContent='';
 }
 function onCanvasMouseDown(event){
+ if(sceneAuthoringActive&&sceneAuthoringMarkerDraft&&[0,2].includes(event.button)){
+  event.preventDefault();if(!gameInputActive())return;
+  if(event.button===2){cancelSceneAuthoringMarker();return;}
+  const target=sceneAuthoringMarkerPoint();
+  if(!target){announce('Apunta a una superficie válida de la sala.');return;}
+  const marker={...sceneAuthoringMarkerDraft,...target};
+  const accepted=window.QBitsSceneEditor?.onWorldMarkerPlaced?.(marker);
+  if(accepted){cancelSceneAuthoringMarker();announce('Marca colocada · F8 para continuar diseñando');}
+  return;
+ }
  if(sceneAuthoringActive&&sceneAuthoringPlacement&&creationPreview?.authoring&&[0,2].includes(event.button)){
   event.preventDefault();if(!gameInputActive())return;
   if(event.button===2){cancelSceneAuthoringPlacement();return;}
@@ -7415,6 +7429,7 @@ function onCanvasMouseDown(event){
  grabQubit();
 }
 function onCanvasMouseUp(event){
+ if(sceneAuthoringActive&&sceneAuthoringMarkerDraft){event.preventDefault();return;}
  if(sceneAuthoringActive&&sceneAuthoringPlacement&&creationPreview?.authoring){event.preventDefault();return;}
  if(tabletAcceptsSelection())return;
  if(trajectoryDraft||trajectoryPanel?.isOpen)return;
@@ -12737,6 +12752,53 @@ function cancelSceneAuthoringPlacement(){
  if(!sceneAuthoringPlacement)return false;
  cancelUnitCreation();announce('Colocación terminada · F8 para elegir otra pieza');return true;
 }
+// Editor-only semantic markers are previews and metadata, never new matter.
+function sceneAuthoringMarkerPoint(){
+ const hit=creationSurfaceAim();
+ if(!hit||!hit.point)return null;
+ const point=hit.point;
+ if(![point.x,point.y,point.z].every(Number.isFinite))return null;
+ if(sceneAuthoringMarkerDraft?.role==='spawn'&&Math.abs(point.y)>.025)return null;
+ const near=aimQubit(8),linked=near?.point&&near.point.distanceTo(point)<.12?near.part.id:null;
+ return {position:[point.x,sceneAuthoringMarkerDraft?.role==='spawn'?EYE_HEIGHT:point.y,point.z],...(linked?{unitId:linked}:{})};
+}
+function beginSceneAuthoringMarker(role,label){
+ if(!sceneAuthoringActive||story.scene!=='lab'||story.mode!=='playing')return {ok:false,error:'Abre una escena del editor.'};
+ if(!['spawn','source','destination','receiver','workzone','note'].includes(role)||typeof label!=='string'||!label.trim()||label.length>80)
+  return {ok:false,error:'El tipo o nombre de marca no es válido.'};
+ if(held||familyPlacement||powerDraft||robotPoseDraft||trajectoryDraft)return {ok:false,error:'Termina primero la otra herramienta.'};
+ cancelUnitCreation();
+ sceneAuthoringMarkerDraft={role,label:label.trim()};
+ captureMouse();redraw=true;
+ announce('Apunta en el mundo para colocar «'+sceneAuthoringMarkerDraft.label+'» · clic confirmar · Esc cancelar');
+ return {ok:true};
+}
+function cancelSceneAuthoringMarker(){
+ if(!sceneAuthoringMarkerDraft)return false;sceneAuthoringMarkerDraft=null;redraw=true;return true;
+}
+function setSceneAuthoringMarkers(markers){
+ if(!sceneAuthoringActive||!Array.isArray(markers)||markers.length>128)return false;
+ if(markers.some(m=>!m||typeof m.label!=='string'||!Array.isArray(m.position)||m.position.length!==3||m.position.some(n=>!Number.isFinite(n))))return false;
+ sceneAuthoringMarkers=markers.map(m=>({id:m.id,role:m.role,label:m.label,position:m.position.slice()}));redraw=true;return true;
+}
+function drawSceneAuthoringMarkers(){
+ if(!sceneAuthoringActive)return;
+ const highlight=(role)=>role==='spawn'?[.23,.52,.94]:role==='receiver'?[.20,.74,.51]:[.81,.58,.23];
+ const markers=sceneAuthoringMarkers.map(m=>({...m,ghost:false}));
+ if(sceneAuthoringMarkerDraft){
+  const hit=sceneAuthoringMarkerPoint();
+  if(hit)markers.push({...sceneAuthoringMarkerDraft,...hit,ghost:true});
+ }
+ if(!markers.length)return;
+ gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
+ for(const marker of markers){
+  const p=V(...marker.position),base=marker.role==='spawn'?V(p.x,.01,p.z):p;
+  const tone=highlight(marker.role),alpha=marker.ghost?.53:.8;
+  drawBox(add(base,V(0,.09,0)),Q(),V(.018,.18,.018),[...tone,alpha]);
+  drawBox(add(base,V(0,.19,0)),Q(),V(.075,.012,.075),[...tone,alpha]);
+ }
+ gl.depthMask(true);gl.disable(gl.BLEND);
+}
 function spawnSceneAuthoringItem(id,xyz,angle=0){
  if(!sceneAuthoringActive||story.scene!=='lab'||story.mode!=='playing'||story.transition)return {ok:false,error:'Entra al Editor de escenas y vuelve a la simulación para colocar piezas.'};
  const item=SCENE_AUTHORING_CATALOG.find(entry=>entry.id===id);
@@ -12781,7 +12843,7 @@ function captureAuthoringScene(){
 let gamePrepared=false;
 const nextPaint=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
 window.QBitsGame={
-  sceneEditor:Object.freeze({open:openAuthoringScene,capture:captureAuthoringScene,catalog:()=>SCENE_AUTHORING_CATALOG.map(entry=>({...entry})),beginPlacement:beginSceneAuthoringPlacement,cancelPlacement:cancelSceneAuthoringPlacement,placement:()=>sceneAuthoringPlacement?{...sceneAuthoringPlacement,valid:!!creationPreview?.valid,reason:creationPreview?.reason}:null,spawn:spawnSceneAuthoringItem,isActive:()=>sceneAuthoringActive,exit:()=>{if(!sceneAuthoringActive)return false;showMain();return true;}}),
+  sceneEditor:Object.freeze({open:openAuthoringScene,capture:captureAuthoringScene,catalog:()=>SCENE_AUTHORING_CATALOG.map(entry=>({...entry})),beginPlacement:beginSceneAuthoringPlacement,cancelPlacement:cancelSceneAuthoringPlacement,placement:()=>sceneAuthoringPlacement?{...sceneAuthoringPlacement,valid:!!creationPreview?.valid,reason:creationPreview?.reason}:null,beginMarker:beginSceneAuthoringMarker,cancelMarker:cancelSceneAuthoringMarker,setMarkers:setSceneAuthoringMarkers,spawn:spawnSceneAuthoringItem,isActive:()=>sceneAuthoringActive,exit:()=>{if(!sceneAuthoringActive)return false;showMain();return true;}}),
   culling:{toggle:toggleCulling,toggleObserver:toggleCullingObserver,toggleStats:toggleCullingStats,benchmark:startCullingBenchmark,cancel:cancelCullingBenchmark,snapshot:()=>({enabled:visuals.culling!==false,observer:cullingLab.observer,stats:cullingLab.stats,benchmark:!!cullingLab.benchmark,last:cullingLab.last,result:cullingLab.result})},
   quickWake,
   applyPreferences:()=>applyPreferences(savedPreferences),
