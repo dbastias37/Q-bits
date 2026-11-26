@@ -63,3 +63,24 @@ test('invalid imported snapshot fails before mutating current authoring scene',a
  assert.equal(t.groups[0],previous);
  assert.equal(api.sceneEditor.isActive(),true);
 });
+
+test('authoring catalog spawns real pieces, rejects occupied placement and keeps native conservation outside editor',async()=>{
+ const game=await prepared(),{api,t,sandbox}=game;
+ assert(api.sceneEditor.open().ok);
+ const ids=api.sceneEditor.catalog().map(item=>item.id);
+ for(const id of ['cube','tetra','pyramid','coupler','arm','servo-pivot','servo-hinge','propeller','drone','belt-straight','belt-left','belt-right'])assert(ids.includes(id),id);
+ const first=api.sceneEditor.spawn('cube',[0,0,0],0);
+ assert(first.ok,first.error);
+ assert.equal(t.groups.length,1);
+ assert.equal(t.groups[0].parts[0].shape,'cube');
+ const occupied=api.sceneEditor.spawn('cube',[0,0,0],0);
+ assert.equal(occupied.ok,false);
+ assert.equal(t.groups.length,1,'a failed placement must not materialize another cube');
+ const invalid=api.sceneEditor.spawn('belt-straight',[100,0,0],0);
+ assert.equal(invalid.ok,false);
+ assert.equal(t.groups.length,1);
+ const capture=api.sceneEditor.capture();
+ assert.equal(capture.ok,true,capture.error);
+ assert.equal(capture.data.snapshot.groups.length,1);
+ assert.equal(sandbox.localStorage.getItem(saves.KEYS.lab),null);
+});
