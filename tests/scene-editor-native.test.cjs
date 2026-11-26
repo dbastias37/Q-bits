@@ -145,3 +145,15 @@ test('world marker placement targets the scene, not numeric coordinates',async()
  assert.equal(t.groups.length,0,'placing a marker cannot invent physical matter');
  assert.equal(api.sceneEditor.setMarkers([{id:'m-3',role:'source',label:'Materia A',position:received[0].position}]),true);
 });
+
+test('opening F8 catalogue releases pointer lock intentionally without pausing live simulation',async()=>{
+ const game=await prepared(),{api,t,sandbox}=game;
+ assert(api.sceneEditor.open().ok);
+ sandbox.document.pointerLockElement=t.canvas;
+ sandbox.document.dispatchEvent({type:'pointerlockchange'});
+ assert.equal(t.story.mode,'playing');
+ assert.equal(api.sceneEditor.suspendInput(),true);
+ assert.equal(sandbox.document.pointerLockElement,null);
+ assert.equal(t.story.mode,'playing','editor catalog must not trigger the engine pause menu');
+ assert.equal(api.sceneEditor.isActive(),true);
+});
