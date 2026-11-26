@@ -157,3 +157,26 @@ test('opening F8 catalogue releases pointer lock intentionally without pausing l
  assert.equal(t.story.mode,'playing','editor catalog must not trigger the engine pause menu');
  assert.equal(api.sceneEditor.isActive(),true);
 });
+
+test('clicking a valid conveyor ghost builds a physical native belt instead of decorative geometry',async()=>{
+ const game=await prepared(),{api,t,sandbox}=game;
+ assert.equal(api.sceneEditor.open().ok,true);
+ sandbox.document.pointerLockElement=t.canvas;
+ assert.equal(api.sceneEditor.beginPlacement('belt-straight').ok,true);
+ const poses=[
+  {camera:[0,1.7,2],yaw:0,pitch:-.7},
+  {camera:[0,1.7,3],yaw:0,pitch:-.9},
+  {camera:[1,1.7,1],yaw:0,pitch:-.8}
+ ];
+ let preview;
+ for(const pose of poses){t.setLook(pose);t.updateCreationPlacement();preview=t.getCreationPreview();if(preview.valid)break;}
+ assert(preview?.valid,preview?.reason||'No valid 3D build site');
+ const count=t.groups.length;
+ t.onCanvasMouseDown({button:0,preventDefault(){}});
+ assert(t.groups.length>count,'click must instantiate the blueprint into real groups');
+ const saved=api.sceneEditor.capture();
+ assert.equal(saved.ok,true,saved.error);
+ assert(saved.data.snapshot.conveyors.length>=1,'the real conveyor controller must be serializable');
+ assert(saved.data.snapshot.groups.some(g=>g.parts.some(p=>p.shape==='coupler')),'the native belt owns real couplers');
+ assert(api.sceneEditor.placement(),'repeated placement remains ready after confirming a belt');
+});
