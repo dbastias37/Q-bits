@@ -12663,6 +12663,49 @@ function openAuthoringScene(data=null){
   return {ok:true};
  }catch(error){sceneAuthoringActive=false;return {ok:false,error:error.message||'No se pudo abrir la escena.'};}
 }
+const SCENE_AUTHORING_CATALOG=Object.freeze([
+ {id:'cube',label:'Q-bit · cubo',category:'Piezas',kind:'piece'},
+ {id:'pyramid',label:'Pirámide',category:'Piezas',kind:'piece'},
+ {id:'tetra',label:'T-bit · tetraedro',category:'Piezas',kind:'piece'},
+ {id:'coupler',label:'Enganche',category:'Piezas',kind:'piece'},
+ {id:'arm',label:'Brazo robótico · blueprint nativo',category:'Mecanismos',kind:'blueprint'},
+ {id:'servo-pivot',label:'Servo pivote',category:'Mecanismos',kind:'blueprint'},
+ {id:'servo-hinge',label:'Servo bisagra',category:'Mecanismos',kind:'blueprint'},
+ {id:'propeller',label:'Hélice de T-bits',category:'Mecanismos',kind:'blueprint'},
+ {id:'drone',label:'Dron con batería descargada',category:'Mecanismos',kind:'blueprint'},
+ {id:'belt-straight',label:'Cinta recta con soportes',category:'Mecanismos',kind:'blueprint'},
+ {id:'belt-left',label:'Cinta · esquina izquierda',category:'Mecanismos',kind:'blueprint'},
+ {id:'belt-right',label:'Cinta · esquina derecha',category:'Mecanismos',kind:'blueprint'}
+].map(entry=>Object.freeze(entry)));
+function spawnSceneAuthoringItem(id,xyz,angle=0){
+ if(!sceneAuthoringActive||story.scene!=='lab'||story.mode!=='playing'||story.transition)return {ok:false,error:'Entra al Editor de escenas y vuelve a la simulación para colocar piezas.'};
+ const item=SCENE_AUTHORING_CATALOG.find(entry=>entry.id===id);
+ if(!item)return {ok:false,error:'Elemento desconocido.'};
+ if(!Array.isArray(xyz)||xyz.length!==3||xyz.some(n=>!Number.isFinite(n)||Math.abs(n)>12)||!Number.isFinite(angle)||Math.abs(angle)>360)return {ok:false,error:'Posición o giro fuera de límites.'};
+ if(scenePartCount()>=MAX_QUBITS)return {ok:false,error:'Se alcanzó el límite de piezas.'};
+ let result;
+ if(item.kind==='piece'){
+  const shape=id,p=V(xyz[0],xyz[1]+unitGroundHeight(shape)+.003,xyz[2]);
+  const g=addQubit([p.x,p.y,p.z],settings.mass,shape);
+  if(!validPose(g,g.body.position,g.body.quaternion)){removeGroup(g);return {ok:false,error:'No hay espacio válido para esa pieza.'};}
+  result=g;
+ }else{
+  const recipe=id==='arm'?robotArmBlueprintTemplate():
+   id==='servo-pivot'?servoBlueprintTemplate('pivot'):
+   id==='servo-hinge'?servoBlueprintTemplate('hinge'):
+   id==='propeller'?propellerBlueprintTemplate(false):
+   id==='drone'?propellerBlueprintTemplate(true):
+   id==='belt-straight'?conveyorBlueprintTemplate('straight',true):
+   id==='belt-left'?conveyorBlueprintTemplate('left',true):
+   id==='belt-right'?conveyorBlueprintTemplate('right',true):null;
+  if(!recipe)return {ok:false,error:'El blueprint no pudo prepararse.'};
+  const rotation=Q();rotation.setFromAxisAngle(V(0,1,0),angle*Math.PI/180);
+  result=spawnSavedMechanism(recipe,V(...xyz),rotation);
+  if(!result)return {ok:false,error:'La posición, las uniones o el espacio del blueprint no son válidos.'};
+ }
+ redraw=true;
+ return {ok:true,name:item.label,pieces:scenePartCount()};
+}
 function captureAuthoringScene(){
  if(!sceneAuthoringActive||story.scene!=='lab'||!story.started||story.transition||saveSession.restoring||saveSession.preparing)return {ok:false,error:'No hay una escena del editor lista para capturar.'};
  const blocked=bankSaveBlocked();
@@ -12678,7 +12721,7 @@ function captureAuthoringScene(){
 let gamePrepared=false;
 const nextPaint=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
 window.QBitsGame={
-  sceneEditor:Object.freeze({open:openAuthoringScene,capture:captureAuthoringScene,isActive:()=>sceneAuthoringActive,exit:()=>{if(!sceneAuthoringActive)return false;showMain();return true;}}),
+  sceneEditor:Object.freeze({open:openAuthoringScene,capture:captureAuthoringScene,catalog:()=>SCENE_AUTHORING_CATALOG.map(entry=>({...entry})),spawn:spawnSceneAuthoringItem,isActive:()=>sceneAuthoringActive,exit:()=>{if(!sceneAuthoringActive)return false;showMain();return true;}}),
   culling:{toggle:toggleCulling,toggleObserver:toggleCullingObserver,toggleStats:toggleCullingStats,benchmark:startCullingBenchmark,cancel:cancelCullingBenchmark,snapshot:()=>({enabled:visuals.culling!==false,observer:cullingLab.observer,stats:cullingLab.stats,benchmark:!!cullingLab.benchmark,last:cullingLab.last,result:cullingLab.result})},
   quickWake,
   applyPreferences:()=>applyPreferences(savedPreferences),
