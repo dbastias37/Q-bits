@@ -1,0 +1,12 @@
+✔ a paid arm removes a stabilized cube from the second cooler and drops it on a relocated feed at 60 Hz (7405.667115ms)
+ℹ {"hz":60,"seconds":6.466666666666722,"joules":155.87531882568146,"feedOffsetZ":0.8,"assembler":[3.7,0,-1.35],"armPivot":{"x":4.548192285206755,"y":0.8670118132426037,"z":0.18651250351024548},"sourceWatts":240,"wireUnits":8}
+✔ a paid arm removes a stabilized cube from the second cooler and drops it on a relocated feed at 120 Hz (7538.799814ms)
+ℹ {"hz":120,"seconds":6.533333333333441,"joules":84.53485767188249,"feedOffsetZ":0.8,"assembler":[3.7,0,-1.35],"armPivot":{"x":4.550133091510402,"y":0.8600883280662661,"z":0.2026570246606747},"sourceWatts":240,"wireUnits":8}
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 15394.839867

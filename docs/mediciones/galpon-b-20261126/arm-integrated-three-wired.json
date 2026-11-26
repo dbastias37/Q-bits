@@ -1,0 +1,361 @@
+{
+  "mode": "Contiguous four-worker mission with real economy and Cannon; simulated clock accelerated, DOM/GPU instrumented.",
+  "milestones": [
+    {
+      "event": "brazo conectado a la fuente",
+      "seconds": 683,
+      "energyJ": 166959.42,
+      "metres": 6.635918831,
+      "material": [
+        288,
+        289,
+        290,
+        291
+      ]
+    },
+    {
+      "event": "palas reconfiguradas con sobrantes conservados",
+      "seconds": 733.27,
+      "energyJ": 166722.07,
+      "ok": true,
+      "origin": 292,
+      "bladeIds": [
+        316,
+        317
+      ],
+      "leftoverIds": [
+        307,
+        308,
+        309,
+        310,
+        311
+      ]
+    },
+    {
+      "event": "dron montado con stock real",
+      "seconds": 733.27,
+      "energyJ": 166710.07,
+      "ids": [
+        287,
+        317,
+        316,
+        294,
+        293,
+        295
+      ]
+    },
+    {
+      "event": "capital físico del dron preparado",
+      "seconds": 746.27,
+      "energyJ": 166303.18,
+      "ids": [
+        287,
+        317,
+        316,
+        294,
+        293,
+        295
+      ],
+      "stockCubes": 9
+    },
+    {
+      "event": "adaptación real receiver",
+      "seconds": 757.07,
+      "energyJ": 166247.54,
+      "id": 295,
+      "energy": 0.05
+    },
+    {
+      "event": "adaptación real beacon",
+      "seconds": 771.13,
+      "energyJ": 166224.58,
+      "id": 296,
+      "energy": 0.05
+    },
+    {
+      "event": "adaptación real beacon",
+      "seconds": 785.87,
+      "energyJ": 166203.31,
+      "id": 297,
+      "energy": 0.05
+    },
+    {
+      "event": "cable físico de recarga",
+      "seconds": 798.67,
+      "energyJ": 166184.88,
+      "id": 2,
+      "metres": 8.30702880595034,
+      "materialIds": [
+        298,
+        299,
+        300,
+        301,
+        302
+      ]
+    },
+    {
+      "event": "ruta QR enseñada sobre carga real",
+      "seconds": 825.2,
+      "energyJ": 165351.2,
+      "receiverId": 295,
+      "beacons": [
+        296,
+        297
+      ],
+      "loadId": 285,
+      "metres": 3.5571474218456016,
+      "storedJ": 810.4999999999754,
+      "estimateJ": 234.06704149966185
+    },
+    {
+      "event": "dron preparado para el primer viaje real",
+      "seconds": 825.2,
+      "energyJ": 165351.2,
+      "receiverId": 295,
+      "loadId": 285
+    },
+    {
+      "event": "primera entrega QR y regreso físico",
+      "seconds": 876.2,
+      "energyJ": 164586.66,
+      "chain": {
+        "phase": "arm-power",
+        "armDemo": 2,
+        "armWired": 1,
+        "droneDelivered": 1,
+        "stabilized": 1,
+        "lot": 1,
+        "lotCount": 0,
+        "total": 0,
+        "target": 80,
+        "continuity": 0,
+        "continuityTarget": 60,
+        "continuityLabel": "Actividad continua útil",
+        "continuityMode": "useful-activity",
+        "deliveryWindow": 240,
+        "continuityState": "waiting",
+        "waitingSeconds": 0,
+        "continuityReason": "",
+        "sustained": false,
+        "completed": false
+      }
+    },
+    {
+      "event": "entrega QR 2 y regreso",
+      "seconds": 930.2,
+      "energyJ": 163788.29,
+      "chain": {
+        "phase": "arm-power",
+        "armDemo": 3,
+        "armWired": 2,
+        "droneDelivered": 2,
+        "stabilized": 2,
+        "lot": 1,
+        "lotCount": 0,
+        "total": 0,
+        "target": 80,
+        "continuity": 0,
+        "continuityTarget": 60,
+        "continuityLabel": "Actividad continua útil",
+        "continuityMode": "useful-activity",
+        "deliveryWindow": 240,
+        "continuityState": "waiting",
+        "waitingSeconds": 0,
+        "continuityReason": "",
+        "sustained": false,
+        "completed": false
+      }
+    },
+    {
+      "event": "entrega QR 3 y regreso",
+      "seconds": 980.2,
+      "energyJ": 162984.29,
+      "chain": {
+        "phase": "assembler",
+        "armDemo": 4,
+        "armWired": 3,
+        "droneDelivered": 3,
+        "stabilized": 3,
+        "lot": 1,
+        "lotCount": 0,
+        "total": 0,
+        "target": 80,
+        "continuity": 0,
+        "continuityTarget": 60,
+        "continuityLabel": "Actividad continua útil",
+        "continuityMode": "useful-activity",
+        "deliveryWindow": 240,
+        "continuityState": "waiting",
+        "waitingSeconds": 0,
+        "continuityReason": "",
+        "sustained": false,
+        "completed": false
+      }
+    },
+    {
+      "event": "tres transferencias cableadas y tres viajes QR completos",
+      "seconds": 981.2,
+      "energyJ": 162952.85,
+      "chain": {
+        "phase": "assembler",
+        "armDemo": 4,
+        "armWired": 3,
+        "droneDelivered": 3,
+        "stabilized": 3,
+        "lot": 1,
+        "lotCount": 0,
+        "total": 0,
+        "target": 80,
+        "continuity": 0,
+        "continuityTarget": 60,
+        "continuityLabel": "Actividad continua útil",
+        "continuityMode": "useful-activity",
+        "deliveryWindow": 240,
+        "continuityState": "waiting",
+        "waitingSeconds": 0,
+        "continuityReason": "",
+        "sustained": false,
+        "completed": false
+      }
+    }
+  ],
+  "observations": [],
+  "errors": [],
+  "armPowerMetrics": {
+    "motorJ": 1827.3951386606705,
+    "gripJ": 4.144666666666741,
+    "peakW": 90.06482843174369,
+    "peakTotalW": 90.06482843174369,
+    "samples": 3760,
+    "profiles": {
+      "1": {
+        "joules": 537.7625730832742,
+        "peakW": 90.06482843174369
+      },
+      "2": {
+        "joules": 607.1676409503178,
+        "peakW": 85.41092750136875
+      },
+      "3": {
+        "joules": 607.9171541447475,
+        "peakW": 85.40590391415266
+      },
+      "4": {
+        "joules": 74.54777048232725,
+        "peakW": 60.19691032483006
+      }
+    }
+  },
+  "final": {
+    "seconds": 981.2,
+    "energyJ": 162952.85,
+    "line": {
+      "built": 8,
+      "running": 8,
+      "traveling": 1,
+      "cooling": 0,
+      "received": 12,
+      "status": "Carga enfriada disponible para el brazo."
+    },
+    "stock": {
+      "assigned": 4,
+      "workers": 4,
+      "mode": "plan",
+      "message": "Salida disponible.",
+      "carrying": 0,
+      "raw": 10,
+      "cubes": 16,
+      "couplers": 0,
+      "readyCubes": 16,
+      "readyCouplers": 0,
+      "beltFeed": true,
+      "availableCubeSlots": 8,
+      "pendingWorker": false
+    },
+    "chain": {
+      "phase": "assembler",
+      "armDemo": 4,
+      "armWired": 3,
+      "droneDelivered": 3,
+      "stabilized": 3,
+      "lot": 1,
+      "lotCount": 0,
+      "total": 0,
+      "target": 80,
+      "continuity": 0,
+      "continuityTarget": 60,
+      "continuityLabel": "Actividad continua útil",
+      "continuityMode": "useful-activity",
+      "deliveryWindow": 240,
+      "continuityState": "waiting",
+      "waitingSeconds": 0,
+      "continuityReason": "",
+      "sustained": false,
+      "completed": false
+    },
+    "world": {
+      "version": 1,
+      "clock": 433.19999999998055,
+      "buildOrder": null,
+      "arms": [
+        279
+      ],
+      "dockedArms": [
+        279
+      ],
+      "belts": {
+        "feedA": null,
+        "feedB": null
+      },
+      "sourceId": 1,
+      "sourcePending": false,
+      "assembler": {
+        "id": 1,
+        "placed": false,
+        "p": [
+          3.7,
+          0,
+          -2.15
+        ],
+        "turns": 0
+      },
+      "laser": null,
+      "pending": [],
+      "carried": {},
+      "returning": [],
+      "productiveTrips": {
+        "279": [
+          323
+        ],
+        "293": [
+          322
+        ]
+      },
+      "firstQueue": [],
+      "families": [],
+      "message": "Producción automática por lotes limitados. Despeja las recepciones para continuar.",
+      "scan": 0.03333333333333334
+    },
+    "bodies": 103,
+    "groups": 65
+  },
+  "physical": {
+    "arm": [
+      {
+        "gripperId": 279,
+        "tip": {
+          "x": 2.3097483968062495,
+          "y": 0.6976005042090673,
+          "z": -0.12958551780024502
+        },
+        "base": {
+          "x": 2.410918831,
+          "y": 0.682,
+          "z": -0.755
+        },
+        "status": "Sin objeto frente a la cara naranja. Centra un cubo suelto frente a ella. Alcance: 5 cm. · frenos mecánicos, motores en reposo"
+      }
+    ],
+    "queue": []
+  }
+}

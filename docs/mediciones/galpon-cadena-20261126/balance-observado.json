@@ -1,0 +1,4647 @@
+{
+  "version": 1,
+  "scope": "native",
+  "note": "Continuación elegida desde A hasta ochenta productos y una recepción adicional en el mismo mundo. Conserva montaje, intentos interrumpidos, todas sus recuperaciones y los checkpoints separados de 20, 40, 60, 80 y 81. La recuperación desde diecisiete incluye una carga manual que volvió a recorrer los ocho tramos. El primer arranque hacia ochenta conserva 1200 s y todo su gasto, incluida actividad inicial; su recuperación física y nuevo arranque quedan separados. Las ramas descartadas de diagnóstico no pertenecen a esta secuencia. No es una ejecución ininterrumpida sin intervenciones.",
+  "validators": {
+    "galpon-production.js": "24cc07ba8667d6880e3fd4a9d4e611139fc18a2dd166bc4f34a2f866153cc807",
+    "galpon-chain.js": "462d163836d4fba06e6c340b2ab04538b03366f64c05f6dd2f349b0dc46011fa",
+    "save-games.js": "ecf0d284b9f6f94541b5066647df7ad20cbc1dd67f211e40282ea196dad35281"
+  },
+  "lineage": {
+    "createdAt": 1795673510034,
+    "initialIds": [
+      3,
+      4,
+      5,
+      6
+    ],
+    "initialSourceJ": 180000,
+    "initialPersonalGrantJ": 1200,
+    "sourceSpentBeforeFirstCheckpointJ": 9283.76862395939,
+    "sourceSpentBetweenCheckpointsJ": 164667.7297974841,
+    "finalSourceJ": 6048.501578556521,
+    "finalReceived": 81,
+    "completeInSavedState": true,
+    "historicalIdsObserved": 612
+  },
+  "checkpoints": [
+    {
+      "id": "a_complete",
+      "path": "partida/a_complete.json",
+      "label": "A desde cuatro trabajadores: ocho tramos y doce recibos",
+      "sha256": "6d582ba49b7a0e676f5e800e40f54243d982bc5d4c109f5d1f3b16adb1bea5dd",
+      "dataSha256": "f5d0a3cc938d651f23c94418ce806943682e55155172901d1f3b0ded0d866eab",
+      "validated": true,
+      "createdAt": 1795673510034,
+      "seconds": 548.0000000000047,
+      "sourceJ": 170716.2313760406,
+      "sourceSpentSinceOpeningJ": 9283.76862395939,
+      "spent": {
+        "extraction": 504,
+        "conversion": 1260,
+        "forming": 384,
+        "charge": 3959.1740386506735,
+        "cooling": 1657.0133333333313,
+        "transport": 1039.5812519718097,
+        "assembly": 480,
+        "reconfiguration": 0
+      },
+      "accountResidualJ": 3.574314177967608e-9,
+      "initialIds": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "extracted": 252,
+      "firstLineReceived": 12,
+      "material": {
+        "records": 256,
+        "origins": 256,
+        "units": 256,
+        "originSha256": "2fbef11bddff0f17a66248bfa8fdfeaabadd87b6b9157244aa95c02bdae477cd",
+        "places": {
+          "world": {
+            "records": 4,
+            "units": 4
+          },
+          "group": {
+            "records": 240,
+            "units": 240
+          },
+          "received": {
+            "records": 12,
+            "units": 12
+          }
+        }
+      },
+      "order": null,
+      "externalBatteries": {
+        "cells": [],
+        "storedJ": 0,
+        "scope": "Baterías externas físicas del snapshot; no es toda la carga del inventario."
+      },
+      "pendingJobs": {}
+    },
+    {
+      "id": "attempt_1_start",
+      "path": "partida/attempt_1_start.json",
+      "label": "Inicio de flota con un rotor previo",
+      "sha256": "dd39f1dd2a2d6d489c015c0ab6e5e6d7225ccf2db59cfa6d6dbb5ba286c4b96e",
+      "dataSha256": "375aebc3f20939bd142a9659a93851f698fbb40b9a4409bfbc1430c22405c093",
+      "validated": true,
+      "createdAt": 1795673510034,
+      "seconds": 1754.399999999719,
+      "sourceJ": 155063.08515643395,
+      "sourceSpentSinceOpeningJ": 24936.914843566046,
+      "spent": {
+        "extraction": 860,
+        "conversion": 2095,
+        "forming": 532,
+        "charge": 12348.594650697712,
+        "cooling": 1793.6044444444408,
+        "transport": 6587.715748418036,
+        "assembly": 691.9999999999993,
+        "reconfiguration": 27.999999999999986
+      },
+      "accountResidualJ": 5.857145879417658e-9,
+      "initialIds": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "extracted": 430,
+      "firstLineReceived": 12,
+      "material": {
+        "records": 452,
+        "origins": 434,
+        "units": 434,
+        "originSha256": "249d894ea9051d8500305b9e1a9b25522747e5574bf966d5bfaf34ba384e5213",
+        "places": {
+          "world": {
+            "records": 55,
+            "units": 42.49999999999998
+          },
+          "group": {
+            "records": 347,
+            "units": 341.4999999999999
+          },
+          "received": {
+            "records": 12,
+            "units": 12
+          },
+          "cable": {
+            "records": 27,
+            "units": 27
+          },
+          "stock": {
+            "records": 11,
+            "units": 11
+          }
+        }
+      },
+      "order": {
+        "epoch": 1,
+        "startedAt": 1074.4666666670041,
+        "received": 1,
+        "receivedIds": [
+          "rotor:2"
+        ],
+        "completed": false,
+        "sustained": true,
+        "continuity": {
+          "seconds": 60,
+          "wait": 0,
+          "deliveries": 1,
+          "lastDelivery": 1564.7999999998915,
+          "reason": "Traslado con carga",
+          "state": "transport"
+        }
+      },
+      "externalBatteries": {
+        "cells": [
+          {
+            "id": 294,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 386,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 397,
+            "capacityJ": 900,
+            "storedJ": 899.6864264992696
+          }
+        ],
+        "storedJ": 2699.6864264992696,
+        "scope": "Baterías externas físicas del snapshot; no es toda la carga del inventario."
+      },
+      "pendingJobs": {}
+    },
+    {
+      "id": "attempt_1_stop_9",
+      "path": "partida/attempt_1_stop_9.json",
+      "label": "Pausa del primer intento: nueve rotores",
+      "sha256": "863e032aa54f97fb5c71de16f68644bb8cf27cde1a8bc184465d80c944aff956",
+      "dataSha256": "2e61354e9952092cb4548f558c365d61f8c0541c014fb0fc9ae0baca1bb8d0eb",
+      "validated": true,
+      "createdAt": 1795673510034,
+      "seconds": 3314.3999999983002,
+      "sourceJ": 139935.858835657,
+      "sourceSpentSinceOpeningJ": 40064.14116434299,
+      "spent": {
+        "extraction": 870,
+        "conversion": 2175,
+        "forming": 596,
+        "charge": 14714.205798900717,
+        "cooling": 2114.9555555555607,
+        "transport": 18805.979809883862,
+        "assembly": 723.9999999999939,
+        "reconfiguration": 63.99999999999986
+      },
+      "accountResidualJ": 2.8594513423740864e-9,
+      "initialIds": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "extracted": 435,
+      "firstLineReceived": 12,
+      "material": {
+        "records": 462,
+        "origins": 439,
+        "units": 439,
+        "originSha256": "2d17bf87257c82f4cff154448340a829861122fea0238a9ac8c0c120397952f2",
+        "places": {
+          "world": {
+            "records": 60,
+            "units": 42.499999999999964
+          },
+          "group": {
+            "records": 363,
+            "units": 357.4999999999999
+          },
+          "received": {
+            "records": 12,
+            "units": 12
+          },
+          "cable": {
+            "records": 27,
+            "units": 27
+          }
+        }
+      },
+      "order": {
+        "epoch": 1,
+        "startedAt": 1074.4666666670041,
+        "received": 9,
+        "receivedIds": [
+          "rotor:2",
+          "rotor:4",
+          "rotor:6",
+          "rotor:8",
+          "rotor:10",
+          "rotor:12",
+          "rotor:14",
+          "rotor:16",
+          "rotor:18"
+        ],
+        "completed": false,
+        "sustained": true,
+        "continuity": {
+          "seconds": 60,
+          "wait": 55.60000000000108,
+          "deliveries": 8,
+          "lastDelivery": 3151.333333331782,
+          "reason": "Espera controlada de un ciclo en curso",
+          "state": "waiting"
+        }
+      },
+      "externalBatteries": {
+        "cells": [
+          {
+            "id": 294,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 386,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 397,
+            "capacityJ": 900,
+            "storedJ": 900
+          }
+        ],
+        "storedJ": 2700,
+        "scope": "Baterías externas físicas del snapshot; no es toda la carga del inventario."
+      },
+      "pendingJobs": {}
+    },
+    {
+      "id": "recovery_1_end_10",
+      "path": "partida/recovery_1_end_10.json",
+      "label": "Recuperación nativa: diez rotores y retorno de la flota",
+      "sha256": "3a8097c5c9b1d34615726271ffedac813d08a434f7f8cf146cd72f43da824190",
+      "dataSha256": "5ca847f3790e50a115caa290299f0226bb4392ea8f7e8d8b913fc75ab9b10a02",
+      "validated": true,
+      "createdAt": 1795673510034,
+      "seconds": 3549.5999999980863,
+      "sourceJ": 137458.1855962425,
+      "sourceSpentSinceOpeningJ": 42541.81440375751,
+      "spent": {
+        "extraction": 876,
+        "conversion": 2190,
+        "forming": 604,
+        "charge": 15015.483832546897,
+        "cooling": 2175.2088888889057,
+        "transport": 20885.121682319266,
+        "assembly": 727.9999999999932,
+        "reconfiguration": 67.99999999999996
+      },
+      "accountResidualJ": 2.4519977159798145e-9,
+      "initialIds": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "extracted": 438,
+      "firstLineReceived": 12,
+      "material": {
+        "records": 465,
+        "origins": 442,
+        "units": 442,
+        "originSha256": "5bcbc9a96fcb9752577ecdd22a680c82516923b160cf6eda99864305436f0b73",
+        "places": {
+          "world": {
+            "records": 61,
+            "units": 43.499999999999964
+          },
+          "group": {
+            "records": 365,
+            "units": 359.4999999999999
+          },
+          "received": {
+            "records": 12,
+            "units": 12
+          },
+          "cable": {
+            "records": 27,
+            "units": 27
+          }
+        }
+      },
+      "order": {
+        "epoch": 1,
+        "startedAt": 1074.4666666670041,
+        "received": 10,
+        "receivedIds": [
+          "rotor:2",
+          "rotor:4",
+          "rotor:6",
+          "rotor:8",
+          "rotor:10",
+          "rotor:12",
+          "rotor:14",
+          "rotor:16",
+          "rotor:18",
+          "rotor:20"
+        ],
+        "completed": false,
+        "sustained": true,
+        "continuity": {
+          "seconds": 60,
+          "wait": 0,
+          "deliveries": 1,
+          "lastDelivery": 3400.5333333315552,
+          "reason": "Traslado con carga",
+          "state": "transport"
+        }
+      },
+      "externalBatteries": {
+        "cells": [
+          {
+            "id": 294,
+            "capacityJ": 900,
+            "storedJ": 836.5387570748144
+          },
+          {
+            "id": 386,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 397,
+            "capacityJ": 900,
+            "storedJ": 900
+          }
+        ],
+        "storedJ": 2636.5387570748144,
+        "scope": "Baterías externas físicas del snapshot; no es toda la carga del inventario."
+      },
+      "pendingJobs": {}
+    },
+    {
+      "id": "attempt_2_start",
+      "path": "partida/attempt_2_start.json",
+      "label": "Reanudación de la flota desde la recuperación",
+      "sha256": "4ef7662c27e0320c5f05cbb76951e8cea7a260e5b73200ec6983e725c70aba88",
+      "dataSha256": "667b0acbee26f7176ad9c8c70a2129905743ed4d9e4dc9d5bc53ecac115a2557",
+      "validated": true,
+      "createdAt": 1795673510034,
+      "seconds": 3551.0666666647517,
+      "sourceJ": 137410.22330863046,
+      "sourceSpentSinceOpeningJ": 42589.77669136954,
+      "spent": {
+        "extraction": 876,
+        "conversion": 2190,
+        "forming": 604,
+        "charge": 15059.983832546897,
+        "cooling": 2175.2088888889057,
+        "transport": 20888.583969931293,
+        "assembly": 727.9999999999932,
+        "reconfiguration": 67.99999999999996
+      },
+      "accountResidualJ": 2.4519977159798145e-9,
+      "initialIds": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "extracted": 438,
+      "firstLineReceived": 12,
+      "material": {
+        "records": 465,
+        "origins": 442,
+        "units": 442,
+        "originSha256": "5bcbc9a96fcb9752577ecdd22a680c82516923b160cf6eda99864305436f0b73",
+        "places": {
+          "world": {
+            "records": 61,
+            "units": 43.499999999999964
+          },
+          "group": {
+            "records": 365,
+            "units": 359.4999999999999
+          },
+          "received": {
+            "records": 12,
+            "units": 12
+          },
+          "cable": {
+            "records": 27,
+            "units": 27
+          }
+        }
+      },
+      "order": {
+        "epoch": 1,
+        "startedAt": 1074.4666666670041,
+        "received": 10,
+        "receivedIds": [
+          "rotor:2",
+          "rotor:4",
+          "rotor:6",
+          "rotor:8",
+          "rotor:10",
+          "rotor:12",
+          "rotor:14",
+          "rotor:16",
+          "rotor:18",
+          "rotor:20"
+        ],
+        "completed": false,
+        "sustained": true,
+        "continuity": {
+          "seconds": 60,
+          "wait": 0,
+          "deliveries": 1,
+          "lastDelivery": 3400.5333333315552,
+          "reason": "Traslado con carga",
+          "state": "transport"
+        }
+      },
+      "externalBatteries": {
+        "cells": [
+          {
+            "id": 294,
+            "capacityJ": 900,
+            "storedJ": 881.0387570748125
+          },
+          {
+            "id": 386,
+            "capacityJ": 900,
+            "storedJ": 897.3107410113196
+          },
+          {
+            "id": 397,
+            "capacityJ": 900,
+            "storedJ": 900
+          }
+        ],
+        "storedJ": 2678.349498086132,
+        "scope": "Baterías externas físicas del snapshot; no es toda la carga del inventario."
+      },
+      "pendingJobs": {}
+    },
+    {
+      "id": "attempt_2_stop_17",
+      "path": "partida/attempt_2_stop_17.json",
+      "label": "Pausa del segundo intento: diecisiete rotores",
+      "sha256": "7bcd686b67cb07da9067a11877c416cbcb551c477251463ee8b8a103c04f6600",
+      "dataSha256": "a37b5f53521f51e28e564faade4eec517f09931b2b522b3d1010640631d98fb5",
+      "validated": true,
+      "createdAt": 1795673510034,
+      "seconds": 4691.066666663715,
+      "sourceJ": 126077.91715961833,
+      "sourceSpentSinceOpeningJ": 53922.08284038167,
+      "spent": {
+        "extraction": 900,
+        "conversion": 2250,
+        "forming": 660,
+        "charge": 16855.349105908535,
+        "cooling": 2416.2222222222854,
+        "transport": 29992.5115122508,
+        "assembly": 755.9999999999884,
+        "reconfiguration": 92.00000000000055
+      },
+      "accountResidualJ": 6.548361852765083e-11,
+      "initialIds": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "extracted": 450,
+      "firstLineReceived": 12,
+      "material": {
+        "records": 472,
+        "origins": 454,
+        "units": 454,
+        "originSha256": "5cb109aa38a8996c0ba09ec96266e5efb83013dd48922d8cb176da33985d796b",
+        "places": {
+          "world": {
+            "records": 54,
+            "units": 41.49999999999998
+          },
+          "group": {
+            "records": 379,
+            "units": 373.4999999999999
+          },
+          "received": {
+            "records": 12,
+            "units": 12
+          },
+          "cable": {
+            "records": 27,
+            "units": 27
+          }
+        }
+      },
+      "order": {
+        "epoch": 1,
+        "startedAt": 1074.4666666670041,
+        "received": 17,
+        "receivedIds": [
+          "rotor:2",
+          "rotor:4",
+          "rotor:6",
+          "rotor:8",
+          "rotor:10",
+          "rotor:12",
+          "rotor:14",
+          "rotor:16",
+          "rotor:18",
+          "rotor:20",
+          "rotor:22",
+          "rotor:24",
+          "rotor:26",
+          "rotor:28",
+          "rotor:30",
+          "rotor:32",
+          "rotor:34"
+        ],
+        "completed": false,
+        "sustained": true,
+        "continuity": {
+          "seconds": 60,
+          "wait": 0,
+          "deliveries": 8,
+          "lastDelivery": 4659.333333330411,
+          "reason": "Traslado con carga",
+          "state": "transport"
+        }
+      },
+      "externalBatteries": {
+        "cells": [
+          {
+            "id": 294,
+            "capacityJ": 900,
+            "storedJ": 866.6624550611156
+          },
+          {
+            "id": 386,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 397,
+            "capacityJ": 900,
+            "storedJ": 900
+          }
+        ],
+        "storedJ": 2666.6624550611155,
+        "scope": "Baterías externas físicas del snapshot; no es toda la carga del inventario."
+      },
+      "pendingJobs": {}
+    },
+    {
+      "id": "recovery_2_ready_17",
+      "path": "partida/recovery_2_ready_17.json",
+      "label": "Carga 569 reintroducida; dron vacío enderezado con los controles de caras",
+      "sha256": "922e25930fe91afe2ec4e8a959b3698c779b38ca5c6dd4d507419b447f68171e",
+      "dataSha256": "c6ce9c9816ad5a22be911c31be07cf8b3d4f6860c196998cd7ff9236147786c8",
+      "validated": true,
+      "createdAt": 1795673510034,
+      "seconds": 4708.2666666637,
+      "sourceJ": 125504.803556765,
+      "sourceSpentSinceOpeningJ": 54495.19644323501,
+      "spent": {
+        "extraction": 902,
+        "conversion": 2255,
+        "forming": 660,
+        "charge": 16903.846650847423,
+        "cooling": 2434.3066666667323,
+        "transport": 30492.04312572085,
+        "assembly": 755.9999999999884,
+        "reconfiguration": 92.00000000000055
+      },
+      "accountResidualJ": 1.4551915228366852e-11,
+      "initialIds": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "extracted": 451,
+      "firstLineReceived": 12,
+      "material": {
+        "records": 473,
+        "origins": 455,
+        "units": 455,
+        "originSha256": "84a1a02f46a4406374c65e52192f34947758936f54323089d05563cf01ffb0c4",
+        "places": {
+          "world": {
+            "records": 55,
+            "units": 42.49999999999998
+          },
+          "group": {
+            "records": 379,
+            "units": 373.4999999999999
+          },
+          "received": {
+            "records": 12,
+            "units": 12
+          },
+          "cable": {
+            "records": 27,
+            "units": 27
+          }
+        }
+      },
+      "order": {
+        "epoch": 1,
+        "startedAt": 1074.4666666670041,
+        "received": 17,
+        "receivedIds": [
+          "rotor:2",
+          "rotor:4",
+          "rotor:6",
+          "rotor:8",
+          "rotor:10",
+          "rotor:12",
+          "rotor:14",
+          "rotor:16",
+          "rotor:18",
+          "rotor:20",
+          "rotor:22",
+          "rotor:24",
+          "rotor:26",
+          "rotor:28",
+          "rotor:30",
+          "rotor:32",
+          "rotor:34"
+        ],
+        "completed": false,
+        "sustained": false,
+        "continuity": {
+          "seconds": 0,
+          "wait": 0,
+          "deliveries": 0,
+          "lastDelivery": null,
+          "reason": "Intervención manual · reintroduce el material en la primera línea.",
+          "state": "waiting"
+        }
+      },
+      "externalBatteries": {
+        "cells": [
+          {
+            "id": 294,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 386,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 397,
+            "capacityJ": 900,
+            "storedJ": 900
+          }
+        ],
+        "storedJ": 2700,
+        "scope": "Baterías externas físicas del snapshot; no es toda la carga del inventario."
+      },
+      "pendingJobs": {}
+    },
+    {
+      "id": "recovery_2_end_17",
+      "path": "partida/recovery_2_end_17.json",
+      "label": "Recogida, entrega y regreso coordinados con el brazo",
+      "sha256": "7750122d26e5ac8b49d0ac65acc538de55fd3f9ca563fcc9bfd53bba70653c03",
+      "dataSha256": "341a531397da02c201e4d5f867c5f6971dd68af69290730181a34262b184f924",
+      "validated": true,
+      "createdAt": 1795673510034,
+      "seconds": 4753.199999996992,
+      "sourceJ": 125420.38644870931,
+      "sourceSpentSinceOpeningJ": 54579.61355129069,
+      "spent": {
+        "extraction": 902,
+        "conversion": 2255,
+        "forming": 660,
+        "charge": 16903.846650847423,
+        "cooling": 2436.3066666667337,
+        "transport": 30574.460233776565,
+        "assembly": 755.9999999999884,
+        "reconfiguration": 92.00000000000055
+      },
+      "accountResidualJ": -1.4551915228366852e-11,
+      "initialIds": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "extracted": 451,
+      "firstLineReceived": 12,
+      "material": {
+        "records": 473,
+        "origins": 455,
+        "units": 455,
+        "originSha256": "84a1a02f46a4406374c65e52192f34947758936f54323089d05563cf01ffb0c4",
+        "places": {
+          "world": {
+            "records": 55,
+            "units": 42.49999999999998
+          },
+          "group": {
+            "records": 379,
+            "units": 373.4999999999999
+          },
+          "received": {
+            "records": 12,
+            "units": 12
+          },
+          "cable": {
+            "records": 27,
+            "units": 27
+          }
+        }
+      },
+      "order": {
+        "epoch": 1,
+        "startedAt": 1074.4666666670041,
+        "received": 17,
+        "receivedIds": [
+          "rotor:2",
+          "rotor:4",
+          "rotor:6",
+          "rotor:8",
+          "rotor:10",
+          "rotor:12",
+          "rotor:14",
+          "rotor:16",
+          "rotor:18",
+          "rotor:20",
+          "rotor:22",
+          "rotor:24",
+          "rotor:26",
+          "rotor:28",
+          "rotor:30",
+          "rotor:32",
+          "rotor:34"
+        ],
+        "completed": false,
+        "sustained": false,
+        "continuity": {
+          "seconds": 0,
+          "wait": 0,
+          "deliveries": 0,
+          "lastDelivery": null,
+          "reason": "Intervención manual · reintroduce el material en la primera línea.",
+          "state": "waiting"
+        }
+      },
+      "externalBatteries": {
+        "cells": [
+          {
+            "id": 294,
+            "capacityJ": 900,
+            "storedJ": 836.6830624577846
+          },
+          {
+            "id": 386,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 397,
+            "capacityJ": 900,
+            "storedJ": 900
+          }
+        ],
+        "storedJ": 2636.6830624577847,
+        "scope": "Baterías externas físicas del snapshot; no es toda la carga del inventario."
+      },
+      "pendingJobs": {}
+    },
+    {
+      "id": "attempt_3_start",
+      "path": "partida/attempt_3_start.json",
+      "label": "Entrada de la serie final con diecisiete productos",
+      "sha256": "a80a53526da7d1aaff61c2a6f9a92680866fad96c3272ffaa16cd56db32c1609",
+      "dataSha256": "a73dbee4dbfd1783ab012c015500fd9ce1c8d4a1a53e4959829b50294aa7691d",
+      "validated": true,
+      "createdAt": 1795673510034,
+      "seconds": 4754.666666663657,
+      "sourceJ": 125348.96846651704,
+      "sourceSpentSinceOpeningJ": 54651.031533482965,
+      "spent": {
+        "extraction": 902,
+        "conversion": 2255,
+        "forming": 660,
+        "charge": 16948.346650847423,
+        "cooling": 2436.3066666667337,
+        "transport": 30601.378215968838,
+        "assembly": 755.9999999999884,
+        "reconfiguration": 92.00000000000055
+      },
+      "accountResidualJ": -1.4551915228366852e-11,
+      "initialIds": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "extracted": 451,
+      "firstLineReceived": 12,
+      "material": {
+        "records": 473,
+        "origins": 455,
+        "units": 455,
+        "originSha256": "84a1a02f46a4406374c65e52192f34947758936f54323089d05563cf01ffb0c4",
+        "places": {
+          "world": {
+            "records": 55,
+            "units": 42.49999999999998
+          },
+          "group": {
+            "records": 379,
+            "units": 373.4999999999999
+          },
+          "received": {
+            "records": 12,
+            "units": 12
+          },
+          "cable": {
+            "records": 27,
+            "units": 27
+          }
+        }
+      },
+      "order": {
+        "epoch": 1,
+        "startedAt": 1074.4666666670041,
+        "received": 17,
+        "receivedIds": [
+          "rotor:2",
+          "rotor:4",
+          "rotor:6",
+          "rotor:8",
+          "rotor:10",
+          "rotor:12",
+          "rotor:14",
+          "rotor:16",
+          "rotor:18",
+          "rotor:20",
+          "rotor:22",
+          "rotor:24",
+          "rotor:26",
+          "rotor:28",
+          "rotor:30",
+          "rotor:32",
+          "rotor:34"
+        ],
+        "completed": false,
+        "sustained": false,
+        "continuity": {
+          "seconds": 0,
+          "wait": 0,
+          "deliveries": 0,
+          "lastDelivery": null,
+          "reason": "Intervención manual · reintroduce el material en la primera línea.",
+          "state": "waiting"
+        }
+      },
+      "externalBatteries": {
+        "cells": [
+          {
+            "id": 294,
+            "capacityJ": 900,
+            "storedJ": 881.1830624577826
+          },
+          {
+            "id": 386,
+            "capacityJ": 900,
+            "storedJ": 899.214123705831
+          },
+          {
+            "id": 397,
+            "capacityJ": 900,
+            "storedJ": 900
+          }
+        ],
+        "storedJ": 2680.3971861636137,
+        "scope": "Baterías externas físicas del snapshot; no es toda la carga del inventario."
+      },
+      "pendingJobs": {}
+    },
+    {
+      "id": "batch_20",
+      "path": "partida/batch_20.json",
+      "label": "Primera tanda: veinte productos únicos y actividad útil cumplida",
+      "sha256": "a3fc33f58915119685cab769b531e29ad09abfba489ac587ae9d44dd20c3ec4f",
+      "dataSha256": "ae1e24672d591ed9523c237e42bfc17b7597560bad30a412e5ef12769562707b",
+      "validated": true,
+      "createdAt": 1795673510034,
+      "seconds": 5227.666666663227,
+      "sourceJ": 120138.35650319573,
+      "sourceSpentSinceOpeningJ": 59861.643496804274,
+      "spent": {
+        "extraction": 912,
+        "conversion": 2280,
+        "forming": 684,
+        "charge": 17676.069178828566,
+        "cooling": 2536.7288888889752,
+        "transport": 34900.84542908789,
+        "assembly": 767.9999999999864,
+        "reconfiguration": 104.00000000000085
+      },
+      "accountResidualJ": -1.1350493878126144e-9,
+      "initialIds": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "extracted": 456,
+      "firstLineReceived": 12,
+      "material": {
+        "records": 478,
+        "origins": 460,
+        "units": 460,
+        "originSha256": "1a9a0133f7fc183b7d0099a79e81c53603b9a3ee86d1d0642608bb420b02e00c",
+        "places": {
+          "world": {
+            "records": 54,
+            "units": 41.49999999999998
+          },
+          "group": {
+            "records": 385,
+            "units": 379.4999999999999
+          },
+          "received": {
+            "records": 12,
+            "units": 12
+          },
+          "cable": {
+            "records": 27,
+            "units": 27
+          }
+        }
+      },
+      "order": {
+        "epoch": 1,
+        "startedAt": 1074.4666666670041,
+        "received": 20,
+        "receivedIds": [
+          "rotor:2",
+          "rotor:4",
+          "rotor:6",
+          "rotor:8",
+          "rotor:10",
+          "rotor:12",
+          "rotor:14",
+          "rotor:16",
+          "rotor:18",
+          "rotor:20",
+          "rotor:22",
+          "rotor:24",
+          "rotor:26",
+          "rotor:28",
+          "rotor:30",
+          "rotor:32",
+          "rotor:34",
+          "rotor:36",
+          "rotor:38",
+          "rotor:40"
+        ],
+        "completed": false,
+        "sustained": true,
+        "continuity": {
+          "seconds": 60,
+          "wait": 0,
+          "deliveries": 3,
+          "lastDelivery": 5226.666666663228,
+          "reason": "Traslado con carga",
+          "state": "transport"
+        }
+      },
+      "externalBatteries": {
+        "cells": [
+          {
+            "id": 294,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 386,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 397,
+            "capacityJ": 900,
+            "storedJ": 848.4125341336634
+          }
+        ],
+        "storedJ": 2648.4125341336635,
+        "scope": "Baterías externas físicas del snapshot; no es toda la carga del inventario."
+      },
+      "pendingJobs": {}
+    },
+    {
+      "id": "batch_40_start",
+      "path": "partida/batch_40_start.json",
+      "label": "Restauración real de la primera tanda para continuar hasta cuarenta",
+      "sha256": "96d37780279d1a4b7afbf3501656057b5792b57453e5b540ec3db576b5c6d50f",
+      "dataSha256": "d66a2a84050dff787540c6531c6e87cb0aba23a0b4a192066206fee3559ee584",
+      "validated": true,
+      "createdAt": 1795673510034,
+      "seconds": 5229.199999996559,
+      "sourceJ": 120134.8942109745,
+      "sourceSpentSinceOpeningJ": 59865.1057890255,
+      "spent": {
+        "extraction": 912,
+        "conversion": 2280,
+        "forming": 684,
+        "charge": 17676.069178828566,
+        "cooling": 2536.7288888889752,
+        "transport": 34904.30772130912,
+        "assembly": 767.9999999999864,
+        "reconfiguration": 104.00000000000085
+      },
+      "accountResidualJ": -1.1350493878126144e-9,
+      "initialIds": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "extracted": 456,
+      "firstLineReceived": 12,
+      "material": {
+        "records": 478,
+        "origins": 460,
+        "units": 460,
+        "originSha256": "1a9a0133f7fc183b7d0099a79e81c53603b9a3ee86d1d0642608bb420b02e00c",
+        "places": {
+          "world": {
+            "records": 54,
+            "units": 41.49999999999998
+          },
+          "group": {
+            "records": 385,
+            "units": 379.4999999999999
+          },
+          "received": {
+            "records": 12,
+            "units": 12
+          },
+          "cable": {
+            "records": 27,
+            "units": 27
+          }
+        }
+      },
+      "order": {
+        "epoch": 1,
+        "startedAt": 1074.4666666670041,
+        "received": 20,
+        "receivedIds": [
+          "rotor:2",
+          "rotor:4",
+          "rotor:6",
+          "rotor:8",
+          "rotor:10",
+          "rotor:12",
+          "rotor:14",
+          "rotor:16",
+          "rotor:18",
+          "rotor:20",
+          "rotor:22",
+          "rotor:24",
+          "rotor:26",
+          "rotor:28",
+          "rotor:30",
+          "rotor:32",
+          "rotor:34",
+          "rotor:36",
+          "rotor:38",
+          "rotor:40"
+        ],
+        "completed": false,
+        "sustained": true,
+        "continuity": {
+          "seconds": 60,
+          "wait": 0,
+          "deliveries": 3,
+          "lastDelivery": 5226.666666663228,
+          "reason": "Traslado con carga",
+          "state": "transport"
+        }
+      },
+      "externalBatteries": {
+        "cells": [
+          {
+            "id": 294,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 386,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 397,
+            "capacityJ": 900,
+            "storedJ": 847.1648535089846
+          }
+        ],
+        "storedJ": 2647.1648535089844,
+        "scope": "Baterías externas físicas del snapshot; no es toda la carga del inventario."
+      },
+      "pendingJobs": {}
+    },
+    {
+      "id": "batch_40",
+      "path": "partida/batch_40.json",
+      "label": "Segunda tanda: cuarenta productos únicos",
+      "sha256": "5daa7cc923fe6c96e957c9068cd59b5e020ae71ae58283f66d0f49fd63ca4350",
+      "dataSha256": "20ac42ebc9b13988a0d629dfd94117cdcd6e9f2b65dd8a13c73fd9b1b25c5299",
+      "validated": true,
+      "createdAt": 1795673510034,
+      "seconds": 8769.200000001214,
+      "sourceJ": 83467.21099314738,
+      "sourceSpentSinceOpeningJ": 96532.78900685262,
+      "spent": {
+        "extraction": 992,
+        "conversion": 2480,
+        "forming": 844,
+        "charge": 23337.04024567963,
+        "cooling": 3340.1066666669076,
+        "transport": 64507.64209451519,
+        "assembly": 847.9999999999727,
+        "reconfiguration": 184.00000000000304
+      },
+      "accountResidualJ": -9.080395102500916e-9,
+      "initialIds": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "extracted": 496,
+      "firstLineReceived": 12,
+      "material": {
+        "records": 518,
+        "origins": 500,
+        "units": 500,
+        "originSha256": "4e61d1bc42335154882fba25ea7d2b2812aecaf3fd940f8c799221b4c9acf81b",
+        "places": {
+          "world": {
+            "records": 54,
+            "units": 41.49999999999998
+          },
+          "group": {
+            "records": 425,
+            "units": 419.4999999999999
+          },
+          "received": {
+            "records": 12,
+            "units": 12
+          },
+          "cable": {
+            "records": 27,
+            "units": 27
+          }
+        }
+      },
+      "order": {
+        "epoch": 1,
+        "startedAt": 1074.4666666670041,
+        "received": 40,
+        "receivedIds": [
+          "rotor:2",
+          "rotor:4",
+          "rotor:6",
+          "rotor:8",
+          "rotor:10",
+          "rotor:12",
+          "rotor:14",
+          "rotor:16",
+          "rotor:18",
+          "rotor:20",
+          "rotor:22",
+          "rotor:24",
+          "rotor:26",
+          "rotor:28",
+          "rotor:30",
+          "rotor:32",
+          "rotor:34",
+          "rotor:36",
+          "rotor:38",
+          "rotor:40",
+          "rotor:42",
+          "rotor:44",
+          "rotor:46",
+          "rotor:48",
+          "rotor:50",
+          "rotor:52",
+          "rotor:54",
+          "rotor:56",
+          "rotor:58",
+          "rotor:60",
+          "rotor:62",
+          "rotor:64",
+          "rotor:66",
+          "rotor:68",
+          "rotor:70",
+          "rotor:72",
+          "rotor:74",
+          "rotor:76",
+          "rotor:78",
+          "rotor:80"
+        ],
+        "completed": false,
+        "sustained": true,
+        "continuity": {
+          "seconds": 60,
+          "wait": 0,
+          "deliveries": 23,
+          "lastDelivery": 8768.666666667874,
+          "reason": "Traslado con carga",
+          "state": "transport"
+        }
+      },
+      "externalBatteries": {
+        "cells": [
+          {
+            "id": 294,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 386,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 397,
+            "capacityJ": 900,
+            "storedJ": 848.8159712207819
+          }
+        ],
+        "storedJ": 2648.8159712207816,
+        "scope": "Baterías externas físicas del snapshot; no es toda la carga del inventario."
+      },
+      "pendingJobs": {}
+    },
+    {
+      "id": "batch_60_start",
+      "path": "partida/batch_60_start.json",
+      "label": "Restauración de la segunda tanda para continuar hasta sesenta",
+      "sha256": "268a4b70e65b6e13e049222add00a86e262157894e8b1f36adc867f1d63dbf66",
+      "dataSha256": "a4bf9a4b6e728e438fab36250b8b543395ff299831c4b265333def0cb9e62986",
+      "validated": true,
+      "createdAt": 1795673510034,
+      "seconds": 8770.6666666679,
+      "sourceJ": 83463.74870571944,
+      "sourceSpentSinceOpeningJ": 96536.25129428056,
+      "spent": {
+        "extraction": 992,
+        "conversion": 2480,
+        "forming": 844,
+        "charge": 23337.04024567963,
+        "cooling": 3340.1066666669076,
+        "transport": 64511.104381943136,
+        "assembly": 847.9999999999727,
+        "reconfiguration": 184.00000000000304
+      },
+      "accountResidualJ": -9.080395102500916e-9,
+      "initialIds": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "extracted": 496,
+      "firstLineReceived": 12,
+      "material": {
+        "records": 518,
+        "origins": 500,
+        "units": 500,
+        "originSha256": "4e61d1bc42335154882fba25ea7d2b2812aecaf3fd940f8c799221b4c9acf81b",
+        "places": {
+          "world": {
+            "records": 54,
+            "units": 41.49999999999998
+          },
+          "group": {
+            "records": 425,
+            "units": 419.4999999999999
+          },
+          "received": {
+            "records": 12,
+            "units": 12
+          },
+          "cable": {
+            "records": 27,
+            "units": 27
+          }
+        }
+      },
+      "order": {
+        "epoch": 1,
+        "startedAt": 1074.4666666670041,
+        "received": 40,
+        "receivedIds": [
+          "rotor:2",
+          "rotor:4",
+          "rotor:6",
+          "rotor:8",
+          "rotor:10",
+          "rotor:12",
+          "rotor:14",
+          "rotor:16",
+          "rotor:18",
+          "rotor:20",
+          "rotor:22",
+          "rotor:24",
+          "rotor:26",
+          "rotor:28",
+          "rotor:30",
+          "rotor:32",
+          "rotor:34",
+          "rotor:36",
+          "rotor:38",
+          "rotor:40",
+          "rotor:42",
+          "rotor:44",
+          "rotor:46",
+          "rotor:48",
+          "rotor:50",
+          "rotor:52",
+          "rotor:54",
+          "rotor:56",
+          "rotor:58",
+          "rotor:60",
+          "rotor:62",
+          "rotor:64",
+          "rotor:66",
+          "rotor:68",
+          "rotor:70",
+          "rotor:72",
+          "rotor:74",
+          "rotor:76",
+          "rotor:78",
+          "rotor:80"
+        ],
+        "completed": false,
+        "sustained": true,
+        "continuity": {
+          "seconds": 60,
+          "wait": 0,
+          "deliveries": 23,
+          "lastDelivery": 8768.666666667874,
+          "reason": "Traslado con carga",
+          "state": "transport"
+        }
+      },
+      "externalBatteries": {
+        "cells": [
+          {
+            "id": 294,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 386,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 397,
+            "capacityJ": 900,
+            "storedJ": 847.5569619620079
+          }
+        ],
+        "storedJ": 2647.556961962008,
+        "scope": "Baterías externas físicas del snapshot; no es toda la carga del inventario."
+      },
+      "pendingJobs": {}
+    },
+    {
+      "id": "batch_60",
+      "path": "partida/batch_60.json",
+      "label": "Tercera tanda: sesenta productos únicos",
+      "sha256": "83edbd4edbc7bdef568aedced7672f91d9816d15385815025f4dffabea94d1f0",
+      "dataSha256": "a20c97aaa6aa88d0b6990d337f3eb8b660b36bd248511d97beeeb9242bdacc9d",
+      "validated": true,
+      "createdAt": 1795673510034,
+      "seconds": 12311.666666712987,
+      "sourceJ": 46773.95015864296,
+      "sourceSpentSinceOpeningJ": 133226.04984135705,
+      "spent": {
+        "extraction": 1072,
+        "conversion": 2680,
+        "forming": 1004,
+        "charge": 28998.248390216137,
+        "cooling": 4143.484444444824,
+        "transport": 94136.31700709081,
+        "assembly": 927.9999999999591,
+        "reconfiguration": 264.0000000000053
+      },
+      "accountResidualJ": -3.9467704482376575e-7,
+      "initialIds": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "extracted": 536,
+      "firstLineReceived": 12,
+      "material": {
+        "records": 558,
+        "origins": 540,
+        "units": 540,
+        "originSha256": "11ede4711a534418bb5009efec29e855dad277b620465c0f5b633a8c707c8f7b",
+        "places": {
+          "world": {
+            "records": 54,
+            "units": 41.49999999999998
+          },
+          "group": {
+            "records": 465,
+            "units": 459.4999999999999
+          },
+          "received": {
+            "records": 12,
+            "units": 12
+          },
+          "cable": {
+            "records": 27,
+            "units": 27
+          }
+        }
+      },
+      "order": {
+        "epoch": 1,
+        "startedAt": 1074.4666666670041,
+        "received": 60,
+        "receivedIds": [
+          "rotor:2",
+          "rotor:4",
+          "rotor:6",
+          "rotor:8",
+          "rotor:10",
+          "rotor:12",
+          "rotor:14",
+          "rotor:16",
+          "rotor:18",
+          "rotor:20",
+          "rotor:22",
+          "rotor:24",
+          "rotor:26",
+          "rotor:28",
+          "rotor:30",
+          "rotor:32",
+          "rotor:34",
+          "rotor:36",
+          "rotor:38",
+          "rotor:40",
+          "rotor:42",
+          "rotor:44",
+          "rotor:46",
+          "rotor:48",
+          "rotor:50",
+          "rotor:52",
+          "rotor:54",
+          "rotor:56",
+          "rotor:58",
+          "rotor:60",
+          "rotor:62",
+          "rotor:64",
+          "rotor:66",
+          "rotor:68",
+          "rotor:70",
+          "rotor:72",
+          "rotor:74",
+          "rotor:76",
+          "rotor:78",
+          "rotor:80",
+          "rotor:82",
+          "rotor:84",
+          "rotor:86",
+          "rotor:88",
+          "rotor:90",
+          "rotor:92",
+          "rotor:94",
+          "rotor:96",
+          "rotor:98",
+          "rotor:100",
+          "rotor:102",
+          "rotor:104",
+          "rotor:106",
+          "rotor:108",
+          "rotor:110",
+          "rotor:112",
+          "rotor:114",
+          "rotor:116",
+          "rotor:118",
+          "rotor:120"
+        ],
+        "completed": false,
+        "sustained": true,
+        "continuity": {
+          "seconds": 60,
+          "wait": 0,
+          "deliveries": 43,
+          "lastDelivery": 12310.666666712974,
+          "reason": "Traslado con carga",
+          "state": "transport"
+        }
+      },
+      "externalBatteries": {
+        "cells": [
+          {
+            "id": 294,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 386,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 397,
+            "capacityJ": 900,
+            "storedJ": 848.3848836655042
+          }
+        ],
+        "storedJ": 2648.3848836655043,
+        "scope": "Baterías externas físicas del snapshot; no es toda la carga del inventario."
+      },
+      "pendingJobs": {}
+    },
+    {
+      "id": "batch_80_start",
+      "path": "partida/batch_80_start.json",
+      "label": "Restauración de la tercera tanda para continuar hasta ochenta",
+      "sha256": "9647eb47169ea9a4ff530b2cd5e446f28a7b6ea82b27a5b9cc81a1f0f6a4c97a",
+      "dataSha256": "0dd59b42b53bb6a59b201256bd1663ce88afb2140c068b5d2d61d6460a19d879",
+      "validated": true,
+      "createdAt": 1795673510034,
+      "seconds": 12313.20000004634,
+      "sourceJ": 46770.4878714952,
+      "sourceSpentSinceOpeningJ": 133229.5121285048,
+      "spent": {
+        "extraction": 1072,
+        "conversion": 2680,
+        "forming": 1004,
+        "charge": 28998.248390216137,
+        "cooling": 4143.484444444824,
+        "transport": 94139.77929423872,
+        "assembly": 927.9999999999591,
+        "reconfiguration": 264.0000000000053
+      },
+      "accountResidualJ": -3.9485166780650616e-7,
+      "initialIds": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "extracted": 536,
+      "firstLineReceived": 12,
+      "material": {
+        "records": 558,
+        "origins": 540,
+        "units": 540,
+        "originSha256": "11ede4711a534418bb5009efec29e855dad277b620465c0f5b633a8c707c8f7b",
+        "places": {
+          "world": {
+            "records": 54,
+            "units": 41.49999999999998
+          },
+          "group": {
+            "records": 465,
+            "units": 459.4999999999999
+          },
+          "received": {
+            "records": 12,
+            "units": 12
+          },
+          "cable": {
+            "records": 27,
+            "units": 27
+          }
+        }
+      },
+      "order": {
+        "epoch": 1,
+        "startedAt": 1074.4666666670041,
+        "received": 60,
+        "receivedIds": [
+          "rotor:2",
+          "rotor:4",
+          "rotor:6",
+          "rotor:8",
+          "rotor:10",
+          "rotor:12",
+          "rotor:14",
+          "rotor:16",
+          "rotor:18",
+          "rotor:20",
+          "rotor:22",
+          "rotor:24",
+          "rotor:26",
+          "rotor:28",
+          "rotor:30",
+          "rotor:32",
+          "rotor:34",
+          "rotor:36",
+          "rotor:38",
+          "rotor:40",
+          "rotor:42",
+          "rotor:44",
+          "rotor:46",
+          "rotor:48",
+          "rotor:50",
+          "rotor:52",
+          "rotor:54",
+          "rotor:56",
+          "rotor:58",
+          "rotor:60",
+          "rotor:62",
+          "rotor:64",
+          "rotor:66",
+          "rotor:68",
+          "rotor:70",
+          "rotor:72",
+          "rotor:74",
+          "rotor:76",
+          "rotor:78",
+          "rotor:80",
+          "rotor:82",
+          "rotor:84",
+          "rotor:86",
+          "rotor:88",
+          "rotor:90",
+          "rotor:92",
+          "rotor:94",
+          "rotor:96",
+          "rotor:98",
+          "rotor:100",
+          "rotor:102",
+          "rotor:104",
+          "rotor:106",
+          "rotor:108",
+          "rotor:110",
+          "rotor:112",
+          "rotor:114",
+          "rotor:116",
+          "rotor:118",
+          "rotor:120"
+        ],
+        "completed": false,
+        "sustained": true,
+        "continuity": {
+          "seconds": 60,
+          "wait": 0,
+          "deliveries": 43,
+          "lastDelivery": 12310.666666712974,
+          "reason": "Traslado con carga",
+          "state": "transport"
+        }
+      },
+      "externalBatteries": {
+        "cells": [
+          {
+            "id": 294,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 386,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 397,
+            "capacityJ": 900,
+            "storedJ": 847.1392034238324
+          }
+        ],
+        "storedJ": 2647.1392034238324,
+        "scope": "Baterías externas físicas del snapshot; no es toda la carga del inventario."
+      },
+      "pendingJobs": {}
+    },
+    {
+      "id": "batch_80_stop_60",
+      "path": "partida/batch_80_stop_60.json",
+      "label": "Pausa por toma fallida en la mesa: se conservan los sesenta recibos",
+      "sha256": "0f670b729d64c6ce352deea5a6151af66d3da4f0194ced50a12e3d72c3f069c7",
+      "dataSha256": "ba7ec66c5a7423ddae76b8adac0ba007f0073d344e599691641e9a8d32250828",
+      "validated": true,
+      "createdAt": 1795673510034,
+      "seconds": 13513.200000061619,
+      "sourceJ": 43798.022655142726,
+      "sourceSpentSinceOpeningJ": 136201.97734485727,
+      "spent": {
+        "extraction": 1074,
+        "conversion": 2685,
+        "forming": 1004,
+        "charge": 29202.988999105164,
+        "cooling": 4163.568888889264,
+        "transport": 96880.41945746329,
+        "assembly": 927.9999999999591,
+        "reconfiguration": 264.0000000000053
+      },
+      "accountResidualJ": -6.004120223224163e-7,
+      "initialIds": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "extracted": 537,
+      "firstLineReceived": 12,
+      "material": {
+        "records": 559,
+        "origins": 541,
+        "units": 541,
+        "originSha256": "bdca5b7bad7715747d306e8d3a5250a2c49c812caa2cccc52bc2290296a863df",
+        "places": {
+          "world": {
+            "records": 55,
+            "units": 42.49999999999998
+          },
+          "group": {
+            "records": 465,
+            "units": 459.4999999999999
+          },
+          "received": {
+            "records": 12,
+            "units": 12
+          },
+          "cable": {
+            "records": 27,
+            "units": 27
+          }
+        }
+      },
+      "order": {
+        "epoch": 1,
+        "startedAt": 1074.4666666670041,
+        "received": 60,
+        "receivedIds": [
+          "rotor:2",
+          "rotor:4",
+          "rotor:6",
+          "rotor:8",
+          "rotor:10",
+          "rotor:12",
+          "rotor:14",
+          "rotor:16",
+          "rotor:18",
+          "rotor:20",
+          "rotor:22",
+          "rotor:24",
+          "rotor:26",
+          "rotor:28",
+          "rotor:30",
+          "rotor:32",
+          "rotor:34",
+          "rotor:36",
+          "rotor:38",
+          "rotor:40",
+          "rotor:42",
+          "rotor:44",
+          "rotor:46",
+          "rotor:48",
+          "rotor:50",
+          "rotor:52",
+          "rotor:54",
+          "rotor:56",
+          "rotor:58",
+          "rotor:60",
+          "rotor:62",
+          "rotor:64",
+          "rotor:66",
+          "rotor:68",
+          "rotor:70",
+          "rotor:72",
+          "rotor:74",
+          "rotor:76",
+          "rotor:78",
+          "rotor:80",
+          "rotor:82",
+          "rotor:84",
+          "rotor:86",
+          "rotor:88",
+          "rotor:90",
+          "rotor:92",
+          "rotor:94",
+          "rotor:96",
+          "rotor:98",
+          "rotor:100",
+          "rotor:102",
+          "rotor:104",
+          "rotor:106",
+          "rotor:108",
+          "rotor:110",
+          "rotor:112",
+          "rotor:114",
+          "rotor:116",
+          "rotor:118",
+          "rotor:120"
+        ],
+        "completed": false,
+        "sustained": false,
+        "continuity": {
+          "seconds": 0,
+          "wait": 0,
+          "deliveries": 0,
+          "lastDelivery": null,
+          "reason": "Esperando una entrega nueva.",
+          "state": "waiting"
+        }
+      },
+      "externalBatteries": {
+        "cells": [
+          {
+            "id": 294,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 386,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 397,
+            "capacityJ": 900,
+            "storedJ": 900
+          }
+        ],
+        "storedJ": 2700,
+        "scope": "Baterías externas físicas del snapshot; no es toda la carga del inventario."
+      },
+      "pendingJobs": {}
+    },
+    {
+      "id": "recovery_yaw_end_60",
+      "path": "partida/recovery_yaw_end_60.json",
+      "label": "Recuperación física de la toma 902 y regreso QR; fuente y configuración conservadas",
+      "sha256": "6051d1fdb0f0cbae31605d9e5009bc6aceb2164357a50dee15aec29825bbe431",
+      "dataSha256": "34c7c2aca8a6a13972e66765031e1d45035d4cfa21421e8f4f6c033a3009cc03",
+      "validated": true,
+      "createdAt": 1795673510034,
+      "seconds": 13563.466666728926,
+      "sourceJ": 43515.899529198854,
+      "sourceSpentSinceOpeningJ": 136484.10047080115,
+      "spent": {
+        "extraction": 1074,
+        "conversion": 2685,
+        "forming": 1004,
+        "charge": 29267.67602610805,
+        "cooling": 4165.568888889262,
+        "transport": 97095.85555641039,
+        "assembly": 927.9999999999591,
+        "reconfiguration": 264.0000000000053
+      },
+      "accountResidualJ": -6.065238267183304e-7,
+      "initialIds": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "extracted": 537,
+      "firstLineReceived": 12,
+      "material": {
+        "records": 559,
+        "origins": 541,
+        "units": 541,
+        "originSha256": "bdca5b7bad7715747d306e8d3a5250a2c49c812caa2cccc52bc2290296a863df",
+        "places": {
+          "world": {
+            "records": 55,
+            "units": 42.49999999999998
+          },
+          "group": {
+            "records": 465,
+            "units": 459.4999999999999
+          },
+          "received": {
+            "records": 12,
+            "units": 12
+          },
+          "cable": {
+            "records": 27,
+            "units": 27
+          }
+        }
+      },
+      "order": {
+        "epoch": 1,
+        "startedAt": 1074.4666666670041,
+        "received": 60,
+        "receivedIds": [
+          "rotor:2",
+          "rotor:4",
+          "rotor:6",
+          "rotor:8",
+          "rotor:10",
+          "rotor:12",
+          "rotor:14",
+          "rotor:16",
+          "rotor:18",
+          "rotor:20",
+          "rotor:22",
+          "rotor:24",
+          "rotor:26",
+          "rotor:28",
+          "rotor:30",
+          "rotor:32",
+          "rotor:34",
+          "rotor:36",
+          "rotor:38",
+          "rotor:40",
+          "rotor:42",
+          "rotor:44",
+          "rotor:46",
+          "rotor:48",
+          "rotor:50",
+          "rotor:52",
+          "rotor:54",
+          "rotor:56",
+          "rotor:58",
+          "rotor:60",
+          "rotor:62",
+          "rotor:64",
+          "rotor:66",
+          "rotor:68",
+          "rotor:70",
+          "rotor:72",
+          "rotor:74",
+          "rotor:76",
+          "rotor:78",
+          "rotor:80",
+          "rotor:82",
+          "rotor:84",
+          "rotor:86",
+          "rotor:88",
+          "rotor:90",
+          "rotor:92",
+          "rotor:94",
+          "rotor:96",
+          "rotor:98",
+          "rotor:100",
+          "rotor:102",
+          "rotor:104",
+          "rotor:106",
+          "rotor:108",
+          "rotor:110",
+          "rotor:112",
+          "rotor:114",
+          "rotor:116",
+          "rotor:118",
+          "rotor:120"
+        ],
+        "completed": false,
+        "sustained": false,
+        "continuity": {
+          "seconds": 0,
+          "wait": 0,
+          "deliveries": 0,
+          "lastDelivery": null,
+          "reason": "Esperando una entrega nueva.",
+          "state": "waiting"
+        }
+      },
+      "externalBatteries": {
+        "cells": [
+          {
+            "id": 294,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 386,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 397,
+            "capacityJ": 900,
+            "storedJ": 883.5360152627577
+          }
+        ],
+        "storedJ": 2683.5360152627577,
+        "scope": "Baterías externas físicas del snapshot; no es toda la carga del inventario."
+      },
+      "pendingJobs": {}
+    },
+    {
+      "id": "batch_80_yaw_start",
+      "path": "partida/batch_80_yaw_start.json",
+      "label": "Restauración de la misma instalación después de corregir la referencia de toma",
+      "sha256": "222672c86a9fb72d938ff6206ec1d8d6e8584901e334a94c1c2d2affc65420a9",
+      "dataSha256": "21e030a1abd25ea0d2426d10f10801af7789fa42c3195fb856d8263bfaf35a09",
+      "validated": true,
+      "createdAt": 1795673510034,
+      "seconds": 13565.000000062279,
+      "sourceJ": 43487.05967111032,
+      "sourceSpentSinceOpeningJ": 136512.94032888967,
+      "spent": {
+        "extraction": 1074,
+        "conversion": 2685,
+        "forming": 1004,
+        "charge": 29267.67602610805,
+        "cooling": 4165.568888889262,
+        "transport": 97124.69541449913,
+        "assembly": 927.9999999999591,
+        "reconfiguration": 264.0000000000053
+      },
+      "accountResidualJ": -6.067566573619843e-7,
+      "initialIds": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "extracted": 537,
+      "firstLineReceived": 12,
+      "material": {
+        "records": 559,
+        "origins": 541,
+        "units": 541,
+        "originSha256": "bdca5b7bad7715747d306e8d3a5250a2c49c812caa2cccc52bc2290296a863df",
+        "places": {
+          "world": {
+            "records": 55,
+            "units": 42.49999999999998
+          },
+          "group": {
+            "records": 465,
+            "units": 459.4999999999999
+          },
+          "received": {
+            "records": 12,
+            "units": 12
+          },
+          "cable": {
+            "records": 27,
+            "units": 27
+          }
+        }
+      },
+      "order": {
+        "epoch": 1,
+        "startedAt": 1074.4666666670041,
+        "received": 60,
+        "receivedIds": [
+          "rotor:2",
+          "rotor:4",
+          "rotor:6",
+          "rotor:8",
+          "rotor:10",
+          "rotor:12",
+          "rotor:14",
+          "rotor:16",
+          "rotor:18",
+          "rotor:20",
+          "rotor:22",
+          "rotor:24",
+          "rotor:26",
+          "rotor:28",
+          "rotor:30",
+          "rotor:32",
+          "rotor:34",
+          "rotor:36",
+          "rotor:38",
+          "rotor:40",
+          "rotor:42",
+          "rotor:44",
+          "rotor:46",
+          "rotor:48",
+          "rotor:50",
+          "rotor:52",
+          "rotor:54",
+          "rotor:56",
+          "rotor:58",
+          "rotor:60",
+          "rotor:62",
+          "rotor:64",
+          "rotor:66",
+          "rotor:68",
+          "rotor:70",
+          "rotor:72",
+          "rotor:74",
+          "rotor:76",
+          "rotor:78",
+          "rotor:80",
+          "rotor:82",
+          "rotor:84",
+          "rotor:86",
+          "rotor:88",
+          "rotor:90",
+          "rotor:92",
+          "rotor:94",
+          "rotor:96",
+          "rotor:98",
+          "rotor:100",
+          "rotor:102",
+          "rotor:104",
+          "rotor:106",
+          "rotor:108",
+          "rotor:110",
+          "rotor:112",
+          "rotor:114",
+          "rotor:116",
+          "rotor:118",
+          "rotor:120"
+        ],
+        "completed": false,
+        "sustained": false,
+        "continuity": {
+          "seconds": 0,
+          "wait": 0,
+          "deliveries": 0,
+          "lastDelivery": null,
+          "reason": "Esperando una entrega nueva.",
+          "state": "waiting"
+        }
+      },
+      "externalBatteries": {
+        "cells": [
+          {
+            "id": 294,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 386,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 397,
+            "capacityJ": 900,
+            "storedJ": 882.3621535354298
+          }
+        ],
+        "storedJ": 2682.3621535354296,
+        "scope": "Baterías externas físicas del snapshot; no es toda la carga del inventario."
+      },
+      "pendingJobs": {}
+    },
+    {
+      "id": "batch_80",
+      "path": "partida/batch_80.json",
+      "label": "Cuarta tanda: ochenta productos únicos y continuidad útil cumplida",
+      "sha256": "3b6f1782a2cb74f81c91678b601915f336c68811cc1ff8bb4c7b6972a72d674d",
+      "dataSha256": "30f724a4e84faadc1200dd80fbcb3089adaf172689dacdcd52e520e210426e68",
+      "validated": true,
+      "createdAt": 1795673510034,
+      "seconds": 17029.000000088785,
+      "sourceJ": 7892.139659419604,
+      "sourceSpentSinceOpeningJ": 172107.8603405804,
+      "spent": {
+        "extraction": 1152,
+        "conversion": 2880,
+        "forming": 1164,
+        "charge": 34712.994417942675,
+        "cooling": 4946.8622222224285,
+        "transport": 125900.00370159652,
+        "assembly": 1007.9999999999454,
+        "reconfiguration": 344.00000000000756
+      },
+      "accountResidualJ": -0.0000011811498552560806,
+      "initialIds": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "extracted": 576,
+      "firstLineReceived": 12,
+      "material": {
+        "records": 598,
+        "origins": 580,
+        "units": 580,
+        "originSha256": "a1f69ba145825081bfc445d95955631ae4f3360d62b600ddd9a21e6587340efe",
+        "places": {
+          "world": {
+            "records": 54,
+            "units": 41.49999999999998
+          },
+          "group": {
+            "records": 505,
+            "units": 499.4999999999999
+          },
+          "received": {
+            "records": 12,
+            "units": 12
+          },
+          "cable": {
+            "records": 27,
+            "units": 27
+          }
+        }
+      },
+      "order": {
+        "epoch": 1,
+        "startedAt": 1074.4666666670041,
+        "received": 80,
+        "receivedIds": [
+          "rotor:2",
+          "rotor:4",
+          "rotor:6",
+          "rotor:8",
+          "rotor:10",
+          "rotor:12",
+          "rotor:14",
+          "rotor:16",
+          "rotor:18",
+          "rotor:20",
+          "rotor:22",
+          "rotor:24",
+          "rotor:26",
+          "rotor:28",
+          "rotor:30",
+          "rotor:32",
+          "rotor:34",
+          "rotor:36",
+          "rotor:38",
+          "rotor:40",
+          "rotor:42",
+          "rotor:44",
+          "rotor:46",
+          "rotor:48",
+          "rotor:50",
+          "rotor:52",
+          "rotor:54",
+          "rotor:56",
+          "rotor:58",
+          "rotor:60",
+          "rotor:62",
+          "rotor:64",
+          "rotor:66",
+          "rotor:68",
+          "rotor:70",
+          "rotor:72",
+          "rotor:74",
+          "rotor:76",
+          "rotor:78",
+          "rotor:80",
+          "rotor:82",
+          "rotor:84",
+          "rotor:86",
+          "rotor:88",
+          "rotor:90",
+          "rotor:92",
+          "rotor:94",
+          "rotor:96",
+          "rotor:98",
+          "rotor:100",
+          "rotor:102",
+          "rotor:104",
+          "rotor:106",
+          "rotor:108",
+          "rotor:110",
+          "rotor:112",
+          "rotor:114",
+          "rotor:116",
+          "rotor:118",
+          "rotor:120",
+          "rotor:122",
+          "rotor:124",
+          "rotor:126",
+          "rotor:128",
+          "rotor:130",
+          "rotor:132",
+          "rotor:134",
+          "rotor:136",
+          "rotor:138",
+          "rotor:140",
+          "rotor:142",
+          "rotor:144",
+          "rotor:146",
+          "rotor:148",
+          "rotor:150",
+          "rotor:152",
+          "rotor:154",
+          "rotor:156",
+          "rotor:158",
+          "rotor:160"
+        ],
+        "completed": true,
+        "sustained": true,
+        "continuity": {
+          "seconds": 60,
+          "wait": 0,
+          "deliveries": 20,
+          "lastDelivery": 17028.0000000888,
+          "reason": "Producción y recepción comprobadas.",
+          "state": "processing"
+        }
+      },
+      "externalBatteries": {
+        "cells": [
+          {
+            "id": 294,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 386,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 397,
+            "capacityJ": 900,
+            "storedJ": 848.2630352232214
+          }
+        ],
+        "storedJ": 2648.2630352232213,
+        "scope": "Baterías externas físicas del snapshot; no es toda la carga del inventario."
+      },
+      "pendingJobs": {}
+    },
+    {
+      "id": "post_victory_81",
+      "path": "partida/post_victory_81.json",
+      "label": "Una nueva recepción física después de la victoria en el mismo mundo",
+      "sha256": "61caeeeb00377b14acb5d43732b6244f318611566d158a2269fbfdf008cb4561",
+      "dataSha256": "a1cc74fa4d9652bec9193e1890535b95c25311c382502a5aa68ac0cc18c81a4b",
+      "validated": true,
+      "createdAt": 1795673510034,
+      "seconds": 17210.00000008615,
+      "sourceJ": 6048.501578556521,
+      "sourceSpentSinceOpeningJ": 173951.49842144348,
+      "spent": {
+        "extraction": 1156,
+        "conversion": 2890,
+        "forming": 1172,
+        "charge": 34998.99308139446,
+        "cooling": 4987.031111111309,
+        "transport": 127387.47423016955,
+        "assembly": 1011.9999999999447,
+        "reconfiguration": 348.0000000000077
+      },
+      "accountResidualJ": -0.0000012317905202507973,
+      "initialIds": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "extracted": 578,
+      "firstLineReceived": 12,
+      "material": {
+        "records": 600,
+        "origins": 582,
+        "units": 582,
+        "originSha256": "eca49e8a11c810ff7361cc97805b58bcf81b3f903df68dbc92e4fad420875d1a",
+        "places": {
+          "world": {
+            "records": 54,
+            "units": 41.49999999999998
+          },
+          "group": {
+            "records": 507,
+            "units": 501.4999999999999
+          },
+          "received": {
+            "records": 12,
+            "units": 12
+          },
+          "cable": {
+            "records": 27,
+            "units": 27
+          }
+        }
+      },
+      "order": {
+        "epoch": 1,
+        "startedAt": 1074.4666666670041,
+        "received": 81,
+        "receivedIds": [
+          "rotor:2",
+          "rotor:4",
+          "rotor:6",
+          "rotor:8",
+          "rotor:10",
+          "rotor:12",
+          "rotor:14",
+          "rotor:16",
+          "rotor:18",
+          "rotor:20",
+          "rotor:22",
+          "rotor:24",
+          "rotor:26",
+          "rotor:28",
+          "rotor:30",
+          "rotor:32",
+          "rotor:34",
+          "rotor:36",
+          "rotor:38",
+          "rotor:40",
+          "rotor:42",
+          "rotor:44",
+          "rotor:46",
+          "rotor:48",
+          "rotor:50",
+          "rotor:52",
+          "rotor:54",
+          "rotor:56",
+          "rotor:58",
+          "rotor:60",
+          "rotor:62",
+          "rotor:64",
+          "rotor:66",
+          "rotor:68",
+          "rotor:70",
+          "rotor:72",
+          "rotor:74",
+          "rotor:76",
+          "rotor:78",
+          "rotor:80",
+          "rotor:82",
+          "rotor:84",
+          "rotor:86",
+          "rotor:88",
+          "rotor:90",
+          "rotor:92",
+          "rotor:94",
+          "rotor:96",
+          "rotor:98",
+          "rotor:100",
+          "rotor:102",
+          "rotor:104",
+          "rotor:106",
+          "rotor:108",
+          "rotor:110",
+          "rotor:112",
+          "rotor:114",
+          "rotor:116",
+          "rotor:118",
+          "rotor:120",
+          "rotor:122",
+          "rotor:124",
+          "rotor:126",
+          "rotor:128",
+          "rotor:130",
+          "rotor:132",
+          "rotor:134",
+          "rotor:136",
+          "rotor:138",
+          "rotor:140",
+          "rotor:142",
+          "rotor:144",
+          "rotor:146",
+          "rotor:148",
+          "rotor:150",
+          "rotor:152",
+          "rotor:154",
+          "rotor:156",
+          "rotor:158",
+          "rotor:160",
+          "rotor:162"
+        ],
+        "completed": true,
+        "sustained": true,
+        "continuity": {
+          "seconds": 60,
+          "wait": 0,
+          "deliveries": 21,
+          "lastDelivery": 17209.200000086163,
+          "reason": "Producción y recepción comprobadas.",
+          "state": "processing"
+        }
+      },
+      "externalBatteries": {
+        "cells": [
+          {
+            "id": 294,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 386,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 397,
+            "capacityJ": 900,
+            "storedJ": 848.4236181860025
+          }
+        ],
+        "storedJ": 2648.4236181860024,
+        "scope": "Baterías externas físicas del snapshot; no es toda la carga del inventario."
+      },
+      "pendingJobs": {}
+    }
+  ],
+  "segments": [
+    {
+      "id": "setup_and_first_receipt",
+      "kind": "setup",
+      "outcome": "recorded",
+      "note": "Instalación y calibración con actividad concurrente; incluye el primer rotor. No es un coste aislado del capital.",
+      "from": "a_complete",
+      "to": "attempt_1_start",
+      "simulationSeconds": 1206.3999999997145,
+      "sourceSpentJ": 15653.146219606657,
+      "spent": {
+        "extraction": 356,
+        "conversion": 835,
+        "forming": 148,
+        "charge": 8389.420612047039,
+        "cooling": 136.5911111111095,
+        "transport": 5548.134496446226,
+        "assembly": 211.99999999999932,
+        "reconfiguration": 27.999999999999986
+      },
+      "sourceJPerNewReceipt": 15653.146219606657,
+      "newReceipts": [
+        "rotor:2"
+      ],
+      "extractedUnits": 178,
+      "externalBatteryDecreaseJ": null,
+      "batteryNote": "Cambió el conjunto de baterías: sin comparación de consumo embarcado.",
+      "logs": [],
+      "receipts": [],
+      "intervals": [],
+      "missingReceiptCounts": [
+        1
+      ],
+      "comparison": {
+        "intervals": 0,
+        "meanSourceJPerRotor": null,
+        "meanObservedSecondsPerRotor": null,
+        "meanPhysicalReceiptSecondsPerRotor": null,
+        "scope": "Débito de toda la fuente entre sondeos de recibos consecutivos del mismo intento; 0,01 J y hasta 1 s de sondeo. No es consumo aislado de drones."
+      }
+    },
+    {
+      "id": "attempt_1",
+      "kind": "run",
+      "outcome": "interrupted",
+      "note": "Ocho nuevos rotores; parada posterior del transporte upstream por obstrucción detectada.",
+      "from": "attempt_1_start",
+      "to": "attempt_1_stop_9",
+      "simulationSeconds": 1559.9999999985812,
+      "sourceSpentJ": 15127.226320776943,
+      "spent": {
+        "extraction": 10,
+        "conversion": 80,
+        "forming": 64,
+        "charge": 2365.6111482030046,
+        "cooling": 321.35111111111996,
+        "transport": 12218.264061465827,
+        "assembly": 31.999999999994543,
+        "reconfiguration": 35.99999999999987
+      },
+      "sourceJPerNewReceipt": 1890.9032900971179,
+      "newReceipts": [
+        "rotor:4",
+        "rotor:6",
+        "rotor:8",
+        "rotor:10",
+        "rotor:12",
+        "rotor:14",
+        "rotor:16",
+        "rotor:18"
+      ],
+      "extractedUnits": 5,
+      "externalBatteryDecreaseJ": -0.31357350073039925,
+      "batteryNote": "Mismos IDs de baterías externas. Su cambio de carga se muestra aparte y no se suma de nuevo al débito de fuente.",
+      "logs": [
+        {
+          "path": "partida/attempt_1.log",
+          "sha256": "42c522fa2cbf458ee5a823246c9ced02935a45b3299071a2d28dca5d7ef690aa",
+          "parsedLines": 42,
+          "ignoredNonJsonLines": 9
+        }
+      ],
+      "receipts": [
+        {
+          "count": 2,
+          "productId": "rotor:4",
+          "receivedAt": 1874.2666666662767,
+          "observedAt": 1874.4,
+          "sourceJ": 153996.38,
+          "log": "partida/attempt_1.log",
+          "line": 10
+        },
+        {
+          "count": 3,
+          "productId": "rotor:6",
+          "receivedAt": 2055.7333333327783,
+          "observedAt": 2056.4,
+          "sourceJ": 152151.5,
+          "log": "partida/attempt_1.log",
+          "line": 15
+        },
+        {
+          "count": 4,
+          "productId": "rotor:8",
+          "receivedAt": 2238.399999999279,
+          "observedAt": 2239.4,
+          "sourceJ": 150304.86,
+          "log": "partida/attempt_1.log",
+          "line": 19
+        },
+        {
+          "count": 5,
+          "productId": "rotor:10",
+          "receivedAt": 2420.933333332446,
+          "observedAt": 2421.4,
+          "sourceJ": 148460.01,
+          "log": "partida/attempt_1.log",
+          "line": 23
+        },
+        {
+          "count": 6,
+          "productId": "rotor:12",
+          "receivedAt": 2603.5999999989467,
+          "observedAt": 2604.4,
+          "sourceJ": 146613.37,
+          "log": "partida/attempt_1.log",
+          "line": 27
+        },
+        {
+          "count": 7,
+          "productId": "rotor:14",
+          "receivedAt": 2786.133333332114,
+          "observedAt": 2786.4,
+          "sourceJ": 144768.52,
+          "log": "partida/attempt_1.log",
+          "line": 31
+        },
+        {
+          "count": 8,
+          "productId": "rotor:16",
+          "receivedAt": 2968.7999999986146,
+          "observedAt": 2969.4,
+          "sourceJ": 142911.17,
+          "log": "partida/attempt_1.log",
+          "line": 35
+        },
+        {
+          "count": 9,
+          "productId": "rotor:18",
+          "receivedAt": 3151.333333331782,
+          "observedAt": 3151.4,
+          "sourceJ": 141055.62,
+          "log": "partida/attempt_1.log",
+          "line": 39
+        }
+      ],
+      "intervals": [
+        {
+          "from": 2,
+          "to": 3,
+          "observedSeconds": 182,
+          "physicalReceiptSeconds": 181.46666666650162,
+          "sourceJ": 1844.8800000000047
+        },
+        {
+          "from": 3,
+          "to": 4,
+          "observedSeconds": 183,
+          "physicalReceiptSeconds": 182.66666666650053,
+          "sourceJ": 1846.640000000014
+        },
+        {
+          "from": 4,
+          "to": 5,
+          "observedSeconds": 182,
+          "physicalReceiptSeconds": 182.53333333316732,
+          "sourceJ": 1844.8499999999767
+        },
+        {
+          "from": 5,
+          "to": 6,
+          "observedSeconds": 183,
+          "physicalReceiptSeconds": 182.66666666650053,
+          "sourceJ": 1846.640000000014
+        },
+        {
+          "from": 6,
+          "to": 7,
+          "observedSeconds": 182,
+          "physicalReceiptSeconds": 182.53333333316732,
+          "sourceJ": 1844.8500000000058
+        },
+        {
+          "from": 7,
+          "to": 8,
+          "observedSeconds": 183,
+          "physicalReceiptSeconds": 182.66666666650053,
+          "sourceJ": 1857.3499999999767
+        },
+        {
+          "from": 8,
+          "to": 9,
+          "observedSeconds": 182,
+          "physicalReceiptSeconds": 182.53333333316732,
+          "sourceJ": 1855.5500000000175
+        }
+      ],
+      "missingReceiptCounts": [],
+      "comparison": {
+        "intervals": 7,
+        "meanSourceJPerRotor": 1848.6800000000014,
+        "meanObservedSecondsPerRotor": 182.42857142857142,
+        "meanPhysicalReceiptSecondsPerRotor": 182.4380952379293,
+        "scope": "Débito de toda la fuente entre sondeos de recibos consecutivos del mismo intento; 0,01 J y hasta 1 s de sondeo. No es consumo aislado de drones."
+      }
+    },
+    {
+      "id": "recovery_1",
+      "kind": "recovery",
+      "outcome": "recorded",
+      "note": "Reenseñanza y recuperación nativas sin cargas creadas o colocadas manualmente; incluye un nuevo rotor y actividad concurrente.",
+      "from": "attempt_1_stop_9",
+      "to": "recovery_1_end_10",
+      "simulationSeconds": 235.1999999997861,
+      "sourceSpentJ": 2477.673239414522,
+      "spent": {
+        "extraction": 6,
+        "conversion": 15,
+        "forming": 8,
+        "charge": 301.2780336461801,
+        "cooling": 60.253333333344926,
+        "transport": 2079.1418724354044,
+        "assembly": 3.999999999999318,
+        "reconfiguration": 4.0000000000000995
+      },
+      "sourceJPerNewReceipt": 2477.673239414522,
+      "newReceipts": [
+        "rotor:20"
+      ],
+      "extractedUnits": 3,
+      "externalBatteryDecreaseJ": 63.461242925185616,
+      "batteryNote": "Mismos IDs de baterías externas. Su cambio de carga se muestra aparte y no se suma de nuevo al débito de fuente.",
+      "logs": [],
+      "receipts": [],
+      "intervals": [],
+      "missingReceiptCounts": [
+        10
+      ],
+      "comparison": {
+        "intervals": 0,
+        "meanSourceJPerRotor": null,
+        "meanObservedSecondsPerRotor": null,
+        "meanPhysicalReceiptSecondsPerRotor": null,
+        "scope": "Débito de toda la fuente entre sondeos de recibos consecutivos del mismo intento; 0,01 J y hasta 1 s de sondeo. No es consumo aislado de drones."
+      }
+    },
+    {
+      "id": "resume_2",
+      "kind": "setup",
+      "outcome": "recorded",
+      "note": "Restauración, arranque y actividad de la instalación durante 1,47 s.",
+      "from": "recovery_1_end_10",
+      "to": "attempt_2_start",
+      "simulationSeconds": 1.4666666666653327,
+      "sourceSpentJ": 47.96228761202656,
+      "spent": {
+        "extraction": 0,
+        "conversion": 0,
+        "forming": 0,
+        "charge": 44.5,
+        "cooling": 0,
+        "transport": 3.4622876120265573,
+        "assembly": 0,
+        "reconfiguration": 0
+      },
+      "sourceJPerNewReceipt": null,
+      "newReceipts": [],
+      "extractedUnits": 0,
+      "externalBatteryDecreaseJ": -41.81074101131753,
+      "batteryNote": "Mismos IDs de baterías externas. Su cambio de carga se muestra aparte y no se suma de nuevo al débito de fuente.",
+      "logs": [],
+      "receipts": [],
+      "intervals": [],
+      "missingReceiptCounts": [],
+      "comparison": {
+        "intervals": 0,
+        "meanSourceJPerRotor": null,
+        "meanObservedSecondsPerRotor": null,
+        "meanPhysicalReceiptSecondsPerRotor": null,
+        "scope": "Débito de toda la fuente entre sondeos de recibos consecutivos del mismo intento; 0,01 J y hasta 1 s de sondeo. No es consumo aislado de drones."
+      }
+    },
+    {
+      "id": "attempt_2",
+      "kind": "run",
+      "outcome": "interrupted",
+      "note": "Siete nuevos rotores; detector geométrico anterior señaló una nueva obstrucción. Su corrección y recuperación se documentan aparte.",
+      "from": "attempt_2_start",
+      "to": "attempt_2_stop_17",
+      "simulationSeconds": 1139.9999999989636,
+      "sourceSpentJ": 11332.306149012133,
+      "spent": {
+        "extraction": 24,
+        "conversion": 60,
+        "forming": 56,
+        "charge": 1795.3652733616382,
+        "cooling": 241.0133333333797,
+        "transport": 9103.927542319507,
+        "assembly": 27.999999999995225,
+        "reconfiguration": 24.000000000000597
+      },
+      "sourceJPerNewReceipt": 1618.9008784303046,
+      "newReceipts": [
+        "rotor:22",
+        "rotor:24",
+        "rotor:26",
+        "rotor:28",
+        "rotor:30",
+        "rotor:32",
+        "rotor:34"
+      ],
+      "extractedUnits": 12,
+      "externalBatteryDecreaseJ": 11.687043025016465,
+      "batteryNote": "Mismos IDs de baterías externas. Su cambio de carga se muestra aparte y no se suma de nuevo al débito de fuente.",
+      "logs": [
+        {
+          "path": "partida/attempt_2.log",
+          "sha256": "2372d62f4d1eb2de658bde3d81df82a8a69095959729061fa7a289b21f34c62a",
+          "parsedLines": 34,
+          "ignoredNonJsonLines": 9
+        }
+      ],
+      "receipts": [
+        {
+          "count": 11,
+          "productId": "rotor:22",
+          "receivedAt": 3580.6666666647247,
+          "observedAt": 3581.07,
+          "sourceJ": 137325.22,
+          "log": "partida/attempt_2.log",
+          "line": 9
+        },
+        {
+          "count": 12,
+          "productId": "rotor:24",
+          "receivedAt": 3759.8666666645618,
+          "observedAt": 3760.07,
+          "sourceJ": 135487.07,
+          "log": "partida/attempt_2.log",
+          "line": 13
+        },
+        {
+          "count": 13,
+          "productId": "rotor:26",
+          "receivedAt": 3939.4666666643984,
+          "observedAt": 3940.07,
+          "sourceJ": 133647.71,
+          "log": "partida/attempt_2.log",
+          "line": 17
+        },
+        {
+          "count": 14,
+          "productId": "rotor:28",
+          "receivedAt": 4119.466666664235,
+          "observedAt": 4120.07,
+          "sourceJ": 131808.43,
+          "log": "partida/attempt_2.log",
+          "line": 21
+        },
+        {
+          "count": 15,
+          "productId": "rotor:30",
+          "receivedAt": 4299.466666664071,
+          "observedAt": 4300.07,
+          "sourceJ": 129969.16,
+          "log": "partida/attempt_2.log",
+          "line": 25
+        },
+        {
+          "count": 16,
+          "productId": "rotor:32",
+          "receivedAt": 4479.466666663908,
+          "observedAt": 4480.07,
+          "sourceJ": 128129.88,
+          "log": "partida/attempt_2.log",
+          "line": 29
+        },
+        {
+          "count": 17,
+          "productId": "rotor:34",
+          "receivedAt": 4659.333333330411,
+          "observedAt": 4660.07,
+          "sourceJ": 126290.6,
+          "log": "partida/attempt_2.log",
+          "line": 33
+        }
+      ],
+      "intervals": [
+        {
+          "from": 11,
+          "to": 12,
+          "observedSeconds": 179,
+          "physicalReceiptSeconds": 179.19999999983702,
+          "sourceJ": 1838.1499999999942
+        },
+        {
+          "from": 12,
+          "to": 13,
+          "observedSeconds": 180,
+          "physicalReceiptSeconds": 179.59999999983665,
+          "sourceJ": 1839.3600000000151
+        },
+        {
+          "from": 13,
+          "to": 14,
+          "observedSeconds": 179.99999999999955,
+          "physicalReceiptSeconds": 179.99999999983675,
+          "sourceJ": 1839.2799999999988
+        },
+        {
+          "from": 14,
+          "to": 15,
+          "observedSeconds": 180,
+          "physicalReceiptSeconds": 179.9999999998363,
+          "sourceJ": 1839.2699999999895
+        },
+        {
+          "from": 15,
+          "to": 16,
+          "observedSeconds": 180,
+          "physicalReceiptSeconds": 179.9999999998363,
+          "sourceJ": 1839.2799999999988
+        },
+        {
+          "from": 16,
+          "to": 17,
+          "observedSeconds": 180,
+          "physicalReceiptSeconds": 179.86666666650308,
+          "sourceJ": 1839.2799999999988
+        }
+      ],
+      "missingReceiptCounts": [],
+      "comparison": {
+        "intervals": 6,
+        "meanSourceJPerRotor": 1839.1033333333326,
+        "meanObservedSecondsPerRotor": 179.83333333333326,
+        "meanPhysicalReceiptSecondsPerRotor": 179.77777777761435,
+        "scope": "Débito de toda la fuente entre sondeos de recibos consecutivos del mismo intento; 0,01 J y hasta 1 s de sondeo. No es consumo aislado de drones."
+      }
+    },
+    {
+      "id": "recovery_2_manual",
+      "kind": "recovery",
+      "outcome": "recorded",
+      "note": "Se soltó la carga 569 con la pinza y se llevó con la mano a la primera cinta. La intervención reinició su historial y la continuidad. El mismo dron vacío se enderezó y se recargó desde el borne. Coste concurrente íntegro; no se añadieron piezas ni energía.",
+      "from": "attempt_2_stop_17",
+      "to": "recovery_2_ready_17",
+      "simulationSeconds": 17.199999999984357,
+      "sourceSpentJ": 573.1136028533365,
+      "spent": {
+        "extraction": 2,
+        "conversion": 5,
+        "forming": 0,
+        "charge": 48.497544938887586,
+        "cooling": 18.084444444446945,
+        "transport": 499.5316134700515,
+        "assembly": 0,
+        "reconfiguration": 0
+      },
+      "sourceJPerNewReceipt": null,
+      "newReceipts": [],
+      "extractedUnits": 1,
+      "externalBatteryDecreaseJ": -33.33754493888455,
+      "batteryNote": "Mismos IDs de baterías externas. Su cambio de carga se muestra aparte y no se suma de nuevo al débito de fuente.",
+      "logs": [],
+      "receipts": [],
+      "intervals": [],
+      "missingReceiptCounts": [],
+      "comparison": {
+        "intervals": 0,
+        "meanSourceJPerRotor": null,
+        "meanObservedSecondsPerRotor": null,
+        "meanPhysicalReceiptSecondsPerRotor": null,
+        "scope": "Débito de toda la fuente entre sondeos de recibos consecutivos del mismo intento; 0,01 J y hasta 1 s de sondeo. No es consumo aislado de drones."
+      }
+    },
+    {
+      "id": "recovery_2_coordinated",
+      "kind": "recovery",
+      "outcome": "recorded",
+      "note": "La carga 569 completó de nuevo los ocho tramos y recuperó su historial automáticamente. El dron transportó la carga 576 real y regresó; el brazo esperó frenado hasta el aterrizaje. Continúan los mismos diecisiete recibos.",
+      "from": "recovery_2_ready_17",
+      "to": "recovery_2_end_17",
+      "simulationSeconds": 44.93333333329247,
+      "sourceSpentJ": 84.41710805568437,
+      "spent": {
+        "extraction": 0,
+        "conversion": 0,
+        "forming": 0,
+        "charge": 0,
+        "cooling": 2.0000000000013642,
+        "transport": 82.41710805571347,
+        "assembly": 0,
+        "reconfiguration": 0
+      },
+      "sourceJPerNewReceipt": null,
+      "newReceipts": [],
+      "extractedUnits": 0,
+      "externalBatteryDecreaseJ": 63.31693754221533,
+      "batteryNote": "Mismos IDs de baterías externas. Su cambio de carga se muestra aparte y no se suma de nuevo al débito de fuente.",
+      "logs": [],
+      "receipts": [],
+      "intervals": [],
+      "missingReceiptCounts": [],
+      "comparison": {
+        "intervals": 0,
+        "meanSourceJPerRotor": null,
+        "meanObservedSecondsPerRotor": null,
+        "meanPhysicalReceiptSecondsPerRotor": null,
+        "scope": "Débito de toda la fuente entre sondeos de recibos consecutivos del mismo intento; 0,01 J y hasta 1 s de sondeo. No es consumo aislado de drones."
+      }
+    },
+    {
+      "id": "resume_3",
+      "kind": "setup",
+      "outcome": "recorded",
+      "note": "Restauración y arranque de la misma instalación; las poses enseñadas y los mecanismos guardados se conservan.",
+      "from": "recovery_2_end_17",
+      "to": "attempt_3_start",
+      "simulationSeconds": 1.4666666666653327,
+      "sourceSpentJ": 71.41798219227348,
+      "spent": {
+        "extraction": 0,
+        "conversion": 0,
+        "forming": 0,
+        "charge": 44.5,
+        "cooling": 0,
+        "transport": 26.917982192273485,
+        "assembly": 0,
+        "reconfiguration": 0
+      },
+      "sourceJPerNewReceipt": null,
+      "newReceipts": [],
+      "extractedUnits": 0,
+      "externalBatteryDecreaseJ": -43.714123705829024,
+      "batteryNote": "Mismos IDs de baterías externas. Su cambio de carga se muestra aparte y no se suma de nuevo al débito de fuente.",
+      "logs": [],
+      "receipts": [],
+      "intervals": [],
+      "missingReceiptCounts": [],
+      "comparison": {
+        "intervals": 0,
+        "meanSourceJPerRotor": null,
+        "meanObservedSecondsPerRotor": null,
+        "meanPhysicalReceiptSecondsPerRotor": null,
+        "scope": "Débito de toda la fuente entre sondeos de recibos consecutivos del mismo intento; 0,01 J y hasta 1 s de sondeo. No es consumo aislado de drones."
+      }
+    },
+    {
+      "id": "run_to_20",
+      "kind": "run",
+      "outcome": "completed",
+      "note": "Tres recibos nuevos en el mismo mundo después de la recuperación, sin intervención durante el tramo.",
+      "from": "attempt_3_start",
+      "to": "batch_20",
+      "simulationSeconds": 472.9999999995698,
+      "sourceSpentJ": 5210.611963321309,
+      "spent": {
+        "extraction": 10,
+        "conversion": 25,
+        "forming": 24,
+        "charge": 727.7225279811428,
+        "cooling": 100.42222222224154,
+        "transport": 4299.467213119049,
+        "assembly": 11.999999999997954,
+        "reconfiguration": 12.000000000000298
+      },
+      "sourceJPerNewReceipt": 1736.8706544404365,
+      "newReceipts": [
+        "rotor:36",
+        "rotor:38",
+        "rotor:40"
+      ],
+      "extractedUnits": 5,
+      "externalBatteryDecreaseJ": 31.98465202995021,
+      "batteryNote": "Mismos IDs de baterías externas. Su cambio de carga se muestra aparte y no se suma de nuevo al débito de fuente.",
+      "logs": [
+        {
+          "path": "partida/run_to_20.log",
+          "sha256": "b6903acb4bfbe5df280c9243434e3a16f09dc9c2582a2e60563f5067f8ede58e",
+          "parsedLines": 19,
+          "ignoredNonJsonLines": 1
+        }
+      ],
+      "receipts": [
+        {
+          "count": 18,
+          "productId": "rotor:36",
+          "receivedAt": 4872.399999996884,
+          "observedAt": 4872.67,
+          "sourceJ": 123803.48,
+          "log": "partida/run_to_20.log",
+          "line": 10
+        },
+        {
+          "count": 19,
+          "productId": "rotor:38",
+          "receivedAt": 5049.5999999967225,
+          "observedAt": 5049.67,
+          "sourceJ": 121971.78,
+          "log": "partida/run_to_20.log",
+          "line": 14
+        },
+        {
+          "count": 20,
+          "productId": "rotor:40",
+          "receivedAt": 5226.666666663228,
+          "observedAt": 5227.67,
+          "sourceJ": 120138.36,
+          "log": "partida/run_to_20.log",
+          "line": 18
+        }
+      ],
+      "intervals": [
+        {
+          "from": 18,
+          "to": 19,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.19999999983884,
+          "sourceJ": 1831.699999999997
+        },
+        {
+          "from": 19,
+          "to": 20,
+          "observedSeconds": 178,
+          "physicalReceiptSeconds": 177.06666666650563,
+          "sourceJ": 1833.4199999999983
+        }
+      ],
+      "missingReceiptCounts": [],
+      "comparison": {
+        "intervals": 2,
+        "meanSourceJPerRotor": 1832.5599999999977,
+        "meanObservedSecondsPerRotor": 177.5,
+        "meanPhysicalReceiptSecondsPerRotor": 177.13333333317223,
+        "scope": "Débito de toda la fuente entre sondeos de recibos consecutivos del mismo intento; 0,01 J y hasta 1 s de sondeo. No es consumo aislado de drones."
+      }
+    },
+    {
+      "id": "resume_40",
+      "kind": "setup",
+      "outcome": "recorded",
+      "note": "Guardado y carga de la primera tanda en una instancia nueva, con todos los mecanismos y sin advertencias.",
+      "from": "batch_20",
+      "to": "batch_40_start",
+      "simulationSeconds": 1.5333333333319388,
+      "sourceSpentJ": 3.4622922212292906,
+      "spent": {
+        "extraction": 0,
+        "conversion": 0,
+        "forming": 0,
+        "charge": 0,
+        "cooling": 0,
+        "transport": 3.4622922212292906,
+        "assembly": 0,
+        "reconfiguration": 0
+      },
+      "sourceJPerNewReceipt": null,
+      "newReceipts": [],
+      "extractedUnits": 0,
+      "externalBatteryDecreaseJ": 1.2476806246791057,
+      "batteryNote": "Mismos IDs de baterías externas. Su cambio de carga se muestra aparte y no se suma de nuevo al débito de fuente.",
+      "logs": [],
+      "receipts": [],
+      "intervals": [],
+      "missingReceiptCounts": [],
+      "comparison": {
+        "intervals": 0,
+        "meanSourceJPerRotor": null,
+        "meanObservedSecondsPerRotor": null,
+        "meanPhysicalReceiptSecondsPerRotor": null,
+        "scope": "Débito de toda la fuente entre sondeos de recibos consecutivos del mismo intento; 0,01 J y hasta 1 s de sondeo. No es consumo aislado de drones."
+      }
+    },
+    {
+      "id": "run_to_40",
+      "kind": "run",
+      "outcome": "completed",
+      "note": "Veinte recibos nuevos sin intervención durante el tramo, con la misma fuente y configuración.",
+      "from": "batch_40_start",
+      "to": "batch_40",
+      "simulationSeconds": 3540.000000004655,
+      "sourceSpentJ": 36667.683217827114,
+      "spent": {
+        "extraction": 80,
+        "conversion": 200,
+        "forming": 160,
+        "charge": 5660.971066851063,
+        "cooling": 803.3777777779324,
+        "transport": 29603.334373206075,
+        "assembly": 79.99999999998636,
+        "reconfiguration": 80.00000000000219
+      },
+      "sourceJPerNewReceipt": 1833.3841608913558,
+      "newReceipts": [
+        "rotor:42",
+        "rotor:44",
+        "rotor:46",
+        "rotor:48",
+        "rotor:50",
+        "rotor:52",
+        "rotor:54",
+        "rotor:56",
+        "rotor:58",
+        "rotor:60",
+        "rotor:62",
+        "rotor:64",
+        "rotor:66",
+        "rotor:68",
+        "rotor:70",
+        "rotor:72",
+        "rotor:74",
+        "rotor:76",
+        "rotor:78",
+        "rotor:80"
+      ],
+      "extractedUnits": 40,
+      "externalBatteryDecreaseJ": -1.6511177117972693,
+      "batteryNote": "Mismos IDs de baterías externas. Su cambio de carga se muestra aparte y no se suma de nuevo al débito de fuente.",
+      "logs": [
+        {
+          "path": "partida/run_to_40.log",
+          "sha256": "a476ec0512af348086b569eb5a8734a9a53ee8e162e463bfee6a826c3f162bfb",
+          "parsedLines": 88,
+          "ignoredNonJsonLines": 1
+        }
+      ],
+      "receipts": [
+        {
+          "count": 21,
+          "productId": "rotor:42",
+          "receivedAt": 5403.333333329734,
+          "observedAt": 5404.2,
+          "sourceJ": 118305.28,
+          "log": "partida/run_to_40.log",
+          "line": 11
+        },
+        {
+          "count": 22,
+          "productId": "rotor:44",
+          "receivedAt": 5580.933333329573,
+          "observedAt": 5581.2,
+          "sourceJ": 116471.86,
+          "log": "partida/run_to_40.log",
+          "line": 15
+        },
+        {
+          "count": 23,
+          "productId": "rotor:46",
+          "receivedAt": 5757.999999996078,
+          "observedAt": 5758.2,
+          "sourceJ": 114638.46,
+          "log": "partida/run_to_40.log",
+          "line": 19
+        },
+        {
+          "count": 24,
+          "productId": "rotor:48",
+          "receivedAt": 5935.066666662584,
+          "observedAt": 5935.2,
+          "sourceJ": 112805.07,
+          "log": "partida/run_to_40.log",
+          "line": 23
+        },
+        {
+          "count": 25,
+          "productId": "rotor:50",
+          "receivedAt": 6112.1333333290895,
+          "observedAt": 6112.2,
+          "sourceJ": 110971.67,
+          "log": "partida/run_to_40.log",
+          "line": 27
+        },
+        {
+          "count": 26,
+          "productId": "rotor:52",
+          "receivedAt": 6289.333333328928,
+          "observedAt": 6290.2,
+          "sourceJ": 109136.47,
+          "log": "partida/run_to_40.log",
+          "line": 31
+        },
+        {
+          "count": 27,
+          "productId": "rotor:54",
+          "receivedAt": 6466.399999995434,
+          "observedAt": 6467.2,
+          "sourceJ": 107303.09,
+          "log": "partida/run_to_40.log",
+          "line": 35
+        },
+        {
+          "count": 28,
+          "productId": "rotor:56",
+          "receivedAt": 6643.46666666194,
+          "observedAt": 6644.2,
+          "sourceJ": 105469.7,
+          "log": "partida/run_to_40.log",
+          "line": 39
+        },
+        {
+          "count": 29,
+          "productId": "rotor:58",
+          "receivedAt": 6820.533333328445,
+          "observedAt": 6821.2,
+          "sourceJ": 103636.32,
+          "log": "partida/run_to_40.log",
+          "line": 43
+        },
+        {
+          "count": 30,
+          "productId": "rotor:60",
+          "receivedAt": 6997.733333328284,
+          "observedAt": 6998.2,
+          "sourceJ": 101802.93,
+          "log": "partida/run_to_40.log",
+          "line": 47
+        },
+        {
+          "count": 31,
+          "productId": "rotor:62",
+          "receivedAt": 7174.79999999479,
+          "observedAt": 7175.2,
+          "sourceJ": 99969.54,
+          "log": "partida/run_to_40.log",
+          "line": 51
+        },
+        {
+          "count": 32,
+          "productId": "rotor:64",
+          "receivedAt": 7351.866666661295,
+          "observedAt": 7352.2,
+          "sourceJ": 98136.16,
+          "log": "partida/run_to_40.log",
+          "line": 55
+        },
+        {
+          "count": 33,
+          "productId": "rotor:66",
+          "receivedAt": 7528.933333327801,
+          "observedAt": 7529.2,
+          "sourceJ": 96302.76,
+          "log": "partida/run_to_40.log",
+          "line": 59
+        },
+        {
+          "count": 34,
+          "productId": "rotor:68",
+          "receivedAt": 7706.13333332764,
+          "observedAt": 7706.2,
+          "sourceJ": 94469.37,
+          "log": "partida/run_to_40.log",
+          "line": 63
+        },
+        {
+          "count": 35,
+          "productId": "rotor:70",
+          "receivedAt": 7883.199999994145,
+          "observedAt": 7884.2,
+          "sourceJ": 92634.17,
+          "log": "partida/run_to_40.log",
+          "line": 67
+        },
+        {
+          "count": 36,
+          "productId": "rotor:72",
+          "receivedAt": 8060.266666660651,
+          "observedAt": 8061.2,
+          "sourceJ": 90800.78,
+          "log": "partida/run_to_40.log",
+          "line": 71
+        },
+        {
+          "count": 37,
+          "productId": "rotor:74",
+          "receivedAt": 8237.333333327775,
+          "observedAt": 8238.2,
+          "sourceJ": 88967.38,
+          "log": "partida/run_to_40.log",
+          "line": 75
+        },
+        {
+          "count": 38,
+          "productId": "rotor:76",
+          "receivedAt": 8414.533333330031,
+          "observedAt": 8415.2,
+          "sourceJ": 87133.99,
+          "log": "partida/run_to_40.log",
+          "line": 79
+        },
+        {
+          "count": 39,
+          "productId": "rotor:78",
+          "receivedAt": 8591.599999998953,
+          "observedAt": 8592.2,
+          "sourceJ": 85300.6,
+          "log": "partida/run_to_40.log",
+          "line": 83
+        },
+        {
+          "count": 40,
+          "productId": "rotor:80",
+          "receivedAt": 8768.666666667874,
+          "observedAt": 8769.2,
+          "sourceJ": 83467.21,
+          "log": "partida/run_to_40.log",
+          "line": 86
+        }
+      ],
+      "intervals": [
+        {
+          "from": 21,
+          "to": 22,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.59999999983847,
+          "sourceJ": 1833.4199999999983
+        },
+        {
+          "from": 22,
+          "to": 23,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666650563,
+          "sourceJ": 1833.3999999999942
+        },
+        {
+          "from": 23,
+          "to": 24,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666650563,
+          "sourceJ": 1833.3899999999994
+        },
+        {
+          "from": 24,
+          "to": 25,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666650563,
+          "sourceJ": 1833.4000000000087
+        },
+        {
+          "from": 25,
+          "to": 26,
+          "observedSeconds": 178,
+          "physicalReceiptSeconds": 177.19999999983884,
+          "sourceJ": 1835.199999999997
+        },
+        {
+          "from": 26,
+          "to": 27,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666650563,
+          "sourceJ": 1833.3800000000047
+        },
+        {
+          "from": 27,
+          "to": 28,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666650563,
+          "sourceJ": 1833.3899999999994
+        },
+        {
+          "from": 28,
+          "to": 29,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666650563,
+          "sourceJ": 1833.37999999999
+        },
+        {
+          "from": 29,
+          "to": 30,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.19999999983884,
+          "sourceJ": 1833.390000000014
+        },
+        {
+          "from": 30,
+          "to": 31,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666650563,
+          "sourceJ": 1833.3899999999994
+        },
+        {
+          "from": 31,
+          "to": 32,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666650563,
+          "sourceJ": 1833.37999999999
+        },
+        {
+          "from": 32,
+          "to": 33,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666650563,
+          "sourceJ": 1833.4000000000087
+        },
+        {
+          "from": 33,
+          "to": 34,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.19999999983884,
+          "sourceJ": 1833.3899999999994
+        },
+        {
+          "from": 34,
+          "to": 35,
+          "observedSeconds": 178,
+          "physicalReceiptSeconds": 177.06666666650563,
+          "sourceJ": 1835.199999999997
+        },
+        {
+          "from": 35,
+          "to": 36,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666650563,
+          "sourceJ": 1833.3899999999994
+        },
+        {
+          "from": 36,
+          "to": 37,
+          "observedSeconds": 177.0000000000009,
+          "physicalReceiptSeconds": 177.06666666712408,
+          "sourceJ": 1833.3999999999942
+        },
+        {
+          "from": 37,
+          "to": 38,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.20000000225627,
+          "sourceJ": 1833.3899999999994
+        },
+        {
+          "from": 38,
+          "to": 39,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666892124,
+          "sourceJ": 1833.3899999999994
+        },
+        {
+          "from": 39,
+          "to": 40,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666892124,
+          "sourceJ": 1833.3899999999994
+        }
+      ],
+      "missingReceiptCounts": [],
+      "comparison": {
+        "intervals": 19,
+        "meanSourceJPerRotor": 1833.582631578947,
+        "meanObservedSecondsPerRotor": 177.1052631578948,
+        "meanPhysicalReceiptSecondsPerRotor": 177.12280701779682,
+        "scope": "Débito de toda la fuente entre sondeos de recibos consecutivos del mismo intento; 0,01 J y hasta 1 s de sondeo. No es consumo aislado de drones."
+      }
+    },
+    {
+      "id": "resume_60",
+      "kind": "setup",
+      "outcome": "recorded",
+      "note": "Restauración real sin advertencias, conservando los mecanismos, las poses y todos los recibos.",
+      "from": "batch_40",
+      "to": "batch_60_start",
+      "simulationSeconds": 1.4666666666853416,
+      "sourceSpentJ": 3.4622874279448297,
+      "spent": {
+        "extraction": 0,
+        "conversion": 0,
+        "forming": 0,
+        "charge": 0,
+        "cooling": 0,
+        "transport": 3.4622874279448297,
+        "assembly": 0,
+        "reconfiguration": 0
+      },
+      "sourceJPerNewReceipt": null,
+      "newReceipts": [],
+      "extractedUnits": 0,
+      "externalBatteryDecreaseJ": 1.2590092587738582,
+      "batteryNote": "Mismos IDs de baterías externas. Su cambio de carga se muestra aparte y no se suma de nuevo al débito de fuente.",
+      "logs": [],
+      "receipts": [],
+      "intervals": [],
+      "missingReceiptCounts": [],
+      "comparison": {
+        "intervals": 0,
+        "meanSourceJPerRotor": null,
+        "meanObservedSecondsPerRotor": null,
+        "meanPhysicalReceiptSecondsPerRotor": null,
+        "scope": "Débito de toda la fuente entre sondeos de recibos consecutivos del mismo intento; 0,01 J y hasta 1 s de sondeo. No es consumo aislado de drones."
+      }
+    },
+    {
+      "id": "run_to_60",
+      "kind": "run",
+      "outcome": "completed",
+      "note": "Veinte recibos nuevos sin intervención durante el tramo, con la fuente y los mecanismos conservados desde A.",
+      "from": "batch_60_start",
+      "to": "batch_60",
+      "simulationSeconds": 3541.0000000450873,
+      "sourceSpentJ": 36689.798547076476,
+      "spent": {
+        "extraction": 80,
+        "conversion": 200,
+        "forming": 160,
+        "charge": 5661.2081445365075,
+        "cooling": 803.377777777916,
+        "transport": 29625.212625147673,
+        "assembly": 79.99999999998636,
+        "reconfiguration": 80.00000000000225
+      },
+      "sourceJPerNewReceipt": 1834.4899273538238,
+      "newReceipts": [
+        "rotor:82",
+        "rotor:84",
+        "rotor:86",
+        "rotor:88",
+        "rotor:90",
+        "rotor:92",
+        "rotor:94",
+        "rotor:96",
+        "rotor:98",
+        "rotor:100",
+        "rotor:102",
+        "rotor:104",
+        "rotor:106",
+        "rotor:108",
+        "rotor:110",
+        "rotor:112",
+        "rotor:114",
+        "rotor:116",
+        "rotor:118",
+        "rotor:120"
+      ],
+      "extractedUnits": 40,
+      "externalBatteryDecreaseJ": -0.8279217034964859,
+      "batteryNote": "Mismos IDs de baterías externas. Su cambio de carga se muestra aparte y no se suma de nuevo al débito de fuente.",
+      "logs": [
+        {
+          "path": "partida/run_to_60.log",
+          "sha256": "db75dca724b574026e0ec63964a7308c6b1057f9e7bb7750f0cc8420b3427fd2",
+          "parsedLines": 88,
+          "ignoredNonJsonLines": 1
+        }
+      ],
+      "receipts": [
+        {
+          "count": 41,
+          "productId": "rotor:82",
+          "receivedAt": 8945.33333333679,
+          "observedAt": 8945.67,
+          "sourceJ": 81633.55,
+          "log": "partida/run_to_60.log",
+          "line": 11
+        },
+        {
+          "count": 42,
+          "productId": "rotor:84",
+          "receivedAt": 9122.933333339051,
+          "observedAt": 9123.67,
+          "sourceJ": 79797.3,
+          "log": "partida/run_to_60.log",
+          "line": 15
+        },
+        {
+          "count": 43,
+          "productId": "rotor:86",
+          "receivedAt": 9300.000000007973,
+          "observedAt": 9300.67,
+          "sourceJ": 77962.89,
+          "log": "partida/run_to_60.log",
+          "line": 19
+        },
+        {
+          "count": 44,
+          "productId": "rotor:88",
+          "receivedAt": 9477.066666676894,
+          "observedAt": 9477.67,
+          "sourceJ": 76128.48,
+          "log": "partida/run_to_60.log",
+          "line": 23
+        },
+        {
+          "count": 45,
+          "productId": "rotor:90",
+          "receivedAt": 9654.133333345815,
+          "observedAt": 9654.67,
+          "sourceJ": 74294.07,
+          "log": "partida/run_to_60.log",
+          "line": 27
+        },
+        {
+          "count": 46,
+          "productId": "rotor:92",
+          "receivedAt": 9831.333333348071,
+          "observedAt": 9831.67,
+          "sourceJ": 72459.66,
+          "log": "partida/run_to_60.log",
+          "line": 31
+        },
+        {
+          "count": 47,
+          "productId": "rotor:94",
+          "receivedAt": 10008.400000016993,
+          "observedAt": 10008.67,
+          "sourceJ": 70625.26,
+          "log": "partida/run_to_60.log",
+          "line": 35
+        },
+        {
+          "count": 48,
+          "productId": "rotor:96",
+          "receivedAt": 10185.466666685914,
+          "observedAt": 10185.67,
+          "sourceJ": 68790.85,
+          "log": "partida/run_to_60.log",
+          "line": 39
+        },
+        {
+          "count": 49,
+          "productId": "rotor:98",
+          "receivedAt": 10362.533333354835,
+          "observedAt": 10362.67,
+          "sourceJ": 66956.44,
+          "log": "partida/run_to_60.log",
+          "line": 43
+        },
+        {
+          "count": 50,
+          "productId": "rotor:100",
+          "receivedAt": 10539.733333357091,
+          "observedAt": 10540.67,
+          "sourceJ": 65120.22,
+          "log": "partida/run_to_60.log",
+          "line": 47
+        },
+        {
+          "count": 51,
+          "productId": "rotor:102",
+          "receivedAt": 10716.800000026013,
+          "observedAt": 10717.67,
+          "sourceJ": 63285.8,
+          "log": "partida/run_to_60.log",
+          "line": 51
+        },
+        {
+          "count": 52,
+          "productId": "rotor:104",
+          "receivedAt": 10893.866666694934,
+          "observedAt": 10894.67,
+          "sourceJ": 61451.37,
+          "log": "partida/run_to_60.log",
+          "line": 55
+        },
+        {
+          "count": 53,
+          "productId": "rotor:106",
+          "receivedAt": 11070.933333363855,
+          "observedAt": 11071.67,
+          "sourceJ": 59616.93,
+          "log": "partida/run_to_60.log",
+          "line": 59
+        },
+        {
+          "count": 54,
+          "productId": "rotor:108",
+          "receivedAt": 11248.133333366111,
+          "observedAt": 11248.67,
+          "sourceJ": 57782.48,
+          "log": "partida/run_to_60.log",
+          "line": 63
+        },
+        {
+          "count": 55,
+          "productId": "rotor:110",
+          "receivedAt": 11425.200000035033,
+          "observedAt": 11425.67,
+          "sourceJ": 55948.04,
+          "log": "partida/run_to_60.log",
+          "line": 67
+        },
+        {
+          "count": 56,
+          "productId": "rotor:112",
+          "receivedAt": 11602.266666703954,
+          "observedAt": 11602.67,
+          "sourceJ": 54113.58,
+          "log": "partida/run_to_60.log",
+          "line": 71
+        },
+        {
+          "count": 57,
+          "productId": "rotor:114",
+          "receivedAt": 11779.333333372875,
+          "observedAt": 11779.67,
+          "sourceJ": 52279.13,
+          "log": "partida/run_to_60.log",
+          "line": 75
+        },
+        {
+          "count": 58,
+          "productId": "rotor:116",
+          "receivedAt": 11956.533333375131,
+          "observedAt": 11956.67,
+          "sourceJ": 50444.67,
+          "log": "partida/run_to_60.log",
+          "line": 79
+        },
+        {
+          "count": 59,
+          "productId": "rotor:118",
+          "receivedAt": 12133.600000044053,
+          "observedAt": 12133.67,
+          "sourceJ": 48610.21,
+          "log": "partida/run_to_60.log",
+          "line": 83
+        },
+        {
+          "count": 60,
+          "productId": "rotor:120",
+          "receivedAt": 12310.666666712974,
+          "observedAt": 12311.67,
+          "sourceJ": 46773.95,
+          "log": "partida/run_to_60.log",
+          "line": 87
+        }
+      ],
+      "intervals": [
+        {
+          "from": 41,
+          "to": 42,
+          "observedSeconds": 178,
+          "physicalReceiptSeconds": 177.60000000226137,
+          "sourceJ": 1836.25
+        },
+        {
+          "from": 42,
+          "to": 43,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666892124,
+          "sourceJ": 1834.4100000000035
+        },
+        {
+          "from": 43,
+          "to": 44,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666892124,
+          "sourceJ": 1834.4100000000035
+        },
+        {
+          "from": 44,
+          "to": 45,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666892124,
+          "sourceJ": 1834.409999999989
+        },
+        {
+          "from": 45,
+          "to": 46,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.20000000225627,
+          "sourceJ": 1834.4100000000035
+        },
+        {
+          "from": 46,
+          "to": 47,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666892124,
+          "sourceJ": 1834.4000000000087
+        },
+        {
+          "from": 47,
+          "to": 48,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666892124,
+          "sourceJ": 1834.409999999989
+        },
+        {
+          "from": 48,
+          "to": 49,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666892124,
+          "sourceJ": 1834.4100000000035
+        },
+        {
+          "from": 49,
+          "to": 50,
+          "observedSeconds": 178,
+          "physicalReceiptSeconds": 177.20000000225627,
+          "sourceJ": 1836.2200000000012
+        },
+        {
+          "from": 50,
+          "to": 51,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666892124,
+          "sourceJ": 1834.4199999999983
+        },
+        {
+          "from": 51,
+          "to": 52,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666892124,
+          "sourceJ": 1834.4300000000003
+        },
+        {
+          "from": 52,
+          "to": 53,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666892124,
+          "sourceJ": 1834.4400000000023
+        },
+        {
+          "from": 53,
+          "to": 54,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.20000000225627,
+          "sourceJ": 1834.449999999997
+        },
+        {
+          "from": 54,
+          "to": 55,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666892124,
+          "sourceJ": 1834.4400000000023
+        },
+        {
+          "from": 55,
+          "to": 56,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666892124,
+          "sourceJ": 1834.4599999999991
+        },
+        {
+          "from": 56,
+          "to": 57,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666892124,
+          "sourceJ": 1834.4500000000044
+        },
+        {
+          "from": 57,
+          "to": 58,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.20000000225627,
+          "sourceJ": 1834.4599999999991
+        },
+        {
+          "from": 58,
+          "to": 59,
+          "observedSeconds": 177,
+          "physicalReceiptSeconds": 177.06666666892124,
+          "sourceJ": 1834.4599999999991
+        },
+        {
+          "from": 59,
+          "to": 60,
+          "observedSeconds": 178,
+          "physicalReceiptSeconds": 177.06666666892124,
+          "sourceJ": 1836.260000000002
+        }
+      ],
+      "missingReceiptCounts": [],
+      "comparison": {
+        "intervals": 19,
+        "meanSourceJPerRotor": 1834.7157894736845,
+        "meanObservedSecondsPerRotor": 177.1578947368421,
+        "meanPhysicalReceiptSecondsPerRotor": 177.12280701979915,
+        "scope": "Débito de toda la fuente entre sondeos de recibos consecutivos del mismo intento; 0,01 J y hasta 1 s de sondeo. No es consumo aislado de drones."
+      }
+    },
+    {
+      "id": "resume_80",
+      "kind": "setup",
+      "outcome": "recorded",
+      "note": "Restauración de la tercera tanda en una instancia nueva; se conservan los sesenta recibos, el material y las poses enseñadas.",
+      "from": "batch_60",
+      "to": "batch_80_start",
+      "simulationSeconds": 1.5333333333528572,
+      "sourceSpentJ": 3.462287147762254,
+      "spent": {
+        "extraction": 0,
+        "conversion": 0,
+        "forming": 0,
+        "charge": 0,
+        "cooling": 0,
+        "transport": 3.462287147907773,
+        "assembly": 0,
+        "reconfiguration": 0
+      },
+      "sourceJPerNewReceipt": null,
+      "newReceipts": [],
+      "extractedUnits": 0,
+      "externalBatteryDecreaseJ": 1.2456802416718347,
+      "batteryNote": "Mismos IDs de baterías externas. Su cambio de carga se muestra aparte y no se suma de nuevo al débito de fuente.",
+      "logs": [],
+      "receipts": [],
+      "intervals": [],
+      "missingReceiptCounts": [],
+      "comparison": {
+        "intervals": 0,
+        "meanSourceJPerRotor": null,
+        "meanObservedSecondsPerRotor": null,
+        "meanPhysicalReceiptSecondsPerRotor": null,
+        "scope": "Débito de toda la fuente entre sondeos de recibos consecutivos del mismo intento; 0,01 J y hasta 1 s de sondeo. No es consumo aislado de drones."
+      }
+    },
+    {
+      "id": "run_to_80_wait",
+      "kind": "run",
+      "outcome": "interrupted",
+      "note": "No hubo un recibo nuevo durante 1200 s. El cubo 902 permaneció en la mesa y la pinza del QR295 no logró tomarlo; al cierre los tres seguidores estaban apoyados y sus baterías tenían 900 J. Se conserva todo el gasto de funcionamiento, recarga y espera. La corrección de la toma y recuperación posterior no están incluidas en este tramo.",
+      "from": "batch_80_start",
+      "to": "batch_80_stop_60",
+      "simulationSeconds": 1200.0000000152795,
+      "sourceSpentJ": 2972.4652163524734,
+      "spent": {
+        "extraction": 2,
+        "conversion": 5,
+        "forming": 0,
+        "charge": 204.7406088890275,
+        "cooling": 20.084444444440123,
+        "transport": 2740.640163224569,
+        "assembly": 0,
+        "reconfiguration": 0
+      },
+      "sourceJPerNewReceipt": null,
+      "newReceipts": [],
+      "extractedUnits": 1,
+      "externalBatteryDecreaseJ": -52.86079657616756,
+      "batteryNote": "Mismos IDs de baterías externas. Su cambio de carga se muestra aparte y no se suma de nuevo al débito de fuente.",
+      "logs": [
+        {
+          "path": "partida/run_to_80_wait.log",
+          "sha256": "2c37934138f66ac73b222ec3fe049ed644c3658a2c2f89e40f3881881cb22ce0",
+          "parsedLines": 28,
+          "ignoredNonJsonLines": 9
+        }
+      ],
+      "receipts": [],
+      "intervals": [],
+      "missingReceiptCounts": [],
+      "comparison": {
+        "intervals": 0,
+        "meanSourceJPerRotor": null,
+        "meanObservedSecondsPerRotor": null,
+        "meanPhysicalReceiptSecondsPerRotor": null,
+        "scope": "Débito de toda la fuente entre sondeos de recibos consecutivos del mismo intento; 0,01 J y hasta 1 s de sondeo. No es consumo aislado de drones."
+      }
+    },
+    {
+      "id": "recovery_yaw",
+      "kind": "recovery",
+      "outcome": "recorded",
+      "note": "Desde el guardado detenido, el QR295 tomó la carga 902, la entregó y regresó físicamente con la referencia de pinza corregida para su orientación real. No se escribieron poses ni se cambiaron configuraciones; no se añadieron piezas ni energía. El tramo incluye cuatro segundos posteriores de recarga real y trabajo concurrente del brazo y otro dron; no es consumo aislado del viaje.",
+      "from": "batch_80_stop_60",
+      "to": "recovery_yaw_end_60",
+      "simulationSeconds": 50.26666666730671,
+      "sourceSpentJ": 282.12312594387186,
+      "spent": {
+        "extraction": 0,
+        "conversion": 0,
+        "forming": 0,
+        "charge": 64.68702700288486,
+        "cooling": 1.999999999998181,
+        "transport": 215.43609894710244,
+        "assembly": 0,
+        "reconfiguration": 0
+      },
+      "sourceJPerNewReceipt": null,
+      "newReceipts": [],
+      "extractedUnits": 0,
+      "externalBatteryDecreaseJ": 16.4639847372423,
+      "batteryNote": "Mismos IDs de baterías externas. Su cambio de carga se muestra aparte y no se suma de nuevo al débito de fuente.",
+      "logs": [],
+      "receipts": [],
+      "intervals": [],
+      "missingReceiptCounts": [],
+      "comparison": {
+        "intervals": 0,
+        "meanSourceJPerRotor": null,
+        "meanObservedSecondsPerRotor": null,
+        "meanPhysicalReceiptSecondsPerRotor": null,
+        "scope": "Débito de toda la fuente entre sondeos de recibos consecutivos del mismo intento; 0,01 J y hasta 1 s de sondeo. No es consumo aislado de drones."
+      }
+    },
+    {
+      "id": "resume_80_yaw",
+      "kind": "setup",
+      "outcome": "recorded",
+      "note": "Restauración y arranque de la misma instalación después de la recuperación. Se conservan los sesenta recibos; el avance y su débito se registran aparte del tramo automático siguiente.",
+      "from": "recovery_yaw_end_60",
+      "to": "batch_80_yaw_start",
+      "simulationSeconds": 1.5333333333528572,
+      "sourceSpentJ": 28.83985808853322,
+      "spent": {
+        "extraction": 0,
+        "conversion": 0,
+        "forming": 0,
+        "charge": 0,
+        "cooling": 0,
+        "transport": 28.839858088744222,
+        "assembly": 0,
+        "reconfiguration": 0
+      },
+      "sourceJPerNewReceipt": null,
+      "newReceipts": [],
+      "extractedUnits": 0,
+      "externalBatteryDecreaseJ": 1.1738617273281307,
+      "batteryNote": "Mismos IDs de baterías externas. Su cambio de carga se muestra aparte y no se suma de nuevo al débito de fuente.",
+      "logs": [],
+      "receipts": [],
+      "intervals": [],
+      "missingReceiptCounts": [],
+      "comparison": {
+        "intervals": 0,
+        "meanSourceJPerRotor": null,
+        "meanObservedSecondsPerRotor": null,
+        "meanPhysicalReceiptSecondsPerRotor": null,
+        "scope": "Débito de toda la fuente entre sondeos de recibos consecutivos del mismo intento; 0,01 J y hasta 1 s de sondeo. No es consumo aislado de drones."
+      }
+    },
+    {
+      "id": "run_to_80_yaw",
+      "kind": "run",
+      "outcome": "completed",
+      "note": "Veinte recibos nuevos tras la recuperación de la toma. La instalación conservó su fuente, poses y configuración; no hubo intervención durante este tramo. El log original completo se congeló sólo después de acabar también la recepción 81. Su evento posterior no se transforma en un recibo del formato anterior.",
+      "from": "batch_80_yaw_start",
+      "to": "batch_80",
+      "simulationSeconds": 3464.0000000265063,
+      "sourceSpentJ": 35594.920011690716,
+      "spent": {
+        "extraction": 78,
+        "conversion": 195,
+        "forming": 160,
+        "charge": 5445.318391834626,
+        "cooling": 781.2933333331666,
+        "transport": 28775.30828709739,
+        "assembly": 79.99999999998636,
+        "reconfiguration": 80.00000000000227
+      },
+      "sourceJPerNewReceipt": 1779.7460005845358,
+      "newReceipts": [
+        "rotor:122",
+        "rotor:124",
+        "rotor:126",
+        "rotor:128",
+        "rotor:130",
+        "rotor:132",
+        "rotor:134",
+        "rotor:136",
+        "rotor:138",
+        "rotor:140",
+        "rotor:142",
+        "rotor:144",
+        "rotor:146",
+        "rotor:148",
+        "rotor:150",
+        "rotor:152",
+        "rotor:154",
+        "rotor:156",
+        "rotor:158",
+        "rotor:160"
+      ],
+      "extractedUnits": 39,
+      "externalBatteryDecreaseJ": 34.09911831220825,
+      "batteryNote": "Mismos IDs de baterías externas. Su cambio de carga se muestra aparte y no se suma de nuevo al débito de fuente.",
+      "logs": [
+        {
+          "path": "partida/run_to_80_yaw.log",
+          "sha256": "dca96def820732116f7c20f6af09bbbc6ef43789ae19d4c55087531d931e3372",
+          "parsedLines": 87,
+          "ignoredNonJsonLines": 1
+        }
+      ],
+      "receipts": [
+        {
+          "count": 61,
+          "productId": "rotor:122",
+          "receivedAt": 13589.066666729252,
+          "observedAt": 13590,
+          "sourceJ": 42917.76,
+          "log": "partida/run_to_80_yaw.log",
+          "line": 9
+        },
+        {
+          "count": 62,
+          "productId": "rotor:124",
+          "receivedAt": 13770.533333398229,
+          "observedAt": 13771,
+          "sourceJ": 41074.45,
+          "log": "partida/run_to_80_yaw.log",
+          "line": 13
+        },
+        {
+          "count": 63,
+          "productId": "rotor:126",
+          "receivedAt": 13951.200000067196,
+          "observedAt": 13952,
+          "sourceJ": 39231.19,
+          "log": "partida/run_to_80_yaw.log",
+          "line": 17
+        },
+        {
+          "count": 64,
+          "productId": "rotor:128",
+          "receivedAt": 14132.000000069498,
+          "observedAt": 14133,
+          "sourceJ": 37387.91,
+          "log": "partida/run_to_80_yaw.log",
+          "line": 21
+        },
+        {
+          "count": 65,
+          "productId": "rotor:130",
+          "receivedAt": 14312.8000000718,
+          "observedAt": 14313,
+          "sourceJ": 35546.42,
+          "log": "partida/run_to_80_yaw.log",
+          "line": 25
+        },
+        {
+          "count": 66,
+          "productId": "rotor:132",
+          "receivedAt": 14493.600000074102,
+          "observedAt": 14494,
+          "sourceJ": 33703.09,
+          "log": "partida/run_to_80_yaw.log",
+          "line": 29
+        },
+        {
+          "count": 67,
+          "productId": "rotor:134",
+          "receivedAt": 14674.400000076404,
+          "observedAt": 14675,
+          "sourceJ": 31859.74,
+          "log": "partida/run_to_80_yaw.log",
+          "line": 33
+        },
+        {
+          "count": 68,
+          "productId": "rotor:136",
+          "receivedAt": 14855.200000078707,
+          "observedAt": 14856,
+          "sourceJ": 30016.36,
+          "log": "partida/run_to_80_yaw.log",
+          "line": 37
+        },
+        {
+          "count": 69,
+          "productId": "rotor:138",
+          "receivedAt": 15036.133333414344,
+          "observedAt": 15037,
+          "sourceJ": 28172.95,
+          "log": "partida/run_to_80_yaw.log",
+          "line": 41
+        },
+        {
+          "count": 70,
+          "productId": "rotor:140",
+          "receivedAt": 15217.06666674998,
+          "observedAt": 15218,
+          "sourceJ": 26329.51,
+          "log": "partida/run_to_80_yaw.log",
+          "line": 45
+        },
+        {
+          "count": 71,
+          "productId": "rotor:142",
+          "receivedAt": 15398.133333418953,
+          "observedAt": 15399,
+          "sourceJ": 24486.07,
+          "log": "partida/run_to_80_yaw.log",
+          "line": 49
+        },
+        {
+          "count": 72,
+          "productId": "rotor:144",
+          "receivedAt": 15579.06666675459,
+          "observedAt": 15580,
+          "sourceJ": 22642.61,
+          "log": "partida/run_to_80_yaw.log",
+          "line": 53
+        },
+        {
+          "count": 73,
+          "productId": "rotor:146",
+          "receivedAt": 15760.000000090227,
+          "observedAt": 15761,
+          "sourceJ": 20799.12,
+          "log": "partida/run_to_80_yaw.log",
+          "line": 57
+        },
+        {
+          "count": 74,
+          "productId": "rotor:148",
+          "receivedAt": 15941.0666667592,
+          "observedAt": 15942,
+          "sourceJ": 18955.57,
+          "log": "partida/run_to_80_yaw.log",
+          "line": 61
+        },
+        {
+          "count": 75,
+          "productId": "rotor:150",
+          "receivedAt": 16122.266666761507,
+          "observedAt": 16123,
+          "sourceJ": 17112.02,
+          "log": "partida/run_to_80_yaw.log",
+          "line": 65
+        },
+        {
+          "count": 76,
+          "productId": "rotor:152",
+          "receivedAt": 16303.333333430479,
+          "observedAt": 16304,
+          "sourceJ": 15268.46,
+          "log": "partida/run_to_80_yaw.log",
+          "line": 69
+        },
+        {
+          "count": 77,
+          "productId": "rotor:154",
+          "receivedAt": 16484.40000009671,
+          "observedAt": 16485,
+          "sourceJ": 13424.88,
+          "log": "partida/run_to_80_yaw.log",
+          "line": 73
+        },
+        {
+          "count": 78,
+          "productId": "rotor:156",
+          "receivedAt": 16665.600000094073,
+          "observedAt": 16666,
+          "sourceJ": 11581.24,
+          "log": "partida/run_to_80_yaw.log",
+          "line": 77
+        },
+        {
+          "count": 79,
+          "productId": "rotor:158",
+          "receivedAt": 16846.800000091436,
+          "observedAt": 16847,
+          "sourceJ": 9737.59,
+          "log": "partida/run_to_80_yaw.log",
+          "line": 81
+        },
+        {
+          "count": 80,
+          "productId": "rotor:160",
+          "receivedAt": 17028.0000000888,
+          "observedAt": 17029,
+          "sourceJ": 7892.14,
+          "log": "partida/run_to_80_yaw.log",
+          "line": 85
+        }
+      ],
+      "intervals": [
+        {
+          "from": 61,
+          "to": 62,
+          "observedSeconds": 181,
+          "physicalReceiptSeconds": 181.46666666897727,
+          "sourceJ": 1843.310000000005
+        },
+        {
+          "from": 62,
+          "to": 63,
+          "observedSeconds": 181,
+          "physicalReceiptSeconds": 180.66666666896708,
+          "sourceJ": 1843.2599999999948
+        },
+        {
+          "from": 63,
+          "to": 64,
+          "observedSeconds": 181,
+          "physicalReceiptSeconds": 180.8000000023021,
+          "sourceJ": 1843.2799999999988
+        },
+        {
+          "from": 64,
+          "to": 65,
+          "observedSeconds": 180,
+          "physicalReceiptSeconds": 180.8000000023021,
+          "sourceJ": 1841.4900000000052
+        },
+        {
+          "from": 65,
+          "to": 66,
+          "observedSeconds": 181,
+          "physicalReceiptSeconds": 180.8000000023021,
+          "sourceJ": 1843.3300000000017
+        },
+        {
+          "from": 66,
+          "to": 67,
+          "observedSeconds": 181,
+          "physicalReceiptSeconds": 180.8000000023021,
+          "sourceJ": 1843.349999999995
+        },
+        {
+          "from": 67,
+          "to": 68,
+          "observedSeconds": 181,
+          "physicalReceiptSeconds": 180.8000000023021,
+          "sourceJ": 1843.380000000001
+        },
+        {
+          "from": 68,
+          "to": 69,
+          "observedSeconds": 181,
+          "physicalReceiptSeconds": 180.93333333563714,
+          "sourceJ": 1843.4099999999999
+        },
+        {
+          "from": 69,
+          "to": 70,
+          "observedSeconds": 181,
+          "physicalReceiptSeconds": 180.93333333563714,
+          "sourceJ": 1843.4400000000023
+        },
+        {
+          "from": 70,
+          "to": 71,
+          "observedSeconds": 181,
+          "physicalReceiptSeconds": 181.06666666897218,
+          "sourceJ": 1843.4399999999987
+        },
+        {
+          "from": 71,
+          "to": 72,
+          "observedSeconds": 181,
+          "physicalReceiptSeconds": 180.93333333563714,
+          "sourceJ": 1843.4599999999991
+        },
+        {
+          "from": 72,
+          "to": 73,
+          "observedSeconds": 181,
+          "physicalReceiptSeconds": 180.93333333563714,
+          "sourceJ": 1843.4900000000016
+        },
+        {
+          "from": 73,
+          "to": 74,
+          "observedSeconds": 181,
+          "physicalReceiptSeconds": 181.06666666897218,
+          "sourceJ": 1843.5499999999993
+        },
+        {
+          "from": 74,
+          "to": 75,
+          "observedSeconds": 181,
+          "physicalReceiptSeconds": 181.2000000023072,
+          "sourceJ": 1843.5499999999993
+        },
+        {
+          "from": 75,
+          "to": 76,
+          "observedSeconds": 181,
+          "physicalReceiptSeconds": 181.06666666897218,
+          "sourceJ": 1843.5600000000013
+        },
+        {
+          "from": 76,
+          "to": 77,
+          "observedSeconds": 181,
+          "physicalReceiptSeconds": 181.06666666623096,
+          "sourceJ": 1843.58
+        },
+        {
+          "from": 77,
+          "to": 78,
+          "observedSeconds": 181,
+          "physicalReceiptSeconds": 181.1999999973632,
+          "sourceJ": 1843.6399999999994
+        },
+        {
+          "from": 78,
+          "to": 79,
+          "observedSeconds": 181,
+          "physicalReceiptSeconds": 181.1999999973632,
+          "sourceJ": 1843.6499999999996
+        },
+        {
+          "from": 79,
+          "to": 80,
+          "observedSeconds": 182,
+          "physicalReceiptSeconds": 181.1999999973632,
+          "sourceJ": 1845.4499999999998
+        }
+      ],
+      "missingReceiptCounts": [],
+      "comparison": {
+        "intervals": 19,
+        "meanSourceJPerRotor": 1843.4536842105265,
+        "meanObservedSecondsPerRotor": 181,
+        "meanPhysicalReceiptSecondsPerRotor": 180.99649122944987,
+        "scope": "Débito de toda la fuente entre sondeos de recibos consecutivos del mismo intento; 0,01 J y hasta 1 s de sondeo. No es consumo aislado de drones."
+      }
+    },
+    {
+      "id": "continue_after_victory",
+      "kind": "run",
+      "outcome": "completed",
+      "note": "Una recepción física adicional en el mismo mundo, con materia y energía pagadas. Se valida por los dos checkpoints exactos: receivedIds pasa de 80 a 81 aunque el HUD mantenga su objetivo de 80. El evento posterior usa otro formato; no se inventa una línea de recibo ni una media entre varios recibos.",
+      "from": "batch_80",
+      "to": "post_victory_81",
+      "simulationSeconds": 180.9999999973661,
+      "sourceSpentJ": 1843.638080863083,
+      "spent": {
+        "extraction": 4,
+        "conversion": 10,
+        "forming": 8,
+        "charge": 285.9986634517845,
+        "cooling": 40.16888888888025,
+        "transport": 1487.4705285730306,
+        "assembly": 3.999999999999318,
+        "reconfiguration": 4.000000000000114
+      },
+      "sourceJPerNewReceipt": 1843.638080863083,
+      "newReceipts": [
+        "rotor:162"
+      ],
+      "extractedUnits": 2,
+      "externalBatteryDecreaseJ": -0.16058296278106354,
+      "batteryNote": "Mismos IDs de baterías externas. Su cambio de carga se muestra aparte y no se suma de nuevo al débito de fuente.",
+      "logs": [],
+      "receipts": [],
+      "intervals": [],
+      "missingReceiptCounts": [
+        81
+      ],
+      "comparison": {
+        "intervals": 0,
+        "meanSourceJPerRotor": null,
+        "meanObservedSecondsPerRotor": null,
+        "meanPhysicalReceiptSecondsPerRotor": null,
+        "scope": "Débito de toda la fuente entre sondeos de recibos consecutivos del mismo intento; 0,01 J y hasta 1 s de sondeo. No es consumo aislado de drones."
+      }
+    }
+  ],
+  "milestones": [
+    {
+      "target": 20,
+      "status": "observed",
+      "confirmedBy": "batch_20",
+      "productId": "rotor:40",
+      "receivedAt": 5226.666666663228,
+      "sourceJAtCheckpointWithCount": 120138.35650319573
+    },
+    {
+      "target": 40,
+      "status": "observed",
+      "confirmedBy": "batch_40",
+      "productId": "rotor:80",
+      "receivedAt": 8768.666666667874,
+      "sourceJAtCheckpointWithCount": 83467.21099314738
+    },
+    {
+      "target": 60,
+      "status": "observed",
+      "confirmedBy": "batch_60",
+      "productId": "rotor:120",
+      "receivedAt": 12310.666666712974,
+      "sourceJAtCheckpointWithCount": 46773.95015864296
+    },
+    {
+      "target": 80,
+      "status": "observed",
+      "confirmedBy": "batch_80",
+      "productId": "rotor:160",
+      "receivedAt": 17028.0000000888,
+      "sourceJAtCheckpointWithCount": 7892.139659419604
+    }
+  ],
+  "limitations": [
+    "Los hashes fijan archivos y los validadores comprueban coherencia; createdAt y contabilidad no prueban por sí solos acciones físicas ni excluyen una rama clonada.",
+    "Native o fixture es procedencia declarada en el manifiesto; se debe acompañar de los scripts y registros de la ejecución.",
+    "El débito de fuente incluye recarga. No sumes de nuevo la carga transferida ni la capacidad nominal de baterías como consumo.",
+    "No se calcula energía total disipada: las baterías externas no abarcan toda la carga almacenada en trabajadores, productos y componentes.",
+    "Los intervalos dentro de un intento y los costes de recuperación se informan por separado. No se proyectan ochenta recepciones a partir de un tramo corto.",
+    "No se ejecutan pasos físicos, no se acredita una interfaz visual y no se modifican los guardados."
+  ]
+}

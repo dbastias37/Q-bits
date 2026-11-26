@@ -1,0 +1,285 @@
+{
+  "date": "2026-11-26",
+  "node": "v24.22.3",
+  "scope": "Cannon y controladores nativos en arnés Node; DOM y GPU simulados. No mide render, FPS ni ochenta entregas.",
+  "method": {
+    "checkpoint": "09-cadena-autonoma.json",
+    "checkpointSha256": "dd39f1dd2a2d6d489c015c0ab6e5e6d7225ccf2db59cfa6d6dbb5ba286c4b96e",
+    "hz": 60,
+    "steps": 1800,
+    "simulatedSeconds": 30,
+    "cpuSamplerIntervalMicroseconds": 1000,
+    "bootExcluded": true,
+    "concurrency": "La corrida prolongada y otros diagnósticos compartían la máquina. CPU es del proceso; las duraciones de pared no forman una comparación aislada.",
+    "physicsChanges": false,
+    "omittedControllers": false
+  },
+  "initial": {
+    "elapsed": 1754.399999999719,
+    "energyJ": 155063.08515643395,
+    "received": 1,
+    "bodies": 150,
+    "groups": 104,
+    "constraints": 6,
+    "records": 452,
+    "contacts": 0,
+    "solverIterations": 24,
+    "arms": [
+      {
+        "id": 279,
+        "state": "carry",
+        "cycles": 5,
+        "status": "Programa reanudado"
+      }
+    ],
+    "batteries": [
+      {
+        "id": 294,
+        "storedJ": 900
+      },
+      {
+        "id": 386,
+        "storedJ": 900
+      },
+      {
+        "id": 397,
+        "storedJ": 899.6864264992696
+      }
+    ]
+  },
+  "final": {
+    "elapsed": 1784.3999999996918,
+    "energyJ": 154885.56286821235,
+    "received": 1,
+    "bodies": 155,
+    "groups": 109,
+    "constraints": 5,
+    "records": 457,
+    "contacts": 30,
+    "solverIterations": 24,
+    "arms": [
+      {
+        "id": 279,
+        "state": "wait",
+        "cycles": 6,
+        "status": "Destino B ocupado · frenos mecánicos, motores en reposo"
+      }
+    ],
+    "batteries": [
+      {
+        "id": 294,
+        "storedJ": 900
+      },
+      {
+        "id": 386,
+        "storedJ": 900
+      },
+      {
+        "id": 397,
+        "storedJ": 848.3817096240485
+      }
+    ]
+  },
+  "profiles": [
+    {
+      "variant": "Contexto previo",
+      "adoptedAsOptIn": false,
+      "wallSeconds": 14.316573614,
+      "cpuUserSeconds": 16.184301,
+      "cpuSystemSeconds": 0.776659,
+      "cpuTotalSeconds": 16.96096,
+      "stateSha256": "574c2efdd9476b76d246d47b32bd56d64e1426505755eebdd75e673269a10d18",
+      "gameSha256": "f9157225057246b7be58abc9f72789ccb1dec70b05d993c6074da0bc0bfb7675"
+    },
+    {
+      "variant": "DONT_CONTEXTIFY",
+      "adoptedAsOptIn": true,
+      "wallSeconds": 16.137717503,
+      "cpuUserSeconds": 10.121879,
+      "cpuSystemSeconds": 0.531573,
+      "cpuTotalSeconds": 10.653452,
+      "stateSha256": "574c2efdd9476b76d246d47b32bd56d64e1426505755eebdd75e673269a10d18",
+      "gameSha256": "f9157225057246b7be58abc9f72789ccb1dec70b05d993c6074da0bc0bfb7675"
+    },
+    {
+      "variant": "Alias léxicos locales",
+      "adoptedAsOptIn": false,
+      "wallSeconds": 11.006845632,
+      "cpuUserSeconds": 11.253439,
+      "cpuSystemSeconds": 0.372589,
+      "cpuTotalSeconds": 11.626028,
+      "stateSha256": "574c2efdd9476b76d246d47b32bd56d64e1426505755eebdd75e673269a10d18",
+      "gameSha256": "f9157225057246b7be58abc9f72789ccb1dec70b05d993c6074da0bc0bfb7675"
+    }
+  ],
+  "identicalFullSavedDataSha256": "574c2efdd9476b76d246d47b32bd56d64e1426505755eebdd75e673269a10d18",
+  "hotspots": {
+    "nonAdditiveInclusive": [
+      {
+        "name": "flightSnapshot",
+        "url": "evalmachine.<anonymous>",
+        "scriptId": "237",
+        "line": 2219,
+        "selfMs": 205.737,
+        "inclusiveMs": 6927.356,
+        "selfPercent": 1.4311806598719723,
+        "inclusivePercent": 48.18918294350588
+      },
+      {
+        "name": "updateFlights",
+        "url": "evalmachine.<anonymous>",
+        "scriptId": "237",
+        "line": 2363,
+        "selfMs": 64.185,
+        "inclusiveMs": 6759.068,
+        "selfPercent": 0.44649397363567345,
+        "inclusivePercent": 47.01851101337889
+      },
+      {
+        "name": "gripperCheck",
+        "url": "evalmachine.<anonymous>",
+        "scriptId": "237",
+        "line": 3204,
+        "selfMs": 297.497,
+        "inclusiveMs": 2789.8160000000003,
+        "selfPercent": 2.0694962635302945,
+        "inclusivePercent": 19.406964735567186
+      },
+      {
+        "name": "n.step",
+        "url": "evalmachine.<anonymous>",
+        "scriptId": "192",
+        "line": 27,
+        "selfMs": 10.015,
+        "inclusiveMs": 1822.994,
+        "selfPercent": 0.06966794649779963,
+        "inclusivePercent": 12.681402741668473
+      },
+      {
+        "name": "propellerObstruction",
+        "url": "evalmachine.<anonymous>",
+        "scriptId": "237",
+        "line": 2209,
+        "selfMs": 251.93,
+        "inclusiveMs": 1646.166,
+        "selfPercent": 1.7525158024154428,
+        "inclusivePercent": 11.451323496205376
+      },
+      {
+        "name": "trajectoryDestinationReadiness",
+        "url": "evalmachine.<anonymous>",
+        "scriptId": "237",
+        "line": 8816,
+        "selfMs": 8.713,
+        "inclusiveMs": 1211.343,
+        "selfPercent": 0.0606107656350802,
+        "inclusivePercent": 8.426538124262017
+      },
+      {
+        "name": "rotorPowerState",
+        "url": "evalmachine.<anonymous>",
+        "scriptId": "237",
+        "line": 6400,
+        "selfMs": 50.582,
+        "inclusiveMs": 1085.3270000000002,
+        "selfPercent": 0.3518666070645733,
+        "inclusivePercent": 7.549925448688705
+      }
+    ],
+    "self": [
+      {
+        "name": "gripperFaceDistance",
+        "url": "evalmachine.<anonymous>",
+        "scriptId": "237",
+        "line": 3156,
+        "selfMs": 1362.112,
+        "inclusiveMs": 1636.23,
+        "selfPercent": 9.475341581628644,
+        "inclusivePercent": 11.382205102156234
+      },
+      {
+        "name": "V",
+        "url": "evalmachine.<anonymous>",
+        "scriptId": "237",
+        "line": 776,
+        "selfMs": 857.1909999999999,
+        "inclusiveMs": 862.6379999999999,
+        "selfPercent": 5.9629292787214565,
+        "inclusivePercent": 6.000820572238532
+      },
+      {
+        "name": "collisionPoseBounds",
+        "url": "evalmachine.<anonymous>",
+        "scriptId": "237",
+        "line": 1549,
+        "selfMs": 843.1109999999999,
+        "inclusiveMs": 899.5349999999997,
+        "selfPercent": 5.864983728378067,
+        "inclusivePercent": 6.257489391203015
+      },
+      {
+        "name": "CANNON.ConvexPolyhedron.calculateWorldAABB",
+        "url": "evalmachine.<anonymous>",
+        "scriptId": "237",
+        "line": 1224,
+        "selfMs": 581.704,
+        "inclusiveMs": 584.762,
+        "selfPercent": 4.046542501203798,
+        "inclusivePercent": 4.067815050419003
+      },
+      {
+        "name": "(anonymous)",
+        "url": "evalmachine.<anonymous>",
+        "scriptId": "237",
+        "line": 2211,
+        "selfMs": 549.739,
+        "inclusiveMs": 667.4060000000001,
+        "selfPercent": 3.8241824502999373,
+        "inclusivePercent": 4.6427164753180685
+      },
+      {
+        "name": "updateMoods",
+        "url": "evalmachine.<anonymous>",
+        "scriptId": "237",
+        "line": 9618,
+        "selfMs": 507.959,
+        "inclusiveMs": 883.603,
+        "selfPercent": 3.5335457249202,
+        "inclusivePercent": 6.14666066193662
+      }
+    ]
+  },
+  "adoptedHarness": {
+    "option": "createGame({nativeContext:true})",
+    "actualModeFlag": "game.nativeContext",
+    "default": false,
+    "fallbackWhenUnavailable": "original contextified global",
+    "gate": {
+      "defaultUsesNativeContext": false,
+      "optInUsesNativeContext": true,
+      "withoutConstantUsesNativeContext": false,
+      "identicalSeededRandom": true,
+      "windowSelfAndEventsRetained": true
+    }
+  },
+  "integratedVerificationAfterDroneSnapshotReuse": {
+    "nativeContext": true,
+    "steps": 1800,
+    "stateSha256": "574c2efdd9476b76d246d47b32bd56d64e1426505755eebdd75e673269a10d18",
+    "gameSha256": "d3e20c8c22e619cb6184012bc3f8ae487f5e6f803535170c42009773b5941a18",
+    "wallSeconds": 7.504341159,
+    "cpuUserSeconds": 9.071503,
+    "cpuSystemSeconds": 0.76109,
+    "comparisonCaveat": "Incluye la posterior reutilización de center/height en los sondeos de vuelo. No aísla su efecto ni el del cambio de arnés."
+  },
+  "droneSnapshotReuse": {
+    "snapshotCallsBefore": 6238,
+    "snapshotCallsAfter": 5400,
+    "pickupQueriesUnchanged": 516,
+    "destinationQueriesUnchanged": 322,
+    "gripperChecksUnchanged": 739,
+    "creationChecksUnchanged": 2655,
+    "sameFullSavedDataSha256": "574c2efdd9476b76d246d47b32bd56d64e1426505755eebdd75e673269a10d18",
+    "scope": "Datos del contador del agente de logística; no representan una medición aislada de velocidad."
+  }
+}

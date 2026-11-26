@@ -1,0 +1,43 @@
+{
+  "scope": "Real saved continuous A/B installation restored in a fresh Node/Cannon instance, then advanced 60 s and restored again. Not a Chromium or full 80-product result.",
+  "inputCheckpoint": "qbits-native-fleet-centered-pick/final.json",
+  "inputMissionSeconds": 1702.066666666667,
+  "inputJoules": 155841.98363888907,
+  "failureBeforeFix": {
+    "hinge": [
+      259,
+      260
+    ],
+    "pivotGapMetres": 0.003920420230885364,
+    "axisDot": -0.972443953470948,
+    "angleDegrees": 13.481817638418885,
+    "restoredRotors": 33,
+    "restoredArms": 0,
+    "warning": "No se pudo recuperar el programa de un brazo."
+  },
+  "restorationOnlyLimits": {
+    "pivotGapMetres": 0.008,
+    "axisAngleDegrees": 15
+  },
+  "observedAfterFix": {
+    "seconds": 60,
+    "armState": "wait",
+    "status": "Sin objeto frente a la cara naranja. Centra un cubo suelto frente a ella. Alcance: 5 cm. · frenos mecánicos, motores en reposo",
+    "cycles": 6,
+    "rotors": 34,
+    "maxAngle": 6.28656883033641,
+    "maxGap": 0.0019788162316322195,
+    "contacts": 232,
+    "equations": 726,
+    "energyJ": 155036.97170548607,
+    "reloadWarnings": []
+  },
+  "preservedAtLoad": [
+    "material identities",
+    "remaining joules",
+    "taught A/B/home poses",
+    "repetition and cycle count",
+    "serialized hinge endpoints"
+  ],
+  "newConnectionsUnchanged": true
+}

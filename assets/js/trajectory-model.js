@@ -160,7 +160,7 @@
  const ROUTE_KEYS=['version','id','startId','endId','glyph','points','loop'];
  const POINT_KEYS=['x','y','z','action','wait'];
  const PART_KEYS=['version','level','face','role','routeId'];
- const ACTIONS=['pass','wait','land','drop'];
+ const ACTIONS=['pass','wait','land','drop','grab'];
  const validId=value=>Number.isSafeInteger(value)&&value>0;
  const validRouteId=value=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$/.test(value);
  const validGlyph=value=>Number.isInteger(value)&&value>=0&&value<GLYPHS.length;

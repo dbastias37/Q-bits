@@ -2,7 +2,7 @@
 (function(root){
  'use strict';
  const SVG='http://www.w3.org/2000/svg';
- const POINT_ACTIONS={pass:'Pasar',wait:'Esperar',land:'Aterrizar',drop:'Soltar carga'};
+ const POINT_ACTIONS={pass:'Pasar',wait:'Esperar',land:'Aterrizar',drop:'Soltar carga',grab:'Tomar carga'};
  const finite=value=>typeof value==='number'&&Number.isFinite(value);
  const metres=value=>finite(value)?String(Math.round(value*100)/100).replace('.',',')+' m':'—';
  const hasRoute=value=>value?.routeId!==undefined&&value?.routeId!==null&&value?.routeId!=='';
@@ -33,7 +33,7 @@
   const availability=element('p','trajectory-guide','','availability');
   const changeGlyph=button('glyph-next','Cambiar cara','trajectory-subtle');identity.append(glyph,routeLabel,kind,orientation,facts,availability,changeGlyph);
   const controls=element('div','trajectory-controls'),guide=element('p','trajectory-guide','','guide'),actions=element('div','trajectory-actions');
-  actions.append(button('start-route','Generar cara nueva','trajectory-primary'),button('link-route','Vincular como fin','trajectory-primary'),button('pair','Elegir final','trajectory-primary'),button('trace','Trazar recorrido','trajectory-primary'),button('assign','Elegir ruta','trajectory-primary'),button('run','Iniciar recorrido','trajectory-primary'),button('stop','Detener recorrido','trajectory-stop'));
+  actions.append(button('start-route','Generar cara nueva','trajectory-primary'),button('link-route','Vincular como fin','trajectory-primary'),button('pair','Elegir final','trajectory-primary'),button('trace','Trazar recorrido','trajectory-primary'),button('assign','Elegir ruta','trajectory-primary'),button('run','Iniciar recorrido','trajectory-primary'),button('stop','Detener recorrido','trajectory-stop'),button('teach-pick','Enseñar recogida','trajectory-subtle'),button('teach-place','Enseñar entrega','trajectory-subtle'));
   const preview=element('div','trajectory-preview'),map=svg('svg',{viewBox:'0 0 420 150',role:'img','aria-label':'Vista superior del recorrido'});map.id='trajectory-map';
   const mapEmpty=element('p','trajectory-preview-empty','El trazado aparecerá aquí.','map-empty');preview.append(map,mapEmpty);
   const routeOptions=element('div','trajectory-route-options'),loop=element('input','',undefined,'loop');loop.type='checkbox';focusable.push(loop);
@@ -66,6 +66,7 @@
    if(type==='assign')return !beacon&&stopped;
    if(type==='run')return !beacon&&!!s.canStart&&stopped;
    if(type==='stop')return !!s.running;
+   if(type==='teach-pick'||type==='teach-place')return !beacon&&linked&&stopped&&!!s.canTeachCargo;
    if(type==='unlink')return linked&&stopped;
    if(type==='glyph-next')return beacon&&linked&&stopped&&s.availableGlyphs!==0;
    if(type==='loop')return beacon&&linked&&s.paired&&stopped;
@@ -104,6 +105,7 @@
    height.min=String(finite(s.minHeight)?s.minHeight:.15);height.max=String(finite(s.maxHeight)?s.maxHeight:3);
    wait.max=String(finite(s.maxWait)?s.maxWait:60);
    const land=action.children[2];land.hidden=!airborne;land.disabled=!airborne;
+   const grab=action.children[4];grab.hidden=!airborne;grab.disabled=!airborne;
    const blocked=busy||!permission('point-update',s);for(const node of [height,action,wait,buttons.get('point-save'),buttons.get('point-remove')])node.disabled=blocked;
   }
   function refresh(){
@@ -119,7 +121,7 @@
    const capacity=finite(s?.glyphCapacity)?s.glyphCapacity:144;
    setText(availability,s?.availableGlyphs===0?'No quedan caras libres (0 de '+capacity+'). '+(!linked?'Puedes vincular este cubo como fin de un inicio existente.':'Desvincula un recorrido para liberar su cara.'):'Caras libres: '+s?.availableGlyphs+' de '+capacity+'.');
    setText(guide,!s?'Cierra este panel y selecciona una pieza disponible.':beacon?!linked?'Genera una cara nueva para iniciar otro recorrido, o vincula este cubo como fin de un inicio existente.':!paired?'Esta cara ya está reservada. Elige una baliza libre como final para que ambas compartan la identidad.':'Traza el camino en la sala. Después, asigna esta ruta al receptor del mecanismo.':!linked?'Este receptor sigue una cara existente. Elige una baliza de la ruta. Para generar una cara nueva, conviértelo en baliza desde el taller.':s.running?'El mecanismo sigue la ruta asignada. Puedes detenerlo desde aquí.':'La ruta está asignada. Inicia el recorrido cuando el mecanismo esté preparado.');
-   const show={'start-route':beacon&&!linked,'link-route':beacon&&!linked,pair:beacon&&linked&&!paired,trace:beacon&&paired,assign:!beacon,run:!beacon&&!s?.running,stop:!!s?.running,unlink:linked,'glyph-next':beacon&&linked,'clear-points':beacon&&paired&&points.length>0};
+   const show={'start-route':beacon&&!linked,'link-route':beacon&&!linked,pair:beacon&&linked&&!paired,trace:beacon&&paired,assign:!beacon,run:!beacon&&!s?.running,stop:!!s?.running,unlink:linked,'glyph-next':beacon&&linked,'clear-points':beacon&&paired&&points.length>0,'teach-pick':!beacon&&linked&&!!s?.cargoAvailable,'teach-place':!beacon&&linked&&!!s?.cargoAvailable};
    for(const [type,shown]of Object.entries(show)){const node=buttons.get(type);node.hidden=!shown;node.disabled=busy||!permission(type,s);}
    setText(changeGlyph,paired?'Cambiar cara de la pareja':'Cambiar cara');setText(buttons.get('assign'),linked?'Cambiar ruta':'Elegir ruta');routeOptions.hidden=!beacon||!paired;loop.checked=!!s?.loop;loop.disabled=busy||!permission('loop',s);
    selectedPoint=Math.max(0,Math.min(selectedPoint,points.length-1));
@@ -132,7 +134,7 @@
    if(current?.routeId!==draftRoute||pointKey(point)!==draftKey){dirty=false;draft=null;refresh();message('El recorrido cambió. Revisa este punto antes de guardarlo.',true);return false;}
    const choice=action.value,seconds=wait.value===''?NaN:Number(wait.value),altitude=height.value===''?NaN:Number(height.value),airborne=current.mode==='air';
    const low=finite(current.minHeight)?current.minHeight:.15,high=finite(current.maxHeight)?current.maxHeight:3;
-   if(!POINT_ACTIONS[choice]||choice==='land'&&!airborne){message('Elige una acción válida para este recorrido.',true);return false;}
+   if(!POINT_ACTIONS[choice]||['land','grab'].includes(choice)&&!airborne){message('Elige una acción válida para este recorrido.',true);return false;}
    if(airborne&&(!Number.isFinite(altitude)||altitude<low||altitude>high)){message('La altura debe estar entre '+metres(low)+' y '+metres(high)+'.',true);return false;}
    const maxWait=finite(current.maxWait)?current.maxWait:60;
    if(choice!=='pass'&&(!Number.isFinite(seconds)||seconds<0||seconds>maxWait)){message('La espera debe estar entre 0 y '+maxWait+' segundos.',true);return false;}

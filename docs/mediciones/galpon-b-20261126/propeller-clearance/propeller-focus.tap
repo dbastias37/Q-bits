@@ -1,0 +1,40 @@
+✔ the recorded transfer table is clear at 7.70147 degrees and at every yaw, with the original blade radius (179.832908ms)
+✔ distant room walls cannot obstruct a vertical takeoff column at any yaw (103.534547ms)
+✔ axial clipping rejects the empty part of a tilted rod but preserves a real edge crossing (87.469094ms)
+✔ the exact pyramid, tetrahedron and coupler caps preserve their empty corners and real incursions (82.472522ms)
+✔ the complete swept disk detects interior and edge crossings without any vertex inside its radius (82.716045ms)
+✔ upper and lower axial limits and the strict radial limit remain unchanged (112.88271ms)
+✔ box rejection and exact clipping are invariant under a rigid world rotation and translation (104.016718ms)
+✔ the flight protection uses the true table boundary and still rejects an intrusive static wall (112.042934ms)
+✔ foreign triangular solids and sensors still obstruct the full blade sweep in every scene (156.347ms)
+✔ power model limits lift, battery power, height, count and exact last energy fraction (2.760764ms)
+✔ two triangular tips snap manually to opposite sockets and retain IDs, weight and energy (198.045675ms)
+✔ hub-to-blade reverse snap works and a used tip cannot also form a conventional rotor (108.619376ms)
+✔ 1 propellers physically lift and hold the connected chassis with 1 battery cells (310.691714ms)
+✔ 2 propellers physically lift and hold the connected chassis with 2 battery cells (266.995153ms)
+✔ 3 propellers physically lift and hold the connected chassis with 3 battery cells (456.443768ms)
+✔ 4 propellers physically lift and hold the connected chassis with 3 battery cells (493.795208ms)
+✔ fifth propeller, absent batteries, held assembly and physical overload fail without spending energy (57.251493ms)
+✔ rotating clearance includes foreign pieces, preventing thrust through a blocked blade disk (78.311892ms)
+✔ translation is powered, direction can reverse, hovering arrests drift and battery exhaustion drops the body (253.834858ms)
+✔ contact face mounted to the drone reverses once per physical wall contact (36.267355ms)
+✔ lab restore and templates retain bounded configuration, physical material and stored energy without resuming flight (220.078533ms)
+✔ blueprint consumes existing material and retains charge, mass and identity (60.050894ms)
+✔ quick drone and panel controls are available, paused inspection spends nothing, safe settings clamp (118.919915ms)
+✔ a mounted hand carries a real cube, shares its battery and counts the payload in flight load (182.314819ms)
+✔ snapshots cannot share flight setting objects and shelving preserves the assembled mechanism (52.620269ms)
+✔ excess load at altitude settles instead of creating unlimited lift, and simultaneous motors reserve battery output (136.813148ms)
+✔ one cell lifts a 30-piece chassis with a weight sensor and independent detection threshold (180.005541ms)
+✔ finite route holds in the air, touches down, takes off again and lands at the last point (231.425169ms)
+✔ remote click opens the editor, the saved loop repeats and a manual landing cancels it (301.69995ms)
+✔ sensor inside the blade disk reports obstruction separately from a load cutoff (37.532157ms)
+✔ restored routes start disarmed and invalid offsets cannot start motors or spend energy (141.464983ms)
+✔ restart returns a flying route to its takeoff pose and its first waypoint (103.178878ms)
+ℹ tests 32
+ℹ suites 0
+ℹ pass 32
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4181.277878

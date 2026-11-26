@@ -1,0 +1,66 @@
+✔ a paid QR drone saves during carry and after release, then resumes the same delivery from durable bytes (5292.565838ms)
+ℹ {"beforeSaveSeconds":10.033333333333333,"afterLoadSeconds":38.56666666666512,"spentBatteryJ":38.325693039372254}
+✔ the production drone completes three physical pickups, cold-table deliveries and landed returns with the same matter (9154.610419ms)
+ℹ {"cyclesSeconds":[48.6,48.733333333333334,48.666666666666664],"chargeDeltaJ":110.28921101522417,"sourceSpentJ":96.24999999991269,"sourceChargeJ":90.25,"sourceCoolingJ":5.999999999999979,"delivered":[9,10,11]}
+✔ an empty production pickup waits supported beyond an upstream cycle and resumes only for a real new load (10308.194852ms)
+✔ a full physical drop pocket keeps the drone supported until the destination actually clears (5690.543738ms)
+✔ a real QR drone lifts stabilized product from the second cooler and delivers it to feedA (9128.901506ms)
+ℹ {"destination":"feedA","seconds":23.6,"routeMetres":3.8412280574569926,"spentBatteryJ":37.6306114343173,"payloadId":71}
+✔ a real QR drone lifts stabilized product from the second cooler and delivers it to feedB (8876.477257ms)
+ℹ {"destination":"feedB","seconds":21.133333333333333,"routeMetres":3.153768578513621,"spentBatteryJ":34.575902345798454,"payloadId":71}
+✔ QR picks a real lower load, carries it, releases over the table and returns to origin (1119.385605ms)
+ℹ {"orientation":"lower","roundTripSeconds":37.025,"spentJ":63.967170612584454,"deliveredX":1.2057306893903552}
+✔ QR picks a real front load, carries it, releases over the table and returns to origin (1013.13987ms)
+ℹ {"orientation":"front","roundTripSeconds":37.99166666666667,"spentJ":68.55289155750988,"deliveredX":1.175068821881967}
+✔ visual cargo teaching leaves all bodies, charge and identities untouched and catches obstruction and wrong facing (103.923262ms)
+✔ cargo teaching accepts classic input, pauses physics and persists both poses without moving the drone (1225.731224ms)
+✔ cargo teaching accepts remapped input, pauses physics and persists both poses without moving the drone (87.45636ms)
+✔ the camera can move during a cargo preview while all simulated bodies remain paused (94.666663ms)
+✔ pickup height can be taught above the adjacent tray while the real gripper reach stays unchanged (125.089679ms)
+✔ grab action refuses bare receivers and ground routes, preserving existing follower protections (77.662182ms)
+✔ galpón preflight rejects a shortfall before moving, spending or creating an automatic grip (78.017757ms)
+✔ QR checkpoints resume before and after delivery at the same action index without replay or physical mutations (881.334135ms)
+✔ a newly placed physical obstacle still stops the carrier after the front-gripper envelope correction (384.151756ms)
+✔ a taught lower face survives accumulated yaw, a loaded checkpoint and its actual pickup/delivery/return (938.836438ms)
+✔ tool-relative targeting preserves the real front normal and still rejects a physically incompatible yaw (73.697608ms)
+✔ the translated pickup still checks the complete real carrier volume before leaving its pad (73.624413ms)
+✔ two QR carriers retain one shared pickup across a durable departure checkpoint (14736.41082ms)
+ℹ {"first":56,"waiting":59,"secondsAfterCheckpoint":42.083333333333336}
+✔ stopping the approaching follower releases the shared pickup for the waiting drone (6549.701447ms)
+✔ an occupied first destination leaves the shared cold pickup available to the other feed (7775.877986ms)
+✔ independent cold pickup poses do not acquire a global fleet lock (5316.427031ms)
+✔ an incoming delivery waits for the outgoing carrier to return through their shared cold shaft, including reload (23875.837001ms)
+ℹ {"waitingForReturnAfterReload":15.32499999999977,"incoming":56,"outgoing":59}
+✔ three sleeping carriers start and reload in their real ground wait before sharing one cold station (22390.340693ms)
+ℹ {"departures":2,"receivers":[56,59,62]}
+✔ a delivery arm and QR pickup retain their local station until HOME or touchdown, including reload (33558.061025ms)
+ℹ {"arm":126,"drone":56,"waitingAfterReload":17.3000000000003,"seconds":2563.399999999846,"durationSeconds":64.99999999994088}
+✔ a real propeller obstruction interrupts a productive loaded flight once, without treating ground waits as faults (6327.096893ms)
+✔ a real propeller obstruction interrupts a productive empty return once, without treating ground waits as faults (9381.623472ms)
+✔ mission source reveals the original remaining reserve once and cannot refill it through its cell (304.745512ms)
+✔ laying and extending cable transfers only live paid material, and recovery keeps identities and energy (172.537238ms)
+✔ blocked cable and hot or fabricated inputs preserve world pieces and the reserve (149.832782ms)
+✔ a material-backed battery changes capacity without adding charge and cannot passively charge (111.400958ms)
+✔ a stopped wired battery charges only while physically supported and spends exactly transferred joules (310.998492ms)
+✔ the real rotor and source share exact energy debits and enforce available output power (145.711196ms)
+✔ charging already allocated before motor accounting remains inside the same source power limit (252.504651ms)
+✔ a fixed QR charging berth requires its cable, proximity and physical support; airborne requests receive nothing (167.516783ms)
+✔ connecting a previously sleeping QR berth records a real support before charging (152.007231ms)
+✔ source, cable custody and battery charge survive a fresh instance without duplicated grants (231.861236ms)
+✔ a real dock charge crossing twenty percent survives save without becoming landing reserve (427.95716ms)
+✔ an upward pair guides a powered physical drone to the second beacon and lands (444.765422ms)
+✔ moving a marker pauses its drone in powered hover without relocating the aircraft (239.427276ms)
+✔ an airborne point releases an actual held payload once and continues to landing (424.58813ms)
+✔ a receiver rejects aerial delivery without a pincher and cannot restart an empty battery (101.132534ms)
+✔ a final pass completes in powered hover instead of forcing an unrequested landing (579.550311ms)
+✔ a durable in-flight save retains pair identity and reloads its route paused in physical hover (382.6037ms)
+✔ 48 authored flight points retain all compiled elbows and reload paused in powered hover (264.116806ms)
+✔ a powered drone reaches every horizontal and vertical corner before landing on a grid circuit (332.697003ms)
+ℹ tests 48
+ℹ suites 0
+ℹ pass 48
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 130089.593532

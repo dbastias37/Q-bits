@@ -1,0 +1,1213 @@
+{
+  "scope": "Native drone pickup/drop teaching in a real restored checkpoint, automatic physics frozen. Camera instrumented; no construction, cargo movement, physical flight or full manual session is claimed.",
+  "checkpoint": "/tmp/qbits-native-fleet-clear-column/final.json",
+  "checkpointSha256": "3a8097c5c9b1d34615726271ffedac813d08a434f7f8cf146cd72f43da824190",
+  "gameSha256": "cb7e54765f0a44756c852e0ca6a5e66f6e1de14f7b93e535ac91e334a8f5716b",
+  "documentSha256": "89924c1d3569a9974404863b81e668275c5a41a58b854bca6b6862918e0a0895",
+  "receiver": 295,
+  "sample": 521,
+  "captures": [
+    "01-controles-ensenanza.png",
+    "02-recogida-azul.png",
+    "03-recogida-roja.png",
+    "04-entrega-azul.png",
+    "05-ayuda-b-960.png"
+  ],
+  "states": [
+    {
+      "label": "valid pickup",
+      "name": "pick",
+      "valid": true,
+      "reason": "Objeto al alcance (2.5 cm) · 1.0 / 1 u.",
+      "clearance": null,
+      "ghostParts": 6,
+      "loadPoses": 0,
+      "target": {
+        "x": 3.12405127338525,
+        "y": 0.7349932644024968,
+        "z": -0.215073399756235
+      },
+      "surface": {
+        "point": {
+          "x": 3.1240512591559026,
+          "y": 0.6649932644024983,
+          "z": -0.21507339779413825
+        },
+        "normal": {
+          "x": 0.0000026190356260999762,
+          "y": 0.9999999999920943,
+          "z": -0.000002991961181320547
+        }
+      },
+      "candidateId": 521,
+      "height": 0.6899932548737082,
+      "suspended": true,
+      "notice": "Objeto al alcance (2.5 cm) · 1.0 / 1 u.",
+      "targetText": "Recogida · Clic para guardar · Rueda: separación · Esc: cancelar"
+    },
+    {
+      "label": "invalid pickup height",
+      "name": "pick",
+      "valid": false,
+      "reason": "Objeto a 8.5 cm de la cara naranja. Alcance: 5 cm. Acerca el objeto o ajusta el agarre.",
+      "clearance": 0.085,
+      "ghostParts": 6,
+      "loadPoses": 0,
+      "target": {
+        "x": 3.1240512855818334,
+        "y": 0.7949932644024955,
+        "z": -0.21507340143803222
+      },
+      "surface": {
+        "point": {
+          "x": 3.1240512591559026,
+          "y": 0.6649932644024983,
+          "z": -0.21507339779413825
+        },
+        "normal": {
+          "x": 0.0000026190356260999762,
+          "y": 0.9999999999920943,
+          "z": -0.000002991961181320547
+        }
+      },
+      "candidateId": null,
+      "height": 0.7499932548737069,
+      "suspended": true,
+      "notice": "Separación del punto apuntado: 8,5 cm · Objeto a 8.5 cm de la cara naranja. Alcance: 5 cm. Acerca el objeto o ajusta el agarre.",
+      "targetText": "Recogida · Objeto a 8.5 cm de la cara naranja. Alcance: 5 cm. Acerca el objeto o ajusta el agarre. · Rueda: separación · Esc: cancelar"
+    },
+    {
+      "label": "pickup before confirmation",
+      "name": "pick",
+      "valid": true,
+      "reason": "Objeto al alcance (2.5 cm) · 1.0 / 1 u.",
+      "clearance": null,
+      "ghostParts": 6,
+      "loadPoses": 0,
+      "target": {
+        "x": 3.12405127338525,
+        "y": 0.7349932644024968,
+        "z": -0.215073399756235
+      },
+      "surface": {
+        "point": {
+          "x": 3.1240512591559026,
+          "y": 0.6649932644024983,
+          "z": -0.21507339779413825
+        },
+        "normal": {
+          "x": 0.0000026190356260999762,
+          "y": 0.9999999999920943,
+          "z": -0.000002991961181320547
+        }
+      },
+      "candidateId": 521,
+      "height": 0.6899932548737082,
+      "suspended": true,
+      "notice": "Objeto al alcance (2.5 cm) · 1.0 / 1 u.",
+      "targetText": "Recogida · Clic para guardar · Rueda: separación · Esc: cancelar"
+    },
+    {
+      "label": "valid drop",
+      "name": "place",
+      "valid": true,
+      "reason": "Entrega válida · caída estimada con el tamaño y movimiento de la carga; comprueba la recepción real.",
+      "clearance": null,
+      "ghostParts": 6,
+      "loadPoses": 1,
+      "target": {
+        "x": 4.0399998868651235,
+        "y": 0.7700002085091698,
+        "z": 0.4499998131543531
+      },
+      "surface": {
+        "point": {
+          "x": 4.04,
+          "y": 0.575,
+          "z": 0.44999999999999996
+        },
+        "normal": {
+          "x": 0,
+          "y": 1,
+          "z": 0
+        }
+      },
+      "candidateId": null,
+      "height": 0.7250001989803813,
+      "suspended": true,
+      "notice": "Entrega válida · caída estimada con el tamaño y movimiento de la carga; comprueba la recepción real.",
+      "targetText": "Entrega · Caída estimada · Clic para guardar · Rueda: altura · Esc: cancelar"
+    }
+  ],
+  "checks": [
+    {
+      "label": "native route stop on the ground",
+      "identicalPhysicalState": true,
+      "sha256": "d2db1ac35dc0f1d5890cb5a22dbc4d7a34b03eb2e854f4fffb48012343cffb69",
+      "bodies": 156,
+      "parts": 406,
+      "energyJ": 137458.1855962425,
+      "seconds": 3549.5999999980863
+    },
+    {
+      "label": "blue preview",
+      "identicalPhysicalState": true,
+      "sha256": "d2db1ac35dc0f1d5890cb5a22dbc4d7a34b03eb2e854f4fffb48012343cffb69",
+      "bodies": 156,
+      "parts": 406,
+      "energyJ": 137458.1855962425,
+      "seconds": 3549.5999999980863
+    },
+    {
+      "label": "rejected confirmation",
+      "identicalPhysicalState": true,
+      "sha256": "d2db1ac35dc0f1d5890cb5a22dbc4d7a34b03eb2e854f4fffb48012343cffb69",
+      "bodies": 156,
+      "parts": 406,
+      "energyJ": 137458.1855962425,
+      "seconds": 3549.5999999980863
+    },
+    {
+      "label": "cancel invalid pickup",
+      "identicalPhysicalState": true,
+      "sha256": "d2db1ac35dc0f1d5890cb5a22dbc4d7a34b03eb2e854f4fffb48012343cffb69",
+      "bodies": 156,
+      "parts": 406,
+      "energyJ": 137458.1855962425,
+      "seconds": 3549.5999999980863
+    },
+    {
+      "label": "confirm pickup",
+      "identicalPhysicalState": true,
+      "sha256": "d2db1ac35dc0f1d5890cb5a22dbc4d7a34b03eb2e854f4fffb48012343cffb69",
+      "bodies": 156,
+      "parts": 406,
+      "energyJ": 137458.1855962425,
+      "seconds": 3549.5999999980863
+    },
+    {
+      "label": "drop preview",
+      "identicalPhysicalState": true,
+      "sha256": "d2db1ac35dc0f1d5890cb5a22dbc4d7a34b03eb2e854f4fffb48012343cffb69",
+      "bodies": 156,
+      "parts": 406,
+      "energyJ": 137458.1855962425,
+      "seconds": 3549.5999999980863
+    },
+    {
+      "label": "confirm drop",
+      "identicalPhysicalState": true,
+      "sha256": "d2db1ac35dc0f1d5890cb5a22dbc4d7a34b03eb2e854f4fffb48012343cffb69",
+      "bodies": 156,
+      "parts": 406,
+      "energyJ": 137458.1855962425,
+      "seconds": 3549.5999999980863
+    },
+    {
+      "label": "tablet and help review",
+      "identicalPhysicalState": true,
+      "sha256": "d2db1ac35dc0f1d5890cb5a22dbc4d7a34b03eb2e854f4fffb48012343cffb69",
+      "bodies": 156,
+      "parts": 406,
+      "energyJ": 137458.1855962425,
+      "seconds": 3549.5999999980863
+    }
+  ],
+  "layouts": [
+    {
+      "viewport": [
+        960,
+        640
+      ],
+      "overflow": 0,
+      "panel": {
+        "left": 16.018142700195312,
+        "right": 770.9502105712891,
+        "top": 132.54908752441406,
+        "bottom": 623.9897003173828
+      },
+      "clipped": []
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [],
+  "browser": "131.0.6778.0",
+  "initial": {
+    "seconds": 3549.5999999980863,
+    "energyJ": 137458.1855962425,
+    "chain": {
+      "phase": "order",
+      "armDemo": 25,
+      "armWired": 3,
+      "droneDelivered": 24,
+      "stabilized": 24,
+      "lot": 1,
+      "lotCount": 10,
+      "total": 10,
+      "target": 80,
+      "continuity": 60,
+      "continuityTarget": 60,
+      "continuityLabel": "Actividad continua útil",
+      "continuityMode": "useful-activity",
+      "deliveryWindow": 240,
+      "continuityState": "transport",
+      "waitingSeconds": 0,
+      "continuityReason": "Traslado con carga",
+      "sustained": true,
+      "completed": false,
+      "reserveReturn": true,
+      "returnReservePercent": 92.7123426514407,
+      "clearOutputs": 3,
+      "clearOutputsTarget": 3
+    },
+    "warnings": [],
+    "bodies": 156,
+    "groups": 110,
+    "rotors": 34,
+    "followers": [
+      {
+        "id": 295,
+        "phase": "ground"
+      },
+      {
+        "id": 387,
+        "phase": "ground"
+      },
+      {
+        "id": 398,
+        "phase": "ground"
+      }
+    ],
+    "webgl": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "glError": 0
+  },
+  "initialPhysicalSha256": "d2db1ac35dc0f1d5890cb5a22dbc4d7a34b03eb2e854f4fffb48012343cffb69",
+  "receiverView": {
+    "eye": [
+      5.087946997002224,
+      1.68,
+      -0.2616055105879901
+    ],
+    "target": [
+      4.087946997002224,
+      0.13388410361516792,
+      -0.2616055105879901
+    ],
+    "rayPart": 295,
+    "preview": null
+  },
+  "beforeProgram": {
+    "routeId": "route-1",
+    "points": [
+      {
+        "x": 3.9999950475557746,
+        "y": 0.9750058831824953,
+        "z": -0.25000001837815433,
+        "action": "land",
+        "wait": 1
+      },
+      {
+        "x": 3.0929052338285543,
+        "y": 0.6899999874715662,
+        "z": -0.26549465962550395,
+        "action": "grab",
+        "wait": 20
+      },
+      {
+        "x": 3.0929052338285543,
+        "y": 0.9399999874715662,
+        "z": -0.26549465962550395,
+        "action": "pass",
+        "wait": 0
+      },
+      {
+        "x": 4.121405190081369,
+        "y": 0.9750058831824953,
+        "z": 0.49710534582356514,
+        "action": "pass",
+        "wait": 0
+      },
+      {
+        "x": 4.121405190081369,
+        "y": 0.7250058831824953,
+        "z": 0.49710534582356514,
+        "action": "drop",
+        "wait": 1
+      },
+      {
+        "x": 4.121405190081369,
+        "y": 0.9750058831824953,
+        "z": 0.49710534582356514,
+        "action": "pass",
+        "wait": 0
+      },
+      {
+        "x": 4.204788000170235,
+        "y": 0.9750058831824953,
+        "z": 0.44996415061676465,
+        "action": "pass",
+        "wait": 0
+      }
+    ],
+    "loop": true,
+    "logistics": {
+      "version": 1,
+      "receiverId": 295,
+      "routeId": "route-1",
+      "dockReceiverId": 296,
+      "pick": {
+        "pointIndex": 1,
+        "position": [
+          3.0929052338285543,
+          0.834578565477382,
+          -0.26549465962550395
+        ],
+        "quaternion": [
+          -7.808810139369097e-9,
+          0.0671574203371436,
+          -1.3754489489885844e-7,
+          0.9977423920499928
+        ],
+        "beaconId": 296,
+        "beaconPosition": [
+          3.9999945465117244,
+          0.04497767416133317,
+          -0.6000000183777957
+        ],
+        "sampleId": 512,
+        "clearanceIndices": [
+          2
+        ]
+      },
+      "place": {
+        "pointIndex": 4,
+        "position": [
+          4.121405190081369,
+          0.869584461188311,
+          0.49710534582356514
+        ],
+        "quaternion": [
+          -7.808810139369097e-9,
+          0.0671574203371436,
+          -1.3754489489885844e-7,
+          0.9977423920499928
+        ],
+        "beaconId": 297,
+        "beaconPosition": [
+          4.204787544737276,
+          0.04498308565532931,
+          0.09996415061706099
+        ],
+        "clearanceIndices": [
+          3,
+          5
+        ]
+      }
+    },
+    "status": {
+      "title": "Receptor de trayectoria",
+      "role": "receiver",
+      "level": 1,
+      "routeId": "route-1",
+      "routeLabel": "Recorrido 1",
+      "glyph": [
+        "0000000000",
+        "0111000000",
+        "0000001110",
+        "0010101010",
+        "0010001110",
+        "0010100000",
+        "0010000000",
+        "0011111100",
+        "0100000010",
+        "0000000000"
+      ],
+      "status": "Recorrido detenido",
+      "mode": "air",
+      "range": 4,
+      "length": 3.9142202133939783,
+      "paired": true,
+      "points": [
+        {
+          "x": 3.9999950475557746,
+          "y": 0.9750058831824953,
+          "z": -0.25000001837815433,
+          "action": "land",
+          "wait": 1
+        },
+        {
+          "x": 3.0929052338285543,
+          "y": 0.6899999874715662,
+          "z": -0.26549465962550395,
+          "action": "grab",
+          "wait": 20
+        },
+        {
+          "x": 3.0929052338285543,
+          "y": 0.9399999874715662,
+          "z": -0.26549465962550395,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.121405190081369,
+          "y": 0.9750058831824953,
+          "z": 0.49710534582356514,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.121405190081369,
+          "y": 0.7250058831824953,
+          "z": 0.49710534582356514,
+          "action": "drop",
+          "wait": 1
+        },
+        {
+          "x": 4.121405190081369,
+          "y": 0.9750058831824953,
+          "z": 0.49710534582356514,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.204788000170235,
+          "y": 0.9750058831824953,
+          "z": 0.44996415061676465,
+          "action": "pass",
+          "wait": 0
+        }
+      ],
+      "displayPoints": [
+        {
+          "x": 3.9999950475557746,
+          "y": 0.9750058831824953,
+          "z": -0.25000001837815433,
+          "action": "land",
+          "wait": 1
+        },
+        {
+          "x": 3.0929052338285543,
+          "y": 0.9750058831824953,
+          "z": -0.25000001837815433,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 3.0929052338285543,
+          "y": 0.9750058831824953,
+          "z": -0.26549465962550395,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 3.0929052338285543,
+          "y": 0.6899999874715662,
+          "z": -0.26549465962550395,
+          "action": "grab",
+          "wait": 20
+        },
+        {
+          "x": 3.0929052338285543,
+          "y": 0.9399999874715662,
+          "z": -0.26549465962550395,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.121405190081369,
+          "y": 0.9399999874715662,
+          "z": -0.26549465962550395,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.121405190081369,
+          "y": 0.9399999874715662,
+          "z": 0.49710534582356514,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.121405190081369,
+          "y": 0.9750058831824953,
+          "z": 0.49710534582356514,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.121405190081369,
+          "y": 0.7250058831824953,
+          "z": 0.49710534582356514,
+          "action": "drop",
+          "wait": 1
+        },
+        {
+          "x": 4.121405190081369,
+          "y": 0.9750058831824953,
+          "z": 0.49710534582356514,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.204788000170235,
+          "y": 0.9750058831824953,
+          "z": 0.49710534582356514,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.204788000170235,
+          "y": 0.9750058831824953,
+          "z": 0.44996415061676465,
+          "action": "pass",
+          "wait": 0
+        }
+      ],
+      "running": false,
+      "canStart": true,
+      "reason": "Reserva estimada 238 J · incluye carga, regreso y aterrizaje.",
+      "cargoAvailable": true,
+      "canTeachCargo": true,
+      "availableGlyphs": 141,
+      "glyphCapacity": 144,
+      "canCreate": false,
+      "loop": true,
+      "minHeight": 0.15,
+      "maxHeight": 3,
+      "maxWait": 60
+    }
+  },
+  "nativeTeachingPause": {
+    "frames": 8,
+    "milliseconds": 1971.300000000745,
+    "instrumentedClockReleased": true,
+    "nativePauseObserved": true,
+    "identicalPhysicalState": true
+  },
+  "pickProgram": {
+    "routeId": "route-1",
+    "points": [
+      {
+        "x": 3.9999950475557746,
+        "y": 0.9750058831824953,
+        "z": -0.25000001837815433,
+        "action": "land",
+        "wait": 1
+      },
+      {
+        "x": 3.145341806109332,
+        "y": 0.6899932548737082,
+        "z": -0.21871676339273083,
+        "action": "grab",
+        "wait": 20
+      },
+      {
+        "x": 3.145341806109332,
+        "y": 0.9399932548737082,
+        "z": -0.21871676339273083,
+        "action": "pass",
+        "wait": 0
+      },
+      {
+        "x": 4.121405190081369,
+        "y": 0.9750058831824953,
+        "z": 0.49710534582356514,
+        "action": "pass",
+        "wait": 0
+      },
+      {
+        "x": 4.121405190081369,
+        "y": 0.7250058831824953,
+        "z": 0.49710534582356514,
+        "action": "drop",
+        "wait": 1
+      },
+      {
+        "x": 4.121405190081369,
+        "y": 0.9750058831824953,
+        "z": 0.49710534582356514,
+        "action": "pass",
+        "wait": 0
+      },
+      {
+        "x": 4.204788000170235,
+        "y": 0.9750058831824953,
+        "z": 0.44996415061676465,
+        "action": "pass",
+        "wait": 0
+      }
+    ],
+    "loop": true,
+    "logistics": {
+      "version": 1,
+      "receiverId": 295,
+      "routeId": "route-1",
+      "dockReceiverId": 296,
+      "pick": {
+        "pointIndex": 1,
+        "position": [
+          3.145341806109332,
+          0.8345718314010845,
+          -0.21871676339273083
+        ],
+        "quaternion": [
+          -5.361947468905874e-9,
+          0.084640787532627,
+          -1.0245970913819511e-7,
+          0.9964115299843967
+        ],
+        "beaconId": 296,
+        "beaconPosition": [
+          3.9999945465117244,
+          0.04497767416133317,
+          -0.6000000183777957
+        ],
+        "sampleId": 521,
+        "clearanceIndices": [
+          2
+        ]
+      },
+      "place": {
+        "pointIndex": 4,
+        "position": [
+          4.121405190081369,
+          0.869584461188311,
+          0.49710534582356514
+        ],
+        "quaternion": [
+          -7.808810139369097e-9,
+          0.0671574203371436,
+          -1.3754489489885844e-7,
+          0.9977423920499928
+        ],
+        "beaconId": 297,
+        "beaconPosition": [
+          4.204787544737276,
+          0.04498308565532931,
+          0.09996415061706099
+        ],
+        "clearanceIndices": [
+          3,
+          5
+        ]
+      }
+    },
+    "status": {
+      "title": "Receptor de trayectoria",
+      "role": "receiver",
+      "level": 1,
+      "routeId": "route-1",
+      "routeLabel": "Recorrido 1",
+      "glyph": [
+        "0000000000",
+        "0111000000",
+        "0000001110",
+        "0010101010",
+        "0010001110",
+        "0010100000",
+        "0010000000",
+        "0011111100",
+        "0100000010",
+        "0000000000"
+      ],
+      "status": "Recorrido detenido",
+      "mode": "air",
+      "range": 4,
+      "length": 3.77837125153344,
+      "paired": true,
+      "points": [
+        {
+          "x": 3.9999950475557746,
+          "y": 0.9750058831824953,
+          "z": -0.25000001837815433,
+          "action": "land",
+          "wait": 1
+        },
+        {
+          "x": 3.145341806109332,
+          "y": 0.6899932548737082,
+          "z": -0.21871676339273083,
+          "action": "grab",
+          "wait": 20
+        },
+        {
+          "x": 3.145341806109332,
+          "y": 0.9399932548737082,
+          "z": -0.21871676339273083,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.121405190081369,
+          "y": 0.9750058831824953,
+          "z": 0.49710534582356514,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.121405190081369,
+          "y": 0.7250058831824953,
+          "z": 0.49710534582356514,
+          "action": "drop",
+          "wait": 1
+        },
+        {
+          "x": 4.121405190081369,
+          "y": 0.9750058831824953,
+          "z": 0.49710534582356514,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.204788000170235,
+          "y": 0.9750058831824953,
+          "z": 0.44996415061676465,
+          "action": "pass",
+          "wait": 0
+        }
+      ],
+      "displayPoints": [
+        {
+          "x": 3.9999950475557746,
+          "y": 0.9750058831824953,
+          "z": -0.25000001837815433,
+          "action": "land",
+          "wait": 1
+        },
+        {
+          "x": 3.145341806109332,
+          "y": 0.9750058831824953,
+          "z": -0.25000001837815433,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 3.145341806109332,
+          "y": 0.9750058831824953,
+          "z": -0.21871676339273083,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 3.145341806109332,
+          "y": 0.6899932548737082,
+          "z": -0.21871676339273083,
+          "action": "grab",
+          "wait": 20
+        },
+        {
+          "x": 3.145341806109332,
+          "y": 0.9399932548737082,
+          "z": -0.21871676339273083,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.121405190081369,
+          "y": 0.9399932548737082,
+          "z": -0.21871676339273083,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.121405190081369,
+          "y": 0.9399932548737082,
+          "z": 0.49710534582356514,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.121405190081369,
+          "y": 0.9750058831824953,
+          "z": 0.49710534582356514,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.121405190081369,
+          "y": 0.7250058831824953,
+          "z": 0.49710534582356514,
+          "action": "drop",
+          "wait": 1
+        },
+        {
+          "x": 4.121405190081369,
+          "y": 0.9750058831824953,
+          "z": 0.49710534582356514,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.204788000170235,
+          "y": 0.9750058831824953,
+          "z": 0.49710534582356514,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.204788000170235,
+          "y": 0.9750058831824953,
+          "z": 0.44996415061676465,
+          "action": "pass",
+          "wait": 0
+        }
+      ],
+      "running": false,
+      "canStart": true,
+      "reason": "Reserva estimada 237 J · incluye carga, regreso y aterrizaje.",
+      "cargoAvailable": true,
+      "canTeachCargo": true,
+      "availableGlyphs": 141,
+      "glyphCapacity": 144,
+      "canCreate": false,
+      "loop": true,
+      "minHeight": 0.15,
+      "maxHeight": 3,
+      "maxWait": 60
+    }
+  },
+  "dropConfirmation": "Entrega guardada · recorrido de ida, suelta, regreso y recarga preparado.",
+  "afterProgram": {
+    "routeId": "route-1",
+    "points": [
+      {
+        "x": 3.9999950475557746,
+        "y": 0.9750058831824953,
+        "z": -0.25000001837815433,
+        "action": "land",
+        "wait": 1
+      },
+      {
+        "x": 3.145341806109332,
+        "y": 0.6899932548737082,
+        "z": -0.21871676339273083,
+        "action": "grab",
+        "wait": 20
+      },
+      {
+        "x": 3.145341806109332,
+        "y": 0.9399932548737082,
+        "z": -0.21871676339273083,
+        "action": "pass",
+        "wait": 0
+      },
+      {
+        "x": 4.061290419589206,
+        "y": 0.9750001989803813,
+        "z": 0.4463564495178573,
+        "action": "pass",
+        "wait": 0
+      },
+      {
+        "x": 4.061290419589206,
+        "y": 0.7250001989803813,
+        "z": 0.4463564495178573,
+        "action": "drop",
+        "wait": 1
+      },
+      {
+        "x": 4.061290419589206,
+        "y": 0.9750001989803813,
+        "z": 0.4463564495178573,
+        "action": "pass",
+        "wait": 0
+      },
+      {
+        "x": 4.204788000170235,
+        "y": 0.9750058831824953,
+        "z": 0.44996415061676465,
+        "action": "pass",
+        "wait": 0
+      }
+    ],
+    "loop": true,
+    "logistics": {
+      "version": 1,
+      "receiverId": 295,
+      "routeId": "route-1",
+      "dockReceiverId": 296,
+      "pick": {
+        "pointIndex": 1,
+        "position": [
+          3.145341806109332,
+          0.8345718314010845,
+          -0.21871676339273083
+        ],
+        "quaternion": [
+          -5.361947468905874e-9,
+          0.084640787532627,
+          -1.0245970913819511e-7,
+          0.9964115299843967
+        ],
+        "beaconId": 296,
+        "beaconPosition": [
+          3.9999945465117244,
+          0.04497767416133317,
+          -0.6000000183777957
+        ],
+        "sampleId": 521,
+        "clearanceIndices": [
+          2
+        ]
+      },
+      "place": {
+        "pointIndex": 4,
+        "position": [
+          4.061290419589206,
+          0.8695787755077575,
+          0.4463564495178573
+        ],
+        "quaternion": [
+          -5.361947468905874e-9,
+          0.084640787532627,
+          -1.0245970913819511e-7,
+          0.9964115299843967
+        ],
+        "beaconId": 297,
+        "beaconPosition": [
+          4.204787544737276,
+          0.04498308565532931,
+          0.09996415061706099
+        ],
+        "clearanceIndices": [
+          3,
+          5
+        ]
+      }
+    },
+    "status": {
+      "title": "Receptor de trayectoria",
+      "role": "receiver",
+      "level": 1,
+      "routeId": "route-1",
+      "routeLabel": "Recorrido 1",
+      "glyph": [
+        "0000000000",
+        "0111000000",
+        "0000001110",
+        "0010101010",
+        "0010001110",
+        "0010100000",
+        "0010000000",
+        "0011111100",
+        "0100000010",
+        "0000000000"
+      ],
+      "status": "Recorrido detenido",
+      "mode": "air",
+      "range": 4,
+      "length": 3.684088861119839,
+      "paired": true,
+      "points": [
+        {
+          "x": 3.9999950475557746,
+          "y": 0.9750058831824953,
+          "z": -0.25000001837815433,
+          "action": "land",
+          "wait": 1
+        },
+        {
+          "x": 3.145341806109332,
+          "y": 0.6899932548737082,
+          "z": -0.21871676339273083,
+          "action": "grab",
+          "wait": 20
+        },
+        {
+          "x": 3.145341806109332,
+          "y": 0.9399932548737082,
+          "z": -0.21871676339273083,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.061290419589206,
+          "y": 0.9750001989803813,
+          "z": 0.4463564495178573,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.061290419589206,
+          "y": 0.7250001989803813,
+          "z": 0.4463564495178573,
+          "action": "drop",
+          "wait": 1
+        },
+        {
+          "x": 4.061290419589206,
+          "y": 0.9750001989803813,
+          "z": 0.4463564495178573,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.204788000170235,
+          "y": 0.9750058831824953,
+          "z": 0.44996415061676465,
+          "action": "pass",
+          "wait": 0
+        }
+      ],
+      "displayPoints": [
+        {
+          "x": 3.9999950475557746,
+          "y": 0.9750058831824953,
+          "z": -0.25000001837815433,
+          "action": "land",
+          "wait": 1
+        },
+        {
+          "x": 3.145341806109332,
+          "y": 0.9750058831824953,
+          "z": -0.25000001837815433,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 3.145341806109332,
+          "y": 0.9750058831824953,
+          "z": -0.21871676339273083,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 3.145341806109332,
+          "y": 0.6899932548737082,
+          "z": -0.21871676339273083,
+          "action": "grab",
+          "wait": 20
+        },
+        {
+          "x": 3.145341806109332,
+          "y": 0.9399932548737082,
+          "z": -0.21871676339273083,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.061290419589206,
+          "y": 0.9399932548737082,
+          "z": -0.21871676339273083,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.061290419589206,
+          "y": 0.9399932548737082,
+          "z": 0.4463564495178573,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.061290419589206,
+          "y": 0.9750001989803813,
+          "z": 0.4463564495178573,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.061290419589206,
+          "y": 0.7250001989803813,
+          "z": 0.4463564495178573,
+          "action": "drop",
+          "wait": 1
+        },
+        {
+          "x": 4.061290419589206,
+          "y": 0.9750001989803813,
+          "z": 0.4463564495178573,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.204788000170235,
+          "y": 0.9750001989803813,
+          "z": 0.4463564495178573,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.204788000170235,
+          "y": 0.9750001989803813,
+          "z": 0.44996415061676465,
+          "action": "pass",
+          "wait": 0
+        },
+        {
+          "x": 4.204788000170235,
+          "y": 0.9750058831824953,
+          "z": 0.44996415061676465,
+          "action": "pass",
+          "wait": 0
+        }
+      ],
+      "running": false,
+      "canStart": true,
+      "reason": "Reserva estimada 241 J · incluye carga, regreso y aterrizaje.",
+      "cargoAvailable": true,
+      "canTeachCargo": true,
+      "availableGlyphs": 141,
+      "glyphCapacity": 144,
+      "canCreate": false,
+      "loop": true,
+      "minHeight": 0.15,
+      "maxHeight": 3,
+      "maxWait": 60
+    }
+  },
+  "help": {
+    "recipe": "Primera línea · 8 / 8 tramos · 8 en marcha. Los planos de la segunda cadena indican su propio material.",
+    "status": "Asigna un equipo a la fuente.\nPrimera línea recuperada · alimenta la recepción del brazo.",
+    "objective": "Tanda 1 / 4 · 10 / 20 · total 10 / 80",
+    "help": "Actividad continua útil: 60 / 60 s · demostrada\nOpcional · tres recepciones sin bloqueos ni cortes: 3 / 3."
+  },
+  "final": {
+    "seconds": 3549.5999999980863,
+    "energyJ": 137458.1855962425,
+    "chain": {
+      "phase": "order",
+      "armDemo": 25,
+      "armWired": 3,
+      "droneDelivered": 24,
+      "stabilized": 24,
+      "lot": 1,
+      "lotCount": 10,
+      "total": 10,
+      "target": 80,
+      "continuity": 60,
+      "continuityTarget": 60,
+      "continuityLabel": "Actividad continua útil",
+      "continuityMode": "useful-activity",
+      "deliveryWindow": 240,
+      "continuityState": "transport",
+      "waitingSeconds": 0,
+      "continuityReason": "Traslado con carga",
+      "sustained": true,
+      "completed": false,
+      "reserveReturn": true,
+      "returnReservePercent": 92.7123426514407,
+      "clearOutputs": 3,
+      "clearOutputsTarget": 3
+    },
+    "warnings": [],
+    "bodies": 156,
+    "groups": 110,
+    "rotors": 34,
+    "followers": [
+      {
+        "id": 387,
+        "phase": "ground"
+      },
+      {
+        "id": 398,
+        "phase": "ground"
+      }
+    ],
+    "webgl": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "glError": 0
+  }
+}

@@ -1,0 +1,51 @@
+✔ a paid QR drone saves during carry and after release, then resumes the same delivery from durable bytes (4712.874073ms)
+ℹ {"beforeSaveSeconds":10.033333333333333,"afterLoadSeconds":38.633333333331784,"spentBatteryJ":37.90068289358305}
+✔ the production drone completes three physical pickups, cold-table deliveries and landed returns with the same matter (8035.140305ms)
+ℹ {"cyclesSeconds":[48.666666666666664,48.733333333333334,48.8],"chargeDeltaJ":109.79428459405563,"sourceSpentJ":96.99999999991269,"sourceChargeJ":91,"sourceCoolingJ":5.999999999999979,"delivered":[9,10,11]}
+✔ an empty production pickup waits supported beyond an upstream cycle and resumes only for a real new load (8408.468785ms)
+✔ a full physical drop pocket keeps the drone supported until the destination actually clears (5263.529124ms)
+✔ a real QR drone lifts stabilized product from the second cooler and delivers it to feedA (8458.301898ms)
+ℹ {"destination":"feedA","seconds":23.666666666666668,"routeMetres":3.848456714142352,"spentBatteryJ":37.91699578758039,"payloadId":71}
+✔ a real QR drone lifts stabilized product from the second cooler and delivers it to feedB (8220.787616ms)
+ℹ {"destination":"feedB","seconds":21.2,"routeMetres":3.152618671160557,"spentBatteryJ":34.822975772882046,"payloadId":71}
+✔ QR picks a real lower load, carries it, releases over the table and returns to origin (1046.839147ms)
+ℹ {"orientation":"lower","roundTripSeconds":37.025,"spentJ":63.967170612584454,"deliveredX":1.2057306893903552}
+✔ QR picks a real front load, carries it, releases over the table and returns to origin (898.046285ms)
+ℹ {"orientation":"front","roundTripSeconds":37.99166666666667,"spentJ":68.55289155750988,"deliveredX":1.175068821881967}
+✔ visual cargo teaching leaves all bodies, charge and identities untouched and catches obstruction and wrong facing (105.875198ms)
+✔ cargo teaching accepts classic input, pauses physics and persists both poses without moving the drone (961.529741ms)
+✔ cargo teaching accepts remapped input, pauses physics and persists both poses without moving the drone (73.259592ms)
+✔ the camera can move during a cargo preview while all simulated bodies remain paused (95.847163ms)
+✔ pickup height can be taught above the adjacent tray while the real gripper reach stays unchanged (79.037046ms)
+✔ grab action refuses bare receivers and ground routes, preserving existing follower protections (65.101567ms)
+✔ galpón preflight rejects a shortfall before moving, spending or creating an automatic grip (70.319528ms)
+✔ QR checkpoints resume before and after delivery at the same action index without replay or physical mutations (740.035954ms)
+✔ a newly placed physical obstacle still stops the carrier after the front-gripper envelope correction (474.295731ms)
+✔ two QR carriers retain one shared pickup across a durable departure checkpoint (13833.672594ms)
+ℹ {"first":56,"waiting":59,"secondsAfterCheckpoint":42.15833333333333}
+✔ stopping the approaching follower releases the shared pickup for the waiting drone (6343.815145ms)
+✔ an occupied first destination leaves the shared cold pickup available to the other feed (7373.549671ms)
+✔ independent cold pickup poses do not acquire a global fleet lock (5136.926763ms)
+✔ an incoming delivery waits for the outgoing carrier to return through their shared cold shaft, including reload (22884.80764ms)
+ℹ {"waitingForReturnAfterReload":15.333333333333103,"incoming":56,"outgoing":59}
+✔ three sleeping carriers start and reload in their real ground wait before sharing one cold station (21760.136497ms)
+ℹ {"departures":2,"receivers":[56,59,62]}
+✔ mission source reveals the original remaining reserve once and cannot refill it through its cell (293.796899ms)
+✔ laying and extending cable transfers only live paid material, and recovery keeps identities and energy (110.420407ms)
+✔ blocked cable and hot or fabricated inputs preserve world pieces and the reserve (158.718966ms)
+✔ a material-backed battery changes capacity without adding charge and cannot passively charge (106.266562ms)
+✔ a stopped wired battery charges only while physically supported and spends exactly transferred joules (252.890111ms)
+✔ the real rotor and source share exact energy debits and enforce available output power (167.456544ms)
+✔ charging already allocated before motor accounting remains inside the same source power limit (207.178408ms)
+✔ a fixed QR charging berth requires its cable, proximity and physical support; airborne requests receive nothing (112.681336ms)
+✔ connecting a previously sleeping QR berth records a real support before charging (132.048695ms)
+✔ source, cable custody and battery charge survive a fresh instance without duplicated grants (224.343085ms)
+✔ a real dock charge crossing twenty percent survives save without becoming landing reserve (466.170298ms)
+ℹ tests 34
+ℹ suites 0
+ℹ pass 34
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 77507.431378

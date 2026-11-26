@@ -1,0 +1,226 @@
+{
+  "mode": "Native input and production clocks, real Cannon; DOM/GPU instrumented. Manual cargo recovery is explicitly separated from the subsequent automated cycle.",
+  "source": "Q-bits branch prueba/galpon-primer-ciclo, working tree 2026-11-26",
+  "phases": [
+    {
+      "file": "qbits-chain-order-20-clear/failed.json",
+      "sha256": "7bcd686b67cb07da9067a11877c416cbcb551c477251463ee8b8a103c04f6600",
+      "elapsed": 4691.066666663715,
+      "energyJ": 126077.91715961833,
+      "spent": {
+        "extraction": 900,
+        "conversion": 2250,
+        "forming": 660,
+        "charge": 16855.349105908535,
+        "cooling": 2416.2222222222854,
+        "transport": 29992.5115122508,
+        "assembly": 755.9999999999884,
+        "reconfiguration": 92.00000000000055
+      },
+      "receipts": 17,
+      "trace569": {
+        "manual": false,
+        "firstLine": true,
+        "arm": true,
+        "drone": false,
+        "second": false,
+        "feed": false,
+        "lastAt": 4613.266666663786,
+        "lastMethod": "arm"
+      },
+      "followers": [
+        {
+          "receiverId": 387,
+          "phase": "ground",
+          "direction": -1,
+          "index": 0
+        },
+        {
+          "receiverId": 398,
+          "phase": "ground",
+          "direction": -1,
+          "index": 0
+        }
+      ],
+      "arms": [
+        {
+          "gripperId": 279,
+          "state": "return",
+          "cycles": 37
+        }
+      ],
+      "records": 472
+    },
+    {
+      "file": "qbits-native-fleet-recovered-17/ready.json",
+      "sha256": "922e25930fe91afe2ec4e8a959b3698c779b38ca5c6dd4d507419b447f68171e",
+      "elapsed": 4708.2666666637,
+      "energyJ": 125504.803556765,
+      "spent": {
+        "extraction": 902,
+        "conversion": 2255,
+        "forming": 660,
+        "charge": 16903.846650847423,
+        "cooling": 2434.3066666667323,
+        "transport": 30492.04312572085,
+        "assembly": 755.9999999999884,
+        "reconfiguration": 92.00000000000055
+      },
+      "receipts": 17,
+      "trace569": {
+        "manual": true,
+        "firstLine": false,
+        "arm": false,
+        "drone": false,
+        "second": false,
+        "feed": false,
+        "lastAt": 4692.599999997047,
+        "lastMethod": null
+      },
+      "followers": [],
+      "arms": [
+        {
+          "gripperId": 279,
+          "state": "wait",
+          "cycles": 38
+        }
+      ],
+      "records": 473,
+      "durationSeconds": 17.199999999984357,
+      "sourceSpentJ": 573.1136028533365,
+      "spentDelta": {
+        "extraction": 2,
+        "conversion": 5,
+        "forming": 0,
+        "charge": 48.497544938887586,
+        "cooling": 18.084444444446945,
+        "transport": 499.5316134700515,
+        "assembly": 0,
+        "reconfiguration": 0
+      }
+    },
+    {
+      "file": "qbits-native-fleet-coordinated-17/final.json",
+      "sha256": "7750122d26e5ac8b49d0ac65acc538de55fd3f9ca563fcc9bfd53bba70653c03",
+      "elapsed": 4753.199999996992,
+      "energyJ": 125420.38644870931,
+      "spent": {
+        "extraction": 902,
+        "conversion": 2255,
+        "forming": 660,
+        "charge": 16903.846650847423,
+        "cooling": 2436.3066666667337,
+        "transport": 30574.460233776565,
+        "assembly": 755.9999999999884,
+        "reconfiguration": 92.00000000000055
+      },
+      "receipts": 17,
+      "trace569": {
+        "manual": false,
+        "firstLine": true,
+        "arm": false,
+        "drone": false,
+        "second": false,
+        "feed": false,
+        "lastAt": 4733.266666663677,
+        "lastMethod": null
+      },
+      "followers": [
+        {
+          "receiverId": 387,
+          "phase": "ground",
+          "direction": 1,
+          "index": 0
+        },
+        {
+          "receiverId": 398,
+          "phase": "ground",
+          "direction": 1,
+          "index": 0
+        },
+        {
+          "receiverId": 295,
+          "phase": "ground",
+          "direction": -1,
+          "index": 0
+        }
+      ],
+      "arms": [
+        {
+          "gripperId": 279,
+          "state": "return",
+          "cycles": 38
+        }
+      ],
+      "records": 473,
+      "durationSeconds": 44.93333333329247,
+      "sourceSpentJ": 84.41710805568437,
+      "spentDelta": {
+        "extraction": 0,
+        "conversion": 0,
+        "forming": 0,
+        "charge": 0,
+        "cooling": 2.0000000000013642,
+        "transport": 82.41710805571347,
+        "assembly": 0,
+        "reconfiguration": 0
+      }
+    }
+  ],
+  "collisionBeforeCoordination": {
+    "seconds": 4747.066666663664,
+    "position": {
+      "x": 3.0419352271912814,
+      "y": 1.0845735577194013,
+      "z": -0.26321419012172687
+    },
+    "obstructions": [
+      {
+        "moduleId": 287,
+        "tip": {
+          "x": 3.0203370681378767,
+          "y": 1.2549949862908298,
+          "z": -0.2629321874552591
+        },
+        "up": {
+          "x": 7.398455380762832e-33,
+          "y": 1.0000000000000002,
+          "z": 5.640738445615378e-31
+        },
+        "hits": [
+          {
+            "kind": "group",
+            "partId": 262,
+            "ids": [
+              262,
+              280,
+              279
+            ],
+            "arm": 279,
+            "pose": {
+              "x": 2.8765179936171457,
+              "y": 1.3104954507295072,
+              "z": -0.1340932537644745
+            },
+            "overlap": {
+              "exact": true
+            }
+          }
+        ]
+      }
+    ],
+    "phase": "travel",
+    "index": 4
+  },
+  "verifiedReload": {
+    "warnings": [],
+    "arms": 1,
+    "followers": 3
+  },
+  "bodyTransformsWritten": false,
+  "energyOrMaterialAdded": false,
+  "manualCargo": {
+    "id": 569,
+    "action": "Native gripper release, native hand to first conveyor; then physically traversed all eight sections before firstLine was restored."
+  }
+}

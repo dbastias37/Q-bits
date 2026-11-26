@@ -8,7 +8,7 @@
 
   const VERSION = 1;
   const FORMAT = 'qbits-save';
-  const KEYS = Object.freeze({lab:'qbits.save.lab.v1', campaign:'qbits.save.campaign.v1'});
+  const KEYS = Object.freeze({lab:'qbits.save.lab.v1', campaign:'qbits.save.campaign.v1', galpon:'qbits.save.galpon.v1'});
   const SHAPES = new Set(['cube', 'pyramid', 'tetra', 'coupler']);
   const UNSAFE_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
   const own = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
@@ -277,11 +277,220 @@
     }
   }
 
+  function checkHangar(data) {
+    checkLab(data);
+    const s = data.snapshot;
+    check(data.version === 1 && record(data.world) && record(data.line) && record(data.mission),
+      'Faltan las estaciones, la línea o el objetivo del galpón.');
+    check(typeof data.mission.phase === 'string' && finite(data.mission.elapsed) && data.mission.elapsed >= 0 &&
+      finite(data.mission.phaseTime) && data.mission.phaseTime >= 0 && finite(data.mission.logicPhase) && data.mission.logicPhase >= 0 && data.mission.logicPhase < 1/15 && finite(data.mission.height) && data.mission.height > 0 &&
+      (data.mission.guideStep === null || typeof data.mission.guideStep === 'string'),
+      'El estado de la misión del galpón no es válido.');
+    const production = load ? load('./galpon-production.js') : root.QBitsGalponProduction;
+    check(production && typeof production.validate === 'function', 'Falta el modelo de producción del galpón.');
+    const model = production.validate(data.production);
+    check(model && Array.isArray(model.records), 'El inventario del galpón no es válido.');
+    const parts = new Map(), records = new Map(model.records.map(r => [r.id, r]));
+    function mark(id, location, shape, weight, mood) {
+      const r = records.get(id);
+      check(r && !parts.has(id), 'Una pieza del galpón carece de procedencia o está duplicada.');
+      const expectedShape = r.kind === 'raw' || r.kind === 'worker' ? 'cube' : r.kind;
+      check((location === 'cargo' || shape === expectedShape) && Math.abs(r.weight - weight) < 1e-8,
+        'La forma o la masa del galpón no coincide con su registro.');
+      if (location !== 'cargo') {
+        check(record(mood) && finite(mood.energy) && Math.abs(mood.energy-r.energy) < 1e-8 &&
+          record(mood.matter) && mood.matter.root === r.origin && mood.matter.path === r.path && mood.matter.rootWeight === 1,
+          'La carga o el linaje de una pieza del galpón no coincide con el inventario.');
+        if (mood.externalBattery !== undefined) {
+          const battery = mood.externalBattery;
+          check(shape === 'cube' && weight === 1 && record(battery) && battery.version === 1 && battery.ownerId === id &&
+            positiveId(battery.packId) && typeof battery.enabled === 'boolean' && !mood.production && !mood.gripper && !mood.trajectory && !mood.workshop,
+            'La batería adaptada no coincide con sus cubos originales.');
+        }
+        if (mood.gripper?.logistics !== undefined) {
+          const logistics = load ? load('./galpon-logistics.js') : root.QBitsGalponLogistics;
+          check(logistics?.validConfig(mood.gripper.logistics), 'La configuración de agarre del dron no es válida.');
+        }
+      }
+      parts.set(id, location);
+    }
+    for (const g of s.groups) for (const p of g.parts) {
+      mark(p.id, 'room', p.shape, p.weight, p.mood);
+      check(!records.get(p.id).group?.startsWith('family:'), 'Una pieza familiar también está en la sala.');
+    }
+    const familyModel = load ? load('./families.js') : root.QBitsFamilies, familyIds = new Set();
+    check(Array.isArray(s.families), 'Faltan las familias del galpón.');
+    for (const f of s.families) {
+      check(familyModel.validFamily(f) && !familyIds.has(f.id), 'Una familia del galpón es inválida o está duplicada.');
+      familyIds.add(f.id);
+      for (const item of f.items) for (const g of item.groups) for (const p of g.parts) {
+        mark(p.id, 'family', p.shape, p.weight, p.mood);
+        const r = records.get(p.id);
+        check(['group','received'].includes(r.place) && r.group === 'family:'+f.id, 'La identidad y su familia no coinciden.');
+      }
+    }
+    check(record(s.powerNetwork) && s.powerNetwork.version === 1 && Array.isArray(s.powerNetwork.reservoirs) &&
+      s.powerNetwork.reservoirs.length <= 1 && Array.isArray(s.powerNetwork.cables) && s.powerNetwork.cables.length <= 128,
+      'La red eléctrica del galpón no es válida.');
+    for (const source of s.powerNetwork.reservoirs) check(record(source) && positiveId(source.id) && arrayVector(source.p,3) &&
+      Math.abs(source.p[1]) <= .02 && source.p.every(n => Math.abs(n) <= 14) && typeof source.enabled === 'boolean' &&
+      finite(source.energy) && Math.abs(source.energy*production.CONFIG.initialEnergyJ-model.energyJ) < 1e-5,
+      'La fuente no representa la misma reserva de la instalación.');
+    const cableIds = new Set(), endpoint = e => record(e) && ['part','reservoir'].includes(e.kind) && positiveId(e.id);
+    for (const cable of s.powerNetwork.cables) {
+      check(record(cable) && positiveId(cable.id) && !cableIds.has(cable.id) && endpoint(cable.from) && endpoint(cable.to) &&
+        !(cable.from.kind === cable.to.kind && cable.from.id === cable.to.id) && Array.isArray(cable.points) && cable.points.length <= 64 &&
+        cable.points.every(p => arrayVector(p,3) && p[1] >= -.01 && p[1] <= 14 && Math.abs(p[0]) <= 14 && Math.abs(p[2]) <= 14) &&
+        Array.isArray(cable.materials) && cable.materials.length > 0 && cable.materials.length <= 8,
+        'Un cable perdió su trazado o su inventario.');
+      cableIds.add(cable.id);
+      for (const p of cable.materials) {
+        check(record(p) && p.shape === 'cube' && (arrayVector(p.p,3) || vector(p.p)) && (arrayVector(p.q,4) || quaternion(p.q)) &&
+          !p.mood?.externalBattery && !p.mood?.gripper && !p.mood?.trajectory && !p.mood?.production && !p.mood?.workshop,
+          'El cable contiene una pieza adaptada o inválida.');
+        mark(p.id,'cable',p.shape,p.weight,p.mood);
+        const r = records.get(p.id);check(r.place === 'cable' && r.group === 'cable:'+cable.id,'La custodia del cable no coincide con sus cubos.');
+      }
+    }
+    for (const job of Object.values(model.chain?.jobs || {})) if (job) {
+      check(Array.isArray(job.inputs) && Array.isArray(job.inputIds) && job.inputs.length === job.inputIds.length,
+        'La estación no conserva sus entradas reservadas.');
+      for (const p of job.inputs) {
+        check(job.inputIds.includes(p.id),'La entrada no pertenece al trabajo guardado.');
+        mark(p.id,'machine',p.shape,p.weight,p.mood);
+        const r=records.get(p.id);check(r.place === 'machine' && r.group === 'station:'+job.station,'La estación perdió la custodia de su entrada.');
+      }
+    }
+    check(Array.isArray(s.disassembly), 'Faltan los desarmes pendientes del galpón.');
+    for (const pending of s.disassembly) {
+      check(record(pending) && Array.isArray(pending.parts) && arrayVector(pending.origin,3),'El desarme pendiente no es válido.');
+      for (const p of pending.parts) {
+        check((arrayVector(p.p,3) || vector(p.p)) && (arrayVector(p.q,4) || quaternion(p.q)),'Falta la postura de un desarme pendiente.');
+        mark(p.id,'disassembly',p.shape,p.weight,p.mood);
+      }
+    }
+    for (const c of s.cargos) {
+      check(positiveId(c.rawId) && c.side === 1 && c.required === (model.initialIds.length === 1 ? 1 : 2) && !c.robotPhysical && quaternion(c.q) && vector(c.v) && vector(c.w) &&
+        typeof c.moving === 'boolean', 'Falta el estado físico de una carga de materia.');
+      const r = records.get(c.rawId);
+      check(r && r.kind === 'raw', 'La carga no corresponde a una extracción de materia.');
+      const h = c.haul, duration = value => finite(value) && value >= 0;
+      check(typeof c.arrived === 'boolean' && (h === null || record(h) && !c.arrived && r.place === 'carry' &&
+        ['planning','reuniendo','arrastrando','descansando','bloqueado'].includes(h.phase) &&
+        typeof h.planning === 'boolean' && typeof h.clear === 'boolean' && vector(h.goal) && vector(h.lastPosition) &&
+        Array.isArray(h.path) && h.path.every(vector) && Number.isInteger(h.index) && h.index >= 0 && h.index <= h.path.length &&
+        ['sinceProgress','nextCrew','nextRoute','nextSafety','nextMatch','activeCount'].every(k => duration(h[k])) &&
+        Array.isArray(h.slots) && h.slots.length === r.carriers.length && new Set(h.slots.map(slot => slot?.id)).size === h.slots.length &&
+        h.slots.every(slot => record(slot) && r.carriers.includes(slot.id) && parts.get(slot.id) === 'room' &&
+          vector(slot.offset) && typeof slot.ready === 'boolean' && typeof slot.fixed === 'boolean' && duration(slot.nextPlan) &&
+          (slot.lastDistance === null || duration(slot.lastDistance)) && Array.isArray(slot.approach) && slot.approach.every(vector) &&
+          Number.isInteger(slot.index) && slot.index >= 0 && slot.index <= Math.max(0,slot.approach.length-1))),
+        'El recorrido de la carga no coincide con sus transportistas.');
+      mark(c.rawId, 'cargo', null, c.side ** 3);
+    }
+    for (const r of model.records) {
+      const location = parts.get(r.id);
+      if (r.place === 'stock' || r.place === 'job') check(!location, 'Una entrada del convertidor también está en la sala.');
+      else if (r.place === 'source' || r.place === 'carry') check(location === 'cargo', 'Falta la carga de una extracción.');
+      else if (r.place === 'received') check(location === 'family', 'Un producto recibido carece de familia.');
+      else if (r.place === 'cable') check(location === 'cable','Falta el material reservado por un cable.');
+      else if (r.place === 'machine') check(location === 'machine','Falta una entrada reservada por una estación.');
+      else check(location === 'room' || location === 'family' || location === 'disassembly', 'Falta una pieza registrada en el galpón.');
+    }
+    const machineGrips=data.machineGrips??[];
+    check(Array.isArray(machineGrips) && machineGrips.length<=s.groups.length,'Los agarres de máquina guardados no son válidos.');
+    const groupFor=new Map(), physicalParts=new Map(), connected=s.groups.map((_,i)=>i);
+    s.groups.forEach((g,i)=>g.parts.forEach(p=>{groupFor.set(p.id,i);physicalParts.set(p.id,p);}));
+    const rootGroup=i=>{while(connected[i]!==i)i=connected[i];return i;};
+    const union=(a,b)=>{if(a!==undefined&&b!==undefined)connected[rootGroup(b)]=rootGroup(a);};
+    for(const joint of s.rotors||[])union(groupFor.get(joint.aId),groupFor.get(joint.bId));
+    const tools=new Set(),loads=new Set();
+    for(const grip of machineGrips){
+      const tool=physicalParts.get(grip?.toolId),load=physicalParts.get(grip?.partId),a=groupFor.get(grip?.toolId),b=groupFor.get(grip?.partId);
+      check(record(grip)&&positiveId(grip.toolId)&&positiveId(grip.partId)&&tool?.mood.gripper&&load&&
+        !tools.has(grip.toolId)&&!loads.has(b)&&rootGroup(a)!==rootGroup(b)&&arrayVector(grip.relative,4)&&Math.abs(Math.hypot(...grip.relative)-1)<.001&&
+        (grip.offset===undefined||arrayVector(grip.offset,3)&&Math.hypot(...grip.offset)<=28),
+        'Un agarre de máquina perdió su herramienta, carga o articulación.');
+      tools.add(grip.toolId);loads.add(b);union(a,b);
+    }
+    const logistics=load?load('./galpon-logistics.js'):root.QBitsGalponLogistics;
+    check(typeof logistics?.validRuntime==='function' && logistics.validRuntime(data.trajectoryRuntime)!==null,
+      'El recorrido en curso del dron no es válido.');
+    const charges=s.runtime?.galponCharges===undefined?[]:s.runtime.galponCharges,chargedFlights=new Set();
+    check(Array.isArray(charges)&&charges.length<=64,'La recarga pendiente del galpón no es válida.');
+    for(const charge of charges){
+      const part=physicalParts.get(charge?.id),component=groupFor.get(charge?.id);
+      const capacity=component===undefined?0:s.groups.reduce((n,g,i)=>n+(rootGroup(i)===rootGroup(component)?g.parts.filter(p=>p.mood.externalBattery).length*900:0),0);
+      check(record(charge)&&positiveId(charge.id)&&part?.mood.flight&&!chargedFlights.has(charge.id)&&finite(charge.joules)&&charge.joules>=0&&charge.joules<=capacity+1e-6,
+        'La recarga pendiente perdió su dron o supera su capacidad embarcada.');
+      chargedFlights.add(charge.id);
+    }
+    check(Array.isArray(data.routes) && record(s.runtime) && s.runtime.version === 1 && s.runtime.blocked === null && Array.isArray(s.runtime.routes),
+      'Faltan las órdenes de movimiento del galpón.');
+    const unit = n => finite(n) && n >= 0 && n <= 1;
+    const groupIds = new Set(s.groups.map(g => g.parts[0].id)), routeIds = new Set();
+    for (const r of data.routes) {
+      check(record(r) && groupIds.has(r.id) && !routeIds.has(r.id) && Array.isArray(r.steps) &&
+        r.steps.every(n => Number.isInteger(n) && n >= 0 && n < 4) && Number.isInteger(r.index) &&
+        r.index >= 0 && r.index <= r.steps.length && vector(r.goal) && vector(r.pin) &&
+        Array.isArray(r.preview) && r.preview.length === r.steps.length && r.preview.every(vector) &&
+        Array.isArray(r.strides) && r.strides.length === r.steps.length && r.strides.every(n => finite(n) && n > 0),
+        'Una ruta del galpón es inválida o perdió a su trabajador.');
+      routeIds.add(r.id);
+      const a = r.align, step = r.segment;
+      check(a === null || record(a) && step === null && vector(a.fromP) && vector(a.toP) &&
+        quaternion(a.fromQ) && quaternion(a.toQ) && unit(a.t), 'La alineación del trabajador no es válida.');
+      check(step === null || record(step) && r.index < r.steps.length && vector(step.p) && quaternion(step.q) &&
+        unit(step.t) && finite(step.duration) && step.duration > 0, 'El paso en curso del trabajador no es válido.');
+    }
+    check(Array.isArray(data.waiting), 'Faltan las órdenes pendientes del galpón.');
+    for (const p of data.waiting) {
+      check(record(p) && groupIds.has(p.id) && !routeIds.has(p.id) && vector(p.goal) &&
+        ['planning','descanso','bloqueo','replan'].includes(p.reason) && finite(p.delay) && p.delay >= 0 &&
+        (p.obstacles === null || typeof p.obstacles === 'string'), 'Una orden pendiente del galpón es inválida.');
+      routeIds.add(p.id);
+    }
+    const h = data.grip;
+    if (h !== null) {
+      check(record(h) && finite(h.distance) && h.distance >= .3 && h.distance <= 2.5 && finite(h.age) && h.age >= 0 &&
+        typeof h.latched === 'boolean' && vector(h.rootOffset) && vector(h.tiltAxis) && quaternion(h.rotation) && quaternion(h.initialRotation) &&
+        Array.isArray(h.items) && h.items.length && h.items.every(i=>record(i) && vector(i.anchor) && (i.target === null || vector(i.target)) &&
+          vector(i.relative) && quaternion(i.initial) && (i.rest === null || quaternion(i.rest))) &&
+        (h.face === null || record(h.face) && quaternion(h.face.from) && quaternion(h.face.target) && Array.isArray(h.face.queue) &&
+          h.face.queue.every(quaternion) && finite(h.face.elapsed) && h.face.elapsed >= 0 && typeof h.face.active === 'boolean'),
+        'El agarre guardado del galpón no es válido.');
+      if (h.family !== null) check(familyIds.has(h.family) && h.part === null && h.picked === null && h.items.length === 1 && h.items[0].id === null,
+        'La familia sostenida no coincide con el inventario.');
+      else check(parts.get(h.part) === 'room' && parts.get(h.picked) === 'room' && h.items.every(i=>groupIds.has(i.id)) &&
+        new Set(h.items.map(i=>i.id)).size === h.items.length && s.groups.find(g=>g.parts[0].id===h.items[0].id)?.parts.some(p=>p.id===h.part),
+        'La selección sostenida no coincide con sus piezas.');
+    }
+    check(Array.isArray(s.shelves) && s.shelves.length === 0 && s.workshop === null, 'Hay un taller o depósito ajeno al galpón.');
+    check(Array.isArray(s.robotArms), 'Falta la lista de brazos del galpón.');
+    const armIds = new Set(), pose = (p,n) => p === null || Array.isArray(p) && p.length === n && p.every(q => arrayVector(q,4) && Math.abs(Math.hypot(...q)-1)<.001);
+    for (const arm of s.robotArms) {
+      const gripper=s.groups.flatMap(g=>g.parts).find(p=>p.id===arm?.gripperId);
+      check(record(arm) && parts.get(arm.baseId)==='room' && gripper?.mood.gripper && !armIds.has(arm.gripperId) &&
+        Array.isArray(arm.joints) && arm.joints.length >= 1 && arm.joints.length <= 4 && arm.joints.every(j=>
+          record(j) && parts.get(j.aId)==='room' && parts.get(j.bId)==='room' && records.get(j.aId)?.kind==='coupler' && records.get(j.bId)?.kind==='coupler') &&
+        record(arm.poses) && pose(arm.poses.pick,arm.joints.length) && pose(arm.poses.place,arm.joints.length) &&
+        (arm.poses.home===undefined || pose(arm.poses.home,arm.joints.length)) && typeof arm.repeat==='boolean',
+        'El brazo no conserva sus piezas, articulaciones o poses.');
+      armIds.add(arm.gripperId);
+    }
+  }
+
+  function checkData(mode, data) {
+    if (mode === 'lab') checkLab(data);
+    else if (mode === 'galpon') checkHangar(data);
+    else checkCampaign(data);
+  }
+
   function validate(mode, data) {
     try {
       check(modeValid(mode), 'El modo de guardado no es válido.');
       checkJson(data);
-      if (mode === 'lab') checkLab(data); else checkCampaign(data);
+      checkData(mode, data);
       return {ok:true};
     } catch (error) { return {ok:false, error:message(error, 'El guardado no es válido.')}; }
   }
@@ -294,7 +503,7 @@
       const arrays = checkParsedJson(save);
       checkParsedPrototypes(arrays);
       check(finite(save.savedAt) && finite(save.createdAt) && save.createdAt >= 0 && save.savedAt >= save.createdAt, 'Las fechas del guardado no son válidas.');
-      if (mode === 'lab') checkLab(save.data); else checkCampaign(save.data);
+      checkData(mode, save.data);
       return {status:'ready', save, arrays};
     } catch (error) { return {status:'invalid', error:message(error, 'No se pudo leer el guardado.')}; }
   }
@@ -311,7 +520,7 @@
     // At most one immutable raw string and primitive metadata per slot. Never
     // retain a decoded graph or a caller-visible object. Every access still
     // reads storage, so another tab, deletion and denied access remain visible.
-    const checked = {lab:null, campaign:null};
+    const checked = Object.create(null);
     function remember(mode, raw, result) {
       checked[mode] = result.status === 'ready' ? {
         raw, arrays:result.arrays,

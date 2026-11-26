@@ -1,0 +1,277 @@
+{
+  "mode": "Native saved world resumed through real Cannon and existing controller forces at 60 Hz; DOM/GPU instrumented. No manual manipulation or re-teaching.",
+  "coreSha256": "89ec410b5cefdadb76fac1a4ab7e2e78ccede44ff2888edffbab5e29386e71fb",
+  "phases": [
+    {
+      "file": "/tmp/qbits-chain-final-20261126/80/failed.json",
+      "sha256": "0f670b729d64c6ce352deea5a6151af66d3da4f0194ced50a12e3d72c3f069c7",
+      "elapsed": 13513.200000061619,
+      "energyJ": 43798.022655142726,
+      "spent": {
+        "extraction": 1074,
+        "conversion": 2685,
+        "forming": 1004,
+        "charge": 29202.988999105164,
+        "cooling": 4163.568888889264,
+        "transport": 96880.41945746329,
+        "assembly": 927.9999999999591,
+        "reconfiguration": 264.0000000000053
+      },
+      "receipts": 60,
+      "records": 559,
+      "recordMass": 541.0000000000002,
+      "recordIdentitiesSha256": "2eeda2596c4f5cffcf438db392b49f745caaa5a855429f8be1702389cb66bc0c",
+      "trace902": {
+        "manual": false,
+        "firstLine": true,
+        "arm": true,
+        "drone": false,
+        "second": false,
+        "feed": false,
+        "lastAt": 12385.466666713926,
+        "lastMethod": "arm"
+      },
+      "followers": [
+        {
+          "receiverId": 387,
+          "phase": "ground",
+          "index": 0,
+          "direction": -1
+        },
+        {
+          "receiverId": 398,
+          "phase": "ground",
+          "index": 0,
+          "direction": -1
+        },
+        {
+          "receiverId": 295,
+          "phase": "ground",
+          "index": 0,
+          "direction": -1
+        }
+      ],
+      "arms": [
+        {
+          "gripperId": 279
+        }
+      ]
+    },
+    {
+      "file": "/tmp/qbits-native-fleet-yaw-recovered-60/final.json",
+      "sha256": "e07d016abe2e68f08c4513b6485dff923993c8d1420e138b56f67f79d59a6963",
+      "elapsed": 13559.466666728875,
+      "energyJ": 43711.15300939146,
+      "spent": {
+        "extraction": 1074,
+        "conversion": 2685,
+        "forming": 1004,
+        "charge": 29202.988999105164,
+        "cooling": 4165.568888889262,
+        "transport": 96965.28910321987,
+        "assembly": 927.9999999999591,
+        "reconfiguration": 264.0000000000053
+      },
+      "receipts": 60,
+      "records": 559,
+      "recordMass": 541.0000000000002,
+      "recordIdentitiesSha256": "2eeda2596c4f5cffcf438db392b49f745caaa5a855429f8be1702389cb66bc0c",
+      "trace902": {
+        "manual": false,
+        "firstLine": true,
+        "arm": true,
+        "drone": false,
+        "second": true,
+        "feed": false,
+        "lastAt": 12385.466666713926,
+        "lastMethod": "arm"
+      },
+      "followers": [
+        {
+          "receiverId": 387,
+          "phase": "ground",
+          "index": 0,
+          "direction": -1
+        },
+        {
+          "receiverId": 398,
+          "phase": "ground",
+          "index": 0,
+          "direction": -1
+        },
+        {
+          "receiverId": 295,
+          "phase": "ground",
+          "index": 0,
+          "direction": -1
+        }
+      ],
+      "arms": [
+        {
+          "gripperId": 279
+        }
+      ],
+      "durationSeconds": 46.26666666725578,
+      "sourceSpentJ": 86.8696457512633,
+      "spentDelta": {
+        "extraction": 0,
+        "conversion": 0,
+        "forming": 0,
+        "charge": 0,
+        "cooling": 1.999999999998181,
+        "transport": 84.86964575658203,
+        "assembly": 0,
+        "reconfiguration": 0
+      }
+    },
+    {
+      "file": "/tmp/qbits-native-fleet-yaw-recovered-60/final-stable.json",
+      "sha256": "6051d1fdb0f0cbae31605d9e5009bc6aceb2164357a50dee15aec29825bbe431",
+      "elapsed": 13563.466666728926,
+      "energyJ": 43515.899529198854,
+      "spent": {
+        "extraction": 1074,
+        "conversion": 2685,
+        "forming": 1004,
+        "charge": 29267.67602610805,
+        "cooling": 4165.568888889262,
+        "transport": 97095.85555641039,
+        "assembly": 927.9999999999591,
+        "reconfiguration": 264.0000000000053
+      },
+      "receipts": 60,
+      "records": 559,
+      "recordMass": 541.0000000000002,
+      "recordIdentitiesSha256": "2eeda2596c4f5cffcf438db392b49f745caaa5a855429f8be1702389cb66bc0c",
+      "trace902": {
+        "manual": false,
+        "firstLine": true,
+        "arm": true,
+        "drone": true,
+        "second": true,
+        "feed": false,
+        "lastAt": 13559.466666728875,
+        "lastMethod": "drone"
+      },
+      "followers": [
+        {
+          "receiverId": 387,
+          "phase": "ground",
+          "index": 0,
+          "direction": -1
+        },
+        {
+          "receiverId": 398,
+          "phase": "travel",
+          "index": 1,
+          "direction": 1
+        },
+        {
+          "receiverId": 295,
+          "phase": "ground",
+          "index": 0,
+          "direction": -1
+        }
+      ],
+      "arms": [
+        {
+          "gripperId": 279
+        }
+      ],
+      "durationSeconds": 4.000000000050932,
+      "sourceSpentJ": 195.25348019260855,
+      "spentDelta": {
+        "extraction": 0,
+        "conversion": 0,
+        "forming": 0,
+        "charge": 64.68702700288486,
+        "cooling": 0,
+        "transport": 130.5664531905204,
+        "assembly": 0,
+        "reconfiguration": 0
+      }
+    }
+  ],
+  "diagnosis": {
+    "receiverId": 295,
+    "gripperId": 293,
+    "payloadId": 902,
+    "yawCurrent": 66.9170805865971,
+    "yawTaught": -0.00349775716760492,
+    "correctionFromRoute": [
+      -0.01313670723489846,
+      0.00002362805834088544,
+      -0.019882855185586967
+    ],
+    "originalReadiness": {
+      "ok": false,
+      "code": "alignment",
+      "message": "Sin objeto frente a la cara naranja. Centra un cubo suelto frente a ella. Alcance: 5 cm."
+    },
+    "correctedReadiness": {
+      "ok": true,
+      "distance": 0.02500681785522991
+    },
+    "details": "yaw/README.md"
+  },
+  "totalFromFailed": {
+    "durationSeconds": 50.26666666730671,
+    "sourceSpentJ": 282.12312594387186
+  },
+  "chargedCarriers": [
+    {
+      "id": 295,
+      "phase": "ground",
+      "index": 0,
+      "direction": -1,
+      "storedJ": 900,
+      "chargeStatus": "Batería cargada",
+      "position": {
+        "x": 4.00675656157012,
+        "y": 0.14456030066989306,
+        "z": -0.26054140286468574
+      }
+    },
+    {
+      "id": 387,
+      "phase": "ground",
+      "index": 0,
+      "direction": -1,
+      "storedJ": 900,
+      "chargeStatus": "Batería cargada",
+      "position": {
+        "x": 3.804022546254503,
+        "y": 0.14457231976633192,
+        "z": 0.4507900960373812
+      }
+    },
+    {
+      "id": 398,
+      "phase": "travel",
+      "index": 1,
+      "direction": 1,
+      "storedJ": 883.5360152627577,
+      "chargeStatus": "Batería cargada",
+      "position": {
+        "x": 4.455818388603379,
+        "y": 1.1271930059980064,
+        "z": 0.45026772394599873
+      }
+    }
+  ],
+  "verifiedReload": {
+    "warnings": [],
+    "arms": 1,
+    "followers": 3
+  },
+  "configurationsChanged": false,
+  "bodyTransformsWritten": false,
+  "energyOrMaterialAdded": false,
+  "manualCargo": false,
+  "focus": {
+    "file": "logistics-yaw-focus.tap",
+    "tests": 48,
+    "passed": 48,
+    "failed": 0
+  }
+}

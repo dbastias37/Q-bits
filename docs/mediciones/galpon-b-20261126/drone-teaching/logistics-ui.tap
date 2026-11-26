@@ -1,0 +1,21 @@
+✔ QR picks a real lower load, carries it, releases over the table and returns to origin (1209.025656ms)
+ℹ {"orientation":"lower","roundTripSeconds":37.025,"spentJ":63.967170612584454,"deliveredX":1.2057306893903552}
+✔ QR picks a real front load, carries it, releases over the table and returns to origin (942.931095ms)
+ℹ {"orientation":"front","roundTripSeconds":37.99166666666667,"spentJ":68.55289155750988,"deliveredX":1.175068821881967}
+✔ visual cargo teaching leaves all bodies, charge and identities untouched and catches obstruction and wrong facing (86.770361ms)
+✔ cargo teaching accepts classic input, pauses physics and persists both poses without moving the drone (1318.206377ms)
+✔ cargo teaching accepts remapped input, pauses physics and persists both poses without moving the drone (91.939822ms)
+✔ the camera can move during a cargo preview while all simulated bodies remain paused (108.222611ms)
+✔ pickup height can be taught above the adjacent tray while the real gripper reach stays unchanged (88.447787ms)
+✔ grab action refuses bare receivers and ground routes, preserving existing follower protections (66.186362ms)
+✔ galpón preflight rejects a shortfall before moving, spending or creating an automatic grip (73.364255ms)
+✔ QR checkpoints resume before and after delivery at the same action index without replay or physical mutations (710.497887ms)
+✔ a newly placed physical obstacle still stops the carrier after the front-gripper envelope correction (410.569894ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5373.911257

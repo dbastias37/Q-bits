@@ -1,0 +1,58 @@
+{
+  "scope": "Frozen real completed-order checkpoint in Chromium, followed by isolated simulation and render measurements. No changes to the original checkpoint.",
+  "runtimeSha256": "96610d18f4c7e880cf5aa42f2ff8028514c7c4ef9a0cd27218a680dfc15d34d5",
+  "aggregateSourcesSha256": "2c5699e92c1a265bacd339e0376fa2d652211fd5dd3bc407ce20da53ead53837",
+  "sourceChanges": [],
+  "files": [
+    {
+      "file": "01-flota-restaurada.png",
+      "bytes": 302222,
+      "sha256": "9b2095099cba74ef25caa6958f6d01160eca59832d8c438fba0c9e7ee4eb3022"
+    },
+    {
+      "file": "02-frio-alimentadores-drones.png",
+      "bytes": 264963,
+      "sha256": "457c904668e5ba09bbf0563c0f3609d9161a41764792c98a19c24bce00a3b24a"
+    },
+    {
+      "file": "03-objetivos-1440.png",
+      "bytes": 364630,
+      "sha256": "3aa722d59ce341c6394715c0066945b15a6c0abbe6a480267f57e82136e6f817"
+    },
+    {
+      "file": "03-objetivos-960.png",
+      "bytes": 226003,
+      "sha256": "6ffbb4ebe23499456da86ba1b9908e09c152612efaefa7316e4cc1af9789f165"
+    },
+    {
+      "file": "README.md",
+      "bytes": 6056,
+      "sha256": "63cf430e6563e0411e7af85a1b35339e49778d6cb2d477db38c5836e01eca780"
+    },
+    {
+      "file": "browser.json",
+      "bytes": 31333,
+      "sha256": "8384d409d8c53c415b17227b7a8e0c1c0cfbb81f2a53249ca50670a0bb8a5e00"
+    },
+    {
+      "file": "checkpoint-80.json",
+      "bytes": 689900,
+      "sha256": "3b6f1782a2cb74f81c91678b601915f336c68811cc1ff8bb4c7b6972a72d674d"
+    },
+    {
+      "file": "provenance.json",
+      "bytes": 519,
+      "sha256": "09faaa11ff876983a0dc622193c7b20b5e83713ecc05c95fa6f90c5152198e90"
+    },
+    {
+      "file": "sources-after-browser.json",
+      "bytes": 67587,
+      "sha256": "6bd29996cdb395ab1cb97731479ddef28d010bb71ad9b2fa685e1054b18ba735"
+    },
+    {
+      "file": "sources-before-browser.json",
+      "bytes": 67587,
+      "sha256": "dd3ebc330564e319aa75fc8a26e7e0e40f327a5c5904957f1989b5977bb8e192"
+    }
+  ]
+}

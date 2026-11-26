@@ -1,0 +1,30 @@
+✖ a paid independent pedestal supports three cold-to-feed-A arm cycles with intact mission fixtures at 60 Hz (1790.935308ms)
+ℹ {"end":[-3.1239315684489397,0.10555083903387603,-0.10118995041768078,-0.039637015226570926],"point":{"x":4.021071735795428,"y":0.7108365374022405,"z":0.43817375014225435},"rows":[{"step":32,"details":[{"outside":false,"self":false,"collisions":[{"moving":{"id":196,"shape":"cube","p":{"x":2.8643445876295517,"y":0.6409040431061683,"z":-0.4215351808429883},"half":{"x":0.045,"y":0.045,"z":0.045}},"obstacle":{"p":{"x":2.5900000000000003,"y":0.61,"z":-0.665},"half":{"x":0.27,"y":0.025,"z":0.21}}}],"selfCollisions":[]}]},{"step":33,"details":[{"outside":false,"self":false,"collisions":[{"moving":{"id":196,"shape":"cube","p":{"x":2.8725772381717465,"y":0.6415765766818863,"z":-0.4751862861946755},"half":{"x":0.045,"y":0.045,"z":0.045}},"obstacle":{"p":{"x":2.5900000000000003,"y":0.61,"z":-0.665},"half":{"x":0.27,"y":0.025,"z":0.21}}}],"selfCollisions":[]}]},{"step":34,"details":[{"outside":false,"self":false,"collisions":[{"moving":{"id":196,"shape":"cube","p":{"x":2.8842920000302206,"y":0.6422479257454972,"z":-0.5281739923043749},"half":{"x":0.045,"y":0.045,"z":0.045}},"obstacle":{"p":{"x":2.5900000000000003,"y":0.61,"z":-0.665},"half":{"x":0.27,"y":0.025,"z":0.21}}}],"selfCollisions":[]}]}]}
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1886.461144
+
+✖ failing tests:
+
+test at ../../../../tmp/qbits-arm-pedestal-a-diagnostic-run.cjs:59:22
+✖ a paid independent pedestal supports three cold-to-feed-A arm cycles with intact mission fixtures at 60 Hz (1790.935308ms)
+  AssertionError [ERR_ASSERTION]: Recorrido hacia B ocupado · carga retenida, motores en reposo
+      at until (/tmp/qbits-arm-pedestal-a-diagnostic-run.cjs:39:256)
+      at run (/tmp/qbits-arm-pedestal-a-diagnostic-run.cjs:43:2)
+      at TestContext.<anonymous> (/tmp/qbits-arm-pedestal-a-diagnostic-run.cjs:59:149)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'fail',
+    diff: 'simple'
+  }

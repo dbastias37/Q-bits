@@ -1,0 +1,218 @@
+{
+  "browser": "131.0.6778.0",
+  "initial": {
+    "seconds": 441.26666666664676,
+    "scene": "galpon",
+    "mode": "playing",
+    "built": 6,
+    "received": 0,
+    "extracted": 195,
+    "cubes": 115,
+    "stock": {
+      "assigned": 4,
+      "workers": 4,
+      "mode": "plan",
+      "message": "Asigna un equipo a la fuente.",
+      "carrying": 1,
+      "raw": 0,
+      "cubes": 6,
+      "couplers": 6,
+      "readyCubes": 0,
+      "readyCouplers": 0,
+      "beltFeed": true,
+      "availableCubeSlots": 18,
+      "pendingWorker": false
+    },
+    "line": {
+      "built": 6,
+      "running": 6,
+      "traveling": 0,
+      "cooling": 0,
+      "received": 0,
+      "status": "Fabrica 18 cubos y 12 enganches para el primer tramo."
+    },
+    "tabletOpen": false,
+    "families": [],
+    "ledger": {
+      "credited": 0,
+      "uniqueOrigins": 0,
+      "spent": {
+        "extraction": 390,
+        "conversion": 965,
+        "forming": 316,
+        "charge": 3071.9427946944193,
+        "cooling": 0,
+        "transport": 681.5483268255445,
+        "assembly": 360,
+        "reconfiguration": 0
+      }
+    },
+    "workers": 4,
+    "energyJ": 174215.50887847703,
+    "bodies": 69,
+    "groups": 41,
+    "drawSize": [
+      960,
+      640
+    ],
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "webgl": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+    "physicsHz": 240,
+    "look": {
+      "yaw": -0.29999999999999916,
+      "pitch": -0.3800000000000001,
+      "camera": [
+        -2.55,
+        1.68,
+        3.9
+      ],
+      "position": [
+        -2.55,
+        1.68,
+        3.9
+      ]
+    }
+  },
+  "final": {
+    "seconds": 578.0666666666953,
+    "scene": "galpon",
+    "mode": "playing",
+    "built": 8,
+    "received": 12,
+    "extracted": 252,
+    "cubes": 156,
+    "stock": {
+      "assigned": 4,
+      "workers": 4,
+      "mode": "plan",
+      "message": "Salida disponible.",
+      "carrying": 0,
+      "raw": 0,
+      "cubes": 0,
+      "couplers": 0,
+      "readyCubes": 0,
+      "readyCouplers": 0,
+      "beltFeed": true,
+      "availableCubeSlots": 24,
+      "pendingWorker": false
+    },
+    "line": {
+      "built": 8,
+      "running": 8,
+      "traveling": 0,
+      "cooling": 0,
+      "received": 12,
+      "status": "Recibido en familia · 12 / 12."
+    },
+    "tabletOpen": false,
+    "families": [
+      {
+        "id": 1,
+        "count": 12,
+        "position": [
+          2.4299999995760393,
+          0.6499999024838047,
+          0.31000000279429807
+        ]
+      }
+    ],
+    "ledger": {
+      "credited": 12,
+      "uniqueOrigins": 12,
+      "spent": {
+        "extraction": 504,
+        "conversion": 1260,
+        "forming": 384,
+        "charge": 3956.9427946944193,
+        "cooling": 1657.0133333333313,
+        "transport": 1052.7663680845776,
+        "assembly": 480,
+        "reconfiguration": 0
+      }
+    },
+    "workers": 4,
+    "energyJ": 170705.27750388428,
+    "bodies": 58,
+    "groups": 36,
+    "drawSize": [
+      960,
+      640
+    ],
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "webgl": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+    "physicsHz": 240,
+    "look": {
+      "yaw": -0.29999999999999916,
+      "pitch": -0.22679632679489647,
+      "camera": [
+        1.760706265910168,
+        1.68,
+        2.265700731303864
+      ],
+      "position": [
+        1.760706265910168,
+        1.68,
+        2.265700731303864
+      ]
+    }
+  },
+  "errors": [],
+  "milestones": [
+    {
+      "event": "tramo 7",
+      "seconds": 472.93
+    },
+    {
+      "event": "tramo 8",
+      "seconds": 516.87
+    },
+    {
+      "event": "recepción 1",
+      "seconds": 549.73
+    },
+    {
+      "event": "recepción 2",
+      "seconds": 552
+    },
+    {
+      "event": "recepción 3",
+      "seconds": 554.27
+    },
+    {
+      "event": "recepción 4",
+      "seconds": 556.67
+    },
+    {
+      "event": "recepción 5",
+      "seconds": 558.93
+    },
+    {
+      "event": "recepción 6",
+      "seconds": 561.2
+    },
+    {
+      "event": "recepción 7",
+      "seconds": 562.87
+    },
+    {
+      "event": "recepción 8",
+      "seconds": 564.67
+    },
+    {
+      "event": "recepción 9",
+      "seconds": 566.33
+    },
+    {
+      "event": "recepción 10",
+      "seconds": 568
+    },
+    {
+      "event": "recepción 11",
+      "seconds": 569.87
+    },
+    {
+      "event": "recepción 12",
+      "seconds": 571.47
+    }
+  ]
+}
