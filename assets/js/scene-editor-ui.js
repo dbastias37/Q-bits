@@ -91,7 +91,7 @@
  if(!active){draftMarkers=(selected?.design?.markers||[]).map(m=>({...m,position:m.position.slice()}));editingMarkerId=null;}
  renderMarkers();
  dialog.hidden=false;$('scene-editor-name').focus();}
- function close(){dialog.hidden=true;}
+ function close(){dialog.hidden=true;if(active)window.QBitsGame?.sceneEditor?.resumeInput?.();}
  function renderMarkers(){
   if(active)window.QBitsGame?.sceneEditor?.setMarkers?.(draftMarkers);
   const list=$('scene-editor-marker-list');list.replaceChildren();
@@ -140,7 +140,6 @@
   active=true;toolbar.hidden=false;
   draftMarkers=mode==='open'?(doc.design?.markers||[]).map(m=>({...m,position:m.position.slice()})):[];
   editingMarkerId=null;renderMarkers();close();
-  game.resumeInput?.();
  }
  function getAuthoringData(){
   const result=window.QBitsGame?.sceneEditor?.capture?.();
@@ -192,7 +191,7 @@
   if(!active||event.repeat||event.ctrlKey||event.altKey||event.metaKey)return;
   if(event.code==='F8'){
    event.preventDefault();event.stopImmediatePropagation();
-   document.exitPointerLock?.();show();
+   window.QBitsGame?.sceneEditor?.suspendInput?.();show();
   }else if(event.code==='Escape'&&!dialog.hidden){
    event.preventDefault();event.stopImmediatePropagation();close();
   }
@@ -212,7 +211,7 @@
  $('scene-editor-choose').addEventListener('click',()=>act(()=>{const code=$('scene-editor-library').value;if(!code)throw Error('No hay versiones en la biblioteca.');selected=MODEL().select(localStorage,code);show();feedback('Versión seleccionada: '+selected.code); }));
  $('scene-editor-new').addEventListener('click',()=>act(()=>enter('new')));
  $('scene-editor-open').addEventListener('click',()=>act(()=>enter('open')));
- $('scene-editor-manage').addEventListener('click',()=>act(show));
+ $('scene-editor-manage').addEventListener('click',()=>act(()=>{window.QBitsGame?.sceneEditor?.suspendInput?.();show();}));
  $('scene-editor-capture').addEventListener('click',()=>act(()=>{
   if(!active)throw Error('Abre primero el Editor de escenas.');
   const data=getAuthoringData(),doc=storeScene(data);
