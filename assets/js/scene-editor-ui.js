@@ -42,6 +42,8 @@
  <button id="scene-editor-copy">Copiar resumen e inventario</button>
  <button id="scene-editor-copy-full">Copiar código completo</button>
  <button id="scene-editor-export">Descargar escena</button></div>
+ <label>Código completo recibido<textarea id="scene-editor-paste" placeholder="Pega aquí QBSCENE1:… para importar una escena sin archivo"></textarea></label>
+ <div class="scene-editor-actions"><button id="scene-editor-import-code">Importar código pegado</button></div>
  <p id="scene-editor-code">Sin escena capturada</p>
  <p id="scene-editor-feedback" role="status" aria-live="polite"></p>
  <input id="scene-editor-file" type="file" accept=".json,.qbits-scene.json,application/json" hidden>
@@ -104,6 +106,11 @@
   for(let i=0;i<bytes.length;i+=16384)bin+=String.fromCharCode(...bytes.subarray(i,i+16384));
   return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
  }
+ function fromBase64(encoded){
+  if(!/^[A-Za-z0-9_-]+$/.test(encoded))throw Error('El código contiene caracteres inválidos.');
+  const bin=atob(encoded.replace(/-/g,'+').replace(/_/g,'/'));const bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));
+  return new TextDecoder('utf-8',{fatal:true}).decode(bytes);
+ }
  function download(doc){
   const name=doc.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,50)||'escena';
   const blob=new Blob([JSON.stringify(doc,null,2)],{type:'application/json'});
@@ -131,6 +138,12 @@
  $('scene-editor-copy-full').addEventListener('click',()=>act(async()=>{const doc=current();await copy('QBSCENE1:'+base64(JSON.stringify(doc)));feedback('Código completo copiado. Contiene la escena entera.');}));
  $('scene-editor-export').addEventListener('click',()=>act(()=>{download(current());feedback('Archivo exportado.');}));
  $('scene-editor-import').addEventListener('click',()=>$('scene-editor-file').click());
+ $('scene-editor-import-code').addEventListener('click',()=>act(()=>{
+  const raw=$('scene-editor-paste').value.trim();
+  if(!raw.startsWith('QBSCENE1:')||raw.length>MODEL().MAX_BYTES*1.5)throw Error('Código completo inválido o demasiado grande.');
+  const doc=MODEL().parse(fromBase64(raw.slice(9)));
+  MODEL().save(localStorage,doc);selected=doc;show();feedback('Código importado y verificado: '+doc.code);
+ }));
  $('scene-editor-file').addEventListener('change',()=>act(async()=>{
   const file=$('scene-editor-file').files[0];if(!file)return;
   if(file.size>MODEL().MAX_BYTES)throw Error('El archivo supera 8 MB.');
