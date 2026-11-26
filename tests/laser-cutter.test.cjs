@@ -2,7 +2,12 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const createGame=require('./game-harness.cjs');
 function lab(){const game=createGame({graphics:false}),{t,sandbox}=game;t.clearNarrativeScene();Object.assign(t.story,{ready:true,started:true,mode:'playing',scene:'lab',phase:'idle',progress:{}});sandbox.document.body.dataset.booting='false';sandbox.document.pointerLockElement=t.canvas;return game;}
-function laser(t,x=0,z=0,y=.048){const g=t.addQubit([x,y,z]);assert(t.adaptCutter({g,part:g.parts[0]}));g.parts[0].mood.energy=1;return g;}
+function laser(t,x=0,z=0,y=.048){
+ const g=t.addQubit([x,y,z]);assert(t.adaptCutter({g,part:g.parts[0]}));g.parts[0].mood.energy=1;
+ const receiver=t.addQubit([x+.5,y,z]);assert(t.adaptCutter({g:receiver,part:receiver.parts[0]}));
+ receiver.parts[0].mood.cutter.face=t.unitProfile('cube').faceNormals.findIndex(n=>n.x<-.9);
+ receiver.parts[0].mood.energy=1;return g;
+}
 function setup(shape='cube'){const game=lab(),{t}=game,c=laser(t),target=t.addQubit([.3,t.unitGroundHeight(shape)+.003,0],shape==='cube'?1:shape==='pyramid'?1/6:1/12,shape);return {...game,c,target,id:c.parts[0].id};}
 function tick(t,seconds=1/120){for(let i=0;i<Math.ceil(seconds*120);i++)t.tickCutters(1/120);}
 function material(t){return t.groups.filter(g=>!g.parts[0].mood.cutter);}
@@ -27,7 +32,7 @@ test('a second stripe automatically cuts all six pyramids into twelve tetrahedra
  for(const g of [c,second,third])assert(t.setCutterEnabled(g.parts[0].id,true));tick(t);
  const pyramids=material(t);assert.equal(pyramids.length,6);for(const g of pyramids)translate(g,.25);tick(t);
  const halves=material(t);assert.equal(halves.length,12,t.cutterRuns.get(second.parts[0].id).status);assert(halves.every(g=>g.parts[0].shape==='tetra'&&g.parts[0].mood.matter.root===root));assert(Math.abs(totalJ(t,halves)-j)<1e-9);
- for(const g of halves)translate(g,.25);tick(t);assert.equal(material(t).length,0);assert.equal(t.world.bodies.filter(b=>b.qubitGroup).length,3);
+ for(const g of halves)translate(g,.25);tick(t);assert.equal(material(t).length,0);assert.equal(t.world.bodies.filter(b=>b.qubitGroup).length,6);
  const saved=t.saveLab({passive:true});assert(saved.groups.every(g=>g.parts.every(p=>p.mood.matter?.root!==root)),'destroyed fragments are absent from durable scene inventory');
  tick(t,1);assert.equal(material(t).length,0);assert.match(t.cutterRuns.get(third.parts[0].id).status,/Esperando/);
 });
@@ -36,8 +41,9 @@ test('standalone pyramid and smallest triangular piece need no mode selection',(
  assert.equal(material(t).length,shape==='pyramid'?2:0);assert(material(t).every(g=>g.parts[0].shape==='tetra'));assert(Math.abs(before-totalJ(t,[c])-8)<1e-9);}
 });
 test('same stripe on the opposite side and R/off-on cannot recut stationary descendants',()=>{
- const {t,c,id}=setup(),other=laser(t,.6);other.parts[0].mood.cutter.face=t.unitProfile('cube').faceNormals.findIndex(n=>n.x<-.9);
- assert(t.setCutterEnabled(id,true));assert(t.setCutterEnabled(other.parts[0].id,true));tick(t,1);assert.equal(material(t).length,6);
+ const {t,c,id}=setup(),other=t.groups.find(g=>g!==c&&g.parts[0].mood.cutter);
+ assert(other);assert(t.setCutterEnabled(id,true));assert(t.setCutterEnabled(other.parts[0].id,true));
+ assert.equal(t.cutterRuns.size,2,'both heads share one powered stripe');tick(t,1);assert.equal(material(t).length,6);
  t.setCutterEnabled(id,false);t.setCutterEnabled(id,true);tick(t,1);assert.equal(material(t).length,6);
 });
 test('leaving the stripe rearms a piece for a new passage, but a distinct nearby stripe can cut immediately',()=>{
@@ -107,11 +113,31 @@ test('powered conveyor carries one real cube through three mounted stripes: six 
  const at=hit.p.vadd(hit.q.vmult(t.V(0,0,-.09))),cell=t.addQubit(at.toArray()),battery=cell.parts[0];battery.mood.externalBattery={version:1,ownerId:battery.id,packId:battery.id,enabled:true};battery.mood.energy=1;
  assert(t.weld({source:cell,target:hit.g,position:cell.body.position.clone(),quaternion:cell.body.quaternion.clone()}));t.stepPhysics(1/240);
  hit=t.rotorPart(conveyor.baseId);const path=conveyor.path.map(p=>hit.p.vadd(hit.q.vmult(p))),emitters=[];
- for(const x of [-.11,.055,.21]){const g=laser(t,x,-.4,path[0].y+.048);g.parts[0].mood.cutter.face=t.unitProfile('cube').faceNormals.findIndex(n=>n.z>.9);emitters.push(g);
+ for(const x of [-.11,.055,.21]){const g=t.addQubit([x,path[0].y+.048,-.4]);assert(t.adaptCutter({g,part:g.parts[0]}));g.parts[0].mood.cutter.face=t.unitProfile('cube').faceNormals.findIndex(n=>n.z>.9);g.parts[0].mood.energy=1;
+  const receiver=t.addQubit([x,path[0].y+.048,.1]);assert(t.adaptCutter({g:receiver,part:receiver.parts[0]}));receiver.parts[0].mood.cutter.face=t.unitProfile('cube').faceNormals.findIndex(n=>n.z<-.9);emitters.push(g);
   t.storyWall(t.V(x,path[0].y/2,-.4),t.V(.045,path[0].y/2,.045));}
  const load=t.addQubit([path[0].x+.055,path[0].y+.055,0]),root=load.parts[0].id,descendants=()=>t.groups.filter(g=>g.parts[0].id===root||g.parts[0].mood.matter?.root===root);let six=false,twelve=false,done=false;
  assert(t.startConveyor(conveyor));for(const g of emitters)assert(t.setCutterEnabled(g.parts[0].id,true));
  for(let i=0;i<240*6;i++){t.stepPhysics(1/240);const remaining=descendants();six||=remaining.length===6&&remaining.every(g=>g.parts[0].shape==='pyramid');twelve||=remaining.length===12&&remaining.every(g=>g.parts[0].shape==='tetra');
   assert(remaining.every(g=>g.body.position.y>path[0].y-.02),'matter stays on the moving belt');if(!remaining.length){done=true;break;}}
  assert(six,'first stripe creates six pyramids');assert(twelve,'second stripe produces twelve smallest pieces');assert(done,'third stripe removes all matter before the end of the belt');assert(conveyor.running);
+});
+
+test('one laser cannot activate alone; facing receiver shares exactly one cutting beam',()=>{
+ const {t}=lab(),source=t.addQubit([0,.048,0]);assert(t.adaptCutter({g:source,part:source.parts[0]}));
+ const id=source.parts[0].id;assert.equal(t.setCutterEnabled(id,true),false);assert.equal(t.cutterRuns.size,0);
+ const receiver=t.addQubit([.5,.048,0]);assert(t.adaptCutter({g:receiver,part:receiver.parts[0]}));
+ receiver.parts[0].mood.cutter.face=t.unitProfile('cube').faceNormals.findIndex(n=>n.x<-.9);
+ assert(t.setCutterEnabled(id,true));tick(t);assert.equal(t.cutterRuns.size,2);
+ const beam=t.cutterRuns.get(id).beam;assert(Math.abs(beam.distance-.386)<.008);
+ assert.equal(t.cutterRuns.get(receiver.parts[0].id).role,'receiver');
+ assert(t.setCutterEnabled(receiver.parts[0].id,false));assert.equal(t.cutterRuns.size,0);
+});
+test('the opposite cube must face the source and remain aligned while activated',()=>{
+ const {t,c,id}=setup(),other=t.groups.find(g=>g!==c&&g.parts[0].mood.cutter),config=other.parts[0].mood.cutter,face=config.face;
+ config.face=c.parts[0].mood.cutter.face;assert.equal(t.setCutterEnabled(id,true),false);
+ config.face=face;other.body.position.z+=.06;assert.equal(t.setCutterEnabled(id,true),false);
+ other.body.position.z-=.06;assert(t.setCutterEnabled(id,true));tick(t);
+ other.body.position.z+=.08;tick(t);
+ assert.equal(t.cutterRuns.get(id).enabled,false);assert.equal(t.cutterRuns.get(other.parts[0].id).enabled,false);
 });

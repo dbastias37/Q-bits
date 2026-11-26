@@ -5,8 +5,8 @@ Implementado el 26 de noviembre de 2026. Primera pieza industrial, disponible en
 ## Uso
 
 1. F8 → Mecanismos → **Láser de corte · cubo adaptable**, o Q → Banco rápido → **Láser de corte**. Coloca su fantasma azul. También puedes adaptar la cara señalada de un cubo libre desde su clic derecho.
-2. Apoya el emisor junto a la cinta, con el cabezal a la altura del centro del material y su franja naranja atravesando el recorrido. Conserva el agarre y giro normales del Q-bit. El alcance es de 50 cm; la franja cubre la altura de un cubo, incluyendo los fragmentos pequeños sobre la misma cinta.
-3. Clic derecho → **Iniciar láser**. Solo se enciende o se apaga: no hay selector de material, temporizador ni receta que configurar.
+2. Coloca **dos cubos láser enfrentados**, con los distintivos naranjas apuntándose directamente, a la altura del material y separados por un máximo de 50 cm entre cabezales. Se pueden instalar a ambos lados de una cinta o de cualquier mecanismo. La alineación lateral tolera 1,5 cm.
+3. Clic derecho → **Iniciar láser** en uno de ellos. Ambos se iluminan y forman **un solo haz tubular** centrado en la cara marcada, sin líneas arriba ni abajo; el otro es un receptor pasivo. Si falta pareja válida, aparece «Se necesitan 2 cubos láser enfrentados para activarse». Si pierden la alineación se detienen. No hay selector de material, temporizador ni receta.
 4. La pieza se transforma al tocar la franja y continúa con su movimiento. Otra franja posterior realiza el siguiente corte.
 
 | Entrada que toca la franja | Resultado |
@@ -19,7 +19,7 @@ Un cubo completo pasa así a seis pirámides, luego a doce triangulares; una ter
 
 ## Contacto y seguridad de la transacción
 
-- Cada transformación consume 8 J del emisor o de su batería externa conectada. El contacto aplica la operación completa; no exige que el material se detenga cuatro segundos.
+- Cada transformación consume 8 J del extremo emisor o de su batería externa conectada; el receptor no cobra un segundo corte. El contacto aplica la operación completa; no exige que el material se detenga cuatro segundos.
 - Las partes ocupan el volumen original, mantienen la orientación y heredan el movimiento lineal y angular. No se depositan en una bandeja más ancha que la cinta.
 - Los descendientes quedan protegidos de la misma franja durante ese paso, incluso si hay un emisor opuesto. Apagar, encender o pulsar R no borra esa protección. Una franja distinta puede efectuar inmediatamente la siguiente transformación. Al alejarse 15 cm perpendicularmente a una franja, la pieza puede volver a atravesarla para otro corte.
 - Se comprueba el trayecto entre pasos físicos para detectar cruces rápidos. Los sólidos incompatibles y las paredes bloquean el haz; otras piezas procesables pueden atravesar la misma franja.
@@ -31,9 +31,9 @@ Un cubo completo pasa así a seis pirámides, luego a doce triangulares; una ter
 
 `mood.cutter` versión 2 conserva la cara emisora. Los guardados anteriores con alcance y modo manual se aceptan y migran al funcionamiento automático. Banco, escenas y mecanismos conservan la adaptación; al restaurar, los láseres quedan apagados.
 
-`mood.cutPasses` guarda hasta dos marcas de franja por fragmento. Se copia de forma independiente, se valida al cargar y evita que un fragmento recién cortado vuelva a cortarse en el mismo lugar al recargar. La destrucción retira inmediatamente cuerpo físico, ID y materia del inventario; el destello visual dura 0,25 s, no tiene física y está limitado a 64 efectos.
+`mood.cutPasses` guarda hasta dos marcas de franja por fragmento. Se copia de forma independiente, se valida al cargar y evita que un fragmento recién cortado vuelva a cortarse en el mismo lugar al recargar. La destrucción retira inmediatamente cuerpo físico, ID y materia del inventario; el destello de quemadura es más grande y dura 0,48 s, no tiene física y está limitado a 64 efectos.
 
-Solo los emisores encendidos buscan objetivos. La detección consulta la región de la franja en el broadphase y usa un barrido local en cada paso físico; el dibujo del haz comprueba oclusores a 30 Hz. El cabezal utiliza cajas del render existente, sin articulaciones nuevas.
+Solo el extremo emisor de cada pareja activa busca objetivos. La detección consulta la región de la franja en el broadphase y usa un barrido local en cada paso físico; el dibujo del haz comprueba oclusores a 30 Hz. El cabezal utiliza cajas del render existente, sin articulaciones nuevas.
 
 ## Verificación reproducible
 
