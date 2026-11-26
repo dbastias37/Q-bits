@@ -6,7 +6,7 @@
  // Recover the ordinary bank slot if a previous editor session ended unexpectedly.
  try {const raw=sessionStorage.getItem(BACKUP);if(raw!==null){const old=JSON.parse(raw);if(old.exists)localStorage.setItem(LAB_KEY,old.raw);else localStorage.removeItem(LAB_KEY);sessionStorage.removeItem(BACKUP);}}catch(e){console.error('Escena: recuperación de banco pendiente',e);}
  let active=false,selected=null,lastCheckpointRaw=null;
- let draftMarkers=[];
+ let draftMarkers=[],editingMarkerId=null;
  const style=document.createElement('style');
  style.textContent=`
  #scene-editor-dialog{position:fixed;inset:0;z-index:135;background:#f8faf9f7;color:#293c36;display:grid;place-items:center;padding:16px;font:13px/1.55 var(--font-menu),Arial,sans-serif}
@@ -52,9 +52,11 @@
  <p>Define puntos de aparición, fuentes, destinos y receptores. Sus coordenadas se conservan aunque muevas las máquinas; las reglas futuras podrán identificarlos por código.</p>
  <label>Nombre de marca<input id="scene-marker-name" type="text" maxlength="80" placeholder="Receptor de productos"></label>
  <label>Función<select id="scene-marker-role"><option value="spawn">Inicio del jugador</option><option value="source">Origen de materia</option><option value="destination">Destino</option><option value="receiver">Recepción</option><option value="workzone">Zona de trabajo</option><option value="note">Referencia visual</option></select></label>
+ <label>ID de pieza asociada (opcional)<input id="scene-marker-unit" type="number" min="1" step="1" placeholder="Ej.: 42"></label>
  <div class="scene-marker-grid"><label>X<input id="scene-marker-x" type="number" step=".1" value="0"></label><label>Y<input id="scene-marker-y" type="number" step=".1" value="0"></label><label>Z<input id="scene-marker-z" type="number" step=".1" value="0"></label></div>
  <div class="scene-editor-actions"><button id="scene-marker-from-player">Usar posición del jugador guardada</button><button id="scene-marker-add">Añadir marca</button><button id="scene-markers-save">Guardar marcas en la escena</button></div>
  <div id="scene-editor-marker-list" aria-live="polite"></div>
+ <svg id="scene-editor-map" viewBox="0 0 360 220" role="img" aria-label="Plano orientativo X/Z de los marcadores" style="width:100%;max-height:240px;background:#f5f8f6;border:1px solid #d0dcd4"></svg>
  <div class="scene-editor-actions">
  <button id="scene-editor-copy">Copiar resumen e inventario</button>
  <button id="scene-editor-copy-full">Copiar código completo</button>
@@ -79,13 +81,39 @@
  if(selected&&items.some(item=>item.code===selected.code))select.value=selected.code;
  $('scene-editor-code').textContent=selected?'Versión de escena: '+selected.code+' · '+selected.inventory.pieces+' piezas':'Sin escena capturada';
  if(selected){$('scene-editor-name').value=selected.name;$('scene-editor-notes').value=selected.notes;}
- draftMarkers=(selected?.design?.markers||[]).map(m=>({...m,position:m.position.slice()}));renderMarkers();
+ draftMarkers=(selected?.design?.markers||[]).map(m=>({...m,position:m.position.slice()}));editingMarkerId=null;renderMarkers();
  dialog.hidden=false;$('scene-editor-name').focus();}
  function close(){dialog.hidden=true;}
- function renderMarkers(){const list=$('scene-editor-marker-list');list.replaceChildren();
-  if(!draftMarkers.length){list.textContent='Sin marcas todavía.';return;}
-  for(const mark of draftMarkers){const line=document.createElement('div');line.textContent=mark.label+' ['+mark.role+'] · '+mark.position.join(', ')+' · '+mark.id;
-   const remove=document.createElement('button');remove.textContent='Quitar';remove.type='button';remove.addEventListener('click',()=>{draftMarkers=draftMarkers.filter(m=>m.id!==mark.id);renderMarkers();});line.append(remove);list.append(line);}
+ function renderMarkers(){
+  const list=$('scene-editor-marker-list');list.replaceChildren();
+  if(!draftMarkers.length)list.textContent='Sin marcas todavía.';
+  for(const mark of draftMarkers){
+   const line=document.createElement('div');
+   line.textContent=mark.label+' ['+mark.role+'] · '+mark.position.join(', ')+(mark.unitId?' · pieza '+mark.unitId:'')+' · '+mark.id;
+   const edit=document.createElement('button');edit.textContent='Editar';edit.type='button';edit.addEventListener('click',()=>{
+    editingMarkerId=mark.id;$('scene-marker-name').value=mark.label;$('scene-marker-role').value=mark.role;
+    ['x','y','z'].forEach((axis,i)=>{$('scene-marker-'+axis).value=String(mark.position[i]);});
+    $('scene-marker-unit').value=mark.unitId?String(mark.unitId):'';
+    $('scene-marker-add').textContent='Actualizar marca';
+   });
+   const remove=document.createElement('button');remove.textContent='Quitar';remove.type='button';
+   remove.addEventListener('click',()=>{draftMarkers=draftMarkers.filter(m=>m.id!==mark.id);if(editingMarkerId===mark.id){editingMarkerId=null;$('scene-marker-add').textContent='Añadir marca';}renderMarkers();});
+   line.append(edit,remove);list.append(line);
+  }
+  const svg=$('scene-editor-map'),ns='http://www.w3.org/2000/svg';svg.replaceChildren();
+  function node(tag,attrs,value){const el=document.createElementNS(ns,tag);for(const [k,v]of Object.entries(attrs))el.setAttribute(k,v);if(value!==undefined)el.textContent=value;svg.append(el);return el;}
+  for(let i=0;i<=8;i++){const x=20+i*40;node('path',{d:'M'+x+' 10V210',stroke:'#dbe6df','stroke-width':'1'});}
+  for(let i=0;i<=5;i++){const y=10+i*40;node('path',{d:'M20 '+y+'H340',stroke:'#dbe6df','stroke-width':'1'});}
+  node('path',{d:'M180 8V212 M18 110H342',stroke:'#90b1a0','stroke-width':'1'});
+  node('text',{x:330,y:106,fill:'#527c68','font-size':'10'},'X+');
+  node('text',{x:183,y:18,fill:'#527c68','font-size':'10'},'Z−');
+  const extent=Math.max(4,...draftMarkers.flatMap(m=>[Math.abs(m.position[0]),Math.abs(m.position[2])]));
+  const scale=90/extent;
+  for(const mark of draftMarkers){
+   const x=Math.max(20,Math.min(340,180+mark.position[0]*scale)),y=Math.max(10,Math.min(210,110+mark.position[2]*scale));
+   node('circle',{cx:x,cy:y,r:5,fill:mark.role==='spawn'?'#286a99':'#a55b3a'});
+   node('text',{x:x+8,y:y-7,fill:'#283e32','font-size':'10'},mark.label.slice(0,24));
+  }
  }
  function getSavedBank(){const raw=localStorage.getItem(LAB_KEY);if(!raw)throw Error('Guarda una partida nueva del banco antes de continuar.');
   const obj=JSON.parse(raw);if(obj.format!=='qbits-save'||obj.mode!=='lab')throw Error('El archivo de banco no es válido.');
@@ -175,11 +203,17 @@
   const p=data.snapshot.position;if(!Array.isArray(p)||p.length!==3)throw Error('No hay posición de jugador guardada.');
   ['x','y','z'].forEach((axis,i)=>{$('scene-marker-'+axis).value=String(p[i]);});feedback('Posición de jugador recuperada del guardado.');
  }));
- $('scene-marker-add').addEventListener('click',()=>act(()=>{const label=$('scene-marker-name').value.trim();
-  const role=$('scene-marker-role').value,position=['x','y','z'].map(k=>Number($('scene-marker-'+k).value));
+ $('scene-marker-add').addEventListener('click',()=>act(()=>{
+  const label=$('scene-marker-name').value.trim(),role=$('scene-marker-role').value;
+  const position=['x','y','z'].map(k=>{const field=$('scene-marker-'+k);return field.value.trim()===''?NaN:Number(field.value);});
   const next=1+Math.max(0,...draftMarkers.map(m=>Number(m.id.slice(2))||0));
-  const marker={id:'m-'+next,role,label,position};MODEL().validateDesign({phase:'authoring',markers:[...draftMarkers,marker]});
-  draftMarkers.push(marker);renderMarkers();feedback('Marca añadida. Pulsa Guardar marcas para incluirla en el archivo.');
+  const marker={id:editingMarkerId||'m-'+next,role,label,position};
+  const attached=$('scene-marker-unit').value.trim();
+  if(attached!==''){marker.unitId=Number(attached);}
+  const updated=draftMarkers.filter(m=>m.id!==marker.id).concat(marker);
+  MODEL().validateDesign({phase:'authoring',markers:updated});
+  draftMarkers=updated;editingMarkerId=null;$('scene-marker-add').textContent='Añadir marca';
+  renderMarkers();feedback('Marca preparada. Pulsa Guardar marcas para incluirla en el archivo.');
  }));
  $('scene-markers-save').addEventListener('click',()=>act(()=>{
   const doc=current(),next=MODEL().withDesign(doc,{phase:'authoring',markers:draftMarkers});selected=MODEL().save(localStorage,next);
