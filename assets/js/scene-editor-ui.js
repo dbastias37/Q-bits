@@ -141,6 +141,7 @@
   if(!game?.open)throw Error('El editor nativo todavía no está disponible.');
   let doc=null;
   if(mode==='open'){doc=current();selected=doc;}
+  if(active&&game.isActive?.()&&!window.confirm('Vas a sustituir el montaje que está en pantalla. ¿Continuar sin capturarlo?'))return;
   const result=game.open(doc?doc.data:null);
   if(!result.ok)throw Error(result.error||'No se pudo entrar a la escena.');
   active=true;toolbar.hidden=false;close();
@@ -214,8 +215,9 @@
  $('scene-marker-add').addEventListener('click',()=>act(()=>{
   const label=$('scene-marker-name').value.trim(),role=$('scene-marker-role').value;
   const position=['x','y','z'].map(k=>{const field=$('scene-marker-'+k);return field.value.trim()===''?NaN:Number(field.value);});
-  const next=1+Math.max(0,...draftMarkers.map(m=>Number(m.id.slice(2))||0));
-  const marker={id:editingMarkerId||'m-'+next,role,label,position};
+  const key=()=>('m-'+Math.random().toString(36).slice(2,12)+Date.now().toString(36));
+  let next=key();while(draftMarkers.some(m=>m.id===next))next=key();
+  const marker={id:editingMarkerId||next,role,label,position};
   const attached=$('scene-marker-unit').value.trim();
   if(attached!==''){marker.unitId=Number(attached);}
   const updated=draftMarkers.filter(m=>m.id!==marker.id).concat(marker);
