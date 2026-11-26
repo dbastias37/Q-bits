@@ -1,7 +1,7 @@
 (() => {
  'use strict';
  const MODEL=()=>window.QBitsSceneFiles;
- const LAB_KEY='qbits.save.lab.v1', BACKUP='qbits.editor.bank-backup.v1';
+ const LAB_KEY='qbits.save.lab.v1', BACKUP='qbits.editor.bank-backup.v1',RECOVERY='qbits.editor.recovery.v1';
  const $=id=>document.getElementById(id);
  // Recover the ordinary bank slot if a previous editor session ended unexpectedly.
  try {const raw=sessionStorage.getItem(BACKUP);if(raw!==null){const old=JSON.parse(raw);if(old.exists)localStorage.setItem(LAB_KEY,old.raw);else localStorage.removeItem(LAB_KEY);sessionStorage.removeItem(BACKUP);}}catch(e){console.error('Escena: recuperación de banco pendiente',e);}
@@ -45,7 +45,7 @@
  <label>Rotación del blueprint en grados<input id="scene-place-angle" type="number" value="0" min="-360" max="360" step="15"></label>
  <div class="scene-editor-actions"><button id="scene-place-button" class="primary">Colocar en escena</button></div>
  <label>Biblioteca de escenas<select id="scene-editor-library" aria-label="Escenas guardadas"></select></label>
- <div class="scene-editor-actions"><button id="scene-editor-choose">Abrir versión seleccionada</button></div>
+ <div class="scene-editor-actions"><button id="scene-editor-choose">Abrir versión seleccionada</button><button id="scene-editor-recover">Recuperar último borrador</button></div>
  <label>Nombre de escena<input id="scene-editor-name" type="text" maxlength="90" value="Mi escena inicial"></label>
  <label>Notas de diseño<textarea id="scene-editor-notes" placeholder="Intención, elementos iniciales, restricciones, objetivos..."></textarea></label>
  <div class="scene-editor-actions">
@@ -77,10 +77,12 @@
  const toolbar=document.createElement('div');toolbar.id='scene-editor-toolbar';toolbar.hidden=true;
  toolbar.innerHTML=`<strong>Editor de escenas · Banco 3D</strong>
  <div class="scene-editor-actions"><button id="scene-editor-capture">Capturar y guardar escena</button><button id="scene-editor-manage">Catálogo / Códigos / Exportar</button></div>
- <small>Coloca las piezas con los controles habituales. Capturar lee directamente el montaje del motor; no hace falta guardar el banco.</small>`;
+ <small>Coloca las piezas con los controles habituales. Capturar lee directamente el montaje del motor; no hace falta guardar el banco.</small><small id="scene-editor-recovery-status" aria-live="polite"></small>`;
  document.body.append(toolbar);
  function feedback(text){$('scene-editor-feedback').textContent=text;}
  function show(){try{selected=MODEL().read(localStorage);}catch(e){selected=null;feedback(e.message);}
+ const recovery=$('scene-editor-recover');
+ try {const raw=localStorage.getItem(RECOVERY);recovery.disabled=!raw||!MODEL().parse(raw);}catch{recovery.disabled=true;}
  const catalog=$('scene-editor-catalog');catalog.replaceChildren();
  for(const item of (window.QBitsGame?.sceneEditor?.catalog?.()||[])){
   const opt=document.createElement('option');opt.value=item.id;opt.textContent=item.category+' · '+item.label;catalog.append(opt);
@@ -183,6 +185,10 @@
   if(!response.ok)throw Error(response.error||'No se pudo colocar.');
   feedback(response.name+' colocado con piezas reales · '+response.pieces+' piezas en escena. Puedes cerrar el panel para inspeccionarlo.');
  }));
+ $('scene-editor-recover').addEventListener('click',()=>act(()=>{
+  const raw=localStorage.getItem(RECOVERY);if(!raw)throw Error('No hay un borrador automático guardado.');
+  const doc=MODEL().parse(raw);MODEL().save(localStorage,doc);selected=doc;show();feedback('Borrador validado. Pulsa Continuar escena guardada para volver a construir.');
+ }));
  $('scene-editor-choose').addEventListener('click',()=>act(()=>{const code=$('scene-editor-library').value;if(!code)throw Error('No hay versiones en la biblioteca.');selected=MODEL().select(localStorage,code);show();feedback('Versión seleccionada: '+selected.code); }));
  $('scene-editor-new').addEventListener('click',()=>act(()=>enter('new')));
  $('scene-editor-open').addEventListener('click',()=>act(()=>enter('open')));
@@ -235,5 +241,15 @@
  }).observe($('main-screen'),{attributes:true,attributeFilter:['hidden']});
  window.addEventListener('pagehide',()=>{if(active)restoreBank();});
  for(const id of ['pause-main','pause-levels','main-play','main-levels']) $(id)?.addEventListener('click',()=>{if(active)try{restoreBank();}catch(e){console.error(e);}}, {capture:true});
+ // A separate, bounded crash-recovery copy; never writes either native game slot.
+ setInterval(()=>{
+  if(!active||!window.QBitsGame?.sceneEditor?.isActive?.()||document.hidden)return;
+  try{
+   const result=window.QBitsGame.sceneEditor.capture();if(!result?.ok)return;
+   const doc=MODEL().pack($('scene-editor-name').value,result.data,$('scene-editor-notes').value,{phase:'authoring',markers:draftMarkers});
+   localStorage.setItem(RECOVERY,JSON.stringify(doc));
+   $('scene-editor-recovery-status').textContent='Borrador recuperable · '+doc.code;
+  }catch(error){$('scene-editor-recovery-status').textContent='Recuperación automática no disponible: '+(error.message||error);}
+ },60000);
  window.QBitsSceneEditor=Object.freeze({open:show,capture:()=>$('scene-editor-capture').click(),restoreBank});
 })();
