@@ -56,13 +56,51 @@
     return {pieces,activeGroups,shapes,components,systems,uniqueIds:ids.size,
       notes:'Inventario descriptivo; el archivo de escena contiene también orientaciones, energía, conexiones y configuraciones.'};
   }
-  function pack(name,data,notes=''){
+
+  const MARKER_ROLES=new Set(['spawn','source','destination','receiver','workzone','note']);
+  function validateDesign(design){
+    if(design===undefined||design===null)return null;
+    if(!design||typeof design!=='object'||Array.isArray(design)||!Array.isArray(design.markers)||design.markers.length>128)fail('El diseño de misión no es válido.');
+    const ids=new Set();
+    const markers=design.markers.map(marker=>{
+      if(!marker||typeof marker!=='object'||!/^m-[A-Za-z0-9_-]{1,40}$/.test(marker.id)||ids.has(marker.id))fail('El marcador no tiene identidad única.');
+      ids.add(marker.id);
+      if(!MARKER_ROLES.has(marker.role))fail('Tipo de marcador no admitido.');
+      if(typeof marker.label!=='string'||!marker.label.trim()||marker.label.length>80)fail('Nombre de marcador inválido.');
+      if(!Array.isArray(marker.position)||marker.position.length!==3||!marker.position.every(v=>Number.isFinite(v)&&Math.abs(v)<1000))fail('Coordenadas de marcador inválidas.');
+      return {id:marker.id,role:marker.role,label:marker.label.trim(),position:marker.position.slice()};
+    });
+    if(!['authoring','initial'].includes(design.phase||'authoring'))fail('Estado de diseño no reconocido.');
+    return {phase:design.phase||'authoring',markers};
+  }
+  function withDesign(document,design){
+    const checked=parse(JSON.stringify(document));
+    const update=pack(checked.name,checked.data,checked.notes,design);
+    return update;
+  }
+  function emptyData(data){
+    verifyData(data);
+    const value=JSON.parse(JSON.stringify(data)),snap=value.snapshot;
+    // Preserve only the native room, player posture, game settings and mood configuration.
+    // All owned matter, mechanisms, ongoing work and runtime references are removed.
+    const keep=['settings','moodSettings','position','yaw','pitch','alphaSettings','environment'];
+    const blank={};
+    for(const key of keep)if(own(snap,key))blank[key]=snap[key];
+    blank.groups=[];blank.cargos=[];
+    value.snapshot=blank;
+    verifyData(value);
+    return value;
+  }
+
+  function pack(name,data,notes='',design=null){
     verifyData(data);
     const safeName=String(name||'Nueva escena').trim().slice(0,90)||'Nueva escena';
     const safeNotes=String(notes).slice(0,2000);
     const snapshot=JSON.parse(JSON.stringify(data));
+    const metadata=validateDesign(design);
     const doc={format:FORMAT,version:VERSION,name:safeName,notes:safeNotes,
-      code:codeFor(snapshot),inventory:inventory(snapshot),data:snapshot};
+      code:codeFor(metadata?{data:snapshot,design:metadata}:snapshot),inventory:inventory(snapshot),data:snapshot};
+    if(metadata)doc.design=metadata;
     const text=JSON.stringify(doc);
     if(text.length>MAX_BYTES)fail('La escena excede el límite de 8 MB.');
     return doc;
@@ -73,9 +111,10 @@
     if(!doc||doc.format!==FORMAT||doc.version!==VERSION)fail('Formato o versión de escena incompatibles.');
     if(typeof doc.name!=='string'||typeof doc.code!=='string')fail('Faltan datos de la escena.');
     verifyData(doc.data);
-    if(codeFor(doc.data)!==doc.code)fail('El código no coincide: el archivo puede estar modificado o dañado.');
+    const design=validateDesign(doc.design);
+    if(codeFor(design?{data:doc.data,design}:doc.data)!==doc.code)fail('El código no coincide: el archivo puede estar modificado o dañado.');
     // Never trust the inventory supplied by a file; regenerate it.
-    return pack(doc.name,doc.data,doc.notes||'');
+    return pack(doc.name,doc.data,doc.notes||'',design);
   }
   function list(storage){
     let value;try{value=JSON.parse(storage.getItem(LIBRARY)||'[]');}catch{value=[];}
@@ -117,8 +156,9 @@
       'Formas: '+Object.entries(inv.shapes).map(([k,v])=>k+' '+v).join(', '),
       'Sistemas: '+Object.entries(inv.systems).map(([k,v])=>k+' '+v).join(', '),
       'Componentes configurados: '+inv.components.map(c=>c.id+':'+c.features.join('+')).join('; '),
+      'Marcadores: '+(doc.design?.markers||[]).map(m=>m.id+' ['+m.role+'] '+m.label+' @ '+m.position.join(',')).join('; '),
       'Notas: '+doc.notes,
       'Para reconstruir la escena exactamente, adjunta el archivo .qbits-scene.json; el código identifica y comprueba el archivo, pero no reemplaza sus datos.'].join('\n');
   }
-  return Object.freeze({FORMAT,VERSION,KEY,LIBRARY,MAX_BYTES,pack,parse,save,read,list,select,inventory,codeFor,explain});
+  return Object.freeze({FORMAT,VERSION,KEY,LIBRARY,MAX_BYTES,pack,parse,save,read,list,select,inventory,codeFor,explain,validateDesign,withDesign,emptyData});
 });
