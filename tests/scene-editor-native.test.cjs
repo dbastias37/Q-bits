@@ -103,8 +103,11 @@ test('3D authoring uses the native ghost: walk/look, wheel rotation, click place
  assert.equal(t.groups.length,1,'click places one real cube at the aimed surface');
  assert.equal(t.groups[0].parts[0].shape,'cube');
  assert(t.getCreationPreview()?.authoring,'the brush stays active for repeated placement');
+ t.setLook({camera:[0,1.7,2],yaw:0,pitch:.4});
+ t.updateCreationPlacement();
+ assert.equal(t.getCreationPreview().valid,false,'aiming above the room gives an invalid ghost');
  t.onCanvasMouseDown({button:0,preventDefault(){}});
- assert.equal(t.groups.length,1,'a blocked overlap cannot create an extra piece');
+ assert.equal(t.groups.length,1,'invalid placement cannot create additional matter');
  t.onCanvasMouseDown({button:2,preventDefault(){}});
  assert.equal(api.sceneEditor.placement(),null);
  assert.equal(t.getCreationPreview(),null);
