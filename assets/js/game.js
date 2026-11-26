@@ -11973,7 +11973,7 @@ function cutterTubeGeometry(){
  const data=[],sides=16,vertex=(x,a)=>{const c=Math.cos(a),s=Math.sin(a);return [x,c,s,0,c,s];};
  for(let i=0;i<sides;i++){
   const a=i*2*Math.PI/sides,b=(i+1)*2*Math.PI/sides;
-  for(const v of [vertex(0,a),vertex(1,a),vertex(0,b),vertex(0,b),vertex(1,a),vertex(1,b)])data.push(...v);
+  for(const v of [vertex(0,a),vertex(0,b),vertex(1,a),vertex(0,b),vertex(1,b),vertex(1,a)])data.push(...v);
  }
  cutterTubeMesh={buffer:buffer(data),count:data.length/6};return cutterTubeMesh;
 }
