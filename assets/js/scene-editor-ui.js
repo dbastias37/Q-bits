@@ -3,6 +3,8 @@
  const MODEL=()=>window.QBitsSceneFiles;
  const LAB_KEY='qbits.save.lab.v1', BACKUP='qbits.editor.bank-backup.v1';
  const $=id=>document.getElementById(id);
+ // Recover the ordinary bank slot if a previous editor session ended unexpectedly.
+ try {const raw=sessionStorage.getItem(BACKUP);if(raw!==null){const old=JSON.parse(raw);if(old.exists)localStorage.setItem(LAB_KEY,old.raw);else localStorage.removeItem(LAB_KEY);sessionStorage.removeItem(BACKUP);}}catch(e){console.error('Escena: recuperación de banco pendiente',e);}
  let active=false,selected=null;
  const style=document.createElement('style');
  style.textContent=`
@@ -158,5 +160,6 @@
   }
  }).observe($('main-screen'),{attributes:true,attributeFilter:['hidden']});
  window.addEventListener('pagehide',()=>{if(active)try{restoreBank();}catch(e){console.error(e);}});
+ for(const id of ['pause-main','pause-levels','main-play','main-levels']) $(id)?.addEventListener('click',()=>{if(active)try{restoreBank();}catch(e){console.error(e);}}, {capture:true});
  window.QBitsSceneEditor=Object.freeze({open:show,capture:()=>$('scene-editor-capture').click(),restoreBank});
 })();
