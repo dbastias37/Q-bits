@@ -2,6 +2,12 @@
 
 Actualizado: 25 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
+## Editor de escenas · autoría y exportación inicial (26 nov 2026)
+
+Integrado en `main` un acceso `Editor de escenas` desde el menú principal. Reutiliza el banco 3D y su catálogo nativo, permite conservar una escena independiente de campaña y banco, importar/exportar `.qbits-scene.json`, copiar un resumen de materia y configuraciones o un código completo `QBSCENE1:`, y comparar un identificador corto `QBSC1-...`. La escena se valida mediante el guardado nativo; al salir se restituye la ranura de banco anterior. Ver [EDITOR_ESCENAS.md](EDITOR_ESCENAS.md).
+
+**Alcance:** base de autoría con captura del último guardado del banco, no un constructor vacío de escenario ni un convertidor de reglas de misión. La transición automática entre herramientas, el catálogo completo de infraestructura como blueprints, marcadores de aparición/recepción y la transformación escena→misión siguen pendientes. No se atribuyen pruebas Chromium ni suite global a este bloque; hubo comprobaciones de sintaxis y de la serialización con validador de prueba. El galpón anterior sigue en PR de prueba y no se integró a main.
+
 ## Manipulación · giro por caras de la pieza sostenida
 
 Base comprobada: `c245359a98acdd2d8c0a94cbb227f3c1fb0e3729`, con la selección y el segundo clic de arrastre integrados. Versión de recursos: `20261125-face-turn-1`.
