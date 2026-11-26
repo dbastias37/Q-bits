@@ -41,6 +41,7 @@
     #tools, #target, #notice { position: fixed; font: 12px/1.6 var(--font-menu), sans-serif; color: #53585d; }
     #tools { left: 18px; top: 16px; opacity: .8; pointer-events: none; }
     #target { left: 50%; top: calc(50% + 18px); transform: translateX(-50%); text-align: center; pointer-events: none; }
+    #target.logistics-preview, #notice.logistics-preview:not(:empty) { color:var(--ink); background:#f5faf5ed; border-left:2px solid var(--mint); padding:4px 8px; box-sizing:border-box; width:max-content; max-width:90vw; text-align:center; }
     #notice { left: 50%; top: 24px; transform: translateX(-50%); pointer-events: none; }
     #crosshair { filter: drop-shadow(0 0 1px #fff); }
     #crosshair.ready::before, #crosshair.ready::after { background: #111; }
@@ -277,6 +278,7 @@ input,select,textarea{font-family:var(--font-menu);}
 .menu-subtitle{font-size:10px;line-height:1.9;max-width:620px;}
 .menu-foot{font-size:8px;line-height:1.9;max-width:min(680px,90vw);}
 #story-objective{font-size:10px;line-height:1.9;max-width:340px;}
+body[data-game-scene='galpon'] #story-objective{color:var(--ink);background:#f5faf5e8;border-left:2px solid var(--mint);padding:6px 10px;box-sizing:border-box;}
 #opening-status{position:fixed;left:24px;top:154px;z-index:22;max-width:290px;white-space:pre-line;font:10px/1.8 var(--font-menu);color:#4c6257;background:#f5faf5dd;border-left:2px solid #9bb3a4;padding:8px 12px;pointer-events:none;}
 body:not([data-game-mode='playing']) #opening-status,body[data-transitioning='true'] #opening-status{display:none!important;}
 #callout-text{width:210px;}#callout-weight,#route-readout{font-size:9px;line-height:1.9;}
@@ -323,7 +325,7 @@ body:not([data-game-mode='playing']) #opening-status,body[data-transitioning='tr
 #galpon-screen .menu-actions{gap:.45rem}#galpon-screen label{display:flex;align-items:center;justify-content:space-between;padding:.35rem 1rem}
 #galpon-screen select,#galpon-screen input{font:inherit;color:inherit;background:#fff;border:1px solid #aab8b1;padding:.3rem}
 #galpon-limit{width:4em}#galpon-menu-status:empty{display:none}#galpon-menu-status{font-size:.8em}
-body[data-game-scene='galpon']:has(#panel:not([hidden])) #story-dialogue{visibility:hidden}
+body[data-game-scene='galpon']:has(#panel:not([hidden])) #story-dialogue,body[data-game-scene='galpon']:has(#panel:not([hidden])) #story-objective{visibility:hidden}
 #page-galpon fieldset{border:0;border-top:1px solid currentColor;margin:.5em 0;padding:.5em 0}
 #page-galpon legend{padding-right:.5em}#page-galpon p{white-space:pre-line}#page-galpon button:disabled{opacity:.48}
 </style>
@@ -486,6 +488,38 @@ body[data-game-scene='galpon']:has(#panel:not([hidden])) #story-dialogue{visibil
           </fieldset>
           <div id="galpon-reconfigure"></div>
           <p id="galpon-status" role="status"></p>
+          <fieldset id="galpon-chain-panel"><legend>Segunda cadena</legend>
+            <p id="galpon-chain-objective">Completa la primera línea para continuar con el mismo mundo.</p>
+            <p id="galpon-chain-help"></p>
+            <button id="galpon-chain-begin" type="button">Continuar · brazo y energía</button>
+            <div id="galpon-chain-controls" hidden>
+              <label>Plano de misión <select id="galpon-chain-plan">
+                <option value="arm">Brazo · 18 cubos + 8 enganches</option>
+                <option value="drone">Dron de referencia · agarre independiente</option>
+                <option value="feedA">Entrada A · cinta para cubos</option>
+                <option value="feedB">Entrada B · cinta y corte</option>
+              </select></label>
+              <button id="galpon-chain-prepare" type="button">Preparar material del plano</button>
+              <button id="galpon-chain-build" type="button">Montar con piezas disponibles</button>
+              <button id="galpon-chain-feed" type="button">Producir para la cadena</button>
+              <button id="galpon-chain-arm" type="button">Configurar brazo · A, B y repetición</button>
+              <p id="galpon-chain-materials"></p>
+              <details><summary>Adaptar piezas existentes</summary>
+                <p>Deja cubos en la bandeja del conformador. Las adaptaciones conservan su energía almacenada. Divide un cubo y luego una pirámide para obtener las dos palas triangulares; los sobrantes permanecen en la sala.</p>
+                <button id="galpon-chain-gripper" type="button">Seleccionado → agarre</button>
+                <button id="galpon-chain-battery" type="button">Seleccionado → batería de una celda</button>
+                <button id="galpon-chain-beacon" type="button">Seleccionado → baliza QR</button>
+                <button id="galpon-chain-receiver" type="button">Seleccionado → receptor QR</button>
+                <button id="galpon-chain-cable" type="button">Selección → desenrollar cable</button>
+              </details>
+              <button id="galpon-chain-assembler" type="button">Colocar ensambladora</button>
+              <button id="galpon-chain-remove" type="button">Retirar ensambladora vacía</button>
+              <button id="galpon-chain-laser" type="button">Anclar láser a la cinta seleccionada</button>
+              <button id="galpon-chain-order" type="button">Iniciar pedido · 4 tandas de 20</button>
+              <button id="galpon-chain-skip" type="button" hidden>Omitir presentación</button>
+            </div>
+            <p id="galpon-chain-status" role="status"></p>
+          </fieldset>
         </div>
         <div id="page-catalog" role="tabpanel" aria-labelledby="tab-catalog" hidden>
           <nav class="catalog-filters" id="catalog-filters" aria-label="Tipos de objeto"></nav>
@@ -909,6 +943,6 @@ body[data-game-scene='galpon']:has(#panel:not([hidden])) #story-dialogue{visibil
   <script src="assets/js/opening.js?v=20261116-block-joins-1" defer></script>
   <script src="assets/js/servo-panel.js?v=20261119-marcha-2" defer></script>
   <script src="assets/js/families-ui.js?v=20261122-families-1" defer></script>
-  <script src="assets/js/boot.js?v=20261126-galpon-1" defer></script>
+  <script src="assets/js/boot.js?v=20261126-galpon-2" defer></script>
 </body>
 </html>

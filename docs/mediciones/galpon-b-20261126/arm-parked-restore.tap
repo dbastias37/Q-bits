@@ -1,0 +1,21 @@
+✔ a taught physical arm reaches the table, parks without idle drain and repeats three cable-powered transfers (6071.290464ms)
+ℹ {"armParts":26,"cableParts":4,"sourceWatts":240,"threeTransferJ":561.2008408705587,"seconds":86.13333333335244,"parkedSeconds":60,"blockedDestinationSeconds":5,"internalChargeUnchanged":true}
+✔ removing an arriving input cancels pickup recovery and parks without empty motor drain (1655.444997ms)
+✔ durable unloaded wait restores passive brakes and takes a later input without restarting the program (1654.81531ms)
+✔ durable pickup approach reaches A and takes the same physical input once (1446.93203ms)
+✔ durable pickup approach returns home when the observed input is removed (893.343734ms)
+✔ a destination occupied during carry retains the load, pays only holding energy and resumes after durable reload (1832.946749ms)
+✔ saving an arm during its real carry restores one grip and finishes the same transfer (1433.683131ms)
+✔ saving an arm during its real carry restores one grip and finishes the same transfer from an older snapshot without an offset (1393.816883ms)
+✔ a resting arm restores its saved hinges despite the measured Cannon deflection (378.856954ms)
+✔ a docked arm restores its saved hinges despite the measured Cannon deflection (375.807215ms)
+✔ a parked after fleet teaching arm restores its saved hinges despite the measured Cannon deflection (397.264493ms)
+✔ an independent paid gripper keeps its constraint and exact charge across reload, rejecting forged holds atomically (312.799641ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 18005.709676

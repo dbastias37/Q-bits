@@ -1,0 +1,8 @@
+{
+  "sourceCheckpoint": "/tmp/qbits-chain-final-20261126/80-yaw-corrected/11-pedido-completo.json",
+  "checkpointSha256": "3b6f1782a2cb74f81c91678b601915f336c68811cc1ff8bb4c7b6972a72d674d",
+  "copiedAt": "2026-11-26T09:57:40.463Z",
+  "runtimeSha256": "96610d18f4c7e880cf5aa42f2ff8028514c7c4ef9a0cd27218a680dfc15d34d5",
+  "globalRuntimeMatches": true,
+  "scope": "The exact completed-order checkpoint is copied for frozen browser inspection. Subsequent performance substeps run only in that isolated browser session."
+}

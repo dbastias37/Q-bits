@@ -1,0 +1,44 @@
+{
+  "scope": "Readonly propellerObstruction CPU query, real restored checkpoint; no physics, rendering or FPS claim",
+  "checkpoint": "/tmp/qbits-native-fleet-clear-column/final.json",
+  "seconds": 3549.5999999980863,
+  "bodies": 156,
+  "groups": 110,
+  "families": 2,
+  "modules": 3,
+  "queriesPerSample": 1050,
+  "identicalPhysicalState": true,
+  "identicalAnswers": [
+    null,
+    null,
+    null
+  ],
+  "samplesMillisecondsPerQuery": {
+    "before": [
+      0.152517316190476,
+      0.15086293619047628,
+      0.15522217523809514,
+      0.1509535495238095,
+      0.148265658095238,
+      0.14897839047619052,
+      0.1496416476190474,
+      0.15046945714285703,
+      0.15010524095238126
+    ],
+    "after": [
+      0.018349196190476202,
+      0.019636404761904702,
+      0.016096733333333325,
+      0.01443020285714283,
+      0.014176505714285668,
+      0.013876139047619116,
+      0.01387447904761887,
+      0.014437804761904599,
+      0.014156790476190508
+    ]
+  },
+  "medianMillisecondsPerQuery": {
+    "before": 0.15046945714285703,
+    "after": 0.01443020285714283
+  }
+}

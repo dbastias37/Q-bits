@@ -3,3 +3,4 @@ Thumbs.db
 node_modules/
 *.zip
 *.log
+!docs/mediciones/galpon-cadena-20261126/partida/*.log

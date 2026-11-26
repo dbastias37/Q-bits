@@ -1,0 +1,1278 @@
+{
+  "receiverId": 295,
+  "gripperId": 293,
+  "payloadId": 902,
+  "componentCount": 1,
+  "seconds": 13513.200000061619,
+  "energyJ": 43798.022655142726,
+  "bodyQuaternion": [
+    -8.449394695335742e-8,
+    0.5513334340889131,
+    -1.0256905607839613e-7,
+    0.8342849899499023
+  ],
+  "yawCurrent": 66.9170805865971,
+  "yawTaught": -0.00349775716760492,
+  "tiltCurrent": 0.000015201007603895785,
+  "tiltTaught": 0.004774256580372363,
+  "center": [
+    4.006536520378516,
+    0.14455995105600608,
+    -0.26035355291852225
+  ],
+  "height": 0,
+  "bodyPosition": [
+    4.006536520378516,
+    0.14455995105600608,
+    -0.26035355291852225
+  ],
+  "toolCurrent": [
+    3.9980679542133917,
+    0.044981385336584315,
+    -0.24048285780927048
+  ],
+  "localToolOffset": [
+    -0.021600000000000407,
+    -0.09957857142857146,
+    -9.416451766766654e-16
+  ],
+  "worldToolOffset": [
+    -0.008468566165124258,
+    -0.09957856571942177,
+    0.019870695109251768
+  ],
+  "payload": {
+    "position": [
+      3.016868633558921,
+      0.6199930310823154,
+      -0.29592296270983737
+    ],
+    "quaternion": [
+      0.6823695031660548,
+      0.6823709473677079,
+      0.18539535730536222,
+      0.1853923213809719
+    ],
+    "yaw": -130.640464023632,
+    "weight": 1,
+    "busy": false
+  },
+  "saved": {
+    "pointIndex": 1,
+    "position": [
+      3.093109474286147,
+      0.8345777820516843,
+      -0.2625792369950457
+    ],
+    "quaternion": [
+      0.00003745319244194291,
+      -0.00003052437304997795,
+      -0.000018250609566712315,
+      0.9999999986662182
+    ],
+    "beaconId": 296,
+    "beaconPosition": [
+      4.006383123605382,
+      0.044994399426291215,
+      -0.6098037806858921
+    ],
+    "sampleId": 576,
+    "clearanceIndices": [
+      2
+    ]
+  },
+  "routePoint": {
+    "x": 3.093109474286147,
+    "y": 0.6899949862058326,
+    "z": -0.2625792369950457,
+    "action": "grab",
+    "wait": 20
+  },
+  "nativeReadiness": {
+    "ok": false,
+    "code": "alignment",
+    "message": "Sin objeto frente a la cara naranja. Centra un cubo suelto frente a ella. Alcance: 5 cm."
+  },
+  "probes": {
+    "runtime": {
+      "tool": [
+        3.0846409081210227,
+        0.7349763715424169,
+        -0.24270854188579394
+      ],
+      "face": [
+        3.084640904612149,
+        0.6899763715424185,
+        -0.24270853045203358
+      ],
+      "quaternion": [
+        -8.449394695335741e-8,
+        0.5513334340889131,
+        -1.0256905607839614e-7,
+        0.8342849899499023
+      ],
+      "yaw": 66.9170805865971,
+      "ok": false,
+      "code": "alignment",
+      "message": "Sin objeto frente a la cara naranja. Centra un cubo suelto frente a ella. Alcance: 5 cm.",
+      "candidateId": null,
+      "distance": null,
+      "localBounds": {
+        "min": [
+          -0.02798172857506559,
+          -0.15998358968202558,
+          -0.13357432442402747
+        ],
+        "max": [
+          0.07274778196495676,
+          -0.06998307476543233,
+          -0.03284511906769685
+        ]
+      },
+      "rayHits": [],
+      "translatedChassisClear": true,
+      "translation": [
+        -0.913427046092369,
+        0.6899949862058326,
+        -0.00222568407652346
+      ],
+      "chassisTarget": [
+        3.093109474286147,
+        0.8345549372618386,
+        -0.2625792369950457
+      ],
+      "heightTarget": 0.6899949862058326
+    },
+    "taught": {
+      "tool": [
+        3.0715058398292183,
+        0.7349999994445351,
+        -0.26258801480016736
+      ],
+      "face": [
+        3.0715041973772506,
+        0.6899999996007594,
+        -0.2625913856376206
+      ],
+      "quaternion": [
+        0.00003745319244194291,
+        -0.00003052437304997795,
+        -0.000018250609566712315,
+        0.9999999986662182
+      ],
+      "yaw": -0.00349775716760492,
+      "ok": true,
+      "code": "ready",
+      "message": "Objeto al alcance (2.5 cm) · 1.0 / 1 u.",
+      "candidateId": 902,
+      "distance": 0.02500810766403539,
+      "localBounds": {
+        "min": [
+          -0.11622039034391618,
+          -0.1600164852026194,
+          -0.09490977110573719
+        ],
+        "max": [
+          0.006950304372370526,
+          -0.070006433197863,
+          0.028263776069095033
+        ]
+      },
+      "rayHits": [
+        {
+          "x": -0.03,
+          "z": -0.03,
+          "gap": 0.025010246583790474
+        },
+        {
+          "x": -0.03,
+          "z": 0,
+          "gap": 0.02500810766403539
+        }
+      ],
+      "translatedChassisClear": true,
+      "translation": [
+        -0.9265621143841734,
+        0.6900186141079507,
+        -0.02210515699089688
+      ],
+      "chassisTarget": [
+        3.0799744059943426,
+        0.8345785651639568,
+        -0.2824587099094191
+      ],
+      "heightTarget": 0.6900186141079507
+    },
+    "anchoredToolCenter": {
+      "tool": [
+        3.0715058398292183,
+        0.7349999994445351,
+        -0.26258801480016736
+      ],
+      "face": [
+        3.0715058363203447,
+        0.6899999994445367,
+        -0.26258800336640703
+      ],
+      "quaternion": [
+        -8.449394695335741e-8,
+        0.5513334340889131,
+        -1.0256905607839614e-7,
+        0.8342849899499023
+      ],
+      "yaw": 66.9170805865971,
+      "ok": true,
+      "code": "ready",
+      "message": "Objeto al alcance (2.5 cm) · 1.0 / 1 u.",
+      "candidateId": 902,
+      "distance": 0.02500681770613438,
+      "localBounds": {
+        "min": [
+          -0.041119846592641646,
+          -0.1600072216109845,
+          -0.11369686691182024
+        ],
+        "max": [
+          0.0596096639473807,
+          -0.07000670669439124,
+          -0.012967661555489582
+        ]
+      },
+      "rayHits": [
+        {
+          "x": -0.03,
+          "z": -0.03,
+          "gap": 0.025007105544456072
+        },
+        {
+          "x": 0,
+          "z": -0.03,
+          "gap": 0.025006961625295233
+        },
+        {
+          "x": 0.03,
+          "z": -0.03,
+          "gap": 0.02500681770613438
+        }
+      ],
+      "translatedChassisClear": true,
+      "translation": [
+        -0.9265621143841734,
+        0.6900186141079507,
+        -0.02210515699089688
+      ],
+      "chassisTarget": [
+        3.0799744059943426,
+        0.8345785651639568,
+        -0.2824587099094191
+      ],
+      "heightTarget": 0.6900186141079507
+    },
+    "anchoredToolFace": {
+      "tool": [
+        3.071504200886124,
+        0.7349999996007578,
+        -0.2625913970713809
+      ],
+      "face": [
+        3.0715041973772506,
+        0.6899999996007594,
+        -0.2625913856376206
+      ],
+      "quaternion": [
+        -8.449394695335741e-8,
+        0.5513334340889131,
+        -1.0256905607839614e-7,
+        0.8342849899499023
+      ],
+      "yaw": 66.9170805865971,
+      "ok": true,
+      "code": "ready",
+      "message": "Objeto al alcance (2.5 cm) · 1.0 / 1 u.",
+      "candidateId": 902,
+      "distance": 0.02500681785522991,
+      "localBounds": {
+        "min": [
+          -0.04112231550510353,
+          -0.16000722176793875,
+          -0.11369403312208154
+        ],
+        "max": [
+          0.0596071950349188,
+          -0.07000670685134552,
+          -0.012964827765750893
+        ]
+      },
+      "rayHits": [
+        {
+          "x": -0.03,
+          "z": -0.03,
+          "gap": 0.025007105693551586
+        },
+        {
+          "x": 0,
+          "z": -0.03,
+          "gap": 0.025006961774390747
+        },
+        {
+          "x": 0.03,
+          "z": -0.03,
+          "gap": 0.02500681785522991
+        }
+      ],
+      "translatedChassisClear": true,
+      "translation": [
+        -0.9265637533272675,
+        0.6900186142641734,
+        -0.022108539262110427
+      ],
+      "chassisTarget": [
+        3.0799727670512485,
+        0.8345785653201795,
+        -0.2824620921806327
+      ],
+      "heightTarget": 0.6900186142641734,
+      "correctionFromRoute": [
+        -0.01313670723489846,
+        0.00002362805834088544,
+        -0.019882855185586967
+      ]
+    },
+    "taughtOrientationOnly": {
+      "tool": [
+        3.0846409081210227,
+        0.7349763715424169,
+        -0.24270854188579394
+      ],
+      "face": [
+        3.084639265669055,
+        0.6899763716986412,
+        -0.2427119127232472
+      ],
+      "quaternion": [
+        0.00003745319244194291,
+        -0.00003052437304997795,
+        -0.000018250609566712315,
+        0.9999999986662182
+      ],
+      "yaw": -0.00349775716760492,
+      "ok": true,
+      "code": "ready",
+      "message": "Objeto al alcance (2.5 cm) · 1.0 / 1 u.",
+      "candidateId": 902,
+      "distance": 0.024986649727267093,
+      "localBounds": {
+        "min": [
+          -0.12935667305471066,
+          -0.15999482583815236,
+          -0.11478844379974369
+        ],
+        "max": [
+          -0.006185978338423967,
+          -0.06998477383339602,
+          0.008385103375088503
+        ]
+      },
+      "rayHits": [
+        {
+          "x": -0.03,
+          "z": -0.03,
+          "gap": 0.024986649727267093
+        }
+      ],
+      "translatedChassisClear": true,
+      "translation": [
+        -0.913427046092369,
+        0.6899949862058326,
+        -0.00222568407652346
+      ],
+      "chassisTarget": [
+        3.093109474286147,
+        0.8345549372618386,
+        -0.2625792369950457
+      ],
+      "heightTarget": 0.6899949862058326
+    }
+  },
+  "anchoredFaceSweptObstructions": [],
+  "yawSweep": {
+    "angles": 360,
+    "originalMisses": [
+      {
+        "degrees": 0,
+        "code": "alignment"
+      },
+      {
+        "degrees": 1,
+        "code": "alignment"
+      },
+      {
+        "degrees": 2,
+        "code": "alignment"
+      },
+      {
+        "degrees": 3,
+        "code": "alignment"
+      },
+      {
+        "degrees": 4,
+        "code": "alignment"
+      },
+      {
+        "degrees": 5,
+        "code": "alignment"
+      },
+      {
+        "degrees": 6,
+        "code": "alignment"
+      },
+      {
+        "degrees": 7,
+        "code": "alignment"
+      },
+      {
+        "degrees": 8,
+        "code": "alignment"
+      },
+      {
+        "degrees": 9,
+        "code": "alignment"
+      },
+      {
+        "degrees": 10,
+        "code": "alignment"
+      },
+      {
+        "degrees": 11,
+        "code": "alignment"
+      },
+      {
+        "degrees": 12,
+        "code": "alignment"
+      },
+      {
+        "degrees": 13,
+        "code": "alignment"
+      },
+      {
+        "degrees": 14,
+        "code": "alignment"
+      },
+      {
+        "degrees": 15,
+        "code": "alignment"
+      },
+      {
+        "degrees": 16,
+        "code": "alignment"
+      },
+      {
+        "degrees": 17,
+        "code": "alignment"
+      },
+      {
+        "degrees": 18,
+        "code": "alignment"
+      },
+      {
+        "degrees": 19,
+        "code": "alignment"
+      },
+      {
+        "degrees": 20,
+        "code": "alignment"
+      },
+      {
+        "degrees": 21,
+        "code": "alignment"
+      },
+      {
+        "degrees": 22,
+        "code": "alignment"
+      },
+      {
+        "degrees": 23,
+        "code": "alignment"
+      },
+      {
+        "degrees": 24,
+        "code": "alignment"
+      },
+      {
+        "degrees": 25,
+        "code": "alignment"
+      },
+      {
+        "degrees": 26,
+        "code": "alignment"
+      },
+      {
+        "degrees": 27,
+        "code": "alignment"
+      },
+      {
+        "degrees": 28,
+        "code": "alignment"
+      },
+      {
+        "degrees": 29,
+        "code": "alignment"
+      },
+      {
+        "degrees": 30,
+        "code": "alignment"
+      },
+      {
+        "degrees": 31,
+        "code": "alignment"
+      },
+      {
+        "degrees": 32,
+        "code": "alignment"
+      },
+      {
+        "degrees": 33,
+        "code": "alignment"
+      },
+      {
+        "degrees": 34,
+        "code": "alignment"
+      },
+      {
+        "degrees": 35,
+        "code": "alignment"
+      },
+      {
+        "degrees": 36,
+        "code": "alignment"
+      },
+      {
+        "degrees": 37,
+        "code": "alignment"
+      },
+      {
+        "degrees": 38,
+        "code": "alignment"
+      },
+      {
+        "degrees": 39,
+        "code": "alignment"
+      },
+      {
+        "degrees": 40,
+        "code": "alignment"
+      },
+      {
+        "degrees": 41,
+        "code": "alignment"
+      },
+      {
+        "degrees": 42,
+        "code": "alignment"
+      },
+      {
+        "degrees": 43,
+        "code": "alignment"
+      },
+      {
+        "degrees": 44,
+        "code": "alignment"
+      },
+      {
+        "degrees": 45,
+        "code": "alignment"
+      },
+      {
+        "degrees": 46,
+        "code": "alignment"
+      },
+      {
+        "degrees": 47,
+        "code": "alignment"
+      },
+      {
+        "degrees": 48,
+        "code": "alignment"
+      },
+      {
+        "degrees": 49,
+        "code": "alignment"
+      },
+      {
+        "degrees": 50,
+        "code": "alignment"
+      },
+      {
+        "degrees": 51,
+        "code": "alignment"
+      },
+      {
+        "degrees": 52,
+        "code": "alignment"
+      },
+      {
+        "degrees": 53,
+        "code": "alignment"
+      },
+      {
+        "degrees": 54,
+        "code": "alignment"
+      },
+      {
+        "degrees": 55,
+        "code": "alignment"
+      },
+      {
+        "degrees": 56,
+        "code": "alignment"
+      },
+      {
+        "degrees": 57,
+        "code": "alignment"
+      },
+      {
+        "degrees": 58,
+        "code": "alignment"
+      },
+      {
+        "degrees": 59,
+        "code": "alignment"
+      },
+      {
+        "degrees": 60,
+        "code": "alignment"
+      },
+      {
+        "degrees": 61,
+        "code": "alignment"
+      },
+      {
+        "degrees": 62,
+        "code": "alignment"
+      },
+      {
+        "degrees": 63,
+        "code": "alignment"
+      },
+      {
+        "degrees": 64,
+        "code": "alignment"
+      },
+      {
+        "degrees": 65,
+        "code": "alignment"
+      },
+      {
+        "degrees": 66,
+        "code": "alignment"
+      },
+      {
+        "degrees": 67,
+        "code": "alignment"
+      },
+      {
+        "degrees": 68,
+        "code": "alignment"
+      },
+      {
+        "degrees": 69,
+        "code": "alignment"
+      },
+      {
+        "degrees": 70,
+        "code": "alignment"
+      },
+      {
+        "degrees": 71,
+        "code": "alignment"
+      },
+      {
+        "degrees": 72,
+        "code": "alignment"
+      },
+      {
+        "degrees": 73,
+        "code": "alignment"
+      },
+      {
+        "degrees": 74,
+        "code": "alignment"
+      },
+      {
+        "degrees": 75,
+        "code": "alignment"
+      },
+      {
+        "degrees": 76,
+        "code": "alignment"
+      },
+      {
+        "degrees": 77,
+        "code": "alignment"
+      },
+      {
+        "degrees": 78,
+        "code": "alignment"
+      },
+      {
+        "degrees": 79,
+        "code": "alignment"
+      },
+      {
+        "degrees": 80,
+        "code": "alignment"
+      },
+      {
+        "degrees": 81,
+        "code": "alignment"
+      },
+      {
+        "degrees": 82,
+        "code": "alignment"
+      },
+      {
+        "degrees": 83,
+        "code": "alignment"
+      },
+      {
+        "degrees": 84,
+        "code": "alignment"
+      },
+      {
+        "degrees": 85,
+        "code": "alignment"
+      },
+      {
+        "degrees": 86,
+        "code": "alignment"
+      },
+      {
+        "degrees": 87,
+        "code": "alignment"
+      },
+      {
+        "degrees": 88,
+        "code": "alignment"
+      },
+      {
+        "degrees": 89,
+        "code": "alignment"
+      },
+      {
+        "degrees": 90,
+        "code": "alignment"
+      },
+      {
+        "degrees": 91,
+        "code": "alignment"
+      },
+      {
+        "degrees": 92,
+        "code": "alignment"
+      },
+      {
+        "degrees": 93,
+        "code": "alignment"
+      },
+      {
+        "degrees": 94,
+        "code": "alignment"
+      },
+      {
+        "degrees": 95,
+        "code": "alignment"
+      },
+      {
+        "degrees": 96,
+        "code": "alignment"
+      },
+      {
+        "degrees": 97,
+        "code": "alignment"
+      },
+      {
+        "degrees": 98,
+        "code": "alignment"
+      },
+      {
+        "degrees": 99,
+        "code": "alignment"
+      },
+      {
+        "degrees": 100,
+        "code": "alignment"
+      },
+      {
+        "degrees": 101,
+        "code": "alignment"
+      },
+      {
+        "degrees": 102,
+        "code": "alignment"
+      },
+      {
+        "degrees": 103,
+        "code": "alignment"
+      },
+      {
+        "degrees": 104,
+        "code": "alignment"
+      },
+      {
+        "degrees": 105,
+        "code": "alignment"
+      },
+      {
+        "degrees": 106,
+        "code": "alignment"
+      },
+      {
+        "degrees": 107,
+        "code": "alignment"
+      },
+      {
+        "degrees": 108,
+        "code": "alignment"
+      },
+      {
+        "degrees": 109,
+        "code": "alignment"
+      },
+      {
+        "degrees": 110,
+        "code": "alignment"
+      },
+      {
+        "degrees": 111,
+        "code": "alignment"
+      },
+      {
+        "degrees": 112,
+        "code": "alignment"
+      },
+      {
+        "degrees": 113,
+        "code": "alignment"
+      },
+      {
+        "degrees": 114,
+        "code": "alignment"
+      },
+      {
+        "degrees": 115,
+        "code": "alignment"
+      },
+      {
+        "degrees": 116,
+        "code": "alignment"
+      },
+      {
+        "degrees": 117,
+        "code": "alignment"
+      },
+      {
+        "degrees": 118,
+        "code": "alignment"
+      },
+      {
+        "degrees": 119,
+        "code": "alignment"
+      },
+      {
+        "degrees": 120,
+        "code": "alignment"
+      },
+      {
+        "degrees": 121,
+        "code": "alignment"
+      },
+      {
+        "degrees": 122,
+        "code": "alignment"
+      },
+      {
+        "degrees": 123,
+        "code": "alignment"
+      },
+      {
+        "degrees": 124,
+        "code": "alignment"
+      },
+      {
+        "degrees": 125,
+        "code": "alignment"
+      },
+      {
+        "degrees": 126,
+        "code": "alignment"
+      },
+      {
+        "degrees": 127,
+        "code": "alignment"
+      },
+      {
+        "degrees": 128,
+        "code": "alignment"
+      },
+      {
+        "degrees": 129,
+        "code": "alignment"
+      },
+      {
+        "degrees": 130,
+        "code": "alignment"
+      },
+      {
+        "degrees": 131,
+        "code": "alignment"
+      },
+      {
+        "degrees": 132,
+        "code": "alignment"
+      },
+      {
+        "degrees": 133,
+        "code": "alignment"
+      },
+      {
+        "degrees": 134,
+        "code": "alignment"
+      },
+      {
+        "degrees": 135,
+        "code": "alignment"
+      },
+      {
+        "degrees": 136,
+        "code": "alignment"
+      },
+      {
+        "degrees": 137,
+        "code": "alignment"
+      },
+      {
+        "degrees": 138,
+        "code": "alignment"
+      },
+      {
+        "degrees": 139,
+        "code": "alignment"
+      },
+      {
+        "degrees": 140,
+        "code": "alignment"
+      },
+      {
+        "degrees": 141,
+        "code": "alignment"
+      },
+      {
+        "degrees": 142,
+        "code": "alignment"
+      },
+      {
+        "degrees": 143,
+        "code": "alignment"
+      },
+      {
+        "degrees": 144,
+        "code": "alignment"
+      },
+      {
+        "degrees": 145,
+        "code": "alignment"
+      },
+      {
+        "degrees": 146,
+        "code": "alignment"
+      },
+      {
+        "degrees": 147,
+        "code": "alignment"
+      },
+      {
+        "degrees": 148,
+        "code": "alignment"
+      },
+      {
+        "degrees": 149,
+        "code": "alignment"
+      },
+      {
+        "degrees": 150,
+        "code": "alignment"
+      },
+      {
+        "degrees": 151,
+        "code": "alignment"
+      },
+      {
+        "degrees": 152,
+        "code": "alignment"
+      },
+      {
+        "degrees": 153,
+        "code": "alignment"
+      },
+      {
+        "degrees": 154,
+        "code": "alignment"
+      },
+      {
+        "degrees": 155,
+        "code": "alignment"
+      },
+      {
+        "degrees": 156,
+        "code": "alignment"
+      },
+      {
+        "degrees": 157,
+        "code": "alignment"
+      },
+      {
+        "degrees": 158,
+        "code": "alignment"
+      },
+      {
+        "degrees": 159,
+        "code": "alignment"
+      },
+      {
+        "degrees": 160,
+        "code": "alignment"
+      },
+      {
+        "degrees": 161,
+        "code": "alignment"
+      },
+      {
+        "degrees": 162,
+        "code": "alignment"
+      },
+      {
+        "degrees": 163,
+        "code": "alignment"
+      },
+      {
+        "degrees": 164,
+        "code": "alignment"
+      },
+      {
+        "degrees": 165,
+        "code": "alignment"
+      },
+      {
+        "degrees": 166,
+        "code": "alignment"
+      },
+      {
+        "degrees": 167,
+        "code": "alignment"
+      },
+      {
+        "degrees": 168,
+        "code": "alignment"
+      },
+      {
+        "degrees": 169,
+        "code": "alignment"
+      },
+      {
+        "degrees": 170,
+        "code": "alignment"
+      },
+      {
+        "degrees": 171,
+        "code": "alignment"
+      },
+      {
+        "degrees": 172,
+        "code": "alignment"
+      },
+      {
+        "degrees": 173,
+        "code": "alignment"
+      },
+      {
+        "degrees": 174,
+        "code": "alignment"
+      },
+      {
+        "degrees": 175,
+        "code": "alignment"
+      },
+      {
+        "degrees": 176,
+        "code": "alignment"
+      },
+      {
+        "degrees": 177,
+        "code": "alignment"
+      },
+      {
+        "degrees": 178,
+        "code": "alignment"
+      },
+      {
+        "degrees": 179,
+        "code": "alignment"
+      },
+      {
+        "degrees": 180,
+        "code": "alignment"
+      },
+      {
+        "degrees": 181,
+        "code": "alignment"
+      },
+      {
+        "degrees": 182,
+        "code": "alignment"
+      },
+      {
+        "degrees": 183,
+        "code": "alignment"
+      },
+      {
+        "degrees": 184,
+        "code": "alignment"
+      },
+      {
+        "degrees": 185,
+        "code": "alignment"
+      },
+      {
+        "degrees": 186,
+        "code": "alignment"
+      },
+      {
+        "degrees": 187,
+        "code": "alignment"
+      },
+      {
+        "degrees": 188,
+        "code": "alignment"
+      },
+      {
+        "degrees": 189,
+        "code": "alignment"
+      },
+      {
+        "degrees": 190,
+        "code": "alignment"
+      },
+      {
+        "degrees": 191,
+        "code": "alignment"
+      },
+      {
+        "degrees": 192,
+        "code": "alignment"
+      },
+      {
+        "degrees": 193,
+        "code": "alignment"
+      },
+      {
+        "degrees": 194,
+        "code": "alignment"
+      },
+      {
+        "degrees": 195,
+        "code": "alignment"
+      },
+      {
+        "degrees": 196,
+        "code": "alignment"
+      },
+      {
+        "degrees": 344,
+        "code": "alignment"
+      },
+      {
+        "degrees": 345,
+        "code": "alignment"
+      },
+      {
+        "degrees": 346,
+        "code": "alignment"
+      },
+      {
+        "degrees": 347,
+        "code": "alignment"
+      },
+      {
+        "degrees": 348,
+        "code": "alignment"
+      },
+      {
+        "degrees": 349,
+        "code": "alignment"
+      },
+      {
+        "degrees": 350,
+        "code": "alignment"
+      },
+      {
+        "degrees": 351,
+        "code": "alignment"
+      },
+      {
+        "degrees": 352,
+        "code": "alignment"
+      },
+      {
+        "degrees": 353,
+        "code": "alignment"
+      },
+      {
+        "degrees": 354,
+        "code": "alignment"
+      },
+      {
+        "degrees": 355,
+        "code": "alignment"
+      },
+      {
+        "degrees": 356,
+        "code": "alignment"
+      },
+      {
+        "degrees": 357,
+        "code": "alignment"
+      },
+      {
+        "degrees": 358,
+        "code": "alignment"
+      },
+      {
+        "degrees": 359,
+        "code": "alignment"
+      }
+    ],
+    "anchoredFaceMisses": [],
+    "minAnchoredDistance": 0.02500675090903578,
+    "maxAnchoredDistance": 0.02500694086581738
+  },
+  "unchangedPhysicalState": true,
+  "sourceHash": "ba66be759b1486ae10751da2252239f247b1e9f9341b12674f8727e66eb7b8d4",
+  "input": "/tmp/qbits-chain-final-20261126/80/failed.json",
+  "restoreCenter": {
+    "savedFromWorldParts": [
+      4.006536520378516,
+      0.14455995105600608,
+      -0.26035355291852225
+    ],
+    "loaded": [
+      4.006536520378516,
+      0.14455995105600608,
+      -0.26035355291852225
+    ],
+    "delta": [
+      0,
+      0,
+      0
+    ]
+  }
+}

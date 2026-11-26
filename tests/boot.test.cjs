@@ -170,8 +170,8 @@ function assertBlocked(e) {
 // The same ordered dependency list drives successful and failed script loads.
 // Furniture scripts load concurrently; their completion precedes organizers.
 const dependencies=[
-  'radial-menu.js','rotor-power.js','propeller-power.js','campaign-reconfiguration.js',
-  'progression.js','campaign-automation.js','campaign-production.js','galpon-production.js','workshop.js',
+  'radial-menu.js','rotor-power.js','propeller-power.js','galpon-logistics.js','campaign-reconfiguration.js',
+  'progression.js','campaign-automation.js','campaign-production.js','galpon-production.js','galpon-chain.js','workshop.js',
   'furniture-models.js','tablet-model.js','tablet-view.js','organizers.js','families.js',
   'workshop-panel.js','robot-arm-panel.js','conveyor-panel.js','battery-liquid.js',
   'reservoir-model.js','contact-sensors.js','controls.js','subtitles.js','dialogue-timing.js',

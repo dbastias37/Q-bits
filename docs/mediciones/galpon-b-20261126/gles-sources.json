@@ -1,0 +1,16 @@
+{
+  "command": "python3 tests/validate-focus-gles.py",
+  "log": "gles.jsonl",
+  "logSha256": "ab43f0b54a87967415d972052b3f8439e7c1f0adb474b28d65afdcb92e20ad25",
+  "identicalToAHead": "6cdd33320cc2e022d7c35fc9c34fa544432c4d95",
+  "shaders": {
+    "vertexSource": "a8cb24a6250c2ad96dd65b261e6604a8df2b8b595ee7f63ced357e829ae2691c",
+    "fragmentSource": "4984007fcd9240c431a5cb4cd0b0471b7181709defd855fd3c4f2ecbb5bcbce0",
+    "focusVertexSource": "288c4547a7876cf9de036a52a001c1f12ebeb46a99a97657786b8c3d4e2f446b",
+    "focusFragmentSource": "3a198f9cd5ef4c855e8f3d5ad2d6a9e93fdcecce7c7c9dd78ba45c35ef7f9c6d",
+    "vertex": "75b8990b09c6dccdfe73d0bc26aa51abe6f40554739004f10e0c6b7767959f04",
+    "blurFragment": "5cd2a79239247228ea24a2a027a422ee041445231f60ddc01232f9cb9c14c7dd",
+    "fragment": "56da866e5cdd1aac03a17b84de9a4edb82bd2145da796c962c04024103f03b98"
+  },
+  "scope": "Actual GLES compilation, linking and pixel fixtures; shaders unchanged since A. Does not measure full-factory render or FPS."
+}

@@ -1,0 +1,21 @@
+{
+  "scope": "Read-only geometry diagnosis, before the physical continuation with an adjusted goal. No core changes, body writes or simulation steps.",
+  "sourceSha256": "ba66be759b1486ae10751da2252239f247b1e9f9341b12674f8727e66eb7b8d4",
+  "files": [
+    {
+      "file": "pickup-readonly.json",
+      "bytes": 24546,
+      "sha256": "e6ca6673d93699aaa19079b9fdbf30c177bd6957d605ed66f6658e375fcaa838"
+    },
+    {
+      "file": "probe.cjs",
+      "bytes": 8033,
+      "sha256": "7e4ff37ff86a1cb4d40a508427dc50055a37a1a0eb909c9bc885470da766d42b"
+    },
+    {
+      "file": "checkpoint-60.json",
+      "bytes": 632867,
+      "sha256": "0f670b729d64c6ce352deea5a6151af66d3da4f0194ced50a12e3d72c3f069c7"
+    }
+  ]
+}

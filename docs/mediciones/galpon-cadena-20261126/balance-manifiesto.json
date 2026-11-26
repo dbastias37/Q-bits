@@ -1,0 +1,319 @@
+{
+  "version": 1,
+  "scope": "native",
+  "createdAt": 1795673510034,
+  "targets": [
+    20,
+    40,
+    60,
+    80
+  ],
+  "note": "Continuación elegida desde A hasta ochenta productos y una recepción adicional en el mismo mundo. Conserva montaje, intentos interrumpidos, todas sus recuperaciones y los checkpoints separados de 20, 40, 60, 80 y 81. La recuperación desde diecisiete incluye una carga manual que volvió a recorrer los ocho tramos. El primer arranque hacia ochenta conserva 1200 s y todo su gasto, incluida actividad inicial; su recuperación física y nuevo arranque quedan separados. Las ramas descartadas de diagnóstico no pertenecen a esta secuencia. No es una ejecución ininterrumpida sin intervenciones.",
+  "checkpoints": [
+    {
+      "id": "a_complete",
+      "path": "partida/a_complete.json",
+      "sha256": "6d582ba49b7a0e676f5e800e40f54243d982bc5d4c109f5d1f3b16adb1bea5dd",
+      "label": "A desde cuatro trabajadores: ocho tramos y doce recibos"
+    },
+    {
+      "id": "attempt_1_start",
+      "path": "partida/attempt_1_start.json",
+      "sha256": "dd39f1dd2a2d6d489c015c0ab6e5e6d7225ccf2db59cfa6d6dbb5ba286c4b96e",
+      "label": "Inicio de flota con un rotor previo"
+    },
+    {
+      "id": "attempt_1_stop_9",
+      "path": "partida/attempt_1_stop_9.json",
+      "sha256": "863e032aa54f97fb5c71de16f68644bb8cf27cde1a8bc184465d80c944aff956",
+      "label": "Pausa del primer intento: nueve rotores"
+    },
+    {
+      "id": "recovery_1_end_10",
+      "path": "partida/recovery_1_end_10.json",
+      "sha256": "3a8097c5c9b1d34615726271ffedac813d08a434f7f8cf146cd72f43da824190",
+      "label": "Recuperación nativa: diez rotores y retorno de la flota"
+    },
+    {
+      "id": "attempt_2_start",
+      "path": "partida/attempt_2_start.json",
+      "sha256": "4ef7662c27e0320c5f05cbb76951e8cea7a260e5b73200ec6983e725c70aba88",
+      "label": "Reanudación de la flota desde la recuperación"
+    },
+    {
+      "id": "attempt_2_stop_17",
+      "path": "partida/attempt_2_stop_17.json",
+      "sha256": "7bcd686b67cb07da9067a11877c416cbcb551c477251463ee8b8a103c04f6600",
+      "label": "Pausa del segundo intento: diecisiete rotores"
+    },
+    {
+      "id": "recovery_2_ready_17",
+      "path": "partida/recovery_2_ready_17.json",
+      "sha256": "922e25930fe91afe2ec4e8a959b3698c779b38ca5c6dd4d507419b447f68171e",
+      "label": "Carga 569 reintroducida; dron vacío enderezado con los controles de caras"
+    },
+    {
+      "id": "recovery_2_end_17",
+      "path": "partida/recovery_2_end_17.json",
+      "sha256": "7750122d26e5ac8b49d0ac65acc538de55fd3f9ca563fcc9bfd53bba70653c03",
+      "label": "Recogida, entrega y regreso coordinados con el brazo"
+    },
+    {
+      "id": "attempt_3_start",
+      "path": "partida/attempt_3_start.json",
+      "sha256": "a80a53526da7d1aaff61c2a6f9a92680866fad96c3272ffaa16cd56db32c1609",
+      "label": "Entrada de la serie final con diecisiete productos"
+    },
+    {
+      "id": "batch_20",
+      "path": "partida/batch_20.json",
+      "sha256": "a3fc33f58915119685cab769b531e29ad09abfba489ac587ae9d44dd20c3ec4f",
+      "label": "Primera tanda: veinte productos únicos y actividad útil cumplida"
+    },
+    {
+      "id": "batch_40_start",
+      "path": "partida/batch_40_start.json",
+      "sha256": "96d37780279d1a4b7afbf3501656057b5792b57453e5b540ec3db576b5c6d50f",
+      "label": "Restauración real de la primera tanda para continuar hasta cuarenta"
+    },
+    {
+      "id": "batch_40",
+      "path": "partida/batch_40.json",
+      "sha256": "5daa7cc923fe6c96e957c9068cd59b5e020ae71ae58283f66d0f49fd63ca4350",
+      "label": "Segunda tanda: cuarenta productos únicos"
+    },
+    {
+      "id": "batch_60_start",
+      "path": "partida/batch_60_start.json",
+      "sha256": "268a4b70e65b6e13e049222add00a86e262157894e8b1f36adc867f1d63dbf66",
+      "label": "Restauración de la segunda tanda para continuar hasta sesenta"
+    },
+    {
+      "id": "batch_60",
+      "label": "Tercera tanda: sesenta productos únicos",
+      "path": "partida/batch_60.json",
+      "sha256": "83edbd4edbc7bdef568aedced7672f91d9816d15385815025f4dffabea94d1f0"
+    },
+    {
+      "id": "batch_80_start",
+      "label": "Restauración de la tercera tanda para continuar hasta ochenta",
+      "path": "partida/batch_80_start.json",
+      "sha256": "9647eb47169ea9a4ff530b2cd5e446f28a7b6ea82b27a5b9cc81a1f0f6a4c97a"
+    },
+    {
+      "id": "batch_80_stop_60",
+      "label": "Pausa por toma fallida en la mesa: se conservan los sesenta recibos",
+      "path": "partida/batch_80_stop_60.json",
+      "sha256": "0f670b729d64c6ce352deea5a6151af66d3da4f0194ced50a12e3d72c3f069c7"
+    },
+    {
+      "id": "recovery_yaw_end_60",
+      "label": "Recuperación física de la toma 902 y regreso QR; fuente y configuración conservadas",
+      "path": "partida/recovery_yaw_end_60.json",
+      "sha256": "6051d1fdb0f0cbae31605d9e5009bc6aceb2164357a50dee15aec29825bbe431"
+    },
+    {
+      "id": "batch_80_yaw_start",
+      "label": "Restauración de la misma instalación después de corregir la referencia de toma",
+      "path": "partida/batch_80_yaw_start.json",
+      "sha256": "222672c86a9fb72d938ff6206ec1d8d6e8584901e334a94c1c2d2affc65420a9"
+    },
+    {
+      "id": "batch_80",
+      "label": "Cuarta tanda: ochenta productos únicos y continuidad útil cumplida",
+      "path": "partida/batch_80.json",
+      "sha256": "3b6f1782a2cb74f81c91678b601915f336c68811cc1ff8bb4c7b6972a72d674d"
+    },
+    {
+      "id": "post_victory_81",
+      "label": "Una nueva recepción física después de la victoria en el mismo mundo",
+      "path": "partida/post_victory_81.json",
+      "sha256": "61caeeeb00377b14acb5d43732b6244f318611566d158a2269fbfdf008cb4561"
+    }
+  ],
+  "segments": [
+    {
+      "id": "setup_and_first_receipt",
+      "kind": "setup",
+      "from": "a_complete",
+      "to": "attempt_1_start",
+      "note": "Instalación y calibración con actividad concurrente; incluye el primer rotor. No es un coste aislado del capital."
+    },
+    {
+      "id": "attempt_1",
+      "kind": "run",
+      "outcome": "interrupted",
+      "from": "attempt_1_start",
+      "to": "attempt_1_stop_9",
+      "logs": [
+        {
+          "path": "partida/attempt_1.log",
+          "sha256": "42c522fa2cbf458ee5a823246c9ced02935a45b3299071a2d28dca5d7ef690aa"
+        }
+      ],
+      "note": "Ocho nuevos rotores; parada posterior del transporte upstream por obstrucción detectada."
+    },
+    {
+      "id": "recovery_1",
+      "kind": "recovery",
+      "from": "attempt_1_stop_9",
+      "to": "recovery_1_end_10",
+      "note": "Reenseñanza y recuperación nativas sin cargas creadas o colocadas manualmente; incluye un nuevo rotor y actividad concurrente."
+    },
+    {
+      "id": "resume_2",
+      "kind": "setup",
+      "from": "recovery_1_end_10",
+      "to": "attempt_2_start",
+      "note": "Restauración, arranque y actividad de la instalación durante 1,47 s."
+    },
+    {
+      "id": "attempt_2",
+      "kind": "run",
+      "outcome": "interrupted",
+      "from": "attempt_2_start",
+      "to": "attempt_2_stop_17",
+      "logs": [
+        {
+          "path": "partida/attempt_2.log",
+          "sha256": "2372d62f4d1eb2de658bde3d81df82a8a69095959729061fa7a289b21f34c62a"
+        }
+      ],
+      "note": "Siete nuevos rotores; detector geométrico anterior señaló una nueva obstrucción. Su corrección y recuperación se documentan aparte."
+    },
+    {
+      "id": "recovery_2_manual",
+      "kind": "recovery",
+      "from": "attempt_2_stop_17",
+      "to": "recovery_2_ready_17",
+      "note": "Se soltó la carga 569 con la pinza y se llevó con la mano a la primera cinta. La intervención reinició su historial y la continuidad. El mismo dron vacío se enderezó y se recargó desde el borne. Coste concurrente íntegro; no se añadieron piezas ni energía."
+    },
+    {
+      "id": "recovery_2_coordinated",
+      "kind": "recovery",
+      "from": "recovery_2_ready_17",
+      "to": "recovery_2_end_17",
+      "note": "La carga 569 completó de nuevo los ocho tramos y recuperó su historial automáticamente. El dron transportó la carga 576 real y regresó; el brazo esperó frenado hasta el aterrizaje. Continúan los mismos diecisiete recibos."
+    },
+    {
+      "id": "resume_3",
+      "kind": "setup",
+      "from": "recovery_2_end_17",
+      "to": "attempt_3_start",
+      "note": "Restauración y arranque de la misma instalación; las poses enseñadas y los mecanismos guardados se conservan."
+    },
+    {
+      "id": "run_to_20",
+      "kind": "run",
+      "from": "attempt_3_start",
+      "to": "batch_20",
+      "note": "Tres recibos nuevos en el mismo mundo después de la recuperación, sin intervención durante el tramo.",
+      "outcome": "completed",
+      "logs": [
+        {
+          "path": "partida/run_to_20.log",
+          "sha256": "b6903acb4bfbe5df280c9243434e3a16f09dc9c2582a2e60563f5067f8ede58e"
+        }
+      ]
+    },
+    {
+      "id": "resume_40",
+      "kind": "setup",
+      "from": "batch_20",
+      "to": "batch_40_start",
+      "note": "Guardado y carga de la primera tanda en una instancia nueva, con todos los mecanismos y sin advertencias."
+    },
+    {
+      "id": "run_to_40",
+      "kind": "run",
+      "from": "batch_40_start",
+      "to": "batch_40",
+      "note": "Veinte recibos nuevos sin intervención durante el tramo, con la misma fuente y configuración.",
+      "outcome": "completed",
+      "logs": [
+        {
+          "path": "partida/run_to_40.log",
+          "sha256": "a476ec0512af348086b569eb5a8734a9a53ee8e162e463bfee6a826c3f162bfb"
+        }
+      ]
+    },
+    {
+      "id": "resume_60",
+      "kind": "setup",
+      "from": "batch_40",
+      "to": "batch_60_start",
+      "note": "Restauración real sin advertencias, conservando los mecanismos, las poses y todos los recibos."
+    },
+    {
+      "id": "run_to_60",
+      "kind": "run",
+      "outcome": "completed",
+      "from": "batch_60_start",
+      "to": "batch_60",
+      "logs": [
+        {
+          "path": "partida/run_to_60.log",
+          "sha256": "db75dca724b574026e0ec63964a7308c6b1057f9e7bb7750f0cc8420b3427fd2"
+        }
+      ],
+      "note": "Veinte recibos nuevos sin intervención durante el tramo, con la fuente y los mecanismos conservados desde A."
+    },
+    {
+      "id": "resume_80",
+      "kind": "setup",
+      "from": "batch_60",
+      "to": "batch_80_start",
+      "note": "Restauración de la tercera tanda en una instancia nueva; se conservan los sesenta recibos, el material y las poses enseñadas."
+    },
+    {
+      "id": "run_to_80_wait",
+      "kind": "run",
+      "outcome": "interrupted",
+      "from": "batch_80_start",
+      "to": "batch_80_stop_60",
+      "logs": [
+        {
+          "path": "partida/run_to_80_wait.log",
+          "sha256": "2c37934138f66ac73b222ec3fe049ed644c3658a2c2f89e40f3881881cb22ce0"
+        }
+      ],
+      "note": "No hubo un recibo nuevo durante 1200 s. El cubo 902 permaneció en la mesa y la pinza del QR295 no logró tomarlo; al cierre los tres seguidores estaban apoyados y sus baterías tenían 900 J. Se conserva todo el gasto de funcionamiento, recarga y espera. La corrección de la toma y recuperación posterior no están incluidas en este tramo."
+    },
+    {
+      "id": "recovery_yaw",
+      "kind": "recovery",
+      "from": "batch_80_stop_60",
+      "to": "recovery_yaw_end_60",
+      "note": "Desde el guardado detenido, el QR295 tomó la carga 902, la entregó y regresó físicamente con la referencia de pinza corregida para su orientación real. No se escribieron poses ni se cambiaron configuraciones; no se añadieron piezas ni energía. El tramo incluye cuatro segundos posteriores de recarga real y trabajo concurrente del brazo y otro dron; no es consumo aislado del viaje."
+    },
+    {
+      "id": "resume_80_yaw",
+      "kind": "setup",
+      "from": "recovery_yaw_end_60",
+      "to": "batch_80_yaw_start",
+      "note": "Restauración y arranque de la misma instalación después de la recuperación. Se conservan los sesenta recibos; el avance y su débito se registran aparte del tramo automático siguiente."
+    },
+    {
+      "id": "run_to_80_yaw",
+      "kind": "run",
+      "outcome": "completed",
+      "from": "batch_80_yaw_start",
+      "to": "batch_80",
+      "logs": [
+        {
+          "path": "partida/run_to_80_yaw.log",
+          "sha256": "dca96def820732116f7c20f6af09bbbc6ef43789ae19d4c55087531d931e3372"
+        }
+      ],
+      "note": "Veinte recibos nuevos tras la recuperación de la toma. La instalación conservó su fuente, poses y configuración; no hubo intervención durante este tramo. El log original completo se congeló sólo después de acabar también la recepción 81. Su evento posterior no se transforma en un recibo del formato anterior."
+    },
+    {
+      "id": "continue_after_victory",
+      "kind": "run",
+      "outcome": "completed",
+      "from": "batch_80",
+      "to": "post_victory_81",
+      "note": "Una recepción física adicional en el mismo mundo, con materia y energía pagadas. Se valida por los dos checkpoints exactos: receivedIds pasa de 80 a 81 aunque el HUD mantenga su objetivo de 80. El evento posterior usa otro formato; no se inventa una línea de recibo ni una media entre varios recibos."
+    }
+  ]
+}

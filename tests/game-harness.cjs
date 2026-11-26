@@ -72,7 +72,11 @@ module.exports = function createGame(options = {}) {
   });
   const seededMath = Object.create(Math);
   seededMath.random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
-  const sandbox = events({
+  // Native benchmarks may opt out of Node's contextified global proxy. Keep
+  // the same stubs, random seed and scripts; older Node versions use the
+  // original context. Functional tests retain that original mode by default.
+  const nativeContext = options.nativeContext === true && typeof vm.constants?.DONT_CONTEXTIFY === 'symbol';
+  const sandboxValues = {
     console, document, navigator: { userAgent: 'logic-test' }, performance, URL, Blob,
     Float32Array, Int32Array, Uint32Array, Uint16Array, Uint8Array, ArrayBuffer, Map, Set,
     Math: seededMath, JSON, Promise, localStorage: options.storage || { getItem: () => null, setItem() {} },
@@ -82,9 +86,12 @@ module.exports = function createGame(options = {}) {
     clearTimeout(id) { timers.delete(id); }, setInterval() {}, clearInterval() {},
     matchMedia: () => ({ matches: false, addEventListener() {} }),
     innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1
-  });
+  };
+  const sandbox = events(nativeContext
+    ? Object.assign(vm.createContext(vm.constants.DONT_CONTEXTIFY), sandboxValues)
+    : sandboxValues);
   sandbox.window = sandbox; sandbox.self = sandbox;
-  vm.createContext(sandbox);
+  if (!nativeContext) vm.createContext(sandbox);
   let scripts;
   const gameFile = path.join(root, 'assets/js/game.js');
   if (fs.existsSync(gameFile)) {
@@ -94,7 +101,7 @@ module.exports = function createGame(options = {}) {
   } else {
     scripts = [...fs.readFileSync(path.join(root, 'index.html'), 'utf8').matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
   }
-  if (fs.existsSync(gameFile)) scripts.splice(scripts.length-1,0,...['campaign-supply','factory-passage','save-games','galpon-production'].map(name=>fs.readFileSync(path.join(root,'assets/js/'+name+'.js'),'utf8')));
+  if (fs.existsSync(gameFile)) scripts.splice(scripts.length-1,0,...['campaign-supply','factory-passage','save-games','galpon-production','galpon-chain','galpon-logistics'].filter(name=>fs.existsSync(path.join(root,'assets/js/'+name+'.js'))).map(name=>fs.readFileSync(path.join(root,'assets/js/'+name+'.js'),'utf8')));
   const hook = `window.__testGame={
     beginOpeningSupply,tickOpeningSupply,requestOpeningCompanion,returnOpeningCompanion,recoverOpeningCompanion,openingDestinations,openingStableAt,openingSupply,openingPayload,openingOwnsPart,hideStoryDialogue,beginFactoryPassage,tickFactoryPassage,finishCampaignLevel,storyOnGrab,openingResetPrompt,showLevelSelector,openingProtected,inputLabel,modalReadingActive,guideNarrationPaused,openFloorOrders,connectMenu,passagePayload,openingFloorHeight,drawFactoryPassage,requestOpeningCompanion,readyQuestion,
     getTrajectorySystem,trajectoryPanelSnapshot,trajectoryPanelAction,openTrajectoryPanel,closeTrajectoryPanel,trajectoryWorldClick,finishTrajectoryDraft,cancelTrajectoryDraft,trajectoryPose,trajectoryAnchor,onTrajectoryPartChanged,removeTrajectoryAdaptation,trajectoryObstacle,startTrajectoryFollower,stepTrajectoryFollower,stopTrajectoryFollower,drawTrajectories,getTrajectoryDraft:()=>trajectoryDraft,getTrajectoryPanel:()=>trajectoryPanel,
@@ -102,6 +109,11 @@ module.exports = function createGame(options = {}) {
     ...(typeof grabFamily==='function'?{grabFamily,removeFamily,aimFamily}:{}),
     ...(typeof startFamilyGrouping==='function'?{startFamilyGrouping,advanceFamilyGrouping,cancelFamilyGrouping,getFamilyGroupingJob:()=>familyGroupingJob}:{}),
     beginHangarGame,buildHangarSegment,hangarLineStatus,galponLineLayout,getHangarSections,galponLineSnapshot,galponLineRecordValid,setHangarLineRunning,hangarLineCoolingIds,
+    ...(typeof beginHangarChain==='function'?{beginHangarChain,initHangarChainWorld,hangarChainAction,buildHangarChainMechanism,hangarChainRecipe,hangarChainLayout,tickHangarChain,hangarChainTransfer,hangarChainSnapshot,hangarChainRestore,hangarChainWorldValid,hangarChainFeedParts,hangarChainStartStation,hangarChainFinishStation,hangarChainReceiveProduct,hangarChainPlaceAssembler,hangarChainRemoveAssembler,hangarChainMountLaser,hangarChainRestoreLaser,hangarChainPowered,hangarChainZone,getHangarChainWorld:()=>hangarChainWorld}:{}),
+    ...(typeof createGalponPowerReservoir==='function'?{createGalponPowerReservoir,galponEnergyWorkbench,chargeGalponDockedDrone,chargeGalponComponent,galponComponentSupported,GALPON_POWER_WATTS,GALPON_CHARGE_WATTS}:{}),
+    ...(typeof hangarChainStationPoint==='function'?{hangarChainStationPoint,hangarChainLaserPoint}:{}),
+    ...(typeof hangarChainStock==='function'?{hangarChainStock}:{}),
+    ...(typeof galponDroneTemplate==='function'?{galponDroneTemplate,galponTrajectoryMaterial,trajectoryEnergyEstimate,trajectoryToolPath,trajectoryPickupReadiness,trajectoryDestinationReadiness,trajectoryCargoCapacity,galponTrajectoryRuntimeSnapshot,restoreGalponTrajectoryRuntime,beginLogisticsPoseDraft,updateLogisticsPoseDraft,logisticsPoseEvaluation,confirmLogisticsPoseDraft,cancelLogisticsPoseDraft,drawLogisticsPoseDraft,getLogisticsPoseDraft:()=>logisticsPoseDraft}:{}),
     showHangarMenu,hangarOrder,hangarWorldStatus,updateHangarReadout,
     hasHangarSave,continueHangarGame,hangarRoutesSnapshot,restoreHangarRoutes,
     hangarReconfigure,hangarReconfigurationOrders,hangarTray,
@@ -114,7 +126,8 @@ module.exports = function createGame(options = {}) {
     ...(typeof connectServoTips==='function'?{restartMechanism,servoMarches,startServoMarch,stopServoMarch,servoMarchFor,servoMarchMembers,servoMarchAction,servoMarchSnapshot,connectServoTips,configureServo,startServo,servoAngle,rotorEndpoint,servoBlueprintTemplate,prepareServoPart,findServoSnap,drawServoGuides}:{}),
     beginPowerCable,cancelPowerCable,powerDraftMaterials,finishPowerCable,addPowerCableMaterial,recoverPowerCable,powerSurfaceRoute,powerCircuitRoute,powerRibbonCaches,powerCableClick,powerTargetText,powerInspectionAvailable,powerAimPort,powerAimCable,powerSurfaceAim,powerMaterialGroups,openPowerCableMenu,openPowerReservoirMenu,powerSecondary,drawPowerReservoirs,drawPowerCables,getPowerDraft:()=>powerDraft,
     spendGripperEnergy,conveyorSpendTraction,powerReservoirs,powerCables,POWER_RESERVOIR_CAPACITY,powerReservoirPlacement,createPowerReservoir,removePowerReservoir,powerPort,powerCableLimit,powerCablePath,powerCableLength,powerCableBlocked,refreshPowerCable,connectPowerCable,extendPowerCable,reroutePowerCable,removePowerCable,updatePowerNetwork,getCableSupply,serializePowerNetwork,restorePowerNetwork,clearPowerNetwork,
-    flightStates,propellerBladePose,propellerSocket,propellerBonds,propellerLayout,propellerModules,findPropellerSnap,propellerBlueprintTemplate,flightForGroup,flightConfig,configureFlight,flightSnapshot,startFlight,stopFlight,updateFlights,tickFlightSensors,propellerVisualPose,flightPanelAction,updateFlightPanel,
+    flightStates,propellerBladePose,propellerSocket,propellerBonds,propellerLayout,propellerModules,findPropellerSnap,propellerBlueprintTemplate,flightForGroup,flightConfig,configureFlight,flightSnapshot,startFlight,stopFlight,updateFlights,tickFlightSensors,propellerVisualPose,flightPanelAction,updateFlightPanel,propellerObstruction,
+    ...(typeof propellerSweepIntersects==='function'?{propellerSweepIntersects}:{}),
     ...(typeof conveyorSurfacePoses==='function'?{conveyorSurfacePoses,conveyorSurfaceContact,conveyorPathPoses,conveyorEnsureSurfaces,conveyorRemoveSurfaces,conveyorPortGeometryValid}:{}),
     ...(typeof drawConveyors==='function'?{drawConveyors}:{}),
     ...(typeof conveyorBlueprintTemplate==='function'?{conveyorBlueprintTemplate}:{}),
@@ -186,7 +199,7 @@ module.exports = function createGame(options = {}) {
     vm.runInContext(source, sandbox, { timeout: 10000 });
   }
   return {
-    t: sandbox.__testGame, api: sandbox.QBitsGame, sandbox, buffers,
+    t: sandbox.__testGame, api: sandbox.QBitsGame, sandbox, buffers, nativeContext,
     get radial() { return sandbox.__testGame.getUnitRadial(); },
     frame(time = performance.now()) { const batch = [...frames.values()]; frames.clear(); for (const fn of batch) fn(time); },
     advanceTimers(ms) {

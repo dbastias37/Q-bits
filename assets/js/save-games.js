@@ -301,6 +301,16 @@
         check(record(mood) && finite(mood.energy) && Math.abs(mood.energy-r.energy) < 1e-8 &&
           record(mood.matter) && mood.matter.root === r.origin && mood.matter.path === r.path && mood.matter.rootWeight === 1,
           'La carga o el linaje de una pieza del galpón no coincide con el inventario.');
+        if (mood.externalBattery !== undefined) {
+          const battery = mood.externalBattery;
+          check(shape === 'cube' && weight === 1 && record(battery) && battery.version === 1 && battery.ownerId === id &&
+            positiveId(battery.packId) && typeof battery.enabled === 'boolean' && !mood.production && !mood.gripper && !mood.trajectory && !mood.workshop,
+            'La batería adaptada no coincide con sus cubos originales.');
+        }
+        if (mood.gripper?.logistics !== undefined) {
+          const logistics = load ? load('./galpon-logistics.js') : root.QBitsGalponLogistics;
+          check(logistics?.validConfig(mood.gripper.logistics), 'La configuración de agarre del dron no es válida.');
+        }
       }
       parts.set(id, location);
     }
@@ -317,6 +327,46 @@
         mark(p.id, 'family', p.shape, p.weight, p.mood);
         const r = records.get(p.id);
         check(['group','received'].includes(r.place) && r.group === 'family:'+f.id, 'La identidad y su familia no coinciden.');
+      }
+    }
+    check(record(s.powerNetwork) && s.powerNetwork.version === 1 && Array.isArray(s.powerNetwork.reservoirs) &&
+      s.powerNetwork.reservoirs.length <= 1 && Array.isArray(s.powerNetwork.cables) && s.powerNetwork.cables.length <= 128,
+      'La red eléctrica del galpón no es válida.');
+    for (const source of s.powerNetwork.reservoirs) check(record(source) && positiveId(source.id) && arrayVector(source.p,3) &&
+      Math.abs(source.p[1]) <= .02 && source.p.every(n => Math.abs(n) <= 14) && typeof source.enabled === 'boolean' &&
+      finite(source.energy) && Math.abs(source.energy*production.CONFIG.initialEnergyJ-model.energyJ) < 1e-5,
+      'La fuente no representa la misma reserva de la instalación.');
+    const cableIds = new Set(), endpoint = e => record(e) && ['part','reservoir'].includes(e.kind) && positiveId(e.id);
+    for (const cable of s.powerNetwork.cables) {
+      check(record(cable) && positiveId(cable.id) && !cableIds.has(cable.id) && endpoint(cable.from) && endpoint(cable.to) &&
+        !(cable.from.kind === cable.to.kind && cable.from.id === cable.to.id) && Array.isArray(cable.points) && cable.points.length <= 64 &&
+        cable.points.every(p => arrayVector(p,3) && p[1] >= -.01 && p[1] <= 14 && Math.abs(p[0]) <= 14 && Math.abs(p[2]) <= 14) &&
+        Array.isArray(cable.materials) && cable.materials.length > 0 && cable.materials.length <= 8,
+        'Un cable perdió su trazado o su inventario.');
+      cableIds.add(cable.id);
+      for (const p of cable.materials) {
+        check(record(p) && p.shape === 'cube' && (arrayVector(p.p,3) || vector(p.p)) && (arrayVector(p.q,4) || quaternion(p.q)) &&
+          !p.mood?.externalBattery && !p.mood?.gripper && !p.mood?.trajectory && !p.mood?.production && !p.mood?.workshop,
+          'El cable contiene una pieza adaptada o inválida.');
+        mark(p.id,'cable',p.shape,p.weight,p.mood);
+        const r = records.get(p.id);check(r.place === 'cable' && r.group === 'cable:'+cable.id,'La custodia del cable no coincide con sus cubos.');
+      }
+    }
+    for (const job of Object.values(model.chain?.jobs || {})) if (job) {
+      check(Array.isArray(job.inputs) && Array.isArray(job.inputIds) && job.inputs.length === job.inputIds.length,
+        'La estación no conserva sus entradas reservadas.');
+      for (const p of job.inputs) {
+        check(job.inputIds.includes(p.id),'La entrada no pertenece al trabajo guardado.');
+        mark(p.id,'machine',p.shape,p.weight,p.mood);
+        const r=records.get(p.id);check(r.place === 'machine' && r.group === 'station:'+job.station,'La estación perdió la custodia de su entrada.');
+      }
+    }
+    check(Array.isArray(s.disassembly), 'Faltan los desarmes pendientes del galpón.');
+    for (const pending of s.disassembly) {
+      check(record(pending) && Array.isArray(pending.parts) && arrayVector(pending.origin,3),'El desarme pendiente no es válido.');
+      for (const p of pending.parts) {
+        check((arrayVector(p.p,3) || vector(p.p)) && (arrayVector(p.q,4) || quaternion(p.q)),'Falta la postura de un desarme pendiente.');
+        mark(p.id,'disassembly',p.shape,p.weight,p.mood);
       }
     }
     for (const c of s.cargos) {
@@ -343,7 +393,37 @@
       if (r.place === 'stock' || r.place === 'job') check(!location, 'Una entrada del convertidor también está en la sala.');
       else if (r.place === 'source' || r.place === 'carry') check(location === 'cargo', 'Falta la carga de una extracción.');
       else if (r.place === 'received') check(location === 'family', 'Un producto recibido carece de familia.');
-      else check(location === 'room' || location === 'family', 'Falta una pieza registrada en el galpón.');
+      else if (r.place === 'cable') check(location === 'cable','Falta el material reservado por un cable.');
+      else if (r.place === 'machine') check(location === 'machine','Falta una entrada reservada por una estación.');
+      else check(location === 'room' || location === 'family' || location === 'disassembly', 'Falta una pieza registrada en el galpón.');
+    }
+    const machineGrips=data.machineGrips??[];
+    check(Array.isArray(machineGrips) && machineGrips.length<=s.groups.length,'Los agarres de máquina guardados no son válidos.');
+    const groupFor=new Map(), physicalParts=new Map(), connected=s.groups.map((_,i)=>i);
+    s.groups.forEach((g,i)=>g.parts.forEach(p=>{groupFor.set(p.id,i);physicalParts.set(p.id,p);}));
+    const rootGroup=i=>{while(connected[i]!==i)i=connected[i];return i;};
+    const union=(a,b)=>{if(a!==undefined&&b!==undefined)connected[rootGroup(b)]=rootGroup(a);};
+    for(const joint of s.rotors||[])union(groupFor.get(joint.aId),groupFor.get(joint.bId));
+    const tools=new Set(),loads=new Set();
+    for(const grip of machineGrips){
+      const tool=physicalParts.get(grip?.toolId),load=physicalParts.get(grip?.partId),a=groupFor.get(grip?.toolId),b=groupFor.get(grip?.partId);
+      check(record(grip)&&positiveId(grip.toolId)&&positiveId(grip.partId)&&tool?.mood.gripper&&load&&
+        !tools.has(grip.toolId)&&!loads.has(b)&&rootGroup(a)!==rootGroup(b)&&arrayVector(grip.relative,4)&&Math.abs(Math.hypot(...grip.relative)-1)<.001&&
+        (grip.offset===undefined||arrayVector(grip.offset,3)&&Math.hypot(...grip.offset)<=28),
+        'Un agarre de máquina perdió su herramienta, carga o articulación.');
+      tools.add(grip.toolId);loads.add(b);union(a,b);
+    }
+    const logistics=load?load('./galpon-logistics.js'):root.QBitsGalponLogistics;
+    check(typeof logistics?.validRuntime==='function' && logistics.validRuntime(data.trajectoryRuntime)!==null,
+      'El recorrido en curso del dron no es válido.');
+    const charges=s.runtime?.galponCharges===undefined?[]:s.runtime.galponCharges,chargedFlights=new Set();
+    check(Array.isArray(charges)&&charges.length<=64,'La recarga pendiente del galpón no es válida.');
+    for(const charge of charges){
+      const part=physicalParts.get(charge?.id),component=groupFor.get(charge?.id);
+      const capacity=component===undefined?0:s.groups.reduce((n,g,i)=>n+(rootGroup(i)===rootGroup(component)?g.parts.filter(p=>p.mood.externalBattery).length*900:0),0);
+      check(record(charge)&&positiveId(charge.id)&&part?.mood.flight&&!chargedFlights.has(charge.id)&&finite(charge.joules)&&charge.joules>=0&&charge.joules<=capacity+1e-6,
+        'La recarga pendiente perdió su dron o supera su capacidad embarcada.');
+      chargedFlights.add(charge.id);
     }
     check(Array.isArray(data.routes) && record(s.runtime) && s.runtime.version === 1 && s.runtime.blocked === null && Array.isArray(s.runtime.routes),
       'Faltan las órdenes de movimiento del galpón.');
@@ -385,10 +465,19 @@
         new Set(h.items.map(i=>i.id)).size === h.items.length && s.groups.find(g=>g.parts[0].id===h.items[0].id)?.parts.some(p=>p.id===h.part),
         'La selección sostenida no coincide con sus piezas.');
     }
-    for (const key of ['shelves','disassembly','robotArms']) check(Array.isArray(s[key]) && s[key].length === 0,
-      'Hay una máquina o depósito ajeno al galpón.');
-    check(record(s.powerNetwork) && Array.isArray(s.powerNetwork.cables) && s.powerNetwork.cables.length === 0 &&
-      s.workshop === null, 'Hay un taller o cable sin procedencia en el galpón.');
+    check(Array.isArray(s.shelves) && s.shelves.length === 0 && s.workshop === null, 'Hay un taller o depósito ajeno al galpón.');
+    check(Array.isArray(s.robotArms), 'Falta la lista de brazos del galpón.');
+    const armIds = new Set(), pose = (p,n) => p === null || Array.isArray(p) && p.length === n && p.every(q => arrayVector(q,4) && Math.abs(Math.hypot(...q)-1)<.001);
+    for (const arm of s.robotArms) {
+      const gripper=s.groups.flatMap(g=>g.parts).find(p=>p.id===arm?.gripperId);
+      check(record(arm) && parts.get(arm.baseId)==='room' && gripper?.mood.gripper && !armIds.has(arm.gripperId) &&
+        Array.isArray(arm.joints) && arm.joints.length >= 1 && arm.joints.length <= 4 && arm.joints.every(j=>
+          record(j) && parts.get(j.aId)==='room' && parts.get(j.bId)==='room' && records.get(j.aId)?.kind==='coupler' && records.get(j.bId)?.kind==='coupler') &&
+        record(arm.poses) && pose(arm.poses.pick,arm.joints.length) && pose(arm.poses.place,arm.joints.length) &&
+        (arm.poses.home===undefined || pose(arm.poses.home,arm.joints.length)) && typeof arm.repeat==='boolean',
+        'El brazo no conserva sus piezas, articulaciones o poses.');
+      armIds.add(arm.gripperId);
+    }
   }
 
   function checkData(mode, data) {

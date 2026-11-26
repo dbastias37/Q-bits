@@ -1,0 +1,36 @@
+{
+  "gameSha256": "656c63c2879376d61afc4c9f1ba99ade05046e78085b262c8d1b541e66e1ca7b",
+  "checkpointSha256": "863e032aa54f97fb5c71de16f68644bb8cf27cde1a8bc184465d80c944aff956",
+  "scope": "Exact polyhedral obstruction query; Cannon continuation is separate from readonly geometry/performance probes",
+  "preserved": {
+    "radius": 0.13027922061357855,
+    "axialLow": 0.001,
+    "axialHigh": 0.047
+  },
+  "tests": [
+    {
+      "file": "propeller-focus.tap",
+      "pass": 32
+    },
+    {
+      "file": "drone-power-focus.tap",
+      "pass": 34
+    },
+    {
+      "file": "family-focus.tap",
+      "pass": 37
+    }
+  ],
+  "distinctTests": 94,
+  "files": [
+    "checkpoint-before.json",
+    "obstruction-before.json",
+    "continuation-after.json",
+    "continuation-after.log",
+    "column-yaw.json",
+    "query-perf.json",
+    "propeller-focus.tap",
+    "drone-power-focus.tap",
+    "family-focus.tap"
+  ]
+}

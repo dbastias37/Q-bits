@@ -1,0 +1,846 @@
+{
+  "date": "2026-11-26",
+  "scope": "Mediciones de componentes y cierre de la continuación nativa de A: cuatro tandas, ochenta rotores y una recepción posterior en el mismo mundo, dentro de la misma reserva. Se conservan todos los intentos interrumpidos, los 1200 s de espera y sus recuperaciones. Los ensayos aislados declaran sus fixtures; el linaje completo incluye intervenciones documentadas y no se presenta como una ejecución ininterrumpida.",
+  "firstLineObserved": {
+    "source": "tests/benchmark-galpon-chain.cjs, hito 01-primera-linea, ensayo a 60 Hz",
+    "workers": 4,
+    "sections": 8,
+    "received": 12,
+    "simulationSeconds": 548,
+    "remainingJ": 170716.2313760406,
+    "lineageCreatedAt": 1795673510034,
+    "checkpointSha256": "6d582ba49b7a0e676f5e800e40f54243d982bc5d4c109f5d1f3b16adb1bea5dd"
+  },
+  "firstLineComparisons": [
+    {
+      "hz": 60,
+      "simulationSeconds": 548,
+      "remainingJ": 170716.23,
+      "received": 12,
+      "sections": 8,
+      "workers": 4
+    },
+    {
+      "hz": 120,
+      "simulationSeconds": 547,
+      "remainingJ": 170716.7,
+      "received": 12,
+      "sections": 8,
+      "workers": 4
+    },
+    {
+      "hz": 240,
+      "simulationSeconds": 551,
+      "remainingJ": 170708.96,
+      "received": 12,
+      "sections": 8,
+      "workers": 4
+    }
+  ],
+  "armMeasured": {
+    "source": "tests/benchmark-galpon-chain.cjs, armPowerMetrics de la continuación real desde el hito 03 con familias presentes",
+    "scope": "Tres transferencias cableadas integradas desde la recepción física de A, con retorno final a descanso. No incluye extracción ni consumo de drones.",
+    "transfers": 3,
+    "sourceSpentJ": 1831.5398053273,
+    "rpm": 12,
+    "motorConsumedJ": 1827.3951386607,
+    "gripperConsumedJ": 4.1446666667,
+    "peakWatts": 90.0648284317,
+    "torqueLimitsNm": [
+      2,
+      4,
+      3,
+      2
+    ]
+  },
+  "armPreparation": {
+    "source": "buildHangarChainMechanism('arm') en assets/js/game.js",
+    "chargedParts": 9,
+    "targetFraction": 1,
+    "initialTechnicalPartFraction": 0.05,
+    "maximumTransferJ": 2565,
+    "paidFromExistingSource": true
+  },
+  "droneMeasured": {
+    "source": "tests/galpon-drone-logistics.test.cjs",
+    "routeMetres": 1.2,
+    "payloadUnits": 1,
+    "underGrip": {
+      "cycleSeconds": 37.025,
+      "batterySpentJ": 63.967
+    },
+    "frontGrip": {
+      "cycleSeconds": 37.992,
+      "batterySpentJ": 68.553
+    }
+  },
+  "missionDroneMeasured": {
+    "source": "tests/galpon-chain-drone.test.cjs",
+    "cycleSeconds": [
+      48.666666666666664,
+      48.733333333333334,
+      48.8
+    ],
+    "sourceSpentJ": 97,
+    "sourceChargeJ": 91,
+    "sourceCoolingJ": 6,
+    "batteryDecreaseJ": 109.79428459405563,
+    "droneConsumedJ": 200.79428459405563
+  },
+  "budgetProjection": {
+    "scope": "Proyección previa basada en tres transferencias integradas del brazo con retorno final y 75 J/vuelo. Sus supuestos se conservan como referencia histórica; nativeSequence contiene el cierre observado de ochenta y ochenta y uno.",
+    "rotors": 80,
+    "inputUnits": 160,
+    "productChargeJPerUnit": 30,
+    "materialConversionChargeAndMinimumCoolingJ": 6560,
+    "laserAndAssemblerJ": 1280,
+    "armTransfers": 160,
+    "armJ": 97682.12295078933,
+    "droneTrips": 320,
+    "assumedJPerDroneTrip": 75,
+    "droneJ": 24000,
+    "parallelTransportLinksAssumed": true,
+    "assumedRunSeconds": 12800,
+    "beltMotors": 30,
+    "idleWattsPerBeltMotor": 0.06,
+    "beltIdleJ": 23040,
+    "subtotalJ": 152562.12295078934,
+    "remainingForCapitalOtherMotionAndVariationJ": 18154.107049210666,
+    "unmeasuredInProjection": [
+      "Construcción y transporte de capital: brazo, dron, alimentadores, balizas, cabezal y cables",
+      "Carga embarcada o de componentes que permanezca almacenada al terminar",
+      "Tracción de cintas con carga y recuperación de fallos",
+      "Diferencia de coste de otras rutas respecto del trayecto mesa a segundo enfriador ensayado",
+      "Tiempo y consumo completos de las ochenta entregas autónomas integradas"
+    ]
+  },
+  "serialTransportSensitivity": {
+    "scope": "Cálculo previo de sensibilidad conservado como referencia histórica; no representa la medición final. El resultado observado está en nativeSequence.",
+    "trips": 320,
+    "assumedSecondsPerTrip": 49,
+    "flightSeconds": 15680,
+    "additionalBeltIdleSeconds": 2880,
+    "additionalBeltIdleJ": 5184,
+    "remainingBeforeCapitalRechargeTimeAndTractionJ": 12970.107049210666,
+    "sharedColdServiceUntilReturn": true,
+    "rangeSecondsPerTrip": [
+      42,
+      49
+    ],
+    "rangeFlightSeconds": [
+      13440,
+      15680
+    ],
+    "rangeSubtotalJ": [
+      153714.12295078934,
+      157746.12295078934
+    ],
+    "rangeRemainingBeforeCapitalJ": [
+      17002.107049210666,
+      12970.107049210666
+    ],
+    "observedFleetStartSourceJ": 157209.01508419495,
+    "observedFleetStartSpentSinceAJ": 13507.21491580506
+  },
+  "continuity": {
+    "mode": "useful-activity",
+    "requiredUsefulSeconds": 60,
+    "recentDeliveryWindowSeconds": 240,
+    "referenceSerialFlightsPerRotor": 4,
+    "referenceSecondsPerFlight": 49,
+    "controlledWaitLimitSeconds": 180,
+    "newDeliveriesRequiredInWindow": 1,
+    "uncontrolledIdleGraceSeconds": 8
+  },
+  "armIdleMeasured": {
+    "source": "tests/galpon-chain-arm.test.cjs",
+    "scope": "Fixture aislada de entradas y salida; se mide la espera y la reanudación, sin proyectar su trayectoria a la recepción integrada.",
+    "parkedSeconds": 60,
+    "parkedSourceSpentJ": 0,
+    "parkedInternalChargeChangeJ": 0,
+    "parkedMotorsEnabled": 0,
+    "blockedDestinationSeconds": 5,
+    "blockedDestinationSourceSpentJ": 0
+  },
+  "feedDroneMeasured": {
+    "source": "tests/benchmark-galpon-feed-drones.cjs, continuación de ready nativo a60Hz",
+    "scope": "A y B se ejecutan por separado desde el mismo guardado con una carga ya producida; no es una medida de tráfico simultáneo ni de80rotores.",
+    "feedA": {
+      "pickupSeconds": 8.0166666667,
+      "dropSeconds": 23.4666666667,
+      "returnSeconds": 44.3333333333
+    },
+    "feedB": {
+      "pickupSeconds": 9.0666666667,
+      "dropSeconds": 22.0666666667,
+      "returnSeconds": 41.6
+    }
+  },
+  "nativeOrderObserved": {
+    "source": "tests/benchmark-galpon-chain.cjs, continuación del checkpoint legítimo 09-cadena-autonoma.json a60Hz; /tmp/qbits-chain-order-20-ground.log",
+    "scope": "Siete intervalos completos entre las recepciones2 y9. Insumos y transporte automáticos reales, familia de A en su posición original. No certifica ochenta recepciones.",
+    "hz": 60,
+    "receipts": [
+      {
+        "received": 2,
+        "missionSeconds": 1874.4,
+        "sourceJ": 153996.38
+      },
+      {
+        "received": 3,
+        "missionSeconds": 2056.4,
+        "sourceJ": 152151.5
+      },
+      {
+        "received": 4,
+        "missionSeconds": 2239.4,
+        "sourceJ": 150304.86
+      },
+      {
+        "received": 5,
+        "missionSeconds": 2421.4,
+        "sourceJ": 148460.01
+      },
+      {
+        "received": 6,
+        "missionSeconds": 2604.4,
+        "sourceJ": 146613.37
+      },
+      {
+        "received": 7,
+        "missionSeconds": 2786.4,
+        "sourceJ": 144768.52
+      },
+      {
+        "received": 8,
+        "missionSeconds": 2969.4,
+        "sourceJ": 142911.17
+      },
+      {
+        "received": 9,
+        "missionSeconds": 3151.4,
+        "sourceJ": 141055.62
+      }
+    ],
+    "intervals": [
+      {
+        "from": 2,
+        "to": 3,
+        "simulationSeconds": 182,
+        "sourceSpentJ": 1844.88
+      },
+      {
+        "from": 3,
+        "to": 4,
+        "simulationSeconds": 183,
+        "sourceSpentJ": 1846.64
+      },
+      {
+        "from": 4,
+        "to": 5,
+        "simulationSeconds": 182,
+        "sourceSpentJ": 1844.85
+      },
+      {
+        "from": 5,
+        "to": 6,
+        "simulationSeconds": 183,
+        "sourceSpentJ": 1846.64
+      },
+      {
+        "from": 6,
+        "to": 7,
+        "simulationSeconds": 182,
+        "sourceSpentJ": 1844.85
+      },
+      {
+        "from": 7,
+        "to": 8,
+        "simulationSeconds": 183,
+        "sourceSpentJ": 1857.35
+      },
+      {
+        "from": 8,
+        "to": 9,
+        "simulationSeconds": 182,
+        "sourceSpentJ": 1855.55
+      }
+    ],
+    "measuredSimulationSeconds": 1277,
+    "measuredSourceSpentJ": 12940.76,
+    "meanSourceJPerRotor": 1848.6800000000014,
+    "meanSecondsPerRotor": 182.42857142857142,
+    "sourceOnlyCaveat": "Son débitos de la reserva de toda la instalación. No se conservó una lectura exacta de las baterías en ambos extremos de cada recibo; no se presenta como consumo aislado del dron.",
+    "extrapolationAtReceipt9": {
+      "scope": "Proyección histórica condicionada a la media 2→9, antes de la recuperación que luego se pagó; no es el saldo final medido ni el presupuesto vigente de la nueva ruta.",
+      "remainingRotors": 71,
+      "sourceAtReceipt9J": 141055.62,
+      "projectedRemainingSourceCostJ": 131256.28000000012,
+      "projectedFinalSourceJ": 9799.33999999988
+    },
+    "interruption": {
+      "missionSeconds": 3314.4,
+      "sourceJ": 139935.86,
+      "received": 9,
+      "usefulContinuitySeconds": 60,
+      "reason": "La detección de obstrucción detuvo el transporte mesa a segundo enfriador. Este intento permanece separado de la recuperación nativa posterior.",
+      "checkpointSha256": "863e032aa54f97fb5c71de16f68644bb8cf27cde1a8bc184465d80c944aff956"
+    }
+  },
+  "nativeSequence": {
+    "manifest": "balance-manifiesto.json",
+    "report": "balance-observado.json",
+    "scope": "Lectura de la secuencia elegida y sus archivos incluidos; validación de guardados, linaje y cuentas, sin ejecutar simulación ni inferir automatización sólo de la contabilidad.",
+    "createdAt": 1795673510034,
+    "firstLineCheckpoint": "6d582ba49b7a0e676f5e800e40f54243d982bc5d4c109f5d1f3b16adb1bea5dd",
+    "finalCheckpoint": "61caeeeb00377b14acb5d43732b6244f318611566d158a2269fbfdf008cb4561",
+    "finalSeconds": 17210.00000008615,
+    "finalSourceJ": 6048.501578556521,
+    "received": 81,
+    "sourceSpentFromA": 164667.7297974841,
+    "sourceSpentSinceOpeningJ": 173951.49842144348,
+    "completedMilestones": [
+      20,
+      40,
+      60,
+      80
+    ],
+    "pendingMilestones": [],
+    "completedBatches": [
+      {
+        "received": 20,
+        "checkpoint": "a3fc33f58915119685cab769b531e29ad09abfba489ac587ae9d44dd20c3ec4f",
+        "seconds": 5227.666666663227,
+        "sourceJ": 120138.35650319573,
+        "uniqueOrigins": 460,
+        "units": 460,
+        "records": 478,
+        "continuitySeconds": 60,
+        "batteries": [
+          {
+            "id": 294,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 386,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 397,
+            "capacityJ": 900,
+            "storedJ": 848.4125341336634
+          }
+        ]
+      },
+      {
+        "received": 40,
+        "checkpoint": "5daa7cc923fe6c96e957c9068cd59b5e020ae71ae58283f66d0f49fd63ca4350",
+        "seconds": 8769.200000001214,
+        "sourceJ": 83467.21099314738,
+        "uniqueOrigins": 500,
+        "units": 500,
+        "records": 518,
+        "continuitySeconds": 60,
+        "batteries": [
+          {
+            "id": 294,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 386,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 397,
+            "capacityJ": 900,
+            "storedJ": 848.8159712207819
+          }
+        ]
+      },
+      {
+        "received": 60,
+        "checkpoint": "83edbd4edbc7bdef568aedced7672f91d9816d15385815025f4dffabea94d1f0",
+        "seconds": 12311.666666712987,
+        "sourceJ": 46773.95015864296,
+        "uniqueOrigins": 540,
+        "units": 540,
+        "records": 558,
+        "continuitySeconds": 60,
+        "batteries": [
+          {
+            "id": 294,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 386,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 397,
+            "capacityJ": 900,
+            "storedJ": 848.3848836655042
+          }
+        ]
+      },
+      {
+        "received": 80,
+        "checkpoint": "3b6f1782a2cb74f81c91678b601915f336c68811cc1ff8bb4c7b6972a72d674d",
+        "seconds": 17029.000000088785,
+        "sourceJ": 7892.139659419604,
+        "uniqueOrigins": 580,
+        "units": 580,
+        "records": 598,
+        "continuitySeconds": 60,
+        "batteries": [
+          {
+            "id": 294,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 386,
+            "capacityJ": 900,
+            "storedJ": 900
+          },
+          {
+            "id": 397,
+            "capacityJ": 900,
+            "storedJ": 848.2630352232214
+          }
+        ]
+      }
+    ],
+    "attempts": [
+      {
+        "id": "attempt_1",
+        "outcome": "interrupted",
+        "newReceipts": 8,
+        "simulationSeconds": 1559.9999999985812,
+        "sourceSpentJ": 15127.226320776943,
+        "spent": {
+          "extraction": 10,
+          "conversion": 80,
+          "forming": 64,
+          "charge": 2365.6111482030046,
+          "cooling": 321.35111111111996,
+          "transport": 12218.264061465827,
+          "assembly": 31.999999999994543,
+          "reconfiguration": 35.99999999999987
+        },
+        "externalBatteryDecreaseJ": -0.31357350073039925,
+        "comparableIntervals": 7,
+        "meanSourceJPerRotor": 1848.6800000000014,
+        "meanObservedSecondsPerRotor": 182.42857142857142
+      },
+      {
+        "id": "attempt_2",
+        "outcome": "interrupted",
+        "newReceipts": 7,
+        "simulationSeconds": 1139.9999999989636,
+        "sourceSpentJ": 11332.306149012133,
+        "spent": {
+          "extraction": 24,
+          "conversion": 60,
+          "forming": 56,
+          "charge": 1795.3652733616382,
+          "cooling": 241.0133333333797,
+          "transport": 9103.927542319507,
+          "assembly": 27.999999999995225,
+          "reconfiguration": 24.000000000000597
+        },
+        "externalBatteryDecreaseJ": 11.687043025016465,
+        "comparableIntervals": 6,
+        "meanSourceJPerRotor": 1839.1033333333326,
+        "meanObservedSecondsPerRotor": 179.83333333333326
+      },
+      {
+        "id": "run_to_20",
+        "outcome": "completed",
+        "newReceipts": 3,
+        "simulationSeconds": 472.9999999995698,
+        "sourceSpentJ": 5210.611963321309,
+        "spent": {
+          "extraction": 10,
+          "conversion": 25,
+          "forming": 24,
+          "charge": 727.7225279811428,
+          "cooling": 100.42222222224154,
+          "transport": 4299.467213119049,
+          "assembly": 11.999999999997954,
+          "reconfiguration": 12.000000000000298
+        },
+        "externalBatteryDecreaseJ": 31.98465202995021,
+        "comparableIntervals": 2,
+        "meanSourceJPerRotor": 1832.5599999999977,
+        "meanObservedSecondsPerRotor": 177.5
+      },
+      {
+        "id": "run_to_40",
+        "outcome": "completed",
+        "newReceipts": 20,
+        "simulationSeconds": 3540.000000004655,
+        "sourceSpentJ": 36667.683217827114,
+        "spent": {
+          "extraction": 80,
+          "conversion": 200,
+          "forming": 160,
+          "charge": 5660.971066851063,
+          "cooling": 803.3777777779324,
+          "transport": 29603.334373206075,
+          "assembly": 79.99999999998636,
+          "reconfiguration": 80.00000000000219
+        },
+        "externalBatteryDecreaseJ": -1.6511177117972693,
+        "comparableIntervals": 19,
+        "meanSourceJPerRotor": 1833.582631578947,
+        "meanObservedSecondsPerRotor": 177.1052631578948
+      },
+      {
+        "id": "run_to_60",
+        "outcome": "completed",
+        "newReceipts": 20,
+        "simulationSeconds": 3541.0000000450873,
+        "sourceSpentJ": 36689.798547076476,
+        "spent": {
+          "extraction": 80,
+          "conversion": 200,
+          "forming": 160,
+          "charge": 5661.2081445365075,
+          "cooling": 803.377777777916,
+          "transport": 29625.212625147673,
+          "assembly": 79.99999999998636,
+          "reconfiguration": 80.00000000000225
+        },
+        "externalBatteryDecreaseJ": -0.8279217034964859,
+        "comparableIntervals": 19,
+        "meanSourceJPerRotor": 1834.7157894736845,
+        "meanObservedSecondsPerRotor": 177.1578947368421
+      },
+      {
+        "id": "run_to_80_wait",
+        "outcome": "interrupted",
+        "newReceipts": 0,
+        "simulationSeconds": 1200.0000000152795,
+        "sourceSpentJ": 2972.4652163524734,
+        "spent": {
+          "extraction": 2,
+          "conversion": 5,
+          "forming": 0,
+          "charge": 204.7406088890275,
+          "cooling": 20.084444444440123,
+          "transport": 2740.640163224569,
+          "assembly": 0,
+          "reconfiguration": 0
+        },
+        "externalBatteryDecreaseJ": -52.86079657616756,
+        "comparableIntervals": 0,
+        "meanSourceJPerRotor": null,
+        "meanObservedSecondsPerRotor": null
+      },
+      {
+        "id": "run_to_80_yaw",
+        "outcome": "completed",
+        "newReceipts": 20,
+        "simulationSeconds": 3464.0000000265063,
+        "sourceSpentJ": 35594.920011690716,
+        "spent": {
+          "extraction": 78,
+          "conversion": 195,
+          "forming": 160,
+          "charge": 5445.318391834626,
+          "cooling": 781.2933333331666,
+          "transport": 28775.30828709739,
+          "assembly": 79.99999999998636,
+          "reconfiguration": 80.00000000000227
+        },
+        "externalBatteryDecreaseJ": 34.09911831220825,
+        "comparableIntervals": 19,
+        "meanSourceJPerRotor": 1843.4536842105265,
+        "meanObservedSecondsPerRotor": 181
+      },
+      {
+        "id": "continue_after_victory",
+        "outcome": "completed",
+        "newReceipts": 1,
+        "simulationSeconds": 180.9999999973661,
+        "sourceSpentJ": 1843.638080863083,
+        "spent": {
+          "extraction": 4,
+          "conversion": 10,
+          "forming": 8,
+          "charge": 285.9986634517845,
+          "cooling": 40.16888888888025,
+          "transport": 1487.4705285730306,
+          "assembly": 3.999999999999318,
+          "reconfiguration": 4.000000000000114
+        },
+        "externalBatteryDecreaseJ": -0.16058296278106354,
+        "comparableIntervals": 0,
+        "meanSourceJPerRotor": null,
+        "meanObservedSecondsPerRotor": null
+      }
+    ],
+    "recoveries": [
+      {
+        "id": "recovery_1",
+        "seconds": 235.1999999997861,
+        "sourceSpentJ": 2477.673239414522,
+        "spent": {
+          "extraction": 6,
+          "conversion": 15,
+          "forming": 8,
+          "charge": 301.2780336461801,
+          "cooling": 60.253333333344926,
+          "transport": 2079.1418724354044,
+          "assembly": 3.999999999999318,
+          "reconfiguration": 4.0000000000000995
+        },
+        "newReceipts": 1,
+        "scope": "Reenseñanza y recuperación nativas sin cargas creadas o colocadas manualmente; incluye un nuevo rotor y actividad concurrente."
+      },
+      {
+        "id": "recovery_2_manual",
+        "seconds": 17.199999999984357,
+        "sourceSpentJ": 573.1136028533365,
+        "spent": {
+          "extraction": 2,
+          "conversion": 5,
+          "forming": 0,
+          "charge": 48.497544938887586,
+          "cooling": 18.084444444446945,
+          "transport": 499.5316134700515,
+          "assembly": 0,
+          "reconfiguration": 0
+        },
+        "newReceipts": 0,
+        "scope": "Se soltó la carga 569 con la pinza y se llevó con la mano a la primera cinta. La intervención reinició su historial y la continuidad. El mismo dron vacío se enderezó y se recargó desde el borne. Coste concurrente íntegro; no se añadieron piezas ni energía."
+      },
+      {
+        "id": "recovery_2_coordinated",
+        "seconds": 44.93333333329247,
+        "sourceSpentJ": 84.41710805568437,
+        "spent": {
+          "extraction": 0,
+          "conversion": 0,
+          "forming": 0,
+          "charge": 0,
+          "cooling": 2.0000000000013642,
+          "transport": 82.41710805571347,
+          "assembly": 0,
+          "reconfiguration": 0
+        },
+        "newReceipts": 0,
+        "scope": "La carga 569 completó de nuevo los ocho tramos y recuperó su historial automáticamente. El dron transportó la carga 576 real y regresó; el brazo esperó frenado hasta el aterrizaje. Continúan los mismos diecisiete recibos."
+      },
+      {
+        "id": "recovery_yaw",
+        "seconds": 50.26666666730671,
+        "sourceSpentJ": 282.12312594387186,
+        "spent": {
+          "extraction": 0,
+          "conversion": 0,
+          "forming": 0,
+          "charge": 64.68702700288486,
+          "cooling": 1.999999999998181,
+          "transport": 215.43609894710244,
+          "assembly": 0,
+          "reconfiguration": 0
+        },
+        "newReceipts": 0,
+        "scope": "Desde el guardado detenido, el QR295 tomó la carga 902, la entregó y regresó físicamente con la referencia de pinza corregida para su orientación real. No se escribieron poses ni se cambiaron configuraciones; no se añadieron piezas ni energía. El tramo incluye cuatro segundos posteriores de recarga real y trabajo concurrente del brazo y otro dron; no es consumo aislado del viaje."
+      }
+    ],
+    "latestInterruption": {
+      "id": "run_to_80_wait",
+      "receivedBefore": 60,
+      "receivedAfter": 60,
+      "seconds": 1200.0000000152795,
+      "sourceSpentJ": 2972.4652163524734,
+      "spent": {
+        "extraction": 2,
+        "conversion": 5,
+        "forming": 0,
+        "charge": 204.7406088890275,
+        "cooling": 20.084444444440123,
+        "transport": 2740.640163224569,
+        "assembly": 0,
+        "reconfiguration": 0
+      },
+      "continuitySeconds": 0,
+      "reason": "Toma fallida del cubo 902 desde la mesa por el agarre QR295; no hubo caída ni nuevo recibo. Los tres seguidores terminaron apoyados con 900 J por batería.",
+      "scope": "Coste completo del intento, con actividad inicial y espera posterior; no es consumo puro de motores en reposo ni coste por rotor. Su recuperación se conserva como el tramo posterior recovery_yaw."
+    },
+    "accountAt60": {
+      "sourceJ": 46773.95015864296,
+      "sourceSpentFromA": 123942.28121739766,
+      "sourceSpentSinceOpeningJ": 133226.04984135705,
+      "spent": {
+        "extraction": 1072,
+        "conversion": 2680,
+        "forming": 1004,
+        "charge": 28998.248390216137,
+        "cooling": 4143.484444444824,
+        "transport": 94136.31700709081,
+        "assembly": 927.9999999999591,
+        "reconfiguration": 264.0000000000053
+      }
+    },
+    "complete80": true,
+    "latestRecovery": {
+      "id": "recovery_yaw",
+      "checkpoint": "6051d1fdb0f0cbae31605d9e5009bc6aceb2164357a50dee15aec29825bbe431",
+      "seconds": 13563.466666728926,
+      "sourceJ": 43515.899529198854,
+      "durationSeconds": 50.26666666730671,
+      "sourceSpentJ": 282.12312594387186,
+      "spent": {
+        "extraction": 0,
+        "conversion": 0,
+        "forming": 0,
+        "charge": 64.68702700288486,
+        "cooling": 1.999999999998181,
+        "transport": 215.43609894710244,
+        "assembly": 0,
+        "reconfiguration": 0
+      },
+      "newReceipts": 0,
+      "continuitySeconds": 0,
+      "batteries": [
+        {
+          "id": 294,
+          "capacityJ": 900,
+          "storedJ": 900
+        },
+        {
+          "id": 386,
+          "capacityJ": 900,
+          "storedJ": 900
+        },
+        {
+          "id": 397,
+          "capacityJ": 900,
+          "storedJ": 883.5360152627577
+        }
+      ],
+      "scope": "Desde el guardado detenido, el QR295 tomó la carga 902, la entregó y regresó físicamente con la referencia de pinza corregida para su orientación real. No se escribieron poses ni se cambiaron configuraciones; no se añadieron piezas ni energía. El tramo incluye cuatro segundos posteriores de recarga real y trabajo concurrente del brazo y otro dron; no es consumo aislado del viaje."
+    },
+    "latestRestoration": {
+      "id": "resume_80_yaw",
+      "seconds": 1.5333333333528572,
+      "sourceSpentJ": 28.83985808853322,
+      "newReceipts": 0
+    },
+    "accountAt80": {
+      "sourceJ": 7892.139659419604,
+      "sourceSpentFromA": 162824.091716621,
+      "sourceSpentSinceOpeningJ": 172107.8603405804,
+      "spent": {
+        "extraction": 1152,
+        "conversion": 2880,
+        "forming": 1164,
+        "charge": 34712.994417942675,
+        "cooling": 4946.8622222224285,
+        "transport": 125900.00370159652,
+        "assembly": 1007.9999999999454,
+        "reconfiguration": 344.00000000000756
+      }
+    },
+    "fourthBatchIncludingInterruption": {
+      "from": "batch_60",
+      "to": "batch_80",
+      "newReceipts": 20,
+      "simulationSeconds": 4717.333333375798,
+      "sourceSpentJ": 38881.81049922336,
+      "segments": [
+        "resume_80",
+        "run_to_80_wait",
+        "recovery_yaw",
+        "resume_80_yaw",
+        "run_to_80_yaw"
+      ],
+      "scope": "Incluye la restauración inicial, todo el intento de 1200 s sin recibos, la recuperación, su nuevo arranque y las veinte recepciones; no es el coste de un tramo automático ininterrumpido."
+    },
+    "postVictory": {
+      "from": 80,
+      "to": 81,
+      "checkpoint": "61caeeeb00377b14acb5d43732b6244f318611566d158a2269fbfdf008cb4561",
+      "seconds": 17210.00000008615,
+      "simulationSeconds": 180.9999999973661,
+      "sourceJ": 6048.501578556521,
+      "sourceSpentJ": 1843.638080863083,
+      "spent": {
+        "extraction": 4,
+        "conversion": 10,
+        "forming": 8,
+        "charge": 285.9986634517845,
+        "cooling": 40.16888888888025,
+        "transport": 1487.4705285730306,
+        "assembly": 3.999999999999318,
+        "reconfiguration": 4.000000000000114
+      },
+      "newProductIds": [
+        "rotor:162"
+      ],
+      "uniqueOrigins": 582,
+      "units": 582,
+      "records": 600,
+      "productParts": 162,
+      "continuitySeconds": 60,
+      "batteries": [
+        {
+          "id": 294,
+          "capacityJ": 900,
+          "storedJ": 900
+        },
+        {
+          "id": 386,
+          "capacityJ": 900,
+          "storedJ": 900
+        },
+        {
+          "id": 397,
+          "capacityJ": 900,
+          "storedJ": 848.4236181860025
+        }
+      ],
+      "externalBatteryDecreaseJ": -0.16058296278106354,
+      "receiptEvidence": "Exact checkpoint receivedIds/product records; the final log event has no chain receipt counter, so no synthetic receipt line was created."
+    },
+    "closedRunArtifacts": {
+      "log": {
+        "path": "partida/run_to_80_yaw.log",
+        "sha256": "dca96def820732116f7c20f6af09bbbc6ef43789ae19d4c55087531d931e3372"
+      },
+      "benchmark": {
+        "path": "partida/run_to_80_yaw_benchmark.json",
+        "sha256": "27b7509297346dbf69bd519b56f481bc93b4341d158f382f1f26c26720ad027b"
+      }
+    }
+  },
+  "pedestalScope": {
+    "reference": "brazo-pedestal.json",
+    "transfersMeasured": 3,
+    "destination": "feedB",
+    "feedStopped": true,
+    "roomSupportsUnchanged": true,
+    "transportJPerCycle60Hz": 816.6767496666666,
+    "transportJPerCycle120Hz": 745.4287936666666,
+    "replacementProjection": {
+      "scope": "Comparación energética hipotética, no ruta alternada A/B verificada ni ensayo de 80.",
+      "transfers": 160,
+      "replacedDroneBudgetJ": 12000,
+      "additionalTransportJRange": [
+        107268.60698666667,
+        118668.27994666666
+      ],
+      "extraPedestalJ": 2112
+    },
+    "fullOrderBudgetValidated": false
+  }
+}

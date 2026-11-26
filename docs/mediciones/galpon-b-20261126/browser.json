@@ -1,0 +1,491 @@
+{
+  "scope": "Isolated B fixture: legal paid production for 18 cubes, 8 couplers and twelve model-credited A workpieces; real UI blueprint and pose teaching; actual Cannon arm-to-table delivery. This does not certify the full A-to-80-rotor production loop.",
+  "errors": [],
+  "consoleErrors": [],
+  "captures": [
+    "01-plano-b-pagado.png",
+    "02-controles-b.png",
+    "03-postura-pick.png",
+    "03-postura-place.png",
+    "04-brazo-configurado.png",
+    "05-brazo-mesa-real.png",
+    "06-fuente-misma-reserva.png",
+    "07-estaciones-cadena.png",
+    "08-controles-b-960.png"
+  ],
+  "states": [
+    {
+      "label": "arm delivered",
+      "scene": "galpon",
+      "mode": "playing",
+      "phase": "cadena",
+      "seconds": 651.7333333333411,
+      "energyJ": 176491,
+      "spent": {
+        "extraction": 76,
+        "conversion": 190,
+        "forming": 32,
+        "charge": 3135,
+        "cooling": 24,
+        "transport": 0,
+        "assembly": 52,
+        "reconfiguration": 0
+      },
+      "extracted": 38,
+      "records": 42,
+      "received": 12,
+      "chain": {
+        "phase": "arm-power",
+        "armDemo": 1,
+        "armWired": 0,
+        "droneDelivered": 0,
+        "stabilized": 0,
+        "lot": 1,
+        "lotCount": 0,
+        "total": 0,
+        "target": 80,
+        "continuity": 0,
+        "continuityTarget": 60,
+        "continuityLabel": "Actividad continua útil",
+        "continuityMode": "useful-activity",
+        "deliveryWindow": 240,
+        "continuityState": "waiting",
+        "waitingSeconds": 0,
+        "continuityReason": "",
+        "sustained": false,
+        "completed": false
+      },
+      "arm": {
+        "running": true,
+        "state": "home",
+        "status": "Soltado · despejando la recepción",
+        "cycles": 1,
+        "repeat": true,
+        "joints": [
+          {
+            "rpm": 12,
+            "maxTorque": 2,
+            "capacity": 64
+          },
+          {
+            "rpm": 12,
+            "maxTorque": 4,
+            "capacity": 64
+          },
+          {
+            "rpm": 12,
+            "maxTorque": 3,
+            "capacity": 64
+          },
+          {
+            "rpm": 12,
+            "maxTorque": 2,
+            "capacity": 64
+          }
+        ]
+      },
+      "source": [
+        {
+          "id": 1,
+          "enabled": false,
+          "maxWatts": 240,
+          "storedJ": 176491
+        }
+      ],
+      "payload": {
+        "position": {
+          "x": 3.0770427321716607,
+          "y": 0.6199945573189429,
+          "z": -0.24113750672479722
+        },
+        "zone": "table"
+      },
+      "belts": 0,
+      "groups": 21,
+      "bodies": 82,
+      "tabletOpen": false,
+      "webgl": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "glError": 0,
+      "drawSize": [
+        1280,
+        800
+      ]
+    },
+    {
+      "label": "stations assembled",
+      "scene": "galpon",
+      "mode": "playing",
+      "phase": "cadena",
+      "seconds": 1806.7333333333413,
+      "energyJ": 174955,
+      "spent": {
+        "extraction": 196,
+        "conversion": 490,
+        "forming": 128,
+        "charge": 4035,
+        "cooling": 24,
+        "transport": 0,
+        "assembly": 172,
+        "reconfiguration": 0
+      },
+      "extracted": 98,
+      "records": 102,
+      "received": 12,
+      "chain": {
+        "phase": "arm-power",
+        "armDemo": 1,
+        "armWired": 0,
+        "droneDelivered": 0,
+        "stabilized": 0,
+        "lot": 1,
+        "lotCount": 0,
+        "total": 0,
+        "target": 80,
+        "continuity": 0,
+        "continuityTarget": 60,
+        "continuityLabel": "Actividad continua útil",
+        "continuityMode": "useful-activity",
+        "deliveryWindow": 240,
+        "continuityState": "waiting",
+        "waitingSeconds": 0,
+        "continuityReason": "",
+        "sustained": false,
+        "completed": false
+      },
+      "arm": {
+        "running": false,
+        "state": "idle",
+        "status": "Detenido",
+        "cycles": 1,
+        "repeat": true,
+        "joints": [
+          {
+            "rpm": 12,
+            "maxTorque": 2,
+            "capacity": 64
+          },
+          {
+            "rpm": 12,
+            "maxTorque": 4,
+            "capacity": 64
+          },
+          {
+            "rpm": 12,
+            "maxTorque": 3,
+            "capacity": 64
+          },
+          {
+            "rpm": 12,
+            "maxTorque": 2,
+            "capacity": 64
+          }
+        ]
+      },
+      "source": [
+        {
+          "id": 1,
+          "enabled": false,
+          "maxWatts": 240,
+          "storedJ": 174955
+        }
+      ],
+      "payload": {
+        "position": {
+          "x": 3.0770426649864815,
+          "y": 0.6199999024790377,
+          "z": -0.24113727144658884
+        },
+        "zone": "table"
+      },
+      "belts": 2,
+      "groups": 29,
+      "bodies": 97,
+      "tabletOpen": true,
+      "webgl": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "glError": 0,
+      "drawSize": [
+        1280,
+        800
+      ]
+    },
+    {
+      "label": "saved visual fixture",
+      "scene": "galpon",
+      "mode": "playing",
+      "phase": "cadena",
+      "seconds": 1808.7333333333395,
+      "energyJ": 174955,
+      "spent": {
+        "extraction": 196,
+        "conversion": 490,
+        "forming": 128,
+        "charge": 4035,
+        "cooling": 24,
+        "transport": 0,
+        "assembly": 172,
+        "reconfiguration": 0
+      },
+      "extracted": 98,
+      "records": 102,
+      "received": 12,
+      "chain": {
+        "phase": "arm-power",
+        "armDemo": 1,
+        "armWired": 0,
+        "droneDelivered": 0,
+        "stabilized": 0,
+        "lot": 1,
+        "lotCount": 0,
+        "total": 0,
+        "target": 80,
+        "continuity": 0,
+        "continuityTarget": 60,
+        "continuityLabel": "Actividad continua útil",
+        "continuityMode": "useful-activity",
+        "deliveryWindow": 240,
+        "continuityState": "waiting",
+        "waitingSeconds": 0,
+        "continuityReason": "",
+        "sustained": false,
+        "completed": false
+      },
+      "arm": {
+        "running": false,
+        "state": "idle",
+        "status": "Detenido",
+        "cycles": 1,
+        "repeat": true,
+        "joints": [
+          {
+            "rpm": 12,
+            "maxTorque": 2,
+            "capacity": 64
+          },
+          {
+            "rpm": 12,
+            "maxTorque": 4,
+            "capacity": 64
+          },
+          {
+            "rpm": 12,
+            "maxTorque": 3,
+            "capacity": 64
+          },
+          {
+            "rpm": 12,
+            "maxTorque": 2,
+            "capacity": 64
+          }
+        ]
+      },
+      "source": [
+        {
+          "id": 1,
+          "enabled": false,
+          "maxWatts": 240,
+          "storedJ": 174955
+        }
+      ],
+      "payload": {
+        "position": {
+          "x": 3.0770426649864815,
+          "y": 0.6199999024790377,
+          "z": -0.24113727144658884
+        },
+        "zone": "table"
+      },
+      "belts": 2,
+      "groups": 29,
+      "bodies": 97,
+      "tabletOpen": true,
+      "webgl": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "glError": 0,
+      "drawSize": [
+        960,
+        640
+      ]
+    }
+  ],
+  "layouts": [
+    {
+      "label": "B panel 1280x800",
+      "viewport": [
+        1280,
+        800
+      ],
+      "documentOverflow": 0,
+      "panel": {
+        "x": 20.018142700195312,
+        "y": 288.5491027832031,
+        "width": 754.9320678710938,
+        "height": 491.4405822753906,
+        "right": 774.9502105712891,
+        "bottom": 779.9896850585938,
+        "scrollWidth": 760,
+        "clientWidth": 760
+      },
+      "clippedHorizontally": []
+    },
+    {
+      "label": "Arm controls 1280x800",
+      "viewport": [
+        1280,
+        800
+      ],
+      "documentOverflow": 0,
+      "panel": {
+        "x": 20.018142700195312,
+        "y": 288.5491027832031,
+        "width": 754.9320678710938,
+        "height": 491.4405822753906,
+        "right": 774.9502105712891,
+        "bottom": 779.9896850585938,
+        "scrollWidth": 760,
+        "clientWidth": 760
+      },
+      "clippedHorizontally": []
+    },
+    {
+      "label": "B panel 960x640",
+      "viewport": [
+        960,
+        640
+      ],
+      "documentOverflow": 0,
+      "panel": {
+        "x": 16.018142700195312,
+        "y": 132.54908752441406,
+        "width": 754.9320678710938,
+        "height": 491.44061279296875,
+        "right": 770.9502105712891,
+        "bottom": 623.9897003173828,
+        "scrollWidth": 760,
+        "clientWidth": 760
+      },
+      "clippedHorizontally": []
+    }
+  ],
+  "browser": "131.0.6778.0",
+  "armActiveTiming": {
+    "milliseconds": 791.0999999996275,
+    "stepCalls": 625,
+    "msPerCall": 1.265759999999404,
+    "simulatedSeconds": 5.208333333333408,
+    "atomicStepHz": 120,
+    "configuredPhysicsHz": 240
+  },
+  "saved": {
+    "energyJ": 174955,
+    "spent": {
+      "extraction": 196,
+      "conversion": 490,
+      "forming": 128,
+      "charge": 4035,
+      "cooling": 24,
+      "transport": 0,
+      "assembly": 172,
+      "reconfiguration": 0
+    },
+    "identities": 102
+  },
+  "final": {
+    "scene": "galpon",
+    "mode": "playing",
+    "phase": "cadena",
+    "seconds": 1808.7333333333395,
+    "energyJ": 174955,
+    "spent": {
+      "extraction": 196,
+      "conversion": 490,
+      "forming": 128,
+      "charge": 4035,
+      "cooling": 24,
+      "transport": 0,
+      "assembly": 172,
+      "reconfiguration": 0
+    },
+    "extracted": 98,
+    "records": 102,
+    "received": 12,
+    "chain": {
+      "phase": "arm-power",
+      "armDemo": 1,
+      "armWired": 0,
+      "droneDelivered": 0,
+      "stabilized": 0,
+      "lot": 1,
+      "lotCount": 0,
+      "total": 0,
+      "target": 80,
+      "continuity": 0,
+      "continuityTarget": 60,
+      "continuityLabel": "Actividad continua útil",
+      "continuityMode": "useful-activity",
+      "deliveryWindow": 240,
+      "continuityState": "waiting",
+      "waitingSeconds": 0,
+      "continuityReason": "",
+      "sustained": false,
+      "completed": false
+    },
+    "arm": {
+      "running": false,
+      "state": "idle",
+      "status": "Detenido",
+      "cycles": 1,
+      "repeat": true,
+      "joints": [
+        {
+          "rpm": 12,
+          "maxTorque": 2,
+          "capacity": 64
+        },
+        {
+          "rpm": 12,
+          "maxTorque": 4,
+          "capacity": 64
+        },
+        {
+          "rpm": 12,
+          "maxTorque": 3,
+          "capacity": 64
+        },
+        {
+          "rpm": 12,
+          "maxTorque": 2,
+          "capacity": 64
+        }
+      ]
+    },
+    "source": [
+      {
+        "id": 1,
+        "enabled": false,
+        "maxWatts": 240,
+        "storedJ": 174955
+      }
+    ],
+    "payload": {
+      "position": {
+        "x": 3.0770426649864815,
+        "y": 0.6199999024790377,
+        "z": -0.24113727144658884
+      },
+      "zone": "table"
+    },
+    "belts": 2,
+    "groups": 29,
+    "bodies": 97,
+    "tabletOpen": true,
+    "webgl": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "glError": 0,
+    "drawSize": [
+      960,
+      640
+    ]
+  }
+}

@@ -18,7 +18,7 @@
   const EPS = 1e-8;
   const categories = ['extraction','conversion','forming','charge','cooling','transport','assembly','reconfiguration'];
   const kinds = ['raw','cube','worker','coupler','pyramid','tetra'];
-  const places = ['source','carry','belt','stock','job','world','group','received'];
+  const places = ['source','carry','belt','stock','job','world','group','received','machine','cable'];
   const finite = Number.isFinite;
   const idOK = value => Number.isSafeInteger(value) && value > 0;
   const between = (num, min, max) => finite(num) && num >= min && num <= max;
@@ -74,7 +74,7 @@
   }
   function syncEnergy(s,id,value) {
     const r = record(s,id);
-    if (!r || !['world','group','received'].includes(r.place) || !between(value,0,1)) return false;
+    if (!r || !['world','group','received','machine','cable'].includes(r.place) || !between(value,0,1)) return false;
     r.energy = value;
     return true;
   }
@@ -180,8 +180,9 @@
       if (r.kind === 'raw' || r.place !== 'world') continue;
       if (active.has(r.id) && (r.heat > 0 || r.activeSeconds < CONFIG.activeSeconds)) {
         const useful = Math.max(r.heat/CONFIG.activePerSecond, CONFIG.activeSeconds-r.activeSeconds);
-        const seconds = Math.min(dt,useful,s.energyJ/CONFIG.activeWatts);
-        spend(s,seconds*CONFIG.activeWatts,'cooling');
+        const watts = CONFIG.activeWatts*r.weight;
+        const seconds = Math.min(dt,useful,s.energyJ/watts);
+        spend(s,seconds*watts,'cooling');
         r.activeSeconds = Math.min(CONFIG.activeSeconds,r.activeSeconds+seconds);
         r.heat = Math.max(0,r.heat-CONFIG.activePerSecond*seconds-CONFIG.passivePerSecond*(dt-seconds));
       } else {
@@ -195,6 +196,22 @@
     const rs = ids.map(id => record(s,id));
     if (!rs.every(r => r && r.place === 'world' && r.kind !== 'raw' && manipulable(r) && !busyCarrier(s,r.id))) return false;
     for (const r of rs) { r.place = 'group'; r.group = key; }
+    return true;
+  }
+  // Material held inside a process or a cable is not a second physical copy.
+  // The adapter owns its saved part snapshots until release or transformation.
+  function reserve(s,ids,key,place = 'machine') {
+    if (!unique(ids) || !nameOK(key) || !['machine','cable'].includes(place)) return false;
+    const rs = ids.map(id => record(s,id));
+    if (!rs.every(r => r && r.place === 'world' && r.kind !== 'raw' && manipulable(r) && !busyCarrier(s,r.id))) return false;
+    for (const r of rs) { r.place = place; r.group = key; }
+    return true;
+  }
+  function release(s,ids,key) {
+    if (!unique(ids) || !nameOK(key)) return false;
+    const rs = ids.map(id => record(s,id));
+    if (!rs.every(r => r?.group === key && ['machine','cable'].includes(r.place))) return false;
+    for (const r of rs) { r.place = 'world'; r.group = null; }
     return true;
   }
   function markReleased(s,ids,key) {
@@ -253,15 +270,17 @@
         !s.records.some(old => !inputIds.has(old.id) && (old.id === p.id || old.origin === p.id && old.origin !== r.origin));
     }) || new Set(outputs.map(p => p.mood.matter.path)).size !== outputs.length) return false;
     const heat = Math.max(...rs.map(p => p.heat)), activeSeconds = Math.min(...rs.map(p => p.activeSeconds));
+    const secondActiveSeconds = Math.min(...rs.map(p => p.secondActiveSeconds || 0));
     s.records = s.records.filter(p => !inputIds.has(p.id)).concat(outputs.map(p => ({
       ...r,id:p.id,path:p.mood.matter.path,kind:r.worker && kind === 'cube' ? 'worker' : kind,
-      weight:p.weight,energy,heat,activeSeconds,carriers:[]
+      weight:p.weight,energy,heat,activeSeconds,secondActiveSeconds,carriers:[]
     })));
     return true;
   }
 
   function stats(s) {
-    const byPlace = Object.fromEntries(places.map(key => [key,0]));
+    const visiblePlaces = places.filter(key => !['machine','cable'].includes(key) || s.chain || s.records.some(r => r.place === key));
+    const byPlace = Object.fromEntries(visiblePlaces.map(key => [key,0]));
     for (const r of s.records) byPlace[r.place] += r.weight;
     return {population:population(s),workerCap:s.workerCap,extracted:s.extracted,received:s.received,
       mass:s.initialIds.length+s.extracted,pieces:s.records.length,energyJ:s.energyJ,byPlace};
@@ -280,6 +299,7 @@
       check(idOK(r.origin) && kinds.includes(r.kind) && places.includes(r.place) && typeof r.worker === 'boolean' &&
         typeof r.credited === 'boolean' && between(r.energy,0,1) && between(r.heat,0,1) && between(r.activeSeconds,0,CONFIG.activeSeconds),
         'registro de materia inválido.');
+      check(r.secondActiveSeconds === undefined || between(r.secondActiveSeconds,0,CONFIG.activeSeconds), 'segundo tratamiento térmico inválido.');
       check(r.source === (initial.has(r.origin) ? 'initial' : 'extraction') && (r.source !== 'initial' || r.worker && !r.credited),
         'origen no autorizado.');
       check(typeof r.path === 'string' && weightAt(r.path) > 0 && close(r.weight,weightAt(r.path)) &&
@@ -291,7 +311,7 @@
         (r.kind !== 'raw' || r.source === 'extraction' && !r.worker && !r.credited && r.energy === 0 && r.heat === 0 &&
          ['source','carry','belt','stock','job'].includes(r.place)), 'ubicación de materia inválida.');
       check(Array.isArray(r.carriers) && (r.place === 'carry' ? unique(r.carriers) : r.carriers.length === 0) &&
-        (['group','received'].includes(r.place) ? nameOK(r.group) : r.group === null), 'custodia inválida.');
+        (['group','received','machine','cable'].includes(r.place) ? nameOK(r.group) : r.group === null), 'custodia inválida.');
       check(r.place !== 'received' || r.kind === 'cube' && r.credited && manipulable(r) && r.activeSeconds+EPS >= CONFIG.activeSeconds,'recepción inválida.');
       const root = roots.get(r.origin) || {mass:0,worker:r.worker,credited:r.credited,paths:new Set()};
       check(r.worker === root.worker && r.credited === root.credited && !root.paths.has(r.path),'linaje repetido o inconsistente.');
@@ -331,12 +351,17 @@
       s.spent.charge+EPS >= converted*CONFIG.unitCapacityJ*CONFIG.cubeCharge,'transformación sin pago.');
     check(inJobs.size === matches(s,'job').length && population(s)+(s.jobs.converter?.target === 'worker' ? 1 : 0) <= s.workerCap,
       'entrada sin cámara o exceso de población.');
+    if (s.chain) {
+      const chain = typeof module === 'object' && module.exports ? require('./galpon-chain.js') : globalThis.QBitsGalponChain;
+      check(chain && typeof chain.validate === 'function', 'falta el registro de la segunda cadena.');
+      chain.validate(s);
+    } else check(!s.records.some(r => r.place === 'machine'), 'materia en una estación ausente.');
     return s;
   }
   const snapshot = s => clone(validate(s));
   const restore = data => clone(validate(data));
   return Object.freeze({
     CONFIG,create,record,available,population,workerUnits,canAddWorker,assignWorker,syncEnergy,canExtract,extract,take,store,unload,drop,
-    start,ready,finish,tick,spend,manipulable,stabilized,markGrouped,markReleased,moveFamily,receive,reconfigure,stats,validate,snapshot,restore
+    start,ready,finish,tick,spend,manipulable,stabilized,markGrouped,markReleased,moveFamily,reserve,release,receive,reconfigure,stats,validate,snapshot,restore
   });
 });

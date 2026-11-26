@@ -1,0 +1,45 @@
+{
+  "command": "node --test --test-reporter=tap tests/*.test.cjs",
+  "exitCode": 0,
+  "nodeVersion": "v24.22.3",
+  "branch": "prueba/galpon-primer-ciclo",
+  "head": "6cdd33320cc2e022d7c35fc9c34fa544432c4d95",
+  "startedAt": "2026-11-26T09:11:55.763Z",
+  "capturedAfterAt": "2026-11-26T09:15:54.750Z",
+  "counts": {
+    "tests": 1863,
+    "suites": 0,
+    "pass": 1863,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "duration_ms": 182053.484583
+  },
+  "tapSha256": "22aca11508228971931b475c623998deae9b3d6d3e3c146936c82c7b5662497d",
+  "fileCountBefore": 348,
+  "fileCountAfter": 348,
+  "testFileCount": 215,
+  "aggregateSha256Before": "e89fa603ef04834bba45a5204b491b1d03c41b5987968f27aa18cbc3c340ee5b",
+  "aggregateSha256After": "b331fc14b03e559b745e0fff39dc6383eb94b3cc91de2be816d10f8709aab3e7",
+  "runtimeSha256Before": "04f4d18c8d7fffbffe5b1723b4ae5bb79c621e0b6d28bea8f55a14e1fbc68f38",
+  "runtimeSha256After": "04f4d18c8d7fffbffe5b1723b4ae5bb79c621e0b6d28bea8f55a14e1fbc68f38",
+  "testDefinitionsSha256Before": "907c536be3794babe24eaa782e005bf7db3745ed1ed29a5c6c12bccbc82de451",
+  "testDefinitionsSha256After": "907c536be3794babe24eaa782e005bf7db3745ed1ed29a5c6c12bccbc82de451",
+  "harnessSha256Before": "a6a143fefeafc0ecc50da95ba37dfb7f24ba8f9e9302df726b7bd3f62daa46f2",
+  "harnessSha256After": "a6a143fefeafc0ecc50da95ba37dfb7f24ba8f9e9302df726b7bd3f62daa46f2",
+  "changes": [
+    {
+      "file": "tests/benchmark-galpon-drone-route.cjs",
+      "before": "6d607189e54b734eb09656d618fdc6759059b77769fe211a87e0f587678d7100",
+      "after": "4c9de8a4de424c8e24c3818bab19e4ca35025297d2252f98fcefba1442d2562d"
+    },
+    {
+      "file": "tests/benchmark-galpon-feed-drones.cjs",
+      "before": "85cbd104fe549cc1ca0534a301e78592cffb7a31e4abbece51dd7b7d07d4e166",
+      "after": "b35d602c9981c896e0b9112915df92a01bfea1225ddbc69f1677aaede4803001"
+    }
+  ],
+  "glesRerun": false,
+  "glesReason": "No shader changes in the closing corrections; this suite uses real Cannon with DOM/GPU stubs and is not a visual or GLES run."
+}

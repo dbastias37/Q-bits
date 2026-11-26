@@ -1,0 +1,212 @@
+{
+  "date": "2026-11-26",
+  "source": "tests/galpon-chain-arm-pedestal.test.cjs",
+  "scope": "Ensayo físico aislado con material pagado. Colocación inicial del equipo vacío, recibos de A y colas de entrada/salida son fixtures; no constituye una ejecución autónoma de80rotores. El alimentador B está detenido para aislar el ciclo del brazo.",
+  "recipe": {
+    "arm": {
+      "cubes": 18,
+      "couplers": 8
+    },
+    "tower": {
+      "cubes": 96,
+      "grid": [
+        4,
+        3,
+        8
+      ],
+      "cubeEdgeMetres": 0.09,
+      "sizeMetres": [
+        0.36,
+        0.72,
+        0.27
+      ],
+      "centerXZ": [
+        4.005,
+        -0.35
+      ],
+      "topY": 0.72,
+      "manufactureJ": 2112,
+      "separateFromArm": true
+    },
+    "cableUnitsInTest": 8,
+    "sourceMaxWatts": 240,
+    "sourceUsesExistingAccount": true,
+    "jointRpm": [
+      12,
+      12,
+      12,
+      12
+    ],
+    "jointTorqueLimitsNm": [
+      4,
+      4,
+      4,
+      4
+    ],
+    "pickupSurface": [
+      4.04,
+      0.665,
+      0.45
+    ],
+    "pickupOffsetCm": 4.5,
+    "dropSurfaceAim": [
+      4.2,
+      0.575,
+      -1.1
+    ],
+    "dropOffsetCm": 18.5,
+    "repeating": true
+  },
+  "results": [
+    {
+      "scope": "Paid isolated construction and transport fixture; native welds for a separate tower; initial empty arm placement and staged inputs/outputs are explicit fixtures; not mission E2E",
+      "hz": 60,
+      "towerUnits": 96,
+      "towerHeightMetres": 0.72,
+      "towerJ": 2112,
+      "initialPivot": {
+        "x": 4.05,
+        "y": 0.945,
+        "z": -0.35
+      },
+      "finalPivot": {
+        "x": 4.050203540100284,
+        "y": 0.9401238117087907,
+        "z": -0.3500771132437878
+      },
+      "rows": [
+        {
+          "id": 208,
+          "arrivalSeconds": 11.80000000000017,
+          "arrivalJ": 636.330352883524,
+          "fullCycleSeconds": 18.13333333333358,
+          "fullCycleJ": 824.4187195226841,
+          "position": {
+            "x": 4.196339663898376,
+            "y": 0.6161552663787192,
+            "z": -1.0952847231196141
+          }
+        },
+        {
+          "id": 209,
+          "arrivalSeconds": 11.466666666666015,
+          "arrivalJ": 626.1343913610617,
+          "fullCycleSeconds": 17.833333333332323,
+          "fullCycleJ": 815.8213163088367,
+          "position": {
+            "x": 4.19859691164142,
+            "y": 0.6152571409985034,
+            "z": -1.0950196049577121
+          }
+        },
+        {
+          "id": 210,
+          "arrivalSeconds": 11.499999999999346,
+          "arrivalJ": 627.6781752172974,
+          "fullCycleSeconds": 17.83333333333232,
+          "fullCycleJ": 815.7902135147597,
+          "position": {
+            "x": 4.19865032228496,
+            "y": 0.6162080242804765,
+            "z": -1.0951198826750475
+          }
+        }
+      ],
+      "seconds": 53.79999999999822,
+      "sourceSpentJ": 2456.0302493462805,
+      "spent": {
+        "extraction": 0,
+        "conversion": 0,
+        "forming": 0,
+        "charge": 0,
+        "cooling": 5.999999999999979,
+        "transport": 2450.030249346368,
+        "assembly": 0,
+        "reconfiguration": 0
+      },
+      "peakMotorWatts": 163.7584949418737,
+      "contactAt": [
+        0.05
+      ],
+      "fixturesUnchanged": true,
+      "identitiesUnchanged": true,
+      "internalChargeUnchanged": true,
+      "cycles": 3
+    },
+    {
+      "scope": "Paid isolated construction and transport fixture; native welds for a separate tower; initial empty arm placement and staged inputs/outputs are explicit fixtures; not mission E2E",
+      "hz": 120,
+      "towerUnits": 96,
+      "towerHeightMetres": 0.72,
+      "towerJ": 2112,
+      "initialPivot": {
+        "x": 4.05,
+        "y": 0.945,
+        "z": -0.35
+      },
+      "finalPivot": {
+        "x": 4.050055929744264,
+        "y": 0.9437819274387135,
+        "z": -0.35004005785646947
+      },
+      "rows": [
+        {
+          "id": 208,
+          "arrivalSeconds": 10.90000000000002,
+          "arrivalJ": 563.6521471400047,
+          "fullCycleSeconds": 17.299999999999656,
+          "fullCycleJ": 752.2061384952685,
+          "position": {
+            "x": 4.203539426898403,
+            "y": 0.6170582576143024,
+            "z": -1.0953345404549992
+          }
+        },
+        {
+          "id": 209,
+          "arrivalSeconds": 10.66666666666606,
+          "arrivalJ": 556.8750722892,
+          "fullCycleSeconds": 17.058333333332367,
+          "fullCycleJ": 745.0332902055816,
+          "position": {
+            "x": 4.203263130325402,
+            "y": 0.618037901355125,
+            "z": -1.0926365408318601
+          }
+        },
+        {
+          "id": 210,
+          "arrivalSeconds": 10.674999999999393,
+          "arrivalJ": 557.29181937658,
+          "fullCycleSeconds": 17.058333333332364,
+          "fullCycleJ": 745.0469526634843,
+          "position": {
+            "x": 4.20323953350849,
+            "y": 0.618091859106479,
+            "z": -1.092714166960628
+          }
+        }
+      ],
+      "seconds": 51.41666666666439,
+      "sourceSpentJ": 2242.2863813643344,
+      "spent": {
+        "extraction": 0,
+        "conversion": 0,
+        "forming": 0,
+        "charge": 0,
+        "cooling": 5.999999999999979,
+        "transport": 2236.2863813644217,
+        "assembly": 0,
+        "reconfiguration": 0
+      },
+      "peakMotorWatts": 206.99850819138942,
+      "contactAt": [
+        0.025
+      ],
+      "fixturesUnchanged": true,
+      "identitiesUnchanged": true,
+      "internalChargeUnchanged": true,
+      "cycles": 3
+    }
+  ]
+}

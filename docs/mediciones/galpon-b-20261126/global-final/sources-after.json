@@ -1,0 +1,1980 @@
+{
+  "capturedAt": "2026-11-26T09:51:55.380Z",
+  "root": "/workspace/scratch/1941ba59df8d/Q-bits",
+  "nodeVersion": "v24.22.3",
+  "branch": "prueba/galpon-primer-ciclo",
+  "head": "6cdd33320cc2e022d7c35fc9c34fa544432c4d95",
+  "command": "node --test --test-reporter=tap tests/*.test.cjs",
+  "scope": "All JS/CJS/CSS/GLSL and JSON under assets and tests plus index.html. Includes fixtures and harness; excludes docs, images, logs and generated reports.",
+  "fileCount": 349,
+  "testFileCount": 216,
+  "selectedTests": [
+    "tests/articulated-grab.test.cjs",
+    "tests/assembly-broadphase.test.cjs",
+    "tests/automation.test.cjs",
+    "tests/battery-capacity.test.cjs",
+    "tests/battery-geometry-cache.test.cjs",
+    "tests/battery-liquid-integration.test.cjs",
+    "tests/battery-liquid.test.cjs",
+    "tests/boot.test.cjs",
+    "tests/box-outline-render.test.cjs",
+    "tests/camera-input.test.cjs",
+    "tests/camera-motion.test.cjs",
+    "tests/camera-pacing.test.cjs",
+    "tests/campaign-supply.test.cjs",
+    "tests/cannon-geometry-compatibility.test.cjs",
+    "tests/compound-narrowphase.test.cjs",
+    "tests/contact-matrix.test.cjs",
+    "tests/contact-sensors.test.cjs",
+    "tests/context-menu-input.test.cjs",
+    "tests/context-menu-live.test.cjs",
+    "tests/controls-integration.test.cjs",
+    "tests/controls.test.cjs",
+    "tests/conveyor-collisions.test.cjs",
+    "tests/conveyor-compact-data.test.cjs",
+    "tests/conveyor-contact-rejection.test.cjs",
+    "tests/conveyor-flight-traction.test.cjs",
+    "tests/conveyor-impact.test.cjs",
+    "tests/conveyor-join-clearance.test.cjs",
+    "tests/conveyor-modules.test.cjs",
+    "tests/conveyor-panel.test.cjs",
+    "tests/conveyor-placement.test.cjs",
+    "tests/conveyor-render-cache.test.cjs",
+    "tests/conveyor-review.test.cjs",
+    "tests/conveyor-runtime.test.cjs",
+    "tests/conveyor-storage.test.cjs",
+    "tests/conveyor-template.test.cjs",
+    "tests/conveyor-virtual-integration.test.cjs",
+    "tests/conveyor-virtual-lifecycle.test.cjs",
+    "tests/conveyor-virtual-storage.test.cjs",
+    "tests/cooling-spatial-culling.test.cjs",
+    "tests/creation-placement.test.cjs",
+    "tests/crouch.test.cjs",
+    "tests/culling-integration.test.cjs",
+    "tests/culling-math.test.cjs",
+    "tests/culling-preferences.test.cjs",
+    "tests/dialogue-timing.test.cjs",
+    "tests/encounter-bubbles.test.cjs",
+    "tests/external-battery-energy.test.cjs",
+    "tests/external-battery-render.test.cjs",
+    "tests/external-battery-storage.test.cjs",
+    "tests/external-battery-workshop-ui.test.cjs",
+    "tests/factory-passage-integration.test.cjs",
+    "tests/factory-passage.test.cjs",
+    "tests/families-integration.test.cjs",
+    "tests/families-ui.test.cjs",
+    "tests/families.test.cjs",
+    "tests/family-grab.test.cjs",
+    "tests/family-sets.test.cjs",
+    "tests/flight-mechanisms.test.cjs",
+    "tests/footsteps-integration.test.cjs",
+    "tests/footsteps.test.cjs",
+    "tests/furniture-input.test.cjs",
+    "tests/furniture-models.test.cjs",
+    "tests/galpon-chain-activity.test.cjs",
+    "tests/galpon-chain-arm-cold-feed.test.cjs",
+    "tests/galpon-chain-arm-pedestal.test.cjs",
+    "tests/galpon-chain-arm.test.cjs",
+    "tests/galpon-chain-drone.test.cjs",
+    "tests/galpon-chain-integration.test.cjs",
+    "tests/galpon-chain-model.test.cjs",
+    "tests/galpon-chain-reuse.test.cjs",
+    "tests/galpon-drone-logistics.test.cjs",
+    "tests/galpon-drone-sharing.test.cjs",
+    "tests/galpon-energy.test.cjs",
+    "tests/galpon-line.test.cjs",
+    "tests/galpon-logistics-model.test.cjs",
+    "tests/galpon-menu.test.cjs",
+    "tests/galpon-permissions.test.cjs",
+    "tests/galpon-power-chain.test.cjs",
+    "tests/galpon-production.test.cjs",
+    "tests/galpon-save.test.cjs",
+    "tests/galpon-source-recovery.test.cjs",
+    "tests/galpon-workers.test.cjs",
+    "tests/game-regression.test.cjs",
+    "tests/glass-integration.test.cjs",
+    "tests/glass.test.cjs",
+    "tests/grab-assembly-batch.test.cjs",
+    "tests/grab-speed.test.cjs",
+    "tests/graphics.test.cjs",
+    "tests/grip-boundary-recovery.test.cjs",
+    "tests/grip-lazy-sat.test.cjs",
+    "tests/grip-rotation-envelope.test.cjs",
+    "tests/guide-audio-integration.test.cjs",
+    "tests/guide-audio.test.cjs",
+    "tests/held-face-rotation.test.cjs",
+    "tests/held-focus.test.cjs",
+    "tests/held-interactions.test.cjs",
+    "tests/integration-campaign-recovery.test.cjs",
+    "tests/integration-energy.test.cjs",
+    "tests/integration-sensor-lifecycle.test.cjs",
+    "tests/join-audio-integration.test.cjs",
+    "tests/join-audio.test.cjs",
+    "tests/lab-limits.test.cjs",
+    "tests/lab-save-runtime.test.cjs",
+    "tests/landing-projection.test.cjs",
+    "tests/large-assembly-joins.test.cjs",
+    "tests/large-collision-query.test.cjs",
+    "tests/live-mechanism-sensors.test.cjs",
+    "tests/mechanical-component-expansion.test.cjs",
+    "tests/mechanical-floor-impact.test.cjs",
+    "tests/mechanical-mood-pose.test.cjs",
+    "tests/mechanical-rest.test.cjs",
+    "tests/mechanism-blueprint.test.cjs",
+    "tests/mechanism-restart.test.cjs",
+    "tests/modular-assembly.test.cjs",
+    "tests/music.test.cjs",
+    "tests/opening-campaign-integration.test.cjs",
+    "tests/opening-menu.test.cjs",
+    "tests/opening-protection.test.cjs",
+    "tests/opening-save-validation.test.cjs",
+    "tests/opening.test.cjs",
+    "tests/organizers.test.cjs",
+    "tests/passive-conveyor-motion.test.cjs",
+    "tests/physical-collision-cache.test.cjs",
+    "tests/physics-rate.test.cjs",
+    "tests/placement-scale.test.cjs",
+    "tests/power-cable-inspection.test.cjs",
+    "tests/power-interactions.test.cjs",
+    "tests/power-network-cache.test.cjs",
+    "tests/power-network.test.cjs",
+    "tests/preferences.test.cjs",
+    "tests/pressure-pad-query.test.cjs",
+    "tests/preview-batching.test.cjs",
+    "tests/production-frequency.test.cjs",
+    "tests/production-friction.test.cjs",
+    "tests/production-ledger.test.cjs",
+    "tests/production.test.cjs",
+    "tests/progression.test.cjs",
+    "tests/prologue.test.cjs",
+    "tests/propeller-clearance.test.cjs",
+    "tests/propeller.test.cjs",
+    "tests/quick-catalogue.test.cjs",
+    "tests/radial-geometry.test.cjs",
+    "tests/radial-input.test.cjs",
+    "tests/radial-mechanisms.test.cjs",
+    "tests/reconfiguration.test.cjs",
+    "tests/render-backend.test.cjs",
+    "tests/rigid-colliders.test.cjs",
+    "tests/rigid-collision-query.test.cjs",
+    "tests/rigid-render-batch.test.cjs",
+    "tests/robot-arm-family-route.test.cjs",
+    "tests/robot-arm-integration.test.cjs",
+    "tests/robot-arm-panel.test.cjs",
+    "tests/robot-arm-setup.test.cjs",
+    "tests/robot-arm-shelves.test.cjs",
+    "tests/robot-arm-usability.test.cjs",
+    "tests/robot-arm.test.cjs",
+    "tests/robot-conveyor-integration.test.cjs",
+    "tests/rotor-chassis.test.cjs",
+    "tests/rotor-core.test.cjs",
+    "tests/rotor-energy-integration.test.cjs",
+    "tests/rotor-groups-ui.test.cjs",
+    "tests/rotor-groups.test.cjs",
+    "tests/rotor-load.test.cjs",
+    "tests/rotor-power.test.cjs",
+    "tests/rotor-stop-brake.test.cjs",
+    "tests/rotor-storage.test.cjs",
+    "tests/rotor-ui.test.cjs",
+    "tests/rotor-unpowered.test.cjs",
+    "tests/rotor-wheel.test.cjs",
+    "tests/route-geometry.test.cjs",
+    "tests/runtime-lookups.test.cjs",
+    "tests/sap-passive-pairs.test.cjs",
+    "tests/save-games.test.cjs",
+    "tests/saved-games-integration.test.cjs",
+    "tests/selection-cache.test.cjs",
+    "tests/selection-drag.test.cjs",
+    "tests/selection-hud-integration.test.cjs",
+    "tests/selection-hud-projection.test.cjs",
+    "tests/selection-hud.test.cjs",
+    "tests/sensor-contact-index.test.cjs",
+    "tests/sensor-discovery-fast-path.test.cjs",
+    "tests/servo-assembly.test.cjs",
+    "tests/servo-march.test.cjs",
+    "tests/servo-panel.test.cjs",
+    "tests/servo-storage.test.cjs",
+    "tests/servo-walker-recognition.test.cjs",
+    "tests/servo-walker-tracking.test.cjs",
+    "tests/servo.test.cjs",
+    "tests/shake-dismantle.test.cjs",
+    "tests/solid-grip.test.cjs",
+    "tests/spatial-query-regressions.test.cjs",
+    "tests/staged-disassembly.test.cjs",
+    "tests/subtitles.test.cjs",
+    "tests/tablet.test.cjs",
+    "tests/tbit-geometry.test.cjs",
+    "tests/tbit-joins.test.cjs",
+    "tests/tbit-lab.test.cjs",
+    "tests/tbit-routes.test.cjs",
+    "tests/tick-scheduler.test.cjs",
+    "tests/trajectory-controller.test.cjs",
+    "tests/trajectory-drive.test.cjs",
+    "tests/trajectory-flight.test.cjs",
+    "tests/trajectory-game.test.cjs",
+    "tests/trajectory-grid-controller.test.cjs",
+    "tests/trajectory-identity-flow.test.cjs",
+    "tests/trajectory-model.test.cjs",
+    "tests/trajectory-mood-pose.test.cjs",
+    "tests/trajectory-panel.test.cjs",
+    "tests/trajectory-runtime.test.cjs",
+    "tests/trajectory-workshop.test.cjs",
+    "tests/transitions.test.cjs",
+    "tests/wide-line-equivalence.test.cjs",
+    "tests/workshop-body-editor.test.cjs",
+    "tests/workshop-integration.test.cjs",
+    "tests/workshop-model.test.cjs",
+    "tests/workshop-panel.test.cjs"
+  ],
+  "aggregateSha256": "2c5699e92c1a265bacd339e0376fa2d652211fd5dd3bc407ce20da53ead53837",
+  "runtimeSha256": "96610d18f4c7e880cf5aa42f2ff8028514c7c4ef9a0cd27218a680dfc15d34d5",
+  "testDefinitionsSha256": "7d0e2af21eee16257dcd329b302c7660e8f07f25e5a03642164d0a8eda9d47f9",
+  "harnessSha256": "47dffb097d3dfe58f5d2e9cc28f8837f6951d9e6cd0f58c28263f8d3ece88c03",
+  "sources": [
+    {
+      "file": "assets/audio/dialogue/guide/voice.json",
+      "bytes": 607,
+      "sha256": "8517c922683018e22a314680ebb7edb7a1d6df691e427897d99635036143f0ea"
+    },
+    {
+      "file": "assets/audio/footsteps/qbits/steps.json",
+      "bytes": 172,
+      "sha256": "3f2a7491414869a7b0dbb35278a10f4109908a9e6d2d204f10c1716f841910a3"
+    },
+    {
+      "file": "assets/audio/joins/qbits/joins.json",
+      "bytes": 96,
+      "sha256": "2627452cd550c0e0a2500b3cda291e848d59dd786cfac7e44521b0cc263eb731"
+    },
+    {
+      "file": "assets/audio/music/playlist.json",
+      "bytes": 432,
+      "sha256": "f10c7db4e993997957fedcf303bdbd814414e1b06b5a00dc398c62db746d40c0"
+    },
+    {
+      "file": "assets/css/conveyor-panel.css",
+      "bytes": 2013,
+      "sha256": "a2ab11d22535c3390ed291b564508216f7f2c419e72c24a88bc6459b6bb07186"
+    },
+    {
+      "file": "assets/css/culling-lab.css",
+      "bytes": 944,
+      "sha256": "e4ad49e3d292a4600b5910577a9135635165320f824fadb524a5528c323851c0"
+    },
+    {
+      "file": "assets/css/families.css",
+      "bytes": 6643,
+      "sha256": "ba68455791207b42d2a3f97d1d156a429d1c62028f79cf13b5cfc6603bfd2b21"
+    },
+    {
+      "file": "assets/css/glass-panels.css",
+      "bytes": 6831,
+      "sha256": "eb7396ab14d5e2e3d1abf5ea07da43e13b287517d1acd2f6b7e4f1903d644d1e"
+    },
+    {
+      "file": "assets/css/hud.css",
+      "bytes": 1588,
+      "sha256": "aa3c3a2907b70903f7441ebea6c8a464e502dc1cec6a17ec40930d55316f2af2"
+    },
+    {
+      "file": "assets/css/quick-catalogue.css",
+      "bytes": 1156,
+      "sha256": "ef64241c7fac3a7e8e37b559bc481db659f19181913244e7c35877c37c3fa031"
+    },
+    {
+      "file": "assets/css/radial-menu.css",
+      "bytes": 8331,
+      "sha256": "48bd04dcf5fe5c5da9fb808bf9dbdaf7380e4cc9316b94b4b84e69947cd96668"
+    },
+    {
+      "file": "assets/css/robot-arm-panel.css",
+      "bytes": 5501,
+      "sha256": "316826904b616bdef793541376547e29984701a2b344147a3974909e655115f1"
+    },
+    {
+      "file": "assets/css/saved-games.css",
+      "bytes": 5743,
+      "sha256": "ffd489a1871cfbecf565b37035e6a2bbf6d9ec0f0ffd6f06290e71057b7b9ea9"
+    },
+    {
+      "file": "assets/css/selection-hud.css",
+      "bytes": 4278,
+      "sha256": "de104936b19add94de536af5010393776479440e7581545c94f94d50124f6770"
+    },
+    {
+      "file": "assets/css/servo-panel.css",
+      "bytes": 2588,
+      "sha256": "a664cc19d8fb146c5d3344827d727b69717c1c0937fc06497c92ae84572ce83d"
+    },
+    {
+      "file": "assets/css/settings.css",
+      "bytes": 5904,
+      "sha256": "a8b8c4740381f0b03933404c99769bc8738ad30e6426184284a99c252834da88"
+    },
+    {
+      "file": "assets/css/subtitles.css",
+      "bytes": 1604,
+      "sha256": "7057abb2c2e84ea569cba943782b8b501ade1899e3e0c5ff3b72b9a5827f6f21"
+    },
+    {
+      "file": "assets/css/tablet.css",
+      "bytes": 12672,
+      "sha256": "cd6a7047bbe5d1bd837d38b7e0f9585fbd4ba8933bf2711887113d6fed379c24"
+    },
+    {
+      "file": "assets/css/trajectory-panel.css",
+      "bytes": 8070,
+      "sha256": "0404e5330155d0085606cca0fa8ee3d99eadf026137f6748878d35577ea421f6"
+    },
+    {
+      "file": "assets/css/workshop-panel.css",
+      "bytes": 6056,
+      "sha256": "df65a818777405f0e53f45611fd675a89a637da93097477d93b90f6176158f86"
+    },
+    {
+      "file": "assets/js/battery-liquid.js",
+      "bytes": 8443,
+      "sha256": "d20a0a4ac790abe6b18922274dc087530c25b4484407c263f1e173fefe042b64"
+    },
+    {
+      "file": "assets/js/boot.js",
+      "bytes": 10987,
+      "sha256": "cee29abbd14492e926ff719e19c7b36429d3207c2530c9bcaca5d9181b378ea2"
+    },
+    {
+      "file": "assets/js/campaign-automation.js",
+      "bytes": 4217,
+      "sha256": "dd16b1bc278dd10fd43725fd766e58053eb689a7a6a572c029f1625116159e93"
+    },
+    {
+      "file": "assets/js/campaign-production.js",
+      "bytes": 6867,
+      "sha256": "bd22aefd732f2869a43251e44351f3133cf54696818a5ed030dbf9683dc793dd"
+    },
+    {
+      "file": "assets/js/campaign-reconfiguration.js",
+      "bytes": 7355,
+      "sha256": "4a8579f266c8c79142a7da848f29227bc40a57a1cf785ed0a60d72cc5b0e6cd0"
+    },
+    {
+      "file": "assets/js/campaign-supply.js",
+      "bytes": 22557,
+      "sha256": "e7166adc62ecda1a6e276bdc1b44a47c466feb600437ec9754a2e50787959ba6"
+    },
+    {
+      "file": "assets/js/cannon.min.js",
+      "bytes": 132200,
+      "sha256": "0e63a043c15379cdbf940ab364c239363fc4e2803013a4c98ee3788fd3aa27ab"
+    },
+    {
+      "file": "assets/js/contact-sensors.js",
+      "bytes": 769,
+      "sha256": "0e887f4cb53298e52e1e554c6422aea135d84f0d0d4c3b9ffaa4e1579589b5ae"
+    },
+    {
+      "file": "assets/js/controls.js",
+      "bytes": 10372,
+      "sha256": "d2b95a24aba9efb71bfb6b2e8183fc3d06a87721ea6441c64acfdecd95907a50"
+    },
+    {
+      "file": "assets/js/conveyor-panel.js",
+      "bytes": 4361,
+      "sha256": "b2789d469d9e24f02c01acc038b2b6b817380366bcd759bfc0ba58a6d69c16d7"
+    },
+    {
+      "file": "assets/js/culling.js",
+      "bytes": 7762,
+      "sha256": "8fc8ef54add1e1a267881c643ea4a3d92ff2124b2c8cedbcd13781aee4fad5dc"
+    },
+    {
+      "file": "assets/js/dialogue-timing.js",
+      "bytes": 1952,
+      "sha256": "b5b880f4938535673ae179b46fe5156914a55c48902697093bde203dbea4bbae"
+    },
+    {
+      "file": "assets/js/factory-passage.js",
+      "bytes": 14449,
+      "sha256": "18cda7e2bb810e32b364d56ae6f57d2a32aa0091cd7c5fd249cd49f557cc80d6"
+    },
+    {
+      "file": "assets/js/families-ui.js",
+      "bytes": 11906,
+      "sha256": "dba60028615eed4653af51079afc4fda59f6fdf5662e98dbe8c1f6a730bf3c1f"
+    },
+    {
+      "file": "assets/js/families.js",
+      "bytes": 15999,
+      "sha256": "5bf27891ca4cec8defdecd9ee5b1c8397af119042917a3e24268730339efda7e"
+    },
+    {
+      "file": "assets/js/footsteps.js",
+      "bytes": 7704,
+      "sha256": "7f3898a2dba1c0f6560ce7e7005e1e50155acd4a0ab62bbd382fdfae8357cb98"
+    },
+    {
+      "file": "assets/js/furniture-models.js",
+      "bytes": 3550,
+      "sha256": "93c2a7b2672644a0bc83dec89fac290cf29f67e08345d6ade7d844201c48ad1d"
+    },
+    {
+      "file": "assets/js/galpon-chain.js",
+      "bytes": 32466,
+      "sha256": "462d163836d4fba06e6c340b2ab04538b03366f64c05f6dd2f349b0dc46011fa"
+    },
+    {
+      "file": "assets/js/galpon-logistics.js",
+      "bytes": 8559,
+      "sha256": "beaf340368ed361895eac3dc70f0c5d8baa3bd5deeec8df779dc5cee507c988b"
+    },
+    {
+      "file": "assets/js/galpon-production.js",
+      "bytes": 21312,
+      "sha256": "24cc07ba8667d6880e3fd4a9d4e611139fc18a2dd166bc4f34a2f866153cc807"
+    },
+    {
+      "file": "assets/js/game.js",
+      "bytes": 1306855,
+      "sha256": "89ec410b5cefdadb76fac1a4ab7e2e78ccede44ff2888edffbab5e29386e71fb"
+    },
+    {
+      "file": "assets/js/glass.js",
+      "bytes": 15899,
+      "sha256": "b893b3acd02f4f96e7d5f86c5a3d2f192d346070e34debeff3f0ac9655924a92"
+    },
+    {
+      "file": "assets/js/graphics.js",
+      "bytes": 11838,
+      "sha256": "e2f54b7c93b443fd1a1b194394b65e3b79bdf837f5f11e76d9331300a120ddad"
+    },
+    {
+      "file": "assets/js/guide-audio.js",
+      "bytes": 7505,
+      "sha256": "b878e847cdff39fc547669292d6543321e3ae625844c14d779de13262dd69cb1"
+    },
+    {
+      "file": "assets/js/join-audio.js",
+      "bytes": 5640,
+      "sha256": "46b29e3dc2519dc254272843a713a837d966fc33e52d0d2748b24f08d1970e41"
+    },
+    {
+      "file": "assets/js/music.js",
+      "bytes": 9887,
+      "sha256": "65cf4f18eb6f54ed39fcce656515fbfa93f40bd15b4a88f8026d8c0cbd6a70ae"
+    },
+    {
+      "file": "assets/js/opening.js",
+      "bytes": 23419,
+      "sha256": "23fee7408da6b19845371fec6aad4b6b5e98aa43569c45af07e4614b29b5695f"
+    },
+    {
+      "file": "assets/js/organizers.js",
+      "bytes": 10341,
+      "sha256": "fdfadd3f0878361a2d38964b1fb8094fef9995ab7e4c7feef6a16df7f7623395"
+    },
+    {
+      "file": "assets/js/preferences.js",
+      "bytes": 4918,
+      "sha256": "78300e5d92f9766ce7b823153a69cd39f9b96d4526b03143fa4cb4f99f8c40a7"
+    },
+    {
+      "file": "assets/js/progression.js",
+      "bytes": 2943,
+      "sha256": "5f860eac085ff6de445cb19393e1c0ee78db6ad4cd67ba89639265756d2506a6"
+    },
+    {
+      "file": "assets/js/propeller-power.js",
+      "bytes": 4776,
+      "sha256": "6f19f4402f153f94aa97ecaf6afad36680ecf6a642ddb1321603f9505989ba05"
+    },
+    {
+      "file": "assets/js/radial-menu.js",
+      "bytes": 24358,
+      "sha256": "4250630f3d73b463fa2914eee4068b1afe25ba93791753c775e64c4894c617dd"
+    },
+    {
+      "file": "assets/js/reservoir-model.js",
+      "bytes": 134478,
+      "sha256": "dd876f6fd9e54f6245b36925d3f4ce48342c15773b8cc218869192ad9b26ef63"
+    },
+    {
+      "file": "assets/js/robot-arm-panel.js",
+      "bytes": 11788,
+      "sha256": "4d8e018fd9a9700dac4b92e6cf2a10ba54fe7580ef67672da5c4217aa60dfd2c"
+    },
+    {
+      "file": "assets/js/rotor-power.js",
+      "bytes": 7738,
+      "sha256": "29ea7519beba93a0f31656069dd0356d2dafa76bd008f6a6c5b274c048867adc"
+    },
+    {
+      "file": "assets/js/route-geometry.js",
+      "bytes": 1999,
+      "sha256": "bafc090d878fa0e318a1428e265437c6c361c3622e80d2541691c0f07d40a6e4"
+    },
+    {
+      "file": "assets/js/save-games.js",
+      "bytes": 41168,
+      "sha256": "ecf0d284b9f6f94541b5066647df7ad20cbc1dd67f211e40282ea196dad35281"
+    },
+    {
+      "file": "assets/js/selection-hud.js",
+      "bytes": 16253,
+      "sha256": "53f40eaa0ae755d693a5c93f0604e680f00d0b5395705f82acdd04a976fcc331"
+    },
+    {
+      "file": "assets/js/servo-panel.js",
+      "bytes": 7433,
+      "sha256": "6270c7e9d4eb2657246082d2b4c9225fc357c4031c345412395d1321c4f26cb7"
+    },
+    {
+      "file": "assets/js/settings.js",
+      "bytes": 21776,
+      "sha256": "986dc1bdb7569dcb519a0de744d70dd4665e4577f4271a1d55a1722a7134dfbe"
+    },
+    {
+      "file": "assets/js/subtitles.js",
+      "bytes": 2583,
+      "sha256": "dfb7d22140dc7219518bc92b5334fcb09bcf4af40e13a4e502a799a077853f10"
+    },
+    {
+      "file": "assets/js/tablet-model.js",
+      "bytes": 1571,
+      "sha256": "cc5068f801463cf06edd48152744c06b35dfa9356676883519dd1d436e4a9eb9"
+    },
+    {
+      "file": "assets/js/tablet-view.js",
+      "bytes": 6264,
+      "sha256": "9392ab08f5bb2e0f18b30a5d95263ee98cfa661cd421b9ae0426512ea55e1ad9"
+    },
+    {
+      "file": "assets/js/trajectory-controller.js",
+      "bytes": 16744,
+      "sha256": "92c75399022780a7f94ef92ee269ffd1295c27d736b9da08751cf9fd5308ec5c"
+    },
+    {
+      "file": "assets/js/trajectory-drive.js",
+      "bytes": 9479,
+      "sha256": "be79a913a274657f9d122ccea0d84f8bd1ce39ee8a3786015e5824ccfd8ecdc4"
+    },
+    {
+      "file": "assets/js/trajectory-model.js",
+      "bytes": 32988,
+      "sha256": "d1a1de7d3fb2dd06da9bfedc6fdd5ef0aa262aa4a50b2c21042043c5a980dfbc"
+    },
+    {
+      "file": "assets/js/trajectory-panel.js",
+      "bytes": 21541,
+      "sha256": "e6ee690dc78617aae14057aa2d28685b8f03b657fa4eda8fc37be18ba156fe0e"
+    },
+    {
+      "file": "assets/js/trajectory-runtime.js",
+      "bytes": 23560,
+      "sha256": "fd5cc0de6ab7a293f213ad021b532f412026952047ef13357adedb706bbf5fe7"
+    },
+    {
+      "file": "assets/js/workshop-panel.js",
+      "bytes": 11235,
+      "sha256": "b239dc691018d141b8c225813d0bbf3ce02d31854e02164c41beb019e8156797"
+    },
+    {
+      "file": "assets/js/workshop.js",
+      "bytes": 12447,
+      "sha256": "96da496e4d90e88d77d96778a159608bd7d98e95de9bb5ff46f3da524624a684"
+    },
+    {
+      "file": "index.html",
+      "bytes": 129143,
+      "sha256": "89924c1d3569a9974404863b81e668275c5a41a58b854bca6b6862918e0a0895"
+    },
+    {
+      "file": "tests/aggregate-galpon-chain-balance.cjs",
+      "bytes": 17598,
+      "sha256": "a67258b8d379d76786888d63bdcfe4d0578743014160c844dc3db9eb4817e3c8"
+    },
+    {
+      "file": "tests/articulated-grab.test.cjs",
+      "bytes": 11566,
+      "sha256": "508cc3bbd3cbe47375ae10a3603f0483e83db39a9e2b770e290a76abc5445119"
+    },
+    {
+      "file": "tests/assembly-broadphase.test.cjs",
+      "bytes": 2781,
+      "sha256": "519a07cd19912164d33f35e402b517ffc586e686e7db851160c279255f337417"
+    },
+    {
+      "file": "tests/automation.test.cjs",
+      "bytes": 7988,
+      "sha256": "0872b4b387ecaf1a3be071ce5abae434f9c37e5663cd94f045ff27ad8daa1602"
+    },
+    {
+      "file": "tests/battery-capacity.test.cjs",
+      "bytes": 7770,
+      "sha256": "5a35da930d4ed5eec60b4857c215720ea2c1ccad5b2c34bbcbc8b8f1115d96a8"
+    },
+    {
+      "file": "tests/battery-geometry-cache.test.cjs",
+      "bytes": 9584,
+      "sha256": "ce6e3b5e20e93ca7004305aaf7dc7257456fd2fcde851adf3e4bcfdb36d6875d"
+    },
+    {
+      "file": "tests/battery-liquid-integration.test.cjs",
+      "bytes": 8023,
+      "sha256": "7a756212cea1842f8943fbe46bbd62b0b267f03da261ac6a787ad28af09ce0f1"
+    },
+    {
+      "file": "tests/battery-liquid.test.cjs",
+      "bytes": 6684,
+      "sha256": "56c5a7691c6bbdf2ecb943ba1295b2279cc23d1fe40938a1a4dc86f3f7c61e26"
+    },
+    {
+      "file": "tests/benchmark-all-elements.cjs",
+      "bytes": 4710,
+      "sha256": "0acc5e82d74ab53883d44e14ab1f4a2d3e9ff34c5a8e268e7eb6005149dd6895"
+    },
+    {
+      "file": "tests/benchmark-architecture-audit.cjs",
+      "bytes": 9465,
+      "sha256": "825f3c34b42395d455ed293bc56424aac5489f90cf4af1e5af190bbffcaba9d3"
+    },
+    {
+      "file": "tests/benchmark-battery-geometry.cjs",
+      "bytes": 3883,
+      "sha256": "9d4943cfc8d98b95f615c8970189fc8b659dbb37ea1a1853918ebd2d5558d940"
+    },
+    {
+      "file": "tests/benchmark-contact-matrix.cjs",
+      "bytes": 18442,
+      "sha256": "679fd4b9be7d7657628865d606f00df602ab485b79de6e5d925c9db80c38ecf0"
+    },
+    {
+      "file": "tests/benchmark-conveyor-cache.cjs",
+      "bytes": 4100,
+      "sha256": "c2a48f281300ca306554ef7b87a5ae9d4f0a7486fcf9a4d6ebd86dd654fbe9ee"
+    },
+    {
+      "file": "tests/benchmark-cpu-architecture.cjs",
+      "bytes": 21471,
+      "sha256": "8f76a45bb9e4892798fbc9147f4aca787e414fca689ca4de29ed69bf66e09772"
+    },
+    {
+      "file": "tests/benchmark-cpu-browser.cjs",
+      "bytes": 11952,
+      "sha256": "6e8ad82688f46fad73bae01f379ca4e56265c3d05fd69fb38c472aca2dbf613f"
+    },
+    {
+      "file": "tests/benchmark-cpu-interactions.cjs",
+      "bytes": 21114,
+      "sha256": "d263b299099bd005376de0753759f8acd66d42ab8d52f67e0ac470827300fa9c"
+    },
+    {
+      "file": "tests/benchmark-culling.cjs",
+      "bytes": 10612,
+      "sha256": "d1dacd302cd71909f6095c3b2ebfd20ae6b0ea131af88ffa1f46da0f6c096004"
+    },
+    {
+      "file": "tests/benchmark-families.cjs",
+      "bytes": 7113,
+      "sha256": "2c28ff25bb868b907a0036bdd873f6073de8fe93944ce1d5e1413e4b4d5dd2e6"
+    },
+    {
+      "file": "tests/benchmark-family-grab.cjs",
+      "bytes": 6482,
+      "sha256": "54762b353465232be6d9d998ae1bba844c3f53fe8e39f322b4f2f2337478fe45"
+    },
+    {
+      "file": "tests/benchmark-galpon-browser.cjs",
+      "bytes": 11004,
+      "sha256": "8b0c4ae6b48c1362fc0348b01aace44795666d7c66e56199412e8becc56572b3"
+    },
+    {
+      "file": "tests/benchmark-galpon-chain-browser.cjs",
+      "bytes": 13769,
+      "sha256": "f9ced1fa629fe37d004c54f923744e22ae100ab487ea6cf48f7d0bddbe55d00c"
+    },
+    {
+      "file": "tests/benchmark-galpon-chain-load-browser.cjs",
+      "bytes": 18301,
+      "sha256": "f91f39cb3d1dc010ba66057323cb0a7ccdbe0cbfd8bb63a19de3a7610497a9ce"
+    },
+    {
+      "file": "tests/benchmark-galpon-chain-restored-browser.cjs",
+      "bytes": 11793,
+      "sha256": "ba6f85ffd67b68e6f2b250e61195d9d947a15a650d8fbe28c25e65ebdd87362b"
+    },
+    {
+      "file": "tests/benchmark-galpon-chain.cjs",
+      "bytes": 16480,
+      "sha256": "c01ed9d0649eb0fbcb303d06f356ef312ace292d8fb6775db3639a97e9ed494d"
+    },
+    {
+      "file": "tests/benchmark-galpon-drone-route.cjs",
+      "bytes": 19851,
+      "sha256": "985d1af0f4e951ff14b971f781e465c106a75b3dfa75012004dc67d5892d45f5"
+    },
+    {
+      "file": "tests/benchmark-galpon-drone-teaching-browser.cjs",
+      "bytes": 15225,
+      "sha256": "af4590960c4bf9449e08eff375406e8d0e87064343da03407478f490fe7e8a6d"
+    },
+    {
+      "file": "tests/benchmark-galpon-factory-route.cjs",
+      "bytes": 9760,
+      "sha256": "d7b4bc09ed2eed7c90ab246639bf96b92ab66716abdd179399e23682963a5e45"
+    },
+    {
+      "file": "tests/benchmark-galpon-feed-drones.cjs",
+      "bytes": 21068,
+      "sha256": "b35d602c9981c896e0b9112915df92a01bfea1225ddbc69f1677aaede4803001"
+    },
+    {
+      "file": "tests/benchmark-galpon.cjs",
+      "bytes": 4957,
+      "sha256": "73216bb00d125deca23c044f1ac05d2258559201066a123be45661ad075c712a"
+    },
+    {
+      "file": "tests/benchmark-ground-contacts.cjs",
+      "bytes": 7024,
+      "sha256": "4d774fc094eeabdbb9d1f5895210f6e2891f11ed99a281433c287f6967ff69c9"
+    },
+    {
+      "file": "tests/benchmark-large-assemblies.cjs",
+      "bytes": 3871,
+      "sha256": "0e46363dad942deb9c55971ac0d93be539df93eca856d2439fdabec4bfd6cc2a"
+    },
+    {
+      "file": "tests/benchmark-mechanical-cache.cjs",
+      "bytes": 5881,
+      "sha256": "e49ad70a10d192d8954058e6fe45596b9938d5507bf61615b57324ba8a43afd6"
+    },
+    {
+      "file": "tests/benchmark-mechanism-units.cjs",
+      "bytes": 4332,
+      "sha256": "e9fec6ee04bf0bb4444cdf6dbfa4eae2e7b196661611db1e51ee483e1c577131"
+    },
+    {
+      "file": "tests/benchmark-mood-defaults.cjs",
+      "bytes": 1836,
+      "sha256": "986033b4b92d98733f61b2faef3111ebcf1d1a7cdfff9d964cb48815c448baa0"
+    },
+    {
+      "file": "tests/benchmark-pressure-pad-query.cjs",
+      "bytes": 12986,
+      "sha256": "e3cf3813c83cfb49d233e63ceffeb62a3fee4531a8ad89ca5694f6a3462e7346"
+    },
+    {
+      "file": "tests/benchmark-preview-disassembly.cjs",
+      "bytes": 2038,
+      "sha256": "92dbc7fa7e15ecd0c184c3a43c0842b534457facffc7f4f339c99f0f13ac296c"
+    },
+    {
+      "file": "tests/benchmark-production-frequency.cjs",
+      "bytes": 19672,
+      "sha256": "22ed3e20d89a099a9109d262e15fd9318a255ffca9d68cf67ea663d49e7c3825"
+    },
+    {
+      "file": "tests/benchmark-query-memory.cjs",
+      "bytes": 6924,
+      "sha256": "91e81f2c4a8c64d0201285254890bb1bda68d60bca3e88a115cb2a200c92bea3"
+    },
+    {
+      "file": "tests/benchmark-rigid-render.cjs",
+      "bytes": 4882,
+      "sha256": "95e557cfacccbd2e33548c3c973e8b1755d4fbca157243167cde5d607505643a"
+    },
+    {
+      "file": "tests/benchmark-runtime-lookups.cjs",
+      "bytes": 3680,
+      "sha256": "1984274b768ebe6b4bb5dfa84a77045b2a22ca196f0942f801bce1802db1e583"
+    },
+    {
+      "file": "tests/benchmark-sap-broadphase.cjs",
+      "bytes": 14032,
+      "sha256": "7d88b6f1cb453a7d70557bc8375c6566fd564798cef03e9f462fc9d3fd4da82f"
+    },
+    {
+      "file": "tests/benchmark-sap-crossover.cjs",
+      "bytes": 11446,
+      "sha256": "2a3ce197266be6fc3304ea4229c73fe3618646a5589e9bafd7dd0be6a35b4de8"
+    },
+    {
+      "file": "tests/benchmark-save-games.cjs",
+      "bytes": 17990,
+      "sha256": "7393f2ffe3a0c4fbc6f6ecf36755c3104cc3e10114b52d33dfd24377a20290d8"
+    },
+    {
+      "file": "tests/benchmark-save-memory.cjs",
+      "bytes": 13165,
+      "sha256": "d45ec1d18f49f3fd4f97a3a0b616b772eda8f61fbc386b28d542f84fd9db6752"
+    },
+    {
+      "file": "tests/benchmark-selection-cache.cjs",
+      "bytes": 2524,
+      "sha256": "3a422441a5675d271ad36a352d78fdf08cc2c5c87d2fb1789358d56d94831065"
+    },
+    {
+      "file": "tests/benchmark-selection-conveyors.cjs",
+      "bytes": 8633,
+      "sha256": "8f928aabb9e27a56245b3b2591e80b162ef677abb86f48396f266cda9c7f71c3"
+    },
+    {
+      "file": "tests/benchmark-startup.cjs",
+      "bytes": 19087,
+      "sha256": "8965b491cd2f146928f06c74bbf8ca954c6659d720fe28e2dfa10e7afa062562"
+    },
+    {
+      "file": "tests/boot.test.cjs",
+      "bytes": 20287,
+      "sha256": "4fbe14d4e7a89359e75ca9174593bd52c8390f6c9ec0f732f0a5cf4f6f16f092"
+    },
+    {
+      "file": "tests/box-outline-render.test.cjs",
+      "bytes": 7478,
+      "sha256": "8c1d6d720107d29c8f15e0bcc50b296d0533bc369f34aa7d31202d3aeda038f4"
+    },
+    {
+      "file": "tests/camera-input.test.cjs",
+      "bytes": 12350,
+      "sha256": "f66eb1c42103293b2330db1bf5effc13ab2667b88c9ca4ff147a42c31ab4650a"
+    },
+    {
+      "file": "tests/camera-motion.test.cjs",
+      "bytes": 5420,
+      "sha256": "a2e3ec5d955f8705593aa6f91be94dd15853f5d11b5a5a9faec29b3182f02654"
+    },
+    {
+      "file": "tests/camera-pacing.test.cjs",
+      "bytes": 4186,
+      "sha256": "517b284c85066a733c76b10e16dd89aef0f4c5900cff5015de153d675802a1a1"
+    },
+    {
+      "file": "tests/campaign-supply.test.cjs",
+      "bytes": 17504,
+      "sha256": "8c89135d795cf123d9d04bc7d218d24caad41bae2cc6add94c9bf3cad69448fc"
+    },
+    {
+      "file": "tests/cannon-geometry-compatibility.test.cjs",
+      "bytes": 4128,
+      "sha256": "5dfe09bbdc2b300c890a91da2d26ef46288368700a6e4dcc2513173010279c23"
+    },
+    {
+      "file": "tests/capture-battery-frame.cjs",
+      "bytes": 7853,
+      "sha256": "f3e2926e1577da164d07717cae50caf67aeeb4df6e9758d0cd6eae068c9a4519"
+    },
+    {
+      "file": "tests/capture-culling-frame.cjs",
+      "bytes": 7680,
+      "sha256": "703bb2dc9d9fce950f080426a137a4309bcf19adde5f21101062ce52edda6255"
+    },
+    {
+      "file": "tests/capture-factory-passage-frame.cjs",
+      "bytes": 9231,
+      "sha256": "9c8bd8d1bd65c95bbef0f683ec34fc9d3320df36837b47936079df1b0aff26ed"
+    },
+    {
+      "file": "tests/capture-families-frame.cjs",
+      "bytes": 15575,
+      "sha256": "31574681461a4b6d3827c30c6fb550caa7c3f7a47413a8936600fbc5e259bf5e"
+    },
+    {
+      "file": "tests/capture-furniture-frame.cjs",
+      "bytes": 6381,
+      "sha256": "ea5c9706636717027db7ebc5d8f7b89b920c2468386b1dbba1a1c717c8efdc5f"
+    },
+    {
+      "file": "tests/capture-glass.cjs",
+      "bytes": 4532,
+      "sha256": "ef25a88753ad698e9a38b3baf10a007581aba3244c4ca7e21a9cfa0653f70c3b"
+    },
+    {
+      "file": "tests/capture-opening-frame.cjs",
+      "bytes": 5705,
+      "sha256": "e7e8746557f15ebbcd7fc3299586ec18492e29a8b458631560e08875d4f1f091"
+    },
+    {
+      "file": "tests/capture-power-frame.cjs",
+      "bytes": 6668,
+      "sha256": "5ff3ec2f1a2d8edfe76fd46f5b0a339144766ecf6d62e675a0918a2af54fe5d4"
+    },
+    {
+      "file": "tests/capture-robot-arm-frame.cjs",
+      "bytes": 34188,
+      "sha256": "db574b1136a972cbdccc04129d9dadbf5cb994120734be0b7e8464faea59a0c9"
+    },
+    {
+      "file": "tests/compound-narrowphase.test.cjs",
+      "bytes": 6972,
+      "sha256": "70d975aa9654052db2427b10ed0cc0cc0067db75b279bfd6c6ddae4bcd45c66f"
+    },
+    {
+      "file": "tests/contact-matrix.test.cjs",
+      "bytes": 28304,
+      "sha256": "7b8471c98979279c1105f0b9a2ea8c49af9ad24c087d1c447fa4ab24728a44c1"
+    },
+    {
+      "file": "tests/contact-sensors.test.cjs",
+      "bytes": 7966,
+      "sha256": "1f5f2562c803073d2c67641a6428151adc7a76cd7171bf12d966fbd91ca1fcc0"
+    },
+    {
+      "file": "tests/context-menu-input.test.cjs",
+      "bytes": 4881,
+      "sha256": "7e7c6f7b50fbe18e1b7f74172308cb2b6d86ab5cce4b6d83f1ffdb552f4e8083"
+    },
+    {
+      "file": "tests/context-menu-live.test.cjs",
+      "bytes": 9466,
+      "sha256": "69bc8e82bc5929b2c1bab71dd40bba7a8d2980ef46d82074ce3e41065ed6f33a"
+    },
+    {
+      "file": "tests/controls-integration.test.cjs",
+      "bytes": 9694,
+      "sha256": "14872a5c3eb1372ec2ae327e2cb15829bc19969f7e299d978e9c02602b3561b6"
+    },
+    {
+      "file": "tests/controls.test.cjs",
+      "bytes": 3962,
+      "sha256": "cfe9fe68185f7c8e1bee07cb51ea825896e6ff18bf42001d223b7e04132d83cc"
+    },
+    {
+      "file": "tests/conveyor-collisions.test.cjs",
+      "bytes": 6464,
+      "sha256": "36d6699fb10359b661730e7622590c8c4c50d16024e3a108006826be1984e89f"
+    },
+    {
+      "file": "tests/conveyor-compact-data.test.cjs",
+      "bytes": 6483,
+      "sha256": "04f36fe0045e54e0b552d04571a9f5f706529f5d91774263cfcc092e5901fb7a"
+    },
+    {
+      "file": "tests/conveyor-contact-rejection.test.cjs",
+      "bytes": 2128,
+      "sha256": "666bed4954b7a53690d2aff053b8735bff0c23b65f06ca6d943b48610a7a088e"
+    },
+    {
+      "file": "tests/conveyor-flight-traction.test.cjs",
+      "bytes": 4151,
+      "sha256": "5a216f341565bad1ea1e5e47347ccd8185c75f6622b5aa113d6ad4e615febed6"
+    },
+    {
+      "file": "tests/conveyor-impact.test.cjs",
+      "bytes": 10823,
+      "sha256": "f5dfc4a1ba975f98297a5f3dfbbabfcc87518238776cbba928f1375ec432bf81"
+    },
+    {
+      "file": "tests/conveyor-join-clearance.test.cjs",
+      "bytes": 3641,
+      "sha256": "05b8f95f2221afe62827e455f07f3d4974f656eac504e197b9179208009fff93"
+    },
+    {
+      "file": "tests/conveyor-modules.test.cjs",
+      "bytes": 11959,
+      "sha256": "ddf88a833b0166b52af7cc03dfdec386fbed7b517811be18594bb1f45cd5dda2"
+    },
+    {
+      "file": "tests/conveyor-panel.test.cjs",
+      "bytes": 7534,
+      "sha256": "e61ccdfc9938d0939739ea1fdaabd400c80f68beb31046c8cd1de3e6f001cdf6"
+    },
+    {
+      "file": "tests/conveyor-placement.test.cjs",
+      "bytes": 18786,
+      "sha256": "4620b130bcf5d954c5c253f95f33ecd99e1b6aae1428e4fb7030a1e23bee858c"
+    },
+    {
+      "file": "tests/conveyor-render-cache.test.cjs",
+      "bytes": 3247,
+      "sha256": "c8b16ef61625373db9299df84a8fbd25454aaf23bd176064141d5f78519f69cf"
+    },
+    {
+      "file": "tests/conveyor-review.test.cjs",
+      "bytes": 4020,
+      "sha256": "4efba90e2c7b2461a14508979afeb94b71ffb618d78beeca7fd913887990af26"
+    },
+    {
+      "file": "tests/conveyor-runtime.test.cjs",
+      "bytes": 7069,
+      "sha256": "a681d176b54020803cdbf619ba099a6ca8e084c9a49eba25256b91df0fcb8913"
+    },
+    {
+      "file": "tests/conveyor-storage.test.cjs",
+      "bytes": 16777,
+      "sha256": "0e7eaeec5ac2cf78cac206e228c9fdb41f7dffe4c1eb74369476a966c48eec01"
+    },
+    {
+      "file": "tests/conveyor-template.test.cjs",
+      "bytes": 3538,
+      "sha256": "1d4b587210a6ad912d2bfa0e52ac1e465beeca9a091528746b24be3c1b2a51a7"
+    },
+    {
+      "file": "tests/conveyor-virtual-integration.test.cjs",
+      "bytes": 6583,
+      "sha256": "8ee9c3fd2de389df9bee0a03da8a4995159465de4e8ce52de6a6c26fb0f06ec8"
+    },
+    {
+      "file": "tests/conveyor-virtual-lifecycle.test.cjs",
+      "bytes": 11171,
+      "sha256": "800a2656020e0ba4c73ff778738dc4b9a1693f8d5d09162a2f0fa49ad887effd"
+    },
+    {
+      "file": "tests/conveyor-virtual-storage.test.cjs",
+      "bytes": 6584,
+      "sha256": "d50e6140cc1d2f358d6ff6e68947a106a1aa609c5fe970fc813d32db0f01c105"
+    },
+    {
+      "file": "tests/cooling-spatial-culling.test.cjs",
+      "bytes": 5937,
+      "sha256": "8b3d6d912e288c5de5c95244e89c43944263c6a188324ad307e3b92824a4f1bf"
+    },
+    {
+      "file": "tests/cpu-audit-fixtures.cjs",
+      "bytes": 7052,
+      "sha256": "36b6aa95a16445a9ef2af8015f6f19432c0c814340d6b6aa06abd234dda8b051"
+    },
+    {
+      "file": "tests/creation-placement.test.cjs",
+      "bytes": 10617,
+      "sha256": "0174f85ec63bf55d46b6b3c08197c3efa2062ada284f68a72802cbf5dd1c7e24"
+    },
+    {
+      "file": "tests/crouch.test.cjs",
+      "bytes": 2976,
+      "sha256": "957b0c4d2f6253784e47056d7d166c8868efaf3f4389dcb72b3d25ae882af85d"
+    },
+    {
+      "file": "tests/culling-integration.test.cjs",
+      "bytes": 18079,
+      "sha256": "fe108f90330ebc60ab7fafd48becf6aff962166fdb5a69586c1fb4acc0fe9af1"
+    },
+    {
+      "file": "tests/culling-math.test.cjs",
+      "bytes": 11561,
+      "sha256": "167b61024bd13f1d0d6ee5d8c3f8371fde27bddeca2b254f58d18cc5202e7eae"
+    },
+    {
+      "file": "tests/culling-preferences.test.cjs",
+      "bytes": 3893,
+      "sha256": "0371e4d491c248a0bd74ae2dd6573422c0249104f0be0417c555c43d78a26310"
+    },
+    {
+      "file": "tests/diagnose-benchmark-retention.cjs",
+      "bytes": 4758,
+      "sha256": "cb7b8fed8427d0a928dbe84687c690be2cb5aad5bf760583393500a7c0295ac9"
+    },
+    {
+      "file": "tests/dialogue-timing.test.cjs",
+      "bytes": 1924,
+      "sha256": "582ea30a18a561fca8e959ea65b265e99d892ce18f1013474eab9601b1938848"
+    },
+    {
+      "file": "tests/encounter-bubbles.test.cjs",
+      "bytes": 2368,
+      "sha256": "39b780f96f12d2a88b5de85e70b0bc2c8d63251bb024b09261ced0655e5834ac"
+    },
+    {
+      "file": "tests/external-battery-energy.test.cjs",
+      "bytes": 11825,
+      "sha256": "f6abb3138f2aebdb9115e6e7f75a291a4fd27dd75ccfffe23d89dc1742b953f6"
+    },
+    {
+      "file": "tests/external-battery-render.test.cjs",
+      "bytes": 3017,
+      "sha256": "cc1a72037ed60b72ee97196b7ecc0224e568c94705356e13338f72616ba59c5e"
+    },
+    {
+      "file": "tests/external-battery-storage.test.cjs",
+      "bytes": 9464,
+      "sha256": "61fae7feaa66a25e7b6bf87ee100697b2a0ec293e90ed9c66d3eef677dbfe920"
+    },
+    {
+      "file": "tests/external-battery-workshop-ui.test.cjs",
+      "bytes": 6891,
+      "sha256": "ff3bdf6c252eb0a4b5c523061527a0a25f2d0a2c7ad78e29d800ec17f1bd2214"
+    },
+    {
+      "file": "tests/factory-passage-integration.test.cjs",
+      "bytes": 10456,
+      "sha256": "6b4e7af1749317d6893324b2be6fd13f2f0fd56259ae977cfbdee7f9f9d31568"
+    },
+    {
+      "file": "tests/factory-passage.test.cjs",
+      "bytes": 8990,
+      "sha256": "09b8e56b837e42ea1ed8dc95108ce812b19b09c808b2cfb70e63d9c060f47369"
+    },
+    {
+      "file": "tests/families-integration.test.cjs",
+      "bytes": 27894,
+      "sha256": "a239026491ec474fe2f7aa55984a211f56be8dc562082db5400f192e8aa41512"
+    },
+    {
+      "file": "tests/families-ui.test.cjs",
+      "bytes": 10002,
+      "sha256": "193a826baa0eef4fe071cdc7d61787578a59258651b002f804ebeca3423ef8c0"
+    },
+    {
+      "file": "tests/families.test.cjs",
+      "bytes": 13197,
+      "sha256": "b6b69e93e2e965453ee91f77834486cd37047b6c8ecf56eebda16ef8a4b40e3f"
+    },
+    {
+      "file": "tests/family-grab.test.cjs",
+      "bytes": 17130,
+      "sha256": "b9e22f50ae4662bed6f8a99659d6a8b7b50873b82835bb38e5f62cd2af0f36e1"
+    },
+    {
+      "file": "tests/family-sets.test.cjs",
+      "bytes": 5535,
+      "sha256": "1501cd23d19097b2cfef95227361b2be474f79e7ece4f06d1268e625b424d32a"
+    },
+    {
+      "file": "tests/fixtures/galpon-arm-docked-pose.json",
+      "bytes": 3147,
+      "sha256": "77df4874d03521764b632af738318d54e2a3c3940d2a09817d9f1feec50dd904"
+    },
+    {
+      "file": "tests/fixtures/galpon-arm-parked-pose.json",
+      "bytes": 5247,
+      "sha256": "ab5e1d8d3af120c83a0325e2a278aede1068e54490ecad6cf2feee3b7c2cfb0e"
+    },
+    {
+      "file": "tests/fixtures/galpon-arm-resting-pose.json",
+      "bytes": 3691,
+      "sha256": "cb2355eb554f9f950bd74e3abfdf02ea2f67172a8f3e51fd1419a330b0c954b9"
+    },
+    {
+      "file": "tests/fixtures/galpon-source-return-block.json",
+      "bytes": 15157,
+      "sha256": "4a637f803f2841c51c44666a0e7505d4efe78d5f04fe7fac4865b04760bbc69d"
+    },
+    {
+      "file": "tests/flight-mechanism-fixture.cjs",
+      "bytes": 2130,
+      "sha256": "5f7ce2234445405142755749d761ea61bc25376c8bb416cb63e091bedd9275bb"
+    },
+    {
+      "file": "tests/flight-mechanisms.test.cjs",
+      "bytes": 11598,
+      "sha256": "093d17f5a3dfbb8a5afcf54d60c3d0cc8d3861600434b90a4c7826f4b42d77f0"
+    },
+    {
+      "file": "tests/footsteps-integration.test.cjs",
+      "bytes": 2749,
+      "sha256": "dc52ff23818e0cc83868773d900bee82420e2aac2622778d886d8dddcfc82fbe"
+    },
+    {
+      "file": "tests/footsteps.test.cjs",
+      "bytes": 7528,
+      "sha256": "9c1c31d44f083b11be02797822805624edbf94abe5ed8a7341d0e94f1c3d5086"
+    },
+    {
+      "file": "tests/furniture-input.test.cjs",
+      "bytes": 5638,
+      "sha256": "25a860629b3523b296972370dce73034c0417b658b37eecc50bd8dc296ae267b"
+    },
+    {
+      "file": "tests/furniture-models.test.cjs",
+      "bytes": 3610,
+      "sha256": "df897e65f9f84eac1ac579ab6e201cef94c74d628a8def9a9747b04d555b06fa"
+    },
+    {
+      "file": "tests/galpon-chain-activity.test.cjs",
+      "bytes": 4028,
+      "sha256": "9239fa446d78b1008df5c7bbd1351a052d0f311342461962c3be111f4129fad1"
+    },
+    {
+      "file": "tests/galpon-chain-arm-cold-feed.test.cjs",
+      "bytes": 4717,
+      "sha256": "e828fddd8abf7853f19bf55f701eb0ca364d498bcb27ad25abebe944ddb2ca2d"
+    },
+    {
+      "file": "tests/galpon-chain-arm-pedestal.test.cjs",
+      "bytes": 6388,
+      "sha256": "4b169bf2afae6789c6361b9e212bb4735b65bb2361ea3f1e1d6e7f113bca8f1a"
+    },
+    {
+      "file": "tests/galpon-chain-arm.test.cjs",
+      "bytes": 22938,
+      "sha256": "395c5cddcfd2f501a4364670c2a8924aa971254e81fe8b5be53f4514f4ae91f5"
+    },
+    {
+      "file": "tests/galpon-chain-drone.test.cjs",
+      "bytes": 18520,
+      "sha256": "7c9472692580f07ace95195cd66e8717080daa36e5f52fa1f365dd05e5d71936"
+    },
+    {
+      "file": "tests/galpon-chain-fixture.cjs",
+      "bytes": 6369,
+      "sha256": "25b7ecbf1486deb98881c5d58c458c530739f8ec957790b1e3a062e3e775f44a"
+    },
+    {
+      "file": "tests/galpon-chain-integration.test.cjs",
+      "bytes": 16655,
+      "sha256": "5596e2ea7dcab5ce03f74675019315b7d9674a32ec679d8a8daddf7f325b6a34"
+    },
+    {
+      "file": "tests/galpon-chain-model.test.cjs",
+      "bytes": 27029,
+      "sha256": "60a4b44fd4e4d8dada8edf72f06cae2590c0007d7c1a1bef76ab182e10bb2d1d"
+    },
+    {
+      "file": "tests/galpon-chain-reuse.test.cjs",
+      "bytes": 9122,
+      "sha256": "5bbac197829c56ee033c82542b79e81cb54300c56cb4b20c0c5c8728103d5941"
+    },
+    {
+      "file": "tests/galpon-drone-logistics.test.cjs",
+      "bytes": 23217,
+      "sha256": "e3978cc828fcc84c0edcc09a2509d1ec0f0eec5d4a08fabaaa0efe297933afe7"
+    },
+    {
+      "file": "tests/galpon-drone-sharing.test.cjs",
+      "bytes": 22762,
+      "sha256": "31633f7b7ac9d05990704daeb4e0e8fcd02860acecdcc701de284457db296374"
+    },
+    {
+      "file": "tests/galpon-energy.test.cjs",
+      "bytes": 3269,
+      "sha256": "3e03498e1d068b135c0fae9620702a7deda6f8d41c4eb71f6d86d59f18af926c"
+    },
+    {
+      "file": "tests/galpon-line.test.cjs",
+      "bytes": 7892,
+      "sha256": "986dcd74c3a3007a909114499d20d6e1f5c93b9b96ffdb25b292f8970a012727"
+    },
+    {
+      "file": "tests/galpon-logistics-model.test.cjs",
+      "bytes": 6095,
+      "sha256": "a8311ee4770914e1f4af3ee1a8e9e0b6b7d8c42f0ab7eac9dd27c74c5f46c485"
+    },
+    {
+      "file": "tests/galpon-menu.test.cjs",
+      "bytes": 3310,
+      "sha256": "eeaf78c0fdf9dcc84f4a3a743bafe8bcbdbb1a1a81c2d0927364b2b423699bca"
+    },
+    {
+      "file": "tests/galpon-permissions.test.cjs",
+      "bytes": 6538,
+      "sha256": "8292130b83b7a9febaecf6bcbec801f9d19e0875503d6bb531c4011217fd9774"
+    },
+    {
+      "file": "tests/galpon-power-chain.test.cjs",
+      "bytes": 14398,
+      "sha256": "68b7e762766dbe0eecc373fa680761fb37b00b83950ff445f56dd7234a839bd8"
+    },
+    {
+      "file": "tests/galpon-production.test.cjs",
+      "bytes": 8995,
+      "sha256": "f6f0672dd05348435d6837671653576527b576330aa0d7c3bc04a7b054aa0346"
+    },
+    {
+      "file": "tests/galpon-save.test.cjs",
+      "bytes": 10298,
+      "sha256": "4ebeb856059f729c649d424291c0faecdab6f83ac809cc3aed5d4a11dc3379d0"
+    },
+    {
+      "file": "tests/galpon-source-recovery.test.cjs",
+      "bytes": 2259,
+      "sha256": "e8857f01ca1e37be23b87c802f06e94c0274267816db20c4aa11960108c2a2e6"
+    },
+    {
+      "file": "tests/galpon-workers.test.cjs",
+      "bytes": 3306,
+      "sha256": "54be1dcf54dba824053edc49cdee40987009932b090d56a558f88e0f538f29ba"
+    },
+    {
+      "file": "tests/game-harness.cjs",
+      "bytes": 25798,
+      "sha256": "47dffb097d3dfe58f5d2e9cc28f8837f6951d9e6cd0f58c28263f8d3ece88c03"
+    },
+    {
+      "file": "tests/game-regression.test.cjs",
+      "bytes": 5946,
+      "sha256": "da18bb199c48f50fb36aac807f00ce1d6b6c6e88f93dc99988b727aa7093754a"
+    },
+    {
+      "file": "tests/glass-integration.test.cjs",
+      "bytes": 3540,
+      "sha256": "7511d995ac19502f4dda761daa3fb74b2da224e1077f7f486242a9449539c7fa"
+    },
+    {
+      "file": "tests/glass.test.cjs",
+      "bytes": 5707,
+      "sha256": "2bf692872b6a5138b1e69ca537e3603eff5bf1635aa5c3396c141f5521170572"
+    },
+    {
+      "file": "tests/grab-assembly-batch.test.cjs",
+      "bytes": 6699,
+      "sha256": "fb8c13daab34d8018a89e0d7cc3a2d7c2d1b7aa901d5fad4ea0552c4776b00e5"
+    },
+    {
+      "file": "tests/grab-speed.test.cjs",
+      "bytes": 5633,
+      "sha256": "60b6d4e6b343351fa7eacdfded216f8929a560d70bc2f7b56ea1f67689f64969"
+    },
+    {
+      "file": "tests/graphics.test.cjs",
+      "bytes": 2857,
+      "sha256": "6cd3fdc26b11d3b5e70b190351ed02fb2e5c0535e1b6426f14463a33abc441be"
+    },
+    {
+      "file": "tests/grip-boundary-recovery.test.cjs",
+      "bytes": 5269,
+      "sha256": "05cdbaa6deb978d1e325cf2898fd9f33c19b1ce182c7a90a29718486397c64e2"
+    },
+    {
+      "file": "tests/grip-lazy-sat.test.cjs",
+      "bytes": 2548,
+      "sha256": "caf89c7384057db87bca020c03b3a83f843859caaffce99393ae2476e2355627"
+    },
+    {
+      "file": "tests/grip-rotation-envelope.test.cjs",
+      "bytes": 2875,
+      "sha256": "0e682ab08bd8b3508dc8ecc0217cbc6ab7100346214066d98a0328332f671d87"
+    },
+    {
+      "file": "tests/guide-audio-integration.test.cjs",
+      "bytes": 3015,
+      "sha256": "196ad9a23c5ce28609620f02eb4e9740e22de0ec941d2f96d49307153b1527d2"
+    },
+    {
+      "file": "tests/guide-audio.test.cjs",
+      "bytes": 7115,
+      "sha256": "147958188eb51116e67378f874c5c1ad48b963f2c860b93cea913a1b83e901ff"
+    },
+    {
+      "file": "tests/held-face-rotation.test.cjs",
+      "bytes": 19207,
+      "sha256": "d4e4146815ba3013088745859ab2a2fcbb00ea73cb872e74df62475514a6d15f"
+    },
+    {
+      "file": "tests/held-focus.test.cjs",
+      "bytes": 8394,
+      "sha256": "5693621829881e3d927c8abcf248f62b07c93f4afb1c8e284dc227fc67d89164"
+    },
+    {
+      "file": "tests/held-interactions.test.cjs",
+      "bytes": 2017,
+      "sha256": "c6449e225f2f7022421e2d9a57ccda9163aa4089e17152f0a6e280ef7eee97b1"
+    },
+    {
+      "file": "tests/integration-campaign-recovery.test.cjs",
+      "bytes": 2351,
+      "sha256": "aa0743b61720997f6765c8def8b454363e92b31958e2afc455447c13c09b8a49"
+    },
+    {
+      "file": "tests/integration-energy.test.cjs",
+      "bytes": 3102,
+      "sha256": "1e181b2da470091348f34e72ed326f504fb50633dfaa61fa4c4f4809a6f67e3b"
+    },
+    {
+      "file": "tests/integration-sensor-lifecycle.test.cjs",
+      "bytes": 4761,
+      "sha256": "2aa91a59f3ca3b87915a73be8e691cd42caf55745722e9a157c7f14669437fac"
+    },
+    {
+      "file": "tests/join-audio-integration.test.cjs",
+      "bytes": 4477,
+      "sha256": "b0d402aca8a956716839f837ada50733f3e9de0ef2d2bd8568531306e9c9d6c6"
+    },
+    {
+      "file": "tests/join-audio.test.cjs",
+      "bytes": 5660,
+      "sha256": "57ef8af9c7f4aee480a4a8cc75e3aa24d5eee5456f83cf45cf6b87093631b3b6"
+    },
+    {
+      "file": "tests/lab-limits.test.cjs",
+      "bytes": 3452,
+      "sha256": "b1dbcb1397cc5783381dac34daa72ed1ef620730217357b4ac3b424d8f261c57"
+    },
+    {
+      "file": "tests/lab-save-runtime.test.cjs",
+      "bytes": 13015,
+      "sha256": "c5921543c9618273245a76efcb12b1e3936ebcbd6638a90ca7e833b7ab8ad45f"
+    },
+    {
+      "file": "tests/landing-projection.test.cjs",
+      "bytes": 1325,
+      "sha256": "14bf479cfedf63d846301c632fde26bc55010b504ac5276328050d10029c9f4a"
+    },
+    {
+      "file": "tests/large-assembly-joins.test.cjs",
+      "bytes": 2310,
+      "sha256": "812270c6fb2ee11145446d34abbc8672fd9b0004ccb9b8323fa3672f5819dd66"
+    },
+    {
+      "file": "tests/large-collision-query.test.cjs",
+      "bytes": 3510,
+      "sha256": "2ee72326c125600988a05640699ac0b0b32c3129a2f741402a0049ed0889c4bd"
+    },
+    {
+      "file": "tests/live-mechanism-sensors.test.cjs",
+      "bytes": 5446,
+      "sha256": "b80fa13213e0478d89eae222b4e88fec7389c0c558c103694e289d432e8579c4"
+    },
+    {
+      "file": "tests/mechanical-component-expansion.test.cjs",
+      "bytes": 3490,
+      "sha256": "fe5d93acde134eb4495ce69b85aaf26b446a59d294208a7de929863c92da9312"
+    },
+    {
+      "file": "tests/mechanical-floor-impact.test.cjs",
+      "bytes": 7098,
+      "sha256": "cdd9eb3f0edf0cc47a37c7296d3baad2a92556c63f292fca20f5176c7f796ae1"
+    },
+    {
+      "file": "tests/mechanical-mood-pose.test.cjs",
+      "bytes": 2658,
+      "sha256": "4e03551c24c361dcc9cac4b646423c54aad84897bd25c2cf08618d83a1a01d08"
+    },
+    {
+      "file": "tests/mechanical-rest.test.cjs",
+      "bytes": 9107,
+      "sha256": "ae145d86834c156a66ed3ccf94c71fcc6517087393f9c18ba8e030fbebf3595a"
+    },
+    {
+      "file": "tests/mechanism-blueprint.test.cjs",
+      "bytes": 8314,
+      "sha256": "3219b679c9170d8ff32658cefc454b25b96c4cc1049a4840464a87d7d6f00a87"
+    },
+    {
+      "file": "tests/mechanism-restart.test.cjs",
+      "bytes": 5973,
+      "sha256": "f99aca7897767a837130a953ce23fcb2b48d1e54c17f9000a5e7d7e7d6516288"
+    },
+    {
+      "file": "tests/modular-assembly.test.cjs",
+      "bytes": 14225,
+      "sha256": "f21002b2f6df676ad98ee7bdecca5225c6fbc1b99decd1a811de7aab5b46f733"
+    },
+    {
+      "file": "tests/music.test.cjs",
+      "bytes": 6093,
+      "sha256": "369441bf7c00a7af3be1821529791f0b9557b239efab4166cf7673b5ecaf6a50"
+    },
+    {
+      "file": "tests/opening-campaign-integration.test.cjs",
+      "bytes": 21325,
+      "sha256": "d4403363f3ca88306fedc678c1690e37593a71533da25d367b5806417db0ca3c"
+    },
+    {
+      "file": "tests/opening-menu.test.cjs",
+      "bytes": 3442,
+      "sha256": "87237d0e065f70d3d16a407c534375e957de4038a199542f3796e714493461b9"
+    },
+    {
+      "file": "tests/opening-protection.test.cjs",
+      "bytes": 11954,
+      "sha256": "869a3acad79b8df9de1d39db7d2b8214d14d84f3e0b4dd7e05eee79c0cf1efdf"
+    },
+    {
+      "file": "tests/opening-save-validation.test.cjs",
+      "bytes": 13056,
+      "sha256": "6fea0f6eb3bf5673208bae37e881d14df1549c3c135691af2b59467e1f77d402"
+    },
+    {
+      "file": "tests/opening.test.cjs",
+      "bytes": 6107,
+      "sha256": "87ca45fe8f5e17b056bc80305713a0a48984156185bbfb621c63ef82652f9687"
+    },
+    {
+      "file": "tests/organizers.test.cjs",
+      "bytes": 10244,
+      "sha256": "8691c48c87827726036527e98988ca5ddb959f687493cc9844755e16226e69e1"
+    },
+    {
+      "file": "tests/passive-conveyor-motion.test.cjs",
+      "bytes": 2962,
+      "sha256": "d9a694a83d39e564b378d5ed3b97a30d6622434785d5f162e31689b6c04b1627"
+    },
+    {
+      "file": "tests/physical-collision-cache.test.cjs",
+      "bytes": 5124,
+      "sha256": "e4ee55cd6d971996023e04961a411f136a152b8913e7d94281013816620544d6"
+    },
+    {
+      "file": "tests/physics-rate.test.cjs",
+      "bytes": 3777,
+      "sha256": "8f28bdc95b1b8ec2fef48492b922e2f8c7597ec801bb117b198a6b78710d0654"
+    },
+    {
+      "file": "tests/placement-scale.test.cjs",
+      "bytes": 6354,
+      "sha256": "73b2e54f4d191e83fe2c2ddf008bee9af18cce8fcef3136a4cf4814680016fd6"
+    },
+    {
+      "file": "tests/power-cable-inspection.test.cjs",
+      "bytes": 4041,
+      "sha256": "7a262f8bd3b368a3105ad4d08ca589cb284cedfbcf233a40dbe73dd46780863e"
+    },
+    {
+      "file": "tests/power-interactions.test.cjs",
+      "bytes": 17715,
+      "sha256": "0a122f25eeb672b74c84c91f93fa89d9e946da1c61d574834369a73b2978b6bc"
+    },
+    {
+      "file": "tests/power-network-cache.test.cjs",
+      "bytes": 13150,
+      "sha256": "18874983373f4e54166b0b1ce68945c6d36b450bd7ea86e8de70f200882cddb9"
+    },
+    {
+      "file": "tests/power-network.test.cjs",
+      "bytes": 11135,
+      "sha256": "f38880019d0853becffa0a292045cf53a795f477d847f6e258c7d5ee77a7a141"
+    },
+    {
+      "file": "tests/preferences.test.cjs",
+      "bytes": 19861,
+      "sha256": "103df7a90b802f2186da50dec360deb001602ddc9677cdc13023cfc12bc0cb95"
+    },
+    {
+      "file": "tests/pressure-pad-query.test.cjs",
+      "bytes": 11478,
+      "sha256": "d2e670bee4926257727651834c661771d710a2d1017151fbf7cd5e5d151597b7"
+    },
+    {
+      "file": "tests/preview-batching.test.cjs",
+      "bytes": 2476,
+      "sha256": "b9b64b0c5f4c466e998dd64ee6d66be97211b9a28e36ecfddcf743615246b194"
+    },
+    {
+      "file": "tests/production-frequency.test.cjs",
+      "bytes": 9138,
+      "sha256": "36195d324200b527ac5a0421301dfe21b0f2e3af99245c523b86626dde36d3e8"
+    },
+    {
+      "file": "tests/production-friction.test.cjs",
+      "bytes": 8667,
+      "sha256": "81a743f4417c222db306a128782db53997e4842ff8f02fd818ac2e1580d8ddad"
+    },
+    {
+      "file": "tests/production-ledger.test.cjs",
+      "bytes": 3763,
+      "sha256": "1ee78be71fbffd7feeabfd5dffa9ee08c45d4ec88aa233e529a148726d4b0393"
+    },
+    {
+      "file": "tests/production.test.cjs",
+      "bytes": 8829,
+      "sha256": "fd0065dc03c6e18b4420cb14a7e3e9604d0424382ff004eaa79c2eef21563f38"
+    },
+    {
+      "file": "tests/profile-cpu-architecture.cjs",
+      "bytes": 15222,
+      "sha256": "6d7f08a0f32b6aef936d247e3c74744ef8d94cf08f5b1771d9bd22250e3e70a0"
+    },
+    {
+      "file": "tests/profile-sap-matrix-diagnostic.cjs",
+      "bytes": 11273,
+      "sha256": "a47e8178dd8a6badb4792f1960403de5475e878b11056e5835f7df14ea0bedf1"
+    },
+    {
+      "file": "tests/progression.test.cjs",
+      "bytes": 4081,
+      "sha256": "1066e9b7fb11a8b005b582c05672b5909017359af6f7048fb5a05c42f27a234a"
+    },
+    {
+      "file": "tests/prologue.test.cjs",
+      "bytes": 6376,
+      "sha256": "336c93545b13a50ea25345821f6bc6e243647948f766a6b61b90e806f76b4fa5"
+    },
+    {
+      "file": "tests/propeller-clearance.test.cjs",
+      "bytes": 8391,
+      "sha256": "0efcd65c2767d40b2ea6fad9855097ae5c30658c1953451a250c6b10497d9707"
+    },
+    {
+      "file": "tests/propeller.test.cjs",
+      "bytes": 20494,
+      "sha256": "1bd735066ea9c60e857ff703f30e346963c044ebf4bb7581fb133c43605cf0a4"
+    },
+    {
+      "file": "tests/quick-catalogue.test.cjs",
+      "bytes": 4936,
+      "sha256": "1735a66455e6fd28f4c7eeebc5a8f7a17d27f935d31dc4cea0c92c67bf23c311"
+    },
+    {
+      "file": "tests/radial-geometry.test.cjs",
+      "bytes": 7348,
+      "sha256": "f7ba1873d5a77a01deee648b23f438638f326f380f33a5fc72e7410210e844c5"
+    },
+    {
+      "file": "tests/radial-input.test.cjs",
+      "bytes": 13614,
+      "sha256": "9f0b1e14df778a3dbf5e0e4067ac0ac7e85de544fcd22891e10492fa3b6b070c"
+    },
+    {
+      "file": "tests/radial-mechanisms.test.cjs",
+      "bytes": 6587,
+      "sha256": "d64797ab0f14517ddea912c49f14cab5c6ff8c174024aab94d732214c1021417"
+    },
+    {
+      "file": "tests/reconfiguration.test.cjs",
+      "bytes": 10188,
+      "sha256": "ec9f820b89320bf11fc9bcc0424d74d248fa24f9fae7d62fe2890e55bbfcefff"
+    },
+    {
+      "file": "tests/render-backend.test.cjs",
+      "bytes": 5080,
+      "sha256": "6dc6d781529cdae9e84123abf146219c3d11d2adacee8cfc99fa68d7cdf89b5c"
+    },
+    {
+      "file": "tests/rigid-colliders.test.cjs",
+      "bytes": 9026,
+      "sha256": "c753fc11556ddaf009ee4a5c5787791289c2911ca2758c4c8bd7cbfa303710fe"
+    },
+    {
+      "file": "tests/rigid-collision-query.test.cjs",
+      "bytes": 6299,
+      "sha256": "6b3deddbe1dd76b2ced7514187dc776301935de9e955d6e96c7a2f266b49d526"
+    },
+    {
+      "file": "tests/rigid-render-batch.test.cjs",
+      "bytes": 10764,
+      "sha256": "545c52a45a066296b464bad4c3a9122d79cb09eca0ba64b899177ea2a488e35a"
+    },
+    {
+      "file": "tests/robot-arm-family-route.test.cjs",
+      "bytes": 2034,
+      "sha256": "bdd1f8d0e6722018ba01ec04e6ca1daa307940cae420b4f7d2a24fe6560266e9"
+    },
+    {
+      "file": "tests/robot-arm-integration.test.cjs",
+      "bytes": 5990,
+      "sha256": "29086f3e69427837f31c714d29d3a20986780e509694d4795eeeccfaf4c0cf7e"
+    },
+    {
+      "file": "tests/robot-arm-panel.test.cjs",
+      "bytes": 7034,
+      "sha256": "4a358ff4d44b4c6ea21df10ac6358c77003f125f8e01e3aac797335f85050094"
+    },
+    {
+      "file": "tests/robot-arm-setup.test.cjs",
+      "bytes": 14700,
+      "sha256": "89bd1acf0af66d18717cf8c07ece4eabbde3872e78a16f9aeb336cef12c35ff3"
+    },
+    {
+      "file": "tests/robot-arm-shelves.test.cjs",
+      "bytes": 6981,
+      "sha256": "f43bc5e87c32d9a8dfbe1e955983852608f512343d9394bfa7cf364df84e8993"
+    },
+    {
+      "file": "tests/robot-arm-usability.test.cjs",
+      "bytes": 7915,
+      "sha256": "af73ddbbb9ddea7461ef9b652740c37830d4a4e0077e54b2f9ab1491cba7cc7e"
+    },
+    {
+      "file": "tests/robot-arm.test.cjs",
+      "bytes": 13340,
+      "sha256": "ff3a8e51de8af257ddb269f663eb18c3790a75fbbd1578abe953be0805bf26f5"
+    },
+    {
+      "file": "tests/robot-conveyor-integration.test.cjs",
+      "bytes": 4693,
+      "sha256": "b84ed9029f0908e3b2de503ca21be7a31d4d6dad85e14f6e6861db3687867b55"
+    },
+    {
+      "file": "tests/rotor-chassis.test.cjs",
+      "bytes": 8244,
+      "sha256": "0e48d2de86fff7239c719f732d9409b9257afb41a0c035e3532e3234dd06b858"
+    },
+    {
+      "file": "tests/rotor-core.test.cjs",
+      "bytes": 7413,
+      "sha256": "0abe9d2a351728aaaf24205a5bfe2cbcd0ec2a9bfb707823bb6fa64a32a333a3"
+    },
+    {
+      "file": "tests/rotor-energy-integration.test.cjs",
+      "bytes": 4881,
+      "sha256": "f09f98f06dfe56e296417c335f99669acd737e17e2fe911abb869407169bec24"
+    },
+    {
+      "file": "tests/rotor-groups-ui.test.cjs",
+      "bytes": 9994,
+      "sha256": "b29665127e389234522c7664e500517322c894af424e9e8b8b88d0bfec566f89"
+    },
+    {
+      "file": "tests/rotor-groups.test.cjs",
+      "bytes": 14666,
+      "sha256": "784f1d021aa8098957fa7bfa8b1e634b7edbc7fe1595eba4fb0ac2bae404788e"
+    },
+    {
+      "file": "tests/rotor-load.test.cjs",
+      "bytes": 5111,
+      "sha256": "c268b811a8bd674dd70ab1afed5dfcaaee1ddda26972895bf9028137ce26a051"
+    },
+    {
+      "file": "tests/rotor-power.test.cjs",
+      "bytes": 5422,
+      "sha256": "eda53f6416af04b6f9952406b623e5a8cb135633e54d582b9e14ceb988429b1f"
+    },
+    {
+      "file": "tests/rotor-stop-brake.test.cjs",
+      "bytes": 2428,
+      "sha256": "61a0ad0c1a639768f1f433738752a8a0a9c13cbaa8fe1f7db677c8d48dc989f3"
+    },
+    {
+      "file": "tests/rotor-storage.test.cjs",
+      "bytes": 15958,
+      "sha256": "8cd9026da901dd7c3e6b8ff5cc951a4dd8eb9b19c6d169c6d593b15e02b57fc6"
+    },
+    {
+      "file": "tests/rotor-ui.test.cjs",
+      "bytes": 5420,
+      "sha256": "80c3e7c9aeabde9f1b47339d264cb8b16cd5da62e0deb125db79a8c4a0535ed0"
+    },
+    {
+      "file": "tests/rotor-unpowered.test.cjs",
+      "bytes": 2789,
+      "sha256": "3f12154e184f9efa83062e7c71dc247589fa2d99c707045f1d5a4fc326cc3a67"
+    },
+    {
+      "file": "tests/rotor-wheel.test.cjs",
+      "bytes": 5991,
+      "sha256": "5be632ad26e935612260f7ac22ceb1ba29cabd75e031c20f139fd49ad6a5084e"
+    },
+    {
+      "file": "tests/route-geometry.test.cjs",
+      "bytes": 2828,
+      "sha256": "1f407cd317ecd5177e4c72e55bee5d79a15f9002a2bd7059f15a410277a03ebd"
+    },
+    {
+      "file": "tests/runtime-lookups.test.cjs",
+      "bytes": 3389,
+      "sha256": "1b5a44ef3e2825388bf1029873b930d6c2bbd642fe98e0d7beb63583e06513a7"
+    },
+    {
+      "file": "tests/sap-passive-pairs.test.cjs",
+      "bytes": 14831,
+      "sha256": "dafe9f61f21bbbc7dc2b19811cefb4601dd3e44bc0c537ef9719f5765d2d555e"
+    },
+    {
+      "file": "tests/save-games.test.cjs",
+      "bytes": 20696,
+      "sha256": "b6bbd2a171d3abc284ea67cc307e535a7c8237f3263cd579aa9fbba71f55ac99"
+    },
+    {
+      "file": "tests/saved-games-integration.test.cjs",
+      "bytes": 24339,
+      "sha256": "5a795c672198a087b0295c180eb0c131d78563e237e5b26ade18f2748b86c1c3"
+    },
+    {
+      "file": "tests/selection-cache.test.cjs",
+      "bytes": 6975,
+      "sha256": "72bedc6786774d9a4d388bc40f893a995cc17a5824a3fb6b5a0e3455008a2d89"
+    },
+    {
+      "file": "tests/selection-drag.test.cjs",
+      "bytes": 9051,
+      "sha256": "72806fde01a20af166395b68ca67f97341c1a1ab54b346cafa98965b8ea1665d"
+    },
+    {
+      "file": "tests/selection-hud-integration.test.cjs",
+      "bytes": 2184,
+      "sha256": "6c79a6f1003b32d6cd179585aa9e562aeef3f4e7126479238c1c852f314ce100"
+    },
+    {
+      "file": "tests/selection-hud-projection.test.cjs",
+      "bytes": 4690,
+      "sha256": "b1d9365dd599fe0ed46b9c1f9277686c5982198935bd2f790ecd2c7fe7d97486"
+    },
+    {
+      "file": "tests/selection-hud.test.cjs",
+      "bytes": 6235,
+      "sha256": "131133e20c19b093977c139f0d867d4add64082c2d341a1afe4e448702c7456a"
+    },
+    {
+      "file": "tests/sensor-contact-index.test.cjs",
+      "bytes": 8166,
+      "sha256": "61edc78da25970c26516de62a4e84404134938d3a0ba8d5ded5c319340a18288"
+    },
+    {
+      "file": "tests/sensor-discovery-fast-path.test.cjs",
+      "bytes": 3971,
+      "sha256": "4426268c488ee07da5b688949d08eac59b4cd1e648e1a14214ad02e1b55fc5ff"
+    },
+    {
+      "file": "tests/servo-assembly.test.cjs",
+      "bytes": 4040,
+      "sha256": "2f5fafc9a3e2cb9a5fc80033cc7c88d4d88ffc2cefb5333754a08a4a4fd04830"
+    },
+    {
+      "file": "tests/servo-march.test.cjs",
+      "bytes": 5334,
+      "sha256": "3eb5b5ac3a8ee8f32e5ac18174042c1d8e3498d369afafbda2f7b89d7618725a"
+    },
+    {
+      "file": "tests/servo-panel.test.cjs",
+      "bytes": 4860,
+      "sha256": "c13dd7bcb7e61a6162f7aa8c1e9c701b703b4b110a5b9cd87ce99081d3c99a72"
+    },
+    {
+      "file": "tests/servo-storage.test.cjs",
+      "bytes": 5403,
+      "sha256": "bb50584427a316965c967683cf8856ac344c84e3c0ce3959730bf46ccdc433f9"
+    },
+    {
+      "file": "tests/servo-walker-recognition.test.cjs",
+      "bytes": 6909,
+      "sha256": "55e83e9b92028e547930798300ee1a055f9067422ef3f74407c835a447324cf5"
+    },
+    {
+      "file": "tests/servo-walker-tracking.test.cjs",
+      "bytes": 8023,
+      "sha256": "523c2062fc02666ad6aa6c049979fc2a43cc28871a942783bea31fc4162d46a7"
+    },
+    {
+      "file": "tests/servo.test.cjs",
+      "bytes": 10829,
+      "sha256": "77ebc85af0a8b498b0e5c8c828813cc98efa89da9b11c7c347f35208c9c41090"
+    },
+    {
+      "file": "tests/shake-dismantle.test.cjs",
+      "bytes": 10666,
+      "sha256": "b743cb9569683b5198456bbd0886e0d8e36c6e27aa53204d4cc7d360c6fec180"
+    },
+    {
+      "file": "tests/solid-grip.test.cjs",
+      "bytes": 5084,
+      "sha256": "a2dcfecf491ac7a1613d216a10bb9508f8fb1ca2bf0cb120099144ddf91fd7f8"
+    },
+    {
+      "file": "tests/spatial-query-reference.cjs",
+      "bytes": 2300,
+      "sha256": "97eb19eee9b7b6d029224b6a7635339ec3cd4b46c34442b0ad3be02641a5eec9"
+    },
+    {
+      "file": "tests/spatial-query-regressions.test.cjs",
+      "bytes": 12216,
+      "sha256": "3287087029e6deb41e6a7ba5a32f650f8a796a679256924853ed123a30838782"
+    },
+    {
+      "file": "tests/staged-disassembly.test.cjs",
+      "bytes": 7166,
+      "sha256": "40963be027fe09996b09593fd596cf1b4fdb5d13b70340e0dd8e60dcd90b1c8a"
+    },
+    {
+      "file": "tests/subtitles.test.cjs",
+      "bytes": 3375,
+      "sha256": "57015c4219bffbbe83d9a3740b3ca0375a30c5924c6f8e59fef8745355274187"
+    },
+    {
+      "file": "tests/tablet.test.cjs",
+      "bytes": 17675,
+      "sha256": "7885cc50abc7e0c4a8d83bcdfcb52eaed3b7060716d9312019b31ec994389d29"
+    },
+    {
+      "file": "tests/tbit-geometry.test.cjs",
+      "bytes": 6348,
+      "sha256": "b0ea7d3758063f663d3175e1f3a7f770d8331df5d549afe9de3c868048fa2181"
+    },
+    {
+      "file": "tests/tbit-joins.test.cjs",
+      "bytes": 9680,
+      "sha256": "49ad483d590e0073192869d13a94a4bdd55f34a337755a4569b5536d064f56ca"
+    },
+    {
+      "file": "tests/tbit-lab.test.cjs",
+      "bytes": 3281,
+      "sha256": "330b69db1212a08a7f9b664667d43f71526fbd731d7eed7c3dce7af77acdb7dc"
+    },
+    {
+      "file": "tests/tbit-routes.test.cjs",
+      "bytes": 9578,
+      "sha256": "51dd413197ae8da8cae910c496a157469e5cf10a62424dad912428de2670efb2"
+    },
+    {
+      "file": "tests/tick-scheduler.test.cjs",
+      "bytes": 14282,
+      "sha256": "8b69885468520fa2959e4ab086b2236d5fbcebccf1512e29a14161f387826f1f"
+    },
+    {
+      "file": "tests/trajectory-controller.test.cjs",
+      "bytes": 10630,
+      "sha256": "9f76df86a3eb479f79f62ecd0ac3dede50288dd47324d064b5e40a7f6b426e2a"
+    },
+    {
+      "file": "tests/trajectory-drive.test.cjs",
+      "bytes": 8402,
+      "sha256": "3750aaf974320f1556e662f2025c3ab7cd1af29c6b02c412fcf75f0e189b3aa3"
+    },
+    {
+      "file": "tests/trajectory-fixtures.cjs",
+      "bytes": 3360,
+      "sha256": "e4b84fd53a8da08db93926b7125d7f8251ae6f1bee3d052eac2bb8d1931936ec"
+    },
+    {
+      "file": "tests/trajectory-flight.test.cjs",
+      "bytes": 11760,
+      "sha256": "9cc205cfcf5eaad76c3a1caaafb8d8bb6dc7033c1ea92e9f2c9bf82b14f9ccd5"
+    },
+    {
+      "file": "tests/trajectory-game.test.cjs",
+      "bytes": 30563,
+      "sha256": "1f21ba073dd623c82f84a88a324c3af97194fcd032806a86688ab95432a70e26"
+    },
+    {
+      "file": "tests/trajectory-grid-controller.test.cjs",
+      "bytes": 9870,
+      "sha256": "cae9772132e9e4264bfb931fa58aa3456f0c7b841b27c14d718a78fcec7b947f"
+    },
+    {
+      "file": "tests/trajectory-identity-flow.test.cjs",
+      "bytes": 10665,
+      "sha256": "ae1913268ac73b28d4e3b116dc70091f8f0c00543b6f4e2d6f3a3d5364807a22"
+    },
+    {
+      "file": "tests/trajectory-model.test.cjs",
+      "bytes": 18268,
+      "sha256": "47f1ec9fc25bdbbba1f15e45dfdbad99378529c5c0a44caffe08bf34fb4e7142"
+    },
+    {
+      "file": "tests/trajectory-mood-pose.test.cjs",
+      "bytes": 8170,
+      "sha256": "64bf21c421cc1799ecb73118c999169102f38e641a6c82c86907ae35d011c185"
+    },
+    {
+      "file": "tests/trajectory-panel.test.cjs",
+      "bytes": 17232,
+      "sha256": "5f87421763394a7fac48a12abdd161f158fb9513bb0281704382b2acb1b285ec"
+    },
+    {
+      "file": "tests/trajectory-runtime.test.cjs",
+      "bytes": 19713,
+      "sha256": "fe03286500c48fc3b4c9c4c071e38248b8af46b05bc215d0d42974302d2cf2ee"
+    },
+    {
+      "file": "tests/trajectory-workshop.test.cjs",
+      "bytes": 8606,
+      "sha256": "5314094c05bbac258b6542eb2ca91a1af4372799aaeb95ae3b8febb077ee6259"
+    },
+    {
+      "file": "tests/transitions.test.cjs",
+      "bytes": 4544,
+      "sha256": "f9b90fc67f573c357994e2438217110e314e1a2c4d40ee8a5315061401f6d358"
+    },
+    {
+      "file": "tests/wide-line-equivalence.test.cjs",
+      "bytes": 5580,
+      "sha256": "db1402a9ddbe56a8441caf407d4b16f682ba01ca88aca492b9192481dc3b662a"
+    },
+    {
+      "file": "tests/workshop-body-editor.test.cjs",
+      "bytes": 5208,
+      "sha256": "1fdcba5eff07ff31d05f16732d4180ac422c300b463d5b8dafe537e584ff7e99"
+    },
+    {
+      "file": "tests/workshop-integration.test.cjs",
+      "bytes": 10710,
+      "sha256": "b70bf4d6264396e072bc73630360bbd26b8990c6669cc6ead7a0d8ad40b0fd21"
+    },
+    {
+      "file": "tests/workshop-model.test.cjs",
+      "bytes": 8636,
+      "sha256": "1450116441746a86a37f1f4866dfcf975bb239ecec26e5ef6c1801f6d01b393d"
+    },
+    {
+      "file": "tests/workshop-panel.test.cjs",
+      "bytes": 6069,
+      "sha256": "8699d8c1e2affa94ed8f3443c7446bd9a9826bb83dd69baa4e819905e197dfb7"
+    }
+  ]
+}

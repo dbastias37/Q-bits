@@ -1,0 +1,29 @@
+✖ a paid independent pedestal supports three cold-to-feed-A arm cycles with intact mission fixtures at 60 Hz (9563.287893ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9719.129871
+
+✖ failing tests:
+
+test at ../../../../tmp/qbits-arm-pedestal-a-probe.cjs:59:22
+✖ a paid independent pedestal supports three cold-to-feed-A arm cycles with intact mission fixtures at 60 Hz (9563.287893ms)
+  AssertionError [ERR_ASSERTION]: the actual load must reach A: Recorrido hacia B ocupado · carga retenida, motores en reposo {"state":"carry","p":{"x":4.013080388590271,"y":0.750548271584098,"z":0.43797835073937774},"load":[{"x":4.008721002736719,"y":0.6550449731817222,"z":0.4421393193860067},{"x":-4.859999923914196,"y":0.044983884755292775,"z":4.609999987394674},{"x":-4.689999923914196,"y":0.044983884755292775,"z":4.609999987394674}]}
+      at until (/tmp/qbits-arm-pedestal-a-probe.cjs:39:119)
+      at run (/tmp/qbits-arm-pedestal-a-probe.cjs:43:2)
+      at TestContext.<anonymous> (/tmp/qbits-arm-pedestal-a-probe.cjs:59:149)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'fail',
+    diff: 'simple'
+  }

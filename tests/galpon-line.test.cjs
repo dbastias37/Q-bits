@@ -94,6 +94,25 @@ test('reversed or stopped first section cannot advance intake and a missing sect
  assert.equal(t.hangarLineStatus().built,0);assert(required.every(id=>state.records.find(r=>r.id===id).place==='world'));
 });
 
+test('B feeds its single reserved line position despite surplus paid construction stock elsewhere',()=>{
+ const {t,G,state,build,manufacture}=fixture();for(let i=0;i<8;i++)build();
+ // Isolated accounting setup for the completed A quota. Every spare below
+ // remains a paid world body; this is a station-admission regression.
+ for(let i=0;i<25;i++){
+  const g=manufacture('cube',t.V(-5.3+(i%5)*.15,.05,2+Math.floor(i/5)*.15)),id=g.parts[0].id;
+  if(i<12){G.tick(state,.5,{activeCoolingIds:[id]});G.tick(state,8);assert(G.receive(state,[id],'fixture:A'));assert(G.markReleased(state,[id],'fixture:A'));}
+ }
+ assert(t.beginHangarChain());t.hideStoryDialogue();t.resumeGame();assert(t.hangarChainAction('feed'));
+ const raw=[];for(let i=0;i<2;i++){const id=t.allocateUnitId();G.tick(state,1);assert(G.extract(state,id));assert(G.take(state,id,state.initialIds[0]));assert(G.store(state,id,state.initialIds[0]));raw.push(id);}
+ const energy=state.energyJ,spares=t.hangarWorldStatus().cubes;assert(spares>=25);
+ t.tickHangarWorld(.13);assert.equal(t.story.hangarWorld.outputs.converter?.place,'belt');assert.equal(state.jobs.converter?.id,raw[0]);
+ assert(state.energyJ<energy,'the fresh feed conversion is paid');
+ G.tick(state,1);t.tickHangarWorld(.13);assert(t.rotorPart(raw[0]),'the same converted identity appears at the physical mouth');
+ assert.equal(state.jobs.converter,null,'the next raw input waits while the single line position is reserved');
+ assert.equal(G.record(state,raw[1]).place,'stock');assert.equal(t.hangarWorldStatus().cubes,spares+1);
+ assert.doesNotThrow(()=>G.validate(state));
+});
+
 test('a product resumes between real belt sections after a cross-instance save and finishes one physical receipt',()=>{
  const values=new Map(),storage={getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,String(v))};
  const {t,build,manufacture,step}=fixture(storage),l=t.galponLineLayout();

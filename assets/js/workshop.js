@@ -88,7 +88,7 @@
   * Removed matter is a nontransferable ballast receipt bound to this piece ID.
   * A caller must block division of adapted parts until all tiers return to I.
   */
- function planPartUpgrade(part,patch,rawProfile){
+ function planPartUpgrade(part,patch,rawProfile,options={}){
   const fail=error=>({error});
   if(!record(part)||!Number.isSafeInteger(part.id)||part.id<1||!Number.isFinite(part.weight)||part.weight<=0||part.weight>128||!['cube','pyramid','tetra','coupler'].includes(part.shape||'cube')||!record(part.mood)||!Number.isFinite(part.mood.energy)||part.mood.energy<0||part.mood.energy>1)return fail('La pieza tiene datos inválidos.');
   if(part.mood.production)return fail('La materia de los pedidos no admite adaptaciones.');
@@ -110,7 +110,8 @@
    if(value===null)trajectory=null;
    else{
     if(!record(value)||Object.keys(value).some(key=>!['role','level'].includes(key))||!['beacon','receiver'].includes(value.role)||!Number.isInteger(value.level)||value.level<1||value.level>3)return fail('Elige baliza o receptor y un nivel de trayectoria válido.');
-    if((part.shape||'cube')!=='cube'||part.mood.matter||part.mood.flight)return fail('Usa un cubo normal y completo para la trayectoria.');
+    const missionMatter=options.allowMatter===true&&part.weight===1&&part.mood.matter?.path===''&&part.mood.matter?.rootWeight===1;
+    if((part.shape||'cube')!=='cube'||part.mood.matter&&!missionMatter||part.mood.flight)return fail('Usa un cubo normal y completo para la trayectoria.');
     if(value.role==='receiver'&&value.level!==1)return fail('El receptor no necesita niveles de alcance.');
     if(value.role==='beacon'&&value.level>profile.bench)return fail('Requiere mesa de trabajo '+value.level+' para este alcance.');
     if(oldTrajectory?.routeId&&oldTrajectory.role!==value.role)return fail('Desvincula primero la ruta antes de cambiar la función del cubo.');

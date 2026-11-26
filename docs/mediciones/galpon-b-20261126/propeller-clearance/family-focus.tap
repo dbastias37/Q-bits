@@ -1,0 +1,45 @@
+✔ a named mixed family preserves matter and replaces its pieces with one simple physical body (146.434556ms)
+✔ families respect 100 base pieces per container and retain a complete inventory (154.618689ms)
+✔ disassembling by type creates homogeneous families without making loose physical fragments (137.098366ms)
+✔ splitting into tens and merging only moves inventory and rejects capacity overflow (171.337512ms)
+✔ withdrawal uses the placement preview and cancellation leaves all content and energy intact (105.427154ms)
+✔ an obstacle inserted after preview prevents withdrawal without losing the reserved item (131.86892ms)
+✔ moving a family commits only its pose and cancellation preserves the original pose (75.402433ms)
+✔ lab snapshot hydration and restoration retain families, names, colors, energy and unique IDs (291.582432ms)
+✔ duplicate IDs across a family and live pieces fail hydration before replacing a scene (50.226406ms)
+✔ stored pieces still occupy the room limit and clearing a scene retires all family bodies (715.905309ms)
+✔ campaign families use existing resources and are cleared when the checkpoint level restarts (298.319692ms)
+✔ families cannot absorb active puzzle resources or in-progress production and construction (36.056246ms)
+✔ incremental family preparation freezes simulation and Escape cancels without mutating matter (114.738431ms)
+✔ incremental family preparation publishes a complete inventory only when all work succeeds (149.904839ms)
+✔ clearing a scene cancels incremental preparation and a late advance cannot restore its matter (43.464439ms)
+✔ battery families preserve individual charge and pack identity when dispensing a battery (40.645687ms)
+✔ a rotor survives family save and reload as an intact reusable module with the same settings (136.904424ms)
+✔ an external contact sensor keeps its stored rotor target through ticks, save and withdrawal (178.78933ms)
+✔ external cables and gripper ID filters survive storing, saving and restoring their target (148.071234ms)
+✔ bulk retirement preserves Cannon indexes, body events and unrelated physical objects (92.956316ms)
+✔ stored piece states are not visited by continuous simulation or family animation updates (54.443856ms)
+✔ withdrawing a loose piece rejects another family as an occupied destination (39.238916ms)
+✔ secondary selection menu opens the family editor and Enter applies its name and black color (37.326511ms)
+✔ the detach dialog groups a construction through its published family button (50.171683ms)
+✔ Shift with deliberate mouse shakes splits a held family while ordinary motion and jitter do not (41.618915ms)
+✔ wheel rotation, Escape cancellation and E placement use the ordinary input handlers (38.711881ms)
+✔ family effects stay globally bounded and repeated draws reuse existing GPU buffers (195.728806ms)
+✔ the recorded transfer table is clear at 7.70147 degrees and at every yaw, with the original blade radius (196.687688ms)
+✔ distant room walls cannot obstruct a vertical takeoff column at any yaw (121.295394ms)
+✔ axial clipping rejects the empty part of a tilted rod but preserves a real edge crossing (102.00365ms)
+✔ the exact pyramid, tetrahedron and coupler caps preserve their empty corners and real incursions (88.557182ms)
+✔ the complete swept disk detects interior and edge crossings without any vertex inside its radius (59.898252ms)
+✔ upper and lower axial limits and the strict radial limit remain unchanged (96.781184ms)
+✔ box rejection and exact clipping are invariant under a rigid world rotation and translation (115.927249ms)
+✔ the flight protection uses the true table boundary and still rejects an intrusive static wall (98.48903ms)
+✔ foreign triangular solids and sensors still obstruct the full blade sweep in every scene (130.816964ms)
+✔ an archived family obstructs through its physical shell without materializing its stored parts (88.920259ms)
+ℹ tests 37
+ℹ suites 0
+ℹ pass 37
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3782.435862

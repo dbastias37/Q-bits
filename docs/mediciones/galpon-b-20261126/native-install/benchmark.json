@@ -1,0 +1,1599 @@
+{
+  "mode": "Contiguous four-worker mission with real economy and Cannon; simulated clock accelerated, DOM/GPU instrumented.",
+  "vmContext": "ordinary-global",
+  "milestones": [
+    {
+      "event": "tres transferencias cableadas y tres viajes QR completos",
+      "seconds": 1075.47,
+      "energyJ": 160885.23,
+      "chain": {
+        "phase": "order",
+        "armDemo": 4,
+        "armWired": 3,
+        "droneDelivered": 3,
+        "stabilized": 3,
+        "lot": 1,
+        "lotCount": 0,
+        "total": 0,
+        "target": 80,
+        "continuity": 0,
+        "continuityTarget": 60,
+        "continuityLabel": "Actividad continua útil",
+        "continuityMode": "useful-activity",
+        "deliveryWindow": 240,
+        "continuityState": "waiting",
+        "waitingSeconds": 0,
+        "continuityReason": "Esperando entregas nuevas.",
+        "sustained": false,
+        "completed": false,
+        "reserveReturn": false,
+        "returnReservePercent": null,
+        "clearOutputs": 0,
+        "clearOutputsTarget": 3
+      }
+    },
+    {
+      "event": "fábrica preparada sin abrir ni acreditar el pedido",
+      "seconds": 1075.666666667003,
+      "energyJ": 160884.76819078493,
+      "extracted": 376,
+      "records": 386,
+      "stock": {
+        "cube": 1,
+        "coupler": 0,
+        "pyramid": 5,
+        "tetra": 0
+      },
+      "feeds": {
+        "feedA": {
+          "baseId": 337,
+          "running": true,
+          "status": "En marcha"
+        },
+        "feedB": {
+          "baseId": 367,
+          "running": true,
+          "status": "En marcha"
+        }
+      },
+      "assembler": {
+        "id": 1,
+        "placed": true,
+        "p": [
+          3.7,
+          0,
+          -2.15
+        ],
+        "turns": 0
+      },
+      "laser": {
+        "part": 383,
+        "belt": 367
+      },
+      "chain": {
+        "phase": "order",
+        "armDemo": 4,
+        "armWired": 3,
+        "droneDelivered": 3,
+        "stabilized": 3,
+        "lot": 1,
+        "lotCount": 0,
+        "total": 0,
+        "target": 80,
+        "continuity": 0,
+        "continuityTarget": 60,
+        "continuityLabel": "Actividad continua útil",
+        "continuityMode": "useful-activity",
+        "deliveryWindow": 240,
+        "continuityState": "waiting",
+        "waitingSeconds": 0,
+        "continuityReason": "Esperando entregas nuevas.",
+        "sustained": false,
+        "completed": false,
+        "reserveReturn": false,
+        "returnReservePercent": null,
+        "clearOutputs": 0,
+        "clearOutputsTarget": 3
+      }
+    },
+    {
+      "event": "pedido abierto por los hitos reales",
+      "seconds": 1075.67,
+      "energyJ": 160884.77,
+      "message": "Pedido abierto · cuatro tandas de veinte. Los nuevos rotores deben llegar a recepción por su cuenta.",
+      "chain": {
+        "phase": "order",
+        "armDemo": 4,
+        "armWired": 3,
+        "droneDelivered": 3,
+        "stabilized": 3,
+        "lot": 1,
+        "lotCount": 0,
+        "total": 0,
+        "target": 80,
+        "continuity": 0,
+        "continuityTarget": 60,
+        "continuityLabel": "Actividad continua útil",
+        "continuityMode": "useful-activity",
+        "deliveryWindow": 240,
+        "continuityState": "waiting",
+        "waitingSeconds": 0,
+        "continuityReason": "Esperando entregas nuevas.",
+        "sustained": false,
+        "completed": false,
+        "reserveReturn": false,
+        "returnReservePercent": null,
+        "clearOutputs": 0,
+        "clearOutputsTarget": 3
+      }
+    },
+    {
+      "event": "dos líneas y ensambladora listas · pedido abierto",
+      "seconds": 1075.67,
+      "energyJ": 160884.77,
+      "chain": {
+        "phase": "order",
+        "armDemo": 4,
+        "armWired": 3,
+        "droneDelivered": 3,
+        "stabilized": 3,
+        "lot": 1,
+        "lotCount": 0,
+        "total": 0,
+        "target": 80,
+        "continuity": 0,
+        "continuityTarget": 60,
+        "continuityLabel": "Actividad continua útil",
+        "continuityMode": "useful-activity",
+        "deliveryWindow": 240,
+        "continuityState": "waiting",
+        "waitingSeconds": 0,
+        "continuityReason": "Esperando entregas nuevas.",
+        "sustained": false,
+        "completed": false,
+        "reserveReturn": false,
+        "returnReservePercent": null,
+        "clearOutputs": 0,
+        "clearOutputsTarget": 3
+      },
+      "factory": {
+        "seconds": 1075.666666667003,
+        "energyJ": 160884.76819078493,
+        "extracted": 376,
+        "records": 386,
+        "stock": {
+          "cube": 1,
+          "coupler": 0,
+          "pyramid": 5,
+          "tetra": 0
+        },
+        "feeds": {
+          "feedA": {
+            "baseId": 337,
+            "running": true,
+            "status": "En marcha"
+          },
+          "feedB": {
+            "baseId": 367,
+            "running": true,
+            "status": "En marcha"
+          }
+        },
+        "assembler": {
+          "id": 1,
+          "placed": true,
+          "p": [
+            3.7,
+            0,
+            -2.15
+          ],
+          "turns": 0
+        },
+        "laser": {
+          "part": 383,
+          "belt": 367
+        },
+        "chain": {
+          "phase": "order",
+          "armDemo": 4,
+          "armWired": 3,
+          "droneDelivered": 3,
+          "stabilized": 3,
+          "lot": 1,
+          "lotCount": 0,
+          "total": 0,
+          "target": 80,
+          "continuity": 0,
+          "continuityTarget": 60,
+          "continuityLabel": "Actividad continua útil",
+          "continuityMode": "useful-activity",
+          "deliveryWindow": 240,
+          "continuityState": "waiting",
+          "waitingSeconds": 0,
+          "continuityReason": "Esperando entregas nuevas.",
+          "sustained": false,
+          "completed": false,
+          "reserveReturn": false,
+          "returnReservePercent": null,
+          "clearOutputs": 0,
+          "clearOutputsTarget": 3
+        }
+      }
+    },
+    {
+      "event": "palas reconfiguradas con sobrantes conservados",
+      "seconds": 1132.2,
+      "energyJ": 160664.84,
+      "ok": true,
+      "origin": 384,
+      "bladeIds": [
+        410,
+        411
+      ],
+      "leftoverIds": [
+        405,
+        406,
+        407,
+        408,
+        409
+      ]
+    },
+    {
+      "event": "dron montado con stock real",
+      "seconds": 1132.2,
+      "energyJ": 160652.84,
+      "ids": [
+        389,
+        411,
+        410,
+        386,
+        385,
+        387
+      ]
+    },
+    {
+      "event": "capital físico del dron preparado",
+      "seconds": 1144.2,
+      "energyJ": 160287.11,
+      "ids": [
+        389,
+        411,
+        410,
+        386,
+        385,
+        387
+      ],
+      "stockCubes": 8
+    },
+    {
+      "event": "capital del transporte feedA listo",
+      "seconds": 1144.2,
+      "energyJ": 160287.11,
+      "receiverId": 387
+    },
+    {
+      "event": "adaptación real receiver",
+      "seconds": 1155,
+      "energyJ": 160231.48,
+      "id": 387,
+      "energy": 0.05
+    },
+    {
+      "event": "adaptación real beacon",
+      "seconds": 1170.07,
+      "energyJ": 160001.54,
+      "id": 388,
+      "energy": 0.05
+    },
+    {
+      "event": "adaptación real beacon",
+      "seconds": 1188.47,
+      "energyJ": 159943.13,
+      "id": 390,
+      "energy": 0.05
+    },
+    {
+      "event": "cable físico de recarga",
+      "seconds": 1202.27,
+      "energyJ": 159918.26,
+      "id": 5,
+      "metres": 7.8270291132787015,
+      "materialIds": [
+        391,
+        392,
+        393,
+        394
+      ]
+    },
+    {
+      "event": "ruta QR enseñada sobre carga real",
+      "seconds": 1228.8,
+      "energyJ": 158973.62,
+      "receiverId": 387,
+      "beacons": [
+        388,
+        390
+      ],
+      "loadId": 285,
+      "metres": 3.76885126277386,
+      "storedJ": 810.4999999999754,
+      "estimateJ": 235.82454427466382
+    },
+    {
+      "event": "transporte feedA enseñado",
+      "seconds": 1228.8,
+      "energyJ": 158973.62,
+      "receiverId": 387,
+      "loadId": 285,
+      "home": [
+        3.82,
+        0.006,
+        0.45
+      ],
+      "drop": [
+        3.2000010968244803,
+        0.5049580494596597,
+        -1.161598998594974
+      ],
+      "metres": 3.76885126277386
+    },
+    {
+      "event": "palas reconfiguradas con sobrantes conservados",
+      "seconds": 1285.07,
+      "energyJ": 158720.13,
+      "ok": true,
+      "origin": 395,
+      "bladeIds": [
+        448,
+        449
+      ],
+      "leftoverIds": [
+        443,
+        444,
+        445,
+        446,
+        447
+      ]
+    },
+    {
+      "event": "dron montado con stock real",
+      "seconds": 1285.07,
+      "energyJ": 158708.13,
+      "ids": [
+        427,
+        449,
+        448,
+        397,
+        396,
+        398
+      ]
+    },
+    {
+      "event": "capital físico del dron preparado",
+      "seconds": 1285.07,
+      "energyJ": 158708.13,
+      "ids": [
+        427,
+        449,
+        448,
+        397,
+        396,
+        398
+      ],
+      "stockCubes": 21
+    },
+    {
+      "event": "capital del transporte feedB listo",
+      "seconds": 1285.07,
+      "energyJ": 158708.13,
+      "receiverId": 398
+    },
+    {
+      "event": "adaptación real receiver",
+      "seconds": 1295.87,
+      "energyJ": 158688.66,
+      "id": 398,
+      "energy": 0.05
+    },
+    {
+      "event": "adaptación real beacon",
+      "seconds": 1311.6,
+      "energyJ": 158558.96,
+      "id": 399,
+      "energy": 0.05
+    },
+    {
+      "event": "adaptación real beacon",
+      "seconds": 1331.07,
+      "energyJ": 158498.48,
+      "id": 400,
+      "energy": 0.05
+    },
+    {
+      "event": "cable físico de recarga",
+      "seconds": 1345.67,
+      "energyJ": 158446.93,
+      "id": 6,
+      "metres": 8.857025498114112,
+      "materialIds": [
+        401,
+        402,
+        403,
+        412,
+        413
+      ]
+    },
+    {
+      "event": "ruta QR enseñada sobre carga real",
+      "seconds": 1372.13,
+      "energyJ": 157476.94,
+      "receiverId": 398,
+      "beacons": [
+        399,
+        400
+      ],
+      "loadId": 322,
+      "metres": 3.3829823793955844,
+      "storedJ": 810.4999999999754,
+      "estimateJ": 232.29702531950997
+    },
+    {
+      "event": "transporte feedB enseñado",
+      "seconds": 1372.13,
+      "energyJ": 157476.94,
+      "receiverId": 398,
+      "loadId": 322,
+      "home": [
+        4.85,
+        0.006,
+        0.45
+      ],
+      "drop": [
+        4.200000276079863,
+        0.5050157031028099,
+        -1.1605177361778307
+      ],
+      "metres": 3.3829823793955844
+    },
+    {
+      "event": "producto inicial transportado al alimentador",
+      "seconds": 1412.53,
+      "energyJ": 157370.63,
+      "receiverId": 398,
+      "id": 322,
+      "origin": 322,
+      "durationSeconds": 40.399999999963256
+    },
+    {
+      "event": "producto inicial transportado al alimentador",
+      "seconds": 1452.2,
+      "energyJ": 157269.75,
+      "receiverId": 398,
+      "id": 286,
+      "origin": 286,
+      "durationSeconds": 39.66666666663059
+    },
+    {
+      "event": "transportes de alimentadores en marcha",
+      "seconds": 1452.2,
+      "energyJ": 157269.75,
+      "receivers": [
+        387,
+        398
+      ]
+    },
+    {
+      "event": "entrada del enfriador reenseñada tras retirada física",
+      "seconds": 1464.47,
+      "energyJ": 157099.53,
+      "receiverId": 295,
+      "pickPoint": [
+        3.0715,
+        0.575,
+        -0.2626
+      ],
+      "dropGripPoint": [
+        4.1,
+        0.575,
+        0.49999999999999994
+      ]
+    },
+    {
+      "event": "origen continuo recolocado con mano y poses reenseñadas",
+      "seconds": 1475.67,
+      "energyJ": 157079.34,
+      "receiverId": 295,
+      "home": [
+        4,
+        0.006,
+        -0.25
+      ],
+      "endBeacon": [
+        4.2,
+        0.047,
+        0.1
+      ],
+      "metres": 3.909023300092723,
+      "durationSeconds": 11.199999999989814,
+      "sourceSpentJ": 20.18999938177876
+    },
+    {
+      "event": "toma central del enfriador enseñada para feedA",
+      "seconds": 1539.27,
+      "energyJ": 156889.56,
+      "receiverId": 387,
+      "sampleId": 323,
+      "pickPoint": [
+        4.1,
+        0.575,
+        0.5
+      ],
+      "metres": 3.9811832448470694
+    },
+    {
+      "event": "toma central del enfriador enseñada para feedB",
+      "seconds": 1539.27,
+      "energyJ": 156889.56,
+      "receiverId": 398,
+      "sampleId": 323,
+      "pickPoint": [
+        4.1,
+        0.575,
+        0.5
+      ],
+      "metres": 3.686708169019002
+    },
+    {
+      "event": "flota configurada en repetición real",
+      "seconds": 1539.2666666665814,
+      "energyJ": 156889.5592277114,
+      "carriers": [
+        {
+          "receiverId": 295,
+          "gripId": 293,
+          "batteryId": 294,
+          "routeId": "route-1",
+          "length": 3.909023300092723,
+          "valid": true,
+          "reason": "Listo",
+          "following": true,
+          "enabled": true,
+          "status": "Despegando",
+          "charge": "Recarga: aterriza sobre un apoyo",
+          "phase": "ground",
+          "index": 0,
+          "position": [
+            4.020448223759834,
+            0.14227037641446735,
+            -0.2500229615167799
+          ],
+          "storedJ": 835.9344030635963,
+          "pick": [
+            3.0930971167985115,
+            0.8345785654531631,
+            -0.2622427211629994
+          ],
+          "place": [
+            4.1215970725487665,
+            0.8695844471627964,
+            0.5003572777173748
+          ]
+        },
+        {
+          "receiverId": 387,
+          "gripId": 385,
+          "batteryId": 386,
+          "routeId": "route-2",
+          "length": 3.9811832448470694,
+          "valid": true,
+          "reason": "Listo",
+          "following": true,
+          "enabled": true,
+          "status": "Despegando",
+          "charge": "Batería cargada",
+          "phase": "ground",
+          "index": 0,
+          "position": [
+            3.8053411021196752,
+            0.14455991412645255,
+            0.45000775682211774
+          ],
+          "storedJ": 900,
+          "pick": [
+            4.121599977173045,
+            0.83457856554999,
+            0.5000635455073553
+          ],
+          "place": [
+            3.221601030452746,
+            0.8671788138146047,
+            -1.1575569496218643
+          ]
+        },
+        {
+          "receiverId": 398,
+          "gripId": 396,
+          "batteryId": 397,
+          "routeId": "route-3",
+          "length": 3.686708169019002,
+          "valid": true,
+          "reason": "Listo",
+          "following": true,
+          "enabled": true,
+          "status": "Despegando",
+          "charge": "Batería cargada",
+          "phase": "ground",
+          "index": 0,
+          "position": [
+            4.869221122438369,
+            0.14455983157227212,
+            0.44987343933093343
+          ],
+          "storedJ": 900,
+          "pick": [
+            4.121600043062726,
+            0.8345785655596305,
+            0.5000344469303821
+          ],
+          "place": [
+            4.221600275669103,
+            0.867244674449771,
+            -1.1565043029717363
+          ]
+        }
+      ],
+      "arms": [
+        {
+          "gripperId": 279,
+          "running": true,
+          "state": "wait",
+          "status": "Puesto B en uso por un dron · frenos mecánicos, motores en reposo",
+          "cycles": 4
+        }
+      ],
+      "firstQueue": [
+        324
+      ],
+      "table": [],
+      "cold": [
+        {
+          "id": 323,
+          "origin": 323,
+          "position": [
+            4.143475997093604,
+            0.6199925856696514,
+            0.5227791865590857
+          ]
+        }
+      ],
+      "stock": {
+        "cube": 25,
+        "coupler": 0,
+        "pyramid": 15,
+        "tetra": 0
+      },
+      "chain": {
+        "phase": "order",
+        "armDemo": 4,
+        "armWired": 3,
+        "droneDelivered": 4,
+        "stabilized": 4,
+        "lot": 1,
+        "lotCount": 1,
+        "total": 1,
+        "target": 80,
+        "continuity": 35.00000000000006,
+        "continuityTarget": 60,
+        "continuityLabel": "Actividad continua útil",
+        "continuityMode": "useful-activity",
+        "deliveryWindow": 240,
+        "continuityState": "returning",
+        "waitingSeconds": 0,
+        "continuityReason": "Regreso automático",
+        "sustained": false,
+        "completed": false,
+        "reserveReturn": true,
+        "returnReservePercent": 92.88160034039959,
+        "clearOutputs": 1,
+        "clearOutputsTarget": 3
+      }
+    },
+    {
+      "event": "dos transportes listos para los alimentadores",
+      "seconds": 1539.2666666665814,
+      "energyJ": 156889.52922771234,
+      "carriers": [
+        {
+          "receiverId": 295,
+          "gripId": 293,
+          "batteryId": 294,
+          "routeId": "route-1",
+          "length": 3.909023300092723,
+          "valid": true,
+          "reason": "Listo",
+          "following": false,
+          "enabled": false,
+          "status": "Pausa de instalación · apoyado en origen · apoyado en origen",
+          "charge": "Recarga: detén el mecanismo y espera a que quede estable",
+          "position": [
+            4.020443324301522,
+            0.14274578167199609,
+            -0.2500229667117862
+          ],
+          "storedJ": 835.9344030635963,
+          "pick": [
+            3.0930971167985115,
+            0.8345785654531631,
+            -0.2622427211629994
+          ],
+          "place": [
+            4.1215970725487665,
+            0.8695844471627964,
+            0.5003572777173748
+          ]
+        },
+        {
+          "receiverId": 387,
+          "gripId": 385,
+          "batteryId": 386,
+          "routeId": "route-2",
+          "length": 3.9811832448470694,
+          "valid": true,
+          "reason": "Listo",
+          "following": false,
+          "enabled": false,
+          "status": "Pausa de instalación · apoyado en origen · apoyado en origen",
+          "charge": "Batería cargada",
+          "position": [
+            3.805341102136295,
+            0.14456291286136486,
+            0.45000775682786637
+          ],
+          "storedJ": 900,
+          "pick": [
+            4.121599977173045,
+            0.83457856554999,
+            0.5000635455073553
+          ],
+          "place": [
+            3.221601030452746,
+            0.8671788138146047,
+            -1.1575569496218643
+          ]
+        },
+        {
+          "receiverId": 398,
+          "gripId": 396,
+          "batteryId": 397,
+          "routeId": "route-3",
+          "length": 3.686708169019002,
+          "valid": true,
+          "reason": "Listo",
+          "following": false,
+          "enabled": false,
+          "status": "Pausa de instalación · apoyado en origen · apoyado en origen",
+          "charge": "Batería cargada",
+          "position": [
+            4.86922112247024,
+            0.1445628497217865,
+            0.4498734393340365
+          ],
+          "storedJ": 900,
+          "pick": [
+            4.121600043062726,
+            0.8345785655596305,
+            0.5000344469303821
+          ],
+          "place": [
+            4.221600275669103,
+            0.867244674449771,
+            -1.1565043029717363
+          ]
+        }
+      ],
+      "arms": [
+        {
+          "gripperId": 279,
+          "running": true,
+          "state": "wait",
+          "status": "Puesto B en uso por un dron · frenos mecánicos, motores en reposo",
+          "cycles": 4
+        }
+      ],
+      "firstQueue": [
+        324
+      ],
+      "table": [],
+      "cold": [
+        {
+          "id": 323,
+          "origin": 323,
+          "position": [
+            4.143475997093604,
+            0.6199925856696514,
+            0.5227791865590857
+          ]
+        }
+      ],
+      "stock": {
+        "cube": 25,
+        "coupler": 0,
+        "pyramid": 15,
+        "tetra": 0
+      },
+      "chain": {
+        "phase": "order",
+        "armDemo": 4,
+        "armWired": 3,
+        "droneDelivered": 4,
+        "stabilized": 4,
+        "lot": 1,
+        "lotCount": 1,
+        "total": 1,
+        "target": 80,
+        "continuity": 35.00000000000006,
+        "continuityTarget": 60,
+        "continuityLabel": "Actividad continua útil",
+        "continuityMode": "useful-activity",
+        "deliveryWindow": 240,
+        "continuityState": "returning",
+        "waitingSeconds": 0,
+        "continuityReason": "Regreso automático",
+        "sustained": false,
+        "completed": false,
+        "reserveReturn": true,
+        "returnReservePercent": 92.88160034039959,
+        "clearOutputs": 1,
+        "clearOutputsTarget": 3
+      }
+    },
+    {
+      "event": "transportes de alimentadores en marcha",
+      "seconds": 1539.27,
+      "energyJ": 156889.53,
+      "receivers": [
+        387,
+        398
+      ]
+    },
+    {
+      "event": "flota guardada reanudada con sus poses existentes",
+      "seconds": 1539.2666666665814,
+      "energyJ": 156889.52922771234,
+      "carriers": [
+        {
+          "receiverId": 295,
+          "gripId": 293,
+          "batteryId": 294,
+          "routeId": "route-1",
+          "length": 3.909023300092723,
+          "valid": true,
+          "reason": "Listo",
+          "following": true,
+          "enabled": true,
+          "status": "Despegando",
+          "charge": "Recarga: detén el mecanismo y espera a que quede estable",
+          "phase": "ground",
+          "index": 0,
+          "position": [
+            4.020443324301522,
+            0.14274578167199609,
+            -0.2500229667117862
+          ],
+          "storedJ": 835.9344030635963,
+          "pick": [
+            3.0930971167985115,
+            0.8345785654531631,
+            -0.2622427211629994
+          ],
+          "place": [
+            4.1215970725487665,
+            0.8695844471627964,
+            0.5003572777173748
+          ]
+        },
+        {
+          "receiverId": 387,
+          "gripId": 385,
+          "batteryId": 386,
+          "routeId": "route-2",
+          "length": 3.9811832448470694,
+          "valid": true,
+          "reason": "Listo",
+          "following": true,
+          "enabled": true,
+          "status": "Despegando",
+          "charge": "Batería cargada",
+          "phase": "ground",
+          "index": 0,
+          "position": [
+            3.805341102136295,
+            0.14456291286136486,
+            0.45000775682786637
+          ],
+          "storedJ": 900,
+          "pick": [
+            4.121599977173045,
+            0.83457856554999,
+            0.5000635455073553
+          ],
+          "place": [
+            3.221601030452746,
+            0.8671788138146047,
+            -1.1575569496218643
+          ]
+        },
+        {
+          "receiverId": 398,
+          "gripId": 396,
+          "batteryId": 397,
+          "routeId": "route-3",
+          "length": 3.686708169019002,
+          "valid": true,
+          "reason": "Listo",
+          "following": true,
+          "enabled": true,
+          "status": "Despegando",
+          "charge": "Batería cargada",
+          "phase": "ground",
+          "index": 0,
+          "position": [
+            4.86922112247024,
+            0.1445628497217865,
+            0.4498734393340365
+          ],
+          "storedJ": 900,
+          "pick": [
+            4.121600043062726,
+            0.8345785655596305,
+            0.5000344469303821
+          ],
+          "place": [
+            4.221600275669103,
+            0.867244674449771,
+            -1.1565043029717363
+          ]
+        }
+      ],
+      "arms": [
+        {
+          "gripperId": 279,
+          "running": true,
+          "state": "wait",
+          "status": "Puesto B en uso por un dron · frenos mecánicos, motores en reposo",
+          "cycles": 4
+        }
+      ],
+      "firstQueue": [
+        324
+      ],
+      "table": [],
+      "cold": [
+        {
+          "id": 323,
+          "origin": 323,
+          "position": [
+            4.143475997093604,
+            0.6199925856696514,
+            0.5227791865590857
+          ]
+        }
+      ],
+      "stock": {
+        "cube": 25,
+        "coupler": 0,
+        "pyramid": 15,
+        "tetra": 0
+      },
+      "chain": {
+        "phase": "order",
+        "armDemo": 4,
+        "armWired": 3,
+        "droneDelivered": 4,
+        "stabilized": 4,
+        "lot": 1,
+        "lotCount": 1,
+        "total": 1,
+        "target": 80,
+        "continuity": 35.00000000000006,
+        "continuityTarget": 60,
+        "continuityLabel": "Actividad continua útil",
+        "continuityMode": "useful-activity",
+        "deliveryWindow": 240,
+        "continuityState": "returning",
+        "waitingSeconds": 0,
+        "continuityReason": "Regreso automático",
+        "sustained": false,
+        "completed": false,
+        "reserveReturn": true,
+        "returnReservePercent": 92.88160034039959,
+        "clearOutputs": 1,
+        "clearOutputsTarget": 3
+      }
+    },
+    {
+      "event": "alimentación automática del segundo frío configurada",
+      "seconds": 1539.27,
+      "energyJ": 156889.53,
+      "fleet": {
+        "seconds": 1539.2666666665814,
+        "energyJ": 156889.52922771234,
+        "carriers": [
+          {
+            "receiverId": 295,
+            "gripId": 293,
+            "batteryId": 294,
+            "routeId": "route-1",
+            "length": 3.909023300092723,
+            "valid": true,
+            "reason": "Listo",
+            "following": true,
+            "enabled": true,
+            "status": "Despegando",
+            "charge": "Recarga: detén el mecanismo y espera a que quede estable",
+            "phase": "ground",
+            "index": 0,
+            "position": [
+              4.020443324301522,
+              0.14274578167199609,
+              -0.2500229667117862
+            ],
+            "storedJ": 835.9344030635963,
+            "pick": [
+              3.0930971167985115,
+              0.8345785654531631,
+              -0.2622427211629994
+            ],
+            "place": [
+              4.1215970725487665,
+              0.8695844471627964,
+              0.5003572777173748
+            ]
+          },
+          {
+            "receiverId": 387,
+            "gripId": 385,
+            "batteryId": 386,
+            "routeId": "route-2",
+            "length": 3.9811832448470694,
+            "valid": true,
+            "reason": "Listo",
+            "following": true,
+            "enabled": true,
+            "status": "Despegando",
+            "charge": "Batería cargada",
+            "phase": "ground",
+            "index": 0,
+            "position": [
+              3.805341102136295,
+              0.14456291286136486,
+              0.45000775682786637
+            ],
+            "storedJ": 900,
+            "pick": [
+              4.121599977173045,
+              0.83457856554999,
+              0.5000635455073553
+            ],
+            "place": [
+              3.221601030452746,
+              0.8671788138146047,
+              -1.1575569496218643
+            ]
+          },
+          {
+            "receiverId": 398,
+            "gripId": 396,
+            "batteryId": 397,
+            "routeId": "route-3",
+            "length": 3.686708169019002,
+            "valid": true,
+            "reason": "Listo",
+            "following": true,
+            "enabled": true,
+            "status": "Despegando",
+            "charge": "Batería cargada",
+            "phase": "ground",
+            "index": 0,
+            "position": [
+              4.86922112247024,
+              0.1445628497217865,
+              0.4498734393340365
+            ],
+            "storedJ": 900,
+            "pick": [
+              4.121600043062726,
+              0.8345785655596305,
+              0.5000344469303821
+            ],
+            "place": [
+              4.221600275669103,
+              0.867244674449771,
+              -1.1565043029717363
+            ]
+          }
+        ],
+        "arms": [
+          {
+            "gripperId": 279,
+            "running": true,
+            "state": "wait",
+            "status": "Puesto B en uso por un dron · frenos mecánicos, motores en reposo",
+            "cycles": 4
+          }
+        ],
+        "firstQueue": [
+          324
+        ],
+        "table": [],
+        "cold": [
+          {
+            "id": 323,
+            "origin": 323,
+            "position": [
+              4.143475997093604,
+              0.6199925856696514,
+              0.5227791865590857
+            ]
+          }
+        ],
+        "stock": {
+          "cube": 25,
+          "coupler": 0,
+          "pyramid": 15,
+          "tetra": 0
+        },
+        "chain": {
+          "phase": "order",
+          "armDemo": 4,
+          "armWired": 3,
+          "droneDelivered": 4,
+          "stabilized": 4,
+          "lot": 1,
+          "lotCount": 1,
+          "total": 1,
+          "target": 80,
+          "continuity": 35.00000000000006,
+          "continuityTarget": 60,
+          "continuityLabel": "Actividad continua útil",
+          "continuityMode": "useful-activity",
+          "deliveryWindow": 240,
+          "continuityState": "returning",
+          "waitingSeconds": 0,
+          "continuityReason": "Regreso automático",
+          "sustained": false,
+          "completed": false,
+          "reserveReturn": true,
+          "returnReservePercent": 92.88160034039959,
+          "clearOutputs": 1,
+          "clearOutputsTarget": 3
+        }
+      }
+    },
+    {
+      "event": "cadena automática en marcha",
+      "seconds": 1599.27,
+      "energyJ": 156035.44,
+      "chain": {
+        "phase": "order",
+        "armDemo": 5,
+        "armWired": 3,
+        "droneDelivered": 4,
+        "stabilized": 4,
+        "lot": 1,
+        "lotCount": 1,
+        "total": 1,
+        "target": 80,
+        "continuity": 60,
+        "continuityTarget": 60,
+        "continuityLabel": "Actividad continua útil",
+        "continuityMode": "useful-activity",
+        "deliveryWindow": 240,
+        "continuityState": "transport",
+        "waitingSeconds": 0,
+        "continuityReason": "Traslado con carga",
+        "sustained": true,
+        "completed": false,
+        "reserveReturn": true,
+        "returnReservePercent": 92.88160034039959,
+        "clearOutputs": 1,
+        "clearOutputsTarget": 3
+      },
+      "fleet": {
+        "seconds": 1599.2666666665268,
+        "energyJ": 156035.4395952356,
+        "carriers": [
+          {
+            "receiverId": 295,
+            "gripId": 293,
+            "batteryId": 294,
+            "routeId": "route-1",
+            "length": 3.909023300092723,
+            "valid": true,
+            "reason": "Listo",
+            "following": true,
+            "enabled": true,
+            "status": "En ruta · punto 6/12",
+            "charge": "Batería cargada",
+            "phase": "travel",
+            "index": 5,
+            "position": [
+              4.165642746763387,
+              1.0927499388259032,
+              -0.2622185354300055
+            ],
+            "storedJ": 867.5405661925182,
+            "pick": [
+              3.0930971167985115,
+              0.8345785654531631,
+              -0.2622427211629994
+            ],
+            "place": [
+              4.1215970725487665,
+              0.8695844471627964,
+              0.5003572777173748
+            ],
+            "payloadId": 324
+          },
+          {
+            "receiverId": 387,
+            "gripId": 385,
+            "batteryId": 386,
+            "routeId": "route-2",
+            "length": 3.9811832448470694,
+            "valid": true,
+            "reason": "Listo",
+            "following": true,
+            "enabled": true,
+            "status": "Esperando producto en origen · Sin objeto frente a la cara naranja. Centra un cubo suelto frente a ella. Alcance: 5 cm.",
+            "charge": "Batería cargada",
+            "waiting": "Esperando producto en origen · Sin objeto frente a la cara naranja. Centra un cubo suelto frente a ella. Alcance: 5 cm.",
+            "phase": "ground",
+            "index": 0,
+            "position": [
+              3.8039694453923585,
+              0.14456404566468345,
+              0.4506491318103386
+            ],
+            "storedJ": 900,
+            "pick": [
+              4.121599977173045,
+              0.83457856554999,
+              0.5000635455073553
+            ],
+            "place": [
+              3.221601030452746,
+              0.8671788138146047,
+              -1.1575569496218643
+            ]
+          },
+          {
+            "receiverId": 398,
+            "gripId": 396,
+            "batteryId": 397,
+            "routeId": "route-3",
+            "length": 3.686708169019002,
+            "valid": true,
+            "reason": "Listo",
+            "following": true,
+            "enabled": true,
+            "status": "Esperando producto en origen · Sin objeto frente a la cara naranja. Centra un cubo suelto frente a ella. Alcance: 5 cm.",
+            "charge": "Batería cargada",
+            "waiting": "Esperando producto en origen · Sin objeto frente a la cara naranja. Centra un cubo suelto frente a ella. Alcance: 5 cm.",
+            "phase": "ground",
+            "index": 0,
+            "position": [
+              4.8692211225065405,
+              0.14457259681057277,
+              0.44987343943146013
+            ],
+            "storedJ": 900,
+            "pick": [
+              4.121600043062726,
+              0.8345785655596305,
+              0.5000344469303821
+            ],
+            "place": [
+              4.221600275669103,
+              0.867244674449771,
+              -1.1565043029717363
+            ]
+          }
+        ],
+        "arms": [
+          {
+            "gripperId": 279,
+            "running": true,
+            "state": "wait",
+            "status": "Puesto B en uso por un dron · frenos mecánicos, motores en reposo",
+            "cycles": 5
+          }
+        ],
+        "firstQueue": [
+          440
+        ],
+        "table": [],
+        "cold": [],
+        "stock": {
+          "cube": 25,
+          "coupler": 0,
+          "pyramid": 15,
+          "tetra": 0
+        },
+        "chain": {
+          "phase": "order",
+          "armDemo": 5,
+          "armWired": 3,
+          "droneDelivered": 4,
+          "stabilized": 4,
+          "lot": 1,
+          "lotCount": 1,
+          "total": 1,
+          "target": 80,
+          "continuity": 60,
+          "continuityTarget": 60,
+          "continuityLabel": "Actividad continua útil",
+          "continuityMode": "useful-activity",
+          "deliveryWindow": 240,
+          "continuityState": "transport",
+          "waitingSeconds": 0,
+          "continuityReason": "Traslado con carga",
+          "sustained": true,
+          "completed": false,
+          "reserveReturn": true,
+          "returnReservePercent": 92.88160034039959,
+          "clearOutputs": 1,
+          "clearOutputsTarget": 3
+        }
+      },
+      "line": {
+        "built": 8,
+        "running": 8,
+        "traveling": 0,
+        "cooling": 0,
+        "received": 12,
+        "status": "Carga enfriada disponible para el brazo."
+      }
+    },
+    {
+      "event": "rotor recibido 2",
+      "seconds": 1658.27,
+      "energyJ": 155231.62,
+      "chain": {
+        "phase": "order",
+        "armDemo": 6,
+        "armWired": 3,
+        "droneDelivered": 5,
+        "stabilized": 5,
+        "lot": 1,
+        "lotCount": 2,
+        "total": 2,
+        "target": 80,
+        "continuity": 60,
+        "continuityTarget": 60,
+        "continuityLabel": "Actividad continua útil",
+        "continuityMode": "useful-activity",
+        "deliveryWindow": 240,
+        "continuityState": "transport",
+        "waitingSeconds": 0,
+        "continuityReason": "Traslado con carga",
+        "sustained": true,
+        "completed": false,
+        "reserveReturn": true,
+        "returnReservePercent": 92.88160034039959,
+        "clearOutputs": 2,
+        "clearOutputsTarget": 3
+      },
+      "bodies": 148
+    },
+    {
+      "event": "pedido parcial guardado para continuar",
+      "seconds": 1658.27,
+      "energyJ": 155231.62,
+      "chain": {
+        "phase": "order",
+        "armDemo": 6,
+        "armWired": 3,
+        "droneDelivered": 5,
+        "stabilized": 5,
+        "lot": 1,
+        "lotCount": 2,
+        "total": 2,
+        "target": 80,
+        "continuity": 60,
+        "continuityTarget": 60,
+        "continuityLabel": "Actividad continua útil",
+        "continuityMode": "useful-activity",
+        "deliveryWindow": 240,
+        "continuityState": "transport",
+        "waitingSeconds": 0,
+        "continuityReason": "Traslado con carga",
+        "sustained": true,
+        "completed": false,
+        "reserveReturn": true,
+        "returnReservePercent": 92.88160034039959,
+        "clearOutputs": 2,
+        "clearOutputsTarget": 3
+      },
+      "endurance": {
+        "target": 2,
+        "initialReceived": 1,
+        "initialEnergyJ": 156889.52922771234,
+        "finalEnergyJ": 155231.61938697958,
+        "spentEnergyJ": 1657.9098407327547,
+        "simulatedSeconds": 118.99999999989177,
+        "wallSeconds": 24.04727937,
+        "peakBodies": 155,
+        "peakGroups": 109,
+        "receivedIds": [
+          "rotor:2",
+          "rotor:4"
+        ],
+        "spent": {
+          "extraction": 860,
+          "conversion": 2095,
+          "forming": 540,
+          "charge": 12299.5480486688,
+          "cooling": 1793.6044444444408,
+          "transport": 6452.228119901557,
+          "assembly": 695.9999999999986,
+          "reconfiguration": 31.99999999999997
+        }
+      }
+    }
+  ],
+  "observations": [],
+  "errors": [],
+  "endurance": {
+    "target": 2,
+    "initialReceived": 1,
+    "initialEnergyJ": 156889.52922771234,
+    "finalEnergyJ": 155231.61938697958,
+    "spentEnergyJ": 1657.9098407327547,
+    "simulatedSeconds": 118.99999999989177,
+    "wallSeconds": 24.04727937,
+    "peakBodies": 155,
+    "peakGroups": 109,
+    "receivedIds": [
+      "rotor:2",
+      "rotor:4"
+    ],
+    "spent": {
+      "extraction": 860,
+      "conversion": 2095,
+      "forming": 540,
+      "charge": 12299.5480486688,
+      "cooling": 1793.6044444444408,
+      "transport": 6452.228119901557,
+      "assembly": 695.9999999999986,
+      "reconfiguration": 31.99999999999997
+    }
+  },
+  "final": {
+    "seconds": 1658.27,
+    "energyJ": 155231.62,
+    "line": {
+      "built": 8,
+      "running": 8,
+      "traveling": 1,
+      "cooling": 0,
+      "received": 12,
+      "status": "Carga enfriada disponible para el brazo."
+    },
+    "stock": {
+      "assigned": 4,
+      "workers": 4,
+      "mode": "plan",
+      "message": "Salida disponible.",
+      "carrying": 0,
+      "raw": 11,
+      "cubes": 28,
+      "couplers": 0,
+      "readyCubes": 28,
+      "readyCouplers": 0,
+      "beltFeed": true,
+      "availableCubeSlots": 0,
+      "pendingWorker": false
+    },
+    "chain": {
+      "phase": "order",
+      "armDemo": 6,
+      "armWired": 3,
+      "droneDelivered": 5,
+      "stabilized": 5,
+      "lot": 1,
+      "lotCount": 2,
+      "total": 2,
+      "target": 80,
+      "continuity": 60,
+      "continuityTarget": 60,
+      "continuityLabel": "Actividad continua útil",
+      "continuityMode": "useful-activity",
+      "deliveryWindow": 240,
+      "continuityState": "transport",
+      "waitingSeconds": 0,
+      "continuityReason": "Traslado con carga",
+      "sustained": true,
+      "completed": false,
+      "reserveReturn": true,
+      "returnReservePercent": 92.88160034039959,
+      "clearOutputs": 2,
+      "clearOutputsTarget": 3
+    },
+    "world": {
+      "version": 1,
+      "clock": 1110.2666666669716,
+      "buildOrder": null,
+      "arms": [
+        279
+      ],
+      "dockedArms": [
+        279
+      ],
+      "belts": {
+        "feedA": 337,
+        "feedB": 367
+      },
+      "sourceId": 1,
+      "sourcePending": false,
+      "assembler": {
+        "id": 1,
+        "placed": true,
+        "p": [
+          3.7,
+          0,
+          -2.15
+        ],
+        "turns": 0
+      },
+      "laser": {
+        "part": 383,
+        "belt": 367
+      },
+      "pending": [],
+      "carried": {},
+      "returning": [],
+      "productiveTrips": {
+        "279": [
+          440
+        ],
+        "293": [
+          324
+        ],
+        "385": [
+          323
+        ],
+        "396": [
+          324
+        ]
+      },
+      "firstQueue": [],
+      "families": [
+        2
+      ],
+      "message": "Rotor recibido · 2 / 80.",
+      "scan": 0.03333333333333334
+    },
+    "bodies": 148,
+    "groups": 102
+  },
+  "physical": {
+    "arm": [
+      {
+        "gripperId": 279,
+        "tip": {
+          "x": 2.3069672559055943,
+          "y": 0.6903914933731172,
+          "z": -0.13189426363282117
+        },
+        "base": {
+          "x": 2.410918831,
+          "y": 0.682,
+          "z": -0.755
+        },
+        "status": "Sin objeto frente a la cara naranja. Centra un cubo suelto frente a ella. Alcance: 5 cm. · frenos mecánicos, motores en reposo"
+      }
+    ],
+    "queue": []
+  }
+}

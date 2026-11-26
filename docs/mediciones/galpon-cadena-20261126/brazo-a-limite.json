@@ -1,0 +1,104 @@
+{
+  "date": "2026-11-26",
+  "scope": "Exploración geométrica acotada con construcción, equipo vacío y colas de entrada preparadas explícitamente. No es una alternativa funcional validada ni una entrega real al alimentador A.",
+  "roomSupportsMoved": false,
+  "physicsChanged": false,
+  "forcesChanged": false,
+  "energyGranted": false,
+  "hz": 60,
+  "apparatus": {
+    "arm": "Brazo nativo de 18 cubos y 8 enganches; cuatro ejes a 12 rpm, 4 N·m y 64 u",
+    "tower": {
+      "layers": 7,
+      "cubes": 84,
+      "heightMetres": 0.63,
+      "manufactureJ": 1848,
+      "pivot": [
+        3.69,
+        0.855,
+        -0.325
+      ]
+    },
+    "cableUnits": 8
+  },
+  "teaching": {
+    "pickCubeCenter": [
+      4.018,
+      0.62,
+      0.445
+    ],
+    "pickFaceSeparationCm": 4.5,
+    "placeAim": [
+      3.35,
+      0.575,
+      -1.08
+    ],
+    "placeFaceSeparationCm": 18.5,
+    "placeView": "Vista más vertical para seleccionar la superficie superior del primer rodillo, no su cara frontal."
+  },
+  "observations": [
+    {
+      "case": "72 cm, posición media libre de la mesa",
+      "outcome": "La toma vertical queda fuera del alcance alineado; no se inició un transporte."
+    },
+    {
+      "case": "54 cm",
+      "outcome": "La misma toma también queda fuera del alcance alineado; no se inició un transporte."
+    },
+    {
+      "case": "63 cm, toma adelantada a Z=0.425",
+      "outcome": "La posición alcanza el cubo, pero la postura del agarre invade la guarda frontal. No se confirmó."
+    },
+    {
+      "case": "63 cm, toma Z=0.445",
+      "outcome": "Ambas posturas son válidas y el agarre recoge físicamente. El recorrido con la carga se rechaza. No hay entrega.",
+      "predictedObstruction": {
+        "movingId": 196,
+        "movingPoint": [
+          2.8643445876295517,
+          0.6409040431061683,
+          -0.4215351808429883
+        ],
+        "wallCenter": [
+          2.59,
+          0.61,
+          -0.665
+        ],
+        "wallHalfExtents": [
+          0.27,
+          0.025,
+          0.21
+        ],
+        "label": "Bancada original del brazo de recepción"
+      }
+    },
+    {
+      "case": "63 cm, giro inicial de 180° del equipo vacío alrededor de Y",
+      "outcome": "Ambas posturas y la recogida física siguen siendo posibles; el controlador conserva la carga y aparca al no hallar un recorrido libre. No hay entrega después de 40 s.",
+      "status": "Recorrido hacia B ocupado · carga retenida, motores en reposo",
+      "finalGripperPoint": [
+        4.013080388590271,
+        0.750548271584098,
+        0.43797835073937774
+      ],
+      "finalCubeCenter": [
+        4.008721002736719,
+        0.6550449731817222,
+        0.4421393193860067
+      ]
+    }
+  ],
+  "validatedFullCycles": 0,
+  "validatedDeliveriesToA": 0,
+  "evidence": [
+    {
+      "file": "brazo-a-barrido.tap",
+      "sha256": "4f0ec1642f6e34ffdff7bf35c38b8690037fbd721b76658b93f84839f934b60d"
+    },
+    {
+      "file": "brazo-a-giro-180.tap",
+      "sha256": "5c21125ed23e564346043c2c097222c97be27d5528b076263f9b4bc1fef5de6d"
+    }
+  ],
+  "limit": "Las pruebas PASS del pedestal hacia B conservan sus resultados. No se atribuye a A un coste por ciclo, capacidad de tres transferencias ni cumplimiento del pedido de ochenta. La prueba de enseñanza o agarre no sustituye una entrega con retorno."
+}

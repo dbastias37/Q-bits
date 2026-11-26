@@ -1,0 +1,178 @@
+{
+  "mode": "Contiguous four-worker mission with real economy and Cannon; simulated clock accelerated, DOM/GPU instrumented.",
+  "milestones": [
+    {
+      "event": "inicio B",
+      "seconds": 548,
+      "energyJ": 170716.23
+    },
+    {
+      "event": "brazo montado",
+      "seconds": 598,
+      "energyJ": 167325.12,
+      "workers": 4,
+      "rotors": 4
+    },
+    {
+      "event": "buffer físico en recepción",
+      "seconds": 645,
+      "energyJ": 167219.34,
+      "queue": [
+        {
+          "id": 285,
+          "p": {
+            "x": 3.02873326015878,
+            "y": 0.6199992145521672,
+            "z": -0.28316562559324837
+          }
+        }
+      ]
+    },
+    {
+      "event": "primera carga B sobre recepción",
+      "seconds": 645,
+      "energyJ": 167219.34,
+      "queue": [
+        285
+      ]
+    },
+    {
+      "event": "pose pick validada",
+      "seconds": 645,
+      "energyJ": 167219.34,
+      "point": {
+        "x": 2.31,
+        "y": 0.575,
+        "z": 0
+      },
+      "heightCm": 12
+    },
+    {
+      "event": "pose place validada",
+      "seconds": 645,
+      "energyJ": 167219.34,
+      "point": {
+        "x": 3.08,
+        "y": 0.575,
+        "z": -0.25
+      },
+      "heightCm": 25
+    },
+    {
+      "event": "transferencia real de recepción a mesa",
+      "seconds": 662,
+      "energyJ": 167156.76
+    }
+  ],
+  "observations": [],
+  "errors": [],
+  "final": {
+    "seconds": 662,
+    "energyJ": 167156.76,
+    "line": {
+      "built": 8,
+      "running": 8,
+      "traveling": 1,
+      "cooling": 0,
+      "received": 12,
+      "status": "Carga enfriada disponible para el brazo."
+    },
+    "stock": {
+      "assigned": 4,
+      "workers": 4,
+      "mode": "plan",
+      "message": "Salida disponible.",
+      "carrying": 0,
+      "raw": 0,
+      "cubes": 2,
+      "couplers": 0,
+      "readyCubes": 2,
+      "readyCouplers": 0,
+      "beltFeed": true,
+      "availableCubeSlots": 22,
+      "pendingWorker": false
+    },
+    "chain": {
+      "phase": "arm-power",
+      "armDemo": 1,
+      "armWired": 0,
+      "droneDelivered": 0,
+      "stabilized": 0,
+      "lot": 1,
+      "lotCount": 0,
+      "total": 0,
+      "target": 80,
+      "continuity": 0,
+      "continuityTarget": 60,
+      "continuityLabel": "Actividad continua útil",
+      "continuityMode": "useful-activity",
+      "deliveryWindow": 240,
+      "continuityState": "waiting",
+      "waitingSeconds": 0,
+      "continuityReason": "",
+      "sustained": false,
+      "completed": false
+    },
+    "world": {
+      "version": 1,
+      "clock": 113.99999999999865,
+      "buildOrder": null,
+      "arms": [
+        279
+      ],
+      "dockedArms": [
+        279
+      ],
+      "belts": {
+        "feedA": null,
+        "feedB": null
+      },
+      "sourceId": 1,
+      "sourcePending": false,
+      "assembler": {
+        "id": 1,
+        "placed": false,
+        "p": [
+          3.7,
+          0,
+          -2.15
+        ],
+        "turns": 0
+      },
+      "laser": null,
+      "pending": [],
+      "carried": {},
+      "returning": [],
+      "productiveTrips": {
+        "279": [
+          285
+        ]
+      },
+      "firstQueue": [],
+      "families": [],
+      "message": "Fuente principal · 167157 J disponibles · salida limitada a 240 W. Actívala y conecta un cable real al brazo.",
+      "scan": 0.03333333333333334
+    },
+    "bodies": 81,
+    "groups": 43
+  },
+  "physical": {
+    "arm": [
+      {
+        "gripperId": 279,
+        "tip": {
+          "x": 2.697560456953746,
+          "y": 0.754106478554838,
+          "z": -0.04932223009605009
+        },
+        "base": {
+          "x": 2.410918831,
+          "y": 0.682,
+          "z": -0.755
+        },
+        "status": "Soltado · despejando la recepción"
+      }
+    ],
+    "queue": []
+  }
+}
