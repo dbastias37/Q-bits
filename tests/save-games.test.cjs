@@ -49,7 +49,7 @@ test('a fresh store restores independent lab and campaign slots from one atomic 
   const reloaded=store(mem);
   assert.deepEqual(reloaded.read('lab').save.data,bench);
   assert.deepEqual(reloaded.read('campaign').save.data,story);
-  assert.deepEqual([...mem.values.keys()].sort(),Object.values(model.KEYS).sort());
+  assert.deepEqual([...mem.values.keys()].sort(),[model.KEYS.lab,model.KEYS.campaign].sort());
   assert.equal(mem.writes.length,2);
   assert.equal(reloaded.read('lab').save.format,'qbits-save');
   assert.equal(reloaded.read('lab').save.version,1);

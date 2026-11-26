@@ -1,6 +1,16 @@
 # Q-bits — punto de continuación
 
-Actualizado: 25 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
+Actualizado: 26 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
+
+## Galpón de prueba · La primera línea
+
+La rama `prueba/galpon-primer-ciclo` parte de `b7ff65f63854114c591b9e8571a586b85253ecb1`. El 26 de noviembre se comprobó que `main` seguía en esa revisión. La entrada **Galpón · primera línea** está en el menú principal. El enlace local con `#galpon` lleva a la selección de esta prueba. Su partida se guarda en `qbits.save.galpon.v1`.
+
+Se implementaron la fuente externa de materia base, los viajes repetidos del equipo, el convertidor y la receta nueva del conformador. Una bancada con ocho tomas alimenta tramos completos de cinta construidos con piezas físicas. El enfriador cobra por la refrigeración y la recuperación eléctrica. El contacto con la bandeja y el recorrido por los ocho tramos permiten recibir el producto en familia. La instalación concede la sala, las estaciones, la bancada, el elevador, la bandeja y un depósito inicial de 180.000 J. Cada trabajador inicial aporta 1 u y 300 J personales. Los planos y las previsualizaciones no aportan material. Las reservas, fragmentos, trabajos y familias conservan sus identidades al guardar.
+
+**Continuidad para el prompt B.** Partir del mismo guardado con el objetivo **Primer ciclo completado**, doce orígenes acreditados y sus cuerpos o familias donde los dejó el jugador. Los 144 cubos y 96 enganches incorporados a ocho rectas representan 240 u. Cargar esta etapa no debe volver a entregar trabajadores, estaciones, piezas ni carga. El modelo expone materia, plazas, energía, trabajos y temperatura, con un segundo umbral de estabilización de 0,12 para la receta que se decida en la siguiente parte. El resto de la misión de galpón sigue abierto.
+
+[Acceso, controles y punto de continuación](GALPON_PRIMER_CICLO.md) · [Economía, recetas y calor](GALPON_ECONOMIA.md) · [Mediciones de las partidas](mediciones/galpon-20261126/README.md)
 
 ## Manipulación · giro por caras de la pieza sostenida
 

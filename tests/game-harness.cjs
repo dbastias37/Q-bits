@@ -94,13 +94,18 @@ module.exports = function createGame(options = {}) {
   } else {
     scripts = [...fs.readFileSync(path.join(root, 'index.html'), 'utf8').matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
   }
-  if (fs.existsSync(gameFile)) scripts.splice(scripts.length-1,0,...['campaign-supply','factory-passage','save-games'].map(name=>fs.readFileSync(path.join(root,'assets/js/'+name+'.js'),'utf8')));
+  if (fs.existsSync(gameFile)) scripts.splice(scripts.length-1,0,...['campaign-supply','factory-passage','save-games','galpon-production'].map(name=>fs.readFileSync(path.join(root,'assets/js/'+name+'.js'),'utf8')));
   const hook = `window.__testGame={
     beginOpeningSupply,tickOpeningSupply,requestOpeningCompanion,returnOpeningCompanion,recoverOpeningCompanion,openingDestinations,openingStableAt,openingSupply,openingPayload,openingOwnsPart,hideStoryDialogue,beginFactoryPassage,tickFactoryPassage,finishCampaignLevel,storyOnGrab,openingResetPrompt,showLevelSelector,openingProtected,inputLabel,modalReadingActive,guideNarrationPaused,openFloorOrders,connectMenu,passagePayload,openingFloorHeight,drawFactoryPassage,requestOpeningCompanion,readyQuestion,
     getTrajectorySystem,trajectoryPanelSnapshot,trajectoryPanelAction,openTrajectoryPanel,closeTrajectoryPanel,trajectoryWorldClick,finishTrajectoryDraft,cancelTrajectoryDraft,trajectoryPose,trajectoryAnchor,onTrajectoryPartChanged,removeTrajectoryAdaptation,trajectoryObstacle,startTrajectoryFollower,stepTrajectoryFollower,stopTrajectoryFollower,drawTrajectories,getTrajectoryDraft:()=>trajectoryDraft,getTrajectoryPanel:()=>trajectoryPanel,
     ...(typeof groupIntoFamilies==='function'?{families,createFamily,groupIntoFamilies,familyInventoryCount,serializeFamilies,restoreFamilies,splitFamily,mergeFamilies,beginFamilyPlacement,updateFamilyPlacement,confirmFamilyPlacement,cancelFamilyPlacement,getFamilyPlacement:()=>familyPlacement,updateFamilies,clearFamilies,openFamilyMenu,drawFamilies,drawFamilyGlass,drawFamilyPlacement,familyEffects}:{}),
     ...(typeof grabFamily==='function'?{grabFamily,removeFamily,aimFamily}:{}),
     ...(typeof startFamilyGrouping==='function'?{startFamilyGrouping,advanceFamilyGrouping,cancelFamilyGrouping,getFamilyGroupingJob:()=>familyGroupingJob}:{}),
+    beginHangarGame,buildHangarSegment,hangarLineStatus,galponLineLayout,getHangarSections,galponLineSnapshot,galponLineRecordValid,setHangarLineRunning,hangarLineCoolingIds,
+    showHangarMenu,hangarOrder,hangarWorldStatus,updateHangarReadout,
+    hasHangarSave,continueHangarGame,hangarRoutesSnapshot,restoreHangarRoutes,
+    hangarReconfigure,hangarReconfigurationOrders,hangarTray,
+    hangarTakeSource,hangarProcessCrews,tickHangarWorld,saveGalponWorld,hangarWorldAction,hangarMakePart,
     saveStore,saveSession,saveCurrentGame,continueSavedGame,newSavedGame,showSavedGames,refreshSavedGames,requestNewSavedGame,closeSavedGames,autosaveGame,
     getPhysicsStep:()=>FIXED_STEP,
     drawPreviewReference:(parts,center,q,scale)=>{for(const part of parts){const mesh=unitMeshes[part.shape],p=add(center,q.vmult(mul(V(...part.p),scale))),rotation=q.mult(shelfQuaternion(part.q));bindGeometry(mesh.buffer);gl.uniform1f(uniforms.uKind,5);setPose(p,rotation,V(CUBE_SIZE*scale,CUBE_SIZE*scale,CUBE_SIZE*scale));tint(...(part.mood.externalBattery?[.38,.62,.66,1]:part.shape==='cube'?[.3,.34,.35,1]:[.58,.61,.61,1]));submitDraw(gl.TRIANGLES,0,mesh.count);}},

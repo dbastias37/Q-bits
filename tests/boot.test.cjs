@@ -171,7 +171,7 @@ function assertBlocked(e) {
 // Furniture scripts load concurrently; their completion precedes organizers.
 const dependencies=[
   'radial-menu.js','rotor-power.js','propeller-power.js','campaign-reconfiguration.js',
-  'progression.js','campaign-automation.js','campaign-production.js','workshop.js',
+  'progression.js','campaign-automation.js','campaign-production.js','galpon-production.js','workshop.js',
   'furniture-models.js','tablet-model.js','tablet-view.js','organizers.js','families.js',
   'workshop-panel.js','robot-arm-panel.js','conveyor-panel.js','battery-liquid.js',
   'reservoir-model.js','contact-sensors.js','controls.js','subtitles.js','dialogue-timing.js',
@@ -379,4 +379,17 @@ test('º ignores repeat/modifier shortcuts and cannot bypass failed loading',asy
  e.gameReady.resolve();e.musicReady.resolve();await e.advance(20000);assert.equal(e.events.includes('game.quickWake'),false);
  const bad=environment();await bad.scriptResult('cannon.min.js',false);quickKey(bad);await bad.advance(1000);
  assert.equal(bad.events.includes('game.quickWake'),false);assert.equal(bad.nodes.get('#boot-retry').hidden,false);
+});
+
+test('el enlace #galpon abre la selección del prototipo desde el botón de entrada',async () => {
+  const e=environment();
+  e.context.location.hash='#galpon';
+  let opened;
+  e.context.QBitsGame.menu=options=>{opened=options.galpon;};
+  await e.loadScripts();e.gameReady.resolve();e.musicReady.resolve();
+  await e.advance(20000);e.nodes.get('#boot-play').click();await flush();
+  assert.equal(opened,true);
+  assert.equal(e.document.body.dataset.booting,'false');
+  assert.equal(e.nodes.get('#boot-screen').hidden,true);
+  assert.equal(e.events.includes('opening.play'),false);
 });

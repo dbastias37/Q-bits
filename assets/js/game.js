@@ -633,6 +633,7 @@ function resize() {
   }
 }
 
+let hangarMenuPointer=null,hangarCapturePointer=null;
 async function captureMouse() {
  if(workshopPanel?.isOpen)closeWorkshopPanel(false);
   if(gamepadActive){panel.hidden=true;menu.hidden=true;detachChoice=null;closeCommandMenu(false);hint.hidden=true;if(pendingPickup)completePendingPickup();return;}
@@ -689,6 +690,7 @@ document.addEventListener('pointerlockchange', () => {
   const transitionCapture = lockPending && lockTransition && lockTransition === story.transition;
   resetMouseCaptureRequest();
   locked = document.pointerLockElement === canvas;
+  hangarCapturePointer=locked&&story.scene==='galpon'?hangarMenuPointer:null;
   // A browser may finish a pending request after Escape, blur or a scene menu.
   // Do not recapture the player behind that pause.
   if(locked&&(document.hidden||story.ready&&story.mode!=='playing'&&!transitionCapture)){
@@ -713,6 +715,17 @@ document.addEventListener('mousemove', event => {
   // A malformed sample must not contaminate yaw/pitch or any gesture state.
   // Valid large movements remain intact: fast turns are intentional input.
   if(!Number.isFinite(event.movementX)||!Number.isFinite(event.movementY))return;
+  if(story.scene==='galpon'){
+    if(document.pointerLockElement!==canvas){
+      hangarMenuPointer={x:event.clientX,y:event.clientY};
+    }else if(hangarCapturePointer&&(event.movementX||event.movementY)){
+      const from=hangarCapturePointer;hangarCapturePointer=null;
+      // Chromium may report the absolute menu cursor as a relative jump on
+      // recapture, even though the cursor's client coordinates never moved.
+      if(event.clientX===from.x&&event.clientY===from.y&&
+         event.movementX===-from.x&&event.movementY===-from.y)return;
+    }
+  }
   if(radialOpen()){
     if(document.pointerLockElement===canvas)unitRadial.moveBy(event.movementX,event.movementY);
     else unitRadial.moveTo(event.clientX,event.clientY);
@@ -1455,7 +1468,33 @@ function addRigidCollisionShapes(body,parts,retiredShapes=null){
  body.updateBoundingRadius();body.aabbNeedsUpdate=true;return owners;
 }
 function groupAngularDamping(count){return count>1?Math.max(settings.damping,Math.min(.65,.24+Math.log2(count)*.065)):settings.damping;}
-function makeGroup(parts,reference=Q(),velocity=V(),spin=V(),retiredShapes=null) {
+function inGalpon(){return story.scene==='galpon';}
+function galponSupplyHint(){announce('El galpón obtiene sus piezas de la fuente, el convertidor y la estación de enganches.');}
+// Inventory is authoritative for every live piece, including a restored piece
+// or a body rebuilt by the ordinary weld/split/blueprint routines.
+function galponMaterialMatches(item,p){
+ const shape=item.kind==='raw'||item.kind==='worker'?'cube':item.kind,m=p.mood;
+ return unitShape(p)===shape&&Number.isFinite(p.weight)&&Math.abs(item.weight-p.weight)<1e-8&&
+  Number.isFinite(m?.energy)&&m.energy>=0&&m.energy<=1&&(item.kind!=='raw'||m.energy===0)&&
+  m.matter?.root===item.origin&&m.matter.path===item.path&&m.matter.rootWeight===1;
+}
+function galponGroupAuthorized(parts,fromFamily){
+ const G=window.QBitsGalponProduction,s=story.galpon,ids=new Set(),live=mechanicalPartIndex();
+ if(!s||!G||!parts.length)return false;
+ return parts.every(p=>{
+  let item=G.record(s,p.id);
+  if(item?.place==='job'){
+   item=['converter','former'].map(key=>G.ready(s,key)).find(out=>out?.id===p.id);
+   if(!item||p.mood?.energy!==item.energy)return false;
+  }
+  if(!item||!['world','belt','group','received'].includes(item.place))return false;
+  if(item.group?.startsWith('family:')&&(!fromFamily||familyStoredParts.get(p.id)!==fromFamily||item.group!=='family:'+fromFamily.id))return false;
+  if(ids.has(p.id)||live.has(p.id)||cargos.some(c=>c.rawId===p.id)||!galponMaterialMatches(item,p))return false;
+  ids.add(p.id);return true;
+ });
+}
+function makeGroup(parts,reference=Q(),velocity=V(),spin=V(),retiredShapes=null,fromFamily=null) {
+ if(inGalpon()&&!galponGroupAuthorized(parts,fromFamily))return null;
  invalidateMechanicalIndex();
  serial=Math.max(serial,...parts.map(p=>p.id));
  const weight=parts.reduce((n,p)=>n+p.weight,0),center=V();
@@ -1468,8 +1507,8 @@ function makeGroup(parts,reference=Q(),velocity=V(),spin=V(),retiredShapes=null)
  body.updateMassProperties();world.addBody(body);
  const g={body,parts:local,partShapes,materialShapeCount,route:null,pin:null};body.qubitGroup=g;body.addEventListener('wakeup',()=>{g.wakeMechanicalComponent=true;});g.block=analyzeBlock(g);groups.push(g);invalidateMechanicalIndex();registerSpeechGroup(g);registerTrajectoryGroup(g);return g;
 }
-function addQubit(p,weight=settings.mass,shape='cube'){return makeGroup([{id:++serial,weight,shape:normalizeUnitShape(shape),p:V(...p),q:Q()}]);}
-function removeGroup(g){trajectoryBeforeRemoveGroup(g);materializeConveyorsForGroup(g);disposeRigidCubeBatch(g);disposeRigidOutline(g);delete g.batteryGeometryCache;delete g.partQueryCache;robotBeforeRemoveGroup(g);invalidateMechanicalIndex();resetBatteryLiquids(g.body);invalidateRotorBody(g);undockCampaignGroup(g);removeSpeechGroup(g);leaveHaul(g);stopRoute(g);world.removeBody(g.body);const i=groups.indexOf(g);if(i>=0)groups.splice(i,1);invalidateMechanicalIndex();if(selected?.g===g)selected=null;multiSelection=multiSelection.filter(item=>item!==g);}
+function addQubit(p,weight=settings.mass,shape='cube'){if(inGalpon())return null;return makeGroup([{id:++serial,weight,shape:normalizeUnitShape(shape),p:V(...p),q:Q()}]);}
+function removeGroup(g){if(inGalpon())hangarLineIntervention(g);trajectoryBeforeRemoveGroup(g);materializeConveyorsForGroup(g);disposeRigidCubeBatch(g);disposeRigidOutline(g);delete g.batteryGeometryCache;delete g.partQueryCache;robotBeforeRemoveGroup(g);invalidateMechanicalIndex();resetBatteryLiquids(g.body);invalidateRotorBody(g);undockCampaignGroup(g);removeSpeechGroup(g);leaveHaul(g);stopRoute(g);world.removeBody(g.body);const i=groups.indexOf(g);if(i>=0)groups.splice(i,1);invalidateMechanicalIndex();if(selected?.g===g)selected=null;multiSelection=multiSelection.filter(item=>item!==g);}
 function corners(pose){if(isTBit(pose))return unitProfile(pose).vertices.map(v=>add(pose.p,pose.q.vmult(v)));const out=[],half=pose.half||V(HALF,HALF,HALF);for(const x of [-half.x,half.x])for(const y of [-half.y,half.y])for(const z of [-half.z,half.z])out.push(add(pose.p,pose.q.vmult(V(x,y,z))));return out;}
 // Rigid geometry is immutable between makeGroup/removeGroup. A translation
 // never changes its rotated extents. Keep a bounded set of exact orientations
@@ -1652,15 +1691,15 @@ function validPose(g,pos,quat,exclude=[],joiningFrames=null){
  });
 }
 function mechanismsUnlocked(){return Object.keys(story.progress).some(key=>/^level\d+$/.test(key)&&Number(key.slice(5))>=5&&story.progress[key]);}
-function mechanismsAvailable(){return !openingProtected()&&!certifiedAutomation()&&!puzzle.active&&(story.scene==='lab'||story.scene==='campaign'&&mechanismsUnlocked());}
+function mechanismsAvailable(){return !openingProtected()&&!certifiedAutomation()&&!puzzle.active&&(inGalpon()||story.scene==='lab'||story.scene==='campaign'&&mechanismsUnlocked());}
 function isMechanismChoice(id){return id==='coupler'||id==='rotor';}
 function normalizeCreationChoice(id){return id==='rotor'?'rotor':normalizeUnitShape(id);}
-function creationChoiceAllowed(id){if(typeof id==='string'&&id.startsWith('quick-'))return story.scene==='lab'&&!puzzle.active&&quickEntries.has(id);return ['cube','tetra','pyramid','coupler','rotor'].includes(id)&&(isMechanismChoice(id)?mechanismsAvailable():story.scene==='lab'&&!puzzle.active);}
+function creationChoiceAllowed(id){if(inGalpon())return false;if(typeof id==='string'&&id.startsWith('quick-'))return story.scene==='lab'&&!puzzle.active&&quickEntries.has(id);return ['cube','tetra','pyramid','coupler','rotor'].includes(id)&&(isMechanismChoice(id)?mechanismsAvailable():story.scene==='lab'&&!puzzle.active);}
 function creationTitle(id){if(quickEntries.has(id))return quickEntries.get(id).title;return {cube:'Q-bit',tetra:'T-bit triangular',pyramid:'T-bit de base cuadrada',coupler:'Enganche',rotor:'Rotor'}[id]||'Q-bit';}
 function creationShape(){const id=normalizeCreationChoice(settings.unitShape);return creationChoiceAllowed(id)?id:'cube';}
 function unitLabel(part){if(part?.mood?.trajectory)return part.mood.trajectory.role==='receiver'?'Receptor de trayectoria':'Cubo de trayectoria';if(part?.mood?.production)return part.mood.production.role==='package'?'Paquete':'Materia';if(isExternalBattery(part))return 'Batería';return unitShape(part)==='coupler'?'Enganche':isTBit(part)?'T-bit':'Q-bit';}
 function groupUnitLabel(g){if(g.parts.some(p=>p.mood.production))return g.parts.every(p=>p.mood.production)?'bloques de materia':'piezas';const c=g.parts.filter(p=>unitShape(p)==='coupler').length;if(c)return c===g.parts.length?'Enganche'+(c===1?'':'s'):'piezas';const t=g.parts.filter(isTBit).length;return t===g.parts.length?'T-bit'+(t===1?'':'s'):t?'piezas':'Q-bit'+(g.parts.length===1?'':'s');}
-function syncUnitControls(){const shape=creationShape(),select=document.querySelector('#unit-shape');select.value=shape;select.disabled=puzzle.active||story.scene!=='lab'&&!mechanismsAvailable();for(const option of select.querySelectorAll('option'))option.disabled=!creationChoiceAllowed(option.value);document.querySelector('#create').textContent='Crear '+creationTitle(shape);}
+function syncUnitControls(){const shape=creationShape(),select=document.querySelector('#unit-shape');select.value=shape;select.disabled=inGalpon()||puzzle.active||story.scene!=='lab'&&!mechanismsAvailable();for(const option of select.querySelectorAll('option'))option.disabled=!creationChoiceAllowed(option.value);document.querySelector('#create').textContent='Crear '+creationTitle(shape);}
 // Explicit sandbox copies: construction blueprints and campaign resources remain separate.
 let quickCatalogueStamp='';
 const quickEntries=new Map();
@@ -1690,8 +1729,8 @@ function quickProfile(entry){
 }
 // A placement preview owns no bodies, material IDs, joints or inventory.
 let creationPreview=null;
-function creationPlacementAllowed(id){return creationChoiceAllowed(id)||puzzle.active&&alphaSettings.allowPuzzleSpawn&&['cube','tetra','pyramid'].includes(id);}
-function startCreationTool(id){if(held||powerDraft||trajectoryDraft)return false;refreshQuickEntries();if(!creationPlacementAllowed(id))return false;if(panel.hidden)captureMouse();else stowTablet();return beginCreationPlacement(id);}
+function creationPlacementAllowed(id){return creationChoiceAllowed(id)||!inGalpon()&&puzzle.active&&alphaSettings.allowPuzzleSpawn&&['cube','tetra','pyramid'].includes(id);}
+function startCreationTool(id){if(inGalpon()){galponSupplyHint();return false;}if(held||powerDraft||trajectoryDraft)return false;refreshQuickEntries();if(!creationPlacementAllowed(id))return false;if(panel.hidden)captureMouse();else stowTablet();return beginCreationPlacement(id);}
 function creationRecord(id){
  const entry=quickEntries.get(id);if(entry?.record)return copySavedMechanism(entry.record);
  if(id!=='rotor')return null;
@@ -1704,7 +1743,7 @@ function beginBlueprintPlacement(shape,options={}){
  panel.hidden=true;captureMouse();return beginCreationPlacement('construction-plan',shape,options);
 }
 function beginCreationPlacement(id,plan=null,options={}){
- if(openingProtected())return false;
+ if(openingProtected()||inGalpon()&&plan&&id!=='construction-plan')return false;
  if(!plan&&!creationPlacementAllowed(id))return false;
  cancelUnitCreation();const entry=quickEntries.get(id);
  if(entry?.action==='shelf')return beginShelfPlacement(wallAim());
@@ -1886,6 +1925,7 @@ function handleKeyUp(event){
  if(event.code==='KeyQ'&&radialOpen()){event.preventDefault();closeUnitRadial(true);}
 }
 function spawnQubit(){
+ if(inGalpon()&&!creationPreview?.plan){galponSupplyHint();return null;}
  automationIntervention();
  if(creationPreview)return confirmCreationPlacement();
  if(pendingUnitCreation?.startsWith('quick-'))return spawnQuickElement(pendingUnitCreation);
@@ -2042,15 +2082,16 @@ function stopRotorsForManipulation(list){
  // Refresh that kinematic state once, after every affected angular speed is zero.
  for(const g of list)if(g.virtualConveyor)syncVirtualConveyorGroup(g);
 }
-function grabQubit(hitOverride=null){
+function grabQubit(hitOverride=null,restoreGrip=false){
  resetAssemblyShake();
- if(!gameInputActive()||held||marquee)return;
- const familyHit=hitOverride?.family?hitOverride:!hitOverride?aimFamily(direction(),2.7):null;if(familyHit)return grabFamily(familyHit);
+ if(!gameInputActive()&&!(restoreGrip&&inGalpon()&&saveSession.restoring)||held||marquee)return;
+ const familyHit=hitOverride?.family?hitOverride:!hitOverride?aimFamily(direction(),2.7):null;if(familyHit)return grabFamily(familyHit,restoreGrip);
  let hit=hitOverride||aimQubit();if(hit?.g?.storyEmerging)return;const pickedPartId=hit?.part.id;
  if(hit?.g?.virtualConveyor){const base=rotorPart(hit.g.virtualConveyor.conveyor.baseId);if(base)hit={...hit,g:base.g,part:base.part};}
  if(!hit){if(aimCargo(3)){announce('Este cuerpo se arrastra con un equipo de Q-bits.');return;}startMarquee();return;}
  if(altDown()){openDetachMenu(hit);return;}
  const list=carrySet(hit),weight=list.reduce((n,g)=>n+totalWeight(g),0);
+ if(inGalpon()&&list.some(g=>g.parts.some(p=>!QBitsGalponProduction.manipulable(QBitsGalponProduction.record(story.galpon,p.id))))){announce('Producto caliente · espera a que pueda manipularse.');return;}
  if(runningConveyorForGroups(list)){selected=hit;announce('Cinta en funcionamiento · primero apaga o desconecta la cinta para moverla.');return;}
  if(!canCarry(list)){announce('Peso '+formatWeight(weight)+' u · capacidad '+formatWeight(settings.maxCarry)+' u. Ajustable en P.');return;}
  for(const member of list){const run=mechanismRuns.get(member);if(run)run.repositioned=true;}
@@ -2069,6 +2110,7 @@ function grabQubit(hitOverride=null){
  const gripMass=new Map(list.filter(g=>!passive.has(g)).map(g=>[g,g.body.mass]));
  for(const [roller,driver]of passive)if(!roller.virtualConveyor)gripMass.set(driver,(gripMass.get(driver)||0)+roller.body.mass);
  for(const g of ordered){
+  if(story.scene==='galpon')hangarLineIntervention(g);
   if(g.blueprintJob){const slot=g.blueprintJob;releaseBlueprintSlot(slot);slot.bp.slots=slot.bp.slots.filter(s=>s!==slot);}
   leaveHaul(g);stopRoute(g);g.body.wakeUp();const point=stable?g.body.position.clone():g===hit.g?hit.point:g.body.position.clone();
   const local=g.body.quaternion.inverse().vmult(sub(point,g.body.position));
@@ -2515,6 +2557,7 @@ function detachPart(hit,all=false){
   makeFragments(rest,ref,velocity,spin);const detached=makeGroup([one],one.q,velocity,spin);selected={g:detached,part:detached.parts[0]};announce(unitLabel(one)+' separado');
  }
  if(modules.length){refreshRotors();pruneConveyors();for(const c of modules)if(conveyors.includes(c)){conveyorEnsureSurfaces(c);virtualizeConveyor(c);}}
+ if(inGalpon())hangarReleaseBrokenSections();
 }
 function resetAssemblyShake(){if(held)held.assemblyShake=null;}
 // One connected mechanism can have several articulated rigid units. An
@@ -2542,6 +2585,7 @@ function dismantleHeldAssembly(){
   const motion=bounded(add(add(velocity,spin.cross(offset)),outward),.45);
   const fragment=makeGroup([part],part.q,motion,spin);if(part.id===picked)pickedGroup=fragment;
  }
+ if(inGalpon())hangarReleaseBrokenSections();
  grabQubit({g:pickedGroup,part:pickedGroup.parts[0],point,distance});
  if(held){held.distance=distance;held.latched=grip.latched;held.reward=grip.reward;held.shakeSeparated=true;}
  snap=null;announce('Estructura desarmada · conservas la pieza que tomaste');redraw=true;return true;
@@ -2562,8 +2606,9 @@ function familyPose(f,p=f.body.position,q=f.body.quaternion){return {p,q,half:V(
 // A hand proxy exposes one outer volume to the ordinary grip solver. It owns
 // no pieces, is never added to groups and never wakes the stored inventory.
 function familyGripProxy(f){return f.gripProxy||(f.gripProxy={body:f.body,parts:[],family:f});}
-function grabFamily(hit=aimFamily(direction(),2.7)){
- const f=hit?.family;if(!familyEnabled()||!f||!families.includes(f)||!gameInputActive()||held||marquee||familyGroupingJob||familyPlacement||pendingUnitCreation||shelfPreview||powerDraft||robotPoseDraft)return false;
+function grabFamily(hit=aimFamily(direction(),2.7),restoreGrip=false){
+ const restoring=restoreGrip&&inGalpon()&&saveSession.restoring;
+ const f=hit?.family;if((!familyEnabled()||!gameInputActive())&&!restoring||!f||!families.includes(f)||held||marquee||familyGroupingJob||familyPlacement||pendingUnitCreation||shelfPreview||powerDraft||robotPoseDraft)return false;
  if(f.weight>settings.maxCarry+.0001){announce('Peso '+formatWeight(f.weight)+' u · capacidad '+formatWeight(settings.maxCarry)+' u. Ajustable en P.');return false;}
  const point=hit.point||f.body.position,distance=hit.distance??point.distanceTo(V(...camera));if(!Number.isFinite(distance))return false;if(distance>2.8){announce('Acércate a la familia para tomarla.');return false;}
  const g=familyGripProxy(f),b=f.body,local=b.quaternion.inverse().vmult(sub(point,b.position)),anchorBody=new CANNON.Body({mass:0});anchorBody.type=CANNON.Body.KINEMATIC;anchorBody.position.copy(point);anchorBody.collisionFilterGroup=0;
@@ -2575,7 +2620,7 @@ function grabFamily(hit=aimFamily(direction(),2.7)){
 }
 function takeFamily(f){if(!families.includes(f)||held)return;pendingPickup={family:f};if(gameInputActive())completePendingPickup();else captureMouse();}
 function familyHandHint(){return (held?.latched?'Clic: soltar':'Suelta el clic para dejarla')+' · '+heldRotationHint()+' · '+inputLabel('rotate')+' + '+walkingInputLabel()+' · giro libre · sacudir: lotes de 10';}
-function familyEnabled(){return !!window.QBitsFamilies&&['lab','campaign'].includes(story.scene)&&!puzzle.active&&!story.transition&&!story.firstCycle&&!story.passage&&!certifiedAutomation();}
+function familyEnabled(){return !!window.QBitsFamilies&&['lab','campaign','galpon'].includes(story.scene)&&!puzzle.active&&!story.transition&&!story.firstCycle&&!story.passage&&!certifiedAutomation();}
 function familyNotice(message){announce(message);return null;}
 function initFamilyUi(){
  if(!familyUi)familyUi=window.QBitsFamiliesUI?.create({onEditorClose:()=>{resetGameInputs();if(story.mode==='playing'&&!story.transition&&!document.hidden)captureMouse();}});
@@ -2637,6 +2682,13 @@ function familyExistingIds(exclude=[]){
 function createFamily(items,p,options={}){
  const id=options.id??familySerial+1,name=QBitsFamilies.sanitizeName(options.name),color=QBitsFamilies.sanitizeColor(options.color),q=options.q||Q(),v=options.v||V(),w=options.w||V();
  if(!options.trusted&&!QBitsFamilies.validFamily({version:1,id,name,color,items,p:[p.x,p.y,p.z],q:[q.x,q.y,q.z,q.w],v:[v.x,v.y,v.z],w:[w.x,w.y,w.z]},{usedIds:options.restoring?undefined:familyExistingIds(options.excludeGroups||[])}))return null;
+ if(inGalpon()&&!familyParts(items).every(part=>{
+  const r=QBitsGalponProduction.record(story.galpon,part.id);
+  if(!r||r.kind==='raw'||!galponMaterialMatches(r,part))return false;
+  if(r.place==='world')return mechanicalPartIndex().has(part.id);
+  if(!['group','received'].includes(r.place))return false;
+  return options.trusted?familyStoredParts.has(part.id):options.restoring&&r.group==='family:'+id;
+ }))return null;
  const body=new CANNON.Body({mass:QBitsFamilies.weight(items)*.25,allowSleep:true,sleepSpeedLimit:.025,sleepTimeLimit:.6});body.addShape(new CANNON.Box(V(FAMILY_HALF,FAMILY_HALF,FAMILY_HALF)));body.position.copy(p);body.quaternion.copy(options.q||Q());body.velocity.copy(options.v||V());body.angularVelocity.copy(options.w||V());body.linearDamping=.03;body.angularDamping=.35;
  const f={id,name,color,items:options.trusted?items:shelfClone(items),body};body.familyRef=f;familySerial=Math.max(familySerial,f.id);for(const part of familyParts(items))serial=Math.max(serial,part.id);
  familyRefresh(f);world.addBody(body);families.push(f);return f;
@@ -2689,7 +2741,7 @@ function* prepareFamilyGrouping(input,options={}){
  const live=new Set(groups),seen=new Set(),components=[];let processed=0;
  for(const g of input||[])if(live.has(g)&&!seen.has(g)){const component=rotorConnectedGroups([g]);component.forEach(v=>seen.add(v));components.push(component);if(++processed%32===0)yield;}
  const members=[...seen];if(!members.length)return familyNotice('Selecciona las piezas que quieres agrupar.');
- const busy=members.some(g=>g.parts.some(p=>p.id===story.guideId||p.mood.production)||g.blueprintJob||g.haulJob||g.route||g.cooler||g.robotHeld||g.pendingMoodOrder||g.body.type!==CANNON.Body.DYNAMIC||g.storyFloat);
+ const busy=members.some(g=>g.parts.some(p=>(!inGalpon()&&p.id===story.guideId)||p.mood.production)||g.blueprintJob||g.haulJob||g.route||g.cooler||g.robotHeld||g.pendingMoodOrder||g.body.type!==CANNON.Body.DYNAMIC||g.storyFloat);
  if(busy||runningConveyorForGroups(members)||[...robotGrips.values()].some(grip=>members.includes(grip.g)||members.includes(robotGripperHit(grip.id)?.g))||[...flightStates.values()].some(f=>f.enabled&&f.component?.some(g=>members.includes(g))))return familyNotice('Detén los trabajos, suelta las cargas y selecciona piezas disponibles para agrupar.');
  syncVirtualConveyors();const shared={joints:serializeRotorState(),sets:serializeRotorSets(),contacts:serializeContactState(),arms:serializeRobotArms(),belts:serializeConveyors()},items=[],origin=members[0].body.position.clone(),visuals=[];
  yield;
@@ -2705,7 +2757,12 @@ function* prepareFamilyGrouping(input,options={}){
  }
  for(const g of members){if(visuals.length>=FAMILY_EFFECT_LIMIT)break;for(const part of g.parts){const pose=partPose(g,part);visuals.push({id:part.id,p:pose.p,shape:unitShape(pose)});if(visuals.length>=FAMILY_EFFECT_LIMIT)break;}}
  yield;
+ if(inGalpon()&&!members.every(g=>g.parts.every(part=>{
+  const r=QBitsGalponProduction.record(story.galpon,part.id);
+  return r?.place==='world'&&r.kind!=='raw'&&QBitsGalponProduction.manipulable(r)&&!story.galpon.records.some(load=>load.carriers.includes(part.id));
+ })))return familyNotice('Deja enfriar la pieza o termina su trabajo antes de agrupar.');
  const made=[];try{for(let i=0;i<batches.length;i++){const b=batches[i],f=createFamily(b.items,poses[i],{name:b.name,color:b.color,restoring:true,trusted:true});if(!f)throw Error('No se pudo crear la familia.');made.push(f);}}catch(e){made.forEach(removeFamily);return familyNotice(e.message);}
+ if(inGalpon())for(const f of made){const parts=familyParts(f.items);for(const part of parts)QBitsGalponProduction.syncEnergy(story.galpon,part.id,part.mood.energy);QBitsGalponProduction.markGrouped(story.galpon,parts.map(p=>p.id),'family:'+f.id);}
  for(const set of rotorSets){const setMembers=rotorSetMembers(set);if(setMembers.some(r=>rotorGroups(r).some(g=>seen.has(g))))set.familySignature=set.familySignature||familySetSignature(setMembers);}
  automationIntervention();retireFamilyGroups(members);clearSelection();familyActive=made[0];
  const destination=new Map();for(const f of made)for(const p of familyParts(f.items))destination.set(p.id,f);
@@ -2732,12 +2789,14 @@ function splitFamily(f,limit=10){
  if(batches.length<2)return familyNotice('Esta familia ya cabe en un lote de '+limit+'.');
  const spots=familySpots(batches.length,f.body.position,[],[f]);if(!spots)return familyNotice('Libera espacio para separar los lotes.');
  const made=[];for(let i=0;i<batches.length;i++){const next=createFamily(batches[i],spots[i],{name:f.name,color:f.color,restoring:true,trusted:true});if(!next){made.forEach(removeFamily);return null;}made.push(next);}
+ if(inGalpon())for(const next of made)QBitsGalponProduction.moveFamily(story.galpon,[...next.partIds],'family:'+f.id,'family:'+next.id);
  for(const next of made)familyEffect(f.body.position,next.body.position,'cube',f.color);removeFamily(f);familyActive=made[0];announce('Familia dividida en '+made.length+' lotes de hasta '+limit+' piezas');return made;
 }
 function mergeFamilies(target,source){
  if(held?.family===target||held?.family===source||familyGroupingJob||!familyEnabled()||target===source||!families.includes(target)||!families.includes(source))return false;
  let items;try{items=QBitsFamilies.merge(target.items,source.items);}catch(e){announce(e.message);return false;}
  if(!QBitsFamilies.validFamily(familyRecord(target,items))){announce('El contenido combinado supera el tamaño de guardado de una familia.');return false;}
+ if(inGalpon()&&!QBitsGalponProduction.moveFamily(story.galpon,[...source.partIds],'family:'+source.id,'family:'+target.id))return false;
  familyEffect(source.body.position,target.body.position,'cube',target.color);target.items=items;familyRefresh(target);target.body.wakeUp();removeFamily(source);familyActive=target;announce('Familia «'+target.name+'» · '+target.count+' piezas');return true;
 }
 function familyLayout(items){
@@ -2773,7 +2832,7 @@ function confirmFamilyPlacement(hit){
  if(draft.items.some(item=>!storedShelfConveyorsValid(item)||item.joints.some(j=>!storedRotorOptionsValid(j))))return familyNotice('El mecanismo guardado contiene datos incompatibles. La familia se conserva.');
  const made=[],joints=[],oldContacts=serializeContactState();try{
   for(const item of draft.items){const offset=item.__familyOffset;
-   for(const record of item.groups){const parts=record.parts.map(p=>({id:p.id,shape:p.shape,weight:p.weight,p:add(draft.point,draft.q.vmult(add(V(...p.p),offset))),q:draft.q.mult(shelfQuaternion(p.q)),mood:shelfClone(p.mood)}));made.push(makeGroup(parts,draft.q.mult(shelfQuaternion(record.q))));}
+   for(const record of item.groups){const parts=record.parts.map(p=>({id:p.id,shape:p.shape,weight:p.weight,p:add(draft.point,draft.q.vmult(add(V(...p.p),offset))),q:draft.q.mult(shelfQuaternion(p.q)),mood:shelfClone(p.mood)}));const group=makeGroup(parts,draft.q.mult(shelfQuaternion(record.q)),V(),V(),null,f);if(!group)throw Error('El inventario ya no contiene esa pieza.');made.push(group);}
    for(const saved of item.joints){const r=shelfRestoreJoint(saved);if(!r)throw Error('No se pudo recuperar la articulación.');joints.push(r);}
   }
   if(made.some(g=>!validPose(g,g.body.position,g.body.quaternion,made)))throw Error('No hay espacio para recuperar este contenido.');
@@ -2782,6 +2841,7 @@ function confirmFamilyPlacement(hit){
   restoreContactState({sensors:[...oldContacts.sensors,...draft.items.flatMap(i=>i.contacts?.sensors||[])],rotors:[...oldContacts.rotors,...draft.items.flatMap(i=>i.contacts?.rotors||[])]});
   const arms=draft.items.flatMap(i=>i.robotArms||[]),belts=draft.items.flatMap(i=>i.conveyors||[]);restoreRobotArms(arms);restoreConveyors(belts);
   if(arms.some(a=>!robotArms.some(r=>r.gripperId===a.gripperId))||belts.some(b=>!conveyors.some(c=>c.baseId===b.baseId)))throw Error('No se pudo recuperar el controlador del mecanismo.');
+  if(inGalpon()&&!QBitsGalponProduction.markReleased(story.galpon,made.flatMap(g=>g.parts.map(p=>p.id)),'family:'+f.id))throw Error('No se pudo transferir la custodia de la familia.');
  }catch(e){joints.forEach(disconnectRotor);made.forEach(removeGroup);pruneRobotArms();pruneConveyors();restoreContactState(oldContacts);announce(e.message);return null;}
  f.items.splice(0,draft.limit);cancelFamilyPlacement();for(const g of made)familyEffect(f.body.position,g.body.position,g.parts[0].shape,f.color);
  if(f.items.length)familyRefresh(f);else removeFamily(f);multiSelection=made;selected=made.length?{g:made[0],part:made[0].parts[0]}:null;announce('Contenido retirado · '+made.reduce((n,g)=>n+g.parts.length,0)+' piezas conservadas');return made;
@@ -3006,7 +3066,7 @@ function validGripperConfig(input){
 }
 function robotGripperHit(partOrId){return rotorPart(typeof partOrId==='object'?partOrId.id:partOrId);}
 function configureGripper(partOrId,patch={}){
- const hit=robotGripperHit(partOrId);if(!hit||hit.part.shape!=='cube'||isExternalBattery(hit.part)||hit.part.mood.production||hit.part.mood.matter||QBitsWorkshop.hasAdaptation(hit.part)||certifiedAutomation())return false;
+ const hit=robotGripperHit(partOrId);if(!hit||hit.part.shape!=='cube'||isExternalBattery(hit.part)||hit.part.mood.production||hit.part.mood.matter&&!(inGalpon()&&hit.part.mood.gripper)||QBitsWorkshop.hasAdaptation(hit.part)||certifiedAutomation())return false;
  const config=copyGripperConfig({...hit.part.mood.gripper,...patch});if(!validGripperConfig(config))return false;
  if(hit.g.virtualConveyor){const conveyor=hit.g.virtualConveyor.conveyor;if(conveyor.running){announce('Cinta en funcionamiento · primero apaga o desconecta la cinta para modificarla.');return false;}materializeConveyor(conveyor);refreshRotors();}
  const arm=robotArmForGroup(hit.g);if(arm&&(arm.running||arm.jogging))stopRobotArm(arm,'Detenido para ajustar el agarre');
@@ -4108,6 +4168,7 @@ function detachConveyorModule(conveyor){
  }
  refreshRotors();for(const c of affected){conveyorEnsureSurfaces(c);virtualizeConveyor(c);}
  const detached=rotorPart(conveyor.baseId);selected={g:detached.g,part:detached.part};multiSelection=[];
+ if(inGalpon())hangarReleaseBrokenSections();
  conveyor.status='Módulo separado · conserva sus piezas y motores';
  announce('Módulo de cinta separado completo · '+owned.size+' piezas conservadas.');return true;
 }
@@ -4673,6 +4734,10 @@ function invalidateRotorBody(g){
   world.removeConstraint(rotor.constraint);rotor.constraint=null;unpinRotor(rotor);
  }
 }
+function disconnectRotorByHand(rotor){
+ if(inGalpon()&&runningConveyorForGroups(rotorGroups(rotor))){announce('Detén la cinta antes de separar su eje.');return false;}
+ const ok=disconnectRotor(rotor);if(ok&&inGalpon())hangarReleaseBrokenSections();return ok;
+}
 function disconnectRotor(rotor){
  if(!rotors.includes(rotor))return false;
  if(rotor.virtualConveyor)materializeConveyor(rotor.virtualConveyor);
@@ -5059,6 +5124,7 @@ function stabilizeRotors(){
  }
 }
 function spawnRotor(p=null,options={}){
+ if(inGalpon()){galponSupplyHint();return null;}
  if(certifiedAutomation()){announce('Ensayo certificado: usa el mecanismo del banco.');return null;}
  if(scenePartCount()+2>MAX_QUBITS){announce('No hay capacidad para dos enganches.');return null;}
  const positions=p?[p]:Array.from({length:6},(_,row)=>[0,1,-1,2,-2,3,-3].map(col=>V(position[0]-Math.sin(yaw)*(.95+row*.3)+Math.cos(yaw)*col*.3,0,position[2]-Math.cos(yaw)*(.95+row*.3)-Math.sin(yaw)*col*.3))).flat();
@@ -5549,10 +5615,11 @@ function stopRoute(g,clearPin=true){
  if(g.route){g.route=null;g.body.type=CANNON.Body.DYNAMIC;g.body.updateMassProperties();g.body.velocity.set(0,0,0);g.body.angularVelocity.set(0,0,0);g.body.wakeUp();}
  if(clearPin){g.pin=null;g.pendingMoodOrder=null;}
 }
-function startRoute(g,goal,quiet=false,remember=!quiet){
+function startRoute(g,goal,quiet=false,remember=!quiet,blueprint=false){
  if(story.passage){if(!quiet)announce('Guía · acompañando');return false;}
  if(!quiet)automationIntervention();
  if(!g||!groups.includes(g))return false;
+ if(inGalpon()&&!blueprint&&!g.blueprintJob&&groupWorkUnits(g)<=0){if(!quiet)announce('Sólo los trabajadores autónomos pueden desplazarse por orden.');return false;}
  if(g.parts.some(p=>p.mood?.externalBattery)){if(!quiet)announce('La batería es pasiva: muévela a mano o móntala en un vehículo.');return false;}
  if(g.parts.some(p=>p.mood.production)){if(!quiet)announce('La materia se transporta con la línea, no recibe órdenes.');return false;}
  if(rotorForGroup(g)){if(!quiet)announce('Separa el rotor antes de asignar un recorrido.');return false;}
@@ -5687,6 +5754,7 @@ function powerReservoirPlacement(p){
  return {point,half,center};
 }
 function createPowerReservoir(p,options={}){
+ if(inGalpon())return null;
  if(powerReservoirs.length>=12)return null;
  const placement=powerReservoirPlacement(p);if(!placement)return null;
  const energy=options.energy===undefined?1:options.energy;if(!Number.isFinite(energy)||energy<0||energy>1||options.enabled!==undefined&&typeof options.enabled!=='boolean')return null;
@@ -6055,6 +6123,7 @@ function externalBatteryCells(subject){
  return [...cells.values()].sort((a,b)=>a.id-b.id);
 }
 function externalBatterySummary(subject){
+ if(story.scene==='galpon'){const supply=hangarMotorSupply(subject);if(supply)return supply;}
  const cells=externalBatteryCells(subject),capacity=cells.reduce((sum,part)=>sum+externalBatteryCapacity(part),0),storedJ=cells.reduce((sum,part)=>sum+part.mood.energy*externalBatteryCapacity(part),0);
  const powerCells=cells.reduce((sum,cell)=>sum+(powerReservoirCell(cell)?POWER_RESERVOIR_CAPACITY/1800:1),0);
  return {cells,powerCells,storedJ,capacity,energy:capacity?storedJ/capacity:0,active:cells.length>0};
@@ -6069,7 +6138,13 @@ function externallyPoweredInternalIds(){
  for(const g of groups){const grippers=g.parts.filter(part=>part.mood.gripper);if(grippers.length&&externalBatteryCells(g).length)for(const part of grippers)ids.add(part.id);}
  return ids;
 }
-function gameBatteryCapacity(part){return isExternalBattery(part)?externalBatteryCapacity(part):QBitsWorkshop.batteryCapacity(part)*batterySceneScale();}
+function gameBatteryCapacity(part){
+ if(isExternalBattery(part))return externalBatteryCapacity(part);
+ const capacity=QBitsWorkshop.batteryCapacity(part)*batterySceneScale();
+ // A galpón fragment stores the same fraction on its share of the original
+ // cell. Six pyramids cannot collectively store six whole batteries.
+ return inGalpon()&&part?.mood?.matter?capacity*part.weight/part.mood.matter.rootWeight:capacity;
+}
 function powerGroupWeight(group){
  if(!mechanicalStepCache)return totalWeight(group);
  const weights=mechanicalStepCache.groupWeights??=new Map();
@@ -6182,7 +6257,7 @@ function externalBatteryPackComponents(g){
  return geometry.components||(geometry.components=buildExternalBatteryComponents(geometry.cells));
 }
 function rechargeExternalBatteries(dt){
- if(!Number.isFinite(dt)||dt<=0)return;
+ if(inGalpon()||!Number.isFinite(dt)||dt<=0)return;
  const heldGroups=new Set((held?.items||(held?[held]:[])).map(item=>item.g));
  for(const g of groups){
   const geometry=externalBatteryGeometry(g);if(!geometry.cells.some(part=>part.mood.energy<1)||powerGroupCabled(g)||heldGroups.has(g)||g.route||g.haulJob||g.pendingMoodOrder||g.blueprintJob||g.body.velocity.norm()>.025||g.body.angularVelocity.norm()>.05)continue;
@@ -6265,7 +6340,7 @@ function stepPhysics(dt){
    }
   }
  }
- for(const c of cargos){if(c.robotPhysical)continue;c.body.velocity.y=0;c.body.position.y=(c.dimensions?.y||c.size)/2;c.body.quaternion.set(0,0,0,1);c.body.angularVelocity.set(0,0,0);c.body.aabbNeedsUpdate=true;}
+ for(const c of cargos){if(c.robotPhysical||c.galponLift)continue;c.body.velocity.y=0;c.body.position.y=(c.dimensions?.y||c.size)/2;c.body.quaternion.set(0,0,0,1);c.body.angularVelocity.set(0,0,0);c.body.aabbNeedsUpdate=true;}
  updateCooling(dt);updateMoods(dt);updateBlueprints(dt);updatePuzzle(dt);tickAutomation(dt);tickProduction(dt);
  }finally{mechanicalStepCache=null;}
 }
@@ -6282,6 +6357,7 @@ function simulationSuspended(){
 function stepLogic(dt){
  if(!Number.isFinite(dt)||dt<=0||simulationSuspended())return;
  tickStats.logic++;
+ if(story.scene==='galpon')tickHangar(dt);
  tickReconfiguration(dt);
  if(story.scene==='campaign'&&!story.encounter)tickMoodHints();
  updateSpeechLogic();
@@ -6323,13 +6399,13 @@ function updatePanel(){
  document.querySelector('#editing').textContent=selected?unitLabel(selected.part)+' '+selected.part.id+' · estructura de '+selected.g.parts.length+' · '+totalWeight(selected.g)+' u en total.':'Selecciona con clic derecho para ajustar una pieza.';
  for(const name of ['mass','gravity','bounce','force','friction','damping','speed','maxCarry','maxSelect','rotationSpeed','grip']){
   const input=document.querySelector('#'+name);if(name==='mass'){input.min=selected?.part.mood?.matter?String(.25/12):'.25';input.step=selected?.part.mood?.matter?'any':'.25';}input.value=name==='mass'&&selected?selected.part.weight:settings[name];
-  input.disabled=openingProtected();
+  input.disabled=openingProtected()||inGalpon()&&name==='mass';
   document.querySelector('#'+name+'Value').textContent=Number(input.value).toFixed(name==='mass'?2:2)+({mass:' u',gravity:' m/s²',force:' N',speed:' m/s',maxCarry:' u',maxSelect:' piezas',rotationSpeed:' rad/s'}[name]||'');
  }
  for(const name of ['guide','line'])document.querySelector('#'+name).value=settings[name];
  updateCargoPanel();updatePuzzlePanel();updateMoodPanel();updateAlphaPanel();updateMechanismPanel();
- document.querySelector('#remove').disabled=openingProtected()||puzzle.active||!selected;document.querySelector('#split').disabled=!selected||selected.g.parts.length===1;
- for(const id of ['create','place-cooler'])document.querySelector('#'+id).disabled=openingProtected();
+ document.querySelector('#remove').disabled=inGalpon()||openingProtected()||puzzle.active||!selected;document.querySelector('#split').disabled=!selected||selected.g.parts.length===1;
+ for(const id of ['create','place-cooler'])document.querySelector('#'+id).disabled=inGalpon()||openingProtected();
  if(!panel.hidden)refreshTabletCharge(performance.now(),true);
 }
 function showArmControls(){
@@ -6352,9 +6428,10 @@ function openPanel(){
  else if(selected?.part.mood.gripper||robotArmForGroup(selected?.g,selected?.part.id))showArmControls();
  else if(tabletMechanism(selected)||selectedRotors().length)switchPanelTab('mechanisms');
  else if(selectedCargo)switchPanelTab('cargo');
+ else if(story.scene==='galpon')switchPanelTab('galpon');
 }
 for(const name of ['mass','gravity','bounce','force','friction','damping','speed','maxCarry','maxSelect','rotationSpeed','grip'])document.querySelector('#'+name).addEventListener('input',event=>{
- if(openingProtected()){updatePanel();return;}
+ if(openingProtected()||inGalpon()&&name==='mass'){updatePanel();return;}
  if(story.scene==='campaign'&&story.campaign?.automation){announce('Ensayo certificado: masa y físicas permanecen fijas. Ajusta el motor.');updatePanel();return;}
  automationIntervention();settings[name]=Number(event.target.value);
  if(name==='mass'&&puzzle.active){settings.mass=1;updatePanel();return;}
@@ -6429,7 +6506,7 @@ function handleKey(event){
  if(trajectoryPanel?.isOpen)return;
  if(powerDraft&&event.code==='Escape'){event.preventDefault();cancelPowerCable();announce('Cable cancelado · material conservado');return;}
  if(tabletVisible()&&['KeyW','KeyA','KeyS','KeyD','KeyC'].includes(event.code)){event.preventDefault();keys.add(event.code);return;}
- if(tabletVisible()&&event.code==='KeyQ'&&!puzzle.active&&!event.repeat&&!event.altKey&&!event.ctrlKey&&!event.metaKey){
+ if(tabletVisible()&&!inGalpon()&&event.code==='KeyQ'&&!puzzle.active&&!event.repeat&&!event.altKey&&!event.ctrlKey&&!event.metaKey){
   event.preventDefault();closeWorkshopPanel(false);switchPanelTab('catalog');return;
  }
  if(tabletVisible()&&['KeyP','Escape'].includes(event.code)){event.preventDefault();if(!event.repeat)stowTablet();return;}
@@ -6444,6 +6521,7 @@ function handleKey(event){
   else if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.code))unitRadial.chooseNext(event.code==='ArrowLeft'||event.code==='ArrowUp'?-1:1);
   return;
  }
+ if(inGalpon()&&event.code==='KeyQ'&&!event.repeat&&!event.ctrlKey&&!event.altKey&&!event.metaKey){event.preventDefault();galponSupplyHint();return;}
  if(event.code==='KeyQ'&&!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&unitRadialAllowed()){
   event.preventDefault();if(story.scene==='lab'){if(powerDraft)return;openPanel();switchPanelTab('catalog');}else openUnitRadial();return;
  }
@@ -7071,19 +7149,26 @@ document.addEventListener('pointerlockchange',()=>{if(document.pointerLockElemen
 // participating Q-bit pieces; payload size and required crew are independent.
 function cargoBounds(c,p=c.body.position){if(c.robotPhysical){const points=corners({...cargoPose(c),p}),min=V(...['x','y','z'].map(k=>Math.min(...points.map(v=>v[k])))),max=V(...['x','y','z'].map(k=>Math.max(...points.map(v=>v[k]))));return {min,max,center:mul(add(min,max),.5),size:sub(max,min)};}if(c.dimensions){const h=mul(c.dimensions,.5);return {min:sub(p,h),max:add(p,h),center:p.clone(),size:c.dimensions.clone()};}const r=c.size/2;return {min:V(p.x-r,p.y-r,p.z-r),max:V(p.x+r,p.y+r,p.z+r),center:p.clone(),size:V(c.size,c.size,c.size)};}
 function cargoPose(c){return {p:c.body.position,q:c.body.quaternion,half:c.dimensions?mul(c.dimensions,.5):V(c.size/2,c.size/2,c.size/2)};}
-function navigationObstacles(g){return groups.filter(o=>o!==g).map(o=>bounds(o)).concat(cargos.map(c=>cargoBounds(c)),puzzleObstacleBounds(),alphaObstacles());}
+function groundFamilyBounds(){
+ return inGalpon()?families.map(f=>collisionPoseBounds(familyPose(f))):[];
+}
+function navigationObstacles(g){return groups.filter(o=>o!==g).map(o=>bounds(o)).concat(cargos.map(c=>cargoBounds(c)),puzzleObstacleBounds(),alphaObstacles(),groundFamilyBounds());}
 function raycastCargo(max=8,dir=direction()){
  let result=null,best=puzzleRayLimit(max,dir);for(const c of cargos){if(c.intake!==undefined&&c.intake!==null)continue;const hit=rayPart(V(...camera),dir,cargoPose(c),best,c.size/2);if(hit&&hit.distance<best){best=hit.distance;result={...hit,cargo:c};}}return result;
 }
 function aimCargo(max=8,dir=direction()){const c=raycastCargo(max,dir);if(!c)return null;const q=aimQubit(c.distance,dir);return q?null:c;}
-function newCargo(p,side=settings.cargoSide,required=settings.cargoRequired,color=settings.cargoColor){
+function newCargo(p,side=settings.cargoSide,required=settings.cargoRequired,color=settings.cargoColor,rawId=null){
+ if(inGalpon()){
+  const item=story.galpon&&window.QBitsGalponProduction?.record(story.galpon,rawId);
+  if(item?.kind!=='raw'||!['source','carry'].includes(item.place)||side!==1||required!==(story.galpon.initialIds.length===1?1:2)||mechanicalPartIndex().has(rawId)||cargos.some(c=>c.rawId===rawId))return null;
+ }
  if(!Number.isInteger(side)||side<1||side>12||!Number.isInteger(required)||required<1||required>MAX_QUBITS||!/^#[0-9a-f]{6}$/i.test(color))return null;
  if(cargos.length>=12)return null;const size=side*CUBE_SIZE;
  const body=new CANNON.Body({mass:0});body.addShape(new CANNON.Box(V(size/2,size/2,size/2)));body.position.set(p.x,size/2,p.z);body.material=world.defaultMaterial;body.fixedRotation=true;body.linearDamping=.08;body.updateMassProperties();world.addBody(body);
- const c={id:++cargoSerial,side,size,required,color,body,job:null,pin:null,lastStatus:'En reposo'};body.cargoRef=c;cargos.push(c);return c;
+ const c={id:++cargoSerial,side,size,required,color,body,job:null,pin:null,lastStatus:'En reposo'};if(inGalpon())c.rawId=rawId;body.cargoRef=c;cargos.push(c);return c;
 }
-function restoreLabCargo(record){
- const cargo=newCargo(record.p,record.side,record.required,record.color);if(!cargo)return null;
+function restoreLabCargo(record,rawId){
+ const cargo=newCargo(record.p,record.side,record.required,record.color,rawId);if(!cargo)return null;
  if(Number.isSafeInteger(record.id)&&record.id>0&&!cargos.some(c=>c!==cargo&&c.id===record.id)){cargo.id=record.id;cargoSerial=Math.max(cargoSerial,cargo.id);}
  if(record.robotPhysical){const body=cargo.body;cargo.robotPhysical=true;body.mass=cargo.required*.25;body.type=CANNON.Body.DYNAMIC;body.fixedRotation=false;body.position.copy(record.p);if(record.q)body.quaternion.copy(record.q);if(record.v)body.velocity.copy(record.v);if(record.w)body.angularVelocity.copy(record.w);body.updateMassProperties();body.aabbNeedsUpdate=true;body.wakeUp();}
  return cargo;
@@ -7093,7 +7178,7 @@ function cargoPlacementClear(p,size,exclude=null,ignored=[]){
  const candidate={p:V(p.x,half,p.z),q:Q(),half:V(half,half,half)};
  if(alphaObstacles().some(w=>obbOverlap(candidate,w,-.004)))return false;
  if(puzzleObstacleBounds(exclude).some(w=>obbOverlap(candidate,{p:w.p,q:w.q||Q(),half:w.half},-.004)))return false;
- if(cargos.some(c=>c!==exclude&&obbOverlap(candidate,cargoPose(c),-.004)))return false;
+ if(cargos.some(c=>c!==exclude&&obbOverlap(candidate,cargoPose(c),-.004))||inGalpon()&&families.some(f=>obbOverlap(candidate,familyPose(f),-.004)))return false;
  return !groups.some(g=>!ignored.includes(g)&&poses(g).some(pose=>obbOverlap(candidate,pose,-.004)));
 }
 function spawnCargo(){
@@ -7110,7 +7195,7 @@ function setCargoMoving(c,moving){
  c.body.material=moving?haulMaterial:world.defaultMaterial;
  const type=moving?CANNON.Body.DYNAMIC:CANNON.Body.STATIC;
  if(c.body.type===type)return;
- c.body.type=type;c.body.mass=moving?c.required*.25:0;c.body.velocity.set(0,0,0);c.body.angularVelocity.set(0,0,0);c.body.force.set(0,0,0);c.body.updateMassProperties();c.body.wakeUp();
+ c.body.type=type;c.body.mass=moving?(c.rawId?1:c.required)*.25:0;c.body.velocity.set(0,0,0);c.body.angularVelocity.set(0,0,0);c.body.force.set(0,0,0);c.body.updateMassProperties();c.body.wakeUp();
 }
 function leaveHaul(g){
  const job=g.haulJob;if(!job)return;for(const slot of job.slots)if(slot.g===g){cancelNavigation(slot);slot.approachSearch=null;}job.slots=job.slots.filter(s=>s.g!==g);g.haulJob=null;g.body.material=g.haulMaterialRestore||null;g.body.fixedRotation=false;g.body.updateMassProperties();g.body.wakeUp();
@@ -7120,13 +7205,13 @@ function stopHaul(c,status='Detenido'){
  cancelNavigation(c);c.pathSearch=null;const job=c.job;if(job){cancelNavigation(job);job.pathSearch=null;for(const slot of job.slots){cancelNavigation(slot);slot.approachSearch=null;}}
  if(job&&status==='Destino alcanzado'){for(const slot of job.slots)if(queueSpeech(slot.g,'happy',{kind:'delivered'}))break;}if(job)for(const slot of [...job.slots]){stopRoute(slot.g);leaveHaul(slot.g);}c.job=null;c.lastStatus=status;setCargoMoving(c,false);return job;
 }
-function deleteCargo(c,internal=false){if(!internal&&puzzleBlockedEdit())return;if(!c||!cargos.includes(c))return;if(c.robotHeld)releaseGripper(c.robotHeld);stopHaul(c);world.removeBody(c.body);cargos.splice(cargos.indexOf(c),1);if(selectedCargo===c)selectedCargo=null;if(pendingCargo?.cargo===c)pendingCargo=null;announce('Cuerpo borrado');}
+function deleteCargo(c,internal=false){if(!internal&&puzzleBlockedEdit())return;if(!c||!cargos.includes(c))return;if(c.robotHeld)releaseGripper(c.robotHeld);stopHaul(c);world.removeBody(c.body);cargos.splice(cargos.indexOf(c),1);if(selectedCargo===c)selectedCargo=null;if(pendingCargo?.cargo===c)pendingCargo=null;if(!internal||!c.rawId)announce('Cuerpo borrado');}
 function selectedTeam(){return [...new Set((multiSelection.length?multiSelection:selected?[selected.g]:[]).filter(g=>groups.includes(g)))];}
 function floorAim(d=direction()){if(d.y>=-.015)return null;const t=-camera[1]/d.y;if(t>40||puzzleRayLimit(t,d)<t-.01)return null;const p=add(V(...camera),mul(d,t));return Math.max(Math.abs(p.x),Math.abs(p.z))<=13.95?p:null;}
 function* planCargoPath(c,goal,crew=[]){
  yield;
  if(!cargoPlacementClear(goal,c.size,c,crew))return null;
- const origin=c.body.position.clone(),step=.18,obstacles=cargos.filter(o=>o!==c).map(c=>cargoBounds(c)).concat(groups.filter(g=>!crew.includes(g)).map(g=>bounds(g)),puzzleObstacleBounds(c),alphaObstacles());
+ const origin=c.body.position.clone(),step=.18,obstacles=cargos.filter(o=>o!==c).map(c=>cargoBounds(c)).concat(groups.filter(g=>!crew.includes(g)).map(g=>bounds(g)),puzzleObstacleBounds(c),alphaObstacles(),groundFamilyBounds());
  const box=(x,z)=>cargoBounds(c,V(x,c.size/2,z));
  const clear=(a,b)=>sweepClear(box(a.x,a.z),box(b.x,b.z),c.size,obstacles);
  if(clear(origin,goal))return [V(goal.x,0,goal.z)];
@@ -7153,7 +7238,7 @@ function crewSlotCandidates(c,crew){
 }
 function assignCrew(c,team){
  const job=c.job;if(!job)return 0;let added=0;const all=[...new Set(job.slots.map(s=>s.g).concat(team))],slots=crewSlotCandidates(c,all);
- for(const g of team){if(job.slots.some(s=>s.g===g)||!groups.includes(g)||rotorForGroup(g)||g.parts.some(p=>p.mood?.externalBattery))continue;
+ for(const g of team){if(job.slots.some(s=>s.g===g)||!groups.includes(g)||inGalpon()&&!groupWorkUnits(g)||rotorForGroup(g)||g.parts.some(p=>p.mood?.externalBattery))continue;
   if(held&&(held.items||[held]).some(i=>i.g===g))continue;
   const bb=bounds(g);if(bb.min.y>.04)continue;
   const q=orientations[orientationIndex(g.body.quaternion)],local=bounds(g,V(),q);
@@ -7178,6 +7263,9 @@ function beginHaul(c,team,goal){
  if(!cargos.includes(c)||c.intake!==undefined&&c.intake!==null)return false;team=[...new Set(team.filter(g=>groups.includes(g)))];if(!team.length){announce('Selecciona primero los Q-bits que trabajarán.');return false;}
  stopHaul(c);const job={cargo:c,goal:goal.clone(),path:[],index:0,slots:[],activeCount:0,nextCrewPlan:0,phase:'planning',lastProgress:simTime,lastPosition:c.body.position.clone(),nextRouteCheck:0};c.job=job;c.pin={point:V(goal.x,0,goal.z),arrived:false};assignCrew(c,team);
  if(!job.slots.length){stopHaul(c,'Sin espacio para el equipo');announce('No hay espacio accesible para colocar el equipo.');return false;}
+ scheduleInitialHaulPath(c,job);announce('Calculando recorrido del equipo…');return true;
+}
+function scheduleInitialHaulPath(c,job){
  c.lastStatus='Calculando recorrido';
  const search=scheduleNavigation(c,planCargoPath(c,job.goal,job.slots.map(s=>s.g)),path=>{
   c.pathSearch=null;
@@ -7186,7 +7274,7 @@ function beginHaul(c,team,goal){
   for(const slot of job.slots)if(queueSpeech(slot.g,'order'))break;
   announce('Equipo asignado · '+job.slots.reduce((n,s)=>n+groupWorkUnits(s.g),0)+' / '+c.required+' Q-bits');
  },()=>cargos.includes(c)&&c.job===job&&c.pathSearch===search);
- c.pathSearch=search;announce('Calculando recorrido del equipo…');return true;
+ c.pathSearch=search;
 }
 function addCrew(c,team){if(!c.job)return false;const count=assignCrew(c,team);announce(count?'Equipo ampliado':'No se encontraron posiciones libres para sumar esos Q-bits.');return count>0;}
 function haulSpeed(c){return settings.haulSpeed*Math.min(1.8,Math.sqrt(Math.max(1,c.job?.activeCount||0)/c.required))*crewMoodSpeed(c);}
@@ -7271,7 +7359,7 @@ function updateHauling(dt){
   if(simTime>=(job.nextSafetyCheck||0)){
    job.nextSafetyCheck=simTime+1/30;
    const step=Math.min(.12,distance),probe=V(c.body.position.x+error.x*step/Math.max(distance,.001),0,c.body.position.z+error.z*step/Math.max(distance,.001));
-   const crew=job.slots.map(s=>s.g),obstacles=cargos.filter(o=>o!==c).map(o=>cargoBounds(o)).concat(groups.filter(g=>!crew.includes(g)).map(g=>bounds(g)),puzzleObstacleBounds(c),alphaObstacles());
+   const crew=job.slots.map(s=>s.g),obstacles=cargos.filter(o=>o!==c).map(o=>cargoBounds(o)).concat(groups.filter(g=>!crew.includes(g)).map(g=>bounds(g)),puzzleObstacleBounds(c),alphaObstacles(),groundFamilyBounds());
    job.segmentClear=sweepClear(cargoBounds(c),cargoBounds(c,V(probe.x,c.body.position.y,probe.z)),c.size,obstacles);
   }
   if(job.segmentClear===false){setCargoMoving(c,false);job.phase='bloqueado';continue;}
@@ -7289,12 +7377,12 @@ function updateCargoPanel(){
  document.querySelector('#cargoColor').value=selectedCargo?.color||settings.cargoColor;
 }
 for(const name of ['cargoSide','cargoRequired','haulSpeed','haulForce'])document.querySelector('#'+name).addEventListener('input',e=>{
- if(certifiedAutomation()){updateCargoPanel();return;}
+ if(certifiedAutomation()||inGalpon()&&name==='cargoRequired'){updateCargoPanel();return;}
  if(name==='cargoRequired'&&puzzle.active)return;
  const value=Number(e.target.value);settings[name]=value;
  if(name==='cargoRequired'&&selectedCargo){const c=selectedCargo;if(c.robotHeld){const owner=robotGripperHit(c.robotHeld);if(owner)robotStopForGroups([owner.g]);else releaseGripper(c.robotHeld);}stopHaul(c);c.required=Math.round(value);if(c.robotPhysical){c.body.mass=c.required*.25;c.body.type=CANNON.Body.DYNAMIC;c.body.fixedRotation=false;c.body.updateMassProperties();c.body.wakeUp();}}updateCargoPanel();
 });
-document.querySelector('#cargoColor').addEventListener('input',e=>{if(puzzle.active)return;if(/^#[0-9a-f]{6}$/i.test(e.target.value)){settings.cargoColor=e.target.value;if(selectedCargo)selectedCargo.color=e.target.value;}});
+document.querySelector('#cargoColor').addEventListener('input',e=>{if(puzzle.active||inGalpon())return;if(/^#[0-9a-f]{6}$/i.test(e.target.value)){settings.cargoColor=e.target.value;if(selectedCargo)selectedCargo.color=e.target.value;}});
 document.querySelector('#create-cargo').addEventListener('click',()=>startCreationTool('quick-cargo'));
 document.querySelector('#delete-cargo').addEventListener('click',()=>{deleteCargo(selectedCargo);updateCargoPanel();});
 
@@ -7541,7 +7629,7 @@ function handleSecondary(event){
   const rotor=rotorForPart(hit.part.id)||rotorForGroup(hit.g);
   if(rotor&&rotorSetFor(rotor)&&!QBitsWorkshop.hasSensor(hit.part)){selectRotorSet(rotorSetFor(rotor));showRotorSetMenu();return;}
   if(rotor?.servo){const stopping=!!servoMarchFor(rotor);items.unshift({label:stopping?'Detener marcha del conjunto':'Iniciar marcha del conjunto',run:()=>{if(stopping)stopServoMarch(servoMarchFor(rotor));else startServoMarch(rotor);captureMouse();}});}
-  if(rotor){items.splice(items.findIndex(item=>item.label==='Guardar forma'),1);items.unshift({label:rotor.servo?'Configurar '+servoLabel(rotor)+'…':'Rotación…',run:()=>rotor.servo?openRotorControls():showRotorRotation(rotor,partPose(hit.g,hit.part).p)});items.push({label:'Guardar mecanismo · Rotor',run:()=>{saveMechanism(rotor);captureMouse();}},{label:'Separar enganches del rotor',run:()=>{disconnectRotor(rotor);captureMouse();}});}
+  if(rotor){items.splice(items.findIndex(item=>item.label==='Guardar forma'),1);items.unshift({label:rotor.servo?'Configurar '+servoLabel(rotor)+'…':'Rotación…',run:()=>rotor.servo?openRotorControls():showRotorRotation(rotor,partPose(hit.g,hit.part).p)});items.push({label:'Guardar mecanismo · Rotor',run:()=>{saveMechanism(rotor);captureMouse();}},{label:'Separar enganches del rotor',run:()=>{disconnectRotorByHand(rotor);captureMouse();}});}
   else if(hit.g.parts.some(part=>unitShape(part)==='coupler'))items.unshift({label:'Guardar mecanismo · Enganche',run:()=>{saveMechanism(hit.g);captureMouse();}},{label:hit.g.parts.some(p=>p.shape==='coupler'&&propellerHasBlade(p.id))?'Hélice incompleta · conecta otro triangular a la punta':'Enganche · Shift + otra punta: rotor; Shift + 2 triangulares: hélice',disabled:true,run:()=>{}});
   if(!rotor&&story.scene==='lab'&&unitShape(hit)==='pyramid')items.unshift(...[['pivot','Preparar Servo pivote'],['hinge','Preparar Servo bisagra']].map(([kind,label])=>({label,run:()=>{prepareServoPart(hit,kind);captureMouse();}})));
   if(hit.g.parts.length>1)items.push({label:'Separar…',run:()=>openDetachMenu(hit)});
@@ -7616,7 +7704,7 @@ function robotPanelSnapshot(){
  const energy=supply?.active?supply.storedJ:[...motorIds].reduce((sum,id)=>{const p=rotorPart(id)?.part;return sum+(p?p.mood.energy*gameBatteryCapacity(p):0);},0);
  const sample=selection&&!component.includes(selection.g)?selection:null;
  const source=selection?.part,canConvert=!selection?.g?.robotHeld&&!selection?.g?.blueprintJob&&!robotArmForGroup(selection?.g)&&story.scene==='lab'&&!puzzle.active&&source?.shape==='cube'&&!source.mood.gripper&&!isExternalBattery(source)&&!source.mood.production&&!source.mood.matter&&!QBitsWorkshop.hasAdaptation(source);
- const snapshot={available:story.scene==='lab'&&!puzzle.active,selectedLabel:selection?(selection.part.mood.name||'Pieza '+selection.part.id)+(hit&&sample?' · muestra para '+hit.part.mood.name:''):'Selecciona el brazo o un Q-bit para adaptarlo.',canConvert:!!canConvert,canRegister:!!hit&&!arm&&component.length>1,canCaptureShape:!!sample,canCapturePiece:!!sample,
+ const snapshot={available:(story.scene==='lab'||inGalpon())&&!puzzle.active,selectedLabel:selection?(selection.part.mood.name||'Pieza '+selection.part.id)+(hit&&sample?' · muestra para '+hit.part.mood.name:''):'Selecciona el brazo o un Q-bit para adaptarlo.',canConvert:!!canConvert,canRegister:!!hit&&!arm&&component.length>1,canCaptureShape:!!sample,canCapturePiece:!!sample,
  targets:groups.filter(g=>!component.includes(g)).flatMap(g=>g.parts.map(p=>({id:p.id,label:(p.mood.name||'Pieza')+' · #'+p.id}))).concat(cargos.filter(c=>c.intake==null).map(c=>({id:-c.id,label:'Cuerpo '+c.id+' · '+c.color+' · '+c.required+' u'}))),gripper:config?{...config,reachCm:gripperReach(config)*100,id:hit.part.id,name:hit.part.mood.name,energy:supply.storedJ,load,pieces}:null};
  if(arm){
   const members=robotArmRotors(arm),running=arm.running||arm.jogging,holding=!!grip,capacity=robotLiftCapacity(config,members);
@@ -7629,7 +7717,7 @@ function robotPanelSnapshot(){
 }
 function robotPanelAction(action,payload={}){
  const {selection,hit,arm}=robotPanelSubject(),finish=(ok,message)=>({ok:!!ok,message});
- if(story.scene!=='lab'||puzzle.active)return finish(false,'Disponible en el banco de pruebas.');
+ if(story.scene!=='lab'&&!inGalpon()||puzzle.active)return finish(false,'Disponible en el banco de pruebas.');
  if(action==='blueprint'){
   const ready=beginBlueprintPlacement(mechanismBlueprintShape(robotArmBlueprintTemplate()));return finish(ready,ready?'Apunta y haz clic para colocar el plano.':'Plano no disponible.');
  }
@@ -7710,7 +7798,7 @@ function conveyorPanelSubject(){const hit=held||selected,g=hit?.g;return g?(conv
 function conveyorPanelSnapshot(){
  const c=conveyorPanelSubject(),base=c?rotorPart(c.baseId):null,line=c?conveyorLine(c):[],supply=base?externalBatterySummary(base.g):null;
  const materials={},materialsWithSupports={};for(const kind of ['straight','left','right']){const recipe=conveyorBlueprintTemplate(kind,false),supported=conveyorBlueprintTemplate(kind,true);materials[kind]=recipe?blueprintMaterials(mechanismBlueprintShape(recipe)):'Plano en preparación';materialsWithSupports[kind]=supported?blueprintMaterials(mechanismBlueprintShape(supported)):materials[kind];}
- return {available:story.scene==='lab'&&!puzzle.active,supportsAvailable:true,materials,materialsWithSupports,selectedLabel:c?(c.kind==='straight'?'Cinta recta':c.kind==='left'?'Esquina izquierda':'Esquina derecha')+' · tramo '+c.id:'Selecciona un rodillo del tramo para configurarlo.',conveyor:c?{id:c.id,kind:c.kind,enabled:c.running,direction:c.direction,status:conveyorStatus(c),load:c.load,capacity:c.capacity,speed:conveyorRotors(c).reduce((sum,r)=>sum+Math.abs(r.actualRpm||0)*Math.PI*CUBE_SIZE/60,0)/Math.max(1,c.joints.length),energy:supply?.storedJ||0,connected:line.length,lineRunning:line.every(section=>section.running)}:null};
+ return {available:(story.scene==='lab'||inGalpon())&&!puzzle.active,supportsAvailable:true,materials,materialsWithSupports,selectedLabel:c?(c.kind==='straight'?'Cinta recta':c.kind==='left'?'Esquina izquierda':'Esquina derecha')+' · tramo '+c.id:'Selecciona un rodillo del tramo para configurarlo.',conveyor:c?{id:c.id,kind:c.kind,enabled:c.running,direction:c.direction,status:conveyorStatus(c),load:c.load,capacity:c.capacity,speed:conveyorRotors(c).reduce((sum,r)=>sum+Math.abs(r.actualRpm||0)*Math.PI*CUBE_SIZE/60,0)/Math.max(1,c.joints.length),energy:supply?.storedJ||0,connected:line.length,lineRunning:line.every(section=>section.running)}:null};
 }
 function conveyorPortWorld(c,name){const base=rotorPart(c?.baseId),port=c?.ports?.[name];return base&&port?{p:add(base.p,base.q.vmult(V(...port.p))),direction:base.q.vmult(V(...port.direction))}:null;}
 function conveyorBlueprintPlacement(record,c){
@@ -7724,7 +7812,7 @@ function conveyorBlueprintPlacement(record,c){
  return {point:origin,height:Math.max(0,origin.y-.002),angle,quarterTurns:((Math.round(angle/(Math.PI/2))%4)+4)%4};
 }
 function conveyorPanelAction(action,payload={}){
- const c=conveyorPanelSubject(),finish=(ok,message)=>({ok:!!ok,message});if(story.scene!=='lab'||puzzle.active)return finish(false,'Disponible en el banco de pruebas.');
+ const c=conveyorPanelSubject(),finish=(ok,message)=>({ok:!!ok,message});if(story.scene!=='lab'&&!inGalpon()||puzzle.active)return finish(false,'Disponible en el banco de pruebas.');
  if(action==='blueprint'){
   if(!['straight','left','right'].includes(payload.kind)||!Number.isInteger(payload.quarterTurns)||payload.quarterTurns<0||payload.quarterTurns>3||!Number.isFinite(payload.height)||payload.height<0||payload.height>6)return finish(false,'Revisa el tipo, la orientación y la altura.');
   const record=conveyorBlueprintTemplate(payload.kind,payload.supports===true);if(!record)return finish(false,'No se pudo preparar este plano.');
@@ -7753,7 +7841,7 @@ function updateMechanismPanel(){
  refreshSensorPanel();updateRobotArmPanel();updateConveyorPanel();updateFlightFleet();updateFlightPanel();updateServoPanel();
  const targets=controlRotors(),rotor=targets[0]||selectedRotor(),set=activeRotorSet(),available=mechanismsAvailable(),rpm=rotor?.rpm??mechanismDefaults.rpm;
  const common=(field,format)=>targets.length>1&&targets.some(r=>r[field]!==targets[0][field])?'Varios':format(rotor?.[field]??mechanismDefaults[field]);
- document.querySelector('#mechanism-unlock').textContent=story.scene==='lab'?'Disponibles en el banco. En campaña: completa el nivel 5, La primera unión.':mechanismsUnlocked()?'Enganche y Rotor desbloqueados.':'Completa el nivel 5, La primera unión, para desbloquearlos en campaña.';
+ document.querySelector('#mechanism-unlock').textContent=inGalpon()?'Ajusta las máquinas instaladas. Fabrica los enganches con la materia del galpón.':story.scene==='lab'?'Disponibles en el banco. En campaña: completa el nivel 5, La primera unión.':mechanismsUnlocked()?'Enganche y Rotor desbloqueados.':'Completa el nivel 5, La primera unión, para desbloquearlos en campaña.';
  document.querySelector('#rotor-status').textContent=targets.length?(set?.name||'Selección')+' · '+targets.length+' rotor'+(targets.length===1?'':'es')+' · '+targets.filter(r=>r.enabled).length+' en marcha'+(targets.some(r=>r.stalled)?' · revisa los rotores atascados':''):'Ctrl + clic sobre cada rotor para añadirlo o quitarlo. También puedes usar '+inputLabel('select')+'.';
  const nameInput=document.querySelector('#rotor-set-name');if(document.activeElement!==nameInput)nameInput.value=set?.name||'';
  document.querySelector('#rotor-set-create').disabled=!targets.length;document.querySelector('#rotor-set-create').textContent=set?'Renombrar conjunto':'Crear conjunto';
@@ -7803,7 +7891,7 @@ function updateMechanismPanel(){
  for(const id of ['force','capacity','torque'])document.querySelector('#rotor-'+id).disabled=powered;
  if(powered)for(const id of ['side','mount','disconnect','clockwise','counterclockwise','start'])document.querySelector('#rotor-'+id).disabled=true;
  document.querySelector('#rotor-rpm').disabled=powered||!!rotor?.servo;
- for(const id of ['create-coupler','create-rotor'])document.querySelector('#'+id).disabled=!available;
+ for(const id of ['create-coupler','create-rotor'])document.querySelector('#'+id).disabled=inGalpon()||!available;
  const list=document.querySelector('#saved-mechanism-list');list.replaceChildren();
  for(const mechanism of savedMechanisms){
   const row=document.createElement('div'),create=document.createElement('button');create.type='button';create.textContent=mechanism.name+' · '+mechanismPartCount(mechanism)+' piezas';create.disabled=!available;
@@ -7811,7 +7899,7 @@ function updateMechanismPanel(){
   const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Eliminar '+mechanism.name);remove.addEventListener('click',()=>{savedMechanisms.splice(savedMechanisms.indexOf(mechanism),1);persistMechanisms();updateMechanismPanel();});row.append(create,remove);list.appendChild(row);
  }
 }
-function createMechanismChoice(kind){if(!mechanismsAvailable())return;clearRotorSelection();settings.unitShape=kind;startCreationTool(kind);}
+function createMechanismChoice(kind){if(inGalpon()){galponSupplyHint();return;}if(!mechanismsAvailable())return;clearRotorSelection();settings.unitShape=kind;startCreationTool(kind);}
 document.querySelector('#create-coupler').addEventListener('click',()=>createMechanismChoice('coupler'));
 document.querySelector('#create-rotor').addEventListener('click',()=>createMechanismChoice('rotor'));
 document.querySelector('#rotor-tier').addEventListener('change',event=>{if(certifiedAutomation()){updateMechanismPanel();return;}const tier=QBitsProgression.effectiveTier(Number(event.target.value),story.progress);story.progress.torqueTier=tier;try{localStorage.setItem('qbits.campaign.v1',JSON.stringify(story.progress));}catch{}if(story.scene==='campaign'){for(const r of rotors)if(r.maxTorque>campaignTorqueCap())configureRotor(r,{maxTorque:campaignTorqueCap()});mechanismDefaults.maxTorque=Math.min(mechanismDefaults.maxTorque,campaignTorqueCap());}updateMechanismPanel();});
@@ -7828,7 +7916,7 @@ document.querySelector('#rotor-set-create').addEventListener('click',()=>{const 
 document.querySelector('#rotor-set-dissolve').addEventListener('click',()=>{const set=activeRotorSet();if(set){dissolveRotorSet(set);announce('Conjunto disuelto · los rotores conservan sus ajustes');}updateMechanismPanel();});
 document.querySelector('#rotor-save').addEventListener('click',()=>{const targets=controlRotors(),rotor=targets[0]||selectedRotor();if(targets.length&&targets.some(r=>!rotorConnectedGroups(rotorGroups(rotor)).includes(rotorGroups(r)[0])))return;if(rotor||selected?.g?.parts.some(part=>unitShape(part)==='coupler'||isExternalBattery(part)))saveMechanism(rotor||selected.g,activeRotorSet()?.name);updateMechanismPanel();});
 document.querySelector('#battery-guide').addEventListener('click',()=>showExternalBatteryGuide());
-document.querySelector('#rotor-disconnect').addEventListener('click',()=>{const rotor=individualControlRotor();if(rotor)disconnectRotor(rotor);updateMechanismPanel();});
+document.querySelector('#rotor-disconnect').addEventListener('click',()=>{const rotor=individualControlRotor();if(rotor)disconnectRotorByHand(rotor);updateMechanismPanel();});
 document.querySelector('#export-mechanisms').addEventListener('click',()=>exportMechanisms());
 document.querySelector('#import-mechanisms').addEventListener('change',async event=>{try{const file=event.target.files?.[0];if(!file)return;if(file.size>1000000)throw new Error('Archivo demasiado grande');const count=importMechanismsData(JSON.parse(await file.text()));announce(count+' mecanismos importados');updateMechanismPanel();}catch(error){announce('No se pudo importar: '+error.message);}event.target.value='';});
 
@@ -7879,11 +7967,12 @@ function updateInspection(){
 }
 const tabletSections={
  bodies:{label:'Cuerpos',tabs:['catalog','cube','route','cargo']},
- machines:{label:'Mecanismos',tabs:['mechanisms']},
+ machines:{label:'Mecanismos',tabs:['mechanisms','galpon']},
  files:{label:'Archivo',tabs:['alpha','puzzle']},
  help:{label:'Ayuda',tabs:['manual']}
 };
 const tabletPages={
+ galpon:['Órdenes del galpón','Inicia la extracción y prepara el pedido por lotes. Cada montaje utiliza los cubos y enganches disponibles en la bancada.'],
  catalog:['Catálogo','Elige un objeto para ver su plano en la sala. Confirma con clic. Shift alinea la posición a la cuadrícula.'],
  cube:['Piezas','Selecciona una pieza en la sala para ver su masa y ajustar el agarre o la física.'],
  route:['Recorrido','Selecciona las piezas que van a moverse. Usa el menú del suelo para indicar el destino.'],
@@ -7932,13 +8021,14 @@ function tabletNearBench(){
 function syncTabletMode(){
  const workshop=!!workshopPanel?.isOpen,near=tabletNearBench();
  panel.dataset.mode=workshop?'workshop':'bank';
+ tabletEl('tablet-bank').textContent=story.scene==='galpon'?'Sala':'Banco';
  tabletEl('tablet-bank').setAttribute('aria-pressed',String(!workshop));
  const button=tabletEl('tablet-workshop');button.disabled=!near;button.title=near?'Trabajar en la mesa':'Acércate a una mesa desplegada';
  button.setAttribute('aria-pressed',String(workshop));
 }
 function tabletAcceptsSelection(){return !panel.hidden&&story.mode==='playing'&&!story.transition;}
 function tabletCanInspect(hit){return !!hit&&(hit.distance<=4||isExternalBattery(hit.part)||!!tabletMechanism(hit));}
-function tabletVisible(){return tabletAcceptsSelection()&&story.scene==='lab';}
+function tabletVisible(){return tabletAcceptsSelection()&&(story.scene==='lab'||inGalpon());}
 const tabletReducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
 let tabletMotionStart=0,tabletStowTimer=0;
 let tabletNextChargeRead=0,tabletNextEmptyBenchCheck=0;
@@ -8156,18 +8246,21 @@ function drawTabletCatalog(){
 }
 function selectTabletGroup(id){switchPanelTab(tabletSections[id].tabs.find(tab=>tab!=='catalog'||story.scene==='lab'&&!puzzle.active));}
 function switchPanelTab(name){
+ if(inGalpon()&&name==='catalog')name='cube';
+ if(name==='galpon'&&story.scene!=='galpon')name='cube';
  if(!tabletPages[name])return;
  tabletTab=name;const group=Object.keys(tabletSections).find(id=>tabletSections[id].tabs.includes(name));
  panel.dataset.group=group;tabletPreferences();
  tabletEl('tablet-center').scrollTop=0;
- tabletEl('tablet-group-title').textContent=tabletSections[group].label;tabletEl('tablet-title').textContent=tabletPages[name][0];
+ tabletEl('tablet-group-title').textContent=group==='machines'&&story.scene==='galpon'?'Instalación':tabletSections[group].label;tabletEl('tablet-title').textContent=tabletPages[name][0];
  tabletEl('tablet-help').textContent=tabletPages[name][1];
  for(const id of Object.keys(tabletSections))tabletEl('wheel-'+id).setAttribute('aria-pressed',String(id===group));
  for(const tab of Object.keys(tabletPages)){
-  const button=tabletEl('tab-'+tab);button.hidden=!tabletSections[group].tabs.includes(tab)||tab==='catalog'&&(story.scene!=='lab'||puzzle.active);
+  const button=tabletEl('tab-'+tab);button.hidden=!tabletSections[group].tabs.includes(tab)||tab==='galpon'&&story.scene!=='galpon'||tab==='catalog'&&(story.scene!=='lab'||puzzle.active);
   tabletEl('page-'+tab).hidden=tab!==name;button.setAttribute('aria-selected',String(tab===name));
  }
  drawMachineLinks();
+ if(name==='galpon'){updateHangarReadout();refreshHangarReconfiguration();}
  if(name==='catalog'){refreshQuickEntries();drawTabletCatalog();}
 }
 const machineLinks=[
@@ -8238,7 +8331,7 @@ function drawCargos(){
   if(c.dimensions){drawMatter(c);continue;}
   gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);bindGeometry(shadowGeometry);gl.uniform1f(uniforms.uKind,2);const s=c.size*2;
   if(visuals.shadows==='sharp'){drawProjectedShadow(unitProfile('cube').vertices.map(p=>add(c.body.position,c.body.quaternion.vmult(mul(p,c.size/CUBE_SIZE)))));}else if(visuals.shadows!=='off'){setPose(V(c.body.position.x,.001,c.body.position.z),Q(),V(s,1,s));gl.uniform1f(uniforms.uScale,s);gl.uniform1f(uniforms.uShadow,.2);submitDraw(gl.TRIANGLES,0,6);}
-  const intake=c.intake||0,drawSize=c.size*(1-intake*.85);gl.depthMask(intake===0);if(intake===0)gl.disable(gl.BLEND);bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,5);setPose(V(c.body.position.x,c.robotPhysical?c.body.position.y:drawSize/2,c.body.position.z),c.body.quaternion,V(drawSize,drawSize,drawSize));
+  const intake=c.intake||0,drawSize=c.size*(1-intake*.85);gl.depthMask(intake===0);if(intake===0)gl.disable(gl.BLEND);bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,5);setPose(V(c.body.position.x,c.robotPhysical||c.galponLift?c.body.position.y:drawSize/2,c.body.position.z),c.body.quaternion,V(drawSize,drawSize,drawSize));
   const rgb=[1,3,5].map(i=>parseInt(c.color.slice(i,i+2),16)/255);tint(...rgb,1-intake*.8);submitDraw(gl.TRIANGLES,0,36);
   gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);if(!intake)drawOutline(c.body.position,c.body.quaternion,V(c.size,c.size,c.size),.65,selectedCargo===c);gl.depthMask(true);gl.disable(gl.BLEND);
  }
@@ -8539,7 +8632,7 @@ function drawTrajectories(){
 // The first puzzle lives in the laboratory. Its previous contents are restored
 // when leaving the challenge; rewards and deliveries use a single transaction.
 const puzzleConfig={frameSeconds:12,energySeconds:8};
-function puzzleBlockedEdit(kind='edit'){if(openingProtected()){announce('Piezas conservadas · las herramientas de creación están en el banco.');return true;}if(certifiedAutomation()){announce('Ensayo certificado: usa las piezas del banco. Reinicia el nivel para restaurarlas.');return true;}if(kind==='mechanism'&&mechanismsAvailable())return false;if(story.ready&&story.scene==='campaign'&&panel.hidden){announce('La materia genera nuevos Q-bits. P abre el banco de herramientas de prueba.');return true;}if(!puzzle.active||kind==='qubit'&&alphaSettings.allowPuzzleSpawn)return false;announce('Puzle activo · los recursos se obtienen en los portales. P → Puzle para volver al banco.');return true;}
+function puzzleBlockedEdit(kind='edit'){if(inGalpon()){galponSupplyHint();return true;}if(openingProtected()){announce('Piezas conservadas · las herramientas de creación están en el banco.');return true;}if(certifiedAutomation()){announce('Ensayo certificado: usa las piezas del banco. Reinicia el nivel para restaurarlas.');return true;}if(kind==='mechanism'&&mechanismsAvailable())return false;if(story.ready&&story.scene==='campaign'&&panel.hidden){announce('La materia genera nuevos Q-bits. P abre el banco de herramientas de prueba.');return true;}if(!puzzle.active||kind==='qubit'&&alphaSettings.allowPuzzleSpawn)return false;announce('Puzle activo · los recursos se obtienen en los portales. P → Puzle para volver al banco.');return true;}
 function saveLab(options={}){syncVirtualConveyors(0);if(!options.passive)cancelPowerCable();return {workshop:workshopPlacement&&{...workshopPlacement},families:serializeFamilies(),disassembly:serializeDisassembly(),powerNetwork:serializePowerNetwork(),trajectories:trajectorySystem?.snapshot()||{version:1,serial:0,routes:[]},mechanismDefaults:typeof mechanismDefaults==='undefined'?null:{...mechanismDefaults},rotors:serializeRotorState(),rotorSets:serializeRotorSets(),robotArms:serializeRobotArms(),conveyors:typeof serializeConveyors==='function'?serializeConveyors():[],contacts:serializeContactState(),shelves:serializeShelves(),alphaScene:alphaSceneSnapshot(),settings:{...settings},moodSettings:{...moodSettings},position:[...position],yaw,pitch,groups:groups.map(g=>({parts:worldParts(g),q:g.body.quaternion.clone(),v:g.body.velocity.clone(),w:g.body.angularVelocity.clone()})),cargos:cargos.map(c=>({id:c.id,p:c.body.position.clone(),side:c.side,required:c.required,color:c.color,...(c.robotPhysical?{robotPhysical:true,q:c.body.quaternion.clone(),v:c.body.velocity.clone(),w:c.body.angularVelocity.clone()}:{} )})),runtime:captureLabRuntime()};}
 // JSON removes Cannon prototypes. Rebuild only the explicitly stored pose and
 // velocity fields, before enterLab clears the current scene. Inventory IDs are
@@ -8694,6 +8787,7 @@ function puzzleWall(p,half,portal=null){
  const wall={p,half,body,portal,min:sub(p,half),max:add(p,half)};puzzle.walls.push(wall);return wall;
 }
 function startPuzzle(){
+ if(inGalpon()){galponSupplyHint();return;}
  if(openingProtected()&&!saveCurrentGame().ok)return;
  if(story.ready&&story.scene!=='lab')enterLab(false);
  if(!puzzle.active)puzzle.savedLab=saveLab();removeWorkshop();contactStates.clear();rotorContactStates.clear();clearPuzzleScene();puzzle.active=true;puzzle.stage=0;puzzle.complete=false;puzzle.delivery=null;puzzle.earned=0;puzzle.run++;
@@ -8809,8 +8903,8 @@ function updatePuzzleHUD(){
 }
 function updatePuzzlePanel(){
  document.querySelector('#puzzle-description').textContent=puzzle.active?(puzzle.complete?'Primera cadena completada. Puedes reiniciarla o volver a tu banco.':'Calipso → Violeta → Ámbar. Cada material entregado crea cuatro Q-bits. En el último portal reserva uno para el marco y dos para la energía; el resto arrastra.'):'Monta la primera cadena dentro de la sala. Al salir se recupera el contenido de tu banco de pruebas.';
- document.querySelector('#start-puzzle').textContent=puzzle.active?'Reiniciar puzle':'Montar puzle 01';document.querySelector('#leave-puzzle').disabled=!puzzle.active;
- for(const id of ['mass','cargoRequired','cargoColor','create','create-cargo','remove','delete-cargo'])document.querySelector('#'+id).disabled=puzzle.active||openingProtected();document.querySelector('#create').disabled=openingProtected()||puzzle.active&&!alphaSettings.allowPuzzleSpawn;
+ document.querySelector('#start-puzzle').disabled=inGalpon();document.querySelector('#start-puzzle').textContent=puzzle.active?'Reiniciar puzle':'Montar puzle 01';document.querySelector('#leave-puzzle').disabled=!puzzle.active;
+ for(const id of ['mass','cargoRequired','cargoColor','create','create-cargo','remove','delete-cargo'])document.querySelector('#'+id).disabled=inGalpon()||puzzle.active||openingProtected();document.querySelector('#create').disabled=inGalpon()||openingProtected()||puzzle.active&&!alphaSettings.allowPuzzleSpawn;
  for(const key of ['frameSeconds','energySeconds']){document.querySelector('#'+key).value=puzzleConfig[key];document.querySelector('#'+key+'Value').textContent=puzzleConfig[key]+' s';}
 }
 function resolvePuzzlePlayer(oldX,oldZ){
@@ -8849,9 +8943,9 @@ for(const key of ['frameSeconds','energySeconds'])document.querySelector('#'+key
 function newMood(id,saved=null){
  const personality=Math.abs(Math.sin(id*127.1)*43758.5453)%1;
  const m={name:'Q-bit '+id,strikes:0,severity:0,lastAnger:-1000,restTotal:0,energy:.8,state:'neutral',reason:'',agitation:0,restLeft:0,idle:0,fullTime:0,blocked:0,calm:0,boredOnce:false,personality,blend:[1,0,0]};
- if(saved)Object.assign(m,saved,{blend:[...(saved.blend||[1,0,0])],...(saved.externalBattery?{externalBattery:{...saved.externalBattery}}:{}),...(saved.gripper?{gripper:JSON.parse(JSON.stringify(saved.gripper))}:{}),...(saved.flight?{flight:QBitsPropellerPower.config(saved.flight)}:{}),...(saved.trajectory?{trajectory:{...saved.trajectory}}:{})});m.name=m.name.replace(/^(?:Kiubit|Qubit) (\d+)$/,'Q-bit $1');return m;
+ if(saved)Object.assign(m,saved,{...(saved.matter?{matter:{...saved.matter}}:{}),blend:[...(saved.blend||[1,0,0])],...(saved.externalBattery?{externalBattery:{...saved.externalBattery}}:{}),...(saved.gripper?{gripper:JSON.parse(JSON.stringify(saved.gripper))}:{}),...(saved.flight?{flight:QBitsPropellerPower.config(saved.flight)}:{}),...(saved.trajectory?{trajectory:{...saved.trajectory}}:{})});m.name=m.name.replace(/^(?:Kiubit|Qubit) (\d+)$/,'Q-bit $1');return m;
 }
-function copyMood(m){return m?{...m,blend:[...m.blend],...(m.externalBattery?{externalBattery:{...m.externalBattery}}:{}),...(Array.isArray(m.sensorMachine?.members)?{sensorMachine:{...m.sensorMachine,members:m.sensorMachine.members.map(pair=>({...pair}))}}:{}),...(m.sensorConfig?{sensorConfig:{...m.sensorConfig}}:{}),...(m.sensorLink?{sensorLink:{...m.sensorLink}}:{}),...(m.gripper?{gripper:JSON.parse(JSON.stringify(m.gripper))}:{}),...(m.flight?{flight:QBitsPropellerPower.config(m.flight)}:{}),...(m.trajectory?{trajectory:{...m.trajectory}}:{})}:null;}
+function copyMood(m){return m?{...m,...(m.matter?{matter:{...m.matter}}:{}),blend:[...m.blend],...(m.externalBattery?{externalBattery:{...m.externalBattery}}:{}),...(Array.isArray(m.sensorMachine?.members)?{sensorMachine:{...m.sensorMachine,members:m.sensorMachine.members.map(pair=>({...pair}))}}:{}),...(m.sensorConfig?{sensorConfig:{...m.sensorConfig}}:{}),...(m.sensorLink?{sensorLink:{...m.sensorLink}}:{}),...(m.gripper?{gripper:JSON.parse(JSON.stringify(m.gripper))}:{}),...(m.flight?{flight:QBitsPropellerPower.config(m.flight)}:{}),...(m.trajectory?{trajectory:{...m.trajectory}}:{})}:null;}
 function moodName(m){return m.state==='excited'?'Entusiasmado':m.state==='restless'?(m.severity>=3?'Alterado':'Inquieto'):'Neutro';}
 function moodColor(m){const colors=[[.53,.60,.61],[.38,.66,.56],[.76,.48,.38]],rgb=[0,0,0];for(let i=0;i<3;i++)for(let k=0;k<3;k++)rgb[k]+=colors[i][k]*m.blend[i];return rgb;}
 function moodCSS(m){return 'rgb('+moodColor(m).map(c=>Math.round(c*255)).join(',')+')';}
@@ -8886,7 +8980,7 @@ function updateMoods(dt){
    m.calm=Math.max(0,m.calm-dt);
    if(!externalInternals.has(part.id)){
     if(working&&moving){m.energy=clamp(m.energy-travel*moodSettings.drain*effort*QBitsWorkshop.movementFactors(part).energy*20/gameBatteryCapacity(part)-dt*.0015*20/gameBatteryCapacity(part),0,1);m.idle=0;m.boredOnce=false;}
-    else if(!openingOwnsPart(part.id)&&!rotorForPart(part.id)?.powerActive&&!robotWorkingParts.has(part))m.energy=clamp(m.energy+dt*moodSettings.recovery*(.9+.2*m.personality)*20/gameBatteryCapacity(part),0,1);
+    else if(!inGalpon()&&!openingOwnsPart(part.id)&&!rotorForPart(part.id)?.powerActive&&!robotWorkingParts.has(part))m.energy=clamp(m.energy+dt*moodSettings.recovery*(.9+.2*m.personality)*20/gameBatteryCapacity(part),0,1);
    }
    if(task||carried||duty||rotorForPart(part.id)?.powerActive){m.idle=0;m.boredOnce=false;}else m.idle+=dt;
    m.blocked=blocked?m.blocked+dt:Math.max(0,m.blocked-dt*2);
@@ -8990,15 +9084,15 @@ function updateMoodSelection(){
 }
 function updateMoodPanel(){
  for(const key of ['drain','recovery','idleSeconds']){document.querySelector('#mood-'+key).value=moodSettings[key];document.querySelector('#mood-'+key+'Value').textContent=key==='idleSeconds'?moodSettings[key]+' s':Math.round(moodSettings[key]*1000)/10+' % / '+(key==='drain'?'m':'s');}
- for(const key of ['tired','rested'])document.querySelector('#mood-test-'+key).disabled=!selected||puzzle.active||openingProtected()||certifiedAutomation();
- for(const key of ['drain','recovery','idleSeconds'])document.querySelector('#mood-'+key).disabled=openingProtected();
+ for(const key of ['tired','rested'])document.querySelector('#mood-test-'+key).disabled=inGalpon()||!selected||puzzle.active||openingProtected()||certifiedAutomation();
+ for(const key of ['drain','recovery','idleSeconds'])document.querySelector('#mood-'+key).disabled=inGalpon()||openingProtected();
 }
 function testMood(tired){
- if(openingProtected())return;
+ if(inGalpon()||openingProtected())return;
  if(certifiedAutomation()){announce('La energía del ensayo solo se recupera con descanso.');return;}
  if(puzzle.active||!selected)return;const m=selected.part.mood;m.energy=tired?.01:1;m.agitation=tired?.75:0;m.state=tired?'restless':'neutral';m.reason=tired?'agotado':'';m.restLeft=tired?3:0;m.fullTime=0;m.calm=tired?0:1;updateMoodPanel();
 }
-for(const key of ['drain','recovery','idleSeconds'])document.querySelector('#mood-'+key).addEventListener('input',e=>{if(openingProtected()||certifiedAutomation()){updateMoodPanel();return;}const value=Number(e.target.value);if(Number.isFinite(value))moodSettings[key]=clamp(value,...({drain:[.005,.08],recovery:[.02,.15],idleSeconds:[45,180]}[key]));updateMoodPanel();});
+for(const key of ['drain','recovery','idleSeconds'])document.querySelector('#mood-'+key).addEventListener('input',e=>{if(inGalpon()||openingProtected()||certifiedAutomation()){updateMoodPanel();return;}const value=Number(e.target.value);if(Number.isFinite(value))moodSettings[key]=clamp(value,...({drain:[.005,.08],recovery:[.02,.15],idleSeconds:[45,180]}[key]));updateMoodPanel();});
 document.querySelector('#mood-test-tired').addEventListener('click',()=>testMood(true));
 document.querySelector('#mood-test-rested').addEventListener('click',()=>testMood(false));
 
@@ -9025,6 +9119,7 @@ function alphaSupport(g,center,q){
  }return level;
 }
 function createCooler(p){
+ if(inGalpon()){galponSupplyHint();return null;}
  if(openingProtected()){announce('Estaciones de este tramo · sin cambios.');return null;}
  if(certifiedAutomation()){announce('El ensayo usa las estaciones existentes.');return null;}
  if(coolers.length>=12){announce('Máximo de 12 enfriadores en esta sala.');return null;}
@@ -9035,6 +9130,9 @@ function createCooler(p){
  announce('Enfriador colocado · capacidad '+c.capacity);return c;
 }
 function removeCooler(c){for(const b of c.bodies)world.removeBody(b);for(const g of groups)if(g.cooler===c)g.cooler=null;coolers.splice(coolers.indexOf(c),1);}
+function applyCoolerRecovery(part,energy){
+ Object.assign(part.mood,{energy,state:'neutral',reason:'',restLeft:0,agitation:0,strikes:0,severity:0,fullTime:0,calm:4});
+}
 function updateCooling(dt){
  const externalInternals=externallyPoweredInternalIds();
  for(const g of groups)g.cooler=null;
@@ -9047,7 +9145,7 @@ function updateCooling(dt){
    if(!c.enabled||!alphaSettings.coolingOn)continue;g.cooler=c;
    for(const part of g.parts){if(isExternalBattery(part)||externalInternals.has(part.id))continue;seen.add(part.id);if(rotorForPart(part.id)?.powerActive||robotWorkingParts.has(part))continue;let e=c.entries.get(part.id);if(!e){e={elapsed:0,done:false};c.entries.set(part.id,e);}const coolingSeconds=(c.coolSeconds||alphaSettings.coolSeconds)*gameBatteryCapacity(part)/300;e.duration=coolingSeconds;e.elapsed=Math.min(coolingSeconds,e.elapsed+dt);
     const m=part.mood;m.coolProgress=e.elapsed/coolingSeconds;
-    if(e.elapsed>=coolingSeconds){if(!e.done){m.energy=alphaSettings.exitEnergy;m.state='neutral';m.reason='';m.restLeft=0;m.agitation=0;m.strikes=0;m.severity=0;m.fullTime=0;m.calm=4;e.done=true;}m.energy=Math.min(m.energy,alphaSettings.exitEnergy);}
+    if(e.elapsed>=coolingSeconds){if(!e.done){applyCoolerRecovery(part,alphaSettings.exitEnergy);e.done=true;}m.energy=Math.min(m.energy,alphaSettings.exitEnergy);}
    }
   }
   for(const [id] of c.entries)if(!seen.has(id))c.entries.delete(id);c.occupants=count;
@@ -9377,6 +9475,7 @@ function spawnSavedMechanism(record,point,rotation=Q()){
  }
 }
 function duplicateMechanism(subject){
+ if(inGalpon()){galponSupplyHint();return null;}
  if(mechanismGroups(subject).some(g=>g.parts.some(QBitsWorkshop.hasAdaptation))){announce('Retira las adaptaciones antes de duplicar el mecanismo.');return null;}
 
  const record=mechanismSnapshot(subject);if(!record){announce('No se puede duplicar este mecanismo hasta ajustar sus puntas.');return null;}
@@ -9391,6 +9490,7 @@ function duplicateMechanism(subject){
 function mechanismsExportData(){return {version:1,mechanisms:savedMechanisms.map(copySavedMechanism)};}
 function exportMechanisms(){const blob=new Blob([JSON.stringify(mechanismsExportData(),null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Q-bits_mecanismos.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function importMechanismsData(data){
+ if(inGalpon())throw Error('Las importaciones se realizan en el banco de pruebas.');
  const input=data?.version===1?data.mechanisms:null;
  if(!Array.isArray(input)||input.length>64||!input.every(savedMechanismValid))throw new Error('Archivo de mecanismos inválido');
  const normalized=input.map(copySavedMechanism);savedMechanisms.splice(0,savedMechanisms.length,...normalized);persistMechanisms();updateAlphaPanel();return normalized.length;
@@ -9539,7 +9639,7 @@ function blueprintSiteClear(box){
 }
 function placeBlueprint(shape,p,placement={}){
  if(openingProtected())return null;
- if(shape?.mechanism?.conveyors&&story.scene!=='lab'){announce('Las cintas modulares se construyen en el banco de pruebas.');return null;}
+ if(shape?.mechanism?.conveyors&&story.scene!=='lab'&&!inGalpon()){announce('Las cintas modulares se construyen en el banco de pruebas.');return null;}
  automationIntervention();
  if((shape?.mechanism?!savedMechanismValid(shape.mechanism)||!mechanismsAvailable():!savedShapeValid(shape))||!p||![p.x,p.z].every(Number.isFinite)||blueprints.length>=12){announce('No se puede colocar otro blueprint aquí.');return null;}
  if(shape.mechanism)shape=mechanismBlueprintShape(shape.mechanism);
@@ -9551,7 +9651,12 @@ function placeBlueprint(shape,p,placement={}){
  if(!blueprintSiteClear(box)){announce('La forma necesita más espacio libre.');return null;}
  bp.id=++alphaSerial;blueprints.push(bp);announce(shape.name+' · '+blueprintMaterials(shape)+' · acerca piezas sueltas y usa clic derecho → Integrar');return bp;
 }
-function nearBlueprint(bp){const used=new Set(bp.slots.map(s=>s.index)),needed=new Set(blueprintTargets(bp).filter((_,i)=>!used.has(i)).map(t=>t.shape));return groups.filter(g=>g.parts.length===1&&!g.parts[0].mood?.externalBattery&&!g.parts[0].mood?.gripper&&(!bp.shape.mechanism||!QBitsWorkshop.hasAdaptation(g.parts[0]))&&!(typeof rotorForGroup==='function'&&rotorForGroup(g))&&needed.has(normalizeUnitShape(g.parts[0].shape))&&!g.route&&!g.pendingMoodOrder&&!g.haulJob&&!g.blueprintJob&&!g.cooler&&!(held?.items||[]).some(i=>i.g===g)&&groupWilling(g)&&bounds(g).min.y<.03&&Math.hypot(g.body.position.x-bp.p.x,g.body.position.z-bp.p.z)<=alphaSettings.blueprintRange).sort((a,b)=>a.body.position.distanceTo(bp.p)-b.body.position.distanceTo(bp.p));}
+function hangarBlueprintMaterial(part){
+ if(!inGalpon())return true;
+ const G=QBitsGalponProduction,s=story.galpon,r=G.record(s,part.id);
+ return r?.place==='world'&&r.kind!=='raw'&&G.manipulable(r)&&!s.records.some(load=>load.carriers.includes(part.id));
+}
+function nearBlueprint(bp){const used=new Set(bp.slots.map(s=>s.index)),needed=new Set(blueprintTargets(bp).filter((_,i)=>!used.has(i)).map(t=>t.shape));return groups.filter(g=>g.parts.length===1&&hangarBlueprintMaterial(g.parts[0])&&!g.parts[0].mood?.externalBattery&&!g.parts[0].mood?.gripper&&(!bp.shape.mechanism||!QBitsWorkshop.hasAdaptation(g.parts[0]))&&!(typeof rotorForGroup==='function'&&rotorForGroup(g))&&needed.has(normalizeUnitShape(g.parts[0].shape))&&!g.route&&!g.pendingMoodOrder&&!g.haulJob&&!g.blueprintJob&&!g.cooler&&!(held?.items||[]).some(i=>i.g===g)&&groupWilling(g)&&bounds(g).min.y<.03&&Math.hypot(g.body.position.x-bp.p.x,g.body.position.z-bp.p.z)<=alphaSettings.blueprintRange).sort((a,b)=>a.body.position.distanceTo(bp.p)-b.body.position.distanceTo(bp.p));}
 function activateBlueprint(bp){bp.active=true;bp.nextScan=0;const used=new Set(bp.slots.map(s=>s.index)),available=nearBlueprint(bp).map(g=>normalizeUnitShape(g.parts[0].shape)),missing=[];for(const [i,target] of blueprintTargets(bp).entries()){if(used.has(i))continue;const j=available.indexOf(target.shape);if(j<0)missing.push(target);else available.splice(j,1);}announce(missing.length?'Faltan '+blueprintMaterials({parts:missing})+' en el radio de '+alphaSettings.blueprintRange+' m. Acerca piezas sueltas.':'Integrando unidades cercanas · '+blueprintMaterials(bp.shape));}
 function releaseBlueprintSlot(s){const g=s.g;if(!groups.includes(g))return;stopRoute(g);g.blueprintJob=null;g.body.type=CANNON.Body.DYNAMIC;g.body.collisionResponse=true;g.body.updateMassProperties();g.body.velocity.set(0,0,0);g.body.angularVelocity.set(0,0,0);g.body.wakeUp();}
 function cancelBlueprint(bp){for(const s of bp.slots)releaseBlueprintSlot(s);blueprints.splice(blueprints.indexOf(bp),1);}
@@ -9563,7 +9668,7 @@ function updateBlueprints(dt){
     // A mechanism consumes supplied loose pieces one at a time. Lift directly
 // from their resting location: twenty simultaneous walking routes used to jam
 // each other before even reaching the assembly lane.
-    if(index>=0&&(bp.shape.mechanism||startRoute(g,stage,true))){const pose=targets[index],q=pose.q.mult(g.parts[0].q.inverse()),target={shape:pose.shape,p:sub(pose.p,q.vmult(g.parts[0].offset)),q},slot={g,bp,index,target,stage,state:'walking',t:0};g.blueprintJob=slot;bp.slots.push(slot);}
+    if(index>=0&&(bp.shape.mechanism||startRoute(g,stage,true,false,true))){const pose=targets[index],q=pose.q.mult(g.parts[0].q.inverse()),target={shape:pose.shape,p:sub(pose.p,q.vmult(g.parts[0].offset)),q},slot={g,bp,index,target,stage,state:'walking',t:0};g.blueprintJob=slot;bp.slots.push(slot);}
    }
   }
   let assembling=bp.slots.some(s=>s.state==='assembly');
@@ -9611,6 +9716,7 @@ function alphaSecondary(dir=direction()){
 function openAlphaPanel(hit=null){pause();showTablet();if(hit)selected=hit;updatePanel();switchPanelTab('alpha');updateAlphaPanel();}
 function renameQubit(){if(!selected||!groups.includes(selected.g))return;const input=document.querySelector('#qubit-name'),name=String(input.value||'').replace(/[\u0000-\u001f]/g,'').trim().slice(0,24);selected.part.mood.name=name||unitLabel(selected.part)+' '+selected.part.id;input.value=selected.part.mood.name;announce('Nombre guardado');}
 function updateAlphaPanel(){
+ for(const id of ['import-shapes','import-mechanisms','alpha-allowPuzzleSpawn','alpha-exitEnergy','alpha-maxRest','alpha-coolSeconds','alpha-capacity'])document.querySelector('#'+id).disabled=inGalpon();
  document.querySelector('#qubit-name').value=selected?.part.mood.name||'';document.querySelector('#qubit-name').disabled=!selected;
  document.querySelector('#rename-qubit').disabled=!selected;document.querySelector('#save-shape').disabled=!selected;
  for(const key of ['maxRest','coolSeconds','capacity','blueprintRange','exitEnergy','glow']){document.querySelector('#alpha-'+key).value=alphaSettings[key];document.querySelector('#alpha-'+key+'Value').textContent=key==='exitEnergy'?Math.round(alphaSettings[key]*100)+' %':alphaSettings[key]+({maxRest:' s',coolSeconds:' s',capacity:' u',blueprintRange:' m',glow:''}[key]||'');}
@@ -9624,7 +9730,7 @@ function updateAlphaPanel(){
  }
 }
 function exportShapes(){const blob=new Blob([JSON.stringify({version:1,shapes:savedShapes},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Q-bits_formas.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-function importShapesData(data){const input=data?.version===1?data.shapes:null;if(!Array.isArray(input)||input.length>64||!input.every(savedShapeValid))throw new Error('Archivo de formas inválido');savedShapes.splice(0,savedShapes.length,...input.map(s=>JSON.parse(JSON.stringify(s))));persistShapes();updateAlphaPanel();return input.length;}
+function importShapesData(data){if(inGalpon())throw Error('Las importaciones se realizan en el banco de pruebas.');const input=data?.version===1?data.shapes:null;if(!Array.isArray(input)||input.length>64||!input.every(savedShapeValid))throw new Error('Archivo de formas inválido');savedShapes.splice(0,savedShapes.length,...input.map(s=>JSON.parse(JSON.stringify(s))));persistShapes();updateAlphaPanel();return input.length;}
 function showPuzzleComplete(){
  pause();panel.hidden=true;document.querySelector('#completion-panel').hidden=false;document.querySelector('#completion-detail').textContent='Tres materiales entregados · '+puzzle.earned+' nuevos Q-bits. La última recompensa te espera al volver a la sala.';
 }
@@ -9683,6 +9789,7 @@ function drawNeonPath(points,color=[.28,.68,.73]){
 function drawAlpha(){
  for(const c of coolers){drawAsset(coolerBodyMesh,c.p,Q(),V(1,1,1),[.93,.94,.94,1]);drawAsset(coolerTrayMesh,c.p,Q(),V(1,1,1),[.24,.27,.28,1]);drawAsset(coolerBaseMesh,c.p,Q(),V(1,1,1),[.23,.25,.26,1]);drawAsset(coolerRimMesh,c.p,Q(),V(1,1,1),[.35,.38,.39,1]);drawAsset(coolerAccentMesh,c.p,Q(),V(1,1,1),c.enabled&&alphaSettings.coolingOn?[.53,.75,.79,1]:[.4,.43,.44,1]);}
  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
+ if(inGalpon())drawHangarPlanGuide();
  for(const bp of blueprints){const occupied=new Set(bp.slots.filter(s=>s.state==='placed').map(s=>s.index));const targets=blueprintTargets(bp);for(let i=0;i<targets.length;i++){if(occupied.has(i))continue;const t=targets[i];if(isTBit(t)){drawUnitMesh(t,[.27,.67,.73,.07],4);drawUnitOutline(t,.4,true);}else{drawBox(t.p,t.q,V(.088,.088,.088),[.27,.67,.73,.07]);drawOutline(t.p,t.q,V(.09,.09,.09),.4,true);}}drawConveyorBlueprintArrows(bp,targets);const bb=blueprintBox(bp);drawRing(V(bp.p.x,.007,bp.p.z),Math.max(.1,Math.min(.65,Math.max(bb.size.x,bb.size.z)/2+.08)),.35);}
  for(const c of coolers)if(c.enabled&&alphaSettings.coolingOn){bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,7);setPose(add(c.p,V(0,.002,0)),Q(),V(1.15,.001,1.15));tint(.2,.63,.73,.13*alphaSettings.glow);submitDraw(gl.TRIANGLES,0,36);}
  gl.depthMask(true);gl.disable(gl.BLEND);
@@ -9694,8 +9801,8 @@ document.querySelector('#save-shape').addEventListener('click',()=>saveShape(sel
 document.querySelector('#place-cooler').addEventListener('click',()=>{const p=floorAim()||V(position[0]-Math.sin(yaw)*1.3,0,position[2]-Math.cos(yaw)*1.3);createCooler(p);});
 document.querySelector('#export-shapes').addEventListener('click',exportShapes);
 document.querySelector('#import-shapes').addEventListener('change',async e=>{try{const file=e.target.files?.[0];if(!file)return;if(file.size>1000000)throw new Error('Archivo demasiado grande');const count=importShapesData(JSON.parse(await file.text()));announce(count+' formas importadas');}catch(error){announce('No se pudo importar: '+error.message);}e.target.value='';});
-for(const key of ['maxRest','coolSeconds','capacity','blueprintRange','exitEnergy','glow'])document.querySelector('#alpha-'+key).addEventListener('input',e=>{if(openingProtected()||certifiedAutomation()){updateAlphaPanel();return;}const n=Number(e.target.value),ranges={maxRest:[15,180],coolSeconds:[5,60],capacity:[1,MAX_QUBITS],blueprintRange:[.5,3],exitEnergy:[.25,.75],glow:[0,1]};if(Number.isFinite(n))alphaSettings[key]=clamp(n,...ranges[key]);updateAlphaPanel();});
-for(const key of ['coolingOn','allowPuzzleSpawn'])document.querySelector('#alpha-'+key).addEventListener('change',e=>{if(openingProtected()||certifiedAutomation()){updateAlphaPanel();return;}alphaSettings[key]=!!e.target.checked;updatePuzzlePanel();updateAlphaPanel();});
+for(const key of ['maxRest','coolSeconds','capacity','blueprintRange','exitEnergy','glow'])document.querySelector('#alpha-'+key).addEventListener('input',e=>{if(openingProtected()||certifiedAutomation()||inGalpon()&&['exitEnergy','maxRest','coolSeconds','capacity'].includes(key)){updateAlphaPanel();return;}const n=Number(e.target.value),ranges={maxRest:[15,180],coolSeconds:[5,60],capacity:[1,MAX_QUBITS],blueprintRange:[.5,3],exitEnergy:[.25,.75],glow:[0,1]};if(Number.isFinite(n))alphaSettings[key]=clamp(n,...ranges[key]);updateAlphaPanel();});
+for(const key of ['coolingOn','allowPuzzleSpawn'])document.querySelector('#alpha-'+key).addEventListener('change',e=>{if(openingProtected()||certifiedAutomation()||inGalpon()&&key==='allowPuzzleSpawn'){updateAlphaPanel();return;}alphaSettings[key]=!!e.target.checked;updatePuzzlePanel();updateAlphaPanel();});
 document.querySelector('#completion-continue').addEventListener('click',()=>{document.querySelector('#completion-panel').hidden=true;captureMouse();});
 document.querySelector('#completion-restart').addEventListener('click',()=>{document.querySelector('#completion-panel').hidden=true;startPuzzle();captureMouse();});
 document.querySelector('#completion-lab').addEventListener('click',()=>{document.querySelector('#completion-panel').hidden=true;leavePuzzle();showTablet();switchPanelTab('puzzle');});
@@ -9954,8 +10061,11 @@ document.addEventListener('webkitfullscreenchange',syncFullscreenButton);
 // Campaign prologue. Scene state, narrative timers and test tools share one clock.
 const chapters=[['00','El primer encuentro','Prólogo · tomar, mover y enfriar'],['01','Primer contacto','Llevar un Q-bit a un destino'],['02','Cada uno por su camino','Dos destinos independientes'],['03','Dos lados','Dos botones simultáneos'],['04','Juntos pesamos más','Dos Q-bits en un botón'],['05','La primera unión','Dos piezas · circuito de líquido'],['06','Cambiar de forma','Tres puertas · L, cuadrado y T'],['07','Seis piezas','Rectángulo y escalera'],['08','Salimos juntos','Seis compañeros · fin del primer bloque'],['09','La fuente','Conocer al equipo · transformar materia'],['10','El camino de vuelta','Dos estaciones · transporte y descanso'],['11','Dos rutas','Elegir materia y organizar al equipo'],['12','La instalación','Tres estaciones · el equipo completo']];
 const ui={main:document.querySelector('#main-screen'),pause:document.querySelector('#pause-screen'),levels:document.querySelector('#levels-screen'),complete:document.querySelector('#chapter-complete'),dialogue:document.querySelector('#story-dialogue'),text:document.querySelector('#story-text'),speaker:document.querySelector('#story-speaker'),choices:document.querySelector('#story-choices'),objective:document.querySelector('#story-objective'),veil:document.querySelector('#scene-veil'),top:document.querySelector('#eye-top'),bottom:document.querySelector('#eye-bottom'),cooling:document.querySelector('#cooling-track'),marker:document.querySelector('#world-label')};
-function gameMode(mode){if(story.mode!==mode)resetSimulationClock();if(mode!=='playing'){window.QBitsGuideAudio?.setPaused(true);window.QBitsFootsteps?.setPaused(true);window.QBitsJoinAudio?.setPaused(true);}if(mode!=='playing')closeUnitRadial(false);story.mode=mode;if(mode!=='playing'){cullingLab.observer=false;document.body.dataset.cullingObserver='false';cullingLab.lastFrame=null;}updateCullingHud(true);window.QBitsMusic?.setPaused(!['playing','menu','levels','codex','settings','saves'].includes(mode));document.body.dataset.gameMode=mode;for(const [key,el] of [['menu',ui.main],['pause',ui.pause],['levels',ui.levels],['complete',ui.complete],['codex',document.querySelector('#codex-screen')],['saves',document.querySelector('#saves-screen')]])el.hidden=mode!==key;document.querySelector('#pause-button').hidden=mode!=='playing';hint.hidden=true;redraw=true;}
-function gameScene(scene){story.scene=scene;document.body.dataset.gameScene=scene;const label=document.querySelector('#chapter-label');label.hidden=scene==='lab';document.querySelector('#chapter-number').textContent=scene==='intro'?'PRÓLOGO / 00':'NIVEL / '+String(story.level||1).padStart(2,'0');document.querySelector('#chapter-name').textContent=scene==='intro'?'El primer encuentro':chapters[story.level||1][1];}
+function gameMode(mode){if(story.mode!==mode)resetSimulationClock();if(mode!=='playing'){window.QBitsGuideAudio?.setPaused(true);window.QBitsFootsteps?.setPaused(true);window.QBitsJoinAudio?.setPaused(true);}if(mode!=='playing')closeUnitRadial(false);story.mode=mode;if(mode!=='playing'){cullingLab.observer=false;document.body.dataset.cullingObserver='false';cullingLab.lastFrame=null;}updateCullingHud(true);window.QBitsMusic?.setPaused(!['playing','menu','levels','codex','settings','saves'].includes(mode));document.body.dataset.gameMode=mode;for(const [key,el] of [['menu',ui.main],['pause',ui.pause],['levels',ui.levels],['complete',ui.complete],['codex',document.querySelector('#codex-screen')],['saves',document.querySelector('#saves-screen')],['galpon-menu',document.querySelector('#galpon-screen')]])el.hidden=mode!==key;document.querySelector('#pause-button').hidden=mode!=='playing';hint.hidden=true;redraw=true;}
+function gameScene(scene){story.scene=scene;document.body.dataset.gameScene=scene;const label=document.querySelector('#chapter-label');label.hidden=scene==='lab';if(scene==='galpon'){
+ document.querySelector('#chapter-number').textContent='GALPÓN / 01';
+ document.querySelector('#chapter-name').textContent='La primera línea';return;
+ }document.querySelector('#chapter-number').textContent=scene==='intro'?'PRÓLOGO / 00':'NIVEL / '+String(story.level||1).padStart(2,'0');document.querySelector('#chapter-name').textContent=scene==='intro'?'El primer encuentro':chapters[story.level||1][1];}
 // Context menus release input capture, but their machines and the world stay live.
 function storySuspended(){return !!story.dialogue?.modal||!!trajectoryPanel?.isOpen||!!familyGroupingJob||!!familyUi?.isOpen()||radialOpen()||story.ready&&(story.mode!=='playing'||document.hidden);}
 function modalReadingActive(){return !!story.dialogue?.modal&&story.mode==='playing'&&!document.hidden&&panel.hidden&&menu.hidden&&commandMenu.hidden&&!settingsScreen?.isOpen&&!radialOpen()&&!trajectoryPanel?.isOpen&&!familyUi?.isOpen();}
@@ -10056,6 +10166,7 @@ function drawStoryWorld(){
  for(const d of storyWorld.details)drawAsset({buffer:cubeGeometry,count:36},d.p,Q(),d.size,[...d.color,1]);
  const door=storyWorld.door;if(door)drawBox(add(door.p,V(.66,.45,.059)),Q(),V(.012,.28,.004),storyWorld.doorProgress>.8?[.37,.68,.55,1]:[.68,.74,.70,1]);
  drawCampaignOpaque();
+ if(story.scene==='galpon')drawHangarStations();
  if(story.firstCycle)drawOpeningSupply();
  if(storyWorld.target){const p=storyWorld.target;drawAsset(storyTargetMesh,p,Q(),V(.25,1,.25),[.36,.69,.58,1],3);drawRing(add(p,V(0,.003,0)),.275,.7);}
 }
@@ -10068,6 +10179,14 @@ function drawStoryGlass(){
 }
 const storyTargetMesh=buildLathe([[.88,.006],[1,.006]],72);
 function clearNarrativeScene(){
+ if(story.scene==='galpon'){
+  clearHangarLine();clearHangarWorld();story.galpon=null;story.galponGuideStep=null;
+  if(tabletTab==='galpon')tabletTab='cube';
+  if(hangarPreviousSettings){
+   Object.assign(settings,hangarPreviousSettings.physics);Object.assign(alphaSettings,hangarPreviousSettings.alpha);Object.assign(moodSettings,hangarPreviousSettings.moods);
+   world.gravity.y=-settings.gravity;world.defaultContactMaterial.friction=settings.friction;world.defaultContactMaterial.restitution=settings.bounce;hangarPreviousSettings=null;
+  }
+ }
  clearOpeningScene();
  clearMechanicalRest();sensorContactsCache=null;
  resetSimulationClock(performance.now(),true);
@@ -10311,7 +10430,164 @@ function writeCampaignSave(checkpoint=saveSession.checkpoint){
 function openStoryDoor(dt){const d=storyWorld.door;if(!d)return;storyWorld.doorProgress=Math.min(1,storyWorld.doorProgress+dt/.95);const t=storyWorld.doorProgress,u=t*t*(3-2*t);d.p.y=d.initialY+2.65*u;d.body.position.copy(d.p);d.min=sub(d.p,d.half);d.max=add(d.p,d.half);d.body.aabbNeedsUpdate=true;}
 // Persistent slots own JSON data. Live Cannon bodies and narrative callbacks
 // remain in the scene; campaign resumes at an explicit level checkpoint.
-function savedGameMode(){return story.scene==='lab'?'lab':'campaign';}
+function savedGameMode(){return story.scene==='galpon'?'galpon':story.scene==='lab'?'lab':'campaign';}
+// Worker routes may be saved during a roll, while the bottom face is off the
+// floor. Reissuing the destination there can fail, and would lose the turn.
+function hangarRoutesSnapshot(){
+ const routes=[];
+ for(const g of groups){
+  const r=g.route;if(!r)continue;
+  const first=r.segment?.phases[0];
+  routes.push({id:g.parts[0].id,steps:[...r.steps],index:r.index,preview:r.preview,strides:r.strides,
+   goal:r.goal,pin:g.pin?.point||r.goal,align:r.align,
+   segment:first?{p:add(first.pivot,first.relative),q:first.fromQ,t:r.segment.t,duration:r.segment.duration}:null});
+ }
+ return routes;
+}
+function restoreHangarRoutes(records){
+ const vec=v=>V(v.x,v.y,v.z),quat=q=>new CANNON.Quaternion(q.x,q.y,q.z,q.w);
+ for(const r of records){
+  const g=rotorPart(r.id).g,a=r.align,s=r.segment;
+  stopRoute(g);
+  const segment=s?{...rollGeometry(g,vec(s.p),quat(s.q),r.steps[r.index]),t:s.t,duration:s.duration}:null;
+  g.route={steps:r.steps,index:r.index,preview:r.preview.map(vec),strides:r.strides,
+   goal:vec(r.goal),align:a?{fromP:vec(a.fromP),toP:vec(a.toP),fromQ:quat(a.fromQ),toQ:quat(a.toQ),t:a.t}:null,segment};
+  g.pin={point:vec(r.pin),arrived:false};g.body.type=CANNON.Body.KINEMATIC;g.body.updateMassProperties();g.body.wakeUp();
+ }
+}
+// Preserve in-flight hauling without calling beginHaul again. That action
+// reassigns every worker and resets the cargo's path, speed and position pins.
+function hangarHaulSnapshot(c){
+ const j=c.job;if(!j)return null;
+ const delay=time=>Math.max(0,(time??0)-simTime);
+ return {phase:j.phase,goal:j.goal,path:j.path,index:j.index,activeCount:j.activeCount,planning:!!c.pathSearch,
+  lastPosition:j.lastPosition,sinceProgress:Math.max(0,simTime-j.lastProgress),nextCrew:delay(j.nextCrewPlan),
+  nextRoute:j.pathSearch?0:delay(j.nextRouteCheck),nextSafety:delay(j.nextSafetyCheck),nextMatch:delay(j.nextRematch),
+  clear:j.segmentClear??true,slots:j.slots.map(s=>({id:s.g.parts[0].id,offset:s.offset,ready:s.ready,
+   nextPlan:s.approachSearch?0:delay(s.nextPlan),approach:s.approachPath||[],index:s.approachIndex??0,
+   lastDistance:Number.isFinite(s.lastDistance)?s.lastDistance:null,fixed:s.g.body.fixedRotation}))};
+}
+function restoreHangarHaul(c,r){
+ if(!r)return;
+ const vec=v=>V(v.x,v.y,v.z);
+ const j={cargo:c,phase:r.phase,goal:vec(r.goal),path:r.path.map(vec),index:r.index,activeCount:r.activeCount,
+  lastPosition:vec(r.lastPosition),lastProgress:simTime-r.sinceProgress,nextCrewPlan:simTime+r.nextCrew,
+  nextRouteCheck:simTime+r.nextRoute,nextSafetyCheck:simTime+r.nextSafety,nextRematch:simTime+r.nextMatch,segmentClear:r.clear};
+ c.job=j;c.pin={point:j.goal.clone(),arrived:false};
+ j.slots=r.slots.map(s=>{
+  const g=rotorPart(s.id).g;g.haulJob=j;g.haulMaterialRestore=g.body.material;g.body.material=haulMaterial;
+  g.body.fixedRotation=s.fixed;g.body.updateMassProperties();
+  return {g,offset:vec(s.offset),ready:s.ready,nextPlan:simTime+s.nextPlan,approachPath:s.approach.length?s.approach.map(vec):null,
+   approachIndex:s.index,lastDistance:s.lastDistance??Infinity,routeFailures:0};
+ });
+ if(r.planning)scheduleInitialHaulPath(c,j);
+}
+function hangarGripSnapshot(){
+ if(!held)return null;
+ const h=held;
+ return {family:h.family?.id??null,part:h.part?.id??null,picked:h.pickedPartId??null,distance:h.distance,age:h.age,
+  latched:!!h.latched,rootOffset:h.rootOffset,rotation:h.rotation,initialRotation:h.initialRotation,tiltAxis:h.tiltAxis,
+  face:h.faceTurn||null,items:h.items.map(i=>({id:i.g.parts[0]?.id??null,anchor:i.anchor,target:i.anchorBody?.position||null,
+   relative:i.relative,initial:i.initialQ,rest:i.restQ||null}))};
+}
+function restoreHangarGrip(h){
+ if(!h)return;
+ const vec=v=>V(v.x,v.y,v.z),quat=q=>new CANNON.Quaternion(q.x,q.y,q.z,q.w);
+ const f=h.family&&families.find(f=>f.id===h.family),hit=f?{family:f}:rotorPart(h.part),body=f?f.body:hit.g.body;
+ const point=add(body.position,body.quaternion.vmult(vec(h.items[0].anchor)));
+ if(!f)multiSelection=h.items.map(i=>rotorPart(i.id).g);
+ grabQubit({...hit,point,distance:h.distance},true);
+ if(!held)return;
+ const savedItems=new Map(h.items.map(i=>[i.id,i]));
+ for(const i of held.items){
+  const r=savedItems.get(i.g.parts[0]?.id??null);
+  i.anchor.copy(r.anchor);i.joint?.pivotA?.copy(i.anchor);
+  if(i.anchorBody&&r.target)i.anchorBody.position.copy(r.target);
+  i.relative=vec(r.relative);i.initialQ=quat(r.initial);i.restQ=r.rest?quat(r.rest):null;
+ }
+ Object.assign(held,{distance:h.distance,age:h.age,latched:h.latched,pickedPartId:h.picked,
+  rootOffset:vec(h.rootOffset),tiltAxis:vec(h.tiltAxis),rotation:quat(h.rotation),initialRotation:quat(h.initialRotation)});
+ if(h.face)held.faceTurn={from:quat(h.face.from),target:quat(h.face.target),queue:h.face.queue.map(quat),elapsed:h.face.elapsed,active:h.face.active};
+}
+function validateHangarAdapters(data,model){
+ if(!galponWorldRecordValid(data.world,data.snapshot,model))throw Error('Las estaciones o sus transportes no coinciden con la materia del galpón.');
+ if(!galponLineRecordValid(data.line,data.snapshot,model))throw Error('Los tramos, recorridos o familias de la línea no coinciden con el galpón.');
+}
+function saveHangarGame(options){
+ try{
+  const snapshot=saveLab({passive:true});snapshot.workshop=null;
+  const waiting=groups.filter(g=>g.pendingMoodOrder&&!g.route&&!g.haulJob).map(g=>{
+   const p=g.pendingMoodOrder;return {id:g.parts[0].id,goal:p.goal,reason:p.reason,
+    delay:Number.isFinite(p.nextTry)?Math.max(0,p.nextTry-simTime):0,obstacles:p.obstacleStamp??null};
+  });
+  snapshot.cargos=snapshot.cargos.map((r,i)=>{
+   const c=cargos[i],b=c.body;
+   return {...r,rawId:c.rawId,q:b.quaternion.clone(),v:b.velocity.clone(),w:b.angularVelocity.clone(),moving:b.type===CANNON.Body.DYNAMIC,haul:hangarHaulSnapshot(c),arrived:!!c.pin?.arrived};
+  });
+  const G=window.QBitsGalponProduction;
+  const sync=p=>G.syncEnergy(story.galpon,p.id,p.mood.energy);
+  for(const g of snapshot.groups)g.parts.forEach(sync);
+  for(const f of snapshot.families)familyParts(f.items).forEach(sync);
+  const data={version:1,snapshot,alphaSettings:{...alphaSettings},production:G.snapshot(story.galpon),
+   world:saveGalponWorld(),line:galponLineSnapshot(),routes:hangarRoutesSnapshot(),waiting,grip:hangarGripSnapshot(),
+   mission:{phase:story.phase,elapsed:story.elapsed,phaseTime:story.phaseTime,logicPhase:logicAccumulator,height:posture.height,guideStep:story.galponGuideStep??null}};
+  validateHangarAdapters(data,data.production);
+  return saveStore.write('galpon',data,{replace:options.replace===true});
+ }catch(error){return {ok:false,error:error.message};}
+}
+function readHangarSlot(){
+ const slot=saveStore.read('galpon');if(slot.status!=='ready')return slot;
+ try{validateHangarAdapters(slot.save.data,slot.save.data.production);return slot;}
+ catch(error){return {status:'invalid',error:error.message};}
+}
+function hasHangarSave(){return readHangarSlot().status==='ready';}
+function hasStoredHangarSlot(){return saveStore.read('galpon').status!=='empty';}
+function latestSaveIsHangar(){
+ const hangar=readHangarSlot();if(hangar.status!=='ready')return false;
+ return ['campaign','lab'].every(mode=>{const other=saveStore.read(mode);return other.status!=='ready'||other.save.savedAt<=hangar.save.savedAt;});
+}
+function continueHangarGame(options={}){
+ if(story.transition)return false;
+ if(liveSavedGame('galpon')){resumeGame();return true;}
+ const slot=saveStore.read('galpon');
+ if(slot.status!=='ready'){savedGameStatus(slot.error||'Todavía no hay un galpón guardado.');return false;}
+ const data=slot.save.data;
+ let snapshot,model;
+ try{
+  model=window.QBitsGalponProduction.restore(data.production);
+  validateHangarAdapters(data,model);
+  snapshot=hydrateLabSnapshot(data.snapshot);
+ }catch(error){savedGameStatus('No se pudo recuperar el galpón. '+error.message);return false;}
+ if(!saveBeforeSwitch('galpon'))return false;
+ return runSavedGame(()=>{
+  beginHangarGame({restoring:true,state:model});
+  for(const r of model.records)serial=Math.max(serial,r.id,r.origin);
+  Object.assign(settings,snapshot.settings);Object.assign(moodSettings,snapshot.moodSettings);Object.assign(alphaSettings,data.alphaSettings);
+  for(const group of snapshot.groups)makeGroup(group.parts,group.q,group.v,group.w);
+  restoreLabMechanisms(snapshot);
+  for(const record of snapshot.cargos){
+   const c=restoreLabCargo(record,record.rawId),b=c.body;
+   setCargoMoving(c,record.moving);b.position.copy(record.p);b.quaternion.copy(record.q);b.velocity.copy(record.v);b.angularVelocity.copy(record.w);b.aabbNeedsUpdate=true;
+  }
+  restoreAlphaScene(snapshot.alphaScene);
+  restoreGalponWorld(data.world);galponRestoreLine(data.line);
+  for(const record of snapshot.cargos){const c=cargos.find(c=>c.id===record.id);restoreHangarHaul(c,record.haul);if(record.arrived)c.pin={point:c.body.position.clone(),arrived:true};}
+  const active=new Set([...data.routes,...data.waiting].map(r=>r.id));
+  const runtime={...snapshot.runtime,routes:snapshot.runtime.routes.filter(r=>!active.has(r.id))};
+  saveSession.restoreWarnings=restoreLabRuntime(runtime).warnings;
+  restoreHangarRoutes(data.routes);
+  for(const p of data.waiting){
+   const g=rotorPart(p.id).g,goal=V(p.goal.x,p.goal.y,p.goal.z);
+   if(p.reason==='planning'){startRoute(g,goal,true,false);continue;}
+   g.pendingMoodOrder={goal,reason:p.reason,nextTry:simTime+p.delay,obstacleStamp:p.obstacles};
+   g.pin={point:goal.clone(),arrived:false};
+  }
+  position.splice(0,3,...snapshot.position);camera.splice(0,3,...position);yaw=snapshot.yaw;pitch=snapshot.pitch;posture.height=data.mission.height;
+  Object.assign(story,{phase:data.mission.phase,elapsed:data.mission.elapsed,phaseTime:data.mission.phaseTime,galponGuideStep:data.mission.guideStep});
+  world.gravity.y=-settings.gravity;world.defaultContactMaterial.friction=settings.friction;world.defaultContactMaterial.restitution=settings.bounce;world.broadphase.dirty=true;
+  restoreHangarGrip(data.grip);updatePanel();updateHangarReadout();savedGameStatus('Galpón restaurado.'+(saveSession.restoreWarnings.length?' '+saveSession.restoreWarnings.join(' '):''));
+ },options.fade===true,data.mission.logicPhase);
+}
 function savedGameStatus(message){
  saveSession.message=message;
  for(const id of ['saves-status','pause-save-status'])document.querySelector('#'+id).textContent=message;
@@ -10345,7 +10621,7 @@ function bankSaveBlocked(){
  return '';
 }
 function persistCampaignCheckpoint(level=story.scene==='campaign'?story.level:0,completed=story.phase==='complete'){
- if(saveSession.preparing)return {ok:false,deferred:true};
+ if(saveSession.preparing||story.scene==='galpon')return {ok:false,deferred:true};
  saveSession.checkpoint={scene:level?'campaign':'intro',level:level||0,completed:!!completed};saveSession.campaignActive=true;
  if(saveSession.restoring||!story.ready||!story.started)return {ok:false,deferred:true};
  const result=writeCampaignSave();
@@ -10356,7 +10632,9 @@ function saveCurrentGame(options={}){
  if(!story.ready||!story.started||saveSession.preparing||saveSession.restoring)return {ok:false,deferred:true};
  if(story.transition){const error='Espera a que termine el cambio de escena.';if(options.manual)savedGameStatus(error);return {ok:false,deferred:true,error};}
  const mode=savedGameMode();let result;
- if(mode==='lab'){
+ if(mode==='galpon'){
+  result=saveHangarGame(options);
+ }else if(mode==='lab'){
   const blocked=puzzle.active?'':bankSaveBlocked();
   if(story.transition||blocked){const error=blocked||'Espera a que termine el cambio de escena.';if(options.manual)savedGameStatus(error);return {ok:false,deferred:true,error};}
   let snapshot,hydrated;
@@ -10370,7 +10648,7 @@ function saveCurrentGame(options={}){
   result=writeCampaignSave(checkpoint);
  }
  saveSession.nextAutosave=performance.now()+AUTOSAVE_MS;
- if(result.ok)savedGameStatus((mode==='lab'?'Banco de pruebas':'Campaña')+' guardado'+(puzzle.active?' · se conserva el banco anterior al puzle':'')+'.');
+ if(result.ok)savedGameStatus((mode==='galpon'?'Galpón':mode==='lab'?'Banco de pruebas':'Campaña')+' guardado'+(puzzle.active?' · se conserva el banco anterior al puzle':'')+'.');
  else savedGameStatus('No se pudo guardar. La partida anterior se conserva. '+(result.error||''));
  return result;
 }
@@ -10380,7 +10658,7 @@ function autosaveGame(time=performance.now()){
  // An unfinished gesture is transient; retry shortly without cancelling it.
  if(result.deferred)saveSession.nextAutosave=time+1000;
 }
-function liveSavedGame(mode){return story.started&&!saveSession.preparing&&savedGameMode()===mode&&(mode==='lab'?saveSession.labActive:saveSession.campaignActive);}
+function liveSavedGame(mode){return story.started&&!saveSession.preparing&&savedGameMode()===mode&&(mode==='galpon'?!!story.galpon:mode==='lab'?saveSession.labActive:saveSession.campaignActive);}
 function refreshSavedGames(){
  for(const mode of ['campaign','lab']){
   const record=saveStore.read(mode),live=liveSavedGame(mode),summary=document.querySelector('#saves-'+mode+'-summary'),date=document.querySelector('#saves-'+mode+'-date');
@@ -10441,9 +10719,9 @@ function saveBeforeSwitch(discardMode=null){
  if(!story.started||saveSession.preparing||discardMode===savedGameMode())return true;
  const result=saveCurrentGame();return result.ok;
 }
-function runSavedGame(action,fade){
+function runSavedGame(action,fade,logicPhase=0){
  saveSession.confirmation=null;document.querySelector('#saves-confirm').hidden=true;
- const run=()=>{saveSession.restoring=true;saveSession.restoreWarnings=[];try{action();resetSimulationClock(performance.now(),true);}finally{saveSession.restoring=false;saveSession.nextAutosave=performance.now()+AUTOSAVE_MS;}};
+ const run=()=>{saveSession.restoring=true;saveSession.restoreWarnings=[];try{action();resetSimulationClock(performance.now(),true);logicAccumulator=logicPhase;}finally{saveSession.restoring=false;saveSession.nextAutosave=performance.now()+AUTOSAVE_MS;}};
  if(fade){sceneFade(run);captureForTransition();}else run();
  return true;
 }
@@ -10513,10 +10791,11 @@ function enterLab(capture=true){
  if(saved){Object.assign(settings,saved.settings);Object.assign(moodSettings,saved.moodSettings||{});Object.assign(alphaSettings,story.labAlpha||{});position.splice(0,3,...saved.position);yaw=saved.yaw;pitch=saved.pitch;camera.splice(0,3,...position);for(const g of saved.groups)makeGroup(g.parts,g.q,g.v,g.w);restoreLabMechanisms(saved);for(const c of saved.cargos)restoreLabCargo(c);restoreAlphaScene(saved.alphaScene);}else{settings.maxCarry=MAX_QUBITS;settings.maxSelect=MAX_QUBITS;addQubit([0,HALF+.003,0]);}
  world.gravity.y=-settings.gravity;world.defaultContactMaterial.friction=settings.friction;world.defaultContactMaterial.restitution=settings.bounce;world.broadphase.dirty=true;ui.veil.style.opacity='0';setupWorkshop();if(saved?.runtime&&saveSession.restoring)saveSession.restoreWarnings=restoreLabRuntime(saved.runtime).warnings;saveSession.labActive=true;updatePanel();if(!saveSession.restoring&&!saveSession.preparing)saveCurrentGame();if(capture)captureMouse();
 }
-function showMain(){saveCurrentGame();document.querySelector('#wake-screen').hidden=true;gameMode('menu');pause(false);panel.hidden=true;document.querySelector('#main-continue').hidden=!story.started&&!['campaign','lab'].some(mode=>saveStore.read(mode).status==='ready');ui.veil.style.opacity='0';ui.top.style.height='0';ui.bottom.style.height='0';canvas.style.filter='none';document.querySelector('#main-play').focus({preventScroll:true});}
-function openPauseMenu(){cancelFamilyGrouping();cancelFamilyPlacement();familyUi?.clear();if(!story.ready||story.mode!=='playing'||story.transition)return;closeWorkshopPanel(false);cancelUnitCreation();cancelShelfPlacement();document.querySelector('#wake-screen').hidden=true;gameMode('pause');pause(false);panel.hidden=true;saveCurrentGame({manual:true});document.querySelector('#pause-opening-help').hidden=!story.firstCycle;document.querySelector('#pause-opening-recover').hidden=!story.firstCycle||!openingPartGroup();document.querySelector('#pause-chapter').textContent=story.firstCycle?'Ciclo 1 · Un lugar para dos':story.passage?'Camino del ciclo 1 al 2':story.scene==='intro'?'Prólogo · El primer encuentro':story.scene==='campaign'?'Nivel '+story.level+' · '+chapters[story.level][1]:'Banco de pruebas';document.querySelector('#pause-resume').focus({preventScroll:true});}
+function showMain(){saveCurrentGame();document.querySelector('#wake-screen').hidden=true;gameMode('menu');pause(false);panel.hidden=true;document.querySelector('#main-continue').hidden=!story.started&&!['campaign','lab'].some(mode=>saveStore.read(mode).status==='ready')&&!hasHangarSave();ui.veil.style.opacity='0';ui.top.style.height='0';ui.bottom.style.height='0';canvas.style.filter='none';document.querySelector('#main-play').focus({preventScroll:true});}
+function openPauseMenu(){cancelFamilyGrouping();cancelFamilyPlacement();familyUi?.clear();if(!story.ready||story.mode!=='playing'||story.transition)return;closeWorkshopPanel(false);cancelUnitCreation();cancelShelfPlacement();document.querySelector('#wake-screen').hidden=true;gameMode('pause');pause(false);panel.hidden=true;saveCurrentGame({manual:true});document.querySelector('#pause-opening-help').hidden=!story.firstCycle;document.querySelector('#pause-opening-recover').hidden=!story.firstCycle||!openingPartGroup();document.querySelector('#pause-restart').textContent=story.scene==='galpon'?'Retomar recorridos':'Reiniciar nivel';document.querySelector('#pause-chapter').textContent=story.firstCycle?'Ciclo 1 · Un lugar para dos':story.passage?'Camino del ciclo 1 al 2':story.scene==='intro'?'Prólogo · El primer encuentro':story.scene==='galpon'?'Galpón · La primera línea':story.scene==='campaign'?'Nivel '+story.level+' · '+chapters[story.level][1]:'Banco de pruebas';document.querySelector('#pause-resume').focus({preventScroll:true});}
 function resumeGame(){if(story.phase==='complete'){gameMode('complete');return;}gameMode('playing');if(story.scene==='intro'&&['asleep','invocation'].includes(story.phase)){ui.veil.style.opacity='1';ui.top.style.height='52%';ui.bottom.style.height='52%';ui.dialogue.hidden=!story.dialogue;if(story.phase==='asleep')showWakeButton();else{document.querySelector('#wake-screen').hidden=true;canvas.focus({preventScroll:true});}return;}if(story.phase==='choice'||story.phase==='repeat')return;captureMouse();}
 function restartCurrent(){
+ if(story.scene==='galpon'){resumeGame();hangarOrder('recover');return;}
  if(story.firstCycle){openingResetPrompt(()=>{const guide=worldParts(storyGuide());sceneFade(()=>beginOpeningSupply(null,guide));captureForTransition();});return;}
  if(story.passage){sceneFade(()=>beginFactoryPassage());captureForTransition();return;}
  sceneFade(()=>{if(story.scene==='intro')beginIntro();else if(story.scene==='campaign')beginCampaignLevel(story.level);else if(puzzle.active)startPuzzle();else{clearNarrativeScene();gameScene('intro');enterLab(false);}});captureForTransition();
@@ -10526,7 +10805,7 @@ function backFromLevels(){gameMode(story.returnMode||'menu');if(story.mode==='pl
 function storyInput(event){
  if(document.body.dataset.booting==='true')return true;
  if(story.transition){event.preventDefault();return true;}
- if(!story.ready)return false;if(story.mode==='saves')return savedGameKey(event);const editing=editableTarget(document.activeElement);
+ if(!story.ready)return false;if(story.mode==='galpon-menu'){if(event.code==='Escape'){event.preventDefault();showMain();}return true;}if(story.mode==='saves')return savedGameKey(event);const editing=editableTarget(document.activeElement);
  if(event.code==='KeyP'&&!event.repeat&&!editing){event.preventDefault();if(!panel.hidden)stowTablet();else openPanel();return true;}
  if(event.code==='Escape'){
   event.preventDefault();if(story.transition&&panel.hidden)return true;if(!panel.hidden){panel.hidden=true;if(story.mode==='playing')openPauseMenu();return true;}
@@ -10582,15 +10861,445 @@ function updateStoryMarker(){
  if(story.firstCycle?.phase==='return'&&!point){const g=openingPartGroup();if(g&&!openingGroupHeld(g)){point=add(g.body.position,V(0,.17,0));label='COMPAÑERO · DEVOLUCIÓN PENDIENTE';}}
  if(point){const p=project(point);if(p&&p.x>35&&p.x<canvas.clientWidth-35&&p.y>100&&p.y<canvas.clientHeight-195){ui.marker.style.left=p.x+'px';ui.marker.style.top=(p.y-18)+'px';ui.marker.textContent=label;ui.marker.hidden=false;}}
 }
+// Galpón de prueba. Production and transport advance on the same simulation
+// clock as the mechanisms. Opening the order sheet only releases mouse capture.
+let hangarReplacePending=false, hangarNextReadout=0, hangarRecipe=null, hangarPreviousSettings=null;
+function showHangarMenu(){
+ if(story.transition)return;
+ gameMode('galpon-menu');pause(false);panel.hidden=true;
+ hangarReplacePending=false;
+ const saved=hasHangarSave();
+ tabletEl('galpon-start').textContent=saved?'Nueva partida':'Entrar al galpón';
+ tabletEl('galpon-continue').disabled=!saved;
+ tabletEl('galpon-cancel').hidden=true;
+ tabletEl('galpon-menu-status').textContent='';
+ tabletEl(saved?'galpon-continue':'galpon-start').focus({preventScroll:true});
+}
+function requestHangarGame(){
+ const workers=Number(tabletEl('galpon-workers').value)===1?1:4;
+ const workerLimit=Number(tabletEl('galpon-limit').value);
+ if(!Number.isInteger(workerLimit)||workerLimit<workers||workerLimit>48){
+  tabletEl('galpon-menu-status').textContent='Elige entre '+workers+' y 48 plazas para este equipo.';return;
+ }
+ if(hasStoredHangarSlot()&&!hangarReplacePending){
+  hangarReplacePending=true;
+  tabletEl('galpon-start').textContent='Reemplazar y comenzar';
+  tabletEl('galpon-cancel').hidden=false;
+  tabletEl('galpon-menu-status').textContent='Se reemplazará la partida de este galpón.';
+  tabletEl('galpon-cancel').focus({preventScroll:true});return;
+ }
+ if(!saveBeforeSwitch('galpon')){tabletEl('galpon-menu-status').textContent=saveSession.message;return;}
+ beginHangarGame({workers,workerLimit});
+ const saved=saveCurrentGame({replace:true});
+ if(!saved.ok)announce(saved.error||'El navegador no pudo guardar esta partida.');
+ canvas.focus({preventScroll:true});showHint(pausedHint);
+}
+function beginHangarGame({workers=4,workerLimit=12,restoring=false,state=null}={}){
+ rememberLab();clearNarrativeScene();
+ hangarPreviousSettings={physics:{...settings},alpha:{...alphaSettings},moods:{...moodSettings}};applyStageDefaults();
+ gameScene('galpon');gameMode('playing');
+ Object.assign(settings,{speed:.7,haulSpeed:.4,haulForce:5});
+ story.started=true;story.phase='produccion';story.elapsed=0;story.galponGuideStep=null;
+ story.cooler=null;story.level=0;storyWorld.details=[];
+ story.galpon=restoring?state:window.QBitsGalponProduction.create(
+  Array.from({length:workers===1?1:4},()=>allocateUnitId()),{workerCap:workerLimit});
+ story.guideId=story.galpon.initialIds[0];
+ const shape=mechanismBlueprintShape(conveyorBlueprintTemplate('straight',false));
+ hangarRecipe=shape.parts.reduce((counts,part)=>{counts[part.shape]=(counts[part.shape]||0)+1;return counts;},{});
+ initHangarWorld({workers,workerLimit,restoring});initHangarLine({restoring});
+ tabletTab='galpon';ui.veil.style.opacity='0';panel.hidden=true;hangarNextReadout=0;
+ resetSimulationClock(performance.now(),true);
+ if(!restoring){
+  hangarGuide('inicio','¿Ves la fuente? Abre P y pulsa «Iniciar extracción». Podemos cargar la materia hasta el convertidor. Ya me cansé de mirar el letrero.');
+  updateHangarReadout();
+ }
+}
+function hangarGuide(step,message){
+ if(story.galponGuideStep===step)return;
+ story.galponGuideStep=step;say(message,{after:hideStoryDialogue});
+}
+function hangarOrder(action){
+ if(story.scene!=='galpon'||story.mode!=='playing'||story.transition)return false;
+ let ok;
+ if(action==='build')ok=buildHangarSegment();
+ else if(action==='run'||action==='halt')ok=setHangarLineRunning(action==='run');
+ else ok=hangarWorldAction(action);
+ updateHangarReadout();
+ return ok;
+}
+function updateHangarReadout(){
+ const state=story.galpon;if(!state||story.scene!=='galpon')return;
+ const shop=hangarWorldStatus(),line=hangarLineStatus();
+ const built=line.built,received=line.received;
+ const ready=shop.readyCubes>=hangarRecipe.cube&&shop.readyCouplers>=hangarRecipe.coupler;
+ const tasks=[];
+ if(built===8&&received>=12){
+  tasks.push('Primer ciclo completado','Recepción automática · '+received+' / 12');
+  if(story.phase!=='primer-ciclo-completado'){
+   story.phase='primer-ciclo-completado';
+   hangarGuide('recibido','Doce llegaron solos. Y yo que pensaba contar viajes. Primer ciclo completado.');
+  }
+ }else if(!built){
+  tasks.push(!shop.assigned?'P → Galpón · inicia la extracción':ready?'P → Galpón · monta el primer tramo':'Prepara el primer tramo · '+shop.cubes+'/'+hangarRecipe.cube+' cubos · '+shop.couplers+'/'+hangarRecipe.coupler+' enganches');
+  if(shop.cubes>=hangarRecipe.cube&&shop.couplers>=hangarRecipe.coupler&&!ready)tasks.push('Hay material caliente en la bancada. Espera a que se pueda manipular.');
+  else if(shop.assigned)tasks.push('P → Galpón · incorpora un compañero o configura el lote');
+  if(story.galponGuideStep==='inicio'&&(shop.cubes||shop.couplers))hangarGuide('materia','Salió la primera pieza. Dale un momento para enfriarse. El conformador puede darle forma de enganche.');
+ }else if(built<8){
+  tasks.push('Conecta producción con recepción · '+built+' / 8 tramos',ready?'Siguiente tramo listo para montar':'Siguiente tramo · '+shop.cubes+'/'+hangarRecipe.cube+' cubos · '+shop.couplers+'/'+hangarRecipe.coupler+' enganches');
+  if(!shop.beltFeed)tasks.push('Acerca una entrada de cinta a la fuente');
+  if(['inicio','materia'].includes(story.galponGuideStep))hangarGuide('cinta','Ya tenemos banda. Mira dónde sueltan la carga. Si se detiene un tramo, comprueba su sentido y su alimentación.');
+ }else{
+  tasks.push('Recibe doce cubos enfriados · '+received+' / 12',line.running===8?'Mantén despejadas la banda y la salida del enfriador':'P → Galpón · pon la línea en marcha');
+  if(story.galponGuideStep!=='entrega'&&story.galponGuideStep!=='recibido')hangarGuide('entrega','Dejemos que lleguen por su cuenta. Si levantas uno, devuélvelo a la entrada. Al parecer en recepción también cuentan el viaje.');
+ }
+ storyObjective(tasks.join('\n'));
+ if(!panel.hidden&&tabletTab==='galpon'){
+  const recipe=hangarRecipe,G=window.QBitsGalponProduction,totals=G.stats(state);
+  const inspected=selected?.part&&G.record(state,selected.part.id);
+  let detail='En turno '+shop.assigned+' · plazas ocupadas '+totals.population+' / '+state.workerCap+' · instalación '+Math.floor(state.energyJ).toLocaleString('es-CL')+' J\nExtraída '+totals.extracted+' u · en acopio '+shop.raw+' u · incorporada a cintas '+built*(recipe.cube+recipe.coupler)+' u · recibidos '+received+' / 12';
+  if(inspected){const heat=G.stabilized(inspected)?'estabilizada':G.manipulable(inspected)?'manipulable':'caliente';
+   detail+='\nPieza '+inspected.id+' · origen '+inspected.origin+' · '+heat+' · carga '+Math.round(selected.part.mood.energy*100)+' %';}
+  tabletEl('galpon-stock').textContent=detail;
+  tabletEl('galpon-recipe').textContent='Tramos '+built+' / 8 · manipulables '+shop.readyCubes+' / '+recipe.cube+' cubos y '+shop.readyCouplers+' / '+recipe.coupler+' enganches.';
+  tabletEl('galpon-status').textContent=[shop.message,line.status].filter(Boolean).join('\n');
+  if(document.activeElement!==tabletEl('galpon-order'))tabletEl('galpon-order').value=shop.mode;
+  tabletEl('galpon-worker').disabled=shop.pendingWorker||totals.population>=state.workerCap;
+  tabletEl('galpon-build').disabled=built>=8||!ready;
+ }
+}
+function tickHangar(dt){
+ tickHangarWorld(dt);tickHangarLine(dt);
+ if(simTime>=hangarNextReadout){hangarNextReadout=simTime+.3;updateHangarReadout();}
+}
+function initHangarControls(click){
+ click('main-galpon',showHangarMenu);click('galpon-start',requestHangarGame);
+ click('galpon-continue',()=>{if(continueHangarGame()){canvas.focus({preventScroll:true});if(document.pointerLockElement!==canvas)showHint(pausedHint);}else tabletEl('galpon-menu-status').textContent=saveSession.message;});
+ click('galpon-cancel',showHangarMenu);click('galpon-back',showMain);
+ for(const [id,action] of Object.entries({work:'work',worker:'worker',release:'release',build:'build',run:'run',stop:'halt',recover:'recover'})){
+  click('galpon-'+id,()=>hangarOrder(action));
+ }
+ tabletEl('galpon-order').addEventListener('change',event=>hangarOrder(event.target.value));
+ click('tab-galpon',()=>switchPanelTab('galpon'));
+}
+
 function initStory(){
  story.lab=saveLab();story.labAlpha={...alphaSettings};try{story.progress=normalizedCampaignProgress(JSON.parse(readQbitsStorage('qbits.campaign.v1')||'{}'));}catch{story.progress={};}story.ready=true;initializeSavedGames();
  const click=(id,fn)=>document.querySelector('#'+id).addEventListener('click',fn);
- click('main-play',()=>showSavedGames('campaign'));click('wake-button',wakeUp);click('skip-encounter',finishEncounter);click('main-continue',()=>story.started?resumeGame():showSavedGames());click('main-levels',showLevelSelector);click('main-lab',()=>showSavedGames('lab'));click('main-saves',()=>showSavedGames());click('pause-button',openPauseMenu);click('pause-resume',resumeGame);click('pause-restart',restartCurrent);click('pause-levels',showLevelSelector);click('pause-main',showMain);click('pause-lab',()=>showSavedGames('lab'));click('pause-save',()=>saveCurrentGame({manual:true}));click('levels-back',backFromLevels);click('complete-repeat',()=>{sceneFade(()=>beginCampaignLevel(story.level||1));captureForTransition();});click('complete-next',()=>{sceneFade(()=>beginCampaignLevel(Math.min(LEVELS.length-1,story.level+1)));captureForTransition();});click('complete-levels',showLevelSelector);click('complete-main',showMain);click('complete-lab',()=>showSavedGames('lab'));
+ initHangarControls(click);
+ click('main-play',()=>showSavedGames('campaign'));click('wake-button',wakeUp);click('skip-encounter',finishEncounter);click('main-continue',()=>story.started?resumeGame():latestSaveIsHangar()?continueHangarGame({fade:true}):showSavedGames());click('main-levels',showLevelSelector);click('main-lab',()=>showSavedGames('lab'));click('main-saves',()=>showSavedGames());click('pause-button',openPauseMenu);click('pause-resume',resumeGame);click('pause-restart',restartCurrent);click('pause-levels',showLevelSelector);click('pause-main',showMain);click('pause-lab',()=>showSavedGames('lab'));click('pause-save',()=>saveCurrentGame({manual:true}));click('levels-back',backFromLevels);click('complete-repeat',()=>{sceneFade(()=>beginCampaignLevel(story.level||1));captureForTransition();});click('complete-next',()=>{sceneFade(()=>beginCampaignLevel(Math.min(LEVELS.length-1,story.level+1)));captureForTransition();});click('complete-levels',showLevelSelector);click('complete-main',showMain);click('complete-lab',()=>showSavedGames('lab'));
  for(const mode of ['campaign','lab']){click('saves-'+mode+'-continue',()=>continueSavedGame(mode,{fade:true}));click('saves-'+mode+'-new',()=>requestNewSavedGame(mode));}
  click('saves-back',closeSavedGames);click('saves-confirm-cancel',()=>{const mode=saveSession.confirmation;saveSession.confirmation=null;document.querySelector('#saves-confirm').hidden=true;document.querySelector('#saves-'+(mode||saveSession.focusMode)+'-new').focus({preventScroll:true});});
  click('saves-confirm-new',()=>{if(saveSession.confirmation)newSavedGame(saveSession.confirmation,{fade:true});});
  click('pause-opening-help',()=>{if(story.firstCycle){gameMode('playing');openingInstruction(story.firstCycle.phase);captureMouse();}});click('pause-opening-recover',()=>{if(story.firstCycle){gameMode('playing');recoverOpeningCompanion();captureMouse();}});
  click('main-codex',showCodex);click('pause-codex',showCodex);click('codex-back',closeCodex);initTitleGreeting();gameScene('lab');gameMode('boot');
+}
+
+// The hangar uses the existing ground crews and inert cargo bodies. Only the
+// external source can introduce a raw identity. Stations reconcile that ID
+// before exchanging a cargo, chamber record or loose part.
+const hangarWorldLayout={source:[-2.09,.05,.93],stock:[-3.16,.05,.93],formerInput:[-3.37,.055,-.74],formerOutput:[-4.33,.055,-.75]};
+const hangarWorldModes=['plan','cube','coupler','stop'];
+function hangarTray(kind,index){
+ const base=kind==='coupler'?hangarWorldLayout.formerOutput:kind==='former'?hangarWorldLayout.formerInput:[-3.23,.055,-1.68];
+ return V(base[0]-(index%6)*.143,base[1],base[2]-Math.floor(index/6)*.15);
+}
+function hangarStockPoint(index=0){const p=hangarWorldLayout.stock;return V(p[0],0,p[2]+(index%2)*.13);}
+function hangarSourcePoint(){return V(...hangarWorldLayout.source);}
+function hangarLineMouth(){return V(-2.09,galponLineLayout().entry.y+HALF+.014,0);}
+function hangarWorkers(){
+ return groups.filter(g=>{
+  if(g.parts.length!==1||g.body.type===CANNON.Body.STATIC)return false;
+  const worker=QBitsGalponProduction.record(story.galpon,g.parts[0].id);
+  return worker?.kind==='worker'&&worker.place==='world'&&groupWorkUnits(g)>0&&!rotorForGroup(g);
+ });
+}
+function hangarIdle(g){
+ const record=QBitsGalponProduction.record(story.galpon,g.parts[0].id);
+ return QBitsGalponProduction.manipulable(record)&&!cubeIsHeld(g)&&!g.robotHeld&&
+  !g.blueprintJob&&!g.cooler&&!g.haulJob&&bounds(g).min.y<.035&&groupWilling(g);
+}
+function hangarClearAt(p,ignore=null){
+ const target={p,q:Q(),half:V(HALF+.012,HALF-.003,HALF+.012)},near={min:sub(p,target.half),max:add(p,target.half)};
+ if(Math.hypot(p.x-position[0],p.z-position[2])<PLAYER_RADIUS+HALF&&p.y<posture.height+HALF)return false;
+ return !cargos.some(c=>c!==ignore&&obbOverlap(target,cargoPose(c),-.001))&&
+  !groups.some(g=>g!==ignore&&boundsOverlap(near,bounds(g))&&poses(g).some(o=>obbOverlap(target,o,-.001)))&&
+  !families.some(f=>obbOverlap(target,familyPose(f),-.001))&&
+  !storyWorld.walls.some(w=>boundsOverlap(near,w)&&obbOverlap(target,w,-.001));
+}
+function hangarFirstBelt(){return typeof getHangarSections==='function'?getHangarSections().find(c=>hangarSectionAligned(c,0)):null;}
+function hangarBeltReady(){const belt=hangarFirstBelt();return !!belt?.running&&belt.direction===1;}
+function hangarLineComplete(){return typeof getHangarSections==='function'&&getHangarSections().length===8;}
+function hangarFloorDetail(x,z,w,d,color){storyWorld.details.push({p:V(x,.002,z),size:V(w,.004,d),color});}
+function buildHangarFixtures(){
+ const concrete=[.77,.81,.80],metal=[.35,.43,.44],stripe=[.91,.64,.28];storyWorld.details=[];
+ for(const z of [-4.35,4.9])storyWall(V(0,1.8,z),V(6.1,1.8,.1),{color:concrete});
+ for(const x of [-6,6])storyWall(V(x,1.8,.28),V(.1,1.8,4.72),{color:concrete});
+ for(const x of [-5.85,-2,2,5.85]){storyWall(V(x,3.42,.28),V(.07,.12,4.62),{color:metal});storyWorld.details.push({p:V(x,3.285,.28),size:V(.032,.012,7.8),color:[.94,.97,.96]});}
+ // The outlet and gathering ring stay on an unobstructed floor. The overhead
+ // chute is high enough for every ground move, including the single-worker run.
+ storyWall(V(-.94,.49,1.13),V(.24,.49,.22),{color:metal});
+ storyWall(V(-1.52,.85,1.12),V(.52,.085,.10),{color:stripe});
+ storyWall(V(-2.98,.29,.30),V(.40,.29,.30),{color:metal});
+ storyWall(V(-3.48,.25,-.22),V(.25,.25,.22),{color:[.38,.45,.41]});
+ for(const [x,z,w,d,c] of [[-2.09,.93,.26,.24,stripe],[-3.16,1.00,.30,.40,stripe],[-3.56,-.88,1.00,.50,[.59,.70,.66]],[-4.63,-.89,1.00,.52,[.58,.65,.63]],[-3.55,-1.94,1.04,.71,[.68,.76,.73]]])hangarFloorDetail(x,z,w,d,c);
+}
+function drawHangarStations(){
+ const s=story.galpon,w=story.hangarWorld;if(!s||!w)return;
+ const steel=[.37,.44,.45,1],amber=[.93,.62,.23,1],teal=[.28,.66,.63,1],dark=[.12,.17,.18,1];
+ const box=(x,y,z,a,b,c,rgb)=>drawBox(V(x,y,z),Q(),V(a,b,c),rgb);
+ // Separate loading chute, enclosed stock bin and the two moving outlet heads.
+ box(-2.08,.90,1.12,.13,.09,.14,steel);box(-2.08,.86,1.02,.13,.08,.22,dark);
+ const level=s.records.reduce((sum,r)=>sum+(r.place==='stock'?1:0),0)/QBitsGalponProduction.CONFIG.stockCapacity;
+ box(-2.98,.36,.606,.53,.16,.01,dark);if(level>0)box(-3.22+.24*level,.36,.615,.48*level,.085,.01,teal);
+ for(const [name,color,x,z] of [['converter',teal,-2.98,.30],['former',amber,-3.48,-.22]]){
+  const job=s.jobs[name],order=w.outputs[name];
+  box(x,name==='former'?.52:.60,z,.33,.032,.21,steel);
+  if(!job||!order)continue;
+  const p=hangarDestination(order),duration=name==='former'?QBitsGalponProduction.CONFIG.formingSeconds:QBitsGalponProduction.CONFIG.conversionSeconds;
+  const height=p.y+.20+.09*(1-Math.min(1,job.elapsed/duration));
+  box(p.x,height,p.z,.15,.06,.14,steel);box(p.x,height-.04,p.z,.085,.021,.086,color);
+ }
+}
+function hangarMakePart(r,p){
+ const raw=r.kind==='raw',shape=r.kind==='coupler'?'coupler':'cube';
+ return makeGroup([{id:r.id,shape,weight:r.weight,p,q:Q(),mood:{name:(raw?'Materia base ':r.kind==='worker'?'Q-bit ':'Pieza ')+r.id,energy:r.energy||0,matter:{root:r.origin,path:r.path,rootWeight:1,name:'Q-bit '+r.origin},...(raw?{production:{batch:'galpon',role:'raw',kind:'A'}}:{})}}]);
+}
+function initHangarWorld({workers=4,restoring=false}={}){
+ const w={version:1,initial:workers,assigned:[],mode:'plan',pendingWorker:false,deliveries:[],outputs:{converter:null,former:null},clock:0,scan:0,sequence:0,message:'Asigna un equipo a la fuente.'};story.hangarWorld=w;buildHangarFixtures();
+ if(!restoring){const initial=QBitsGalponProduction.available(story.galpon,'worker');for(const [i,r] of initial.entries())hangarMakePart(r,V(-2.34+(i%2)*.3,HALF+.002,1.55+Math.floor(i/2)*.19));position.splice(0,3,-2.55,EYE_HEIGHT,3.9);yaw=-.30;pitch=-.38;camera.splice(0,3,...position);}
+ world.broadphase.dirty=true;return w;
+}
+function clearHangarWorld(){story.hangarWorld=null;}
+function hangarWorldAction(action,id=null){
+ const w=story.hangarWorld;if(story.scene!=='galpon'||!w)return false;
+ if(action==='work'||action==='release'){
+  const all=hangarWorkers(),selection=new Set(selectedTeam().flatMap(g=>g.parts.map(p=>p.id))),wanted=id?[id]:selection.size?[...selection]:all.map(g=>g.parts[0].id);
+  if(action==='work'){for(const g of all){const n=g.parts[0].id;if(wanted.includes(n)&&!w.assigned.includes(n))w.assigned.push(n);}w.message=w.assigned.length?'Equipo asignado a la fuente.':'Selecciona un trabajador disponible.';}
+  else{w.assigned=w.assigned.filter(n=>!wanted.includes(n));for(const g of all)if(wanted.includes(g.parts[0].id)&&!g.haulJob)stopRoute(g);w.message='El equipo termina el traslado en curso.';}
+ }else if(action==='worker'){if(w.pendingWorker||QBitsGalponProduction.population(story.galpon)>=story.galpon.workerCap){w.message='No hay una plaza disponible para otro compañero.';return false;}w.pendingWorker=true;w.message='Un compañero en cola.';}
+ else if(hangarWorldModes.includes(action)){w.mode=action;w.message=action==='stop'?'Conversión en pausa.':'Orden de fabricación actualizada.';}
+ else if(action==='recover'){for(const d of w.deliveries)if(d.belt&&!hangarBeltReady()){if(d.lift)d.lowering=true;else d.belt=false;}for(const c of cargos)if(c.rawId&&c.job)stopHaul(c,'Replanificar');for(const g of hangarWorkers())if(w.assigned.includes(g.parts[0].id)&&!g.haulJob)stopRoute(g);hangarYieldAtSource(w,true);w.message='El equipo comprobará el paso de nuevo.';}
+ else return false;w.scan=0;return true;
+}
+function hangarWorldLabels(){
+ if(!story.hangarWorld)return [];const line=galponLineLayout();
+ return [{p:V(-.94,1.1,1.13),text:'Fuente · materia base'},{p:V(-2.99,.79,.30),text:'Convertidor'},{p:V(-3.53,1.10,-.22),text:'Conformador'},{p:V(line.cooler.x,line.cooler.y+.45,line.cooler.z),text:'Enfriador'},{p:V(line.receiver.x,line.receiver.y+.42,line.receiver.z),text:'Recepción'}];
+}
+function hangarPhysicalStock(){
+ const stock={cube:[],coupler:[]},s=story.galpon;
+ for(const g of groups){
+  if(g.parts.length!==1||g.blueprintJob||cubeIsHeld(g)||g.robotHeld||g.haulJob||g.route)continue;
+  const r=QBitsGalponProduction.record(s,g.parts[0].id);
+  if(r?.place==='world'&&stock[r.kind]&&r.weight===1&&!rotorForGroup(g))stock[r.kind].push(g);
+ }
+ return stock;
+}
+function hangarWorldStatus(){
+ const w=story.hangarWorld;if(!w)return {};
+ const G=QBitsGalponProduction,s=story.galpon,stock=hangarPhysicalStock(),workers=hangarWorkers();
+ const ready=group=>G.manipulable(G.record(s,group.parts[0].id));
+ return {
+  assigned:workers.filter(g=>w.assigned.includes(g.parts[0].id)).length,workers:G.population(s),
+  mode:w.mode,message:w.message,carrying:w.deliveries.length,raw:s.records.filter(r=>r.place==='stock').length,
+  cubes:stock.cube.length,couplers:stock.coupler.length,
+  readyCubes:stock.cube.filter(ready).length,readyCouplers:stock.coupler.filter(ready).length,
+  beltFeed:hangarBeltReady(),availableCubeSlots:Math.max(0,24-stock.cube.length),pendingWorker:w.pendingWorker
+ };
+}
+function hangarDistance(a,b){return Math.hypot(a.x-b.x,a.z-b.z);}
+function hangarMuster(id){const n=story.hangarWorld.assigned.indexOf(id),source=hangarSourcePoint();return V(source.x+.13+(Math.floor(n/2)%2)*.15,0,source.z+(n%2?-.18:.18)*(1+Math.floor(n/4)*.8));}
+// An interrupted return may leave a worker on the outlet or in a colleague's
+// bay. Yield by one ordinary, collision-checked rolling step. A held worker,
+// unassigned object or filled output still blocks the installation.
+function hangarYieldAtSource(w,requested=false){
+ const source=hangarSourcePoint(),team=hangarWorkers().filter(g=>w.assigned.includes(g.parts[0].id));
+ const pending=team.filter(g=>g.pendingMoodOrder?.reason==='bloqueo');
+ for(const g of team){
+  if(g.route||!hangarIdle(g)||g.pendingMoodOrder?.reason==='planning')continue;
+  const p=g.body.position,bay=hangarMuster(g.parts[0].id);
+  const onOutlet=hangarDistance(p,source)<.14;
+  const inOtherBay=pending.some(other=>other!==g&&hangarDistance(p,hangarMuster(other.parts[0].id))<.15);
+  if(!onOutlet&&!inOtherBay&&!(pending.includes(g)||requested&&hangarDistance(p,bay)>.25))continue;
+  let best=null,score=-Infinity;
+  for(let dir=0;dir<4;dir++){
+   const step=makeRollSegment(g,dir);if(!step)continue;
+   const to=step.endP,endClearance=hangarDistance(to,source);
+   if(onOutlet&&endClearance<=hangarDistance(p,source)+.01)continue;
+   const separation=team.reduce((gap,other)=>other===g?gap:Math.min(gap,hangarDistance(to,other.body.position)),.4);
+   const value=separation+(onOutlet?endClearance:0)-.25*hangarDistance(to,bay);
+   if(value>score){best=to;score=value;}
+  }
+  if(best){stopRoute(g);return startRoute(g,best,true,false);}
+ }
+ return false;
+}
+function hangarDockRaw(c,d){
+ const G=QBitsGalponProduction,s=story.galpon;
+ if(d.belt){
+  const target=hangarLineMouth(),stock=s.records.filter(r=>r.place==='stock'||r.place==='belt').length;
+  if(!d.lowering&&(!hangarBeltReady()||stock>=G.CONFIG.stockCapacity||!hangarClearAt(target,c)))return false;
+  // The source lift first clears the workbench vertically, then slides the
+  // actual cargo body over the inlet. No second body exists during the lift.
+  const progress=d.lowering?Math.max(0,d.lift-.20):Math.min(1,(d.lift||0)+.20),p=hangarSourcePoint();
+  if(progress<=.50)p.y+=(target.y-p.y)*progress*2;
+  else{p.y=target.y;p.z+=(target.z-p.z)*(progress-.50)*2;}
+  const from=c.body.position,steps=Math.max(1,Math.ceil(from.distanceTo(p)/HALF)),sample=V();
+  for(let i=1;i<=steps;i++){from.lerp(p,i/steps,sample);if(!hangarClearAt(sample,c))return false;}
+  const mass=G.record(s,c.rawId).weight*.25;
+  const liftJ=mass*Math.abs(world.gravity.y)*Math.max(0,p.y-from.y)/.75+.12*from.distanceTo(p);
+  if(!G.spend(s,liftJ,'transport'))return false;
+  d.lift=progress;c.galponLift=true;c.body.position.copy(p);c.body.aabbNeedsUpdate=true;
+  if(d.lowering){if(!progress){c.galponLift=false;d.lowering=false;d.belt=false;}return false;}
+  if(progress<1)return false;
+  if(!G.unload(s,c.rawId,d.crew))return false;
+  const r=G.record(s,c.rawId);deleteCargo(c,true);hangarMakePart(r,target);
+ }else{if(!G.store(s,c.rawId,d.crew))return false;deleteCargo(c,true);}
+ return true;
+}
+function hangarTakeSource(c,crew,belt){
+ const s=story.galpon,w=story.hangarWorld,ids=crew.map(g=>g.parts[0].id),d={id:c.rawId,crew:ids,belt,slot:w.sequence++%2};
+ if(!QBitsGalponProduction.take(s,c.rawId,ids))return false;
+ for(const g of crew)stopRoute(g);w.deliveries.push(d);return true;
+}
+function hangarProcessCrews(){
+ const w=story.hangarWorld,G=QBitsGalponProduction,s=story.galpon,source=hangarSourcePoint();
+ for(const d of [...w.deliveries]){
+  const c=cargos.find(c=>c.rawId===d.id);if(!c)continue;
+  const goal=d.belt?source:hangarStockPoint(d.slot),atGoal=hangarDistance(c.body.position,goal)<.068;
+  if(d.lift>0||atGoal&&(d.belt||c.pin?.arrived||!c.job)){
+   const before=d.lift||0;
+   if(hangarDockRaw(c,d)){w.deliveries.splice(w.deliveries.indexOf(d),1);w.message=d.belt?'Materia depositada en la cinta.':'Materia en el acopio.';continue;}
+   if((d.lift||0)!==before)w.message=d.lowering||!d.belt?'Devolviendo la carga al suelo.':'Elevador en marcha.';
+   else w.message=d.belt?'Entrada de cinta ocupada o detenida.':'Acopio lleno.';
+   continue;
+  }
+  if(!c.job&&w.clock>=(d.retry||0)){d.retry=w.clock+1.2;const crew=hangarWorkers().filter(g=>d.crew.includes(g.parts[0].id)&&hangarIdle(g));if(crew.length===d.crew.length)beginHaul(c,crew,goal);}
+ }
+ const carriers=new Set(w.deliveries.flatMap(d=>d.crew)),workers=hangarWorkers().filter(g=>w.assigned.includes(g.parts[0].id)&&!carriers.has(g.parts[0].id)&&hangarIdle(g));
+ const nearby=workers.filter(g=>hangarDistance(g.body.position,hangarMuster(g.parts[0].id))<=.086&&hangarDistance(g.body.position,source)<.55&&!g.route&&!g.pendingMoodOrder);
+ const required=w.initial===1?1:2;
+ for(const g of hangarWorkers()){const part=g.parts[0];if(cubeIsHeld(g)||hangarDistance(g.body.position,source)>.6||part.mood.energy>=.95)continue;
+  const joules=Math.min(.12*6,(.95-part.mood.energy)*gameBatteryCapacity(part));if(G.spend(s,joules,'charge')){part.mood.energy+=joules/gameBatteryCapacity(part);G.syncEnergy(s,part.id,part.mood.energy);}
+ }
+ let c=cargos.find(c=>c.rawId&&G.record(s,c.rawId)?.place==='source');
+ const rawCount=s.records.filter(r=>r.kind==='raw').length;
+ const requested=w.pendingWorker||w.mode!=='plan'||!hangarLineComplete()||hangarOrderRemaining()>rawCount;
+ if(!c&&requested&&!w.deliveries.length&&nearby.length>=required&&G.canExtract(s)&&rawCount<G.CONFIG.stockCapacity+G.CONFIG.sourceCapacity&&cargos.length<12&&hangarClearAt(source)){
+  const r=G.extract(s,allocateUnitId());if(r){c=newCargo(source,1,required,'#78959a',r.id);if(c)c.rawId=r.id;}
+ }
+ if(c&&nearby.length>=c.required){const crew=nearby.slice(0,c.required);hangarTakeSource(c,crew,hangarBeltReady());}
+ for(const g of workers){if(g.haulJob||w.deliveries.some(d=>d.crew.includes(g.parts[0].id))||g.route||g.pendingMoodOrder)continue;let dest=hangarMuster(g.parts[0].id);const p=g.body.position;
+  if(p.x<source.x-.3&&p.z<1.54)dest=V(p.x,0,1.73+(g.parts[0].id%2)*.21);
+  else if(p.x<source.x-.10&&p.z>1.45)dest=V(source.x+.08+(g.parts[0].id%2)*.20,0,p.z);
+  if(hangarDistance(p,dest)>.086)startRoute(g,dest,true,false);}
+ return requested&&nearby.length>=required;
+}
+// Count only whole, previously uncredited products that can still fulfil the
+// order. A manual pickup cancels its trip, freeing the same place in the order.
+function hangarOrderRemaining(){
+ const s=story.galpon,at=hangarLineMouth(),active=new Set();
+ for(const id of hangarLine?.trips.keys()||[]){const r=QBitsGalponProduction.record(s,id);if(r?.place==='world'&&!r.credited)active.add(id);}
+ for(const g of groups){
+  if(g.parts.length!==1||cubeIsHeld(g)||g.robotHeld||g.body.position.distanceTo(at)>.145)continue;
+  const r=QBitsGalponProduction.record(s,g.parts[0].id);if(r?.kind==='cube'&&r.place==='world'&&!r.credited)active.add(r.id);
+ }
+ return Math.max(0,QBitsGalponProduction.CONFIG.quota-s.received-active.size);
+}
+function hangarCollectBeltRaw(){
+ const G=QBitsGalponProduction,s=story.galpon,belt=hangarFirstBelt();
+ const contacting=belt&&hangarBeltReady()?new Set(conveyorContactLoads(belt).map(hit=>hit.body)):new Set();
+ for(const g of [...groups]){
+  if(g.parts.length!==1||!g.parts[0].mood.production||cubeIsHeld(g)||g.robotHeld)continue;
+  const raw=G.record(s,g.parts[0].id);if(raw?.kind!=='raw'||raw.place!=='belt')continue;
+  const p=g.body.position,feed=contacting.has(g.body)&&p.x>=-1.91&&p.x<=-1.64;
+  const dock=p.y<HALF+.017&&g.body.velocity.norm()<.12&&
+   [0,1].some(slot=>hangarDistance(p,hangarStockPoint(slot))<.085);
+  if((feed||dock)&&G.store(s,raw.id))removeGroup(g);
+ }
+}
+function hangarFreeTray(kind,count){for(let i=0;i<count;i++){const p=hangarTray(kind,i);if(hangarClearAt(p))return i;}return -1;}
+function hangarFormerIntake(g){for(let i=0;i<12;i++){const p=hangarTray('former',i);if(hangarDistance(g.body.position,p)<.067&&Math.abs(g.body.position.y-p.y)<.029)return true;}return false;}
+function hangarDestination(order){return order.place==='belt'?hangarLineMouth():order.place==='worker'?V(-2.85+(order.slot%4)*.20,HALF+.004,2+Math.floor(order.slot/4)*.18):hangarTray(order.place,order.slot);}
+function hangarRunStations(){
+ const G=QBitsGalponProduction,w=story.hangarWorld,s=story.galpon,stock=hangarPhysicalStock(),complete=hangarLineComplete();
+ for(const station of ['former','converter']){
+  const order=w.outputs[station],ready=G.ready(s,station);if(!ready||!order)continue;const dest=hangarDestination(order);
+  if(!hangarClearAt(dest)||order.place==='belt'&&!hangarBeltReady()){w.message='Salida ocupada · '+(station==='former'?'conformador':'convertidor');continue;}
+  const created=hangarMakePart(ready,dest);if(!created)continue;
+  G.finish(s,station);w.outputs[station]=null;if(ready.kind==='worker'){w.pendingWorker=false;w.assigned.push(ready.id);}w.message='Salida disponible.';
+ }
+ if(w.mode==='stop'&&!w.pendingWorker)return;
+ const formerCubes=stock.cube.filter(hangarFormerIntake),loose=stock.cube.length-formerCubes.length;
+ const wantCouplers=w.mode==='coupler'||w.mode==='plan'&&!complete&&stock.coupler.length+(w.outputs.former?1:0)<12;
+ if(!w.outputs.former&&wantCouplers){const r=formerCubes.find(g=>G.manipulable(G.record(s,g.parts[0].id))),slot=hangarFreeTray('coupler',18);
+  if(r&&slot>=0){const p=r.parts[0];G.syncEnergy(s,p.id,p.mood.energy);if(G.start(s,'former',p.id,'coupler')){removeGroup(r);w.outputs.former={place:'coupler',slot};}}
+ }
+ if(w.outputs.converter)return;const raw=s.records.find(r=>r.kind==='raw'&&r.place==='stock');if(!raw)return;
+ let place,slot=-1,kind='cube';
+ if(w.pendingWorker){place='worker';kind='worker';for(let i=0;i<12;i++)if(hangarClearAt(hangarDestination({place,slot:i}))){slot=i;break;}}
+ else if(wantCouplers&&formerCubes.length+stock.coupler.length+(w.outputs.former?1:0)<(w.mode==='plan'?12:18)){place='former';slot=hangarFreeTray(place,12);}
+ if(!place||slot<0&&place==='former'){
+  if(complete&&w.mode!=='coupler'){if(!hangarBeltReady()||hangarOrderRemaining()<=0||stock.cube.length>=G.CONFIG.quota+2||!hangarClearAt(hangarLineMouth()))return;place='belt';slot=0;}
+  else if(w.mode==='cube'||w.mode==='plan'&&loose<18){place='cube';slot=hangarFreeTray(place,24);}else return;
+ }
+ if(slot>=0&&G.start(s,'converter',raw.id,kind))w.outputs.converter={place,slot};
+}
+function tickHangarWorld(dt){
+ const w=story.hangarWorld;if(!w||story.scene!=='galpon'||!(dt>0)||storySuspended()||story.transition)return;
+ w.clock+=dt;w.scan-=dt;
+ if(w.scan<=0){
+  w.scan=.12;hangarCollectBeltRaw();w.extracting=hangarProcessCrews();hangarRunStations();
+  if(w.assigned.length&&w.clock>=(w.yieldAt||7)){
+   w.yieldAt=w.clock+7;
+   if(!w.deliveries.length&&!w.extracting||!hangarClearAt(hangarSourcePoint()))hangarYieldAtSource(w);
+  }
+ }
+ const activeCoolingIds=typeof hangarLineCoolingIds==='function'?hangarLineCoolingIds():[];
+ QBitsGalponProduction.tick(story.galpon,dt,{extracting:!!w.extracting,activeCoolingIds});
+}
+function saveGalponWorld(){
+ const w=story.hangarWorld;if(!w)return null;
+ const deliveries=w.deliveries.map(d=>({id:d.id,crew:[...d.crew],belt:d.belt,slot:d.slot,
+  retry:d.retry||0,lift:d.lift||0,lowering:!!d.lowering}));
+ // Reconfiguration may retire the selected ID between physics ticks.
+ const assigned=w.assigned.filter(id=>QBitsGalponProduction.record(story.galpon,id)?.kind==='worker');
+ return {version:1,initial:w.initial,assigned,mode:w.mode,pendingWorker:w.pendingWorker,deliveries,
+  clock:w.clock,scan:w.scan,yieldAt:w.yieldAt||7,extracting:!!w.extracting,outputs:JSON.parse(JSON.stringify(w.outputs)),sequence:w.sequence};
+}
+function galponWorldRecordValid(w,physical,s){
+ const G=QBitsGalponProduction,validId=n=>Number.isSafeInteger(n)&&n>0;
+ const uniqueIds=list=>Array.isArray(list)&&list.every(validId)&&new Set(list).size===list.length;
+ if(!w||w.version!==1||![1,4].includes(w.initial)||w.initial!==s.initialIds.length||
+    !Number.isFinite(w.clock)||w.clock<0||!Number.isFinite(w.scan)||w.scan<0||w.scan>.121||!Number.isFinite(w.yieldAt)||w.yieldAt<0||
+    typeof w.extracting!=='boolean'||typeof w.pendingWorker!=='boolean'||!hangarWorldModes.includes(w.mode)||
+    !Number.isSafeInteger(w.sequence)||w.sequence<0||!Array.isArray(w.deliveries)||w.deliveries.length>12||!w.outputs)return false;
+ if(!uniqueIds(w.assigned)||w.assigned.some(n=>G.record(s,n)?.kind!=='worker')||
+    w.deliveries.some(d=>!d||!Array.isArray(d.crew))||!uniqueIds(w.deliveries.map(d=>d.id))||
+    !uniqueIds(w.deliveries.flatMap(d=>d.crew)))return false;
+ for(const d of w.deliveries){
+  const raw=G.record(s,d.id);
+  if(raw?.kind!=='raw'||raw.place!=='carry'||raw.carriers.length!==d.crew.length||
+     d.crew.length!==(w.initial===1?1:2)||d.crew.some(n=>!raw.carriers.includes(n))||
+     ![0,1].includes(d.slot)||!Number.isFinite(d.retry)||d.retry<0||typeof d.belt!=='boolean'||
+     !Number.isFinite(d.lift)||d.lift<0||d.lift>1||d.lift>0&&!d.belt||
+     typeof d.lowering!=='boolean'||d.lowering&&(!d.belt||!d.lift))return false;
+ }
+ if(s.records.some(r=>r.place==='carry'&&!w.deliveries.some(d=>d.id===r.id)))return false;
+ const sizes={belt:1,cube:24,former:12,coupler:18,worker:12};
+ for(const station of ['converter','former']){
+  const outlet=w.outputs[station],job=s.jobs[station];
+  if(outlet===null&&!job)continue;
+  if(!outlet||!job||!Object.hasOwn(sizes,outlet.place)||!Number.isInteger(outlet.slot)||outlet.slot<0||
+     outlet.slot>=sizes[outlet.place]||(station==='former')!==(outlet.place==='coupler')||
+     (job.target==='worker')!==(outlet.place==='worker')||job.target==='worker'&&!w.pendingWorker)return false;
+ }
+ return true;
+}
+function restoreGalponWorld(saved){
+ const w=story.hangarWorld;if(!w||!galponWorldRecordValid(saved,null,story.galpon))return false;
+ Object.assign(w,JSON.parse(JSON.stringify(saved)));
+ for(const d of w.deliveries)if(d.lift){const c=cargos.find(c=>c.rawId===d.id);if(c)c.galponLift=true;}
+ return true;
 }
 
 // Eight complete campaign levels. All gates use the actual bodies and welded parts.
@@ -10767,12 +11476,17 @@ function drawCampaignTransparent(){
 }
 const campaignLabels=[];
 function updateCampaignLabels(){
- const layer=document.querySelector('#campaign-labels'),c=story.campaign,visible=story.scene==='campaign'&&story.mode==='playing'&&panel.hidden&&!story.transition;layer.hidden=!visible;if(!visible||!c)return;
+ const layer=document.querySelector('#campaign-labels'),c=story.campaign,visible=(story.scene==='campaign'||story.scene==='galpon')&&story.mode==='playing'&&panel.hidden&&!story.transition;layer.hidden=!visible;if(!visible)return;
+ if(story.scene==='galpon'){layoutWorldLabels(layer,hangarWorldLabels());return;}
+ if(!c)return;
  const gate=c.gates[c.stage],labels=blockTwoLabels().concat(reconfigurationLabels(),automationLabels(),productionLabels());
  for(const t of gate.targets)labels.push({p:add(t.p,V(0,.10,0)),text:(t.index===0?'A':'B')+' · '+(t.ready?'listo':'Q-bit '+(t.index+1))});
  if(gate.kind==='routes')for(const [i,id] of c.crew.entries()){const g=groups.find(g=>g.parts.some(p=>p.id===id));if(g)labels.push({p:add(g.body.position,V(0,.14,0)),text:String(i+1)});}
  for(const b of gate.pads)labels.push({p:add(b.p,V(0,.19,0)),text:Math.min(b.required,Math.round(b.load))+' / '+b.required+' Q-bits'});
  if(gate.socket){const s=gate.socket,text=gate.solved?'Puerta abierta · retira las piezas':story.socketHint?.socket===s?story.socketHint.text:gate.flow>0?(gate.active?'Cargando ':'Volviendo ')+Math.round(gate.flow*100)+' %':s.form.name;labels.push({p:add(s.center,V(0,.54,0)),text});}
+ layoutWorldLabels(layer,labels);
+}
+function layoutWorldLabels(layer,labels){
  while(campaignLabels.length<labels.length){const el=document.createElement('div');el.className='campaign-label';layer.appendChild(el);campaignLabels.push(el);}
  for(let i=0;i<campaignLabels.length;i++){const el=campaignLabels[i],l=labels[i],p=l?project(l.p):null;el.hidden=!p||p.x<25||p.x>canvas.clientWidth-25||p.y<65||p.y>canvas.clientHeight-(ui.dialogue.hidden?40:205);if(!el.hidden){el.style.left=p.x+'px';el.style.top=p.y+'px';el.textContent=l.text;el.dataset.voice=l.voice||'';}}
 }
@@ -11798,6 +12512,236 @@ function automationLabels(){
  const s=story.campaign?.automation;if(!s)return [];
  return s.goal.delivery?[{p:add(s.origin,V(0,.17,0)),text:'ORIGEN'},{p:add(s.target,V(0,.17,0)),text:s.run.complete?'RECIBIDO':'RECEPTOR'}]:[{p:add(s.pivot,V(0,.3,0)),text:'BANCO · '+s.goal.load+' u · 0,40 N·m'}];
 }
+// The test installation has eight powered sockets on a fixed, level bench.
+// The sockets supply the actual blueprint motors from the one metered plant
+// reservoir. A socket has no material inventory or simulated belt of its own.
+let hangarLine=null;
+function galponLineLayout(){
+ if(hangarLine?.layout)return hangarLine.layout;
+ const length=CUBE_SIZE*6,edge=length*4,supportY=.65,surfaceY=supportY+.002+CUBE_SIZE*2.5+HALF*Math.SQRT2+.004;
+ return {entry:V(-edge,surfaceY,0),exit:V(edge,surfaceY,0),length,supportY,cooler:V(-edge+length*2,surfaceY,0),receiver:V(edge+.14,.58,0)};
+}
+function initHangarLine({restoring=false}={}){
+ clearHangarLine();
+ const l=galponLineLayout(),plate=[.29,.35,.36],metal=[.51,.58,.59],cold=[.26,.66,.74];
+ hangarLine={layout:l,bases:[],trips:new Map(),cooling:[],jam:new Map(),fixtures:[],message:'Fabrica 18 cubos y 12 enganches para el primer tramo.',familyIds:[],recipe:conveyorBlueprintTemplate('straight',false)};
+ for(const joint of hangarLine.recipe.joints)joint.rpm=60;
+ const wall=(x,y,z,hx,hy,hz,color)=>{const w=storyWall(V(x,y,z),V(hx,hy,hz),{color});hangarLine.fixtures.push(w);return w;};
+ wall(0,l.supportY-.04,0,l.exit.x,.04,.35,plate);
+ for(const x of [-1.88,0,1.88])for(const z of [-.28,.28])wall(x,.285,z,.045,.285,.045,metal);
+ for(let i=0;i<8;i++){
+  const x=l.entry.x+l.length*(i+.5);
+  wall(x,l.supportY-.016,.358,.19,.012,.008,[.81,.64,.31]);
+ }
+ for(const x of [l.cooler.x-l.length+.02,l.cooler.x+l.length-.02]){
+  for(const z of [-.37,.37])wall(x,.91,z,.026,.26,.022,cold);
+  wall(x,1.20,0,.035,.03,.39,cold);
+ }
+ const rx=l.exit.x+.25;
+ hangarLine.tray=wall(rx,.54,0,.37,.035,.50,[.31,.55,.43]).body;
+ wall(rx+.37,.64,0,.014,.09,.50,plate);
+ for(const z of [-.495,.495])wall(rx,.64,z,.37,.09,.012,plate);
+ for(const x of [rx-.22,rx+.22])wall(x,.25,.30,.035,.25,.035,metal);
+ return hangarLine;
+}
+function clearHangarLine(){
+ if(!hangarLine)return;
+ for(const w of hangarLine.fixtures){if(world.bodies.includes(w.body))world.removeBody(w.body);const i=storyWorld.walls.indexOf(w);if(i>=0)storyWorld.walls.splice(i,1);}
+ hangarLine=null;
+}
+function getHangarSections(){return hangarLine?hangarLine.bases.map(id=>conveyors.find(c=>c.baseId===id)).filter(Boolean):[];}
+function hangarSectionAligned(c,index){
+ const l=galponLineLayout(),entry=conveyorPortWorld(c,'entry'),exit=conveyorPortWorld(c,'exit'),x=l.entry.x+l.length*index;
+ return !!entry&&!!exit&&entry.p.distanceTo(V(x,l.supportY+.002+CUBE_SIZE*2.5,0))<.024&&exit.p.distanceTo(V(x+l.length,l.supportY+.002+CUBE_SIZE*2.5,0))<.024&&entry.direction.x>.994;
+}
+function hangarMotorSupply(subject){
+ const line=hangarLine,s=story.galpon;if(!line||!s)return null;
+ const id=subject?.aId??subject?.parts?.[0]?.id??(Array.isArray(subject)?subject[0]?.parts?.[0]?.id:null);
+ const socket=line.sockets?.get(id);
+ if(!socket||!hangarSectionAligned(socket.c,socket.index))return null;
+ // The engine debits a cell's energy fraction for torque and traction. This
+ // adapter spends the same joules as extraction, forming and the cooler.
+ const G=window.QBitsGalponProduction,capacity=G.CONFIG.initialEnergyJ;
+ if(!line.cell)line.cell={id:-90001,mood:{
+  get energy(){return s.energyJ/capacity;},
+  set energy(fraction){const spent=Math.min(s.energyJ,Math.max(0,s.energyJ-capacity*fraction));if(spent>0)G.spend(s,spent,'transport');}
+ }};
+ return {cells:[line.cell],powerCells:capacity/1800,capacity,storedJ:s.energyJ,energy:s.energyJ/capacity,active:true};
+}
+function bindHangarSockets(){
+ if(!hangarLine)return;hangarLine.sockets=new Map();
+ for(const c of getHangarSections()){const index=hangarLine.bases.indexOf(c.baseId);for(const id of c.required)hangarLine.sockets.set(id,{c,index});}
+}
+function hangarReleaseBrokenSections(){
+ const line=hangarLine,s=story.galpon;if(!line||!s)return;
+ let changed=false;
+ for(const [i,id]of line.bases.entries()){
+  if(id===null)continue;const c=conveyors.find(b=>b.baseId===id);
+  if(c&&conveyorComplete(c))continue;
+  const G=window.QBitsGalponProduction,key='belt-'+(i+1),ids=s.records.filter(r=>r.group===key).map(r=>r.id);
+  if(ids.length)G.markReleased(s,ids,key);
+  line.bases[i]=null;changed=true;
+ }
+ if(changed){line.trips.clear();line.cooling=[];bindHangarSockets();line.message='Tramo desmontado. Retira los restos y monta de nuevo el plano.';}
+}
+function hangarSegmentPlan(index){
+ const line=hangarLine,l=galponLineLayout();
+ if(line.guide?.index===index)return line.guide.plan;
+ const plan={shape:mechanismBlueprintShape(line.recipe),p:V(l.entry.x+(index+.5)*l.length,l.supportY+.002,0),q:Q(),slots:[]};
+ line.guide={index,plan};return plan;
+}
+function drawHangarPlanGuide(){
+ if(!hangarLine)return;const empty=hangarLine.bases.indexOf(null);
+ const index=empty<0?hangarLine.bases.length:empty;if(index>=8)return;
+ const plan=hangarSegmentPlan(index),box=blueprintBox(plan);
+ drawOutline(box.p,Q(),box.size,.40,true);
+ drawConveyorBlueprintArrows(plan,blueprintTargets(plan));
+}
+function buildHangarSegment(){
+ const line=hangarLine,s=story.galpon,G=window.QBitsGalponProduction;
+ if(story.scene!=='galpon'||!line||!s||!G)return false;
+ hangarReleaseBrokenSections();const empty=line.bases.indexOf(null),i=empty<0?line.bases.length:empty;if(i>=8)return false;
+ const bp={...hangarSegmentPlan(i),slots:[]};
+ const targets=blueprintTargets(bp),stock={cube:[],coupler:[]},index=mechanicalPartIndex();
+ for(const kind of Object.keys(stock))for(const r of G.available(s,kind)){
+  const g=index.get(r.id)?.g;
+  if(g&&g.parts.length===1&&g.parts[0].shape===kind&&Math.abs(g.parts[0].weight-1)<1e-6&&!g.route&&!g.robotHeld&&!g.haulJob&&!g.blueprintJob&&!openingGroupHeld(g))stock[kind].push(g);
+ }
+ const fail=message=>{line.message=message;announce(message);return false;};
+ const selected=targets.map(t=>stock[t.shape].shift());
+ if(selected.some(g=>!g))return fail('El plano necesita 18 cubos y 12 enganches manipulables y libres.');
+ if(!creationPosesClear(targets,false,{groups:selected}))return fail('Hueco de montaje ocupado. Retira el obstáculo del soporte.');
+ const ids=selected.map(g=>g.parts[0].id),key='belt-'+(i+1),assemblyJ=targets.length*2;
+ if(s.energyJ<assemblyJ||!G.markGrouped(s,ids,key))return fail('Sin energía o material disponible para integrar el tramo.');
+ const originals=selected.map(g=>({p:g.body.position.clone(),q:g.body.quaternion.clone()}));
+ for(const [n,g]of selected.entries()){
+  const t=targets[n],q=t.q.mult(g.parts[0].q.inverse());
+  g.body.quaternion.copy(q);g.body.position.copy(sub(t.p,q.vmult(g.parts[0].offset)));g.body.aabbNeedsUpdate=true;
+  bp.slots.push({g,index:n,bp,state:'placed'});
+ }
+ // The standard final assembly validates all 30 pieces, the coupler endpoints
+ // and the solids, and builds the three true motors while retaining every ID.
+ blueprints.push(bp);const before=conveyors.length;
+ completeMechanismBlueprint(bp,targets);
+ if(conveyors.length!==before+1){
+  const active=blueprints.indexOf(bp);if(active>=0)blueprints.splice(active,1);
+  for(const [n,id]of ids.entries()){const g=rotorPart(id)?.g;if(g?.parts.length===1){g.body.position.copy(originals[n].p);g.body.quaternion.copy(originals[n].q);g.body.aabbNeedsUpdate=true;}}
+  G.markReleased(s,ids,key);return fail('Revisa el montaje. Se han conservado todas las piezas.');
+ }
+ G.spend(s,assemblyJ,'assembly');const c=conveyors.at(-1);line.bases[i]=c.baseId;bindHangarSockets();
+ const on=startConveyor(c);line.message='Tramo '+(i+1)+' de 8 integrado · '+(on?'en marcha':c.status);announce(line.message);return true;
+}
+function setHangarLineRunning(enabled){
+ const list=getHangarSections();if(!list.length)return false;
+ if(!enabled){for(const c of list)stopConveyor(c);hangarLine.message='Línea detenida.';return true;}
+ for(const c of list){const i=hangarLine.bases.indexOf(c.baseId);
+  if(!hangarSectionAligned(c,i)){hangarLine.message='Realinea el tramo '+(i+1)+' con su soporte.';return false;}
+  if(!startConveyor(c)){hangarLine.message='Tramo '+(i+1)+' · '+c.status;return false;}
+ }
+ hangarLine.message='Línea en marcha.';return true;
+}
+function hangarLineIntervention(g){
+ if(!hangarLine||!g)return;
+ for(const p of g.parts){
+  hangarLine.trips.delete(p.id);hangarLine.jam.delete(p.id);
+  const at=hangarLine.cooling.indexOf(p.id);if(at>=0)hangarLine.cooling.splice(at,1);
+ }
+}
+function hangarLineCoolingIds(){return hangarLine?.cooling||[];}
+function hangarReceiveGroup(g,trip){
+ const line=hangarLine,s=story.galpon,G=window.QBitsGalponProduction,id=g.parts[0].id,r=G.record(s,id),p=g.body.position,l=galponLineLayout();
+ if(!r||!G.manipulable(r)||!trip.recovered||trip.stage!==8||p.x<l.exit.x-.045||p.x>l.exit.x+.62||Math.abs(p.z)>.46||p.y>.665||p.y<.59)return false;
+ const tray=line.tray,contacts=conveyorContactIndex().get(g.body)||[];
+ if(!contacts.some(c=>(c.bi===tray&&c.bj===g.body&&c.ni.y>.65)||(c.bj===tray&&c.bi===g.body&&c.ni.y<-.65)))return false;
+ if(s.received>=G.CONFIG.quota&&!r.credited){
+  line.trips.delete(id);line.message='Pedido cubierto · el excedente queda en la bandeja.';return true;
+ }
+ const shared={joints:[],sets:[],contacts:{sensors:[],rotors:[]},arms:[],belts:[]};
+ const capture=familySnapshotSteps([g],shared);let result;do{result=capture.next();}while(!result.done);
+ const item=result.value;if(!QBitsOrganizers.validItem(item))return false;
+ let family=families.find(f=>line.familyIds.includes(f.id)&&f.count<QBitsFamilies.CAPACITY&&!held?.items?.some(h=>h.g.family===f)&&Math.abs(f.body.position.x-l.receiver.x)<.40&&Math.abs(f.body.position.z)<.47&&Math.abs(f.body.position.y-.66)<.09);
+ const newFamily=!family;
+ if(!family){
+  const at=V(l.receiver.x+.13,.575+FAMILY_HALF+.002,.31);
+  if(!creationPosesClear([{p:at,q:Q(),half:V(FAMILY_HALF,FAMILY_HALF,FAMILY_HALF)}],false,{groups:[g]}))return false;
+  family=createFamily([item],at,{name:'Recepción',color:'#64ae91',excludeGroups:[g]});if(!family)return false;
+ }
+ if(!G.receive(s,[id],'family:'+family.id)){if(newFamily)removeFamily(family);return false;}
+ if(newFamily)line.familyIds.push(family.id);else{family.items.push(item);familyRefresh(family);}
+ familyEffect(p,family.body.position,'cube',family.color);retireFamilyGroups([g]);line.trips.delete(id);line.message='Recibido en familia · '+G.stats(s).received+' / 12.';return true;
+}
+function tickHangarLine(dt){
+ const line=hangarLine,s=story.galpon,G=window.QBitsGalponProduction;if(!line||!s||!G||!(dt>0))return;
+ hangarReleaseBrokenSections();const sections=getHangarSections(),l=galponLineLayout(),seen=new Set(),cold=new Set();
+ for(const c of sections){
+  const i=line.bases.indexOf(c.baseId),forward=c.running&&c.direction===1&&c.speed>=.002;
+  if(!hangarSectionAligned(c,i))continue;
+  for(const {body}of conveyorContactLoads(c)){
+   const g=body.qubitGroup;if(!g||g.parts.length!==1||g.route||g.haulJob||g.robotHeld||openingGroupHeld(g))continue;
+   const id=g.parts[0].id,rec=G.record(s,id),x=body.position.x;
+   if(!rec||rec.kind!=='cube'||rec.place!=='world')continue;
+   if(!forward){const paused=line.trips.get(id);if(paused&&(i===paused.stage||i===paused.stage-1)){seen.add(id);paused.missing=0;}continue;}
+   if((i===1||i===2)&&Math.abs(x-l.cooler.x)<l.length-.015)cold.add(id);
+   const start=l.entry.x+i*l.length;
+   let trip=line.trips.get(id);
+   if(!trip&&i===0&&x>=start-.05&&x<=start+.15){trip={id,stage:0,missing:0,coolTime:0,recovered:false};line.trips.set(id,trip);}
+   if(!trip)continue;
+   if(i===trip.stage&&x>start+l.length*.45)trip.stage++;
+   if(i===trip.stage||i===trip.stage-1){
+    const last=line.jam.get(id);
+    if(!seen.has(id))line.jam.set(id,{x,seconds:last&&Math.abs(x-last.x)<.006*dt?last.seconds+dt:0});
+    seen.add(id);trip.missing=0;
+   }
+  }
+ }
+ // Four physical work positions share the cooler. Keep an occupied position
+ // until its thermal cycle and the ordinary electrical recovery have finished.
+ const waiting=[...cold].filter(id=>!line.trips.get(id)?.recovered);
+ line.cooling=[...line.cooling.filter(id=>waiting.includes(id)),...waiting.filter(id=>!line.cooling.includes(id))].slice(0,4);
+ const served=new Set(line.cooling);
+ for(const [id,trip]of line.trips){
+  const g=rotorPart(id)?.g;if(!g||g.parts.length!==1||g.route||g.haulJob||g.robotHeld||openingGroupHeld(g)){line.trips.delete(id);continue;}
+  const p=g.parts[0],r=G.record(s,id);
+  if(served.has(id)&&r){
+   trip.coolTime+=dt;
+   // A compact through-cooler uses the existing cooler's recovery state and
+   // capacity scaling. Its electrical top-up is paid separately from heat.
+   const duration=.8*gameBatteryCapacity(p)/300;
+   if(!trip.recovered&&trip.coolTime>=duration&&r.activeSeconds+1e-8>=G.CONFIG.activeSeconds&&G.manipulable(r)){
+    const target=Math.max(p.mood.energy,.5),joules=(target-p.mood.energy)*G.CONFIG.unitCapacityJ;
+    if(!joules||G.spend(s,joules,'cooling')){applyCoolerRecovery(p,target);G.syncEnergy(s,id,p.mood.energy);trip.recovered=true;}
+   }
+  }
+  if(trip.stage===8&&hangarReceiveGroup(g,trip))continue;
+  if(!seen.has(id))trip.missing+=dt;
+  const landing=trip.stage===8&&g.body.position.x>=l.exit.x-.09&&g.body.position.x<=l.exit.x+.62&&Math.abs(g.body.position.z)<.47&&g.body.position.y>.57&&g.body.position.y<l.entry.y+.16;
+  if(!landing&&trip.missing>.55)line.trips.delete(id);
+ }
+ for(const id of line.jam.keys())if(!seen.has(id)||!line.trips.has(id))line.jam.delete(id);
+}
+function hangarLineStatus(){
+ const c=getHangarSections(),s=story.galpon,reversed=c.find(b=>b.direction<0),jammed=hangarLine&&[...hangarLine.jam.values()].some(j=>j.seconds>2);
+ return {built:c.length,running:c.filter(x=>x.running).length,traveling:hangarLine?.trips.size||0,cooling:hangarLine?.cooling.length||0,received:s?window.QBitsGalponProduction.stats(s).received:0,status:c.find(b=>!b.running)?.status||(reversed?'Sentido inverso en el tramo '+(hangarLine.bases.indexOf(reversed.baseId)+1):jammed?'Atasco en la cinta · despeja el paso.':hangarLine?.message)||''};
+}
+function galponLineSnapshot(){
+ hangarReleaseBrokenSections();return hangarLine&&{version:1,sections:[...hangarLine.bases],cooling:[...hangarLine.cooling],trips:[...hangarLine.trips.values()].map(t=>({...t})),familyIds:hangarLine.familyIds.filter(id=>families.some(f=>f.id===id))};
+}
+function galponLineRecordValid(data,physical,model){
+ if(data?.version!==1||!Array.isArray(data.sections)||data.sections.length>8||!Array.isArray(data.trips)||!Array.isArray(data.familyIds)||data.familyIds.length>2000)return false;
+ const unique=ids=>ids.every(id=>Number.isSafeInteger(id)&&id>0)&&new Set(ids).size===ids.length;
+ const active=data.cooling??[];if(!Array.isArray(active)||active.length>4||!unique(active)||active.some(id=>window.QBitsGalponProduction.record(model,id)?.place!=='world'))return false;
+ if(!unique(data.sections.filter(id=>id!==null))||!unique(data.trips.map(t=>t?.id))||!unique(data.familyIds))return false;
+ const belts=physical?.conveyors||[],G=window.QBitsGalponProduction;
+ if(data.sections.filter(id=>id!==null).length!==belts.length||!data.sections.every((id,i)=>{
+  if(id===null)return true;const c=belts.find(b=>b.baseId===id);
+  return c&&c.kind==='straight'&&c.required.length===30&&new Set(c.required).size===30&&c.joints.length===3&&c.required.every(n=>G.record(model,n)?.group==='belt-'+(i+1));
+ }))return false;
+ return data.trips.every(t=>{const r=G.record(model,t.id);return r?.kind==='cube'&&r.place==='world'&&Number.isInteger(t.stage)&&t.stage>=0&&t.stage<=data.sections.length&&Number.isFinite(t.missing)&&t.missing>=0&&Number.isFinite(t.coolTime)&&t.coolTime>=0&&typeof t.recovered==='boolean';});
+}
+function galponRestoreLine(data){
+ if(!hangarLine||!data)return false;hangarLine.bases=data.sections.slice();hangarLine.cooling=(data.cooling??[]).slice();hangarLine.trips=new Map(data.trips.map(t=>[t.id,{...t}]));hangarLine.familyIds=data.familyIds.slice();bindHangarSockets();return true;
+}
+
 // Chapter V: finite matter, powered dosing and physical station transport.
 chapters.push(...QBitsProduction.chapters);LEVELS.push(...QBitsProduction.levels);
 function productionGroups(s=story.campaign?.production){return s?groups.filter(g=>g.parts.some(p=>p.mood.production&&p.mood.production.batch===s.batch)):[];}
@@ -11951,7 +12895,15 @@ function drawProduction(){
 }
 function productionLabels(){const s=story.campaign?.production;if(!s)return [];return [{p:add(s.control,V(0,.25,0)),text:'E · CONTROL DEL LOTE'},{p:V(-1.65,.96,s.z),text:'MATERIA · '+s.ledger.stock.length+' EN RESERVA'},...(s.goal.packages?[{p:V(-.08,.86,s.z),text:'EMPAQUE · A + B'}]:[]),{p:V(1.5,.79,s.z),text:'RECEPTOR · '+s.ledger.accepted.length+'/'+s.goal.target}];}
 
-function groupWorkUnits(g){return g.parts.reduce((n,p)=>n+(p.mood?.externalBattery?0:(p.mood?.matter?p.weight/p.mood.matter.rootWeight:1)*QBitsWorkshop.movementFactors(p).load),0);}
+function groupWorkUnits(g){
+ if(inGalpon()){
+  // An assigned crew still exerts traction on its own cargo. A part installed
+  // on a rotor, or embodied in a mixed rigid assembly, is passive.
+  if(g.blueprintJob||rotorForGroup(g)||g.parts.some(p=>p.mood.externalBattery||p.mood.gripper||p.mood.trajectory||p.mood.workshop?.sensor))return 0;
+  let total=0;for(const p of g.parts){const r=QBitsGalponProduction.record(story.galpon,p.id);if(!r?.worker||r.kind==='coupler'||r.place!=='world')return 0;total+=r.weight;}
+  return total;
+ }
+ return g.parts.reduce((n,p)=>n+(p.mood?.externalBattery?0:(p.mood?.matter?p.weight/p.mood.matter.rootWeight:1)*QBitsWorkshop.movementFactors(p).load),0);}
 function chapterMatterParts(c=story.campaign){return groups.flatMap(g=>worldParts(g)).filter(p=>p.mood?.matter?.root===c?.reconfiguration?.root);}
 function chapterDialogue(lines){
  const c=story.campaign;let index=0;
@@ -11975,6 +12927,60 @@ function setupReconfiguration(c){
  storyWall(add(p,V(0,.37,-.235)),V(.35,.34,.025),{color:[.025,.033,.030]});
  storyWorld.details.push({p:add(p,V(0,.02,.48)),size:V(.68,.025,.3),color:[.72,.78,.75]});
  world.broadphase.dirty=true;
+}
+// Manual material transformations share the campaign recipes. Inspect the
+// physical intake on every command and commit only after the exit is clear.
+function hangarReconfigure(action){
+ if(!inGalpon()||!story.galpon||story.mode!=='playing'||story.transition||document.hidden||!Object.hasOwn(QBitsReconfiguration.actions,action))return false;
+ const s=story.galpon,G=QBitsGalponProduction,fail=message=>{announce(message);return false;};
+ if(s.jobs.former)return fail('El conformador está ocupado.');
+ const kind={divide:'cube',subdivide:'pyramid',pyramid:'tetra',cube:'pyramid'}[action];
+ const inTray=g=>{
+  const {x,z}=g.body.position,[cx,,cz]=hangarWorldLayout.formerInput;
+  const base=bounds(g).min.y;return base>=-.012&&base<.04&&x>=cx-.79&&x<=cx+.07&&z>=cz-.226&&z<=cz+.07;
+ };
+ const byRoot=new Map();
+ for(const g of groups){
+  if(g.parts.length!==1||!inTray(g)||cubeIsHeld(g)||g.blueprintJob||g.robotHeld||g.route||g.haulJob||rotorForGroup(g))continue;
+  const part=worldParts(g)[0],r=G.record(s,part.id);
+  if(!r||r.place!=='world'||part.shape!==kind||!G.manipulable(r)||['raw','coupler'].includes(r.kind)||s.records.some(load=>load.carriers.includes(r.id)))continue;
+  part.mood.matter={root:r.origin,path:r.path,rootWeight:1,name:part.mood.matter?.name||part.mood.name};
+  const key=String(r.origin)+(action==='pyramid'?'/'+r.path[0]:'');
+  if(!byRoot.has(key))byRoot.set(key,[]);byRoot.get(key).push({g,part});
+ }
+ let plan,source;
+ for(const candidates of byRoot.values()){
+  const batch=action==='divide'||action==='subdivide'?candidates.slice(0,1):candidates;
+  const choice=QBitsReconfiguration.plan(action,batch.map(v=>v.part));
+  if(!choice.error){plan=choice;source=batch;break;}
+ }
+ if(!plan)return fail('Suelta en la entrada del conformador las piezas compatibles del mismo cubo.');
+ if(scenePartCount()-source.length+plan.outputs.length>MAX_QUBITS||s.energyJ<G.CONFIG.formingJ)return fail('Falta capacidad o energía para reconfigurar.');
+ const outputs=plan.outputs.map((part,i)=>{
+  const p=hangarTray('coupler',i);p.y=unitGroundHeight(part.shape)+.005;return {...part,weight:1/({cube:1,pyramid:6,tetra:12}[part.shape]),p,q:Q()};
+ });
+ if(!creationPosesClear(outputs))return fail('La salida del conformador está ocupada. Libera espacio para todas las piezas.');
+ for(const part of outputs)part.id=part.shape==='cube'?part.mood.matter.root:allocateUnitId();
+ const previous=s.records;
+ if(!G.reconfigure(s,action,source.map(v=>v.part),outputs))return fail('El registro de materia rechazó la transformación.');
+ const made=[];
+ for(const {g} of source)removeGroup(g);
+ try{
+  for(const part of outputs){const g=makeGroup([part]);if(!g)throw Error();made.push(g);}
+ }catch{
+  for(const g of made)removeGroup(g);s.records=previous;
+  for(const {g,part} of source)makeGroup([part],g.body.quaternion,g.body.velocity,g.body.angularVelocity);
+  return fail('No se pudo completar la operación. La entrada está disponible.');
+ }
+ story.hangarWorld.assigned=story.hangarWorld.assigned.filter(id=>G.record(s,id)?.kind==='worker');
+ G.spend(s,G.CONFIG.formingJ,'reconfiguration');clearSelection();announce(QBitsReconfiguration.actions[action].label+' · '+outputs.length+' en la salida.');return true;
+}
+function hangarReconfigurationOrders(){
+ return Object.entries(QBitsReconfiguration.actions).map(([key,action])=>({label:action.label,run:()=>hangarReconfigure(key)}));
+}
+function refreshHangarReconfiguration(){
+ const list=document.querySelector('#galpon-reconfigure');if(!list||list.children.length)return;
+ for(const {label,run} of hangarReconfigurationOrders()){const button=document.createElement('button');button.type='button';button.textContent=label;button.addEventListener('click',run);list.appendChild(button);}
 }
 function reconfigurationInput(action){
  const c=story.campaign,s=c?.reconfiguration;
@@ -12652,7 +13658,7 @@ window.QBitsGame={
     resetSimulationClock();requestAnimationFrame(frame);
     }finally{saveSession.preparing=false;}
   },
-  menu(){if(!gamePrepared)return;resetSimulationClock();showMain();},
+  menu(options={}){if(!gamePrepared)return;resetSimulationClock();showMain();if(options.galpon)showHangarMenu();},
   play(){if(!gamePrepared)return;story.started=true;resetSimulationClock();if(story.scene==='intro')persistCampaignCheckpoint(0,false);resumeGame();}
 };
 

@@ -319,6 +319,14 @@ body:not([data-game-mode='playing']) #opening-status,body[data-transitioning='tr
   <link rel="stylesheet" href="assets/css/tablet.css?v=20261124-opening-walk-1">
   <link rel="stylesheet" href="assets/css/saved-games.css?v=20261121-saved-games-1">
   <link rel="stylesheet" href="assets/css/families.css?v=20261122-families-1">
+<style>
+#galpon-screen .menu-actions{gap:.45rem}#galpon-screen label{display:flex;align-items:center;justify-content:space-between;padding:.35rem 1rem}
+#galpon-screen select,#galpon-screen input{font:inherit;color:inherit;background:#fff;border:1px solid #aab8b1;padding:.3rem}
+#galpon-limit{width:4em}#galpon-menu-status:empty{display:none}#galpon-menu-status{font-size:.8em}
+body[data-game-scene='galpon']:has(#panel:not([hidden])) #story-dialogue{visibility:hidden}
+#page-galpon fieldset{border:0;border-top:1px solid currentColor;margin:.5em 0;padding:.5em 0}
+#page-galpon legend{padding-right:.5em}#page-galpon p{white-space:pre-line}#page-galpon button:disabled{opacity:.48}
+</style>
 </head>
 <body data-game-mode="boot" data-game-scene="lab" data-booting="true">
   <section id="boot-screen" aria-label="Inicio de Q-bits" data-stage="loading">
@@ -337,8 +345,21 @@ body:not([data-game-mode='playing']) #opening-status,body[data-transitioning='tr
   <section id="main-screen" class="game-screen" hidden aria-label="Menú principal">
     <button id="title-qbit" class="title-emblem" aria-label="Saludar al Q-bit"><div class="portrait-cube"><i></i><i></i><i></i><i></i><i></i><i></i></div></button><div id="title-greeting" hidden role="status"></div>
     <p class="eyebrow">CADA PIEZA CUENTA</p><h1 aria-label="Q-bits" class="game-title">Q-bits</h1><p class="menu-subtitle">Todo comienza con un encuentro.</p>
-    <div class="menu-actions"><button id="main-play" class="primary">Campaña <span class="menu-arrow" aria-hidden="true"></span></button><button id="main-continue" hidden>Continuar</button><button id="main-levels">Seleccionar nivel</button><button id="main-lab">Banco de pruebas</button><button id="main-saves" type="button">Partidas guardadas</button><button id="main-codex">Catálogo de materia</button><button id="main-settings">Configuración</button></div>
+    <div class="menu-actions"><button id="main-play" class="primary">Campaña <span class="menu-arrow" aria-hidden="true"></span></button><button id="main-continue" hidden>Continuar</button><button id="main-levels">Seleccionar nivel</button><button id="main-lab">Banco de pruebas</button><button id="main-galpon">Galpón · primera línea</button><button id="main-saves" type="button">Partidas guardadas</button><button id="main-codex">Catálogo de materia</button><button id="main-settings">Configuración</button></div>
     <small class="menu-foot">Versión de pruebas · Teclado y mouse<br>P abre las herramientas · º ir a Despertar</small>
+  </section>
+  <section id="galpon-screen" class="game-screen frosted" hidden aria-labelledby="galpon-title">
+    <p class="eyebrow">GALPÓN DE PRUEBA</p><h2 id="galpon-title">La primera línea</h2>
+    <p class="menu-subtitle">Extrae materia con tu equipo. Monta ocho tramos de cinta<br>y entrega doce cubos fríos en recepción.</p>
+    <div class="menu-actions">
+      <button id="galpon-continue" type="button" disabled>Continuar partida</button>
+      <label>Equipo inicial <select id="galpon-workers"><option value="4">Cuatro Q-bits</option><option value="1">Un Q-bit</option></select></label>
+      <label>Plazas de trabajo <input id="galpon-limit" type="number" min="1" max="48" value="12"></label>
+      <button id="galpon-start" type="button">Comenzar de nuevo</button>
+      <button id="galpon-cancel" type="button" hidden>Conservar la partida</button>
+      <p id="galpon-menu-status" role="status"></p>
+      <button id="galpon-back" type="button">← Volver</button>
+    </div>
   </section>
   <section id="pause-screen" class="game-screen frosted" hidden role="dialog" aria-modal="true" aria-label="Pausa">
     <p class="eyebrow">TÓMATE UN MOMENTO</p><h2>Pausa</h2><p id="pause-chapter" class="menu-subtitle"></p>
@@ -440,11 +461,32 @@ body:not([data-game-mode='playing']) #opening-status,body[data-transitioning='tr
         <nav class="tablet-rail" aria-label="Secciones de la tableta">
           <div class="tablet-wheel" aria-label="Rueda de secciones"><button type="button" id="wheel-bodies" title="Cuerpos" aria-label="Cuerpos" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 9 5v10l-9 5-9-5V7zM3 7l9 5 9-5M12 12v10"/></svg></button><button type="button" id="wheel-machines" title="Mecanismos" aria-label="Mecanismos" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3 1-1h4l1 3 3 1 3 1v4l-2 2-1 3 1 3-4 2-3-2-3 1-3-2v-3l-2-3-2-1 1-4 3-1z"/><circle cx="12" cy="11" r="3"/></svg></button><button type="button" id="wheel-files" title="Archivo" aria-label="Archivo" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 6h8l2 3h10l-2 11H2zM2 8V4h8l3 2h7v3"/></svg></button><button type="button" id="wheel-help" title="Ayuda" aria-label="Ayuda" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 2-3 5m0 2v1"/></svg></button></div>
           <h2 id="tablet-group-title">Cuerpos</h2>
-    <div class="tabs" role="tablist"><button id="tab-catalog" role="tab" aria-selected="false" aria-controls="page-catalog">Catálogo</button><button id="tab-cube" role="tab" aria-controls="page-cube" aria-selected="true">Piezas</button><button id="tab-route" role="tab" aria-controls="page-route" aria-selected="false">Recorrido</button><button id="tab-cargo" role="tab" aria-controls="page-cargo" aria-selected="false">Cuerpos</button><button id="tab-puzzle" role="tab" aria-controls="page-puzzle" aria-selected="false">Puzle</button><button id="tab-mechanisms" role="tab" aria-controls="page-mechanisms" aria-selected="false">Mecanismos</button><button id="tab-alpha" role="tab" aria-controls="page-alpha" aria-selected="false">Formas y planos</button><button id="tab-manual" role="tab" aria-controls="page-manual" aria-selected="false">Manual</button></div>
+    <div class="tabs" role="tablist"><button id="tab-catalog" role="tab" aria-selected="false" aria-controls="page-catalog">Catálogo</button><button id="tab-cube" role="tab" aria-controls="page-cube" aria-selected="true">Piezas</button><button id="tab-route" role="tab" aria-controls="page-route" aria-selected="false">Recorrido</button><button id="tab-cargo" role="tab" aria-controls="page-cargo" aria-selected="false">Cuerpos</button><button id="tab-puzzle" role="tab" aria-controls="page-puzzle" aria-selected="false">Puzle</button><button id="tab-galpon" role="tab" aria-controls="page-galpon" hidden>Galpón</button><button id="tab-mechanisms" role="tab" aria-controls="page-mechanisms" aria-selected="false">Mecanismos</button><button id="tab-alpha" role="tab" aria-controls="page-alpha" aria-selected="false">Formas y planos</button><button id="tab-manual" role="tab" aria-controls="page-manual" aria-selected="false">Manual</button></div>
           <div id="machine-links" hidden></div>
         </nav>
         <div class="tablet-center" id="tablet-center">
         <h2 id="tablet-title">Piezas</h2>
+        <div id="page-galpon" role="tabpanel" aria-labelledby="tab-galpon" hidden>
+          <p id="galpon-stock"></p>
+          <fieldset><legend>Equipo y producción</legend>
+            <button id="galpon-work" type="button">Iniciar extracción</button>
+            <button id="galpon-worker" type="button">Incorporar compañero</button>
+            <button id="galpon-release" type="button">Retirar del turno</button>
+            <label>Orden de fabricación <select id="galpon-order">
+              <option value="plan">Preparar siguiente tramo o pedido</option>
+              <option value="cube">Fabricar cubos</option><option value="coupler">Conformar enganches</option><option value="stop">Detener fabricación</option>
+            </select></label>
+          </fieldset>
+          <fieldset><legend>Montaje y marcha</legend>
+            <p id="galpon-recipe"></p>
+            <button id="galpon-build" type="button">Montar siguiente tramo</button>
+            <button id="galpon-run" type="button">Poner en marcha la línea</button>
+            <button id="galpon-stop" type="button">Detener la línea</button>
+            <button id="galpon-recover" type="button">Retomar recorridos</button>
+          </fieldset>
+          <div id="galpon-reconfigure"></div>
+          <p id="galpon-status" role="status"></p>
+        </div>
         <div id="page-catalog" role="tabpanel" aria-labelledby="tab-catalog" hidden>
           <nav class="catalog-filters" id="catalog-filters" aria-label="Tipos de objeto"></nav>
           <div id="catalog-entries"></div>
@@ -867,6 +909,6 @@ body:not([data-game-mode='playing']) #opening-status,body[data-transitioning='tr
   <script src="assets/js/opening.js?v=20261116-block-joins-1" defer></script>
   <script src="assets/js/servo-panel.js?v=20261119-marcha-2" defer></script>
   <script src="assets/js/families-ui.js?v=20261122-families-1" defer></script>
-  <script src="assets/js/boot.js?v=20261125-face-turn-1" defer></script>
+  <script src="assets/js/boot.js?v=20261126-galpon-1" defer></script>
 </body>
 </html>

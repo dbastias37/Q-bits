@@ -72,7 +72,7 @@
   function loadScript(path) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = path + '?v=20261125-face-turn-1';
+      script.src = path + '?v=20261126-galpon-1';
       script.onload = resolve;
       script.onerror = () => reject(new Error('No se pudo cargar ' + path));
       document.head.append(script);
@@ -109,6 +109,10 @@
     openingStarted = true;play.disabled = true;
     // Unlock audio in the gesture; no NPC dialogue runs during this opening.
     QBitsMusic.start();window.QBitsGuideAudio?.unlock();window.QBitsFootsteps?.unlock();window.QBitsJoinAudio?.unlock();
+    if(location.hash==='#galpon'){
+      opening?.skip?.();opening?.dispose();screen.hidden=true;
+      document.body.dataset.booting='false';QBitsGame.menu({galpon:true});return;
+    }
     screen.dataset.stage = 'cinematic';loading.hidden = true;
     try {
       mainMenu.hidden=false;mainMenu.inert=true;mainMenu.classList.add('cube-menu');mainMenu.style.opacity='0';
@@ -145,6 +149,7 @@
       await loadScript('assets/js/progression.js');
       await loadScript('assets/js/campaign-automation.js');
       await loadScript('assets/js/campaign-production.js');
+      await loadScript('assets/js/galpon-production.js');
       await loadScript('assets/js/workshop.js');
       await Promise.all(['furniture-models','tablet-model','tablet-view'].map(name=>loadScript('assets/js/'+name+'.js')));
       await loadScript('assets/js/organizers.js');
