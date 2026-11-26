@@ -39,3 +39,15 @@ test('stable checksum ignores JSON key ordering',()=>{
  const a=fixture(),b={alphaSettings:{},snapshot:{conveyors:[{id:8}],groups:[{parts:[{mood:{energy:.5},shape:'cube',id:1},{mood:{gripper:true},shape:'coupler',id:2}]}]}};
  assert.equal(scenes.codeFor(a),scenes.codeFor(b));
 });
+
+test('the editor keeps multiple independently addressable scenes',()=>{
+ const values=new Map(),storage={getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,v)};
+ const first=scenes.save(storage,scenes.pack('Versión A',fixture()));
+ const secondData=fixture();secondData.snapshot.groups[0].parts[0].shape='pyramid';
+ const second=scenes.save(storage,scenes.pack('Versión B',secondData));
+ assert.notEqual(first.code,second.code);
+ assert.deepEqual(scenes.list(storage).map(x=>x.code),[second.code,first.code]);
+ assert.equal(scenes.select(storage,first.code).name,'Versión A');
+ assert.equal(scenes.read(storage).code,first.code);
+ assert.equal(values.get('qbits.save.lab.v1'),undefined);
+});
