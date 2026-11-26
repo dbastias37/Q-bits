@@ -2,6 +2,12 @@
 
 Actualizado: 26 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
+## Corrección de montaje láser en mecanismos (26 nov 2026)
+
+El montaje real con dos cabezales soldados compartiendo un cuerpo rígido antes no podía crear pareja: la búsqueda descartaba expresamente el mismo grupo. Se ha eliminado esa exclusión y se añadió encendido automático para pares enfrentados que comparten un mecanismo físico (cuerpo rígido o componente articulado) y disponen de energía real, incluso mediante batería externa activa. Los dos cabezales forman un único circuito; uno corta y el otro recibe, sin duplicar transformaciones. El encendido manual continúa para piezas sueltas y el apagado manual se mantiene hasta reactivar. El alcance es 1,5 m y se admite un pequeño desfase lateral, ajustando el tubo para conectar los centros. El sistema tolera mecanismos en ruta, salvo manipulaciones y trabajos inconclusos.
+
+La suite precedente cerró con dos errores (una afirmación de distancia incorrecta y un receptor del fixture que interfería físicamente con la cinta). Esta revisión incluye sus correcciones y pruebas nuevas de montaje con batería, encendido automático, agotamiento y parada manual. No se considerará certificada la suite hasta que los chequeos ejecutados finalicen.
+
 ## Primera pieza industrial · láser automático por contacto (26 nov 2026)
 
 Base: `2ea9e8a`, primera implementación del cubo adaptable. La condición vigente sustituye los modos manuales y el corte temporizado: basta encender el emisor. Cada franja procesa la pieza al contacto: **cubo → seis pirámides cuadradas; cada pirámide → dos triangulares; cada triangular → desaparición**. Tres franjas sucesivas convierten un cubo en seis, luego doce piezas y finalmente ninguna. La destrucción final es una excepción explícita solicitada por el usuario; no devuelve recursos. La ensambladora sigue fuera de este bloque.
