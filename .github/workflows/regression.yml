@@ -1,0 +1,23 @@
+name: Q-bits · regresiones JavaScript
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Sintaxis del editor
+        run: |
+          node --check assets/js/game.js
+          node --check assets/js/scene-files.js
+          node --check assets/js/scene-editor-ui.js
+      - name: Suite del juego y editor
+        run: node --test tests/*.test.cjs
