@@ -51,16 +51,26 @@ function capture(name,eye,target,draw,details={}){
  draw();snapshots.push({name,parts:t.groups.reduce((n,g)=>n+g.parts.length,0),bodies:t.groups.length,joints:t.rotors.length,...details,commands});
 }
 
-const emitter=t.addQubit([0,.048,0]),target=t.addQubit([.30,.048,0]),part=emitter.parts[0];
-if(!t.adaptCutter({g:emitter,part}))throw Error('Cannot adapt emitter');part.mood.energy=1;
-const draw=()=>{for(const g of t.groups)t.drawGroupSolid(g);t.drawCutters();};
-const eye=[.54,.32,.53],look=[.17,.045,0];
+sandbox.document.body.dataset.booting='false';sandbox.document.pointerLockElement=t.canvas;
+if(!t.spawnSavedMechanism(t.conveyorBlueprintTemplate('straight'),t.V()))throw Error('No conveyor');
+const conveyor=t.conveyors.at(-1);let hit=t.rotorPart(conveyor.baseId),at=hit.p.vadd(hit.q.vmult(t.V(0,0,-.09))),cell=t.addQubit(at.toArray()),battery=cell.parts[0];
+battery.mood.externalBattery={version:1,ownerId:battery.id,packId:battery.id,enabled:true};battery.mood.energy=1;
+if(!t.weld({source:cell,target:hit.g,position:cell.body.position.clone(),quaternion:cell.body.quaternion.clone()}))throw Error('No battery');t.stepPhysics(1/240);
+hit=t.rotorPart(conveyor.baseId);const points=conveyor.path.map(p=>hit.p.vadd(hit.q.vmult(p))),emitters=[];
+for(const x of [-.11,.055,.21]){const g=t.addQubit([x,points[0].y+.048,-.4]),part=g.parts[0];t.adaptCutter({g,part});part.mood.cutter.face=t.unitProfile('cube').faceNormals.findIndex(n=>n.z>.9);part.mood.energy=1;emitters.push(g);
+ t.storyWall(t.V(x,points[0].y/2,-.4),t.V(.045,points[0].y/2,.045));}
+const load=t.addQubit([points[0].x+.055,points[0].y+.055,0]),root=load.parts[0].id;
+const draw=()=>{for(const g of t.groups)t.drawGroupSolid(g);t.drawConveyors();t.drawCutters();for(const w of t.storyWorld.walls)t.drawBox(w.p,w.q||t.Q(),w.half.scale(2),[.72,.76,.74,1]);};
+const eye=[.65,.67,.78],look=[0,.27,-.04];
 capture('cutter-off',eye,look,draw);
-t.setCutterEnabled(part.id,true);for(let i=0;i<180;i++)t.tickCutters(1/120);
-capture('cutter-active',eye,look,draw);
-for(let i=0;i<310;i++)t.tickCutters(1/120);
-if(t.groups.length!==7)throw Error('Cut did not finish');
-capture('cutter-output',eye,look,draw);
+t.startConveyor(conveyor);for(const g of emitters)t.setCutterEnabled(g.parts[0].id,true);t.stepPhysics(1/240);capture('cutter-active',eye,look,draw);
+let pyramids=false,triangles=false,destroyed=false;
+for(let i=0;i<240*6;i++){t.stepPhysics(1/240);const matter=t.groups.filter(g=>g.parts[0].id===root||g.parts[0].mood.matter?.root===root);
+ if(!pyramids&&matter.length===6&&matter.every(g=>g.parts[0].shape==='pyramid')){pyramids=true;capture('cutter-pyramids',eye,look,draw);}
+ if(!triangles&&matter.length===12&&matter.every(g=>g.parts[0].shape==='tetra')){triangles=true;capture('cutter-triangles',eye,look,draw);}
+ if(!matter.length){destroyed=true;capture('cutter-vaporized',eye,look,draw);break;}
+}
+if(!pyramids||!triangles||!destroyed)throw Error('Conveyor sequence incomplete');
 lab();t.setLook({camera:[0,.5,.7],yaw:0,pitch:-.7});
 if(!t.startCreationTool('quick-cutter')||!t.getCreationPreview()?.valid)throw Error('No blue placement');
 const preview=t.getCreationPreview(),center=preview.point;

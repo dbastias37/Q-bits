@@ -1,38 +1,45 @@
 # Láser de corte adaptable
 
-Implementado el 26 de noviembre de 2026. Primera pieza industrial, independiente de la futura ensambladora. Disponible en el banco y el editor de escenas; no altera los recursos ni los desbloqueos de campaña.
+Implementado el 26 de noviembre de 2026. Primera pieza industrial, disponible en el banco y el editor de escenas. La máquina de dos entradas y una salida sigue pendiente.
 
-## Probarlo
+## Uso
 
-1. En el editor, F8 → Mecanismos → **Láser de corte · cubo adaptable**. En el banco, Q → Equipo/Banco rápido → **Láser de corte**. Apunta el fantasma azul y coloca con clic. La rueda cambia su orientación.
-2. También puedes usar clic derecho sobre un cubo normal → **Adaptar como láser de corte**. Adapta la cara señalada, sin crear otro cubo ni cambiar su ID, masa o carga.
-3. Coloca un cubo suelto frente al cabezal naranja, a menos de 50 cm, con espacio a ambos lados y detrás para las salidas. El emisor y la materia pueden apoyarse directamente en el suelo.
-4. Clic derecho en el emisor → **Iniciar láser**. Tras cuatro segundos continuos de corte aparecen seis pirámides físicas. Sigue esperando otro cubo.
-5. Para obtener triangulares, cambia **Corte** a **pirámide → 2 triangulares** y vuelve a iniciar. En ese modo el cabezal se sitúa más bajo en su cara para alcanzar las pirámides apoyadas en el suelo.
+1. F8 → Mecanismos → **Láser de corte · cubo adaptable**, o Q → Banco rápido → **Láser de corte**. Coloca su fantasma azul. También puedes adaptar la cara señalada de un cubo libre desde su clic derecho.
+2. Apoya el emisor junto a la cinta, con el cabezal a la altura del centro del material y su franja naranja atravesando el recorrido. Conserva el agarre y giro normales del Q-bit. El alcance es de 50 cm; la franja cubre la altura de un cubo, incluyendo los fragmentos pequeños sobre la misma cinta.
+3. Clic derecho → **Iniciar láser**. Solo se enciende o se apaga: no hay selector de material, temporizador ni receta que configurar.
+4. La pieza se transforma al tocar la franja y continúa con su movimiento. Otra franja posterior realiza el siguiente corte.
 
-El menú permite elegir cualquiera de las seis caras, alternar alcance 25/50/100 cm, detener, reiniciar, tomar, guardar y retirar la adaptación conservando el cubo. Cambiar un ajuste detiene el corte. R sobre el emisor seleccionado reinicia el proceso; no rebobina ni duplica la materia ya cortada. El cubo conserva sus controles de agarre y giro normales.
+| Entrada que toca la franja | Resultado |
+| --- | --- |
+| Un cubo | Seis pirámides de base cuadrada |
+| Una pirámide cuadrada | Dos T-bits tetraédricos, pirámides triangulares |
+| Un T-bit tetraédrico | Desaparición, con un breve destello de desintegración |
 
-## Energía, espacio y recuperación
+Un cubo completo pasa así a seis pirámides, luego a doce triangulares; una tercera franja elimina esas doce piezas. Los dos primeros pasos conservan materia, origen y julios, incluida la capacidad interna repartida mediante `cutEnergyScale`. La desaparición de la unidad mínima es una **destrucción deliberada solicitada para esta mecánica**: no devuelve materia, carga ni inventario. No cambia las reglas de recomposición de la campaña.
 
-- Consume 2 W durante 4 s: 8 J por transformación. Usa su reserva interna o una batería/depósito encendido conectado mediante la red existente.
-- El haz se detiene en el primer sólido. No atraviesa otra pieza para cortar una situada detrás.
-- Solo procesa una pieza suelta de la forma elegida, sin adaptaciones ni tareas activas. No corta el propio emisor, conjuntos soldados, baterías, agarres, piezas transportadas por la mano/pinza ni materia de pedidos.
-- «Salida ocupada» conserva el original y el avance, sin gastar más energía hasta que exista espacio. No hay bandeja invisible ni materia en tránsito fuera del guardado.
-- La materia original permanece física durante el proceso. Solo se sustituye al completar el tiempo y comprobar de nuevo el haz, el límite de piezas y todas las salidas. Dos emisores no pueden consumir el mismo original dos veces.
-- Tomar el emisor detiene el proceso. Perder el objetivo reinicia el avance. Agotar energía exige volver a iniciar; pausa y pestaña oculta suspenden el tiempo.
-- La división conserva masa, origen, estado y julios. `cutEnergyScale` reparte también la capacidad interna entre los descendientes, manteniendo el porcentaje de carga sin multiplicar la reserva. Recomponer mediante el modelo de materia suma esa capacidad.
+## Contacto y seguridad de la transacción
 
-## Persistencia y rendimiento
+- Cada transformación consume 8 J del emisor o de su batería externa conectada. El contacto aplica la operación completa; no exige que el material se detenga cuatro segundos.
+- Las partes ocupan el volumen original, mantienen la orientación y heredan el movimiento lineal y angular. No se depositan en una bandeja más ancha que la cinta.
+- Los descendientes quedan protegidos de la misma franja durante ese paso, incluso si hay un emisor opuesto. Apagar, encender o pulsar R no borra esa protección. Una franja distinta puede efectuar inmediatamente la siguiente transformación. Al alejarse 15 cm perpendicularmente a una franja, la pieza puede volver a atravesarla para otro corte.
+- Se comprueba el trayecto entre pasos físicos para detectar cruces rápidos. Los sólidos incompatibles y las paredes bloquean el haz; otras piezas procesables pueden atravesar la misma franja.
+- Solo se corta materia suelta. No se cortan conjuntos soldados, adaptaciones, baterías, el emisor, piezas en la mano/pinza ni piezas ocupadas por tareas.
+- Si la salida está ocupada, se alcanza el límite de piezas o falta energía, el original permanece intacto. La sustitución física es atómica; no se cobra un corte cancelado por espacio.
+- Tomar el emisor lo detiene. Pausa y pestaña oculta suspenden la operación. El agotamiento requiere cargar y volver a encender.
 
-`mood.cutter` almacena versión, cara, alcance y forma de entrada. Escenas, familias y banco conservan esos datos; los mecanismos guardados incluyen la adaptación en su receta y los blueprints requieren material existente. Al cargar, todos los cortadores están apagados y el avance se reinicia con el original intacto; la energía ya gastada no se devuelve. La exportación de escena identifica `cutter` en su inventario.
+## Guardado y compatibilidad
 
-Solo los emisores iniciados comprueban objetivos. Detección y comprobación de espacio se limitan a 30 Hz, con una validación adicional antes de transformar; el gasto sigue el paso físico. El cabezal usa tres cajas sobre el cuerpo existente y no añade articulaciones. La adaptación no habilita generación de piezas en campaña.
+`mood.cutter` versión 2 conserva la cara emisora. Los guardados anteriores con alcance y modo manual se aceptan y migran al funcionamiento automático. Banco, escenas y mecanismos conservan la adaptación; al restaurar, los láseres quedan apagados.
+
+`mood.cutPasses` guarda hasta dos marcas de franja por fragmento. Se copia de forma independiente, se valida al cargar y evita que un fragmento recién cortado vuelva a cortarse en el mismo lugar al recargar. La destrucción retira inmediatamente cuerpo físico, ID y materia del inventario; el destello visual dura 0,25 s, no tiene física y está limitado a 64 efectos.
+
+Solo los emisores encendidos buscan objetivos. La detección consulta la región de la franja en el broadphase y usa un barrido local en cada paso físico; el dibujo del haz comprueba oclusores a 30 Hz. El cabezal utiliza cajas del render existente, sin articulaciones nuevas.
 
 ## Verificación reproducible
 
-- `node --test tests/laser-cutter.test.cjs`: 14 pruebas, incluyendo Cannon, paso físico completo, conservación, bloqueo y recuperación, dos emisores, energía externa, guardado y colocación 3D del editor.
+- `node --test tests/laser-cutter.test.cjs`: 19 pruebas de contacto, tres etapas, conservación, destrucción, guardado, recarga, protecciones, barrido rápido, oclusores, energía y colocación 3D. Incluye una cinta real alimentada que lleva un cubo por tres franjas hasta eliminar los doce fragmentos, sin reposicionar el material durante la prueba.
 - `node --test tests/*.test.cjs`: regresión general.
-- `QBITS_CAPTURE_SCRIPT=capture-cutter-frame.cjs python3 tests/validate-robot-arm-gles.py /tmp/qbits-cutter-gles`: captura y reproducción de los dibujos reales del juego (apagado, activo, salida y fantasma azul).
+- `QBITS_CAPTURE_SCRIPT=capture-cutter-frame.cjs python3 tests/validate-robot-arm-gles.py /tmp/qbits-cutter-gles`: seis vistas del render real —apagado, encendido, pirámides, triangulares, desintegración y blueprint azul— reproducidas en GLES. También admite `QBITS_RENDER_BACKEND=webgl2`.
 - `python3 tests/validate-focus-gles.py`: shaders, foco y posprocesado.
 
-Estas comprobaciones validan física, lógica y píxeles GLES; no certifican una partida manual en el navegador ni FPS en el equipo del jugador. La máquina de dos entradas y una salida queda fuera de este bloque.
+Las pruebas ejecutan lógica y física Cannon con DOM simulado y verifican píxeles GLES por separado. No sustituyen una partida manual en navegador ni miden FPS en el equipo del jugador.

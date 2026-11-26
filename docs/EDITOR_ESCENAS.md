@@ -74,4 +74,4 @@ Las pruebas nuevas de autoría están en `tests/scene-authoring.test.cjs` y `tes
 
 ## Láser de corte
 
-F8 → Mecanismos → Láser de corte coloca un cubo adaptado mediante el fantasma 3D. Clic derecho permite iniciar, detener, elegir cara y alternar corte de cubo o pirámide. La escena exportada conserva su configuración; al restaurar queda apagado. Consulta [la guía del cortador](LASER_CORTE_QBITS.md).
+F8 → Mecanismos → Láser de corte coloca un cubo adaptado mediante el fantasma 3D. Clic derecho permite iniciar o detener. El corte es automático al contacto: cubo → seis pirámides cuadradas → doce triangulares → desaparición al tercer corte, usando franjas sucesivas. La escena exportada conserva la adaptación y la protección de los fragmentos ante la misma franja; al restaurar, el emisor queda apagado. Consulta [la guía del cortador](LASER_CORTE_QBITS.md).
