@@ -77,7 +77,7 @@
  const toolbar=document.createElement('div');toolbar.id='scene-editor-toolbar';toolbar.hidden=true;
  toolbar.innerHTML=`<strong>Editor de escenas · Banco 3D</strong>
  <div class="scene-editor-actions"><button id="scene-editor-capture">Capturar y guardar escena</button><button id="scene-editor-manage">Catálogo / Códigos / Exportar</button></div>
- <small>Coloca las piezas con los controles habituales. Capturar lee directamente el montaje del motor; no hace falta guardar el banco.</small><small id="scene-editor-recovery-status" aria-live="polite"></small>`;
+ <small>F8 · abrir catálogo y códigos. Capturar lee directamente el montaje del motor; no hace falta guardar el banco.</small><small id="scene-editor-recovery-status" aria-live="polite"></small>`;
  document.body.append(toolbar);
  function feedback(text){$('scene-editor-feedback').textContent=text;}
  function show(){try{selected=MODEL().read(localStorage);}catch(e){selected=null;feedback(e.message);}
@@ -176,6 +176,15 @@
  }
  async function act(fn){try{await fn();}catch(e){feedback(e.message||String(e));}}
  mainButton.addEventListener('click',()=>act(show));
+ window.addEventListener('keydown',event=>{
+  if(!active||event.repeat||event.ctrlKey||event.altKey||event.metaKey)return;
+  if(event.code==='F8'){
+   event.preventDefault();event.stopImmediatePropagation();
+   document.exitPointerLock?.();show();
+  }else if(event.code==='Escape'&&!dialog.hidden){
+   event.preventDefault();event.stopImmediatePropagation();close();
+  }
+ },true);
  $('scene-editor-close').addEventListener('click',close);
  $('scene-place-button').addEventListener('click',()=>act(()=>{
   if(!active||!window.QBitsGame?.sceneEditor?.isActive?.())throw Error('Abre primero Nueva escena vacía o Continuar escena.');
