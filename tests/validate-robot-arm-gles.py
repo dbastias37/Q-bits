@@ -8,7 +8,7 @@ import json, subprocess, sys, struct, zlib, math, os
 from pathlib import Path
 OUT=Path(sys.argv[1]) if len(sys.argv)>1 else Path('/tmp/qbits-robot-arm')
 OUT.mkdir(parents=True,exist_ok=True)
-subprocess.run(['node',str(Path(__file__).with_name('capture-robot-arm-frame.cjs')),str(OUT/'commands.json'),sys.argv[2] if len(sys.argv)>2 else '960',sys.argv[3] if len(sys.argv)>3 else '720'],check=True)
+subprocess.run(['node',str(Path(__file__).with_name(os.environ.get('QBITS_CAPTURE_SCRIPT','capture-robot-arm-frame.cjs'))),str(OUT/'commands.json'),sys.argv[2] if len(sys.argv)>2 else '960',sys.argv[3] if len(sys.argv)>3 else '720'],check=True)
 data=json.loads((OUT/'commands.json').read_text());W=data['width'];H=data['height']
 E=C.CDLL('libEGL.so.1')
 def egl(name,result,*args):

@@ -39,7 +39,7 @@
       ids.add(p.id);pieces++;shapes[p.shape]=(shapes[p.shape]||0)+1;
       if(Number.isFinite(p.weight))totalMass+=p.weight;
       const features=[];
-      for(const k of ['workshop','trajectory','gripper','externalBattery','rotor','sensor','flight','matter'])
+      for(const k of ['workshop','trajectory','gripper','cutter','externalBattery','rotor','sensor','flight','matter'])
         if(p.mood&&p.mood[k])features.push(k);
       if(features.length)components.push({id:p.id,shape:p.shape,features});
     }

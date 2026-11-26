@@ -1680,6 +1680,7 @@ function quickCatalogue(){
  ...['pivot','hinge'].map(kind=>({id:'quick-servo-'+kind,title:kind==='pivot'?'Servo pivote':'Servo bisagra',record:servoBlueprintTemplate(kind),subtitle:'Articulación · apagada'})),
  {id:'quick-propeller',title:'Hélice modular',record:propellerBlueprintTemplate()},{id:'quick-drone',title:'Dron de prueba',record:propellerBlueprintTemplate(true),subtitle:'1 hélice + batería I'}, {id:'quick-arm',title:'Brazo Q-bits',record:robotArmBlueprintTemplate()},...['straight','left','right'].map((kind,i)=>({id:'quick-conveyor-'+kind,title:['Cinta recta','Esquina izquierda','Esquina derecha'][i],record:conveyorBlueprintTemplate(kind)})),
  {id:'quick-gripper',title:'Cubo de agarre',record:quickSingleRecord('gripper')},...[1,2,3].map(n=>({id:'quick-battery-'+n,title:'Batería '+['','I','II','III'][n],record:quickSingleRecord('battery',n),subtitle:'100 % · apagada'})),
+ {id:'quick-cutter',title:'Láser de corte',record:cutterBlueprintTemplate(),subtitle:'Cubo adaptable · apagado'},
  {id:'quick-sensor',title:'Sensor configurable',action:'sensor'},{id:'quick-cargo',title:'Cuerpo sólido',action:'cargo'},{id:'quick-cooler',title:'Enfriador',action:'cooler'},{id:'quick-shelf',title:'Repisa',action:'shelf',subtitle:'Colocar en pared'},
  {id:'quick-workshop',title:'Mesa de trabajo',action:'workshop',subtitle:'Colocar o reubicar en el suelo'},
  ...savedMechanisms.map((record,i)=>({id:'quick-saved-mechanism-'+i,title:record.name,record:copySavedMechanism(record),subtitle:'Mecanismo guardado'})),
@@ -1732,7 +1733,7 @@ function beginCreationPlacement(id,plan=null,options={}){
   for(let i=1;i<path.length;i++){const delta=sub(path[i],path[i-1]),q=Q();q.setFromVectors(V(1,0,0),mul(delta,1/delta.norm()));q.normalize();surfaces.push({p:add(base.p,base.q.vmult(add(mul(add(path[i],path[i-1]),.5),V(0,-.002,0)))),q:base.q.mult(q),half:V(delta.norm()/2,.002,CUBE_SIZE*1.5)});}
  }
  const compact=local.some(p=>p.half)?local:rigidColliderLayout(local.map((p,id)=>({...p,id,offset:p.p}))).map(box=>box.half?{p:box.offset,q:box.q,half:box.half}:box.parts[0]);
- pendingUnitCreation=id;creationPreview={id,entry,record,local,compact,surfaces,plan,elevation:options.height||0,turns:options.quarterTurns||0,valid:false,poses:[],reason:'Apunta a una superficie.'};
+ pendingUnitCreation=id;creationPreview={id,entry,record,local,compact,surfaces,plan,cutterConfigs:new Map((record?.groups.flatMap(g=>g.parts)||[]).filter(p=>p.cutter).map(p=>[p.key,p.cutter])),elevation:options.height||0,turns:options.quarterTurns||0,valid:false,poses:[],reason:'Apunta a una superficie.'};
  updateCreationPlacement();redraw=true;announce((plan?.name||creationTitle(id))+' · rueda: girar por caras · Shift: cuadrícula y giro libre · clic: colocar · Esc: cancelar');return true;
 }
 function creationSurfaceAim(dir=direction(),exclude=[],excludedFamilies=[]){
@@ -1825,6 +1826,7 @@ function drawCreationPlacement(){
  gl.uniform1f(uniforms.uJitter,0);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
  const eye=V(...camera),ordered=creationPreview.drawPoses.slice().sort((a,b)=>b.p.distanceSquared(eye)-a.p.distanceSquared(eye));
  for(const pose of ordered){if(pose.half)drawBox(pose.p,pose.q,mul(pose.half,2),color);else drawUnitMesh(pose,color,3);}
+ if(creationPreview.cutterConfigs.size)for(const pose of creationPreview.poses){const cfg=creationPreview.cutterConfigs.get(pose.key);if(cfg)drawCutterHead(pose,cfg,color);}
  if(creationPreview.record)drawConveyorBlueprintArrows({shape:{mechanism:creationPreview.record}},creationPreview.poses);
  gl.depthMask(true);gl.disable(gl.BLEND);gl.uniform1f(uniforms.uJitter,visuals.jitter/100);
 }
@@ -4404,7 +4406,7 @@ function restartSelection(){
  const team=selectedTeam(),motors=selectedRotors();
  const requested=motors.length?motors.flatMap(rotorGroups):team.length?team:[aimQubit(4)?.g||lastRunGroup];
  const handled=new Set();
- for(const g of requested){const run=mechanismRun(g)||neutralWalkerRun(g);if(run&&!handled.has(run)){handled.add(run);restartMechanism(g,run);}}
+ for(const g of requested){for(const part of g?.parts||[])if(part.mood.cutter){if(setCutterEnabled(part.id,true))handled.add(part);}const run=mechanismRun(g)||neutralWalkerRun(g);if(run&&!handled.has(run)){handled.add(run);restartMechanism(g,run);}}
  if(!handled.size){
   if(selectedCargo||team.some(g=>g.haulJob)){if(selectedCargo)stopHaul(selectedCargo);for(const g of team)leaveHaul(g);announce('Transporte detenido');}
   else announce('Selecciona un mecanismo o una pieza que haya iniciado un recorrido.');
@@ -5678,7 +5680,7 @@ function powerPartConnectable(hit){
  if(!hit)return false;
  // Every articulated group owns its coupler; inspect the local rigid body
  // instead of walking the entire hinge graph for every rendered cable end.
- return hit.g.parts.some(p=>unitShape(p)==='coupler'||isExternalBattery(p)||p.mood?.gripper||p.mood?.flight);
+ return hit.g.parts.some(p=>unitShape(p)==='coupler'||isExternalBattery(p)||p.mood?.gripper||p.mood?.cutter||p.mood?.flight);
 }
 function powerPort(endpoint){
  const e=powerEndpoint(endpoint);if(!e)return null;
@@ -6071,10 +6073,10 @@ function externallyPoweredInternalIds(){
  }
  // An adapted cube has its own internal reserve even when there are no rotors.
  // An active external supply neither drains nor passively refills that reserve.
- for(const g of groups){const grippers=g.parts.filter(part=>part.mood.gripper);if(grippers.length&&externalBatteryCells(g).length)for(const part of grippers)ids.add(part.id);}
+ for(const g of groups){const grippers=g.parts.filter(part=>part.mood.gripper||part.mood.cutter);if(grippers.length&&externalBatteryCells(g).length)for(const part of grippers)ids.add(part.id);}
  return ids;
 }
-function gameBatteryCapacity(part){return isExternalBattery(part)?externalBatteryCapacity(part):QBitsWorkshop.batteryCapacity(part)*batterySceneScale();}
+function gameBatteryCapacity(part){return isExternalBattery(part)?externalBatteryCapacity(part):QBitsWorkshop.batteryCapacity(part)*batterySceneScale()*(part?.mood?.cutEnergyScale??1);}
 function powerGroupWeight(group){
  if(!mechanicalStepCache)return totalWeight(group);
  const weights=mechanicalStepCache.groupWeights??=new Map();
@@ -6253,7 +6255,7 @@ function stepPhysics(dt){
  // The family shell stays outside groups, but follows the same hand speed
  // limits without visiting or activating any of its stored pieces.
  if(held?.family){const b=held.family.body,speed=b.velocity.norm(),spin=b.angularVelocity.norm();if(speed>6)b.velocity.scale(6/speed,b.velocity);if(spin>30)b.angularVelocity.scale(30/spin,b.angularVelocity);}
- updateCampaignPressure(dt);updateButtonPhysics();prepareRotorPower();updateRotorMotors(dt);driveRobotArms(dt);driveConveyors(dt);driveServos(dt);productionForces(dt);updateFlights(dt);wakeMechanicalRest();world.step(dt);invalidateConveyorContacts();stabilizeRotors();finishMechanicalRest(dt);updateRotorPower(dt);validateServoMarches();tickContactSensors(dt);tickFlightSensors(dt);
+ updateCampaignPressure(dt);updateButtonPhysics();prepareRotorPower();updateRotorMotors(dt);driveRobotArms(dt);driveConveyors(dt);driveServos(dt);productionForces(dt);updateFlights(dt);wakeMechanicalRest();world.step(dt);invalidateConveyorContacts();stabilizeRotors();finishMechanicalRest(dt);updateRotorPower(dt);validateServoMarches();tickContactSensors(dt);tickFlightSensors(dt);tickCutters(dt);
  // The floor correction must translate a hinged assembly as a whole. Moving
  // a single link stretches its constraints and stores an impulse on release.
  if(held){
@@ -6497,6 +6499,7 @@ function updateTarget(){
  else if(marquee)targetLabel.textContent='Suelta para seleccionar · hasta '+settings.maxSelect+' piezas';
  else if(held?.latched)targetLabel.textContent='Clic · soltar selección · '+heldRotationHint()+' · '+inputLabel('rotate')+' + '+walkingInputLabel()+' · giro libre';
  else if(held)targetLabel.textContent=snap?(snap.propellerTip?'Pala alineada · suelta para unir a la hélice':snap.rotorTip?(snap.servoKind?'Servo alineado · suelta para unir':'Puntas alineadas · suelta para formar Rotor'):snap.wholeFace?'Cara completa · suelta para unir':'Suelta para unir esta cara'):shiftDown()?inputLabel('radial')+'/'+inputLabel('interact')+' · caras · '+inputLabel('stop')+' · arriba/abajo · '+walkingInputLabel()+' · giro libre'+(heldAssemblyGroups().length?' · sacudir · desarmar':''):heldRotationHint()+' · rueda · enfocar · '+inputLabel('drop')+' · caída';
+ else if(hit?.part.mood.cutter)targetLabel.textContent='Láser · '+(cutterRuns.get(hit.part.id)?.status||'Apagado')+' · clic derecho: controles';
  else if(hit&&isExternalBattery(hit.part)){const info=externalBatteryPackInfo(hit.part.id);targetLabel.textContent=info.label+' · '+info.percent+' % · '+(info.enabled?'activa':'apagada')+' · clic derecho: batería';}
  else if(shelfTarget&&(!hit||shelfTarget.distance<(hit.distance??Infinity))){const cell=shelfTarget.shelf.cells[shelfTarget.cellIndex];targetLabel.textContent='Compartimento '+(shelfTarget.cellIndex+1)+' · '+(cell.category?.label||'Vacío')+' · '+cell.items.length+'/50 · clic derecho: organizar';}
  else if(selectedRotors().length)targetLabel.textContent=(activeRotorSet()?.name||'Selección de rotores')+' · '+selectedRotors().length+' · Ctrl + clic: añadir / quitar · clic derecho o P: controles';
@@ -7526,6 +7529,7 @@ function handleSecondary(event){
  if(hit){
   selectedCargo=null;pendingCargo=null;selected=hit;if(!multiSelection.includes(hit.g))multiSelection=[];
   if(event.altKey||altDown()){openDetachMenu(hit);return;}
+  if(hit.part.mood.cutter){showCutterMenu(hit);return;}
   if(hit.part.mood.trajectory){showTrajectoryMenu(hit);return;}
   if(isExternalBattery(hit.part)){showExternalBatteryMenu(hit.part.id);return;}
   const flight=flightForGroup(hit.g);if(flight&&!hit.part.mood.gripper&&!QBitsWorkshop.hasSensor(hit.part)){showFlightMenu(hit,flight);return;}
@@ -7568,6 +7572,7 @@ function handleSecondary(event){
    {label:'Guardar forma',run:()=>{saveShape(hit.g);captureMouse();}},
    {label:'Nombrar '+unitLabel(hit.part),run:()=>openAlphaPanel(hit)}];
   if(story.scene==='lab'&&!puzzle.active&&powerMaterialGroups(team))items.unshift({label:'Desenrollar como cable · '+powerCableLimit(team.flatMap(worldParts)).toFixed(1)+' m',run:()=>beginPowerCable(team)});
+  if(canAdaptCutter(hit))items.unshift({label:'Adaptar como láser de corte',run:()=>{if(adaptCutter(hit))showCutterMenu(hit);}});
   if(QBitsWorkshop.hasSensor(hit.part))items.unshift({label:'Configurar sensor…',run:()=>showSensorMenu(hit)});
   const rotor=rotorForPart(hit.part.id)||rotorForGroup(hit.g);
   if(rotor&&rotorSetFor(rotor)&&!QBitsWorkshop.hasSensor(hit.part)){selectRotorSet(rotorSetFor(rotor));showRotorSetMenu();return;}
@@ -7778,7 +7783,7 @@ function joinCompletedConveyorBlueprint(bp,made){
  if(joined){made.splice(made.indexOf(incoming.g),1,joined);pruneConveyors();}else announce('Tramo completo. Une los laterales con Shift para compartir la batería.');return joined;
 }
 function updateConveyorPanel(){if(!window.QBitsConveyorPanel||typeof conveyorBlueprintTemplate!=='function')return;if(!conveyorPanel)conveyorPanel=QBitsConveyorPanel.create({snapshot:conveyorPanelSnapshot,action:conveyorPanelAction});conveyorPanel.refresh();}
-function builtInMechanismRecipes(){return [propellerBlueprintTemplate(),robotArmBlueprintTemplate(),...(typeof conveyorBlueprintTemplate==='function'?['straight','left','right'].map(kind=>conveyorBlueprintTemplate(kind,false)):[])].filter(Boolean);}
+function builtInMechanismRecipes(){return [cutterBlueprintTemplate(),propellerBlueprintTemplate(),robotArmBlueprintTemplate(),...(typeof conveyorBlueprintTemplate==='function'?['straight','left','right'].map(kind=>conveyorBlueprintTemplate(kind,false)):[])].filter(Boolean);}
 
 function updateMechanismPanel(){
  refreshSensorPanel();updateRobotArmPanel();updateConveyorPanel();updateFlightFleet();updateFlightPanel();updateServoPanel();
@@ -8595,6 +8600,8 @@ function hydrateLabSnapshot(saved){
   const mood=record.mood;if(mood!==null&&mood!==undefined){
    if(typeof mood!=='object'||Array.isArray(mood)||mood.name!==undefined&&typeof mood.name!=='string'||mood.energy!==undefined&&(!finite(mood.energy)||mood.energy<0||mood.energy>1))return invalid();
    if(mood.blend!==undefined)values(mood.blend,3);
+   if(mood.cutter!==undefined&&(record.shape!=='cube'||!validCutterConfig(mood.cutter)||mood.gripper||mood.externalBattery||mood.trajectory||mood.workshop))return invalid();
+   if(mood.cutEnergyScale!==undefined&&(!finite(mood.cutEnergyScale)||mood.cutEnergyScale<=0||mood.cutEnergyScale>1))return invalid();
    if(mood.gripper&&!validGripperConfig(mood.gripper)||mood.flight&&!QBitsPropellerPower.validConfig(mood.flight)||mood.trajectory&&!QBitsTrajectoryModel.validatePart(mood.trajectory))return invalid();
    // Episodes use an absolute simulation timestamp; a new page starts at zero.
    if(clock!==null&&finite(mood.lastAnger))mood.lastAnger=simTime-Math.max(0,clock-mood.lastAnger);
@@ -8880,9 +8887,9 @@ for(const key of ['frameSeconds','energySeconds'])document.querySelector('#'+key
 function newMood(id,saved=null){
  const personality=Math.abs(Math.sin(id*127.1)*43758.5453)%1;
  const m={name:'Q-bit '+id,strikes:0,severity:0,lastAnger:-1000,restTotal:0,energy:.8,state:'neutral',reason:'',agitation:0,restLeft:0,idle:0,fullTime:0,blocked:0,calm:0,boredOnce:false,personality,blend:[1,0,0]};
- if(saved)Object.assign(m,saved,{blend:[...(saved.blend||[1,0,0])],...(saved.externalBattery?{externalBattery:{...saved.externalBattery}}:{}),...(saved.gripper?{gripper:JSON.parse(JSON.stringify(saved.gripper))}:{}),...(saved.flight?{flight:QBitsPropellerPower.config(saved.flight)}:{}),...(saved.trajectory?{trajectory:{...saved.trajectory}}:{})});m.name=m.name.replace(/^(?:Kiubit|Qubit) (\d+)$/,'Q-bit $1');return m;
+ if(saved)Object.assign(m,saved,{blend:[...(saved.blend||[1,0,0])],...(saved.externalBattery?{externalBattery:{...saved.externalBattery}}:{}),...(saved.gripper?{gripper:JSON.parse(JSON.stringify(saved.gripper))}:{}),...(saved.flight?{flight:QBitsPropellerPower.config(saved.flight)}:{}),...(saved.cutter?{cutter:{...saved.cutter}}:{}),...(saved.trajectory?{trajectory:{...saved.trajectory}}:{})});m.name=m.name.replace(/^(?:Kiubit|Qubit) (\d+)$/,'Q-bit $1');return m;
 }
-function copyMood(m){return m?{...m,blend:[...m.blend],...(m.externalBattery?{externalBattery:{...m.externalBattery}}:{}),...(Array.isArray(m.sensorMachine?.members)?{sensorMachine:{...m.sensorMachine,members:m.sensorMachine.members.map(pair=>({...pair}))}}:{}),...(m.sensorConfig?{sensorConfig:{...m.sensorConfig}}:{}),...(m.sensorLink?{sensorLink:{...m.sensorLink}}:{}),...(m.gripper?{gripper:JSON.parse(JSON.stringify(m.gripper))}:{}),...(m.flight?{flight:QBitsPropellerPower.config(m.flight)}:{}),...(m.trajectory?{trajectory:{...m.trajectory}}:{})}:null;}
+function copyMood(m){return m?{...m,blend:[...m.blend],...(m.externalBattery?{externalBattery:{...m.externalBattery}}:{}),...(Array.isArray(m.sensorMachine?.members)?{sensorMachine:{...m.sensorMachine,members:m.sensorMachine.members.map(pair=>({...pair}))}}:{}),...(m.sensorConfig?{sensorConfig:{...m.sensorConfig}}:{}),...(m.sensorLink?{sensorLink:{...m.sensorLink}}:{}),...(m.gripper?{gripper:JSON.parse(JSON.stringify(m.gripper))}:{}),...(m.flight?{flight:QBitsPropellerPower.config(m.flight)}:{}),...(m.cutter?{cutter:{...m.cutter}}:{}),...(m.trajectory?{trajectory:{...m.trajectory}}:{})}:null;}
 function moodName(m){return m.state==='excited'?'Entusiasmado':m.state==='restless'?(m.severity>=3?'Alterado':'Inquieto'):'Neutro';}
 function moodColor(m){const colors=[[.53,.60,.61],[.38,.66,.56],[.76,.48,.38]],rgb=[0,0,0];for(let i=0;i<3;i++)for(let k=0;k<3;k++)rgb[k]+=colors[i][k]*m.blend[i];return rgb;}
 function moodCSS(m){return 'rgb('+moodColor(m).map(c=>Math.round(c*255)).join(',')+')';}
@@ -8953,7 +8960,7 @@ function moodVisualPose(g,pose){
  if(g.parts.length!==1||g.route||g.haulJob&&groupWilling(g)||g.moodDuty||g.cooler||g.moodCarried||g.body.velocity.norm()>.03)return pose;
  // Attached pieces and trajectory markers share their collider's pose.
  // Mood gestures would separate joints or clip a fixed pixel face.
- if(g.parts[0].mood.trajectory||g.robotGrip||g.robotHeld||rotorForGroup(g))return pose;
+ if(g.parts[0].mood.trajectory||g.parts[0].mood.cutter||g.robotGrip||g.robotHeld||rotorForGroup(g))return pose;
  const m=g.parts[0].mood,phase=simTime*(2.1+m.personality*.4)+g.parts[0].id,joy=m.blend[1],restless=m.blend[2],pulse=Math.max(0,Math.sin(phase));
  if(joy+restless<.001)return pose;
  const q=Q();q.setFromAxisAngle(V(0,0,1),joy*Math.sin(phase)*.018+restless*Math.sin(simTime*28+phase)*(.008+.014*(m.severity||1)));
@@ -9262,21 +9269,22 @@ function storedConveyorsValid(record,keys,owners){
 }
 function savedMechanismValid(record){
  try{
-  if(!record||record.version!==1||!['rotor','coupler','battery','gripper'].includes(record.type)||typeof record.name!=='string'||!record.name.trim()||record.name.length>40||/[\u0000-\u001f]/.test(record.name))return false;
+  if(!record||record.version!==1||!['rotor','coupler','battery','gripper','cutter'].includes(record.type)||typeof record.name!=='string'||!record.name.trim()||record.name.length>40||/[\u0000-\u001f]/.test(record.name))return false;
   if(!Array.isArray(record.groups)||record.groups.length<1||record.groups.length>MAX_QUBITS||!Array.isArray(record.joints)||record.joints.length>=record.groups.length)return false;
-  if(['coupler','battery','gripper'].includes(record.type)&&(record.groups.length!==1||record.joints.length!==0)||record.type==='rotor'&&(record.groups.length<2||!record.joints.length)||!storedRotorSetsValid(record))return false;
+  if(['coupler','battery','gripper','cutter'].includes(record.type)&&(record.groups.length!==1||record.joints.length!==0)||record.type==='rotor'&&(record.groups.length<2||!record.joints.length)||!storedRotorSetsValid(record))return false;
   const keys=new Map(),owners=new Map();let count=0;
   for(const [groupIndex,group]of record.groups.entries()){
    if(!Array.isArray(group?.parts)||!group.parts.length)return false;
    for(const part of group.parts){
     if(++count>MAX_QUBITS||!part||!Number.isSafeInteger(part.key)||part.key<0||part.key>=MAX_QUBITS||keys.has(part.key)||!['cube','tetra','pyramid','coupler'].includes(part.shape))return false;
     if(!Number.isFinite(part.weight)||part.weight<(part.shape==='tetra'?.25/12:part.shape==='pyramid'?.25/6:.25)-1e-9||part.weight>3||!Array.isArray(part.p)||part.p.length!==3||!part.p.every(n=>Number.isFinite(n)&&Math.abs(n)<14)||!Array.isArray(part.q)||part.q.length!==4||!part.q.every(Number.isFinite)||Math.abs(Math.hypot(...part.q)-1)>.0001)return false;
+    if(part.cutter!==undefined&&(part.shape!=='cube'||part.battery!==undefined||part.gripper!==undefined||!validCutterConfig(part.cutter)))return false;
     if(part.flight!==undefined&&(part.shape!=='coupler'||!QBitsPropellerPower.validConfig(part.flight)))return false;
     if(part.gripper!==undefined&&(part.shape!=='cube'||part.battery!==undefined||!storedGripperConfigValid(part.gripper)))return false;
     keys.set(part.key,part);owners.set(part.key,groupIndex);
    }
   }
-  if(record.type==='battery'?![...keys.values()].some(part=>part.battery!==undefined):record.type==='gripper'?![...keys.values()].some(part=>part.gripper!==undefined):![...keys.values()].some(part=>part.shape==='coupler')&&!record.joints.some(j=>j?.servo))return false;
+  if(record.type==='cutter'?![...keys.values()].some(part=>part.cutter!==undefined):record.type==='battery'?![...keys.values()].some(part=>part.battery!==undefined):record.type==='gripper'?![...keys.values()].some(part=>part.gripper!==undefined):![...keys.values()].some(part=>part.shape==='coupler')&&!record.joints.some(j=>j?.servo))return false;
   if(!storedRobotArmValid(record,keys)||!storedConveyorsValid(record,keys,owners))return false;
   const powered=record.joints.filter(j=>j?.enabled===true);if(powered.length>1&&powered.some(j=>j.mount==='fixed'))return false;
   const attached=new Set(),graph=record.groups.map(()=>new Set()),parents=record.groups.map((_,i)=>i),root=i=>parents[i]===i?i:parents[i]=root(parents[i]);
@@ -9298,7 +9306,7 @@ function savedMechanismValid(record){
  }catch{return false;}
 }
 function copySavedMechanism(record){
- return {version:1,type:record.type,name:record.name,groups:record.groups.map(g=>({parts:g.parts.map(p=>({key:p.key,shape:p.shape,weight:p.weight,p:[...p.p],q:[...p.q],...(p.battery?{battery:{pack:p.battery.pack,enabled:p.battery.enabled}}:{}),...(p.gripper?{gripper:{...p.gripper}}:{}),...(p.flight?{flight:QBitsPropellerPower.config(p.flight)}:{})}))})),joints:record.joints.map(j=>({a:j.a,b:j.b,rpm:j.rpm,direction:j.direction,moving:j.moving,...storedRotorDrive(j),enabled:j.enabled})),...(record.rotorSets?{rotorSets:record.rotorSets.map(set=>({name:set.name,joints:[...set.joints]}))}:{}),...(record.robotArm?{robotArm:JSON.parse(JSON.stringify(record.robotArm))}:{}),...(record.conveyors?{conveyors:JSON.parse(JSON.stringify(record.conveyors))}:{})};
+ return {version:1,type:record.type,name:record.name,groups:record.groups.map(g=>({parts:g.parts.map(p=>({key:p.key,shape:p.shape,weight:p.weight,p:[...p.p],q:[...p.q],...(p.battery?{battery:{pack:p.battery.pack,enabled:p.battery.enabled}}:{}),...(p.cutter?{cutter:{...p.cutter}}:{}),...(p.gripper?{gripper:{...p.gripper}}:{}),...(p.flight?{flight:QBitsPropellerPower.config(p.flight)}:{})}))})),joints:record.joints.map(j=>({a:j.a,b:j.b,rpm:j.rpm,direction:j.direction,moving:j.moving,...storedRotorDrive(j),enabled:j.enabled})),...(record.rotorSets?{rotorSets:record.rotorSets.map(set=>({name:set.name,joints:[...set.joints]}))}:{}),...(record.robotArm?{robotArm:JSON.parse(JSON.stringify(record.robotArm))}:{}),...(record.conveyors?{conveyors:JSON.parse(JSON.stringify(record.conveyors))}:{})};
 }
 function alignMechanismSnapshot(record){
  // A live hinge solver may leave millimetres of drift. Canonicalize only this
@@ -9328,14 +9336,14 @@ function alignMechanismSnapshot(record){
 }
 function mechanismSnapshot(subject,name=null){
  syncVirtualConveyors(0);
- const connected=mechanismGroups(subject);if(!connected.length||!connected.some(g=>g.parts.some(p=>p.shape==='coupler'||p.mood?.externalBattery||p.mood?.gripper))&&!rotors.some(r=>r.servo&&rotorGroups(r).some(g=>connected.includes(g))))return null;
+ const connected=mechanismGroups(subject);if(!connected.length||!connected.some(g=>g.parts.some(p=>p.shape==='coupler'||p.mood?.externalBattery||p.mood?.gripper||p.mood?.cutter))&&!rotors.some(r=>r.servo&&rotorGroups(r).some(g=>connected.includes(g))))return null;
  if(connected.some(g=>g.parts.some(p=>p.mood?.externalBattery&&!isExternalBattery(p))))return null;
  const linked=rotors.filter(r=>rotorGroups(r).every(g=>connected.includes(g)));
- const hasBattery=connected.some(g=>g.parts.some(isExternalBattery)),hasGrip=connected.some(g=>g.parts.some(p=>p.mood?.gripper)),type=linked.length?'rotor':hasBattery?'battery':hasGrip?'gripper':'coupler',commonSet=linked.length&&rotorSetFor(linked[0]),defaultName=commonSet&&linked.every(r=>commonSet.rotorIds.includes(r.id))?commonSet.name:linked.length?(hasGrip?'Brazo Q-bits':linked.length===1&&linked[0].servo?(linked[0].servo.kind==='pivot'?'Servo pivote':'Servo bisagra'):linked.some(r=>r.servo)?'Mecanismo articulado':'Rotor'):hasBattery?'Batería':hasGrip?'Cubo de agarre':'Enganche';
+ const hasBattery=connected.some(g=>g.parts.some(isExternalBattery)),hasGrip=connected.some(g=>g.parts.some(p=>p.mood?.gripper)),type=linked.length?'rotor':hasBattery?'battery':hasGrip?'gripper':connected.some(g=>g.parts.some(p=>p.mood.cutter))?'cutter':'coupler',commonSet=linked.length&&rotorSetFor(linked[0]),defaultName=commonSet&&linked.every(r=>commonSet.rotorIds.includes(r.id))?commonSet.name:linked.length?(hasGrip?'Brazo Q-bits':linked.length===1&&linked[0].servo?(linked[0].servo.kind==='pivot'?'Servo pivote':'Servo bisagra'):linked.some(r=>r.servo)?'Mecanismo articulado':'Rotor'):hasBattery?'Batería':hasGrip?'Cubo de agarre':type==='cutter'?'Láser de corte':'Enganche';
  const min=V(Infinity,Infinity,Infinity),max=V(-Infinity,-Infinity,-Infinity);
  for(const g of connected){const box=bounds(g);for(const axis of ['x','y','z']){min[axis]=Math.min(min[axis],box.min[axis]);max[axis]=Math.max(max[axis],box.max[axis]);}}
  const origin=V((min.x+max.x)/2,min.y,(min.z+max.z)/2),keys=new Map();let key=0;
- const record={version:1,type,name:String(name||(propellerModules(connected).length?'Dron Q-bits':defaultName)).replace(/[\u0000-\u001f]/g,'').trim().slice(0,40)||defaultName,groups:connected.map(g=>({parts:worldParts(g).map(p=>{const current=key++;keys.set(p.id,current);return {key:current,shape:p.shape,weight:p.weight,p:[p.p.x-origin.x,p.p.y-origin.y,p.p.z-origin.z].map(n=>+n.toFixed(8)),q:[p.q.x,p.q.y,p.q.z,p.q.w].map(n=>+n.toFixed(10)),...(p.mood?.gripper?{gripper:{...p.mood.gripper}}:{}),...(p.mood?.flight?{flight:QBitsPropellerPower.config(p.mood.flight)}:{})};})})),joints:linked.map(r=>({a:keys.get(r.aId),b:keys.get(r.bId),rpm:r.rpm,direction:r.direction,moving:r.moving,...storedRotorDrive(r),enabled:r.enabled}))};
+ const record={version:1,type,name:String(name||(propellerModules(connected).length?'Dron Q-bits':defaultName)).replace(/[\u0000-\u001f]/g,'').trim().slice(0,40)||defaultName,groups:connected.map(g=>({parts:worldParts(g).map(p=>{const current=key++;keys.set(p.id,current);return {key:current,shape:p.shape,weight:p.weight,p:[p.p.x-origin.x,p.p.y-origin.y,p.p.z-origin.z].map(n=>+n.toFixed(8)),q:[p.q.x,p.q.y,p.q.z,p.q.w].map(n=>+n.toFixed(10)),...(p.mood?.cutter?{cutter:{...p.mood.cutter}}:{}),...(p.mood?.gripper?{gripper:{...p.mood.gripper}}:{}),...(p.mood?.flight?{flight:QBitsPropellerPower.config(p.mood.flight)}:{})};})})),joints:linked.map(r=>({a:keys.get(r.aId),b:keys.get(r.bId),rpm:r.rpm,direction:r.direction,moving:r.moving,...storedRotorDrive(r),enabled:r.enabled}))};
  // A chassis can still join two cells after their middle cell is removed.
  // Export each contiguous straight run as its own pack, without changing live
  // identities, switches or charge. Charge never enters the template.
@@ -9370,7 +9378,7 @@ function persistMechanisms(){
  try{window.localStorage.setItem('qbits.mechanisms.v1',JSON.stringify(savedMechanisms));return true;}catch{announce('Mecanismo guardado en esta sesión · expórtalo para conservarlo');return false;}
 }
 function saveMechanism(subject,name=null){
- if(mechanismGroups(subject).some(g=>g.parts.some(QBitsWorkshop.hasAdaptation))){announce('Retira las adaptaciones antes de guardar el montaje. La investigación permanece disponible.');return null;}
+ if(mechanismGroups(subject).some(g=>g.parts.some(p=>QBitsWorkshop.hasAdaptation(p)&&!p.mood.cutter))){announce('Retira las adaptaciones antes de guardar el montaje. La investigación permanece disponible.');return null;}
 
  if(savedMechanisms.length>=64){announce('Hay 64 mecanismos guardados. Exporta o elimina uno antes de añadir otro.');return null;}
  const record=mechanismSnapshot(subject,name);if(!record){announce('No se puede guardar: revisa el encaje de las puntas del rotor.');return null;}
@@ -9391,7 +9399,7 @@ function spawnSavedMechanism(record,point,rotation=Q()){
  }
  try{
   for(const parts of data)for(const part of parts)ids.set(part.key,allocateUnitId());
-  for(const [i,parts]of data.entries()){const created=parts.map((part,j)=>{const id=ids.get(part.key),config=record.groups[i].parts[j].gripper,mood=part.battery?{...newMood(id),energy:0,externalBattery:{version:1,ownerId:id,packId:ids.get(part.battery.pack),enabled:part.battery.enabled}}:config?{...newMood(id),gripper:{...config}}:null;return {id,shape:part.shape,weight:part.weight,p:part.p,q:part.q,mood:record.groups[i].parts[j].flight?{...(mood||newMood(id)),flight:QBitsPropellerPower.config(record.groups[i].parts[j].flight)}:mood};});made.push(makeGroup(created));}
+  for(const [i,parts]of data.entries()){const created=parts.map((part,j)=>{const id=ids.get(part.key),config=record.groups[i].parts[j].gripper,mood=part.battery?{...newMood(id),energy:0,externalBattery:{version:1,ownerId:id,packId:ids.get(part.battery.pack),enabled:part.battery.enabled}}:config?{...newMood(id),gripper:{...config}}:null;return {id,shape:part.shape,weight:part.weight,p:part.p,q:part.q,mood:record.groups[i].parts[j].cutter?{...(mood||newMood(id)),cutter:{...record.groups[i].parts[j].cutter}}:record.groups[i].parts[j].flight?{...(mood||newMood(id)),flight:QBitsPropellerPower.config(record.groups[i].parts[j].flight)}:mood};});made.push(makeGroup(created));}
   for(const joint of record.joints){const rotor=connectRotorTips(ids.get(joint.a),ids.get(joint.b),{...joint,...storedRotorDrive(joint),enabled:false});if(!rotor)throw new Error('Las puntas del mecanismo ya no encajan.');joints.push(rotor);}
   for(let i=0;i<joints.length;i++){const state=record.joints[i];configureRotor(joints[i],{...state,...storedRotorDrive(state),enabled:state.enabled&&!state.servo});}
   rememberSensorMachine(record.name,joints);
@@ -9530,6 +9538,7 @@ function completeMechanismBlueprint(bp,targets){
   for(let i=0;i<rigid.length;i++){
    for(let j=0;j<rigid[i].length;j++){const p=rigid[i][j],recipe=record.groups[i].parts[j],storedJ=p.mood.energy*gameBatteryCapacity(p);
     if(recipe.battery){p.mood.externalBattery={version:1,ownerId:p.id,packId:ids.get(recipe.battery.pack),enabled:false};p.mood.energy=storedJ/(60*batterySceneScale());}
+    if(recipe.cutter)p.mood.cutter={...recipe.cutter};
     if(recipe.gripper)p.mood.gripper={...recipe.gripper};if(recipe.flight)p.mood.flight=QBitsPropellerPower.config(recipe.flight);
    }
    made.push(makeGroup(rigid[i],bp.q));
@@ -9552,7 +9561,7 @@ function savedShapeValid(shape){return shape&&typeof shape.name==='string'&&shap
 function loadSavedShapes(){try{const list=JSON.parse(readQbitsStorage('qbits.shapes.v1')||'[]');if(Array.isArray(list))savedShapes.push(...list.filter(savedShapeValid).slice(0,64));}catch{} }
 function persistShapes(){try{window.localStorage.setItem('qbits.shapes.v1',JSON.stringify(savedShapes));return true;}catch{announce('Forma guardada en esta sesión · Exportar formas permite conservar una copia.');return false;}}
 function saveShape(g){
- if(g?.parts.some(p=>p.mood?.externalBattery||p.mood?.gripper)||g&&propellerLayout(g).length)return saveMechanism(g);
+ if(g?.parts.some(p=>p.mood?.externalBattery||p.mood?.gripper||p.mood?.cutter)||g&&propellerLayout(g).length)return saveMechanism(g);
  if(g&&typeof rotorForGroup==='function'&&rotorForGroup(g))return saveMechanism(g);
  if(!g||!groups.includes(g))return;if(savedShapes.length>=64){announce('Hay 64 formas guardadas. Exporta o elimina una antes de añadir otra.');return;}
  if(!assemblyValid(poses(g))){announce('Esta forma tiene caras incompatibles. Desármala y vuelve a encajar las piezas.');return;}
@@ -10102,6 +10111,7 @@ function drawStoryGlass(){
 const storyTargetMesh=buildLathe([[.88,.006],[1,.006]],72);
 function clearNarrativeScene(){
  clearOpeningScene();
+ cutterRuns.clear();
  clearMechanicalRest();sensorContactsCache=null;
  resetSimulationClock(performance.now(),true);
  cancelCullingBenchmark();cullingLab.observer=false;cullingLab.lastFrame=null;document.body.dataset.cullingObserver='false';
@@ -11772,7 +11782,142 @@ function tickContactSensors(dt){
  }
  for(const key of rotorContactStates.keys())if(!inputs.has(key))rotorContactStates.delete(key);
 }
+// A cutter is a reversible adaptation of an existing cube. Runtime progress is
+// transient: the input stays in the world until an atomic, collision-checked cut.
+const cutterRuns=new Map();
+const CUTTER_DURATION=4,CUTTER_WATTS=2,CUTTER_RANGES=[25,50,100];
+function validCutterConfig(c){
+ return !!c&&typeof c==='object'&&!Array.isArray(c)&&c.version===1&&Number.isInteger(c.face)&&c.face>=0&&c.face<6&&CUTTER_RANGES.includes(c.range)&&['cube','pyramid'].includes(c.mode)&&Object.keys(c).every(k=>['version','face','range','mode'].includes(k));
+}
+function defaultCutterConfig(){return {version:1,face:unitProfile('cube').faceNormals.findIndex(n=>n.x>.9),range:50,mode:'cube'};}
+function cutterBlueprintTemplate(){return {version:1,type:'cutter',name:'Láser de corte',groups:[{parts:[{key:0,shape:'cube',weight:1,p:[0,HALF,0],q:[0,0,0,1],cutter:defaultCutterConfig()}]}],joints:[]};}
+function canAdaptCutter(hit){
+ const p=hit?.part;return story.scene==='lab'&&!puzzle.active&&groups.includes(hit?.g)&&p?.shape==='cube'&&!p.mood.gripper&&!p.mood.production&&!p.mood.externalBattery&&!QBitsWorkshop.hasAdaptation(p)&&!hit.g.robotHeld&&!hit.g.blueprintJob&&!held?.items?.some(i=>i.g===hit.g);
+}
+function adaptCutter(hit){
+ if(!canAdaptCutter(hit)){announce('Usa un cubo libre, sin otras adaptaciones.');return false;}
+ const cfg=defaultCutterConfig();
+ if(hit.point){const pose=partPose(hit.g,hit.part),local=pose.q.inverse().vmult(sub(hit.point,pose.p));cfg.face=unitProfile('cube').faceNormals.reduce((best,n,i,all)=>n.dot(local)>all[best].dot(local)?i:best,0);}
+ hit.part.mood.cutter=cfg;redraw=true;announce('Láser adaptado · conserva el cubo y su carga · clic derecho para iniciar');return true;
+}
+function cutterLocalCenter(cfg){
+ const profile=unitProfile('cube'),rotation=Q();rotation.setFromVectors(V(1,0,0),profile.faceNormals[cfg.face]);
+ return add(profile.faceCenters[cfg.face],rotation.vmult(V(0,cfg.mode==='pyramid'?-.0225:0,0)));
+}
+function cutterPose(hit){
+ const cfg=hit.part.mood.cutter,pose=partPose(hit.g,hit.part),profile=unitProfile('cube'),normal=profile.faceNormals[cfg.face],axis=pose.q.vmult(normal),origin=add(pose.p,pose.q.vmult(add(cutterLocalCenter(cfg),mul(normal,.007))));
+ const rotation=Q();rotation.setFromVectors(V(1,0,0),normal);return {origin,axis,q:pose.q.mult(rotation),pose};
+}
+function cutterBusy(g){return !!(g.robotHeld||g.blueprintJob||g.haulJob||g.route||g.pendingMoodOrder||g.cooler||g.storySocket||(held?.items||[]).some(i=>i.g===g));}
+function cutterBeam(hit){
+ const {origin,axis}=cutterPose(hit),range=hit.part.mood.cutter.range/100,end=add(origin,mul(axis,range));let distance=range,target=null;
+ const seen=new Set();
+ world.raycastAll(origin,end,{skipBackfaces:false},result=>{
+  const body=result.body;if(!body.collisionFilterGroup)return;
+  const g=body.qubitGroup;
+  if(g){
+   if(seen.has(g))return;seen.add(g);
+   for(const pose of poses(g)){
+    if(pose.part.id===hit.part.id)continue;
+    const ray=rayPart(origin,axis,pose,range);if(ray&&ray.distance<distance){distance=ray.distance;target={g,part:pose.part,...pose};}
+   }
+  }else if(result.distance<distance){distance=result.distance;target=null;}
+ });
+ return {origin,end:add(origin,mul(axis,distance)),axis,target};
+}
+function cutterInputPlan(target,mode){
+ if(!target||!groups.includes(target.g)||target.g.parts.length!==1||target.part.shape!==mode||cutterBusy(target.g)||rotorForGroup(target.g)||target.part.mood.gripper||target.part.mood.externalBattery||target.part.mood.production||QBitsWorkshop.hasAdaptation(target.part))return null;
+ const part=worldParts(target.g)[0];
+ if(!part.mood.matter){part.mood.matter={root:part.id,path:mode==='cube'?'':'0',rootWeight:part.weight*(mode==='cube'?1:6),name:part.mood.name};}
+ // Ordinary pieces each have an internal reserve. Descendants divide that
+ // capacity too, keeping both the charge percentage and total joules unchanged.
+ part.mood.cutEnergyScale=part.mood.cutEnergyScale??1;
+ const plan=QBitsReconfiguration.plan(mode==='cube'?'divide':'subdivide',[part]);
+ return plan.error?null:plan;
+}
+function cutterOutputPoses(target,plan,axis){
+ const pose=partPose(target.g,target.part),floor=bounds(target.g).min.y;
+ let forward=V(axis.x,0,axis.z);if(forward.norm()<.01)forward=V(1,0,0);forward.normalize();const across=V(-forward.z,0,forward.x),columns=plan.outputs.length===2?2:3;
+ return plan.outputs.map((p,i)=>({...p,p:add(V(pose.p.x,floor+unitGroundHeight(p.shape)+.004,pose.p.z),add(mul(across,(i%columns-(columns-1)/2)*.11),mul(forward,Math.floor(i/columns)*.11))),q:Q()}));
+}
+function setCutterEnabled(id,enabled){
+ const hit=rotorPart(id);if(!hit||!validCutterConfig(hit.part.mood.cutter)||story.scene!=='lab'||puzzle.active)return false;
+ if(!enabled){cutterRuns.delete(id);redraw=true;return true;}
+ if(cutterBusy(hit.g)){announce('Suelta el láser y termina su movimiento antes de iniciar.');return false;}
+ if(gripperSupply(hit).storedJ<=0){announce('Láser sin energía · carga el cubo o conecta una batería encendida.');return false;}
+ cutterRuns.set(id,{enabled:true,elapsed:0,targetId:null,sampleLeft:0,beam:null,status:'Esperando '+(hit.part.mood.cutter.mode==='cube'?'cubo':'pirámide')});redraw=true;return true;
+}
+function tickCutters(dt){
+ if(!Number.isFinite(dt)||dt<=0||simulationSuspended())return;
+ for(const [id,run]of cutterRuns){
+  const hit=rotorPart(id);
+  if(!hit||!validCutterConfig(hit.part.mood.cutter)){cutterRuns.delete(id);continue;}
+  if(!run.enabled)continue;
+  if(story.scene!=='lab'||puzzle.active||cutterBusy(hit.g)){run.enabled=false;run.elapsed=0;run.beam=null;run.status='Detenido · vuelve a iniciar al soltar';continue;}
+  run.sampleLeft-=dt;
+  if(run.sampleLeft<=0){
+   run.beam=cutterBeam(hit);run.sampleLeft=1/30;run.plan=cutterInputPlan(run.beam.target,hit.part.mood.cutter.mode);
+   run.clear=!!run.plan&&scenePartCount()-1+run.plan.outputs.length<=MAX_QUBITS&&creationPosesClear(cutterOutputPoses(run.beam.target,run.plan,run.beam.axis),false,{groups:[run.beam.target.g]});
+  }
+  const target=run.beam?.target,plan=target&&groups.includes(target.g)&&!cutterBusy(target.g)?run.plan:null;
+  if(!plan){run.elapsed=0;run.targetId=null;run.status=target?'Pieza incompatible o en uso':'Esperando pieza en el haz';continue;}
+  if(run.targetId!==target.part.id){run.targetId=target.part.id;run.elapsed=0;}
+  if(!run.clear){
+   run.status='Salida ocupada · libera espacio';continue;
+  }
+  const advance=Math.min(dt,CUTTER_DURATION-run.elapsed);
+  if(advance>0&&!spendGripperEnergy(hit,CUTTER_WATTS*advance)){
+   run.enabled=false;run.elapsed=0;run.beam=null;run.status='Sin energía · carga y vuelve a iniciar';continue;
+  }
+  run.elapsed+=advance;run.status='Cortando · '+Math.min(100,Math.round(run.elapsed/CUTTER_DURATION*100))+' %';
+  if(run.elapsed+1e-8<CUTTER_DURATION)continue;
+  // Re-raycast and re-plan at commit, even between cached detection samples.
+  const fresh=cutterBeam(hit),finalPlan=fresh.target?.part.id===run.targetId&&cutterInputPlan(fresh.target,hit.part.mood.cutter.mode);
+  if(!finalPlan){run.elapsed=0;run.targetId=null;run.sampleLeft=0;continue;}
+  const finalOutput=cutterOutputPoses(fresh.target,finalPlan,fresh.axis);
+  if(scenePartCount()-1+finalOutput.length>MAX_QUBITS||!creationPosesClear(finalOutput,false,{groups:[fresh.target.g]})){run.status='Salida ocupada · libera espacio';continue;}
+  const original=worldParts(fresh.target.g),velocity=fresh.target.g.body.velocity.clone(),spin=fresh.target.g.body.angularVelocity.clone(),made=[];
+  removeGroup(fresh.target.g);
+  try{for(const part of finalOutput)made.push(makeGroup([{...part,id:allocateUnitId()}],Q(),velocity,V()));}
+  catch(error){for(const g of made)removeGroup(g);makeGroup(original,Q(),velocity,spin);run.enabled=false;run.status='Corte cancelado · pieza recuperada';continue;}
+  run.elapsed=0;run.targetId=null;run.sampleLeft=0;run.beam=null;run.status='Corte completo · esperando otra pieza';redraw=true;
+ }
+}
+function showCutterMenu(hit){
+ const live=rotorPart(hit.part.id);if(!live||!validCutterConfig(live.part.mood.cutter))return;
+ const cfg=live.part.mood.cutter,run=cutterRuns.get(live.part.id),active=!!run?.enabled,point=partPose(live.g,live.part).p;
+ const change=patch=>{setCutterEnabled(live.part.id,false);Object.assign(live.part.mood.cutter,patch);showCutterMenu({...live,distance:hit.distance});redraw=true;};
+ const chooseFace=()=>openCommandMenu(point,'Cara emisora · láser detenido',unitProfile('cube').faceNormals.map((n,face)=>({label:({x:'X',y:'Y',z:'Z'})[['x','y','z'].find(k=>Math.abs(n[k])>.9)]+' '+(n.x+n.y+n.z>0?'+':'−')+(face===cfg.face?' · actual':''),run:()=>change({face})})).concat([{label:'Volver',run:()=>showCutterMenu(hit)}]),live.g);
+ openCommandMenu(point,'Láser de corte · '+(run?.status||'Apagado'),[
+  {label:active?'Detener láser':'Iniciar láser',run:()=>{setCutterEnabled(live.part.id,!active);captureMouse();}},
+  {label:'Corte: '+(cfg.mode==='cube'?'cubo → 6 pirámides':'pirámide → 2 triangulares'),run:()=>change({mode:cfg.mode==='cube'?'pyramid':'cube'})},
+  {label:'Alcance: '+cfg.range+' cm',run:()=>change({range:CUTTER_RANGES[(CUTTER_RANGES.indexOf(cfg.range)+1)%CUTTER_RANGES.length]})},
+  {label:'Elegir cara emisora…',run:()=>{setCutterEnabled(live.part.id,false);chooseFace();}},
+  {label:'Reiniciar corte · R',run:()=>{setCutterEnabled(live.part.id,true);captureMouse();}},
+  {label:'4 segundos · 8 J por corte · salida libre',disabled:true,run:()=>{}},
+  {label:'Tomar cubo / conjunto',disabled:!canCarry(rotorConnectedGroups([live.g]))||hit.distance>2.8,run:()=>{setCutterEnabled(live.part.id,false);takeSelection({...live,point,distance:hit.distance});}},
+  {label:'Guardar mecanismo',run:()=>{saveMechanism(live.g);captureMouse();}},
+  {label:'Retirar láser · conservar cubo',run:()=>{setCutterEnabled(live.part.id,false);delete live.part.mood.cutter;captureMouse();redraw=true;}},
+  {label:'Separar pieza…',run:()=>openDetachMenu({...live,point,distance:hit.distance})},
+  {label:'Cerrar',run:()=>captureMouse()}
+ ],live.g);
+}
+function drawCutterHead(pose,cfg,color){
+ const profile=unitProfile('cube'),normal=profile.faceNormals[cfg.face],rotation=Q();rotation.setFromVectors(V(1,0,0),normal);const q=pose.q.mult(rotation),at=v=>add(pose.p,pose.q.vmult(add(cutterLocalCenter(cfg),rotation.vmult(v))));
+ drawBox(at(V(.003,0,0)),q,V(.006,.040,.040),color[3]<1?color:[.12,.15,.16,1]);
+ drawBox(at(V(.0063,0,0)),q,V(.0008,.016,.016),color);
+ drawBox(at(V(.0063,.016,0)),q,V(.0008,.003,.024),color);
+}
+function drawCutters(){
+ for(const g of groups){if(!renderGroupVisible(g))continue;for(const part of g.parts){
+  if(!validCutterConfig(part.mood.cutter))continue;
+  const run=cutterRuns.get(part.id),active=!!run?.enabled,color=run?.status?.includes('ocupada')||run?.status?.startsWith('Sin energía')?[1,.18,.08,1]:active?[1,.48,.09,1]:[.32,.25,.14,1];drawCutterHead(partPose(g,part),part.mood.cutter,color);
+  if(active&&run.beam){const hit={g,part},origin=cutterPose(hit).origin;drawLines([origin,run.beam.end],[1,.4,.07,1]);}
+ }}
+}
+
 function drawWorkshop(){
+ drawCutters();
  // Furniture is drawn once by drawStoryWorld using the same oriented solids
  // as its Cannon colliders. Only fitted-piece indicators are drawn here.
  for(const g of groups)for(const part of g.parts)if(part.mood.workshop&&QBitsWorkshop.hasSensor(part)){const pose=partPose(g,part),face=sensorFace(part),point=add(pose.p,pose.q.vmult(add(face.center,mul(face.normal,.004)))),r=sensorTarget(part),tipQ=Q();tipQ.setFromVectors(V(1,0,0),face.normal);drawBox(point,pose.q.mult(tipQ),V(.009,.023,.023),r?[.25,.8,.49,1]:[.7,.57,.25,1]);if(altDown()&&sensorConfig(part).mode==='laser'){const beam=sensorBeam({g,part,...pose},sensorConfig(part).range,new Set(rotorConnectedGroups([g]).map(member=>member.body)));drawLines([beam.origin,beam.end],[1,.24,.12,1]);}if(r){const tip=sensorNearest(pose,r).point;drawLines([point,tip],[.2,.7,.43,.7]);}}
@@ -12698,6 +12843,7 @@ const SCENE_AUTHORING_CATALOG=Object.freeze([
  {id:'pyramid',label:'Pirámide',category:'Piezas',kind:'piece'},
  {id:'tetra',label:'T-bit · tetraedro',category:'Piezas',kind:'piece'},
  {id:'coupler',label:'Enganche',category:'Piezas',kind:'piece'},
+ {id:'cutter',label:'Láser de corte · cubo adaptable',category:'Mecanismos',kind:'blueprint'},
  {id:'arm',label:'Brazo robótico · blueprint nativo',category:'Mecanismos',kind:'blueprint'},
  {id:'servo-pivot',label:'Servo pivote',category:'Mecanismos',kind:'blueprint'},
  {id:'servo-hinge',label:'Servo bisagra',category:'Mecanismos',kind:'blueprint'},
@@ -12710,7 +12856,7 @@ const SCENE_AUTHORING_CATALOG=Object.freeze([
 // Authoring uses the same live 3D placement as the native Q-bits creator.
 // A visual preview is not a physical body; only the confirmed click allocates IDs.
 function sceneAuthoringRecipe(id){
- return id==='arm'?robotArmBlueprintTemplate():
+ return id==='cutter'?cutterBlueprintTemplate():id==='arm'?robotArmBlueprintTemplate():
   id==='servo-pivot'?servoBlueprintTemplate('pivot'):
   id==='servo-hinge'?servoBlueprintTemplate('hinge'):
   id==='propeller'?propellerBlueprintTemplate(false):
@@ -12813,7 +12959,7 @@ function spawnSceneAuthoringItem(id,xyz,angle=0){
   if(!validPose(g,g.body.position,g.body.quaternion)){removeGroup(g);return {ok:false,error:'No hay espacio válido para esa pieza.'};}
   result=g;
  }else{
-  const recipe=id==='arm'?robotArmBlueprintTemplate():
+  const recipe=id==='cutter'?cutterBlueprintTemplate():id==='arm'?robotArmBlueprintTemplate():
    id==='servo-pivot'?servoBlueprintTemplate('pivot'):
    id==='servo-hinge'?servoBlueprintTemplate('hinge'):
    id==='propeller'?propellerBlueprintTemplate(false):

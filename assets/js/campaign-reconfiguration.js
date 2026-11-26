@@ -82,6 +82,7 @@
     const outputs=paths.map(path=>{
       const p=copy(first);delete p.id;p.shape=shape;p.weight=weight/paths.length;
       p.mood.energy=energy;p.mood.matter={...origin,path};
+      if(parts.some(part=>part.mood.cutEnergyScale!==undefined))p.mood.cutEnergyScale=parts.reduce((sum,part)=>sum+(part.mood.cutEnergyScale??1),0)/paths.length;
       p.mood.name=origin.name+(path?' · '+(Number(path[0])+1)+(path[1]||''):'');
       // Recombination cannot erase exhaustion, agitation or an active rest episode.
       for(const key of ['restLeft','restTotal','agitation','severity','strikes'])p.mood[key]=Math.max(...parts.map(part=>part.mood[key]||0));

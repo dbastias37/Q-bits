@@ -71,3 +71,7 @@ Para el siguiente bloque deben implementarse estaciones como blueprints hechos c
 `node --test tests/scene-files.test.cjs` cubre ida y vuelta del formato, checksum, importación alterada, aislamiento de ranuras y estabilidad frente al orden de claves. Las comprobaciones de sintaxis y la verificación de empaquetado se pueden ejecutar por separado. **No se afirma una prueba completa en Chromium ni la suite del juego en este entorno**, que sólo dispone del código obtenido mediante el conector de GitHub.
 
 Las pruebas nuevas de autoría están en `tests/scene-authoring.test.cjs` y `tests/scene-editor-native.test.cjs`. Comprueban el formato real de guardado vacío, referencias de marcador, retrocompatibilidad e integridad. Su ejecución en la suite completa y una sesión gráfica siguen pendientes de certificación. La rama `main` mantiene las modificaciones aisladas en módulos nuevos y el registro de sus scripts en `index.html`.
+
+## Láser de corte
+
+F8 → Mecanismos → Láser de corte coloca un cubo adaptado mediante el fantasma 3D. Clic derecho permite iniciar, detener, elegir cara y alternar corte de cubo o pirámide. La escena exportada conserva su configuración; al restaurar queda apagado. Consulta [la guía del cortador](LASER_CORTE_QBITS.md).

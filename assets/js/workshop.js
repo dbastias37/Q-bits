@@ -75,7 +75,7 @@
  function hasSensor(part){const raw=part?.mood?.workshop;return raw?.sensor===true&&stateValid(part,raw);}
  function batteryCapacity(part){return SPEC.battery[partState(part).battery];}
  function movementFactors(part){const state=partState(part);return {speed:SPEC.speed[state.movement],energy:SPEC.movementEnergy[state.movement],grip:SPEC.grip[state.lightweight],load:SPEC.load[state.lightweight]};}
- function hasAdaptation(part){if(part?.mood?.trajectory!==undefined)return true;const raw=part?.mood?.workshop;if(!raw)return false;if(!stateValid(part,raw))return true;return raw.sensor||raw.battery>1||raw.lightweight>1||raw.movement>1;}
+ function hasAdaptation(part){if(part?.mood?.trajectory!==undefined||part?.mood?.cutter!==undefined)return true;const raw=part?.mood?.workshop;if(!raw)return false;if(!stateValid(part,raw))return true;return raw.sensor||raw.battery>1||raw.lightweight>1||raw.movement>1;}
  function trajectoryState(part){
   const data=part?.mood?.trajectory;if(!record(data)||data.version!==1||!Number.isInteger(data.level)||data.level<1||data.level>3||!['beacon','receiver'].includes(data.role)||!Number.isInteger(data.face)||data.face<0||data.face>5||data.routeId!==null&&(typeof data.routeId!=='string'||!/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$/.test(data.routeId)))return null;
   if(Object.keys(data).some(key=>!['version','level','face','role','routeId'].includes(key)))return null;
@@ -91,6 +91,7 @@
  function planPartUpgrade(part,patch,rawProfile){
   const fail=error=>({error});
   if(!record(part)||!Number.isSafeInteger(part.id)||part.id<1||!Number.isFinite(part.weight)||part.weight<=0||part.weight>128||!['cube','pyramid','tetra','coupler'].includes(part.shape||'cube')||!record(part.mood)||!Number.isFinite(part.mood.energy)||part.mood.energy<0||part.mood.energy>1)return fail('La pieza tiene datos inválidos.');
+  if(part.mood.cutter)return fail('Retira el láser desde su menú antes de aplicar otra adaptación.');
   if(part.mood.production)return fail('La materia de los pedidos no admite adaptaciones.');
   if(part.mood.gripper)return fail('El cubo de agarre mantiene su función. Usa un cubo normal para otra adaptación.');
   if(part.mood.externalBattery)return fail('Usa los controles de batería: una batería externa no admite adaptaciones de Q-bit.');

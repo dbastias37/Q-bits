@@ -2,6 +2,16 @@
 
 Actualizado: 26 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
+## Primera pieza industrial · cubo láser de corte (26 nov 2026)
+
+Base: `2f09a56`, editor 3D y corrección de guardado durante colocación. Se implementa únicamente el cortador adaptable al Q-bit. F8 → Mecanismos y Q → Banco rápido ofrecen su blueprint físico; clic derecho en un cubo libre permite adaptar su cara apuntada conservando ID, materia y carga. El cabezal y su fantasma azul reutilizan el render del juego. Controles de iniciar/detener/reiniciar, seis caras, alcance y corte cubo→6 pirámides o pirámide→2 triangulares. R reinicia el proceso sin recuperar material consumido.
+
+Corte de 4 s a 2 W, alimentación interna o externa por cable, primer sólido como oclusor, espera sin consumo ante salida ocupada y sustitución atómica del original. Conserva origen, masa y julios repartiendo también la capacidad de los descendientes. Tomar el emisor lo detiene; pausa, agotamiento y objetivos retirados no duplican materia. Guardados de banco, escenas e inventarios y recetas de mecanismos incluyen la adaptación; restaurar deja el cortador apagado y el original intacto. Detección de emisores activos a 30 Hz y validación final antes de transformar. No se amplía la campaña ni se crea la ensambladora.
+
+**Verificación:** 14 pruebas específicas con Cannon y recorrido del editor; reproducción GLES de cuatro vistas reales sin errores; shaders/foco/posprocesado aprobados. La regresión general aprobó **1.739/1.739** pruebas; las vistas GLES también pasan en WebGL 1 y 2. No equivale a una partida manual en navegador. [Uso, límites y comandos](LASER_CORTE_QBITS.md).
+
+**Siguiente pieza, pendiente de indicación del usuario:** máquina cúbica de dos entradas y una salida, puertos con ancho y altura compatibles con las cintas y encaje mediante blueprint azul.
+
 ## Editor de escenas · colocación 3D en vivo (26 nov 2026)
 
 En `main` el Editor de escenas ofrece una **sala vacía** separada de las partidas normales y un **catálogo lateral accesible con F8**. Seleccionar una pieza o un blueprint vuelve inmediatamente a la sala: el motor usa su sistema existente de **fantasma 3D azul (válido) / rojo (bloqueado)**, proyección sobre superficies, cuadrícula con Shift, giro de 90° con rueda o giro libre con Shift + rueda. **Clic izquierdo coloca la pieza física y mantiene el pincel; clic derecho / Esc cancela.** Ya no existen campos de coordenadas para colocar objetos.
