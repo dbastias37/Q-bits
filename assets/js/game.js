@@ -11786,7 +11786,7 @@ function tickContactSensors(dt){
 // Each stripe performs one atomic contact cut. Passage marks belong to the
 // material, so another emitter on the same stripe or a reload cannot recut it.
 const cutterRuns=new Map(),cutterPassParts=new Set(),cutterEffects=[];
-const CUTTER_RANGE=.5,CUTTER_HALF_HEIGHT=.052,CUTTER_JOULES=8;
+const CUTTER_RANGE=.5,CUTTER_HALF_HEIGHT=.052,CUTTER_JOULES=8,CUTTER_FLASH_SECONDS=.48;
 function validCutterConfig(c){
  if(!c||typeof c!=='object'||Array.isArray(c)||!Number.isInteger(c.face)||c.face<0||c.face>=6)return false;
  return c.version===2?Object.keys(c).every(k=>['version','face'].includes(k)):c.version===1&&[25,50,100].includes(c.range)&&['cube','pyramid'].includes(c.mode)&&Object.keys(c).every(k=>['version','face','range','mode'].includes(k));
@@ -11801,7 +11801,7 @@ function adaptCutter(hit){
  if(!canAdaptCutter(hit)){announce('Usa un cubo libre, sin otras adaptaciones.');return false;}
  const cfg=defaultCutterConfig();
  if(hit.point){const pose=partPose(hit.g,hit.part),local=pose.q.inverse().vmult(sub(hit.point,pose.p));cfg.face=unitProfile('cube').faceNormals.reduce((best,n,i,all)=>n.dot(local)>all[best].dot(local)?i:best,0);}
- hit.part.mood.cutter=cfg;redraw=true;announce('Láser adaptado · clic derecho para encender · corte automático al contacto');return true;
+ hit.part.mood.cutter=cfg;redraw=true;announce('Láser adaptado · coloca otro cubo láser enfrente para activar el corte');return true;
 }
 function cutterLocalCenter(cfg){return unitProfile('cube').faceCenters[cfg.face];}
 function cutterPose(hit){
@@ -11812,8 +11812,25 @@ function cutterBusy(g){return !!(g.robotHeld||g.blueprintJob||g.haulJob||g.route
 function cutterMaterial(target){
  return !!target&&target.g.body.world===world&&target.g.parts.length===1&&['cube','pyramid','tetra'].includes(target.part.shape)&&!cutterBusy(target.g)&&!rotorForGroup(target.g)&&!target.part.mood.gripper&&!target.part.mood.externalBattery&&!target.part.mood.production&&!QBitsWorkshop.hasAdaptation(target.part);
 }
-function cutterBeam(hit){
- const frame=cutterPose(hit);return {...frame,end:add(frame.origin,mul(frame.axis,CUTTER_RANGE)),up:frame.q.vmult(V(0,1,0)),normal:frame.q.vmult(V(0,0,1))};
+function cutterBeam(hit,opposite=null){
+ const frame=cutterPose(hit),distance=opposite?sub(cutterPose(opposite).origin,frame.origin).dot(frame.axis):CUTTER_RANGE;
+ return {...frame,distance,end:add(frame.origin,mul(frame.axis,distance)),up:frame.q.vmult(V(0,1,0)),normal:frame.q.vmult(V(0,0,1))};
+}
+// Only one emitter cuts. The opposing orange face completes the circuit.
+function cutterPairGeometry(hit,other){
+ if(!hit||!other||hit.part.id===other.part.id||!validCutterConfig(other.part.mood.cutter))return null;
+ const a=cutterPose(hit),b=cutterPose(other),delta=sub(b.origin,a.origin),distance=delta.dot(a.axis);
+ if(distance<=.002||distance>CUTTER_RANGE+1e-4||a.axis.dot(b.axis)>-.995)return null;
+ return sub(delta,mul(a.axis,distance)).length()<=.015?distance:null;
+}
+function cutterOpposite(hit){
+ let chosen=null,nearest=Infinity;
+ for(const g of groups){if(g===hit.g||cutterBusy(g))continue;
+  for(const part of g.parts){if(!validCutterConfig(part.mood.cutter))continue;
+   const receiver={g,part},distance=cutterPairGeometry(hit,receiver);
+   if(distance!==null&&distance<nearest){nearest=distance;chosen=receiver;}
+  }
+ }return chosen;
 }
 function cutterStripeMark(beam){return {origin:beam.origin.toArray(),axis:beam.axis.toArray(),normal:beam.normal.toArray()};}
 function cutterSameStripe(mark,beam){
@@ -11836,34 +11853,44 @@ function cutterOutputPoses(target,plan){
  return plan.outputs.map((part,i)=>({...part,p:add(pose.p,pose.q.vmult(local[i].p)),q:pose.q.mult(local[i].q)}));
 }
 function cutterContact(target,beam,previous){
- const curtain={p:add(beam.origin,mul(beam.axis,CUTTER_RANGE/2)),q:beam.q,half:V(CUTTER_RANGE/2,CUTTER_HALF_HEIGHT,.0015)},current=partPose(target.g,target.part),box=collisionPoseBounds(curtain);
+ const curtain={p:add(beam.origin,mul(beam.axis,beam.distance/2)),q:beam.q,half:V(beam.distance/2,CUTTER_HALF_HEIGHT,.0015)},current=partPose(target.g,target.part),box=collisionPoseBounds(curtain);
  const inverse=beam.q.inverse(),now=inverse.vmult(sub(current.p,beam.origin)),before=previous?inverse.vmult(sub(previous.p,beam.origin)):now,radius=.08;
- if(Math.max(now.x,before.x)<-radius||Math.min(now.x,before.x)>CUTTER_RANGE+radius||Math.min(now.y,before.y)>CUTTER_HALF_HEIGHT+radius||Math.max(now.y,before.y)<-CUTTER_HALF_HEIGHT-radius||Math.min(now.z,before.z)>radius||Math.max(now.z,before.z)<-radius)return null;
+ if(Math.max(now.x,before.x)<-radius||Math.min(now.x,before.x)>beam.distance+radius||Math.min(now.y,before.y)>CUTTER_HALF_HEIGHT+radius||Math.max(now.y,before.y)<-CUTTER_HALF_HEIGHT-radius||Math.min(now.z,before.z)>radius||Math.max(now.z,before.z)<-radius)return null;
  const travel=previous?current.p.distanceTo(previous.p):0,turn=previous?2*Math.acos(Math.min(1,Math.abs(current.q.x*previous.q.x+current.q.y*previous.q.y+current.q.z*previous.q.z+current.q.w*previous.q.w))):0,steps=Math.min(48,Math.max(1,Math.ceil((travel+turn*.08)/.008)));
  for(let i=0;i<=steps;i++){
   const f=i/steps,p=previous?add(previous.p,mul(sub(current.p,previous.p),f)):current.p,q=previous?slerp(previous.q,current.q,f):current.q,pose={part:target.part,p,q};
   if(boundsOverlap(box,collisionPoseBounds(pose))&&obbOverlap(curtain,pose,0))return pose;
  }return null;
 }
-function cutterRayDistance(hit,beam,height,distance=CUTTER_RANGE,ignore=null){
+function cutterRayDistance(hit,beam,height,distance=CUTTER_RANGE,ignore=null,receiver=null){
  const start=add(beam.origin,mul(beam.up,height));let stop=distance;
  world.raycastAll(start,add(start,mul(beam.axis,distance)),{skipBackfaces:false},result=>{
   if(!result.body.collisionFilterGroup)return;const g=result.body.qubitGroup;
-  if(g){if(g===ignore||g.parts.every(part=>part.id===hit.part.id||cutterMaterial({g,part})))return;
+  if(g){if(g===ignore||g===receiver?.g||g.parts.every(part=>part.id===hit.part.id||cutterMaterial({g,part})))return;
    for(const pose of physicalGroupPoses(g)){if(pose.part?.id===hit.part.id)continue;const ray=pose.half?rayPuzzleBox(start,beam.axis,pose,distance):rayPart(start,beam.axis,pose,distance)?.distance;if(ray!==null&&ray!==undefined)stop=Math.min(stop,ray);}
   }else stop=Math.min(stop,result.distance);
  });return stop;
 }
 function cutterOccluded(hit,target,beam,contact){
- const local=beam.q.inverse().vmult(sub(contact.p,beam.origin)),height=Math.max(-CUTTER_HALF_HEIGHT+.001,Math.min(CUTTER_HALF_HEIGHT-.001,local.y)),distance=Math.max(0,Math.min(CUTTER_RANGE,local.x));
+ const local=beam.q.inverse().vmult(sub(contact.p,beam.origin)),height=Math.max(-CUTTER_HALF_HEIGHT+.001,Math.min(CUTTER_HALF_HEIGHT-.001,local.y)),distance=Math.max(0,Math.min(beam.distance,local.x));
  return cutterRayDistance(hit,beam,height,distance,target.g)<distance-1e-6;
 }
 function setCutterEnabled(id,enabled){
  const hit=rotorPart(id);if(!hit||!validCutterConfig(hit.part.mood.cutter)||story.scene!=='lab'||puzzle.active)return false;
- if(!enabled){cutterRuns.delete(id);redraw=true;return true;}
+ if(!enabled){
+  const current=cutterRuns.get(id);cutterRuns.delete(id);
+  if(current?.pairId!==undefined&&cutterRuns.get(current.pairId)?.pairId===id)cutterRuns.delete(current.pairId);
+  redraw=true;return true;
+ }
+ if(cutterRuns.get(id)?.enabled)return true;
  if(cutterBusy(hit.g)){announce('Suelta el láser y termina su movimiento antes de iniciar.');return false;}
+ const opposite=cutterOpposite(hit);
+ if(!opposite){announce('Se necesitan 2 cubos láser enfrentados para activarse · alinea las caras naranjas (máximo 50 cm).');return false;}
+ if(cutterRuns.get(opposite.part.id)?.enabled){announce('El cubo láser opuesto ya pertenece a otra pareja activa.');return false;}
  if(gripperSupply(hit).storedJ<CUTTER_JOULES){announce('Láser sin energía · requiere 8 J por corte.');return false;}
- cutterRuns.set(id,{enabled:true,previous:new Map(),beam:null,status:'Esperando pieza · corte automático'});redraw=true;return true;
+ cutterRuns.set(id,{enabled:true,role:'source',pairId:opposite.part.id,previous:new Map(),beam:null,status:'Esperando pieza · corte automático'});
+ cutterRuns.set(opposite.part.id,{enabled:true,role:'receiver',pairId:id,status:'Receptor activo · corte automático'});
+ redraw=true;return true;
 }
 function tickCutters(dt){
  if(!Number.isFinite(dt)||dt<=0||simulationSuspended())return;
@@ -11873,16 +11900,27 @@ function tickCutters(dt){
   if(!hit.part.mood.cutPasses.length){delete hit.part.mood.cutPasses;cutterPassParts.delete(id);}
  }
  for(const [id,run]of cutterRuns){
+  if(run.role==='receiver')continue;
   const hit=rotorPart(id);
-  if(!hit||!validCutterConfig(hit.part.mood.cutter)){cutterRuns.delete(id);continue;}
+  if(!hit||!validCutterConfig(hit.part.mood.cutter)){cutterRuns.delete(id);cutterRuns.delete(run.pairId);continue;}
   if(!run.enabled)continue;
-  if(story.scene!=='lab'||puzzle.active||cutterBusy(hit.g)){run.enabled=false;run.beam=null;run.status='Detenido · vuelve a iniciar al soltar';continue;}
-  const beam=run.beam=cutterBeam(hit),previous=run.previous;
-  run.visualLeft=(run.visualLeft||0)-dt;if(run.visualLeft<=0){run.rays=new Map([-1,-.5,0,.5,1].map(h=>[h,cutterRayDistance(hit,beam,h*CUTTER_HALF_HEIGHT)]));run.visualLeft=1/30;}
+  const opposite=rotorPart(run.pairId),peer=cutterRuns.get(run.pairId);
+  if(!opposite||!peer||cutterPairGeometry(hit,opposite)===null){
+   run.enabled=false;run.beam=null;run.status='Detenido · falta cubo láser opuesto alineado';
+   if(peer){peer.enabled=false;peer.status=run.status;}
+   announce('Láser detenido · vuelve a enfrentar las dos caras naranjas.');redraw=true;continue;
+  }
+  if(story.scene!=='lab'||puzzle.active||cutterBusy(hit.g)||cutterBusy(opposite.g)){
+   run.enabled=false;run.beam=null;run.status='Detenido · vuelve a iniciar al soltar';
+   peer.enabled=false;peer.status=run.status;continue;
+  }
+  const beam=run.beam=cutterBeam(hit,opposite),previous=run.previous;
+  run.visualLeft=(run.visualLeft||0)-dt;
+  if(run.visualLeft<=0){run.rayLength=cutterRayDistance(hit,beam,0,beam.distance,null,opposite);run.visualLeft=1/30;}
   run.previous=new Map();run.status='Esperando pieza · corte automático';
   // Query only the stripe's neighbourhood; keep last-step candidates once more
   // to sweep fast departures. No global per-piece scan or persistent history.
-  const region=collisionPoseBounds({p:add(beam.origin,mul(beam.axis,CUTTER_RANGE/2)),q:beam.q,half:V(CUTTER_RANGE/2,CUTTER_HALF_HEIGHT,.0015)}),margin=Math.max(.15,dt*8),bodies=[];
+  const region=collisionPoseBounds({p:add(beam.origin,mul(beam.axis,beam.distance/2)),q:beam.q,half:V(beam.distance/2,CUTTER_HALF_HEIGHT,.0015)}),margin=Math.max(.15,dt*8),bodies=[];
   world.broadphase.aabbQuery(world,new CANNON.AABB({lowerBound:sub(region.min,V(margin,margin,margin)),upperBound:add(region.max,V(margin,margin,margin))}),bodies);
   const nearby=new Set(bodies.map(b=>b.qubitGroup).filter(g=>g&&g!==hit.g&&g.parts.length===1)),candidateGroups=new Set(nearby);
   for(const old of previous.values())if(old.g.body.world===world)candidateGroups.add(old.g);
@@ -11902,18 +11940,19 @@ function tickCutters(dt){
    try{for(const part of output){part.mood.cutPasses=marks;made.push(makeGroup([{...part,id:allocateUnitId()}],Q(),add(velocity,spin.cross(sub(part.p,center))),spin));}}
    catch(error){for(const g of made)removeGroup(g);makeGroup(original,Q(),velocity,spin);run.enabled=false;run.status='Corte cancelado · pieza recuperada';break;}
    spendGripperEnergy(hit,CUTTER_JOULES);
-   if(!output.length){cutterEffects.push({p:pose.p.clone(),q:pose.q.clone(),left:.25});if(cutterEffects.length>64)cutterEffects.shift();}
-   run.status=output.length?'Corte completo · esperando otra pieza':'Pieza mínima desintegrada';redraw=true;
+   if(!output.length){cutterEffects.push({p:pose.p.clone(),q:pose.q.clone(),left:CUTTER_FLASH_SECONDS});if(cutterEffects.length>64)cutterEffects.shift();}
+    run.status=output.length?'Corte completo · esperando otra pieza':'Pieza mínima desintegrada';redraw=true;
+   }
+   peer.enabled=run.enabled;peer.status=run.status;
   }
  }
-}
 function showCutterMenu(hit){
  const live=rotorPart(hit.part.id);if(!live||!validCutterConfig(live.part.mood.cutter))return;
  const run=cutterRuns.get(live.part.id),active=!!run?.enabled,point=partPose(live.g,live.part).p;
  openCommandMenu(point,'Láser de corte · '+(run?.status||'Apagado'),[
   {label:active?'Detener láser':'Iniciar láser',run:()=>{setCutterEnabled(live.part.id,!active);captureMouse();}},
   {label:'Automático: cubo → pirámide → triangular → desaparición',disabled:true,run:()=>{}},
-  {label:'Contacto · 8 J por corte · franja de 50 cm',disabled:true,run:()=>{}},
+  {label:'Dos caras láser enfrentadas · máximo 50 cm · 8 J por corte',disabled:true,run:()=>{}},
   {label:'Tomar cubo / conjunto',disabled:!canCarry(rotorConnectedGroups([live.g]))||hit.distance>2.8,run:()=>{setCutterEnabled(live.part.id,false);takeSelection({...live,point,distance:hit.distance});}},
   {label:'Guardar mecanismo',run:()=>{saveMechanism(live.g);captureMouse();}},
   {label:'Retirar láser · conservar cubo',run:()=>{setCutterEnabled(live.part.id,false);delete live.part.mood.cutter;captureMouse();redraw=true;}},
@@ -11926,13 +11965,37 @@ function drawCutterHead(pose,cfg,color){
  drawBox(at(V(.003,0,0)),q,V(.006,.085,.040),color[3]<1?color:[.12,.15,.16,1]);
  drawBox(at(V(.0063,0,0)),q,V(.0008,.078,.004),color);
 }
+// Shared cylinder mesh with X in [0, 1]: a smooth tubular beam, not five
+// separate rays, with its origin at the centre of the marked cube face.
+let cutterTubeMesh=null;
+function cutterTubeGeometry(){
+ if(cutterTubeMesh)return cutterTubeMesh;
+ const data=[],sides=16,vertex=(x,a)=>{const c=Math.cos(a),s=Math.sin(a);return [x,c,s,0,c,s];};
+ for(let i=0;i<sides;i++){
+  const a=i*2*Math.PI/sides,b=(i+1)*2*Math.PI/sides;
+  for(const v of [vertex(0,a),vertex(1,a),vertex(0,b),vertex(0,b),vertex(1,a),vertex(1,b)])data.push(...v);
+ }
+ cutterTubeMesh={buffer:buffer(data),count:data.length/6};return cutterTubeMesh;
+}
+function drawCutterTube(beam,rayLength){
+ const length=Math.max(0,Math.min(beam.distance,rayLength));
+ if(length<.001)return;
+ const mesh=cutterTubeGeometry();
+ drawAsset(mesh,beam.origin,beam.q,V(length,.0078,.0078),[1,.43,.07,1],3);
+ drawAsset(mesh,beam.origin,beam.q,V(length,.0048,.0048),[1,.76,.26,1],3);
+}
 function drawCutters(){
  for(const g of groups){if(!renderGroupVisible(g))continue;for(const part of g.parts){
   if(!validCutterConfig(part.mood.cutter))continue;
   const run=cutterRuns.get(part.id),active=!!run?.enabled,color=run?.status?.includes('ocupada')||run?.status?.startsWith('Sin energía')?[1,.18,.08,1]:active?[1,.48,.09,1]:[.32,.25,.14,1];drawCutterHead(partPose(g,part),part.mood.cutter,color);
-  if(active&&run.beam){const beam=cutterBeam({g,part});for(const h of [-1,-.5,0,.5,1]){const shift=mul(beam.up,h*CUTTER_HALF_HEIGHT),distance=run.rays?.get(h)??CUTTER_RANGE;drawLines([add(beam.origin,shift),add(add(beam.origin,mul(beam.axis,distance)),shift)],[1,.4,.07,1]);}}
+  if(active&&run.role==='source'&&run.beam)drawCutterTube(run.beam,run.rayLength??run.beam.distance);
  }}
- for(const effect of cutterEffects){const size=.012*effect.left/.25;for(const v of [V(1,1,1),V(-1,1,-1),V(1,-1,-1),V(-1,-1,1)])drawBox(add(effect.p,effect.q.vmult(mul(v,(.25-effect.left)*.18))),effect.q,V(size,size,size),[1,.62,.18,1]);}
+ for(const effect of cutterEffects){
+  const remaining=Math.max(0,effect.left/CUTTER_FLASH_SECONDS),spread=(1-remaining)*.065,size=.020*Math.sqrt(remaining);
+  drawBox(effect.p,effect.q,V(size*1.5,size*1.5,size*1.5),[1,.52,.12,1]);
+  for(const v of [V(1,1,1),V(-1,1,-1),V(1,-1,-1),V(-1,-1,1),V(1,0,-1),V(-1,0,1)])
+   drawBox(add(effect.p,effect.q.vmult(mul(v,spread))),effect.q,V(size,size,size),[1,.68,.22,1]);
+ }
 }
 
 function drawWorkshop(){
