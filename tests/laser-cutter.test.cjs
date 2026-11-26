@@ -67,7 +67,7 @@ test('incompatible bodies and a real wall occlude a target behind them',()=>{
  assert(t.setCutterEnabled(id,true));tick(t,.1);assert(t.groups.includes(target));}
 });
 test('insufficient energy, manual stop, hidden tab and removed input are safe',()=>{
- const {t,c,target,id,sandbox}=setup();c.parts[0].mood.energy=.00001;assert.equal(t.setCutterEnabled(id,true),false);tick(t);assert(t.groups.includes(target));
+ const {t,c,target,id,sandbox}=setup();c.parts[0].mood.energy=.00001;t.groups.find(g=>g!==c&&g.parts[0].mood.cutter).parts[0].mood.energy=.00001;assert.equal(t.setCutterEnabled(id,true),false);tick(t);assert(t.groups.includes(target));
  c.parts[0].mood.energy=1;assert(t.setCutterEnabled(id,true));sandbox.document.hidden=true;tick(t);assert(t.groups.includes(target));sandbox.document.hidden=false;
  t.setCutterEnabled(id,false);tick(t);assert(t.groups.includes(target));t.setCutterEnabled(id,true);t.removeGroup(target);tick(t);assert.equal(material(t).length,0);
 });
@@ -119,7 +119,7 @@ test('powered conveyor carries one real cube through three mounted stripes: six 
  const load=t.addQubit([path[0].x+.055,path[0].y+.055,0]),root=load.parts[0].id,descendants=()=>t.groups.filter(g=>g.parts[0].id===root||g.parts[0].mood.matter?.root===root);let six=false,twelve=false,done=false;
  assert(t.startConveyor(conveyor));for(const g of emitters)assert(t.setCutterEnabled(g.parts[0].id,true));
  for(let i=0;i<240*6;i++){t.stepPhysics(1/240);const remaining=descendants();six||=remaining.length===6&&remaining.every(g=>g.parts[0].shape==='pyramid');twelve||=remaining.length===12&&remaining.every(g=>g.parts[0].shape==='tetra');
-  assert(remaining.every(g=>g.body.position.y>path[0].y-.02),'matter stays on the moving belt');if(!remaining.length){done=true;break;}}
+  assert(remaining.every(g=>g.body.position.y>path[0].y-.02),'matter stays on moving belt at step '+i+'; groups='+remaining.length+'; stage='+remaining.map(g=>g.parts[0].shape).join(',')+'; y='+remaining.map(g=>g.body.position.y.toFixed(3)).join(',')+'; statuses='+emitters.map(g=>t.cutterRuns.get(g.parts[0].id)?.status).join('|'));if(!remaining.length){done=true;break;}}
  assert(six,'first stripe creates six pyramids');assert(twelve,'second stripe produces twelve smallest pieces');assert(done,'third stripe removes all matter before the end of the belt');assert(conveyor.running);
 });
 
