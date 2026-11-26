@@ -1,5 +1,9 @@
 # Q-bits
 
+### Probar el galpón · La primera línea
+
+En Windows, extrae el ZIP de esta rama y abre **Abrir-galpon.cmd**. Si ya sirves el juego por HTTP, elige **Galpón · primera línea** en el menú principal o visita `/#galpon`. Desde **P → Galpón** puedes iniciar la extracción y montar ocho tramos para entregar doce cubos enfriados. [Controles y guardado](docs/GALPON_PRIMER_CICLO.md) · [Pruebas de la escena](docs/mediciones/galpon-20261126/README.md).
+
 ### Primer ciclo y paseo · 24 de noviembre de 2026
 
 La campaña nueva conserva el despertar y el cuidado, incorpora una primera petición y devolución con reserva finita, y conecta las misiones 1 y 2 mediante una galería acompañada con ventanas a una fábrica decorativa y dos descensos. La instalación se muestra sin explicar su propósito. [Guiones, alcance y pendientes](docs/INICIO_Y_PASEO_20261124.md) · [Verificación de esta entrega](docs/mediciones/inicio-paseo-20261124/README.md). Integración en `main` autorizada el 24 de noviembre de 2026; la comprobación de manejo y fluidez en el dispositivo del jugador sigue pendiente.
@@ -165,7 +169,7 @@ El proceso dura cuatro segundos de simulación y se congela al pausar, consultar
 
 El NPC introduce cada experimento con diálogos que avanzan con E. J abre el catálogo; también está disponible desde los menús. Los descubrimientos se conservan en el progreso existente. Los planos de referencia de un cubo formado por seis pirámides y de una pirámide formada por dos triangulares se añaden a **Formas guardadas**. Para colocar uno: clic derecho en el suelo → Formas guardadas. Para construirlo: reúne piezas compatibles y activa **Integrar cercanos** sobre el blueprint. Guardar un plano no concede cuerpos ni recursos.
 
-El [prompt maestro de campaña](docs/PROMPT_MAESTRO_CAMPANA.md) reúne el lore, el tono del guía, la secuencia posterior, la autonomía, los desafíos y la progresión propuesta. Los niveles 16–20 y las certificaciones Torque I–III están implementados. La [dirección futura](docs/PROMPT_MAESTRO_CAMPANA.md#misiones-grandes-en-galpones) contempla unas diez misiones grandes en galpones con varias máquinas a automatizar, una vez enseñadas y probadas sus mecánicas y materiales. Solo está registrada: no se han creado esas etapas ni fijado su numeración. Coordinación avanzada, temperatura y posjuego siguen pendientes. El taller incorpora calibraciones de batería, estructura ligera y movimiento para las piezas del banco. La [revisión del bloque](docs/REVISION_BLOQUE_III.md) detalla qué se comprobó y qué queda pendiente.
+El [prompt maestro de campaña](docs/PROMPT_MAESTRO_CAMPANA.md) reúne el lore, el tono del guía, la secuencia posterior, la autonomía, los desafíos y la progresión propuesta. Los niveles 16–20 y las certificaciones Torque I–III están implementados. La [dirección futura](docs/PROMPT_MAESTRO_CAMPANA.md#misiones-grandes-en-galpones) contempla unas diez misiones grandes en galpones con varias máquinas a automatizar, una vez enseñadas y probadas sus mecánicas y materiales. La rama de prueba incluye el primer ciclo jugable del galpón y temperatura de productos. La numeración de futuras etapas, su coordinación avanzada y el posjuego siguen pendientes. El taller incorpora calibraciones de batería, estructura ligera y movimiento para las piezas del banco. La [revisión del bloque](docs/REVISION_BLOQUE_III.md) detalla qué se comprobó y qué queda pendiente.
 
 ## Archivos y desarrollo
 

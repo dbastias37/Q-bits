@@ -9739,7 +9739,7 @@ function updateAlphaHUD(){
  for(const machine of arms)for(const rotor of robotArmRotors(machine))for(const g of rotorGroups(rotor))if(g)machineGroups.add(g);
  for(const machine of belts)for(const rotor of conveyorRotors(machine))for(const g of rotorGroups(rotor))if(g)machineGroups.add(g);
  let qCount=0,tCount=0,mCount=0,rCount=0,materialCount=0;for(const g of groups)for(const part of g.parts){if(machineGroups.has(g)){materialCount++;continue;}if(part.mood.production){rCount++;continue;}if(unitShape(part)==='coupler')mCount++;else if(isTBit(part))tCount++;else qCount++;}
- const census=document.querySelector('#alpha-census-text');census.textContent='× '+qCount+' Q'+(tCount?' · '+tCount+' T':'')+(mCount?' · '+mCount+' M':'')+(arms.length?' · '+arms.length+' brazos':'')+(belts.length?' · '+belts.length+' cintas':'')+(rCount?' · '+rCount+' bloques de materia':'');if(pendingDisassemblyCount())census.textContent+=' · '+pendingDisassemblyCount()+' en desarme';if(families.length)census.textContent+=' · '+familyInventoryCount()+' en '+families.length+' familias';census.title=materialCount+' piezas integradas en mecanismos; se conservan al desarmarlos y dentro del límite de la sala.';
+ const census=document.querySelector('#alpha-census-text');census.textContent='× '+qCount+' Q'+(tCount?' · '+tCount+' T':'')+(mCount?' · '+mCount+' M':'')+(arms.length?' · '+arms.length+' brazos':'')+(belts.length?' · '+belts.length+' cintas':'')+(rCount?' · '+rCount+' bloques de materia':'');if(pendingDisassemblyCount())census.textContent+=' · '+pendingDisassemblyCount()+' en desarme';if(families.length)census.textContent+=' · '+familyInventoryCount()+' en '+families.length+(families.length===1?' familia':' familias');census.title=materialCount+' piezas integradas en mecanismos; se conservan al desarmarlos y dentro del límite de la sala.';
  if(!panel.hidden||!commandMenu.hidden||held)return;const h=alphaHit(5);if(!h)return;
  if(h.bp)targetLabel.textContent=h.bp.shape.name+' · '+h.bp.status+' · clic derecho';
  if(h.cooler){const c=h.cooler,values=[...c.entries.values()],remaining=values.length?Math.ceil(Math.max(0,...values.map(v=>(v.duration||c.coolSeconds||alphaSettings.coolSeconds)-v.elapsed))):c.coolSeconds||alphaSettings.coolSeconds;targetLabel.textContent='Enfriador · '+c.occupants+'/'+c.capacity+' · '+(!c.enabled||!alphaSettings.coolingOn?'apagado':values.length&&remaining===0?'listos · energía '+Math.round(alphaSettings.exitEnergy*100)+' %':remaining+' s');}
@@ -10968,8 +10968,9 @@ function updateHangarReadout(){
  }
 }
 function tickHangar(dt){
+ const previousReceived=story.galpon.received;
  tickHangarWorld(dt);tickHangarLine(dt);
- if(simTime>=hangarNextReadout){hangarNextReadout=simTime+.3;updateHangarReadout();}
+ if(story.galpon.received!==previousReceived||simTime>=hangarNextReadout){hangarNextReadout=simTime+.3;updateHangarReadout();}
 }
 function initHangarControls(click){
  click('main-galpon',showHangarMenu);click('galpon-start',requestHangarGame);

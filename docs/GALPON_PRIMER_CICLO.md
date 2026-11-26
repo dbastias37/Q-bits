@@ -12,6 +12,12 @@ Abre el menú principal y elige **Galpón · primera línea**. Empieza con cuatr
 
 Los mandos de selección, agarre, uniones y giro por caras se utilizan también en el galpón. **Esc → Guardar partida** guarda el estado en este navegador. Al probar una segunda variante guarda primero todo lo que quieras conservar: **Nueva partida** solicita reemplazar el guardado del galpón.
 
+## Comprobaciones
+
+La verificación automatizada parte de la pantalla principal y prueba el recorrido hasta recibir doce cubos. El equipo de cuatro y el trabajador individual completaron el mismo pedido. Los ensayos focalizados cubren ocupación de salidas, pausa, reconfiguración, intervención manual, energía y recarga desde otra instancia. [Hitos, capturas y mediciones](mediciones/galpon-20261126/README.md).
+
+El acceso local por `#galpon`, la descarga de los recursos, la apertura de la tableta y la continuación tras recargar se probaron con el servidor PowerShell 7.4.19 en Linux y Chromium. El archivo CMD utiliza Windows PowerShell 5.1. Su apertura desde el Explorador de Windows queda pendiente de prueba en Windows.
+
 ## Punto de continuación para el prompt B
 
 La segunda parte debe partir del guardado que ya alcanzó **Primer ciclo completado**. Reutiliza el mismo equipo, los recursos realmente presentes, las familias y sus miembros, los ocho tramos que el jugador montó, la energía restante y el crédito de los doce orígenes únicos. Lee el estado al abrir el siguiente encargo. Un trabajador adicional, la reserva restante de materia y la carga de cada pieza dependen de lo que hizo el jugador.

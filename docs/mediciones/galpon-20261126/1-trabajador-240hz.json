@@ -1,0 +1,547 @@
+{
+  "node": "v24.22.3",
+  "workers": 1,
+  "physicsHz": 240,
+  "frameHz": 60,
+  "sampleSeconds": 1,
+  "milestones": [
+    {
+      "event": "primera extracción",
+      "seconds": 4
+    },
+    {
+      "event": "primer cubo producido",
+      "seconds": 8
+    },
+    {
+      "event": "tramo 1",
+      "seconds": 304
+    },
+    {
+      "event": "tramo 2",
+      "seconds": 364
+    },
+    {
+      "event": "tramo 3",
+      "seconds": 412
+    },
+    {
+      "event": "tramo 4",
+      "seconds": 456
+    },
+    {
+      "event": "tramo 5",
+      "seconds": 500
+    },
+    {
+      "event": "tramo 6",
+      "seconds": 544
+    },
+    {
+      "event": "tramo 7",
+      "seconds": 588
+    },
+    {
+      "event": "tramo 8",
+      "seconds": 632
+    },
+    {
+      "event": "recepción 1",
+      "seconds": 665
+    },
+    {
+      "event": "recepción 2",
+      "seconds": 667
+    },
+    {
+      "event": "recepción 3",
+      "seconds": 669
+    },
+    {
+      "event": "recepción 4",
+      "seconds": 672
+    },
+    {
+      "event": "recepción 5",
+      "seconds": 674
+    },
+    {
+      "event": "recepción 6",
+      "seconds": 676
+    },
+    {
+      "event": "recepción 7",
+      "seconds": 678
+    },
+    {
+      "event": "recepción 8",
+      "seconds": 680
+    },
+    {
+      "event": "recepción 9",
+      "seconds": 681
+    },
+    {
+      "event": "recepción 10",
+      "seconds": 683
+    },
+    {
+      "event": "recepción 11",
+      "seconds": 685
+    },
+    {
+      "event": "recepción 12",
+      "seconds": 687
+    }
+  ],
+  "samples": [
+    {
+      "seconds": 30,
+      "extracted": 3,
+      "workers": 1,
+      "carrying": 0,
+      "stock": 0,
+      "cubes": 1,
+      "couplers": 2,
+      "built": 0,
+      "received": 0,
+      "running": 0,
+      "energyJ": 179926,
+      "status": "Salida disponible.",
+      "lineStatus": "Fabrica 18 cubos y 12 enganches para el primer tramo."
+    },
+    {
+      "seconds": 60,
+      "extracted": 6,
+      "workers": 1,
+      "carrying": 0,
+      "stock": 0,
+      "cubes": 1,
+      "couplers": 5,
+      "built": 0,
+      "received": 0,
+      "running": 0,
+      "energyJ": 179842.95,
+      "status": "Salida disponible.",
+      "lineStatus": "Fabrica 18 cubos y 12 enganches para el primer tramo."
+    },
+    {
+      "seconds": 90,
+      "extracted": 9,
+      "workers": 1,
+      "carrying": 0,
+      "stock": 0,
+      "cubes": 1,
+      "couplers": 8,
+      "built": 0,
+      "received": 0,
+      "running": 0,
+      "energyJ": 179754.07,
+      "status": "Salida disponible.",
+      "lineStatus": "Fabrica 18 cubos y 12 enganches para el primer tramo."
+    },
+    {
+      "seconds": 120,
+      "extracted": 12,
+      "workers": 1,
+      "carrying": 0,
+      "stock": 0,
+      "cubes": 1,
+      "couplers": 11,
+      "built": 0,
+      "received": 0,
+      "running": 0,
+      "energyJ": 179665.01,
+      "status": "Salida disponible.",
+      "lineStatus": "Fabrica 18 cubos y 12 enganches para el primer tramo."
+    },
+    {
+      "seconds": 150,
+      "extracted": 15,
+      "workers": 1,
+      "carrying": 0,
+      "stock": 0,
+      "cubes": 3,
+      "couplers": 12,
+      "built": 0,
+      "received": 0,
+      "running": 0,
+      "energyJ": 179584.13,
+      "status": "Salida disponible.",
+      "lineStatus": "Fabrica 18 cubos y 12 enganches para el primer tramo."
+    },
+    {
+      "seconds": 180,
+      "extracted": 18,
+      "workers": 1,
+      "carrying": 0,
+      "stock": 0,
+      "cubes": 6,
+      "couplers": 12,
+      "built": 0,
+      "received": 0,
+      "running": 0,
+      "energyJ": 179507.07,
+      "status": "Salida disponible.",
+      "lineStatus": "Fabrica 18 cubos y 12 enganches para el primer tramo."
+    },
+    {
+      "seconds": 210,
+      "extracted": 21,
+      "workers": 1,
+      "carrying": 0,
+      "stock": 0,
+      "cubes": 9,
+      "couplers": 12,
+      "built": 0,
+      "received": 0,
+      "running": 0,
+      "energyJ": 179430.19,
+      "status": "Salida disponible.",
+      "lineStatus": "Fabrica 18 cubos y 12 enganches para el primer tramo."
+    },
+    {
+      "seconds": 240,
+      "extracted": 24,
+      "workers": 1,
+      "carrying": 0,
+      "stock": 0,
+      "cubes": 12,
+      "couplers": 12,
+      "built": 0,
+      "received": 0,
+      "running": 0,
+      "energyJ": 179353.14,
+      "status": "Salida disponible.",
+      "lineStatus": "Fabrica 18 cubos y 12 enganches para el primer tramo."
+    },
+    {
+      "seconds": 270,
+      "extracted": 27,
+      "workers": 1,
+      "carrying": 0,
+      "stock": 0,
+      "cubes": 15,
+      "couplers": 12,
+      "built": 0,
+      "received": 0,
+      "running": 0,
+      "energyJ": 179276.26,
+      "status": "Salida disponible.",
+      "lineStatus": "Fabrica 18 cubos y 12 enganches para el primer tramo."
+    },
+    {
+      "seconds": 300,
+      "extracted": 30,
+      "workers": 1,
+      "carrying": 0,
+      "stock": 0,
+      "cubes": 18,
+      "couplers": 12,
+      "built": 0,
+      "received": 0,
+      "running": 0,
+      "energyJ": 179199.2,
+      "status": "Salida disponible.",
+      "lineStatus": "Fabrica 18 cubos y 12 enganches para el primer tramo."
+    },
+    {
+      "seconds": 330,
+      "extracted": 43,
+      "workers": 1,
+      "carrying": 0,
+      "stock": 0,
+      "cubes": 4,
+      "couplers": 6,
+      "built": 1,
+      "received": 0,
+      "running": 1,
+      "energyJ": 178833.91,
+      "status": "Materia depositada en la cinta.",
+      "lineStatus": "Línea en marcha."
+    },
+    {
+      "seconds": 360,
+      "extracted": 64,
+      "workers": 1,
+      "carrying": 1,
+      "stock": 2,
+      "cubes": 18,
+      "couplers": 12,
+      "built": 1,
+      "received": 0,
+      "running": 1,
+      "energyJ": 178406.35,
+      "status": "Entrada de cinta ocupada o detenida.",
+      "lineStatus": "Línea en marcha."
+    },
+    {
+      "seconds": 390,
+      "extracted": 84,
+      "workers": 1,
+      "carrying": 1,
+      "stock": 0,
+      "cubes": 10,
+      "couplers": 12,
+      "built": 2,
+      "received": 0,
+      "running": 2,
+      "energyJ": 177808.09,
+      "status": "Elevador en marcha.",
+      "lineStatus": "Línea en marcha."
+    },
+    {
+      "seconds": 420,
+      "extracted": 102,
+      "workers": 1,
+      "carrying": 0,
+      "stock": 0,
+      "cubes": 9,
+      "couplers": 0,
+      "built": 3,
+      "received": 0,
+      "running": 3,
+      "energyJ": 177315.68,
+      "status": "Materia depositada en la cinta.",
+      "lineStatus": "Línea en marcha."
+    },
+    {
+      "seconds": 450,
+      "extracted": 123,
+      "workers": 1,
+      "carrying": 1,
+      "stock": 1,
+      "cubes": 18,
+      "couplers": 12,
+      "built": 3,
+      "received": 0,
+      "running": 3,
+      "energyJ": 176833.32,
+      "status": "Entrada de cinta ocupada o detenida.",
+      "lineStatus": "Línea en marcha."
+    },
+    {
+      "seconds": 480,
+      "extracted": 143,
+      "workers": 1,
+      "carrying": 1,
+      "stock": 0,
+      "cubes": 9,
+      "couplers": 12,
+      "built": 4,
+      "received": 0,
+      "running": 4,
+      "energyJ": 176244.62,
+      "status": "Elevador en marcha.",
+      "lineStatus": "Línea en marcha."
+    },
+    {
+      "seconds": 510,
+      "extracted": 164,
+      "workers": 1,
+      "carrying": 1,
+      "stock": 0,
+      "cubes": 7,
+      "couplers": 3,
+      "built": 5,
+      "received": 0,
+      "running": 5,
+      "energyJ": 175683.03,
+      "status": "Salida disponible.",
+      "lineStatus": "Línea en marcha."
+    },
+    {
+      "seconds": 540,
+      "extracted": 184,
+      "workers": 1,
+      "carrying": 1,
+      "stock": 2,
+      "cubes": 18,
+      "couplers": 12,
+      "built": 5,
+      "received": 0,
+      "running": 5,
+      "energyJ": 175223.88,
+      "status": "Elevador en marcha.",
+      "lineStatus": "Línea en marcha."
+    },
+    {
+      "seconds": 570,
+      "extracted": 204,
+      "workers": 1,
+      "carrying": 0,
+      "stock": 0,
+      "cubes": 10,
+      "couplers": 12,
+      "built": 6,
+      "received": 0,
+      "running": 6,
+      "energyJ": 174584.01,
+      "status": "Materia depositada en la cinta.",
+      "lineStatus": "Línea en marcha."
+    },
+    {
+      "seconds": 600,
+      "extracted": 225,
+      "workers": 1,
+      "carrying": 1,
+      "stock": 0,
+      "cubes": 7,
+      "couplers": 5,
+      "built": 7,
+      "received": 0,
+      "running": 7,
+      "energyJ": 174023.27,
+      "status": "Elevador en marcha.",
+      "lineStatus": "Línea en marcha."
+    },
+    {
+      "seconds": 630,
+      "extracted": 245,
+      "workers": 1,
+      "carrying": 0,
+      "stock": 4,
+      "cubes": 18,
+      "couplers": 12,
+      "built": 7,
+      "received": 0,
+      "running": 7,
+      "energyJ": 173581.31,
+      "status": "Materia depositada en la cinta.",
+      "lineStatus": "Línea en marcha."
+    },
+    {
+      "seconds": 660,
+      "extracted": 252,
+      "workers": 1,
+      "carrying": 0,
+      "stock": 0,
+      "cubes": 12,
+      "couplers": 0,
+      "built": 8,
+      "received": 0,
+      "running": 8,
+      "energyJ": 171567.24,
+      "status": "Salida disponible.",
+      "lineStatus": "Línea en marcha."
+    }
+  ],
+  "costs": [
+    {
+      "built": 0,
+      "frames": 18240,
+      "maxBodies": 77,
+      "peakGroups": 31,
+      "frameCpuMsMedian": 0.28,
+      "frameCpuMsP95": 1.44,
+      "drawCalls": 137,
+      "triangles": 2236,
+      "lines": 0
+    },
+    {
+      "built": 1,
+      "frames": 3600,
+      "maxBodies": 79,
+      "peakGroups": 36,
+      "frameCpuMsMedian": 1.32,
+      "frameCpuMsP95": 3.59,
+      "drawCalls": 185,
+      "triangles": 2580,
+      "lines": 0
+    },
+    {
+      "built": 2,
+      "frames": 2880,
+      "maxBodies": 81,
+      "peakGroups": 41,
+      "frameCpuMsMedian": 2.09,
+      "frameCpuMsP95": 3.93,
+      "drawCalls": 244,
+      "triangles": 3080,
+      "lines": 0
+    },
+    {
+      "built": 3,
+      "frames": 2640,
+      "maxBodies": 81,
+      "peakGroups": 44,
+      "frameCpuMsMedian": 2.81,
+      "frameCpuMsP95": 4.62,
+      "drawCalls": 293,
+      "triangles": 3454,
+      "lines": 0
+    },
+    {
+      "built": 4,
+      "frames": 2640,
+      "maxBodies": 83,
+      "peakGroups": 49,
+      "frameCpuMsMedian": 3.48,
+      "frameCpuMsP95": 5.62,
+      "drawCalls": 347,
+      "triangles": 3892,
+      "lines": 0
+    },
+    {
+      "built": 5,
+      "frames": 2640,
+      "maxBodies": 83,
+      "peakGroups": 52,
+      "frameCpuMsMedian": 4.2,
+      "frameCpuMsP95": 7.66,
+      "drawCalls": 396,
+      "triangles": 4266,
+      "lines": 0
+    },
+    {
+      "built": 6,
+      "frames": 2640,
+      "maxBodies": 85,
+      "peakGroups": 57,
+      "frameCpuMsMedian": 4.92,
+      "frameCpuMsP95": 8.39,
+      "drawCalls": 450,
+      "triangles": 4704,
+      "lines": 0
+    },
+    {
+      "built": 7,
+      "frames": 2640,
+      "maxBodies": 85,
+      "peakGroups": 60,
+      "frameCpuMsMedian": 5.44,
+      "frameCpuMsP95": 11.7,
+      "drawCalls": 493,
+      "triangles": 4994,
+      "lines": 0
+    },
+    {
+      "built": 8,
+      "frames": 3300,
+      "maxBodies": 66,
+      "peakGroups": 45,
+      "frameCpuMsMedian": 8.16,
+      "frameCpuMsP95": 15.87,
+      "drawCalls": 503,
+      "triangles": 5110,
+      "lines": 0
+    }
+  ],
+  "description": "Tiempo simulado desde la entrada. Acciones por menú y tableta, DOM/GPU instrumentados. Mediana y p95 de CPU real para navegación y física por fotograma simulado.",
+  "final": {
+    "seconds": 687,
+    "extracted": 252,
+    "workers": 1,
+    "carrying": 0,
+    "stock": 0,
+    "cubes": 0,
+    "couplers": 0,
+    "built": 8,
+    "received": 12,
+    "running": 8,
+    "energyJ": 171528.32,
+    "status": "Salida disponible.",
+    "lineStatus": "Recibido en familia · 12 / 12."
+  },
+  "complete": true
+}
