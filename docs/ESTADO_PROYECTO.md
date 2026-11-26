@@ -1,18 +1,16 @@
 # Q-bits — punto de continuación
 
-Actualizado: 25 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
+Actualizado: 26 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
-## Editor de escenas · sala vacía y marcadores (26 nov 2026)
+## Editor de escenas · núcleo de autoría y trazabilidad (26 nov 2026)
 
-Sobre la primera integración de autoría en `main`, se añadió `emptyData`, que elimina del guardado de sala las piezas, mecanismos y tareas y conserva únicamente los parámetros nativos que requiere el banco. No toma material prestado de la campaña. Se añadieron marcadores de aparición, fuente, destino, recepción, zona de trabajo y nota: identidad estable, XYZ, etiqueta, edición, plano orientativo X/Z y anclaje opcional a una identidad de pieza existente. Las modificaciones de marca se incorporan al código de escena y a las exportaciones, con control de integridad y compatibilidad con archivos sin marcas.
+**`main`: sesión de autoría nativa** accesible desde el menú principal, con sala de banco vacía (cero Q-bits, sin mesa preinstalada), creación y configuración normales, captura directa del mundo físico sin pasar por guardados del banco, restauración de escenas, biblioteca de versiones y transferencia como archivo `.qbits-scene.json` o código completo `QBSCENE1:`. El identificador `QBSC1-` cambia al modificar el estado físico o los marcadores. La fuente del estado serializado sigue siendo el guardado validado de banco, no un sistema alternativo de física.
 
-**Importante:** para crear la sala vacía aún se necesita guardar primero una escena nativa del banco, elegir `Crear escena realmente vacía` y reabrir la versión exportable con Continuar. No hay todavía un botón que inicie directamente una escena 3D vacía, catálogo propio de estaciones industrializadas ni conversor automático a misión. Las marcas no ejecutan reglas. La batería de pruebas nueva `tests/scene-authoring.test.cjs` comprueba el esquema de guardado, pero queda pendiente ejecutar la suite y verificar el flujo visual completo en un navegador. Ver [manual](EDITOR_ESCENAS.md).
+La sesión desactiva las escrituras y autoguardados de partida normal, restaura de manera limpia al salir al menú o entrar en selección, y conserva la campaña y el banco fuera de la edición. El manifiesto describe grupos, formas, masa nominal, IDs, ubicaciones, fracciones de carga, componentes y mecanismos. Se incorporan marcas de autoría (spawn, origen, destino, recepción, trabajo y nota), edición y plano X/Z, IDs estables, coordenadas y referencias opcionales a pieza física, verificadas antes de exportar.
 
-## Editor de escenas · autoría y exportación inicial (26 nov 2026)
+**Pruebas añadidas** en `tests/scene-files.test.cjs`, `tests/scene-authoring.test.cjs` y `tests/scene-editor-native.test.cjs`, incluyendo guardado/lectura, integridad, cero materia, vínculo de marcadores, restauración y aislamiento de ranuras. Sintaxis de los módulos y núcleo y pruebas de funciones en memoria con validador nativo verificadas. **No se ha ejecutado la suite completa ni QA visual de navegador** en esta sesión; los tests de física están añadidos, pendientes de ejecución en un entorno Node completo.
 
-Integrado en `main` un acceso `Editor de escenas` desde el menú principal. Reutiliza el banco 3D y su catálogo nativo, permite conservar una escena independiente de campaña y banco, importar/exportar `.qbits-scene.json`, copiar un resumen de materia y configuraciones o un código completo `QBSCENE1:`, y comparar un identificador corto `QBSC1-...`. La escena se valida mediante el guardado nativo; al salir se restituye la ranura de banco anterior. Ver [EDITOR_ESCENAS.md](EDITOR_ESCENAS.md).
-
-**Alcance:** base de autoría con captura del último guardado del banco, no un constructor vacío de escenario ni un convertidor de reglas de misión. La transición automática entre herramientas, el catálogo completo de infraestructura como blueprints, marcadores de aparición/recepción y la transformación escena→misión siguen pendientes. No se atribuyen pruebas Chromium ni suite global a este bloque; hubo comprobaciones de sintaxis y de la serialización con validador de prueba. El galpón anterior sigue en PR de prueba y no se integró a main.
+**Pendiente**: catálogo de infraestructura hecha de piezas/blueprints nativos, puertos y recetas de estaciones industriales, colocación de marcadores mediante interacción 3D directa, presupuesto de materia inicial, creación de terreno y conversión automática de escena a misión con objetivos ejecutables. Las marcas ahora son autoría, no activadores jugables. La cadena anterior permanece en su PR separado, no se mezcla en `main`. Ver [EDITOR_ESCENAS.md](EDITOR_ESCENAS.md).
 
 ## Manipulación · giro por caras de la pieza sostenida
 
