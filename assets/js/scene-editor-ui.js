@@ -6,6 +6,7 @@
  // Recover the ordinary bank slot if a previous editor session ended unexpectedly.
  try {const raw=sessionStorage.getItem(BACKUP);if(raw!==null){const old=JSON.parse(raw);if(old.exists)localStorage.setItem(LAB_KEY,old.raw);else localStorage.removeItem(LAB_KEY);sessionStorage.removeItem(BACKUP);}}catch(e){console.error('Escena: recuperación de banco pendiente',e);}
  let active=false,selected=null,lastCheckpointRaw=null;
+ let draftMarkers=[];
  const style=document.createElement('style');
  style.textContent=`
  #scene-editor-dialog{position:fixed;inset:0;z-index:135;background:#f8faf9f7;color:#293c36;display:grid;place-items:center;padding:16px;font:13px/1.55 var(--font-menu),Arial,sans-serif}
@@ -14,6 +15,10 @@
  .scene-editor-shell h2{font-size:22px;margin:0 0 6px}.scene-editor-shell p{margin:8px 0 13px}
  .scene-editor-shell textarea,.scene-editor-shell input[type=text]{width:100%;border:1px solid #bfcfc5;background:#fff;padding:9px;font:inherit;user-select:text}
  .scene-editor-shell textarea{height:105px;resize:vertical}
+ .scene-editor-shell select,.scene-editor-shell input[type=number]{border:1px solid #bfcfc5;padding:7px;background:#fff;color:inherit;max-width:100%}
+ .scene-marker-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+ #scene-editor-marker-list{max-height:155px;overflow:auto;padding:6px 0}
+ #scene-editor-marker-list button{margin-left:10px;border:0;background:none;color:#a32f34;text-decoration:underline;cursor:pointer}
  .scene-editor-actions{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
  .scene-editor-actions button,#scene-editor-toolbar button{border:1px solid #b2c5b9;background:white;color:#243d32;padding:8px 12px;cursor:pointer;font:inherit}
  .scene-editor-actions button.primary{background:#36594c;color:#fff}
@@ -39,9 +44,17 @@
  <label>Notas de diseño<textarea id="scene-editor-notes" placeholder="Intención, elementos iniciales, restricciones, objetivos..."></textarea></label>
  <div class="scene-editor-actions">
  <button id="scene-editor-new" class="primary">Nueva escena en el banco</button>
+ <button id="scene-editor-blank">Crear escena realmente vacía</button>
  <button id="scene-editor-open">Continuar escena guardada</button>
  <button id="scene-editor-import">Importar archivo</button>
  <button id="scene-editor-close">Volver</button></div>
+ <h3>Marcas del nivel</h3>
+ <p>Define puntos de aparición, fuentes, destinos y receptores. Sus coordenadas se conservan aunque muevas las máquinas; las reglas futuras podrán identificarlos por código.</p>
+ <label>Nombre de marca<input id="scene-marker-name" type="text" maxlength="80" placeholder="Receptor de productos"></label>
+ <label>Función<select id="scene-marker-role"><option value="spawn">Inicio del jugador</option><option value="source">Origen de materia</option><option value="destination">Destino</option><option value="receiver">Recepción</option><option value="workzone">Zona de trabajo</option><option value="note">Referencia visual</option></select></label>
+ <div class="scene-marker-grid"><label>X<input id="scene-marker-x" type="number" step=".1" value="0"></label><label>Y<input id="scene-marker-y" type="number" step=".1" value="0"></label><label>Z<input id="scene-marker-z" type="number" step=".1" value="0"></label></div>
+ <div class="scene-editor-actions"><button id="scene-marker-from-player">Usar posición del jugador guardada</button><button id="scene-marker-add">Añadir marca</button><button id="scene-markers-save">Guardar marcas en la escena</button></div>
+ <div id="scene-editor-marker-list" aria-live="polite"></div>
  <div class="scene-editor-actions">
  <button id="scene-editor-copy">Copiar resumen e inventario</button>
  <button id="scene-editor-copy-full">Copiar código completo</button>
@@ -66,8 +79,19 @@
  if(selected&&items.some(item=>item.code===selected.code))select.value=selected.code;
  $('scene-editor-code').textContent=selected?'Versión de escena: '+selected.code+' · '+selected.inventory.pieces+' piezas':'Sin escena capturada';
  if(selected){$('scene-editor-name').value=selected.name;$('scene-editor-notes').value=selected.notes;}
+ draftMarkers=(selected?.design?.markers||[]).map(m=>({...m,position:m.position.slice()}));renderMarkers();
  dialog.hidden=false;$('scene-editor-name').focus();}
  function close(){dialog.hidden=true;}
+ function renderMarkers(){const list=$('scene-editor-marker-list');list.replaceChildren();
+  if(!draftMarkers.length){list.textContent='Sin marcas todavía.';return;}
+  for(const mark of draftMarkers){const line=document.createElement('div');line.textContent=mark.label+' ['+mark.role+'] · '+mark.position.join(', ')+' · '+mark.id;
+   const remove=document.createElement('button');remove.textContent='Quitar';remove.type='button';remove.addEventListener('click',()=>{draftMarkers=draftMarkers.filter(m=>m.id!==mark.id);renderMarkers();});line.append(remove);list.append(line);}
+ }
+ function getSavedBank(){const raw=localStorage.getItem(LAB_KEY);if(!raw)throw Error('Guarda una partida nueva del banco antes de continuar.');
+  const obj=JSON.parse(raw);if(obj.format!=='qbits-save'||obj.mode!=='lab')throw Error('El archivo de banco no es válido.');
+  const check=window.QBitsSavedGames.validate('lab',obj.data);if(!check.ok)throw Error(check.error);return {raw,data:obj.data};}
+ function storeScene(data){const doc=MODEL().pack($('scene-editor-name').value,data,$('scene-editor-notes').value,{phase:'authoring',markers:draftMarkers});
+  selected=MODEL().save(localStorage,doc);$('scene-editor-code').textContent=doc.code+' · '+doc.inventory.pieces+' piezas';return doc;}
  function stashBank(){
   if(sessionStorage.getItem(BACKUP)!==null)return;
   const raw=localStorage.getItem(LAB_KEY);
@@ -130,6 +154,11 @@
  $('scene-editor-close').addEventListener('click',close);
  $('scene-editor-choose').addEventListener('click',()=>act(()=>{const code=$('scene-editor-library').value;if(!code)throw Error('No hay versiones en la biblioteca.');selected=MODEL().select(localStorage,code);show();feedback('Versión seleccionada: '+selected.code); }));
  $('scene-editor-new').addEventListener('click',()=>act(()=>enter('new')));
+ $('scene-editor-blank').addEventListener('click',()=>act(()=>{
+  const bank=getSavedBank();const data=MODEL().emptyData(bank.data);
+  if(!confirm('Crear una escena vacía desde el estado del banco guardado. No modifica tu partida original. ¿Continuar?'))return;
+  draftMarkers=[];const doc=storeScene(data);show();feedback('Escena vacía creada ('+doc.code+'). Selecciona Continuar escena guardada y luego Continuar en Banco de pruebas.');
+ }));
  $('scene-editor-open').addEventListener('click',()=>act(()=>enter('open')));
  $('scene-editor-manage').addEventListener('click',()=>act(show));
  $('scene-editor-capture').addEventListener('click',()=>act(()=>{
@@ -138,10 +167,23 @@
   if(!raw||raw===lastCheckpointRaw)throw Error('No hay un guardado nuevo de esta edición. Usa Esc → Guardar partida y luego captura.');
   let envelope;try{envelope=JSON.parse(raw);}catch{throw Error('Guardado del banco ilegible.');}
   if(envelope.mode!=='lab'||envelope.format!=='qbits-save')throw Error('El guardado actual no corresponde al banco.');
-  const doc=MODEL().pack($('scene-editor-name').value,envelope.data,$('scene-editor-notes').value);
-  selected=MODEL().save(localStorage,doc);lastCheckpointRaw=raw;
+  const doc=storeScene(envelope.data);lastCheckpointRaw=raw;
   $('scene-editor-code').textContent=selected.code+' · '+selected.inventory.pieces+' piezas';
   feedback('Escena capturada y guardada. '+selected.code);
+ }));
+ $('scene-marker-from-player').addEventListener('click',()=>act(()=>{const data=selected?.data||getSavedBank().data;
+  const p=data.snapshot.position;if(!Array.isArray(p)||p.length!==3)throw Error('No hay posición de jugador guardada.');
+  ['x','y','z'].forEach((axis,i)=>{$('scene-marker-'+axis).value=String(p[i]);});feedback('Posición de jugador recuperada del guardado.');
+ }));
+ $('scene-marker-add').addEventListener('click',()=>act(()=>{const label=$('scene-marker-name').value.trim();
+  const role=$('scene-marker-role').value,position=['x','y','z'].map(k=>Number($('scene-marker-'+k).value));
+  const next=1+Math.max(0,...draftMarkers.map(m=>Number(m.id.slice(2))||0));
+  const marker={id:'m-'+next,role,label,position};MODEL().validateDesign({phase:'authoring',markers:[...draftMarkers,marker]});
+  draftMarkers.push(marker);renderMarkers();feedback('Marca añadida. Pulsa Guardar marcas para incluirla en el archivo.');
+ }));
+ $('scene-markers-save').addEventListener('click',()=>act(()=>{
+  const doc=current(),next=MODEL().withDesign(doc,{phase:'authoring',markers:draftMarkers});selected=MODEL().save(localStorage,next);
+  show();feedback('Marcas guardadas; nuevo código '+selected.code);
  }));
  $('scene-editor-copy').addEventListener('click',()=>act(async()=>{const doc=current();await copy(MODEL().explain(doc));feedback('Resumen copiado. Puedes pegarlo en el chat.');}));
  $('scene-editor-copy-full').addEventListener('click',()=>act(async()=>{const doc=current();await copy('QBSCENE1:'+base64(JSON.stringify(doc)));feedback('Código completo copiado. Contiene la escena entera.');}));
