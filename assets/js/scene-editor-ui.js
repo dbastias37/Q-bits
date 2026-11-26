@@ -140,6 +140,7 @@
   active=true;toolbar.hidden=false;
   draftMarkers=mode==='open'?(doc.design?.markers||[]).map(m=>({...m,position:m.position.slice()})):[];
   editingMarkerId=null;renderMarkers();close();
+  game.resumeInput?.();
  }
  function getAuthoringData(){
   const result=window.QBitsGame?.sceneEditor?.capture?.();
