@@ -56,3 +56,12 @@ test('several versions remain available independently of native save slots',()=>
  assert.equal(storage.getItem('qbits.save.lab.v1'),null);
  assert.equal(storage.getItem('qbits.save.campaign.v1'),null);
 });
+
+test('anchored marker refers to existing native part and rejects an orphan',()=>{
+ const data=native(),mark={id:'m-3',role:'receiver',label:'Salida',position:[1,0,2],unitId:12};
+ const doc=scenes.pack('Anclada',data,'',{phase:'authoring',markers:[mark]});
+ assert.equal(scenes.parse(JSON.stringify(doc)).design.markers[0].unitId,12);
+ assert.throws(()=>scenes.pack('Huérfana',data,'',{phase:'authoring',markers:[{...mark,unitId:99}]}),/inexistente/);
+ const moved=scenes.emptyData(data);
+ assert.throws(()=>scenes.pack('Sin materia',moved,'',{phase:'authoring',markers:[mark]}),/inexistente/);
+});
