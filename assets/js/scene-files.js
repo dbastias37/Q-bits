@@ -68,7 +68,12 @@
       if(!MARKER_ROLES.has(marker.role))fail('Tipo de marcador no admitido.');
       if(typeof marker.label!=='string'||!marker.label.trim()||marker.label.length>80)fail('Nombre de marcador inválido.');
       if(!Array.isArray(marker.position)||marker.position.length!==3||!marker.position.every(v=>Number.isFinite(v)&&Math.abs(v)<1000))fail('Coordenadas de marcador inválidas.');
-      return {id:marker.id,role:marker.role,label:marker.label.trim(),position:marker.position.slice()};
+      const clean={id:marker.id,role:marker.role,label:marker.label.trim(),position:marker.position.slice()};
+      if(marker.unitId!==undefined&&marker.unitId!==null){
+        if(!Number.isSafeInteger(marker.unitId)||marker.unitId<=0)fail('ID de pieza asociada inválido.');
+        clean.unitId=marker.unitId;
+      }
+      return clean;
     });
     if(!['authoring','initial'].includes(design.phase||'authoring'))fail('Estado de diseño no reconocido.');
     return {phase:design.phase||'authoring',markers};
@@ -98,6 +103,8 @@
     const safeNotes=String(notes).slice(0,2000);
     const snapshot=JSON.parse(JSON.stringify(data));
     const metadata=validateDesign(design);
+    if(metadata){const ids=new Set((snapshot.snapshot.groups||[]).flatMap(g=>(g.parts||[]).map(p=>p.id)));
+      for(const marker of metadata.markers)if(marker.unitId!==undefined&&!ids.has(marker.unitId))fail('La marca '+marker.id+' referencia una pieza inexistente.');}
     const doc={format:FORMAT,version:VERSION,name:safeName,notes:safeNotes,
       code:codeFor(metadata?{data:snapshot,design:metadata}:snapshot),inventory:inventory(snapshot),data:snapshot};
     if(metadata)doc.design=metadata;
@@ -156,7 +163,7 @@
       'Formas: '+Object.entries(inv.shapes).map(([k,v])=>k+' '+v).join(', '),
       'Sistemas: '+Object.entries(inv.systems).map(([k,v])=>k+' '+v).join(', '),
       'Componentes configurados: '+inv.components.map(c=>c.id+':'+c.features.join('+')).join('; '),
-      'Marcadores: '+(doc.design?.markers||[]).map(m=>m.id+' ['+m.role+'] '+m.label+' @ '+m.position.join(',')).join('; '),
+      'Marcadores: '+(doc.design?.markers||[]).map(m=>m.id+' ['+m.role+'] '+m.label+' @ '+m.position.join(',')+(m.unitId?' · pieza '+m.unitId:'')).join('; '),
       'Notas: '+doc.notes,
       'Para reconstruir la escena exactamente, adjunta el archivo .qbits-scene.json; el código identifica y comprueba el archivo, pero no reemplaza sus datos.'].join('\n');
   }
