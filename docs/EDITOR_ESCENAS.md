@@ -15,6 +15,8 @@ El menú principal ofrece **Editor de escenas** junto a Campaña y Banco de prue
 
 La sesión de edición **no escribe en la ranura nativa del banco**. Los autoguardados de banco se suspenden en autoría; salir al menú o ir a selección de nivel abandona el mundo del editor, preservando los guardados del banco y la campaña.
 
+Además existe una **copia de recuperación automática cada 60 segundos** cuando el mundo está en estado capturable. Esta copia se almacena por separado en `qbits.editor.recovery.v1`. Desde el menú del editor, **Recuperar último borrador** valida esa versión y la incorpora a la biblioteca antes de volver a abrirla. Una operación de física no capturable no pisa la última copia correcta. La recuperación no sustituye una exportación a disco.
+
 ## Sala inicial y catálogo físico
 
 La nueva escena reutiliza la sala blanca, cámara, física y controles del banco. Las herramientas de creación no alteran el sistema de piezas; no se inyectan máquinas industriales decorativas ni colores ajenos. La mesa nativa del banco **no aparece por defecto**.
