@@ -15,6 +15,30 @@ El menú principal ofrece **Editor de escenas** junto a Campaña y Banco de prue
 
 **Importante:** el botón de captura usa el último guardado válido del banco. Debes guardar desde Esc inmediatamente antes de capturar; no se presenta una captura antigua como una lectura instantánea de la escena activa.
 
+## Escena realmente vacía
+
+**Flujo seguro de la primera versión:**
+
+1. En **Editor de escenas → Nueva escena en el banco**, abre una partida nueva del banco. El editor utiliza los controles y el catálogo nativo de construcción del banco, sin dar permisos de creación a una misión.
+2. Desde el banco, abre **Esc → Guardar partida**. Ese guardado sirve como plantilla válida de sala, controles, configuración y posición del jugador.
+3. En la barra del editor abre **Códigos / Exportar** y elige **Crear escena realmente vacía**. Confirma. El proceso copia la plantilla, elimina todas las piezas, cuerpos, trabajos y estructuras asociados y valida el resultado con el validador real de banco. **No borra el banco normal.**
+4. Selecciona **Continuar escena guardada → Continuar** en las opciones del banco para entrar a la sala sin piezas iniciales. Construye con el catálogo de Q-bits.
+5. Para conservar las construcciones, guarda otra vez desde Esc y usa **Capturar y guardar escena**. El código de versión cambia cuando cambia el estado.
+   
+Esta acción parte de un guardado nativo existente porque la sala 3D tiene parámetros de ambiente y cámara que no deben inventarse. Las piezas desaparecen del nuevo archivo autoral; la dotación de la partida normal vuelve a su valor previo al regresar al menú.
+
+## Marcadores de diseño y vínculos
+
+El editor permite marcar **inicio del jugador, origen de materia, destino, recepción, zona de trabajo y referencia visual**. Cada marca tiene ID único estable, nombre, posición XYZ, función y opcionalmente un **ID de pieza asociada**. Se puede añadir, editar y eliminar y visualizar en un plano orientativo X/Z del diseño. El plano no sustituye una vista de ingeniería con las dimensiones reales de la sala.
+
+Al usar un ID asociado, el archivo valida que ese ID exista entre las piezas físicas de la escena. Una exportación no puede acreditar un receptor cuyo objeto no existe. Los marcadores son **datos semánticos de autoría**; todavía no activan una misión, disparan un sensor ni mueven físicamente una máquina. La futura integración de reglas debe resolver los IDs de objetos y sus transformaciones en el motor.
+
+El código corto identifica tanto el guardado de piezas como el conjunto de marcadores. Las escenas anteriores sin el campo `design` siguen siendo compatibles con esta versión de archivo.
+
+## Principio de fabricación del nivel
+
+No se crea un segundo catálogo de estructuras decorativas que aparente ser una fábrica. Los objetos jugables siguen siendo los grupos físicos, materiales y blueprints que admite el banco. Para añadir estaciones industriales faltantes primero habrá que implementar las recetas y puertos en el motor, y sólo después incorporarlas al catálogo de autoría. La edición no otorga masa ni energía a una partida de campaña.
+
 ## Contrato del archivo
 
 Formato `qbits-scene`, versión 1. Contiene nombre, notas, resumen de piezas y componentes, datos completos del guardado nativo de banco y el código `QBSC1-XXXXXXXXXXXXXXXX`. El resumen es informativo; todas las posiciones, orientaciones, estados energéticos, configuraciones, conexiones, familias y mecanismos admitidos por el guardado nativo se obtienen del campo `data`, no se reconstruyen desde un listado superficial.
@@ -33,12 +57,12 @@ El código largo es una representación Base64 URL de los datos completos. El re
 
 ## Límites y siguiente bloque
 
-Esta primera integración **no es aún un editor profesional completo de niveles**: usa la geometría y el espacio iniciales del banco, no tiene un catálogo nuevo de objetos de escenario ni creación arbitraria de terreno, no permite colocar puntos de misión con identificadores propios ni convierte el archivo en una misión de campaña con condiciones de victoria. Tampoco se ha cambiado el galpón A/B, que sigue en su rama separada. La entrada **Nueva** utiliza el procedimiento nativo del banco y, por tanto, hereda cualquier dotación inicial que ese modo proporcione.
+Esta primera integración **no es aún un editor profesional completo de niveles**: usa la geometría y el espacio iniciales del banco, no tiene un catálogo nuevo de objetos de escenario ni creación arbitraria de terreno; las marcas de misión existen como datos verificables, pero todavía no ejecutan objetivos, activadores o condiciones de victoria. La escena vacía requiere crear primero un guardado nativo del banco y reabrir la versión limpia. Tampoco se ha cambiado el galpón A/B, que sigue en su rama separada. La entrada **Nueva** utiliza el procedimiento nativo del banco y, por tanto, hereda cualquier dotación inicial que ese modo proporcione.
 
-Para el siguiente bloque deben implementarse estaciones como blueprints hechos con piezas, vínculos semánticos estables de entrada/salida, marcado de aparición, validación de presupuesto de material y el conversor escena→misión. La futura importación de escenas de gran tamaño requiere un flujo de archivos en lugar de únicamente Web Storage.
+Para el siguiente bloque deben implementarse estaciones como blueprints hechos con piezas, puertos semánticos de entrada/salida, colocación visual directa de marcadores en 3D, validación de presupuesto de material y el conversor escena→misión. Los marcadores actuales documentan posiciones y referencias a identidades nativas, sin gobernar aún la lógica del nivel. La futura importación de escenas de gran tamaño requiere un flujo de archivos en lugar de únicamente Web Storage.
 
 ## Pruebas
 
 `node --test tests/scene-files.test.cjs` cubre ida y vuelta del formato, checksum, importación alterada, aislamiento de ranuras y estabilidad frente al orden de claves. Las comprobaciones de sintaxis y la verificación de empaquetado se pueden ejecutar por separado. **No se afirma una prueba completa en Chromium ni la suite del juego en este entorno**, que sólo dispone del código obtenido mediante el conector de GitHub.
 
-La rama `main` mantiene las modificaciones aisladas en módulos nuevos y el registro de sus scripts en `index.html`.
+Las pruebas nuevas de autoría están en `tests/scene-authoring.test.cjs`. Comprueban el formato real de guardado vacío, referencias de marcador, retrocompatibilidad e integridad. Su ejecución en la suite completa y una sesión gráfica siguen pendientes de certificación. La rama `main` mantiene las modificaciones aisladas en módulos nuevos y el registro de sus scripts en `index.html`.
