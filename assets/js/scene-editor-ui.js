@@ -38,6 +38,12 @@
  dialog.innerHTML=`<div class="scene-editor-shell">
  <p>Q-BITS / HERRAMIENTAS DE CREACIÓN</p><h2>Editor de escenas</h2>
  <p>Comienza con una sala vacía y utiliza las piezas, mecanismos y blueprints nativos. El editor no modifica tus partidas de campaña ni de banco.</p>
+ <h3>Catálogo de construcción nativa</h3>
+ <p>Coloca piezas reales y mecanismos completos hechos con sus blueprints nativos. Son recursos libres sólo durante la autoría, no en misiones.</p>
+ <label>Elemento<select id="scene-editor-catalog" aria-label="Piezas y blueprints"></select></label>
+ <div class="scene-marker-grid"><label>X<input id="scene-place-x" type="number" value="0" step=".1"></label><label>Altura base (Y)<input id="scene-place-y" type="number" value="0" step=".1"></label><label>Z<input id="scene-place-z" type="number" value="0" step=".1"></label></div>
+ <label>Rotación del blueprint en grados<input id="scene-place-angle" type="number" value="0" min="-360" max="360" step="15"></label>
+ <div class="scene-editor-actions"><button id="scene-place-button" class="primary">Colocar en escena</button></div>
  <label>Biblioteca de escenas<select id="scene-editor-library" aria-label="Escenas guardadas"></select></label>
  <div class="scene-editor-actions"><button id="scene-editor-choose">Abrir versión seleccionada</button></div>
  <label>Nombre de escena<input id="scene-editor-name" type="text" maxlength="90" value="Mi escena inicial"></label>
@@ -70,11 +76,15 @@
  document.body.append(dialog);
  const toolbar=document.createElement('div');toolbar.id='scene-editor-toolbar';toolbar.hidden=true;
  toolbar.innerHTML=`<strong>Editor de escenas · Banco 3D</strong>
- <div class="scene-editor-actions"><button id="scene-editor-capture">Capturar y guardar escena</button><button id="scene-editor-manage">Códigos / Exportar</button></div>
+ <div class="scene-editor-actions"><button id="scene-editor-capture">Capturar y guardar escena</button><button id="scene-editor-manage">Catálogo / Códigos / Exportar</button></div>
  <small>Coloca las piezas con los controles habituales. Capturar lee directamente el montaje del motor; no hace falta guardar el banco.</small>`;
  document.body.append(toolbar);
  function feedback(text){$('scene-editor-feedback').textContent=text;}
  function show(){try{selected=MODEL().read(localStorage);}catch(e){selected=null;feedback(e.message);}
+ const catalog=$('scene-editor-catalog');catalog.replaceChildren();
+ for(const item of (window.QBitsGame?.sceneEditor?.catalog?.()||[])){
+  const opt=document.createElement('option');opt.value=item.id;opt.textContent=item.category+' · '+item.label;catalog.append(opt);
+ }
  const items=MODEL().list(localStorage),select=$('scene-editor-library');select.replaceChildren();
  for(const item of items){const option=document.createElement('option');option.value=item.code;option.textContent=item.name+' · '+item.code;select.append(option);}
  if(selected&&items.some(item=>item.code===selected.code))select.value=selected.code;
@@ -165,6 +175,14 @@
  async function act(fn){try{await fn();}catch(e){feedback(e.message||String(e));}}
  mainButton.addEventListener('click',()=>act(show));
  $('scene-editor-close').addEventListener('click',close);
+ $('scene-place-button').addEventListener('click',()=>act(()=>{
+  if(!active||!window.QBitsGame?.sceneEditor?.isActive?.())throw Error('Abre primero Nueva escena vacía o Continuar escena.');
+  const input=key=>{const field=$('scene-place-'+key);return field.value.trim()===''?NaN:Number(field.value);};
+  const xyz=['x','y','z'].map(input),angle=input('angle');
+  const response=window.QBitsGame.sceneEditor.spawn($('scene-editor-catalog').value,xyz,angle);
+  if(!response.ok)throw Error(response.error||'No se pudo colocar.');
+  feedback(response.name+' colocado con piezas reales · '+response.pieces+' piezas en escena. Puedes cerrar el panel para inspeccionarlo.');
+ }));
  $('scene-editor-choose').addEventListener('click',()=>act(()=>{const code=$('scene-editor-library').value;if(!code)throw Error('No hay versiones en la biblioteca.');selected=MODEL().select(localStorage,code);show();feedback('Versión seleccionada: '+selected.code); }));
  $('scene-editor-new').addEventListener('click',()=>act(()=>enter('new')));
  $('scene-editor-open').addEventListener('click',()=>act(()=>enter('open')));
