@@ -2,6 +2,18 @@
 
 Actualizado: 26 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
+## Edición local de un ensamblaje con Ctrl · 27 nov 2026
+
+Rama de implementación: `feature/ctrl-parts-detach-20261127`, PR #49. En el banco se selecciona normalmente un conjunto soldado y se mantiene Ctrl mientras se desplaza la mira por sus cubos; los miembros alcanzados se marcan por ID, sin duplicar cuerpos. Ctrl + clic permite alternar una pieza específica. Sobre enganches de rotor, Ctrl + clic mantiene su función anterior de selección de rotores. La aplicación está restringida al banco y a montajes reales; campaña y rompecabezas conservan sus reglas.
+
+La indicación visual es un cambio opaco y tenue del propio material a azul oscuro. Para estructuras rígidas con cuatro piezas o más, el color se agrupa dentro de las mallas existentes por apariencia y se reconstruye sólo al cambiar los miembros marcados, no en cada fotograma. Al usar el pincel de piezas se oculta el contorno global de selección. No se añade una capa transparente ni una segunda simulación.
+
+El clic secundario ofrece **Separar piezas seleccionadas** y **Eliminar piezas seleccionadas**. Se reutilizan `worldParts`, `makeFragments` y `makeGroup` para preservar identidad, forma, masa, energía y velocidad de las piezas supervivientes. Si la selección contiene piezas contiguas se recuperan como un solo subensamblaje seleccionado; islas desconectadas forman cuerpos independientes, igual que el sistema previo. Las demás piezas permanecen en la sala. La operación se bloquea durante cinta, rotor o vuelo activos y refresca los controladores al reconstruir la topología.
+
+El HUD de selección conserva la navegación, el contador de grupos y los accesos de teclado/mando, pero reemplaza las miniaturas físicas animadas por **indicadores estáticos de cantidad y nombre**, sin Canvas2D, saltos ni cálculo geométrico de las réplicas. Versión de recursos: `20261127-part-brush-1`.
+
+**Verificación pendiente de CI y prueba visual:** `tests/assembly-part-brush.test.cjs` comprueba selección, menú, separación, borrado, conservación de masa y barrido Ctrl. Las pruebas de HUD verifican que no se crea ningún canvas para las estructuras. El harness usa física Cannon real, con DOM/GPU simulados; no acredita la comodidad visual del pincel ni el comportamiento del mouse en un navegador físico.
+
 ## Corrección de montaje láser en mecanismos (26 nov 2026)
 
 El montaje real con dos cabezales soldados compartiendo un cuerpo rígido antes no podía crear pareja: la búsqueda descartaba expresamente el mismo grupo. Se ha eliminado esa exclusión y se añadió encendido automático para pares enfrentados que comparten un mecanismo físico (cuerpo rígido o componente articulado) y disponen de energía real, incluso mediante batería externa activa. Los dos cabezales forman un único circuito; uno corta y el otro recibe, sin duplicar transformaciones. El encendido manual continúa para piezas sueltas y el apagado manual se mantiene hasta reactivar. El alcance es 1,5 m y se admite un pequeño desfase lateral, ajustando el tubo para conectar los centros. El sistema tolera mecanismos en ruta, salvo manipulaciones y trabajos inconclusos.
