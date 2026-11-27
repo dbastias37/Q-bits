@@ -368,8 +368,10 @@ const fragmentSource = `
       float sheen = 0.065 * pow(max(0.0, dot(vNormal, halfVector)), 24.0);
       float black = 0.035 + 0.13 * lightBands(light) + 0.045 * fill + sheen*(1.+uLighting*2.) + edgeLight;
       black*=surfaceGrain();black+=uLighting*.025*max(vNormal.y,0.);
-      gl_FragColor = vec4(vec3(black)+accentLight(), 1.0);
-      return;
+      vec3 surface=vec3(black)+accentLight();
+      // Opaque blue-tinted material: never a separate overlay or outline draw.
+      if(uKind>1.125)surface+=vec3(.010,.040,.073);
+      gl_FragColor=vec4(clamp(surface,0.0,1.0),1.0);return;
     }
     float halfSize = uSize * 0.5;
     vec3 boundary = vec3(
@@ -734,6 +736,7 @@ document.addEventListener('mousemove', event => {
   yaw -= event.movementX * 0.002 * mouse.sensitivity;
   yaw = Math.atan2(Math.sin(yaw), Math.cos(yaw));
   pitch = Math.max(-Math.PI / 2 + 0.012, Math.min(Math.PI / 2 - 0.012, pitch - event.movementY * 0.002 * mouse.sensitivity * (mouse.invertY?-1:1)));
+  scanPartBrush();
   redraw = true;
 });
 document.addEventListener('keydown', onPhysicalKeyDown);
@@ -1203,6 +1206,50 @@ const puzzle={active:false,stage:0,complete:false,run:0,portals:[],buttons:[],wa
 let cargoSerial=0,selectedCargo=null,pendingCargo=null,moveChoice=null,routeInspection=null,commandState=null,menuConnector=null;
 const commandMenu=document.querySelector('#command-menu');
 let multiSelection=[],marquee=null,hoverPointer=null,detachChoice=null;
+// Local selection of stable part IDs, not additional physics bodies or overlay layers.
+let partBrush=null,partBrushScanAt=-Infinity;
+function clearPartBrush(){
+ if(!partBrush)return;
+ const g=partBrush.g;partBrush=null;partBrushScanAt=-Infinity;
+ if(groups.includes(g))disposeRigidCubeBatch(g);
+ redraw=true;
+}
+function brushPart(hit,{toggle=false}={}){
+ if(!hit||!groups.includes(hit.g)||selected?.g!==hit.g||hit.g.parts.length<2)return false;
+ if(!partBrush||partBrush.g!==hit.g){clearPartBrush();partBrush={g:hit.g,ids:new Set()};}
+ const had=partBrush.ids.has(hit.part.id);
+ if(toggle&&had)partBrush.ids.delete(hit.part.id);else partBrush.ids.add(hit.part.id);
+ if(!partBrush.ids.size){clearPartBrush();return true;}
+ if(toggle||!had){disposeRigidCubeBatch(hit.g);redraw=true;}return true;
+}
+function scanPartBrush(force=false){
+ if(!ctrlDown()||!gameInputActive()||held||story.scene!=='lab'||puzzle.active||!selected?.g||selected.g.parts.length<2||pendingUnitCreation||creationPreview)return;
+ const time=performance.now();if(!force&&time-partBrushScanAt<30)return;partBrushScanAt=time;
+ const hit=aimQubit(4);if(hit&&hit.g===selected.g&&!rotorForPart(hit.part.id))brushPart(hit);
+}
+function editBrushParts(mode){
+ const brush=partBrush;if(!brush||!groups.includes(brush.g)||!brush.ids.size)return false;
+ const g=brush.g;
+ if(story.scene!=='lab'||puzzleBlockedEdit()||openingProtected()){announce('Esta escena no permite modificar el conjunto.');return false;}
+ if(held&&(held.items||[held]).some(item=>item.g===g)){announce('Suelta el conjunto antes de editarlo.');return false;}
+ if(runningConveyorForGroups([g])||flightForGroup(g)?.enabled||rotors.some(r=>r.enabled&&rotorGroups(r).includes(g))){
+  announce('Detén los motores, aterriza el dron o apaga la cinta antes de modificar el conjunto.');return false;
+ }
+ const parts=worldParts(g),picked=parts.filter(p=>brush.ids.has(p.id)),rest=parts.filter(p=>!brush.ids.has(p.id));
+ if(!picked.length){clearPartBrush();return false;}
+ const modules=conveyors.filter(c=>rotorPart(c.baseId)?.g===g||conveyorRotors(c).some(r=>rotorGroups(r).includes(g)));
+ for(const c of modules)materializeConveyor(c);
+ automationIntervention();
+ const reference=g.body.quaternion.clone(),velocity=g.body.velocity.clone(),spin=g.body.angularVelocity.clone();
+ for(const part of picked)if(mode==='delete'&&part.mood.trajectory)trajectorySystem?.unlink(part.id);
+ clearPartBrush();removeGroup(g);
+ const remaining=rest.length?makeFragments(rest,reference,velocity,spin):[];
+ const detached=mode==='detach'?makeFragments(picked,reference,velocity,spin):[];
+ refreshRotors();pruneConveyors();pruneRobotArms();
+ for(const c of modules)if(conveyors.includes(c)){conveyorEnsureSurfaces(c);virtualizeConveyor(c);}
+ const chosen=mode==='detach'?detached:remaining;multiSelection=chosen;selected=chosen.length?{g:chosen[0],part:chosen[0].parts[0]}:null;
+ announce(picked.length+' '+(picked.length===1?'pieza':'piezas')+(mode==='delete'?' eliminadas':' separadas')+' · resto conservado');redraw=true;return true;
+}
 const menu=document.querySelector('#detach-menu'),selectionRect=document.querySelector('#selection-rect');
 let serial=0, held=null, selected=null, snap=null, accumulator=0, simTime=0, noticeTimer;
 const panel=document.querySelector('#panel'),targetLabel=document.querySelector('#target'),crosshair=document.querySelector('#crosshair');
@@ -1474,7 +1521,7 @@ function makeGroup(parts,reference=Q(),velocity=V(),spin=V(),retiredShapes=null)
  const g={body,parts:local,partShapes,materialShapeCount,route:null,pin:null};body.qubitGroup=g;body.addEventListener('wakeup',()=>{g.wakeMechanicalComponent=true;});g.block=analyzeBlock(g);groups.push(g);invalidateMechanicalIndex();registerSpeechGroup(g);registerTrajectoryGroup(g);for(const p of local)if(p.mood.cutPasses?.length)cutterPassParts.add(p.id);return g;
 }
 function addQubit(p,weight=settings.mass,shape='cube'){return makeGroup([{id:++serial,weight,shape:normalizeUnitShape(shape),p:V(...p),q:Q()}]);}
-function removeGroup(g){trajectoryBeforeRemoveGroup(g);materializeConveyorsForGroup(g);disposeRigidCubeBatch(g);disposeRigidOutline(g);delete g.batteryGeometryCache;delete g.partQueryCache;robotBeforeRemoveGroup(g);invalidateMechanicalIndex();resetBatteryLiquids(g.body);invalidateRotorBody(g);undockCampaignGroup(g);removeSpeechGroup(g);leaveHaul(g);stopRoute(g);world.removeBody(g.body);const i=groups.indexOf(g);if(i>=0)groups.splice(i,1);invalidateMechanicalIndex();if(selected?.g===g)selected=null;multiSelection=multiSelection.filter(item=>item!==g);}
+function removeGroup(g){trajectoryBeforeRemoveGroup(g);materializeConveyorsForGroup(g);disposeRigidCubeBatch(g);disposeRigidOutline(g);delete g.batteryGeometryCache;delete g.partQueryCache;robotBeforeRemoveGroup(g);invalidateMechanicalIndex();resetBatteryLiquids(g.body);invalidateRotorBody(g);undockCampaignGroup(g);removeSpeechGroup(g);leaveHaul(g);stopRoute(g);world.removeBody(g.body);const i=groups.indexOf(g);if(i>=0)groups.splice(i,1);invalidateMechanicalIndex();if(selected?.g===g)selected=null;multiSelection=multiSelection.filter(item=>item!==g);if(partBrush?.g===g)clearPartBrush();}
 function corners(pose){if(isTBit(pose))return unitProfile(pose).vertices.map(v=>add(pose.p,pose.q.vmult(v)));const out=[],half=pose.half||V(HALF,HALF,HALF);for(const x of [-half.x,half.x])for(const y of [-half.y,half.y])for(const z of [-half.z,half.z])out.push(add(pose.p,pose.q.vmult(V(x,y,z))));return out;}
 // Rigid geometry is immutable between makeGroup/removeGroup. A translation
 // never changes its rotated extents. Keep a bounded set of exact orientations
@@ -6470,7 +6517,7 @@ function handleKey(event){
  if(['ShiftLeft','ShiftRight','ControlLeft','ControlRight','AltLeft','AltRight','KeyW','KeyA','KeyS','KeyD','KeyC'].includes(event.code)){
   event.preventDefault();
   if(event.code.startsWith('Shift')&&held&&!shiftDown())beginHeldRotation();
-  keys.add(event.code);return;
+  keys.add(event.code);if(event.code.startsWith('Control'))scanPartBrush(true);return;
  }
  if(event.repeat)return;
  if(event.code==='KeyB'){event.preventDefault();startCreationTool('quick-cargo');}
@@ -6499,6 +6546,7 @@ function updateTarget(){
  else if(marquee)targetLabel.textContent='Suelta para seleccionar · hasta '+settings.maxSelect+' piezas';
  else if(held?.latched)targetLabel.textContent='Clic · soltar selección · '+heldRotationHint()+' · '+inputLabel('rotate')+' + '+walkingInputLabel()+' · giro libre';
  else if(held)targetLabel.textContent=snap?(snap.propellerTip?'Pala alineada · suelta para unir a la hélice':snap.rotorTip?(snap.servoKind?'Servo alineado · suelta para unir':'Puntas alineadas · suelta para formar Rotor'):snap.wholeFace?'Cara completa · suelta para unir':'Suelta para unir esta cara'):shiftDown()?inputLabel('radial')+'/'+inputLabel('interact')+' · caras · '+inputLabel('stop')+' · arriba/abajo · '+walkingInputLabel()+' · giro libre'+(heldAssemblyGroups().length?' · sacudir · desarmar':''):heldRotationHint()+' · rueda · enfocar · '+inputLabel('drop')+' · caída';
+ else if(partBrush?.ids.size)targetLabel.textContent=partBrush.ids.size+' piezas azuladas · Ctrl + mirar para añadir · clic derecho para separar o eliminar';
  else if(hit?.part.mood.cutter)targetLabel.textContent='Láser · '+(cutterRuns.get(hit.part.id)?.status||'Apagado')+' · clic derecho: controles';
  else if(hit&&isExternalBattery(hit.part)){const info=externalBatteryPackInfo(hit.part.id);targetLabel.textContent=info.label+' · '+info.percent+' % · '+(info.enabled?'activa':'apagada')+' · clic derecho: batería';}
  else if(shelfTarget&&(!hit||shelfTarget.distance<(hit.distance??Infinity))){const cell=shelfTarget.shelf.cells[shelfTarget.cellIndex];targetLabel.textContent='Compartimento '+(shelfTarget.cellIndex+1)+' · '+(cell.category?.label||'Vacío')+' · '+cell.items.length+'/50 · clic derecho: organizar';}
@@ -6769,9 +6817,12 @@ function rigidCubeBatch(g){
   }
  };
  for(const part of solidParts){
-  const shape=unitShape(part);
-  if(shape==='coupler'){append('coupler',5,[.20,.23,.24,1],part,0,30);append('tip',5,[.53,.59,.58,1],part,30,12);}
-  else append(shape==='cube'?'cube':'tbit',shape==='cube'?1:5,shape==='cube'?null:[.48,.48,.48,1],part,0,unitMeshes[shape].count);
+  const shape=unitShape(part),brushed=partBrush?.g===g&&partBrush.ids.has(part.id);
+  if(shape==='coupler'){
+   append(brushed?'coupler-brushed':'coupler',5,brushed?[.27,.35,.42,1]:[.20,.23,.24,1],part,0,30);
+   append(brushed?'tip-brushed':'tip',5,brushed?[.38,.51,.58,1]:[.53,.59,.58,1],part,30,12);
+  }
+  else append(brushed?shape+'-brushed':shape,shape==='cube'?(brushed?1.25:1):5,shape==='cube'?null:(brushed?[.30,.39,.48,1]:[.48,.48,.48,1]),part,0,unitMeshes[shape].count);
  }
  const batches=[];for(const [key,material]of materials)batches.push({key,kind:material.kind,color:material.color,count:material.data.length/12,buffer:buffer(material.data)});
  boundGeometry=null;const cubes=batches.find(b=>b.key==='cube');
@@ -6781,12 +6832,15 @@ function drawGroupSolid(g){
  if(g.virtualConveyor)syncVirtualConveyorGroup(g);
  if(!renderGroupVisible(g))return;
  const batteries=batteryVisualPacks(g);
- if(g.block&&!batteries.length){disposeRigidCubeBatch(g);const p=moodVisualPose(g,blockPose(g));bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,1);setPose(p.p,p.q,p.size);submitDraw(gl.TRIANGLES,0,36);}
+ if(g.block&&!batteries.length&&partBrush?.g!==g){disposeRigidCubeBatch(g);const p=moodVisualPose(g,blockPose(g));bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,1);setPose(p.p,p.q,p.size);submitDraw(gl.TRIANGLES,0,36);}
  else {
   const batch=rigidCubeBatch(g);
   if(batch)for(const material of batch.batches){bindGeometry(material.buffer,true);gl.uniform1f(uniforms.uKind,material.kind);setPose(g.body.position,g.body.quaternion,V(1,1,1));if(material.color)tint(...material.color);submitDraw(gl.TRIANGLES,0,material.count);}
   const blades=new Set(propellerLayout(g).flatMap(m=>m.blades));
-  for(const part of g.parts)if(!isExternalBattery(part)&&(!batch||blades.has(part))){const p=propellerVisualPose(g,part);drawUnitMesh(g.parts.length===1?{...moodVisualPose(g,p),part}:p);}
+  for(const part of g.parts)if(!isExternalBattery(part)&&(!batch||blades.has(part))){
+   const p=propellerVisualPose(g,part),brushed=partBrush?.g===g&&partBrush.ids.has(part.id),color=brushed&&unitShape(part)!=='cube'?[.30,.39,.48,1]:null;
+   drawUnitMesh(g.parts.length===1?{...moodVisualPose(g,p),part}:p,color,brushed&&unitShape(part)==='cube'?1.25:null);
+  }
  }
  for(const battery of batteries)drawBatteryOpaque(battery);
  for(const part of g.parts)if(part.mood.gripper)drawGripperMark(partPose(g,part));
@@ -7030,15 +7084,8 @@ function drawRigidOutline(g,alpha,chosen){
 }
 function selectionGroups(){if(selectedRotors().length)return [];const chosen=new Set(multiSelection);if(selected?.g)chosen.add(selected.g);return groups.filter(g=>chosen.has(g));}
 function selectionHudSnapshot(team=selectionGroups()){
- return team.map(g=>{
-  let geometry=selectionHudGeometry.get(g);
-  if(!geometry||geometry.source!==g.parts){
-   geometry={source:g.parts,revision:g.parts.map(p=>p.id).join(','),parts:g.parts.map(p=>{const shape=unitShape(p),profile=unitProfile(p);return {id:p.id,p:[p.offset.x,p.offset.y,p.offset.z],q:[p.q.x,p.q.y,p.q.z,p.q.w],vertices:profile.vertices.map(v=>[v.x,v.y,v.z]),faces:profile.faces.map(face=>face.slice()),color:shape==='cube'?[.15,.18,.19]:shape==='coupler'?[.25,.30,.30]:[.48,.48,.48]};})};
-   selectionHudGeometry.set(g,geometry);
-  }
-  const summary=moodSummary([g]),agitation=Math.max(0,...g.parts.map(p=>p.mood.agitation||0));
-  return {id:g.body.id,name:g.parts[0].mood.name,count:g.parts.length,revision:geometry.revision,parts:geometry.parts,mood:summary.counts.restless?'restless':summary.counts.excited?'excited':'neutral',energy:summary.energy,agitation,shaking:agitation>.65||speech.shake?.id===g.parts[0].id};
- });
+ // Compact text labels only: avoid building replica polygon geometry.
+ return team.map(g=>({id:g.body.id,name:g.parts[0].mood.name,count:g.parts.length,parts:[{id:g.parts[0].id}]}));
 }
 function selectFromHud(id,{toggle=false}={}){
  const g=groups.find(item=>item.body.id===id);if(!g||story.transition||story.mode!=='playing')return false;
@@ -7065,7 +7112,7 @@ function drawStructureOutlines(){
  const selectedGroups=new Set(selectionGroups());
  const chosenRotors=selectedRotors(),rotorParts=new Map(),parts=chosenRotors.length?mechanicalPartIndex():null;
  for(const rotor of chosenRotors)for(const id of [rotor.aId,rotor.bId]){const hit=parts.get(id);if(!hit)continue;if(!rotorParts.has(hit.g))rotorParts.set(hit.g,new Set());rotorParts.get(hit.g).add(hit.part);}
- for(const g of groups){const visible=renderGroupVisible(g);if(!visible&&(!visuals.markers||!selectedGroups.has(g)))continue;const chosen=selectedGroups.has(g);
+ for(const g of groups){const visible=renderGroupVisible(g);if(!visible&&(!visuals.markers||!selectedGroups.has(g)))continue;const chosen=selectedGroups.has(g)&&partBrush?.g!==g;
   if(visible){
    if(g.block){const p=moodVisualPose(g,blockPose(g));drawOutline(p.p,p.q,p.size,.88,chosen);}
    else if(chosen||visuals.style==='cel')drawRigidOutline(g,.85,chosen);
@@ -7345,7 +7392,7 @@ function updateMenuConnector(){
 }
 // Selection persists after release and can be grabbed again with the primary action.
 function clearSelection(){
- clearRotorSelection();
+ clearRotorSelection();clearPartBrush();
  multiSelection=[];selected=null;selectedCargo=null;pendingCargo=null;pendingPickup=null;moveChoice=null;routeInspection=null;
  speech.nextHud=0;document.querySelector('#selection').textContent='';
 }
@@ -7410,8 +7457,9 @@ function onCanvasMouseDown(event){
  if((held?.reward||held?.latched)){releaseQubit(shiftDown());clearSelection();return;}
  if(!held&&event.button===0&&(event.ctrlKey||event.metaKey||ctrlDown())&&gameInputActive()){
   const hit=aimQubit(4),rotor=hit&&rotorForPart(hit.part.id);
-  if(rotor){toggleRotorSelection(rotor);announce(selectedRotors().length+' rotores seleccionados · clic derecho o P para crear un conjunto');}
-  else announce('Apunta a un enganche de rotor · Ctrl + clic para añadirlo');
+  if(rotor){clearPartBrush();toggleRotorSelection(rotor);announce(selectedRotors().length+' rotores seleccionados · clic derecho o P para crear un conjunto');}
+  else if(hit&&brushPart(hit,{toggle:true}))announce((partBrush?.ids.size||0)+' piezas marcadas · Ctrl + mirar para ampliar · clic derecho para editar');
+  else announce('Selecciona primero un conjunto y mantén Ctrl para marcar sus cubos.');
   return;
  }
  if(event.button===2){if(marquee)finishMarquee(true);handleSecondary(event);return;}
@@ -7493,6 +7541,15 @@ function openWallOrganization(hit){
  ]);
 }
 function handleSecondary(event){
+ if(partBrush?.ids.size&&groups.includes(partBrush.g)){
+  const g=partBrush.g,count=partBrush.ids.size,part=g.parts.find(p=>partBrush.ids.has(p.id))||g.parts[0];
+  openCommandMenu(partPose(g,part).p,count+' '+(count===1?'pieza marcada':'piezas marcadas'),[
+   {label:'Separar piezas seleccionadas',run:()=>{editBrushParts('detach');captureMouse();}},
+   {label:'Eliminar piezas seleccionadas',run:()=>{editBrushParts('delete');captureMouse();}},
+   {label:'Quitar marcas azules',run:()=>{clearPartBrush();captureMouse();}},
+   {label:'Cerrar',run:()=>captureMouse()}
+  ]);return;
+ }
  if(held?.family){const f=held.family;releaseQubit();clearSelection();openFamilyMenu(f);return;}
  const rect=canvas.getBoundingClientRect();
  const dir=gameInputActive()?direction():screenRay(clamp(event.clientX-rect.left,0,canvas.clientWidth),clamp(event.clientY-rect.top,0,canvas.clientHeight));
