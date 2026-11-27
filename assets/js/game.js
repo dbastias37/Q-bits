@@ -7113,7 +7113,7 @@ function drawStructureOutlines(){
  const chosenRotors=selectedRotors(),rotorParts=new Map(),parts=chosenRotors.length?mechanicalPartIndex():null;
  for(const rotor of chosenRotors)for(const id of [rotor.aId,rotor.bId]){const hit=parts.get(id);if(!hit)continue;if(!rotorParts.has(hit.g))rotorParts.set(hit.g,new Set());rotorParts.get(hit.g).add(hit.part);}
  for(const g of groups){const visible=renderGroupVisible(g);if(!visible&&(!visuals.markers||!selectedGroups.has(g)))continue;const chosen=selectedGroups.has(g)&&partBrush?.g!==g;
-  if(visible){
+  if(visible&&partBrush?.g!==g){
    if(g.block){const p=moodVisualPose(g,blockPose(g));drawOutline(p.p,p.q,p.size,.88,chosen);}
    else if(chosen||visuals.style==='cel')drawRigidOutline(g,.85,chosen);
   }
