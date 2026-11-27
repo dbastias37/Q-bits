@@ -130,6 +130,7 @@ module.exports = function createGame(options = {}) {
     batteryWorkshopCheck,createExternalBattery,restoreExternalBattery,toggleExternalBattery,externalBatteryPack,externalBatteryPackInfo,showWorkshopBatteries,showExternalBatteryMenu,showExternalBatteryGuide,
     batteryVisualPacks,drawBatteryOpaque,drawBatteryGlass,drawBatteriesTransparent,drawGroupSolid,drawBox,
     updateBatteryLiquids,resetBatteryLiquids,batteryLiquidDebug,
+    ...(typeof livePartSelection==='function'?{livePartSelection,markAssemblyPart,editMarkedParts}:{}),
     selectionHudSnapshot,selectFromHud,initSelectionHud,updateSelectionHud,onPhysicalKeyDown,onPhysicalKeyUp,keyboardInput,dispatchControlAction,pollGamepadInput,resetGameInputs,gameInputActive,getInputState:()=>({gamepadActive,hudInputActive,gamepadMove:[...gamepadMove]}),setMultiSelection:value=>{multiSelection=value},selectionGroups,drawSelectionMarker,drawWideLines,visualResolution,visualFrameDue,applyPreferences,renderSettingsPreview,initSettingsScreen,getVisuals:()=>visuals,getSettingsScreen:()=>settingsScreen,
     getWorkshopProfile:()=>workshopProfile,setWorkshopProfile:value=>{workshopProfile=value},getWorkshopBench:()=>workshopBench,contactStates,
     awardWorkshopCredits,setupWorkshop,openWorkshopMenu,applyWorkshopUpgrade,purchaseWorkshopResearch,linkContactSensor,unlinkContactSensor,tickContactSensors,sensorContactActive,sensorConfig,sensorReading,sensorBeam,showSensorMenu,workshopTarget,drawWorkshop,

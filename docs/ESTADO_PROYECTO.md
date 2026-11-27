@@ -1,6 +1,16 @@
 # Q-bits — punto de continuación
 
-Actualizado: 26 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
+Actualizado: 27 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
+
+## Edición de piezas dentro de un montaje (27 nov 2026)
+
+Con el montaje seleccionado y la mano libre, mantener Ctrl y recorrer con la mira marca las piezas visibles de ese mecanismo. Soltar Ctrl conserva las marcas y permite cambiar el ángulo. Un tono azul en el material y un contador en la esquina indican la selección. Clic derecho abre las acciones **Separar piezas marcadas**, **Eliminar piezas marcadas** y **Limpiar marcas**. El menú permite que la simulación continúe y vuelve a comprobar el montaje antes de ejecutar la acción.
+
+La separación conserva las uniones internas, las articulaciones válidas, la identidad, la carga y la posición de las piezas. La mano toma únicamente lo extraído cuando está al alcance y dentro del límite de carga. Varias islas se pueden retirar juntas y siguen siendo cuerpos independientes. La eliminación respeta los permisos de la escena. Una cinta en marcha tiene que detenerse para modificar sus piezas. La selección de rotores con Ctrl + clic y la guía de caída con una pieza sostenida siguen disponibles.
+
+Se retiró la miniatura animada de selección. Tab o L3 abre una lista estática de nombres y cantidades. El selector ya no construye mallas ni dibuja cubos en Canvas 2D. La selección parcial usa la pasada opaca habitual de WebGL para los sólidos y conserva el dibujo por lotes.
+
+**Verificación.** 1.754 pruebas Node aprobadas. En Chromium 149 se cargó una escena de cinco cubos mediante el editor nativo. Con WebGL 1 y WebGL 2 se comprobó el cambio de color, la limpieza de marcas, la separación en dos y tres cubos y la eliminación de los dos marcados. Las dos ejecuciones terminaron sin errores de página ni de WebGL. Una prueba adicional con Cannon separó 100 piezas de un bloque de 2.000 y verificó las 2.000 identidades resultantes.
 
 ## Corrección de montaje láser en mecanismos (26 nov 2026)
 

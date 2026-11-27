@@ -104,3 +104,24 @@ test('virtual roller selection outlines follow the same visual phase and stay in
   for(const part of g.parts)for(const corner of t.corners(t.virtualConveyorVisualPose(g,part)))assert(corner.distanceTo(g.body.position)<=t.renderGroupRadius(g)+1e-8,'spinning visuals must stay in the visibility bound');
  }
 });
+
+test('a brush stroke tints vertices in the existing solid pass and only uploads marks when a new cell is added',()=>{
+ const {t,sandbox,calls,uploads,live}=fixture();sandbox.document.pointerLockElement=t.canvas;
+ const g=t.makeGroup(Array.from({length:8},(_,i)=>({id:t.allocateUnitId(),shape:'cube',weight:1,p:t.V(i*.09,.045,0),q:t.Q()})));
+ t.setSelected({g,part:g.parts[0]});const marked=g.parts.slice(2,4);
+ assert(t.markAssemblyPart(t.rotorPart(marked[0].id)));
+ t.drawGroupSolid(g);const material=g.rigidCubeBatch.batches[0],solid=material.buffer,mark=material.markBuffer;
+ assert.equal(calls.filter(c=>c[0]==='draw').length,1);
+ const check=ids=>{
+  const bytes=uploads.get(mark);assert.equal(bytes.length,material.count);
+  for(const {id,start,end} of material.ranges)assert(bytes.slice(start,end).every(b=>b===Number(ids.includes(id))));
+ };
+ check([marked[0].id]);calls.length=0;
+ t.markAssemblyPart(t.rotorPart(marked[1].id));t.drawGroupSolid(g);
+ assert.deepEqual(calls.filter(c=>c[0]==='upload'),[['upload',mark]]);
+ assert.equal(g.rigidCubeBatch.batches[0].buffer,solid);check(marked.map(p=>p.id));
+ for(let i=0;i<10;i++){t.markAssemblyPart(t.rotorPart(marked[0].id));t.drawGroupSolid(g);}
+ assert.equal(calls.filter(c=>c[0]==='upload').length,1);
+ t.setSelected(null);t.livePartSelection();assert(!live.has(mark));
+ t.drawGroupSolid(g);assert(!g.rigidCubeBatch,'unmarked block returns to its one-box fast path');
+});
