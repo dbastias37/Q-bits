@@ -15,7 +15,7 @@ test('a 2000 unit structure can actually lift, move, release and survive a labor
  const {t}=lab(),g=t.makeGroup(block(t)),ids=g.parts.map(p=>p.id);assert.equal(t.settings.maxCarry,2000);assert.equal(t.settings.maxSelect,2000);assert.equal(g.body.mass,500);
  t.grabQubit({g,part:g.parts[0],point:g.body.position.clone(),distance:1});const held=t.getHeld();assert(held,'default hand accepts 2000 units');const target=t.V(.3,1.2,0);held.rootOffset=target.vsub(t.V(...t.getLook().camera).vadd(t.screenRay(640,360).scale(held.distance)));
  let peak=0;for(let i=0;i<120;i++){t.stepPhysics(1/120);peak=Math.max(peak,g.body.angularVelocity.norm());}assert(g.body.position.distanceTo(target)<.035,`hand at ${g.body.position}`);assert(peak<.1);t.releaseQubit();assert.equal(g.body.angularVelocity.norm(),0);
- t.setMultiSelection([g]);t.setSelected({g,part:g.parts[0]});assert.equal(t.selectionHudSnapshot()[0].parts.length,2000);
+ t.setMultiSelection([g]);t.setSelected({g,part:g.parts[0]});assert.equal(t.selectionHudSnapshot()[0].count,2000);assert.equal(t.selectionHudSnapshot()[0].parts.length,1,'el HUD no duplica geometría de 2000 cubos');
  const saved=t.saveLab();t.clearNarrativeScene();t.story.scene='campaign';t.story.lab=saved;t.enterLab(false);assert.equal(t.groups.length,1);assert.deepEqual(Array.from(t.groups[0].parts,p=>p.id),Array.from(ids));assert.equal(t.settings.maxCarry,2000);assert.equal(t.groups[0].body.mass,500);
 });
 test('shelves retain all 2000 identities and accept enlarged gripper and conveyor settings',()=>{
