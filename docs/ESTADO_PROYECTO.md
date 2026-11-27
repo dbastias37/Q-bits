@@ -2,6 +2,14 @@
 
 Actualizado: 27 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
 
+## Construcción por caras con N y Ctrl (27 nov 2026)
+
+En el banco y el editor 3D, N prepara la colocación habitual. Al mantener Ctrl, la mira alinea un Q-bit azul semitransparente con una cara cuadrada visible. Clic izquierdo traza una posición y mantenerlo extiende una fila sobre el plano de esa cara. Otro clic sobre un holograma permite añadir una capa. Clic derecho rellena las posiciones pintadas y las suelda al soporte. Esc descarta el trazado.
+
+El trazado sigue al cuerpo cuando gira o se desplaza. El relleno comprueba el soporte, las colisiones, los permisos de creación y la población antes de materializar los cubos. Las escenas restringidas conservan su economía. El editor guarda las piezas físicas y omite los hologramas. El dibujo combina las celdas contiguas en cajas y muestra sus divisiones en el material.
+
+**Verificación.** 1.765 pruebas de Node, incluidas 11 de construcción por caras. Cubren diagonales, capas, caras inferiores, soportes en movimiento, obstáculos, población y conservación de un servo. En Chromium con WebGL 1 y 2, una escena de cinco cubos siguió teniendo cinco al pintar la fila azul y pasó a un montaje soldado de diez al confirmar. Shaders comprobados con EGL/GLES. [Controles del banco](MANUAL_BANCO_PRUEBAS.md#construir-sobre-las-caras-de-un-montaje).
+
 ## Edición de piezas dentro de un montaje (27 nov 2026)
 
 Con el montaje seleccionado y la mano libre, mantener Ctrl y recorrer con la mira marca las piezas visibles de ese mecanismo. Soltar Ctrl conserva las marcas y permite cambiar el ángulo. Un tono azul en el material y un contador en la esquina indican la selección. Clic derecho abre las acciones **Separar piezas marcadas**, **Eliminar piezas marcadas** y **Limpiar marcas**. El menú permite que la simulación continúe y vuelve a comprobar el montaje antes de ejecutar la acción.
