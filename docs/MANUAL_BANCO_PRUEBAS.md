@@ -17,6 +17,14 @@ Para alimentar máquinas separadas desde un depósito grande, consulta [Cables y
 
 Las repisas siguen colocándose en paredes. Depósitos, enfriadores y cuerpos sólidos van en el suelo. **Mesa de trabajo** prepara una vista previa para colocarla o reubicarla. Clic derecho sobre una pieza de la mesa abre sus opciones. **E** abre el taller. Para retirarla, haz clic derecho sobre una zona libre de la mesa y elige **Retirar mesa**. Los cables primero colocan sus cubos y después abren el tendido. **N, B y los botones Crear** usan también la colocación previa. Los planos de construcción siguen necesitando material existente.
 
+### Construir sobre las caras de un montaje
+
+1. Pulsa **N** para preparar un Q-bit y mantén **Ctrl** mientras apuntas a una cara cuadrada. El cubo azul semitransparente muestra dónde quedará soldado, incluso en una cara lateral o inferior de un montaje girado.
+2. Haz **clic izquierdo** para trazar un cubo. Mantén el botón y mueve la mira para trazar una fila sobre ese plano. Suelta el botón y apunta a una cara de los propios cubos azules para añadir otra capa. Puedes soltar Ctrl entre pasadas.
+3. Haz **clic derecho** para rellenar las posiciones azules. Los cubos se unen al montaje en una sola operación. **Esc** descarta el trazado. Si otra pieza ocupa el espacio antes de confirmar, aparta el obstáculo y reintenta.
+
+Cada trazado pertenece a un montaje. Solo se puede usar donde esté habilitada la creación de cubos y cuenta para el límite de población de la sala.
+
 **Manipulación:** rueda hacia abajo acerca y hacia arriba aleja. En **Configuración → Juego**, «Invertir rueda al acercar y alejar objetos» e «Invertir giro de las piezas» se guardan por separado. El segundo ajuste afecta tanto Shift + WASD como el giro de la vista previa. La velocidad de movimiento mantiene su ajuste independiente.
 
 Las estructuras se sujetan desde su centro para evitar giros provocados por tirar de un extremo. Su masa sigue siendo la suma de sus piezas; soltar elimina el giro residual de la mano. Las estructuras rígidas libres amortiguan más el giro y rebotan menos que los cubos sueltos. Los motores conservan su amortiguación calibrada, límites de carga y consumo.

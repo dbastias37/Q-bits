@@ -21,7 +21,7 @@
 #selection-hud button[data-focused=true], #selection-hud button:focus-visible { background: #dbe6e7; outline: 1px solid #567879; }
 #selection-hud small { grid-column: 1 / -1; }
 
-#target.part-selection-count {
+#target.part-selection-count, #target.face-build-hint {
   inset: auto max(22px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom)) auto;
   max-width: min(58vw, 360px);
   text-align: right;
