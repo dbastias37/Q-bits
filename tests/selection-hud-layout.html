@@ -1,22 +1,18 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="../"><title>Q-bits · vista de selección</title><link rel="stylesheet" href="assets/css/selection-hud.css"><style>
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;height:100%;font:13px system-ui;color:#576b61;background:#eef0ed}body{background:linear-gradient(165deg,#f7f8f6 0 48%,#e9eeea 48.2% 100%)!important}.fixture-controls{position:fixed;bottom:120px;left:160px;right:24px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}button{font:inherit;border:1px solid #bccbc2;background:#f6f8f5;padding:10px 14px;border-radius:4px;color:#405c4f;cursor:pointer}.fixture-note{position:fixed;left:24px;bottom:210px;font-size:12px;line-height:1.6;max-width:70ch}#fixture-state{margin-left:auto}#selection-hud .selection-hud-unit canvas{height:76px}@media(max-width:520px){#selection-hud .selection-hud-unit canvas{height:62px}.fixture-note{bottom:265px;font-size:11px}.fixture-controls{gap:6px;bottom:16px;left:16px;right:16px}.fixture-controls button{padding:8px}#fixture-state{flex-basis:100%;margin:0}}
-</style></head><body><section id="selection-hud"></section><p class="fixture-note">Miniaturas del módulo real, dibujadas con Canvas2D sin WebGL.<br>Mantén Tab para elegir con el mouse; flechas y Enter también funcionan.<br>La fila usa geometría de cubo, pirámide y estructuras compuestas.</p><div class="fixture-controls"><button id="restore">Restaurar selección</button><button id="add">Añadir Q-bit</button><button id="remove">Quitar último</button><button id="many">128 piezas</button><button id="interact">Activar selección</button><button id="reduced">Movimiento reducido</button><span id="fixture-state"></span></div>
-<script src="assets/js/selection-hud.js"></script><script>
-const cube=[[-.5,-.5,-.5],[.5,-.5,-.5],[.5,-.5,.5],[-.5,-.5,.5],[-.5,.5,-.5],[.5,.5,-.5],[.5,.5,.5],[-.5,.5,.5]],faces=[[0,1,2,3],[4,7,6,5],[0,4,5,1],[1,5,6,2],[2,6,7,3],[3,7,4,0]];
-const pyramid=[[-.5,-.125,-.5],[.5,-.125,-.5],[.5,-.125,.5],[-.5,-.125,.5],[0,.375,0]],pyramidFaces=[[0,1,2,3],[0,4,1],[1,4,2],[2,4,3],[3,4,0]];
-let serial=0,items=[],interactive=false,reduced=false;
-(async()=>{
- const response=await fetch('index.html');if(!response.ok)return;const source=new DOMParser().parseFromString(await response.text(),'text/html');
- for(const node of source.head.querySelectorAll('style,link[rel="stylesheet"]'))document.head.append(node.cloneNode(true));
- document.body.dataset.gameMode='playing';document.body.dataset.gameScene='lab';
- for(const id of ['alpha-census','pause-button','fullscreen-button','tools']){const node=source.querySelector('#'+id)?.cloneNode(true);if(node){if(id==='pause-button')node.hidden=false;document.body.append(node);}}
- document.querySelector('#alpha-census-text').textContent='× 128';
-})().catch(console.error);
-function part(p=[0,0,0],shape='cube'){return {id:++serial,p,q:[0,0,0,1],vertices:shape==='cube'?cube:pyramid,faces:shape==='cube'?faces:pyramidFaces,color:shape==='cube'?[.16,.19,.20]:[.48,.48,.48]};}
-function specimen(parts,mood='neutral',extra={}){return {id:++serial,count:parts.length,name:'Q-bit '+serial,parts,mood,energy:1,revision:serial,...extra};}
-function restore(){items=[specimen([part()]),specimen([part()],'excited'),specimen([part()],'restless',{agitation:.8,shaking:true}),specimen([part([0,0,0],'pyramid')]),specimen([part([-1,0,0]),part(),part([1,0,0]),part([0,1,0])]),specimen([part([-.5,0,0]),part([.5,0,0]),part([.5,1,0])],'excited')];}
-const hud=QBitsSelectionHUD.create({root:document.querySelector('#selection-hud'),onSelect(id,{toggle}){items=toggle?items.filter(i=>i.id!==id):items.filter(i=>i.id===id);}});restore();
-document.querySelector('#restore').onclick=restore;document.querySelector('#add').onclick=()=>items.push(specimen([part()]));document.querySelector('#remove').onclick=()=>items.pop();document.querySelector('#many').onclick=()=>items=Array.from({length:128},()=>specimen([part()]));document.querySelector('#interact').onclick=()=>{interactive=!interactive;hud.setInteractive(interactive);};document.querySelector('#reduced').onclick=()=>{reduced=!reduced;};
-window.addEventListener('keydown',event=>{if(event.code==='Tab'){event.preventDefault();interactive=true;hud.setInteractive(true);}if(interactive&&event.code==='ArrowRight'){event.preventDefault();hud.stepFocus(1);}if(interactive&&event.code==='ArrowLeft'){event.preventDefault();hud.stepFocus(-1);}if(interactive&&event.code==='Enter'){event.preventDefault();hud.activateFocused({toggle:event.ctrlKey});}});window.addEventListener('keyup',event=>{if(event.code==='Tab'){event.preventDefault();interactive=false;hud.setInteractive(false);}});
-let last=performance.now();function frame(now){const dt=Math.min(.1,(now-last)/1000);last=now;hud.update(items,dt,{active:true,reducedMotion:reduced});document.querySelector('#fixture-state').textContent=items.length+' seleccionados · '+hud.visibleCount+' visibles';requestAnimationFrame(frame);}requestAnimationFrame(frame);
-</script></body></html>
+<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Q-bits · selección de estructuras</title><link rel="stylesheet" href="../assets/css/selection-hud.css">
+<p>Mantén Tab para ver la selección. Usa las flechas y Enter para elegir una estructura.</p>
+<section id="selection-hud" hidden></section><script src="../assets/js/selection-hud.js"></script><script>
+let entries=Array.from({length:12},(_,i)=>({id:i,name:'Montaje '+(i+1),count:i+1}));
+const hud=QBitsSelectionHUD.create({root:document.querySelector('#selection-hud'),onSelect(id,{toggle}){
+ entries=entries.filter(item=>toggle?item.id!==id:item.id===id);hud.update(entries);
+}});
+hud.update(entries);hud.setHint('← → para elegir · Enter para aislar');
+window.addEventListener('keydown',event=>{
+ if(!['Tab','ArrowLeft','ArrowRight','Enter'].includes(event.code))return;
+ event.preventDefault();
+ if(event.code==='Tab')hud.setInteractive(true);
+ else if(event.code==='Enter')hud.activateFocused({toggle:event.ctrlKey});
+ else hud.stepFocus(event.code==='ArrowLeft'?-1:1);
+});
+window.addEventListener('keyup',event=>{if(event.code==='Tab')hud.setInteractive(false);});
+</script></html>

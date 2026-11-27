@@ -21,9 +21,7 @@ let trajectorySystem=null,trajectoryPanel=null,trajectoryDraft=null,trajectoryGr
 let radialGlassStamp='',radialGlassAllocated=false;
 const preferences=window.QBitsPreferences;
 let savedPreferences=preferences.load(window.localStorage),visuals=preferences.effective(savedPreferences),settingsScreen=null,lastVisualFrame=0,lastVisualCheck=null,previewViewport=null;
-let selectionHud=null,selectionHudClock=0,selectionHudStamp='',selectionHudItems=[];
-const selectionHudGeometry=new WeakMap();
-const reducedHudMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)');
+let selectionHud=null;
 const visualRGB=key=>preferences.rgb(visuals[key]);
 function radialOpen(){return !!unitRadial?.isOpen;}
 const storyWorld={walls:[],details:[],door:null,target:null,doorProgress:0};
@@ -127,6 +125,8 @@ const vertexSource = `
   attribute vec3 aNormal;
   attribute vec3 aPiecePosition;
   attribute vec3 aPieceNormal;
+  attribute float aPartMark;
+  varying float vPartMark;
   uniform float uJitter;
   uniform vec2 uResolution;
   varying vec2 vSurfaceUV;
@@ -197,6 +197,7 @@ const vertexSource = `
     vNormal = uKind > 0.5 ? rotate(aNormal) : aNormal;
     vLocal = aPiecePosition;
     vLocalNormal = aPieceNormal;
+    vPartMark = aPartMark;
   }
 `;
 
@@ -227,6 +228,10 @@ const fragmentSource = `
   uniform vec4 uLiquidPlane;
   varying vec3 vLocal;
   varying vec3 vLocalNormal;
+  varying float vPartMark;
+  vec3 markedAlbedo(vec3 color){
+    return mix(color, color * vec3(.72,.85,.98) + vec3(.025,.09,.19), vPartMark);
+  }
   float surfaceGrain(){
     vec2 uv=mix(vSurfaceUV,vAffineUV.xy/max(.001,vAffineUV.z),uWarp)*uTextureScale;
     return mix(1.,.965+.035*texture2D(uSurface,uv).r,uTextureMix);
@@ -268,7 +273,7 @@ const fragmentSource = `
       float edge=1.0-smoothstep(.004,.035,min(border.x,min(border.y,border.z)));
       float reflection=pow(max(0.0,dot(reflect(-normalize(vec3(-.6,1.,.8)),n),view)),24.0);
       vec3 glass=mix(vec3(.53,.76,.68),vec3(.96,1.,.98),min(1.,fres*.6+edge*.5+reflection*.7));
-      gl_FragColor=vec4(glass,.045+fres*.22+edge*.23+reflection*.18);return;
+      gl_FragColor=vec4(mix(glass,vec3(.23,.46,.76),vPartMark),.045+fres*.22+edge*.23+reflection*.18+vPartMark*.23);return;
     }
     if (uKind > 14.5) {
       // The volume is clipped against the gravity/slosh plane before drawing.
@@ -342,7 +347,7 @@ const fragmentSource = `
     if (uKind > 4.5) {
       vec3 lightDir = normalize(vec3(-0.6, 1.0, 0.35));
       float light = 0.77 + 0.22 * max(0.0, dot(vNormal, lightDir)) + 0.06 * max(0.0, dot(vNormal, normalize(vec3(0.7,0.2,-0.6))));
-      gl_FragColor = vec4(clamp(uTint.rgb * lightBands(light) * surfaceGrain() + accentLight(), 0.0, 1.0), uTint.a);
+      gl_FragColor = vec4(clamp(markedAlbedo(uTint.rgb) * lightBands(light) * surfaceGrain() + accentLight(), 0.0, 1.0), uTint.a);
       return;
     }
     if (uKind > 2.5) {
@@ -368,7 +373,7 @@ const fragmentSource = `
       float sheen = 0.065 * pow(max(0.0, dot(vNormal, halfVector)), 24.0);
       float black = 0.035 + 0.13 * lightBands(light) + 0.045 * fill + sheen*(1.+uLighting*2.) + edgeLight;
       black*=surfaceGrain();black+=uLighting*.025*max(vNormal.y,0.);
-      gl_FragColor = vec4(vec3(black)+accentLight(), 1.0);
+      gl_FragColor = vec4(markedAlbedo(vec3(black))+accentLight(), 1.0);
       return;
     }
     float halfSize = uSize * 0.5;
@@ -454,9 +459,10 @@ function gameInputActive(){return panel.hidden&&menu.hidden&&commandMenu.hidden&
 function inputLabel(action){return window.QBitsControls?.labelFor(action,savedPreferences,gamepadActive?'gamepad':'keyboard')||action;}
 function walkingInputLabel(){return gamepadActive?'stick izquierdo':['forward','left','backward','right'].map(inputLabel).join(' / ');}
 function lookingInputLabel(){return gamepadActive?'stick derecho':'mouse';}
-function controlEvent(code,event={},source='keyboard'){return {code,repeat:false,target:canvas,clientX:event.clientX??canvas.clientWidth/2,clientY:event.clientY??canvas.clientHeight/2,altKey:altDown()||(!!event.altKey&&!/^Alt/.test(event.code||'')),ctrlKey:ctrlDown()||(!!event.ctrlKey&&!/^Control/.test(event.code||'')),shiftKey:shiftDown()||!!event.shiftKey,metaKey:!!event.metaKey,source,preventDefault(){event.preventDefault?.();},stopPropagation(){event.stopPropagation?.();}};}
+function controlEvent(code,event={},source='keyboard'){return {code,repeat:false,cancelled:!!event.cancelled,target:canvas,clientX:event.clientX??canvas.clientWidth/2,clientY:event.clientY??canvas.clientHeight/2,altKey:altDown()||(!!event.altKey&&!/^Alt/.test(event.code||'')),ctrlKey:ctrlDown()||(!!event.ctrlKey&&!/^Control/.test(event.code||'')),shiftKey:shiftDown()||!!event.shiftKey,metaKey:!!event.metaKey,source,preventDefault(){event.preventDefault?.();},stopPropagation(){event.stopPropagation?.();}};}
 function setHudInput(enabled,source='keyboard'){
- if(enabled){if(hudInputActive||!window.qbitsSelectionHud?.available||story.mode!=='playing'||story.transition||!panel.hidden||!menu.hidden||!commandMenu.hidden)return;hudInputActive=true;hudReturnCapture=document.pointerLockElement===canvas;keys.clear();gamepadMove=[0,0];window.qbitsSelectionHud.setHint?.(source==='gamepad'?window.QBitsControls.gamepadHint(savedPreferences.controls.gamepad,'hud'):'← → · elegir · Enter · aislar · Ctrl + clic · quitar');window.qbitsSelectionHud.setInteractive(true,source);if(hudReturnCapture){story.intentionalUnlock=true;story.preserveGrip=true;document.exitPointerLock();}}
+ if(enabled)updateSelectionHud();
+ if(enabled){if(hudInputActive||!window.qbitsSelectionHud?.available||story.mode!=='playing'||story.transition||!panel.hidden||!menu.hidden||!commandMenu.hidden)return;hudInputActive=true;hudReturnCapture=document.pointerLockElement===canvas;keys.clear();gamepadMove=[0,0];window.qbitsSelectionHud.setHint?.(source==='gamepad'?window.QBitsControls.gamepadHint(savedPreferences.controls.gamepad,'hud'):'← → · elegir · Enter · aislar · Ctrl + clic · quitar');window.qbitsSelectionHud.setInteractive(true,source);updateSelectionHud();if(hudReturnCapture){story.intentionalUnlock=true;story.preserveGrip=true;document.exitPointerLock();}}
  else {if(!hudInputActive)return;hudInputActive=false;window.qbitsSelectionHud?.setInteractive(false,source);const capture=hudReturnCapture;hudReturnCapture=false;if(capture&&!document.hidden&&story.mode==='playing'&&!story.transition)captureMouse();}
 }
 function dispatchControlAction(id,down,source='keyboard',event={}){
@@ -1203,6 +1209,7 @@ const puzzle={active:false,stage:0,complete:false,run:0,portals:[],buttons:[],wa
 let cargoSerial=0,selectedCargo=null,pendingCargo=null,moveChoice=null,routeInspection=null,commandState=null,menuConnector=null;
 const commandMenu=document.querySelector('#command-menu');
 let multiSelection=[],marquee=null,hoverPointer=null,detachChoice=null;
+let partSelection=null,lastBrushDirection=null;
 const menu=document.querySelector('#detach-menu'),selectionRect=document.querySelector('#selection-rect');
 let serial=0, held=null, selected=null, snap=null, accumulator=0, simTime=0, noticeTimer;
 const panel=document.querySelector('#panel'),targetLabel=document.querySelector('#target'),crosshair=document.querySelector('#crosshair');
@@ -1474,7 +1481,7 @@ function makeGroup(parts,reference=Q(),velocity=V(),spin=V(),retiredShapes=null)
  const g={body,parts:local,partShapes,materialShapeCount,route:null,pin:null};body.qubitGroup=g;body.addEventListener('wakeup',()=>{g.wakeMechanicalComponent=true;});g.block=analyzeBlock(g);groups.push(g);invalidateMechanicalIndex();registerSpeechGroup(g);registerTrajectoryGroup(g);for(const p of local)if(p.mood.cutPasses?.length)cutterPassParts.add(p.id);return g;
 }
 function addQubit(p,weight=settings.mass,shape='cube'){return makeGroup([{id:++serial,weight,shape:normalizeUnitShape(shape),p:V(...p),q:Q()}]);}
-function removeGroup(g){trajectoryBeforeRemoveGroup(g);materializeConveyorsForGroup(g);disposeRigidCubeBatch(g);disposeRigidOutline(g);delete g.batteryGeometryCache;delete g.partQueryCache;robotBeforeRemoveGroup(g);invalidateMechanicalIndex();resetBatteryLiquids(g.body);invalidateRotorBody(g);undockCampaignGroup(g);removeSpeechGroup(g);leaveHaul(g);stopRoute(g);world.removeBody(g.body);const i=groups.indexOf(g);if(i>=0)groups.splice(i,1);invalidateMechanicalIndex();if(selected?.g===g)selected=null;multiSelection=multiSelection.filter(item=>item!==g);}
+function removeGroup(g){if(partSelection&&(partSelection.root===g||partSelection.members.has(g)))clearPartSelection();trajectoryBeforeRemoveGroup(g);materializeConveyorsForGroup(g);disposeRigidCubeBatch(g);disposeRigidOutline(g);delete g.batteryGeometryCache;delete g.partQueryCache;robotBeforeRemoveGroup(g);invalidateMechanicalIndex();resetBatteryLiquids(g.body);invalidateRotorBody(g);undockCampaignGroup(g);removeSpeechGroup(g);leaveHaul(g);stopRoute(g);world.removeBody(g.body);const i=groups.indexOf(g);if(i>=0)groups.splice(i,1);invalidateMechanicalIndex();if(selected?.g===g)selected=null;multiSelection=multiSelection.filter(item=>item!==g);}
 function corners(pose){if(isTBit(pose))return unitProfile(pose).vertices.map(v=>add(pose.p,pose.q.vmult(v)));const out=[],half=pose.half||V(HALF,HALF,HALF);for(const x of [-half.x,half.x])for(const y of [-half.y,half.y])for(const z of [-half.z,half.z])out.push(add(pose.p,pose.q.vmult(V(x,y,z))));return out;}
 // Rigid geometry is immutable between makeGroup/removeGroup. A translation
 // never changes its rotated extents. Keep a bounded set of exact orientations
@@ -1887,6 +1894,10 @@ function closeUnitRadial(commit=false){
 }
 function cancelUnitCreation(){pendingUnitCreation=null;creationPreview=null;sceneAuthoringPlacement=null;redraw=true;}
 function handleKeyUp(event){
+ if(event.code.startsWith('Control')){
+  if(ctrlDown()&&canBrushParts()&&!event.cancelled)brushAssemblyPart();
+  lastBrushDirection=null;
+ }
  keys.delete(event.code);
  if(event.code.startsWith('Alt'))routeInspection=null;
  if(event.code==='ShiftLeft'||event.code==='ShiftRight'){if(creationPreview&&!shiftDown())creationPreview.freeRotation=false;resetAssemblyShake();if(held&&!shiftDown())held.shakeSeparated=false;}
@@ -1980,7 +1991,7 @@ function aimQubit(max=2.7,dir=direction()){
   for(const pose of conveyorSurfacePoses(conveyor)){const distance=rayPuzzleBox(origin,dir,pose,best);if(distance===null||distance>=best)continue;
    const point=add(origin,mul(dir,distance)),local=pose.q.inverse().vmult(sub(point,pose.p)),normal=V();let axis='y',gap=Infinity;
    for(const key of ['x','y','z']){const edge=Math.abs(Math.abs(local[key])-pose.half[key]);if(edge<gap){axis=key;gap=edge;}}
-   normal[axis]=local[axis]<0?-1:1;best=distance;hit={distance,point,normal:pose.q.vmult(normal),g:base.g,part:base.part};
+   normal[axis]=local[axis]<0?-1:1;best=distance;hit={distance,point,normal:pose.q.vmult(normal),g:base.g,part:base.part,conveyorSurface:true};
   }
  }
  if(targetAimCache)targetAimCache.push({x:origin.x,y:origin.y,z:origin.z,dx:dir.x,dy:dir.y,dz:dir.z,max,hit});
@@ -2446,14 +2457,26 @@ function assemblyFaceSets(parts){
  return faces;
 }
 function assemblyConnections(parts){
- const links=parts.map(()=>new Set()),faces=assemblyFaceSets(parts);
+ const links=parts.map(()=>new Set());if(parts.length<2)return links;
+ const faces=assemblyFaceSets(parts);
  for(const [a,b]of propellerBonds(parts)){links[a].add(b);links[b].add(a);}
- for(let i=0;i<faces.length;i++)for(let j=i+1;j<faces.length;j++){
-  const a=faces[i],b=faces[j];
-  if(a.kind!==b.kind||a.members.some(index=>b.members.includes(index))||!facesCoincide(a,b))continue;
-  // A complete composite contact binds every contributor. Removing a half
-  // rebuilds this graph, so its formerly full-square joint cannot survive.
-  for(const ai of a.members)for(const bi of b.members){links[ai].add(bi);links[bi].add(ai);}
+ // A cut in a large solid needs the same face matching as a weld. Only
+ // coincident centres can match; search adjacent bins at tolerance boundaries.
+ const buckets=new Map(),tolerance=.00005,cell=n=>Math.floor(n/CUBE_SIZE),key=(x,y,z)=>x+','+y+','+z;
+ for(const face of faces){
+  const {x,y,z}=face.center;
+  for(let i=cell(x-tolerance);i<=cell(x+tolerance);i++)
+   for(let j=cell(y-tolerance);j<=cell(y+tolerance);j++)
+    for(let k=cell(z-tolerance);k<=cell(z+tolerance);k++){
+     const nearby=buckets.get(key(i,j,k));if(!nearby)continue;
+     for(const other of nearby){
+      if(other.kind!==face.kind||other.members.some(n=>face.members.includes(n))||!facesCoincide(other,face,tolerance))continue;
+      for(const a of other.members)for(const b of face.members){links[a].add(b);links[b].add(a);}
+     }
+    }
+  const bin=key(cell(x),cell(y),cell(z));
+  if(!buckets.has(bin))buckets.set(bin,[]);
+  buckets.get(bin).push(face);
  }
  return links;
 }
@@ -2522,6 +2545,125 @@ function detachPart(hit,all=false){
   makeFragments(rest,ref,velocity,spin);const detached=makeGroup([one],one.q,velocity,spin);selected={g:detached,part:detached.parts[0]};announce(unitLabel(one)+' separado');
  }
  if(modules.length){refreshRotors();pruneConveyors();for(const c of modules)if(conveyors.includes(c)){conveyorEnsureSurfaces(c);virtualizeConveyor(c);}}
+}
+// A brush stroke only records material IDs. Resolve topology again when the live
+// menu runs, since the world keeps simulating while the pointer is unlocked.
+function clearPartSelection(){
+ lastBrushDirection=null;if(!partSelection)return;
+ for(const g of partSelection.members.keys())for(const material of g.rigidCubeBatch?.batches||[])releasePartMarkBuffer(material);
+ partSelection=null;targetLabel.classList.remove('part-selection-count');redraw=true;
+}
+function livePartSelection(){
+ const state=partSelection;
+ if(!state)return null;
+ if(selected?.g!==state.root){clearPartSelection();return null;}
+ const component=mechanicalComponentGroups(state.root);
+ if(component!==state.component){
+  if(!component||[...state.members.keys()].some(g=>!component.includes(g))){clearPartSelection();return null;}
+  state.component=component;
+ }
+ return state;
+}
+function canBrushParts(){
+ return !!selected?.g&&!held&&!marquee&&!selectedRotorIds.length&&gameInputActive()&&storyActionAllowed()&&!openingProtected()&&
+  !creationPreview&&!shelfPreview&&!familyPlacement&&!robotPoseDraft&&!trajectoryDraft&&!powerDraft&&!sceneAuthoringMarkerDraft&&
+  !radialOpen()&&!cullingLab.observer&&!settingsScreen?.isOpen;
+}
+function brushVisiblePart(dir,hit=aimQubit(4,dir)){
+ if(!hit||hit.conveyorSurface||aimFamily(dir,hit.distance)||aimShelf(dir,hit.distance))return false;
+ return markAssemblyPart(hit);
+}
+function brushAssemblyPart(){
+ const dir=direction(),previous=lastBrushDirection;
+ // Fill the short arc between displayed frames. Keep a fast turn bounded even
+ // if the browser resumes after a lengthy frame.
+ const samples=previous?Math.min(12,Math.ceil(previous.distanceTo(dir)/.018)):1;
+ for(let i=1;i<samples;i++){
+  const ray=V();previous.lerp(dir,i/samples,ray);ray.normalize();brushVisiblePart(ray);
+ }
+ brushVisiblePart(dir);lastBrushDirection=dir;
+}
+function markAssemblyPart(hit){
+ if(!canBrushParts()||!hit||hit.conveyorSurface)return false;
+ const root=selected.g,component=mechanicalComponentGroups(root);
+ if(!component||!component.includes(hit.g)||(component.length===1&&root.parts.length===1))return false;
+ let state=livePartSelection();
+ if(state?.ids.has(hit.part.id)){state.lastId=hit.part.id;return true;}
+ if((state?.ids.size||0)>=settings.maxSelect)return false;
+ if(!state){
+  state=partSelection={root,component,ids:new Set(),members:new Map(),lastId:null};
+  targetLabel.classList.add('part-selection-count');
+  multiSelection=[];selectedCargo=null;pendingCargo=null;pendingPickup=null;
+ }
+ let marks=state.members.get(hit.g);
+ if(!marks){marks=new Set();state.members.set(hit.g,marks);}
+ marks.add(hit.part.id);state.ids.add(hit.part.id);state.lastId=hit.part.id;
+ redraw=true;return true;
+}
+function markedPartCount(state){return state.ids.size===1?'1 pieza marcada':state.ids.size+' piezas marcadas';}
+function openPartSelectionMenu(){
+ const state=livePartSelection(),last=state&&rotorPart(state.lastId);
+ if(!last)return;
+ const all=state.component.every(g=>state.members.get(g)?.size===g.parts.length);
+ const run=action=>{editMarkedParts(state,action);captureMouse();};
+ openCommandMenu(last.p,markedPartCount(state),[
+  {label:'Separar piezas marcadas',disabled:all,run:()=>run('separate')},
+  {label:'Eliminar piezas marcadas',run:()=>run('delete')},
+  {label:'Limpiar marcas',run:()=>{clearPartSelection();captureMouse();}},
+  {label:'Cerrar',run:()=>captureMouse()}
+ ]);
+}
+function editMarkedParts(state,action){
+ if(!state||state!==livePartSelection()||held||!storyActionAllowed()||openingProtected()){
+  announce('El montaje cambió. Vuelve a marcar las piezas.');return false;
+ }
+ const deleting=action==='delete',component=state.component,ids=state.ids;
+ if(deleting&&puzzleBlockedEdit())return false;
+ if(!deleting&&component.every(g=>state.members.get(g)?.size===g.parts.length))return false;
+ if(runningConveyorForGroups(component)){announce('Apaga la cinta antes de modificar sus piezas.');return false;}
+ if(component.some(g=>g.blueprintJob)){announce('Espera a que termine el montaje del plano.');return false;}
+ const affectedBelts=conveyors.filter(c=>component.includes(rotorPart(c.baseId)?.g));
+ const joints=rotors.filter(r=>component.includes(mechanicalPartIndex().get(r.aId)?.g));
+ const keepJoints=new Set(joints.filter(r=>r.constraint||r.virtualConveyor));
+ // Materialize before taking world poses. Intact joints on either side keep
+ // their original pivots and settings, even with normal solver drift.
+ for(const c of affectedBelts)materializeConveyor(c);
+ automationIntervention();
+ trajectoryStopForGroups(component);
+ robotStopForGroups(component);
+ for(const rotor of joints){
+  const a=ids.has(rotor.aId),b=ids.has(rotor.bId);
+  if(a!==b||(deleting&&a))disconnectRotor(rotor);
+ }
+ for(const c of affectedBelts)conveyorRemoveSurfaces(c);
+ if(deleting&&trajectorySystem)for(const id of ids)if(mechanicalPartIndex().get(id)?.part.mood.trajectory)trajectorySystem.unlink(id);
+ const extracted=[];
+ clearPartSelection();
+ for(const [g,marks] of state.members){
+  if(!deleting&&marks.size===g.parts.length){extracted.push(g);continue;}
+  const parts=worldParts(g),ref=g.body.quaternion.clone(),center=g.body.position.clone(),velocity=g.body.velocity.clone(),spin=g.body.angularVelocity.clone();
+  removeGroup(g);
+  const rebuild=subset=>{
+   const fragments=makeFragments(subset,ref,velocity,spin);
+   for(const fragment of fragments)fragment.body.velocity.copy(add(velocity,spin.cross(sub(fragment.body.position,center))));
+   return fragments;
+  };
+  rebuild(parts.filter(p=>!marks.has(p.id)));
+  if(!deleting)extracted.push(...rebuild(parts.filter(p=>marks.has(p.id))));
+ }
+ refreshRotors(keepJoints);pruneConveyors();pruneRobotArms();
+ for(const c of affectedBelts)if(conveyors.includes(c)){conveyorEnsureSurfaces(c);virtualizeConveyor(c);}
+ clearSelection();
+ if(!deleting){
+  const picked=rotorPart(state.lastId);
+  multiSelection=extracted;selected={g:picked.g,part:picked.part};
+  if(canCarry(extracted)&&picked.p.distanceTo(V(...camera))<=2.8){
+   pendingPickup={...selected,team:extracted,keepSelectionOnDrop:true};
+   if(gameInputActive())completePendingPickup();
+  }
+ }
+ announce(markedPartCount(state)+(deleting?' · eliminación completada':' · separación completada'));
+ redraw=true;return true;
 }
 function resetAssemblyShake(){if(held)held.assemblyShake=null;}
 // One connected mechanism can have several articulated rigid units. An
@@ -3334,7 +3476,13 @@ function robotArmStatus(arm){
 function robotStopForGroups(list){stopServoMarchForGroups(list);flightStopForGroups(list);conveyorStopForGroups(list);for(const arm of robotArms)if(rotorConnectedGroups([robotGripperHit(arm.gripperId)?.g].filter(Boolean)).some(g=>list.includes(g)))stopRobotArm(arm,'Detenido para manipular');for(const grip of [...robotGrips.values()])if(list.includes(grip.g)||list.includes(robotGripperHit(grip.id)?.g))releaseGripper(grip.id);}
 function robotBeforeRemoveGroup(g){robotStopForGroups([g]);for(const arm of robotArms)if(arm.brakes.some(c=>c.bodyA===g.body||c.bodyB===g.body))robotRemoveBrakes(arm);}
 function clearRobotArms(){cancelRobotPoseDraft();for(const arm of [...robotArms]){stopRobotArm(arm);robotRemoveBrakes(arm);}for(const id of [...robotGrips.keys()])releaseGripper(id);robotArms.length=0;robotWorkingParts.clear();}
-function pruneRobotArms(){for(const arm of [...robotArms])if(!robotGripperHit(arm.gripperId)||!robotGripperHit(arm.baseId)||robotArmRotors(arm).length!==arm.joints.length){stopRobotArm(arm,'Brazo incompleto');robotRemoveBrakes(arm);robotArms.splice(robotArms.indexOf(arm),1);}}
+function pruneRobotArms(){
+ for(const arm of [...robotArms]){
+  const component=mechanicalComponentGroups(robotGripperHit(arm.gripperId)?.g),members=robotArmRotors(arm);
+  if(component?.includes(robotGripperHit(arm.baseId)?.g)&&members.length===arm.joints.length&&members.every(r=>component.includes(rotorGroups(r)[0])))continue;
+  stopRobotArm(arm,'Brazo incompleto');robotRemoveBrakes(arm);robotArms.splice(robotArms.indexOf(arm),1);
+ }
+}
 function serializeRobotArms(){pruneRobotArms();return robotArms.map(arm=>({gripperId:arm.gripperId,baseId:arm.baseId,joints:arm.joints.map(j=>({...j})),poses:JSON.parse(JSON.stringify(arm.poses)),repeat:arm.repeat}));}
 function restoreRobotArms(records){for(const data of Array.isArray(records)?records:[]){if(robotArms.some(a=>a.gripperId===data.gripperId))continue;createRobotArm(data);}}
 function robotArmTemplate(subject,idToKey,linkedRotors){
@@ -4120,7 +4268,13 @@ function detachConveyorModule(conveyor){
 }
 function conveyorStopForGroups(list){for(const conveyor of conveyors){const base=rotorPart(conveyor.baseId);if(base&&rotorConnectedGroups([base.g]).some(g=>list.includes(g)))stopConveyor(conveyor,'Detenida para manipular');}}
 function clearConveyors(){for(const conveyor of [...conveyors]){stopConveyor(conveyor);conveyorRemoveSurfaces(conveyor);}conveyors.length=0;}
-function pruneConveyors(){for(const conveyor of [...conveyors])if(!conveyorComplete(conveyor)){stopConveyor(conveyor,'Cinta incompleta');conveyorRemoveSurfaces(conveyor);conveyors.splice(conveyors.indexOf(conveyor),1);}}
+function pruneConveyors(){
+ for(const conveyor of [...conveyors]){
+  const topology=conveyorTopology(conveyor);
+  if(topology.complete&&topology.members.every(r=>rotorGroups(r).includes(topology.base.g)))continue;
+  stopConveyor(conveyor,'Cinta incompleta');conveyorRemoveSurfaces(conveyor);conveyors.splice(conveyors.indexOf(conveyor),1);
+ }
+}
 function serializeConveyors(){syncVirtualConveyors(0);pruneConveyors();return conveyors.map(c=>({baseId:c.baseId,required:[...c.required],moduleParts:conveyorModuleParts(c),joints:c.joints.map(j=>({...j})),kind:c.kind,direction:c.direction,capacity:c.capacity,...(c.ports?{ports:JSON.parse(JSON.stringify(c.ports))}:{})}));}
 function restoreConveyors(records){for(const data of Array.isArray(records)?records:[])if(!conveyors.some(c=>c.baseId===data.baseId))createConveyor(data);}
 function conveyorTemplate(subject,idToKey,linkedRotors){
@@ -4610,10 +4764,11 @@ function activeRotorSet(){
  return rotorSetFor(selectedRotor());
 }
 function controlRotors(){const chosen=selectedRotors();if(chosen.length)return chosen;const set=activeRotorSet();return set?rotorSetMembers(set):selectedRotor()?[selectedRotor()]:[];}
-function clearRotorSelection(){selectedRotorIds=[];redraw=true;}
-function selectRotorSet(set){const members=rotorSetMembers(set);selectedRotorIds=members.map(r=>r.id);multiSelection=[];selectedCargo=null;const hit=members.length&&rotorPart(members[0].aId);selected=hit?{g:hit.g,part:hit.part}:null;redraw=true;return members.length>0;}
+function clearRotorSelection(){clearPartSelection();selectedRotorIds=[];redraw=true;}
+function selectRotorSet(set){clearPartSelection();const members=rotorSetMembers(set);selectedRotorIds=members.map(r=>r.id);multiSelection=[];selectedCargo=null;const hit=members.length&&rotorPart(members[0].aId);selected=hit?{g:hit.g,part:hit.part}:null;redraw=true;return members.length>0;}
 function toggleRotorSelection(rotor){
  if(!rotors.includes(rotor))return false;
+ clearPartSelection();
  const at=selectedRotorIds.indexOf(rotor.id);
  if(at<0&&selectedRotors().length>=settings.maxSelect){announce('Máximo '+settings.maxSelect+' rotores seleccionados');return false;}
  if(at<0)selectedRotorIds.push(rotor.id);else selectedRotorIds.splice(at,1);
@@ -6470,7 +6625,9 @@ function handleKey(event){
  if(['ShiftLeft','ShiftRight','ControlLeft','ControlRight','AltLeft','AltRight','KeyW','KeyA','KeyS','KeyD','KeyC'].includes(event.code)){
   event.preventDefault();
   if(event.code.startsWith('Shift')&&held&&!shiftDown())beginHeldRotation();
-  keys.add(event.code);return;
+  keys.add(event.code);
+  if(event.code.startsWith('Control')&&!event.repeat&&canBrushParts())brushAssemblyPart();
+  return;
  }
  if(event.repeat)return;
  if(event.code==='KeyB'){event.preventDefault();startCreationTool('quick-cargo');}
@@ -6478,7 +6635,7 @@ function handleKey(event){
  if(event.code==='KeyV'){event.preventDefault();duplicateSelection();}
  if(event.code==='KeyR'){event.preventDefault();restartSelection();}
  if(event.code==='KeyX'&&(event.altKey||altDown())){event.preventDefault();openDetachMenu(aimQubit()||selected);}
- if(event.code==='Delete'||event.code==='Backspace'){event.preventDefault();const c=aimCargo(4);if(c)deleteCargo(c.cargo);else deleteQubit(held||aimQubit()||selected);}
+ if(event.code==='Delete'||event.code==='Backspace'){event.preventDefault();if(livePartSelection()){openPartSelectionMenu();return;}const c=aimCargo(4);if(c)deleteCargo(c.cargo);else deleteQubit(held||aimQubit()||selected);}
 }
 function updateTarget(){
  if(sceneAuthoringActive&&sceneAuthoringMarkerDraft){const hit=sceneAuthoringMarkerPoint();crosshair.classList.toggle('ready',!!hit);targetLabel.textContent=hit?'Marca '+sceneAuthoringMarkerDraft.label+' · clic: colocar · clic derecho/Esc: cancelar':'Apunta a una superficie para colocar la marca';return;}
@@ -6490,9 +6647,11 @@ function updateTarget(){
   targetLabel.textContent=({home:'Posición inicial',pick:'A · Tomar',place:'B · Soltar'}[draft.name])+' · '+draft.heightCm.toLocaleString('es-CL')+' cm · '+(valid?'Clic para guardar':draft.reason||'Apunta para marcar')+' · Rueda: altura · Esc: volver';
   return;
  }
+ livePartSelection();
  snap=findSnap();updateCallout();updateCargoCallout();updateMenuConnector();updateInspection();updatePuzzleHUD();updateMoodSelection();updateAlphaHUD();
  if(!gameInputActive()){targetLabel.textContent='';crosshair.classList.remove('ready');return;}
  const familyHit=!held&&aimFamily();if(held?.family||familyPlacement||familyHit){familyActive=held?.family||familyPlacement?.family||familyHit.family;targetLabel.textContent=held?.family?familyHandHint():familyPlacement?.reason||familyActive.name+' · ×'+familyActive.count+' · clic: tomar · clic derecho: familia';crosshair.classList.toggle('ready',familyPlacement?!!familyPlacement.valid:true);return;}
+ if(ctrlDown()&&canBrushParts())brushAssemblyPart();
  const hit=held||aimQubit(),shelfTarget=!held&&aimShelf();crosshair.classList.toggle('ready',creationPreview?.authoring?!!creationPreview.valid:!!hit||!!shelfTarget);
  if(shelfPreview)targetLabel.textContent=shelfPreview.valid?(shelfPreview.snapped?'Repisa alineada · ':'')+'Clic / E · colocar · Esc · cancelar':shelfPreview.reason;
  else if(creationPreview)targetLabel.textContent=creationPreview.reason;
@@ -6507,9 +6666,14 @@ function updateTarget(){
  else if(selectedTeam().length)targetLabel.textContent=(story.scene==='lab'?'Mantén '+inputLabel('primary')+' · mover selección':inputLabel('primary')+' · tomar selección')+' | '+inputLabel('clear')+' · deseleccionar';
  else if(hit)targetLabel.textContent=totalWeight(hit.g)>settings.maxCarry?'Supera la capacidad de '+formatWeight(settings.maxCarry)+' u':'Clic · tomar | clic derecho · seleccionar';else targetLabel.textContent=aimCargo(4)?'Clic derecho · órdenes del cuerpo':wallAim()?'Clic derecho · organización de pared':'';
  if(!held&&!pendingUnitCreation&&!marquee&&story.scene==='lab'&&!puzzle.active){const text=powerTargetText();if(text)targetLabel.textContent=text;}
+ if(!held&&!creationPreview&&!shelfPreview&&!marquee&&partSelection){
+  targetLabel.textContent=markedPartCount(partSelection)+' · '+inputLabel('secondary')+' · separar o eliminar';
+ }else if(hit&&!held&&selected?.g===hit.g&&canBrushParts()&&(hit.g.parts.length>1||rotorForGroup(hit.g))){
+  targetLabel.textContent+=' · '+inputLabel('drop')+' + apuntar · marcar piezas';
+ }
  if(pendingCargo)targetLabel.textContent='Clic derecho en el suelo · destino de la carga';
  const pieces=multiSelection.reduce((n,g)=>n+g.parts.length,0),weight=multiSelection.reduce((n,g)=>n+totalWeight(g),0);
- document.querySelector('#selection').textContent=multiSelection.length>1?pieces+' seleccionados · '+formatWeight(weight)+' u':'';
+ document.querySelector('#selection').textContent=partSelection?markedPartCount(partSelection):multiSelection.length>1?pieces+' seleccionados · '+formatWeight(weight)+' u':'';
  }finally{targetAimCache=previousAimCache;}
 }
 
@@ -6535,6 +6699,7 @@ face([[-.5,0,-.5],[.5,0,-.5],[.5,0,.5],[-.5,0,.5]],[0,1,0]);
 const shadowGeometry=buffer(vertices.slice(roomVertexCount));vertices.length=roomVertexCount;
 const ringVertices=[];for(let i=0;i<48;i++)for(const n of [i,i+1]){const t=n/48*Math.PI*2;ringVertices.push(Math.cos(t),0,Math.sin(t),0,1,0);}
 const ringGeometry=buffer(ringVertices),lineGeometry=gl.createBuffer();
+const partMarkAttribute=gl.getAttribLocation(program,'aPartMark');
 const attributes=[['aPosition',0],['aNormal',12],['aPiecePosition',0],['aPieceNormal',12]].map(([name,offset])=>[gl.getAttribLocation(program,name),offset]);
 sceneGeometryBindings=window.QBitsGraphics?.geometryBindings(gl,attributes)||null;
 let boundGeometry=null,boundGeometryLayout=false;
@@ -6677,7 +6842,15 @@ function drawBatteriesTransparent(){
  const packs=groups.filter(renderGroupVisible).flatMap(batteryVisualPacks).sort((a,b)=>b.p.distanceTo(V(...camera))-a.p.distanceTo(V(...camera)));
  if(!packs.length)return;
  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
- for(const pack of packs)drawBatteryGlass(pack);
+ for(const pack of packs){
+  const g=pack.body.qubitGroup,marks=partSelection?.members.get(g);
+  if(!marks||!pack.parts.some(p=>marks.has(p.id))){drawBatteryGlass(pack);continue;}
+  for(const part of pack.parts){
+   gl.vertexAttrib1f(partMarkAttribute,marks.has(part.id)?1:0);
+   drawBatteryGlass({...partPose(g,part),size:V(CUBE_SIZE,CUBE_SIZE,CUBE_SIZE)});
+  }
+  gl.vertexAttrib1f(partMarkAttribute,0);
+ }
  gl.depthMask(true);gl.disable(gl.BLEND);
 }
 function drawRobotArmLights(){
@@ -6730,7 +6903,10 @@ function drawConveyorBlueprintArrows(bp,targets){
 // glass/liquid and gripper markings retain their own dynamic render passes.
 function disposeRigidCubeBatch(g){
  const entry=g.rigidCubeBatch;if(!entry)return;
- for(const batch of entry.batches||[entry])if(batch.buffer){deleteRenderBuffer(batch.buffer);if(boundGeometry===batch.buffer)boundGeometry=null;}
+ for(const batch of entry.batches||[entry]){
+  releasePartMarkBuffer(batch);
+  if(batch.buffer){deleteRenderBuffer(batch.buffer);if(boundGeometry===batch.buffer)boundGeometry=null;}
+ }
  delete g.rigidCubeBatch;
 }
 // Remove only full, coincident opposing faces inside one rigid body. Keep
@@ -6760,33 +6936,63 @@ function rigidCubeBatch(g){
  const local=g.parts.map(p=>({part:p,shape:unitShape(p),battery:isExternalBattery(p),x:p.offset.x,y:p.offset.y,z:p.offset.z,qx:p.q.x,qy:p.q.y,qz:p.q.z,qw:p.q.w}));
  const blades=new Set(propellerLayout(g).flatMap(m=>m.blades)),solidParts=g.parts.filter(part=>!isExternalBattery(part)&&!blades.has(part)),hiddenFaces=rigidHiddenFaces(solidParts);
  const materials=new Map(),append=(key,kind,color,part,first,count)=>{
-  let material=materials.get(key);if(!material){material={kind,color,data:[]};materials.set(key,material);}
-  const data=unitMeshes[unitShape(part)].data;
+  let material=materials.get(key);if(!material){material={kind,color,data:[],ranges:[]};materials.set(key,material);}
+  const data=unitMeshes[unitShape(part)].data,start=material.data.length/12;
   for(let i=first*6;i<(first+count)*6;i+=6){
    if(hiddenFaces.get(part)?.has([data[i+3],data[i+4],data[i+5]].map(n=>Math.round(n*1e8)).join(',')))continue;
    const position=add(part.offset,part.q.vmult(V(data[i]*CUBE_SIZE,data[i+1]*CUBE_SIZE,data[i+2]*CUBE_SIZE))),normal=part.q.vmult(V(data[i+3],data[i+4],data[i+5]));
    material.data.push(position.x,position.y,position.z,normal.x,normal.y,normal.z,...data.slice(i,i+6));
   }
+  const end=material.data.length/12;
+  if(end>start)material.ranges.push({id:part.id,start,end});
  };
  for(const part of solidParts){
   const shape=unitShape(part);
   if(shape==='coupler'){append('coupler',5,[.20,.23,.24,1],part,0,30);append('tip',5,[.53,.59,.58,1],part,30,12);}
   else append(shape==='cube'?'cube':'tbit',shape==='cube'?1:5,shape==='cube'?null:[.48,.48,.48,1],part,0,unitMeshes[shape].count);
  }
- const batches=[];for(const [key,material]of materials)batches.push({key,kind:material.kind,color:material.color,count:material.data.length/12,buffer:buffer(material.data)});
+ const batches=[];for(const [key,material]of materials)batches.push({key,kind:material.kind,color:material.color,count:material.data.length/12,buffer:buffer(material.data),ranges:material.ranges});
  boundGeometry=null;const cubes=batches.find(b=>b.key==='cube');
  g.rigidCubeBatch={parts:g.parts,local,batches,hiddenFaceCount:[...hiddenFaces.values()].reduce((n,set)=>n+set.size,0),count:cubes?.count||0,buffer:cubes?.buffer||null};return batches.length?g.rigidCubeBatch:null;
+}
+// One byte per visible vertex, uploaded only when this group's marks change.
+// The base mesh, depth test and number of material draws stay the same.
+function releasePartMarkBuffer(material){
+ if(!material.markBuffer)return;
+ gl.deleteBuffer(material.markBuffer);material.markBuffer=null;material.markData=null;material.marks=null;
+}
+function bindPartMarks(material,marks){
+ if(!material.markBuffer){material.markBuffer=gl.createBuffer();material.markData=new Uint8Array(material.count);}
+ gl.bindBuffer(gl.ARRAY_BUFFER,material.markBuffer);
+ if(material.marks!==marks||material.markCount!==marks.size){
+  const data=material.markData;data.fill(0);
+  for(const {id,start,end} of material.ranges)if(marks.has(id))data.fill(1,start,end);
+  gl.bufferData(gl.ARRAY_BUFFER,data,gl.DYNAMIC_DRAW);
+  material.marks=marks;material.markCount=marks.size;
+ }
+ gl.enableVertexAttribArray(partMarkAttribute);gl.vertexAttribPointer(partMarkAttribute,1,gl.UNSIGNED_BYTE,false,0,0);
 }
 function drawGroupSolid(g){
  if(g.virtualConveyor)syncVirtualConveyorGroup(g);
  if(!renderGroupVisible(g))return;
- const batteries=batteryVisualPacks(g);
- if(g.block&&!batteries.length){disposeRigidCubeBatch(g);const p=moodVisualPose(g,blockPose(g));bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,1);setPose(p.p,p.q,p.size);submitDraw(gl.TRIANGLES,0,36);}
+ const batteries=batteryVisualPacks(g),marks=partSelection?.members.get(g);
+ if(g.block&&!batteries.length&&!marks){disposeRigidCubeBatch(g);const p=moodVisualPose(g,blockPose(g));bindGeometry(cubeGeometry);gl.uniform1f(uniforms.uKind,1);setPose(p.p,p.q,p.size);submitDraw(gl.TRIANGLES,0,36);}
  else {
   const batch=rigidCubeBatch(g);
-  if(batch)for(const material of batch.batches){bindGeometry(material.buffer,true);gl.uniform1f(uniforms.uKind,material.kind);setPose(g.body.position,g.body.quaternion,V(1,1,1));if(material.color)tint(...material.color);submitDraw(gl.TRIANGLES,0,material.count);}
+  if(batch)for(const material of batch.batches){
+   bindGeometry(material.buffer,true);gl.uniform1f(uniforms.uKind,material.kind);
+   setPose(g.body.position,g.body.quaternion,V(1,1,1));if(material.color)tint(...material.color);
+   if(marks)bindPartMarks(material,marks);
+   submitDraw(gl.TRIANGLES,0,material.count);
+   if(marks){gl.disableVertexAttribArray(partMarkAttribute);gl.vertexAttrib1f(partMarkAttribute,0);}
+  }
   const blades=new Set(propellerLayout(g).flatMap(m=>m.blades));
-  for(const part of g.parts)if(!isExternalBattery(part)&&(!batch||blades.has(part))){const p=propellerVisualPose(g,part);drawUnitMesh(g.parts.length===1?{...moodVisualPose(g,p),part}:p);}
+  for(const part of g.parts)if(!isExternalBattery(part)&&(!batch||blades.has(part))){
+   const p=propellerVisualPose(g,part),marked=marks?.has(part.id);
+   if(marked)gl.vertexAttrib1f(partMarkAttribute,1);
+   drawUnitMesh(g.parts.length===1?{...moodVisualPose(g,p),part}:p);
+   if(marked)gl.vertexAttrib1f(partMarkAttribute,0);
+  }
  }
  for(const battery of batteries)drawBatteryOpaque(battery);
  for(const part of g.parts)if(part.mood.gripper)drawGripperMark(partPose(g,part));
@@ -6799,7 +7005,7 @@ function drawQubits(){
   setPose(V(p.p.x,.001,p.p.z),Q(),V(scale,scale,scale));gl.uniform1f(uniforms.uScale,scale);gl.uniform1f(uniforms.uShadow,.22/(1+height*3));submitDraw(gl.TRIANGLES,0,6);
  }}
  gl.depthMask(true);gl.disable(gl.BLEND);
- for(const g of groups){if(!renderGroupVisible(g))continue;if(g.parts.some(p=>p.mood.production)){for(const p of poses(g))drawBox(p.p,p.q,V(CUBE_SIZE-.002,CUBE_SIZE-.002,CUBE_SIZE-.002),p.part.mood.production?.kind==='A'?[.27,.56,.67,1]:p.part.mood.production?[.72,.53,.26,1]:[.12,.14,.13,1]);if(g.parts.length===2)drawOutline(g.body.position,g.body.quaternion,sub(bounds(g,V(),Q()).max,bounds(g,V(),Q()).min),.8,false);}else drawGroupSolid(g);}
+ for(const g of groups){if(!renderGroupVisible(g))continue;if(g.parts.some(p=>p.mood.production)){for(const p of poses(g))drawBox(p.p,p.q,V(CUBE_SIZE-.002,CUBE_SIZE-.002,CUBE_SIZE-.002),partSelection?.members.get(g)?.has(p.part.id)?[.12,.28,.43,1]:p.part.mood.production?.kind==='A'?[.27,.56,.67,1]:p.part.mood.production?[.72,.53,.26,1]:[.12,.14,.13,1]);if(g.parts.length===2)drawOutline(g.body.position,g.body.quaternion,sub(bounds(g,V(),Q()).max,bounds(g,V(),Q()).min),.8,false);}else drawGroupSolid(g);}
  drawConveyors();drawCargos();drawPuzzle();drawAlpha();drawWorkshop();drawShelves();drawFamilies();drawDisassembly();drawCreationPlacement();drawSceneAuthoringMarkers();drawFamilyPlacement();drawRobotArmLights();drawRobotPoseDraft();drawPowerReservoirs();drawPowerCables();drawTrajectories();drawBatteriesTransparent();drawFamilyGlass();drawStructureOutlines();drawServoGuides();drawGuides();drawTaskGuides();
 }
 addQubit([position[0]-Math.sin(yaw)*1.25,HALF+.003,position[2]-Math.cos(yaw)*1.25]);
@@ -6888,6 +7094,7 @@ function updateMarquee(event){
 }
 function finishMarquee(cancel=false){if(!marquee)return;const m=marquee;marquee=null;selectionRect.hidden=true;if(!cancel&&Math.hypot(m.x-m.x0,m.y-m.y0)>=6)selectRectangle({left:Math.min(m.x0,m.x),right:Math.max(m.x0,m.x),top:Math.min(m.y0,m.y),bottom:Math.max(m.y0,m.y)});}
 function openDetachMenu(hit){
+ clearPartSelection();
  if(!hit||!groups.includes(hit.g))return;
  if(runningConveyorForGroups([hit.g])){announce('Cinta en funcionamiento · primero apaga o desconecta la cinta para separarla.');return;}
  const module=conveyorForPart(hit.part.id);
@@ -7030,22 +7237,14 @@ function drawRigidOutline(g,alpha,chosen){
 }
 function selectionGroups(){if(selectedRotors().length)return [];const chosen=new Set(multiSelection);if(selected?.g)chosen.add(selected.g);return groups.filter(g=>chosen.has(g));}
 function selectionHudSnapshot(team=selectionGroups()){
- return team.map(g=>{
-  let geometry=selectionHudGeometry.get(g);
-  if(!geometry||geometry.source!==g.parts){
-   geometry={source:g.parts,revision:g.parts.map(p=>p.id).join(','),parts:g.parts.map(p=>{const shape=unitShape(p),profile=unitProfile(p);return {id:p.id,p:[p.offset.x,p.offset.y,p.offset.z],q:[p.q.x,p.q.y,p.q.z,p.q.w],vertices:profile.vertices.map(v=>[v.x,v.y,v.z]),faces:profile.faces.map(face=>face.slice()),color:shape==='cube'?[.15,.18,.19]:shape==='coupler'?[.25,.30,.30]:[.48,.48,.48]};})};
-   selectionHudGeometry.set(g,geometry);
-  }
-  const summary=moodSummary([g]),agitation=Math.max(0,...g.parts.map(p=>p.mood.agitation||0));
-  return {id:g.body.id,name:g.parts[0].mood.name,count:g.parts.length,revision:geometry.revision,parts:geometry.parts,mood:summary.counts.restless?'restless':summary.counts.excited?'excited':'neutral',energy:summary.energy,agitation,shaking:agitation>.65||speech.shake?.id===g.parts[0].id};
- });
+ return team.map(g=>({id:g.body.id,name:g.parts[0].mood.name,count:g.parts.length}));
 }
 function selectFromHud(id,{toggle=false}={}){
  const g=groups.find(item=>item.body.id===id);if(!g||story.transition||story.mode!=='playing')return false;
  clearRotorSelection();
  if(toggle){const team=selectionGroups();multiSelection=team.includes(g)?team.filter(item=>item!==g):[...team,g];selected=multiSelection.length?{g:multiSelection[0],part:multiSelection[0].parts[0]}:null;}
  else {multiSelection=[g];selected={g,part:g.parts[0]};}
- selectedCargo=null;selectionHudStamp='';redraw=true;return true;
+ selectedCargo=null;redraw=true;return true;
 }
 function initSelectionHud(){
  if(selectionHud||!window.QBitsSelectionHUD)return;
@@ -7053,16 +7252,16 @@ function initSelectionHud(){
  window.qbitsSelectionHud=selectionHud;
  selectionHud.setHint?.('Mantén '+inputLabel('hud')+' para elegir · Ctrl + clic para quitar');
 }
-function updateSelectionHud(dt){
+function updateSelectionHud(){
  if(!selectionHud)return;
- const active=story.ready&&story.mode==='playing'&&!story.transition&&!document.hidden&&panel.hidden&&menu.hidden&&commandMenu.hidden&&!radialOpen();
- const team=active?selectionGroups():[],stamp=team.map(g=>g.body.id).join(',');selectionHudClock-=dt;
- if(stamp!==selectionHudStamp||selectionHudClock<=0){selectionHudStamp=stamp;selectionHudClock=.08;selectionHudItems=selectionHudSnapshot(team);}
- selectionHud.update(selectionHudItems,dt,{active,reducedMotion:!!reducedHudMotion?.matches});
+ const active=story.ready&&story.mode==='playing'&&!story.transition&&!document.hidden&&panel.hidden&&menu.hidden&&commandMenu.hidden&&!radialOpen()&&!partSelection;
+ // The text chooser only needs its entries while the HUD control is held.
+ const available=active&&(!!selected?.g||multiSelection.length>0)&&!selectedRotorIds.length;
+ selectionHud.update(available&&hudInputActive?selectionHudSnapshot():[],{available});
 }
 function drawStructureOutlines(){
  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
- const selectedGroups=new Set(selectionGroups());
+ const selectedGroups=new Set(partSelection?[]:selectionGroups());
  const chosenRotors=selectedRotors(),rotorParts=new Map(),parts=chosenRotors.length?mechanicalPartIndex():null;
  for(const rotor of chosenRotors)for(const id of [rotor.aId,rotor.bId]){const hit=parts.get(id);if(!hit)continue;if(!rotorParts.has(hit.g))rotorParts.set(hit.g,new Set());rotorParts.get(hit.g).add(hit.part);}
  for(const g of groups){const visible=renderGroupVisible(g);if(!visible&&(!visuals.markers||!selectedGroups.has(g)))continue;const chosen=selectedGroups.has(g);
@@ -7320,7 +7519,7 @@ function connectMenu(element,point){
  menuConnector={element,point:point.clone(),started:simTime};updateMenuConnector();
 }
 function openCommandMenu(point,title,items,restartGroup=null){
- const familyMembers=familySelectionGroups();if(familyEnabled()&&familyMembers.length&&!familyPlacement){
+ const familyMembers=partSelection?[]:familySelectionGroups();if(familyEnabled()&&familyMembers.length&&!familyPlacement){
   const at=items.findIndex(item=>item.label==='Cerrar');items.splice(at<0?items.length:at,0,
    {label:'Agrupar en familia…',run:()=>editFamily(null,familyMembers)},
    {label:'Desarmar y agrupar por tipo',run:()=>{startFamilyGrouping(familyMembers,{disassemble:true,byType:true});captureMouse();}});
@@ -7407,11 +7606,15 @@ function onCanvasMouseDown(event){
   if(spawnQubit()&&!placesMechanism)clearSelection();
   return;
  }
- if((held?.reward||held?.latched)){releaseQubit(shiftDown());clearSelection();return;}
+ if((held?.reward||held?.latched)){
+  const keepSelection=held.keepSelectionOnDrop;releaseQubit(shiftDown());
+  if(!keepSelection)clearSelection();
+  return;
+ }
  if(!held&&event.button===0&&(event.ctrlKey||event.metaKey||ctrlDown())&&gameInputActive()){
   const hit=aimQubit(4),rotor=hit&&rotorForPart(hit.part.id);
   if(rotor){toggleRotorSelection(rotor);announce(selectedRotors().length+' rotores seleccionados · clic derecho o P para crear un conjunto');}
-  else announce('Apunta a un enganche de rotor · Ctrl + clic para añadirlo');
+  else if(!brushVisiblePart(direction(),hit))announce('Selecciona un conjunto y recórrelo con Ctrl para marcar sus piezas.');
   return;
  }
  if(event.button===2){if(marquee)finishMarquee(true);handleSecondary(event);return;}
@@ -7453,7 +7656,7 @@ function completePendingPickup(){
  const point=partPose(request.g,request.part).p,distance=point.distanceTo(V(...camera));
  if(distance>2.8){announce('Acércate a la selección para tomarla.');return;}
  multiSelection=request.team.filter(g=>groups.includes(g));
- grabQubit({g:request.g,part:request.part,point,distance});if(held)held.latched=true;
+ grabQubit({g:request.g,part:request.part,point,distance});if(held){held.latched=true;held.keepSelectionOnDrop=!!request.keepSelectionOnDrop;}
 }
 function openFloorOrders(point){
  const team=[...selectedTeam()],count=team.reduce((n,g)=>n+g.parts.length,0),items=[];
@@ -7493,6 +7696,7 @@ function openWallOrganization(hit){
  ]);
 }
 function handleSecondary(event){
+ if(!held&&livePartSelection()){openPartSelectionMenu();return;}
  if(held?.family){const f=held.family;releaseQubit();clearSelection();openFamilyMenu(f);return;}
  const rect=canvas.getBoundingClientRect();
  const dir=gameInputActive()?direction():screenRay(clamp(event.clientX-rect.left,0,canvas.clientWidth),clamp(event.clientY-rect.top,0,canvas.clientHeight));

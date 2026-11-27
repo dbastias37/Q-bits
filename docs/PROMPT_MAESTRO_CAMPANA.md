@@ -171,7 +171,7 @@ Entrega cada bloque con cambios concretos, pruebas realizadas y límites pendien
 
 ## Interfaz y entradas vigentes — 15 de noviembre de 2026
 
-Mantener el contador general ampliado y la fila superior de miniaturas fieles a las estructuras seleccionadas. Son representaciones visuales, nunca clones físicos ni fuentes de materia/energía. La entrada y salida son elásticas y breves; movimiento y respuestas de hover dependen de los estados existentes, con frases espaciadas. Respetar márgenes y movimiento reducido. En escritorio se ocultan los botones flotantes de pausa y pantalla completa, conservando acciones de teclado y menús.
+Mantener el contador general de población. La selección se ve en la escena. Mantener Tab/L3 abre una lista estática de nombres y cantidades para elegir estructuras. Al recorrer con Ctrl un montaje seleccionado, cada pieza visible marcada toma un tono azul en su propio material. Clic derecho permite separar o eliminar las marcadas siguiendo las reglas de la escena. En escritorio se ocultan los botones flotantes de pausa y pantalla completa, conservando acciones de teclado y menús.
 
 Teclado y Mando se configuran por separado con dos distribuciones y una personalizada, asignaciones individuales y captura que no ejecuta acciones del juego. Mantener Tab/L3 habilita el mostrador sin soltar lo que se lleva. La configuración se edita como borrador, se guarda explícitamente y avisa antes de salir con cambios. NPC y Q-bits tienen estilos independientes de subtítulos; ocultarlos no debe bloquear elecciones ni el avance narrativo. Estos cambios de interfaz no alteran el alcance de campaña ni sus mecánicas.
 
