@@ -164,7 +164,7 @@
   function geometry(points,mode){return Model.geometry(points,mode);}
   function geometryReason(points,mode,range){
    if(!Array.isArray(points)||points.length<2||points.length>Model.LIMITS.compiledPoints)return 'El recorrido contiene puntos inválidos';
-   if(points.some(p=>!xyz(p)||Math.abs(p.x)>13.85||Math.abs(p.z)>13.85))return 'Recorrido fuera de la sala';
+   if(points.some(p=>!xyz(p)||!(adapter.insideRoom?adapter.insideRoom(p):Math.abs(p.x)<=13.85&&Math.abs(p.z)<=13.85)))return 'Recorrido fuera de la sala';
    if(mode==='air'&&points.some(p=>p.y<Model.LIMITS.heights[0]||p.y>Model.LIMITS.heights[1]))return 'Ajusta la altura de vuelo entre 0,15 y 3 m';
    if(Model.length(points)>range+1e-6)return 'No alcanza · acorta el recorrido o mejora la pareja';
    return null;

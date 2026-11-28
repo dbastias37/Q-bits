@@ -2,13 +2,15 @@
 
 Actualizado el 28 de noviembre de 2026 para `dbastias37/Q-bits`.
 
-## Toma de techo · suministro vertical (28 nov 2026)
+## Toma de Q-bits y sala del banco (28 nov 2026)
 
-En el banco y el editor, la toma rectangular se ancla al techo sobre el punto que marca la mira. La rueda regula la altura de salida de 2 a 3 m. El menú de la boca permite cambiar la altura instalada, la pieza, la cadencia y el tiempo de retiro en el piso. La cortina negra oculta la aparición del cuerpo antes de su caída por gravedad. La configuración inicial entrega 12 Q-bits por minuto desde 2,5 m y retira las piezas abandonadas tras 30 segundos de reposo en el piso.
+La mira permite montar la toma en el techo o en cualquiera de las cuatro paredes exteriores. La instalación de techo conserva la entrega vertical a 2–3 m. En pared, la boca sigue la altura apuntada, con ajuste fino de 10 cm y margen de 30 cm al piso y al techo. Sale una pieza física hacia el interior a 1,65 m/s, con una velocidad vertical inicial de −0,08 m/s. La gravedad del banco determina el arco. El catálogo muestra una estimación sobre el piso para ubicar la primera cinta.
 
-Cada toma comparte la geometría procedural con las demás de la misma altura y utiliza un cuerpo estático compuesto. La lógica de suministro utiliza el reloj de simulación a 15 Hz. Una boca obstruida espera y las tomas se turnan cuando coinciden. Al retirar el apoyo de una pila, las piezas de encima se despiertan. El guardado y la exportación conservan la fase del suministro y el tiempo transcurrido de las piezas sueltas, incluso al retirar su toma. [Colocación y controles](MANUAL_BANCO_PRUEBAS.md#toma-de-techo).
+**P → Cuerpos → Cuerpos** permite ajustar por separado el ancho y el largo de 8 a 40 m, la altura de 4 a 18 m, el máximo de piezas de 1 a 2.000 y el de cuerpos de carga de 1 a 64. La sala inicial y los archivos anteriores usan 28 × 28 m de piso, 14 m de altura y límites de 2.000 piezas y 12 cuerpos. Al reducir un cupo se conserva el inventario presente. Al cambiar medidas se actualizan paredes físicas, render, movimiento y colocación. Las tomas y las repisas siguen su soporte. Una reducción incompatible se cancela antes de mover los objetos. La campaña y el puzle recuperan su sala propia.
 
-Con Cannon se verificaron las cuatro formas a 60, 120 y 240 Hz, la entrega a una cinta en marcha, el reinicio del plazo al soltar una pieza con la mano o la pinza, la conservación de montajes y la caducidad, el bloqueo y la recuperación al llegar a 2.000 piezas. En una prueba de tres minutos simulados, 12 tomas configuradas a 60 piezas/min emitieron 775 piezas de las cuatro formas. El pico fue de 64 piezas sin recoger. Tras retirar las tomas y transcurrir los tiempos de espera quedaron los seis cuerpos estáticos originales de la sala.
+La toma conserva la cadencia, la espera ante una boca ocupada, el máximo compartido de 64 piezas sueltas y el retiro por inactividad en el piso. El guardado del banco y los códigos de escena conservan el montaje, las medidas, los cupos y los temporizadores. Los archivos de tomas anteriores se restauran en el techo.
+
+Pruebas con Cannon cubren las cuatro orientaciones de pared y las cuatro formas a 60, 120 y 240 Hz, la entrega lateral a una cinta alimentada, el bloqueo de la boca, el cambio de medidas con soportes instalados, los cupos por debajo de la ocupación y el regreso del puzle. [Controles y medidas en el manual](MANUAL_BANCO_PRUEBAS.md#toma-de-q-bits).
 
 ## Acoplador de dos cintas (28 nov 2026)
 

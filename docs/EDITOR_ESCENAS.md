@@ -24,7 +24,7 @@ La nueva escena reutiliza la sala blanca, cámara, física y controles del banco
 El panel **Catálogo de construcción nativa** sólo selecciona la pieza o blueprint: **ya no hay campos de coordenadas para colocar objetos**. La sala utiliza la mira, rayos contra superficies, fantasma 3D con color de validez, giro y una confirmación mediante clic. El catálogo incluye:
 
 - **Piezas:** Q-bit cúbico, pirámide, T-bit tetraédrico y enganche.
-- **Equipo.** La toma de techo se coloca con la mira y la rueda ajusta la altura. La escena exportada conserva sus ajustes y los tiempos de las piezas sueltas. [Uso de la toma](MANUAL_BANCO_PRUEBAS.md#toma-de-techo).
+- **Equipo.** La toma de Q-bits se monta apuntando al techo o a una pared. La rueda ajusta la altura. En **P → Cuerpos** se editan las medidas de la sala y sus límites. El archivo de escena conserva esos valores, el montaje de la toma y los tiempos de las piezas sueltas. [Uso de la toma](MANUAL_BANCO_PRUEBAS.md#toma-de-q-bits).
 - **Blueprints físicos:** brazo robótico articulado, servo pivote, servo bisagra, hélice, dron con batería descargada y cintas rectas o de esquina izquierda/derecha.
 
 Los blueprints no son mallas falsas: el motor ejecuta la ruta `spawnSavedMechanism` y reconstruye cuerpos, masa, enganches, articulaciones y controladores. El verificador de geometría comprueba límites de habitación, otras construcciones, suelo y espacio antes de aceptar la colocación. El creador puede rotar y cambiar los mecanismos después con los controles normales.

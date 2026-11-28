@@ -94,8 +94,9 @@ module.exports = function createGame(options = {}) {
   } else {
     scripts = [...fs.readFileSync(path.join(root, 'index.html'), 'utf8').matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
   }
-  if (fs.existsSync(gameFile)) scripts.splice(scripts.length-1,0,...['campaign-supply','factory-passage','ceiling-feeder','save-games'].map(name=>fs.readFileSync(path.join(root,'assets/js/'+name+'.js'),'utf8')));
+  if (fs.existsSync(gameFile)) scripts.splice(scripts.length-1,0,...['campaign-supply','factory-passage','lab-room','ceiling-feeder','save-games'].map(name=>fs.readFileSync(path.join(root,'assets/js/'+name+'.js'),'utf8')));
   const hook = `window.__testGame={
+    room,configureRoom,roomWalls,
     ceilingFeeders,feederDrops,createCeilingFeeder,configureFeeder,removeCeilingFeeder,tickCeilingFeeders,serializeCeilingFeeders,aimCeilingFeeder,drawCeilingFeeders,
     assemblerBlueprintTemplate,assemblerStations,assemblerAt,assemblerAction,assemblerForward,assemblerReverse,assemblerPocket,assemblerChamber,assemblerFeed,assemblerStatus,assemblerOriginals,extendAssembler,showAssemblerMenu,updateAssemblerPanel,tabletMechanism,
     cutterRuns,defaultCutterConfig,validCutterConfig,cutterBlueprintTemplate,canAdaptCutter,adaptCutter,cutterPose,cutterBeam,cutterInputPlan,cutterOutputPoses,setCutterEnabled,tickCutters,showCutterMenu,drawCutters,gameBatteryCapacity,
