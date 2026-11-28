@@ -170,3 +170,215 @@ test('clicking the central roof chooses a product, and the context menu opens it
  assert.equal(sandbox.document.querySelector('#assembler-panel').hidden,false);
  assert.equal(sandbox.document.querySelector('#assembler-recipe').value,'bipyramid');
 });
+
+for(const lane of ['A','B'])test('two arrivals from '+lane+' alone leave C separately with their original identities',()=>{
+ const {t}=lab(),s=build(t);power(t,s);assert(t.assemblerAction(s,'toggle'));
+ const first=feed(t,s[lane]);tick(t,1.3);const second=feed(t,s[lane]);
+ const ids=[first,second],originals=ids.map(id=>t.rotorPart(id).g),count=t.scenePartCount(),passed=new Set();
+ assert(tick(t,32,()=>{
+  ids.forEach((id,i)=>{
+   assert.equal(t.rotorPart(id).g,originals[i],'a single lane cannot create a joint');
+   if(progress(t,s.C,id)>.22)passed.add(id);
+  });
+  return passed.size===2;
+ }),'both pieces must cross the central output');
+ assert.equal(t.scenePartCount(),count);
+ for(const id of ids)assert.equal(t.rotorPart(id).part.mood.assemblyPasses.at(-1).port,lane);
+});
+
+test('one cube in A plus two in B produces one pair and delivers the spare through C',()=>{
+ const {t}=lab(),s=build(t);power(t,s);assert(t.assemblerAction(s,'toggle'));
+ const b1=feed(t,s.B);tick(t,1.2);const b2=feed(t,s.B),a=feed(t,s.A);
+ const spare=t.rotorPart(b2).g,count=t.scenePartCount();
+ assert(tick(t,34,()=>t.rotorPart(a).g===t.rotorPart(b1).g&&progress(t,s.C,b2)>.22));
+ assert.equal(t.rotorPart(b2).g,spare);assert.equal(spare.parts.length,1);assert.equal(t.scenePartCount(),count);
+ assert.deepEqual(Array.from(t.assemblerOriginals(t.rotorPart(a).g),p=>p.id),[a,b1]);
+});
+
+test('a cube ahead of a matching triangular pyramid leaves intact; the two triangular pyramids couple',()=>{
+ const {t}=lab(),s=build(t);power(t,s);assert(t.assemblerAction(s,'recipe','pyramid'));assert(t.assemblerAction(s,'toggle'));
+ const cube=feed(t,s.B),left=feed(t,s.A,'tetra');tick(t,1.1);const right=feed(t,s.B,'tetra');
+ const spare=t.rotorPart(cube).g,count=t.scenePartCount();
+ assert(tick(t,30,()=>t.rotorPart(left).g===t.rotorPart(right).g&&progress(t,s.C,cube)>.22));
+ assert.equal(t.rotorPart(cube).g,spare);assert.equal(t.scenePartCount(),count);
+});
+
+test('the wait only uses powered time and resumes from the elapsed second after a save',()=>{
+ const {t}=lab(),s=build(t),cell=power(t,s),id=feed(t,s.A);assert(t.assemblerAction(s,'toggle'));
+ assert(tick(t,15,()=>s.C.assemblyStatus==='Esperando la entrada B'));tick(t,6);
+ cell.mood.externalBattery.enabled=false;tick(t,11);
+ const snap=JSON.parse(JSON.stringify(t.saveLab({passive:true}))),record=snap.conveyors.find(c=>c.ports.assemblyLane==='C');
+ const e=record.assemblyQueue.find(r=>r.id===id);assert(e.wait>=6&&e.wait<7);
+ const next=lab().t;snap.workshop=null;Object.assign(next.story,{scene:'intro',lab:next.hydrateLabSnapshot(snap),labAlpha:t.alphaSettings});
+ next.enterLab(false);const restored=next.assemblerStations()[0];next.rotorPart(cell.id).part.mood.externalBattery.enabled=true;assert(next.assemblerAction(restored,'toggle'));
+ assert(tick(next,6,()=>progress(next,restored.C,id)>.04));
+ assert.equal(next.rotorPart(id).part.mood.assemblyPasses[0].port,'A');
+});
+
+test('a recipe imported from a native servo file builds an articulated product from four arriving pieces and reverses it',()=>{
+ const {t}=lab(),s=build(t);power(t,s);
+ const record=t.servoBlueprintTemplate('pivot');
+ assert.equal(t.installAssemblerPlans(s,[record]).accepted,1);assert.equal(s.C.ports.product,'plan-0');
+ assert.equal(t.installAssemblerPlans(s,[record]).accepted,1);assert.equal(s.C.ports.plans.length,1);
+ const portable=t.mechanismSnapshot(t.rotorPart(s.C.baseId).g,'Acoplador con receta');assert(t.savedMechanismValid(portable));
+ const a=feed(t,s.A),b=feed(t,s.B,'pyramid');assert(t.assemblerAction(s,'toggle'));tick(t,1.4);
+ const c=feed(t,s.A),d=feed(t,s.B),count=t.scenePartCount(),initialJoints=t.rotors.length;
+ const ids=[a,b,c,d];
+ assert(tick(t,26,()=>t.rotors.length===initialJoints+1&&progress(t,s.C,a)>.09),'the assembled servo must travel along C');
+ assert.equal(t.rotors.at(-1).servo.kind,'pivot');assert.equal(t.rotors.at(-1).enabled,false);
+ assert.deepEqual(new Set(Array.from(t.assemblerOriginals(t.rotorPart(d).g),p=>p.id)),new Set(ids));
+ const snapshot=t.hydrateLabSnapshot(JSON.parse(JSON.stringify(t.saveLab({passive:true})))),next=lab().t;
+ snapshot.workshop=null;Object.assign(next.story,{scene:'intro',lab:snapshot,labAlpha:t.alphaSettings});next.enterLab(false);
+ const n=next.assemblerStations()[0];assert.equal(n.C.ports.plans[0].name,record.name);
+ assert(next.assemblerAction(n,'reverse'));assert(next.assemblerAction(n,'toggle'));
+ assert(tick(next,24,()=>next.rotors.length===initialJoints&&ids.every(id=>!next.rotorPart(id).part.mood.assemblyJoint)));
+ for(const [i,id] of ids.entries()){assert.equal(next.rotorPart(id).g.parts.length,1);assert.equal(next.rotorPart(id).part.mood.name,'Pieza '+id);const port=i%2===0?'A':'B';assert(tick(next,14,()=>progress(next,n[port],id)<.1));}
+ assert.equal(next.scenePartCount(),count);
+});
+
+test('the rotor product joins two real couplers and releases them to the originating lanes in reverse',()=>{
+ const {t}=lab(),s=build(t);power(t,s);const joints=t.rotors.length;
+ const a=feed(t,s.B,'coupler'),b=feed(t,s.A,'coupler');assert(t.assemblerAction(s,'recipe','rotor'));assert(t.assemblerAction(s,'toggle'));
+ assert(tick(t,17,()=>t.rotors.length===joints+1&&progress(t,s.C,b)>.07));
+ assert(t.assemblerAction(s,'reverse'));
+ assert(tick(t,18,()=>t.rotors.length===joints&&progress(t,s.B,a)<.1&&progress(t,s.A,b)<.1));
+ assert.equal(t.rotorPart(a).part.mood.assemblyJoint,undefined);
+});
+
+test('a rigid imported form uses both lanes and skips invalid, oversize and duplicate recipes without affecting the saved library',()=>{
+ const {t}=lab(),s=build(t);power(t,s);const q=[0,0,0,1],form={name:'Trío horizontal',parts:[0,.09,.18].map(x=>({shape:'cube',p:[x,0,0],q}))};
+ const broken={name:'Separado',parts:[{shape:'cube',p:[0,0,0],q},{shape:'cube',p:[.5,0,0],q}]};
+ assert.equal(t.installAssemblerPlans(s,[broken,t.assemblerBlueprintTemplate(),form]).skipped,2);
+ assert.equal(s.C.ports.plans.length,1);assert.throws(()=>t.installAssemblerPlans(s,[broken]));assert.equal(s.C.ports.product,'plan-0');
+ assert.equal(t.savedShapes.length,0);assert.equal(t.savedMechanisms.length,0);
+ const a=feed(t,s.A),b=feed(t,s.B);assert(t.assemblerAction(s,'toggle'));tick(t,1.5);const c=feed(t,s.B);
+ assert(tick(t,22,()=>t.rotorPart(a).g.parts.length===3&&progress(t,s.C,a)>.12));
+ assert.equal(t.rotorPart(a).g,t.rotorPart(b).g);assert.equal(t.rotorPart(b).g,t.rotorPart(c).g);
+});
+
+test('a sustained obstruction releases intact pieces beside C; the next valid pair resumes when C clears',()=>{
+ const {t}=lab(),s=build(t);power(t,s);
+ const a=feed(t,s.A),b=feed(t,s.B),base=t.rotorPart(s.C.baseId);
+ const wall=t.storyWall(base.p.vadd(base.q.vmult(t.V(-.06,.13,.27))),t.V(.095,.06,.12));
+ const count=t.scenePartCount();assert(t.assemblerAction(s,'toggle'));
+ assert(tick(t,15,()=>s.C.assemblyStatus==='Salida C ocupada'));
+ tick(t,1);assert.equal(t.rotorPart(a).part.mood.assemblyPasses,undefined);
+ const ejected=id=>t.rotorPart(id).part.mood.assemblyPasses?.[0]?.station===s.C.baseId;
+ assert(tick(t,25,()=>ejected(a)&&ejected(b)));
+ for(const id of [a,b]){const h=t.rotorPart(id);assert.equal(h.g.parts.length,1);assert.equal(h.part.mood.assemblyJoint,undefined);assert.equal(t.rotorPart(id).part.mood.name,'Pieza '+id);}
+ assert(tick(t,3,()=>[a,b].every(id=>t.rotorPart(id).p.y<.08)));assert.equal(t.scenePartCount(),count);
+ t.world.removeBody(wall.body);t.storyWorld.walls.splice(t.storyWorld.walls.indexOf(wall),1);
+ const c=feed(t,s.A),d=feed(t,s.B);assert(tick(t,15,()=>t.rotorPart(c).g===t.rotorPart(d).g));
+});
+
+for(const hz of [60,240])test('a mixed continuous run conserves every input at '+hz+' Hz',()=>{
+ const {t}=lab(),s=build(t,.38);power(t,s);assert(t.assemblerAction(s,'recipe','pyramid'));assert(t.assemblerAction(s,'toggle'));
+ const before=t.scenePartCount(),ids=new Map(),delivered=new Set(),pairs=new Set();
+ const batches=[['tetra','cube'],[null,'tetra'],['cube','pyramid'],['tetra','tetra'],['tetra',null],[null,'cube']];
+ for(let frame=0;frame<36*hz;frame++){
+  const index=frame/(1.5*hz);
+  if(Number.isInteger(index)&&batches[index])for(const [i,shape] of batches[index].entries())if(shape){
+   const port=i?'B':'A',id=feed(t,s[port],shape);ids.set(id,{port,shape});
+  }
+  t.stepPhysics(1/hz);
+  if(frame%6!==0)continue;
+  for(const [id,{port,shape}] of ids){
+   const hit=t.rotorPart(id);assert(hit);assert.equal(hit.part.shape,shape);
+   if(progress(t,s.C,id)<.16)continue;
+   delivered.add(id);
+   if(hit.g.parts.length===2){
+    const other=hit.g.parts.find(p=>p.id!==id);assert.equal(shape,'tetra');assert.equal(other.shape,'tetra');
+    assert.notEqual(port,ids.get(other.id).port);pairs.add(Math.min(other.id,id));
+   }else assert.equal(hit.part.mood.assemblyPasses?.at(-1).port,port);
+  }
+  if(ids.size===9&&delivered.size===ids.size)break;
+ }
+ assert.equal(delivered.size,ids.size);assert(pairs.size>=1);
+ assert.equal(t.scenePartCount(),before+ids.size);
+});
+
+test('an unrelated articulated rotor passes from A to C and back as the same two bodies and joint',()=>{
+ const {t,sandbox}=lab(),s=build(t);power(t,s);
+ const r=sandbox.QBitsAssembler.recipes.rotor,path=t.conveyorPathPoses(s.A),origin=path[0].vadd(t.V(.18,.067,0));
+ const gs=r.poses.map(([p,q])=>t.makeGroup([{id:t.allocateUnitId(),shape:'coupler',weight:1,p:origin.vadd(t.V(...p).scale(.09)),q:new sandbox.CANNON.Quaternion(...q)}]));
+ const [a,b]=gs.map(g=>g.parts[0].id),joint=t.connectRotorTips(a,b,{enabled:false}),count=t.scenePartCount();assert(joint);
+ assert(t.assemblerAction(s,'toggle'));
+ assert(tick(t,29,()=>progress(t,s.C,a)>.08&&gs[0].parts[0].mood.assemblyPasses?.at(-1).port==='A'));
+ assert.equal(t.rotorPart(a).g,gs[0]);assert.equal(t.rotorPart(b).g,gs[1]);assert(t.rotors.includes(joint));
+ assert(t.assemblerAction(s,'reverse'));assert(tick(t,18,()=>progress(t,s.A,a)<.08&&gs[0].parts[0].mood.assemblyPasses===undefined));
+ assert(t.rotors.includes(joint));assert.equal(t.scenePartCount(),count);
+});
+
+test('a push across the chamber cannot change the recorded inlet',()=>{
+ const {t}=lab(),s=build(t);power(t,s);const first=feed(t,s.A);assert(t.assemblerAction(s,'toggle'));
+ tick(t,1.4);const second=feed(t,s.A),g=t.rotorPart(first).g;
+ assert(tick(t,15,()=>s.C.assemblyStatus==='Esperando la entrada B'&&s.C.assemblyQueue.size===2));
+ g.body.position.copy(t.assemblerPocket(s.B).vadd(t.V(0,.05,0)));g.body.velocity.setZero();g.body.aabbNeedsUpdate=true;
+ const passed=new Set();
+ assert(tick(t,25,()=>{
+  for(const id of [first,second]){
+   const h=t.rotorPart(id);assert.equal(h.g.parts.length,1);
+   if(progress(t,s.C,id)>.13){assert.equal(h.part.mood.assemblyPasses.at(-1).port,'A');passed.add(id);}
+  }
+  return passed.size===2;
+ }));
+});
+
+test('a compact eight-slot form completes from balanced lanes and survives portable scene validation',()=>{
+ const {t}=lab(),s=build(t);power(t,s);const parts=[];
+ for(const x of [0,.09])for(const y of [0,.09])for(const z of [0,.09])parts.push({shape:'cube',p:[x,y,z],q:[0,0,0,1]});
+ t.installAssemblerPlans(s,[{name:'Bloque 2 × 2 × 2',parts}]);
+ const ids=[];assert(t.assemblerAction(s,'toggle'));
+ for(let i=0;i<4;i++){ids.push(feed(t,s.A),feed(t,s.B));tick(t,1.55);}
+ assert(tick(t,25,()=>t.rotorPart(ids[0]).g.parts.length===8&&progress(t,s.C,ids[0])>.1));
+ const root=t.rotorPart(ids[0]).g;assert(t.assemblyValid(t.worldParts(root)));assert(ids.every(id=>t.rotorPart(id).g===root));
+ const raw=JSON.parse(JSON.stringify(t.saveLab({passive:true})));assert.doesNotThrow(()=>t.hydrateLabSnapshot(raw));
+ raw.conveyors.find(c=>c.ports.assemblyLane==='C').ports.plans[0].parts[0].p=[1,1,1];
+ assert.throws(()=>t.hydrateLabSnapshot(raw));
+});
+
+test('the native product list offers both functional servo designs and the Q-bit with a square pyramid',()=>{
+ const {t,sandbox}=lab(),s=build(t),base=t.rotorPart(s.C.baseId);
+ const point=t.assemblerChamber(base).p;
+ sandbox.document.body.dataset.booting='false';sandbox.document.pointerLockElement=t.canvas;
+ t.setLook({camera:[point.x,point.y+2,point.z],yaw:0,pitch:-Math.PI/2});
+ t.onCanvasMouseDown({button:0,preventDefault(){}});
+ for(const label of ['Servo pivote','Servo bisagra','Q-bit con punta piramidal'])assert(t.getCommandState().items.some(i=>i.label===label));
+ for(const [id,n] of [['pivot',4],['hinge',5],['tip',2]]){
+  assert(t.assemblerAction(s,'recipe',id));const txt=sandbox.document.querySelector('#assembler-materials').textContent;
+  assert.equal([...txt.matchAll(/(\d+) ×/g)].reduce((sum,m)=>sum+Number(m[1]),0),n);
+ }
+});
+
+test('a matching partner that enters just before timeout can finish its trip down the other belt',()=>{
+ const {t}=lab(),s=build(t);power(t,s);assert(t.assemblerAction(s,'toggle'));
+ const a=feed(t,s.A);assert(tick(t,15,()=>s.C.assemblyStatus==='Esperando la entrada B'));tick(t,8.5);
+ const b=feed(t,s.B);assert(tick(t,5,()=>s.C.assemblyStatus.includes('en camino')));
+ assert(tick(t,12,()=>t.rotorPart(a).g===t.rotorPart(b).g&&progress(t,s.C,a)>.1));
+ assert.equal(t.rotorPart(a).part.mood.assemblyPasses,undefined);
+});
+
+test('an adapted ingredient uses the imported settings and recovers its own configuration on reverse',()=>{
+ const {t}=lab(),s=build(t);power(t,s);
+ const q=[0,0,0,1],record={version:1,name:'Pareja con láser',type:'cutter',joints:[],groups:[{parts:[
+  {key:0,shape:'cube',weight:1,p:[0,.045,0],q,cutter:{version:2,face:4}},
+  {key:1,shape:'cube',weight:1,p:[.09,.045,0],q}
+ ]}]};
+ assert.equal(t.installAssemblerPlans(s,[record]).accepted,1);const a=feed(t,s.A),b=feed(t,s.B);
+ assert(t.adaptCutter(t.rotorPart(a)));t.rotorPart(a).part.mood.cutter={version:2,face:0};
+ assert(t.assemblerAction(s,'toggle'));assert(tick(t,16,()=>t.rotorPart(a).g===t.rotorPart(b).g&&progress(t,s.C,a)>.10));
+ assert.equal(t.rotorPart(a).part.mood.cutter.face,4);
+ assert.doesNotThrow(()=>t.hydrateLabSnapshot(JSON.parse(JSON.stringify(t.saveLab({passive:true})))));
+ assert(t.assemblerAction(s,'reverse'));assert(tick(t,16,()=>t.rotorPart(a).g!==t.rotorPart(b).g&&progress(t,s.A,a)<.10));
+ assert.equal(t.rotorPart(a).part.mood.cutter.face,0);assert.equal(t.rotorPart(b).part.mood.cutter,undefined);
+});
+
+test('when both return branches stay obstructed the assembled load is recovered whole',()=>{
+ const {t}=lab(),s=build(t);power(t,s);const a=feed(t,s.A),b=feed(t,s.B);
+ assert(t.assemblerAction(s,'toggle'));assert(tick(t,16,()=>t.rotorPart(a).g===t.rotorPart(b).g&&progress(t,s.C,a)>.10));
+ const g=t.rotorPart(a).g,count=t.scenePartCount();
+ for(const lane of [s.A,s.B])t.storyWall(t.assemblerPocket(lane).vadd(t.V(0,.06,0)),t.V(.07,.06,.08));
+ assert(t.assemblerAction(s,'reverse'));assert(tick(t,25,()=>s.C.assemblyMessage?.includes('Retorno bloqueado')));
+ assert(tick(t,3,()=>g.body.position.y<.08));assert.equal(t.rotorPart(a).g,g);assert.equal(t.rotorPart(b).g,g);
+ assert.equal(t.scenePartCount(),count);
+});
