@@ -139,6 +139,10 @@
       if (own(cargo, 'robotPhysical')) check(typeof cargo.robotPhysical === 'boolean', 'El estado físico de un cuerpo no es válido.');
       if (cargo.robotPhysical) check(quaternion(cargo.q) && vector(cargo.v) && vector(cargo.w), 'La postura física de un cuerpo no es válida.');
     }
+    if (own(snapshot,'ceilingSupply')) {
+      const feederModel=load ? load('./ceiling-feeder.js') : root.QBitsCeilingFeeder;
+      check(feederModel?.validSnapshot(snapshot.ceilingSupply,snapshot.groups),'Los datos de la toma de techo no son válidos.');
+    }
     for (const key of ['rotors', 'rotorSets', 'robotArms', 'conveyors', 'shelves', 'disassembly']) {
       if (own(snapshot, key)) check(Array.isArray(snapshot[key]), 'La colección '+key+' no es válida.');
     }
@@ -175,6 +179,7 @@
       check(record(snapshot[key]), 'El estado de '+key+' del inicio no es válido.');
       for (const list of lists) emptyOpeningList(snapshot[key], list);
     }
+    check(!own(snapshot,'ceilingSupply'), 'El primer ciclo no admite tomas de techo.');
     const live = new Map();
     for (const group of snapshot.groups) {
       live.set(group.parts[0].id, group);

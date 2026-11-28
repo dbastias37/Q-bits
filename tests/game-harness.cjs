@@ -94,8 +94,9 @@ module.exports = function createGame(options = {}) {
   } else {
     scripts = [...fs.readFileSync(path.join(root, 'index.html'), 'utf8').matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
   }
-  if (fs.existsSync(gameFile)) scripts.splice(scripts.length-1,0,...['campaign-supply','factory-passage','save-games'].map(name=>fs.readFileSync(path.join(root,'assets/js/'+name+'.js'),'utf8')));
+  if (fs.existsSync(gameFile)) scripts.splice(scripts.length-1,0,...['campaign-supply','factory-passage','ceiling-feeder','save-games'].map(name=>fs.readFileSync(path.join(root,'assets/js/'+name+'.js'),'utf8')));
   const hook = `window.__testGame={
+    ceilingFeeders,feederDrops,createCeilingFeeder,configureFeeder,removeCeilingFeeder,tickCeilingFeeders,serializeCeilingFeeders,aimCeilingFeeder,drawCeilingFeeders,
     assemblerBlueprintTemplate,assemblerStations,assemblerAt,assemblerAction,assemblerForward,assemblerReverse,assemblerPocket,assemblerChamber,assemblerFeed,assemblerStatus,assemblerOriginals,extendAssembler,showAssemblerMenu,updateAssemblerPanel,tabletMechanism,
     cutterRuns,defaultCutterConfig,validCutterConfig,cutterBlueprintTemplate,canAdaptCutter,adaptCutter,cutterPose,cutterBeam,cutterInputPlan,cutterOutputPoses,setCutterEnabled,tickCutters,showCutterMenu,drawCutters,gameBatteryCapacity,
     beginOpeningSupply,tickOpeningSupply,requestOpeningCompanion,returnOpeningCompanion,recoverOpeningCompanion,openingDestinations,openingStableAt,openingSupply,openingPayload,openingOwnsPart,hideStoryDialogue,beginFactoryPassage,tickFactoryPassage,finishCampaignLevel,storyOnGrab,openingResetPrompt,showLevelSelector,openingProtected,inputLabel,modalReadingActive,guideNarrationPaused,openFloorOrders,connectMenu,passagePayload,openingFloorHeight,drawFactoryPassage,requestOpeningCompanion,readyQuestion,
@@ -138,7 +139,7 @@ module.exports = function createGame(options = {}) {
     setupProduction,tickProduction,productionForces,productionIntervention,productionObjective,startProduction,resetProduction,openProductionMenu,
     setupAutomation,tickAutomation,automationObjective,automationIntervention,tickCampaign,campaignTorqueCap,
     chapters,LEVELS,beginReconfiguration,reconfigurationInput,tickReconfiguration,setupReconfiguration,reconfigurationObjective,showCodex,closeCodex,catalogueRecipe,rememberCatalogueRecipe,groupWorkUnits,showCampaignResults,
-    savedMechanisms,mechanismSnapshot,mechanismGroups,mechanismPartCount,savedMechanismValid,saveMechanism,spawnSavedMechanism,persistMechanisms,loadSavedMechanisms,mechanismsExportData,importMechanismsData,serializeRotorState,restoreRotorState,clearPuzzleScene,leavePuzzle,
+    savedMechanisms,mechanismSnapshot,mechanismGroups,mechanismPartCount,savedMechanismValid,saveMechanism,spawnSavedMechanism,persistMechanisms,loadSavedMechanisms,mechanismsExportData,importMechanismsData,serializeRotorState,restoreRotorState,clearPuzzleScene,startPuzzle,leavePuzzle,
     beginCampaignLevel,beginIntro,showMain,hideStoryDialogue,
     aimQubit,planRoute,planCargoPath,startRoute,stopRoute,
     stepPhysics:stepSimulation, // compatibility alias to the production pipeline

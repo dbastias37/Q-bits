@@ -17,6 +17,15 @@ Para alimentar máquinas separadas desde un depósito grande, consulta [Cables y
 
 Las repisas siguen colocándose en paredes. Depósitos, enfriadores y cuerpos sólidos van en el suelo. **Mesa de trabajo** prepara una vista previa para colocarla o reubicarla. Clic derecho sobre una pieza de la mesa abre sus opciones. **E** abre el taller. Para retirarla, haz clic derecho sobre una zona libre de la mesa y elige **Retirar mesa**. Los cables primero colocan sus cubos y después abren el tendido. **N, B y los botones Crear** usan también la colocación previa. Los planos de construcción siguen necesitando material existente.
 
+### Toma de techo
+
+1. Abre **Q → Equipo → Toma de techo**. Apunta a la superficie donde quieras recibir las piezas o al techo sobre ese punto. La línea azul marca la vertical. La rueda ajusta la altura de la boca entre 2 y 3 m, en pasos de 10 cm. **Shift** alinea el centro con la cuadrícula.
+2. Confirma con clic. La toma empieza a entregar cubos a 12 piezas por minuto. Mira la boca desde el piso y haz clic para abrir sus ajustes.
+3. Elige cubo, pirámide cuadrada, T-bit triangular o enganche. Ajusta entre 1 y 60 piezas por minuto y entre 1 y 600 segundos de espera en el piso. **Aplicar** guarda los ajustes. **Emisión activa** permite detener y reanudar el suministro.
+4. La espera inicial es de 30 segundos de reposo en el piso. Una cinta puede llevarse la pieza y descargarla más lejos. Tomar la pieza, seleccionarla o incorporarla a un montaje la conserva. Retirar la toma deja que las piezas sueltas completen su espera.
+
+La boca ocupada espera. Caben hasta 12 tomas por sala y 64 piezas emitidas sin recoger entre todas. Al liberarse espacio, la emisión se reanuda al ritmo configurado. La partida conserva los ajustes y la espera transcurrida de cada pieza.
+
 ### Construir sobre las caras de un montaje
 
 1. Pulsa **N** para preparar un Q-bit y mantén **Ctrl** mientras apuntas a una cara cuadrada. El cubo azul semitransparente muestra dónde quedará soldado, incluso en una cara lateral o inferior de un montaje girado.

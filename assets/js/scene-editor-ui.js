@@ -39,7 +39,7 @@
  <p>Q-BITS / HERRAMIENTAS DE CREACIÓN</p><h2>Editor de escenas</h2>
  <p>Comienza con una sala vacía y utiliza las piezas, mecanismos y blueprints nativos. El editor no modifica tus partidas de campaña ni de banco.</p>
  <h3>Catálogo de construcción nativa</h3>
- <p>Elige una pieza y vuelve inmediatamente a la sala. Apunta con la mira: fantasma azul = espacio libre; rojo = bloqueado. Rueda = girar; Shift = cuadrícula; clic = colocar; clic derecho/Esc = terminar.</p>
+ <p>Elige una pieza y vuelve inmediatamente a la sala. Apunta con la mira: fantasma azul = espacio libre; rojo = bloqueado. Rueda = girar o ajustar la altura de la toma de techo; Shift = cuadrícula; clic = colocar; clic derecho/Esc = terminar.</p>
  <label>Elemento<select id="scene-editor-catalog" aria-label="Piezas y blueprints"></select></label>
  <div class="scene-editor-actions"><button id="scene-place-button" class="primary">Colocar con la mira en 3D</button></div>
  <label>Biblioteca de escenas<select id="scene-editor-library" aria-label="Escenas guardadas"></select></label>
@@ -201,7 +201,7 @@
   if(!active||!window.QBitsGame?.sceneEditor?.isActive?.())throw Error('Inicia primero Nueva escena vacía o Continuar escena.');
   const response=window.QBitsGame.sceneEditor.beginPlacement($('scene-editor-catalog').value);
   if(!response.ok)throw Error(response.error||'No se pudo preparar la vista previa.');
-  $('scene-editor-live-hint').textContent=response.name+' · apunta para colocar · rueda: girar · clic derecho/Esc: cancelar';
+  $('scene-editor-live-hint').textContent=response.name+' · apunta para colocar · rueda: '+response.wheel+' · clic derecho/Esc: cancelar';
   close();
  }));
  $('scene-editor-recover').addEventListener('click',()=>act(()=>{
