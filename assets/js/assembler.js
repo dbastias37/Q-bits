@@ -7,18 +7,45 @@
   double:{label:'Doble Q-bit',inputs:['cube','cube'],poses:[[[-.5,0,0],[0,0,0,1]],[[.5,0,0],[0,0,0,1]]]},
   socket:{label:'Q-bit con enganche',inputs:['cube','coupler'],poses:[[[0,0,0],[0,0,0,1]],[[0,1+5/56,0],[0,0,0,1]]]},
   pyramid:{label:'Pirámide de dos triangulares',inputs:['tetra','tetra'],poses:[[[.125,0,-.125],[0,0,0,1]],[[-.125,0,.125],[0,1,0,0]]]},
+  pivot:{label:'Servo pivote',servo:'pivot'},
+  hinge:{label:'Servo bisagra',servo:'hinge'},
+  tip:{label:'Q-bit con punta piramidal',inputs:['cube','pyramid'],poses:[[[0,0,0],[0,0,0,1]],[[0,.625,0],[0,0,0,1]]]},
+  rotor:{label:'Rotor de dos enganches',inputs:['coupler','coupler'],poses:[[[-51/56,0,0],[0,0,-Math.SQRT1_2,Math.SQRT1_2]],[[51/56,0,0],[0,0,Math.SQRT1_2,Math.SQRT1_2]]],
+   blueprint:{groups:[{parts:[{key:0}]},{parts:[{key:1}]}],joints:[{a:0,b:1,rpm:30,direction:1,moving:'b',mount:'wheel',maxTorque:3.2,capacity:256,enabled:false}]}},
   bipyramid:{label:'Bipirámide',inputs:['pyramid','pyramid'],poses:[[[0,.125,0],[0,0,0,1]],[[0,-.125,0],[1,0,0,0]]]}
  };
- function validPorts(ports){
-  if(!ports||ports.assemblyLane===undefined)return ports?.product===undefined;
-  const lane=ports.assemblyLane;
-  return Object.hasOwn(lanes,lane)&&(lane==='C'?Object.hasOwn(recipes,ports.product):ports.product===undefined);
+ function planIndex(id){return typeof id==='string'&&/^plan-(0|[1-9]\d?)$/.test(id)?Number(id.slice(5)):-1;}
+ function validPorts(ports,validPlan){
+  if(ports?.assemblyLane!=='C')return ports?.plans===undefined&&ports?.product===undefined&&
+   (ports?.assemblyLane===undefined||ports.assemblyLane==='A'||ports.assemblyLane==='B');
+  if(ports.plans!==undefined&&(!Array.isArray(ports.plans)||ports.plans.length>64||!ports.plans.every(p=>validPlan?.(p))))return false;
+  return Object.hasOwn(recipes,ports.product)||!!ports.plans?.[planIndex(ports.product)];
  }
  function pattern(recipe,a,b){
-  const shapes=recipes[recipe]?.inputs;
-  if(!shapes)return null;
+  const shapes=(typeof recipe==='string'?recipes[recipe]:recipe)?.inputs;
+  if(shapes?.length!==2)return null;
   if(a===shapes[0]&&b===shapes[1])return [0,1];
   return a===shapes[1]&&b===shapes[0]?[1,0]:null;
+ }
+ // Reserve actual ingredients from opposite ports first. Only the first B of
+ // each needed shape matters, even when a whole belt is backed up at the gate.
+ function match(recipe,lanes,includeTravelling=false){
+  const usable=e=>(e.ready||includeTravelling)&&!e.bypass&&recipe.inputs.includes(e.shape);
+  const A=lanes.A.filter(usable),B=lanes.B.filter(usable);
+  if(!A.length||!B.length)return null;
+  const kinds=new Map();for(const e of B)if(!kinds.has(e.shape))kinds.set(e.shape,e);
+  let left,right;
+  for(const e of A){
+   right=Array.from(kinds.values()).find(b=>e.shape!==b.shape||recipe.inputs.indexOf(e.shape)!==recipe.inputs.lastIndexOf(e.shape));
+   if(right){left=e;break;}
+  }
+  if(!left)return null;
+  const rows=Array(recipe.inputs.length).fill(null),others=[...A,...B].filter(e=>e!==left&&e!==right).sort((a,b)=>b.wait-a.wait);
+  for(const e of [left,right,...others]){
+   const index=recipe.inputs.findIndex((shape,i)=>!rows[i]&&shape===e.shape);
+   if(index>=0)rows[index]=e;
+  }
+  return rows.every(Boolean)?rows:null;
  }
  function template(straight,size){
   const record={version:1,type:'rotor',name:'Acoplador',groups:[{parts:[]}],joints:[],conveyors:[],rotorSets:[]};
@@ -71,5 +98,5 @@
   for(let x=-8;x<=0;x++)for(let z=-3;z<=3;z++)cube(x,4,z);
   return record;
  }
- root.QBitsAssembler={lanes,recipes,pattern,template,validPorts};
+ root.QBitsAssembler={lanes,recipes,pattern,match,template,validPorts,planIndex};
 })(typeof window==='object'?window:globalThis);

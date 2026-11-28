@@ -4057,7 +4057,7 @@ function materializeConveyor(conveyor){
 function materializeConveyorsForGroup(g){for(const conveyor of conveyors)if(conveyor.virtual&&(conveyor.virtual.baseGroup===g||conveyor.virtual.records.some(r=>r.g===g)))materializeConveyor(conveyor);}
 function conveyorForGroup(g){return conveyors.find(c=>conveyorRotors(c).some(r=>rotorGroups(r).includes(g)&&rotorPart(c.baseId)?.g!==g))||conveyors.find(c=>rotorPart(c.baseId)?.g===g)||null;}
 function conveyorStatus(conveyor){return conveyor?.status||'Selecciona una cinta';}
-function conveyorPortsValid(ports){return !ports||QBitsAssembler.validPorts(ports)&&['entry','exit'].every(name=>{const port=ports[name];return port&&Array.isArray(port.p)&&port.p.length===3&&port.p.every(n=>Number.isFinite(n)&&Math.abs(n)<=10)&&Array.isArray(port.direction)&&port.direction.length===3&&port.direction.every(Number.isFinite)&&Math.abs(Math.hypot(...port.direction)-1)<.001;});}
+function conveyorPortsValid(ports){return !ports||QBitsAssembler.validPorts(ports,assemblerPlanRecipe)&&['entry','exit'].every(name=>{const port=ports[name];return port&&Array.isArray(port.p)&&port.p.length===3&&port.p.every(n=>Number.isFinite(n)&&Math.abs(n)<=10)&&Array.isArray(port.direction)&&port.direction.length===3&&port.direction.every(Number.isFinite)&&Math.abs(Math.hypot(...port.direction)-1)<.001;});}
 // The chambers belong to three standard conveyors on the same frame. Match
 // their local mounting positions so two stations welded together stay distinct.
 function assemblerStations(){
@@ -4104,14 +4104,14 @@ function assemblerPocket(belt){
 function assemblerFeed(belt,base){
  const pocket=assemblerPocket(belt),up=base.q.vmult(V(0,1,0));let nearest=null,best=.105;
  for(const [body,load] of belt.payloads){
-  const g=body.qubitGroup||body.cargoRef;if(simTime-load.at>.14||!g||body.world!==world||g.pin)continue;
-  if(g.parts?cutterBusy(g)||rotorForGroup(g):!g.robotPhysical||g.robotHeld||g.job)continue;
+  if(simTime-load.at>.14)continue;
+  const g=assemblerLoadRoot(body.qubitGroup||body.cargoRef);if(!g)continue;
   const offset=sub(body.position,pocket),height=up.dot(offset);if(height<-.009||height>.24)continue;
   const distance=sub(offset,mul(up,height)).norm();if(distance>=best)continue;
-  // The operation happens only once the entire load is beyond the curtain.
-  const chamber=assemblerChamber(base),inverse=base.q.inverse();
-  const solids=g.parts?poses(g):[cargoPose(g)];
-  if(solids.some(p=>corners(p).some(v=>{const local=inverse.vmult(sub(v,chamber.p));return Math.abs(local.x)>chamber.half.x||Math.abs(local.z)>chamber.half.z||Math.abs(local.y)>chamber.half.y;})))continue;
+  // A long or articulated load enters leading end first. Its whole footprint
+  // is checked at the destination before any of its bodies may transfer.
+  const sideways=base.q.inverse().vmult(offset).z;
+  if(Math.abs(sideways)>CUBE_SIZE)continue;
   nearest=g;best=distance;
  }
  return nearest;
@@ -4122,7 +4122,15 @@ function looseMaterialShape(g){
  return m.gripper||m.flight||m.cutter||m.trajectory||m.externalBattery||m.production||QBitsWorkshop.hasAdaptation(p)?null:p.shape;
 }
 function assemblerOriginals(g){
- if(g.parts?.length!==2)return null;
+ const mark=g.parts?.[0]?.mood.assemblyJoint;
+ if(mark?.batch){
+  const members=rotorConnectedGroups([g]).flatMap(group=>group.parts);
+  if(members.length!==mark.count||Math.min(...members.map(p=>p.id))!==mark.batch||
+   members.some(p=>p.mood.assemblyJoint?.batch!==mark.batch||p.mood.assemblyJoint.count!==mark.count)||
+   !['A','B'].every(port=>members.some(p=>p.mood.assemblyJoint.port===port)))return null;
+  return members.sort((a,b)=>a.id-b.id);
+ }
+ if(g.parts?.length!==2||rotorForGroup(g))return null;
  const a=g.parts.find(p=>p.mood.assemblyJoint?.port==='A'),b=g.parts.find(p=>p.mood.assemblyJoint?.port==='B');
  if(!a||!b)return null;
  const left=a.mood.assemblyJoint,right=b.mood.assemblyJoint;
@@ -4147,14 +4155,17 @@ function assemblerClear(parts,excluded){
 }
 function assemblerLoose(g,base){
  const inverse=base.q.inverse();
- return (g.parts?worldParts(g):[cargoPose(g)]).map(p=>({...p,p:inverse.vmult(sub(p.p,g.body.position)),q:inverse.mult(p.q)}));
+ return (g.parts?assemblerLoadMembers(g).flatMap(worldParts):[cargoPose(g)]).map(p=>({...p,p:inverse.vmult(sub(p.p,g.body.position)),q:inverse.mult(p.q)}));
 }
 function assemblerTransfer(g,parts,velocity){
  // Passthrough preserves even the original rigid body and its orientation.
  const origin=g.parts?partPose(g,g.parts[0]).p:g.body.position;
- g.body.position.vadd(sub(parts[0].p,origin),g.body.position);
- g.body.velocity.copy(velocity);g.body.angularVelocity.set(0,0,0);
- g.body.force.set(0,0,0);g.body.torque.set(0,0,0);g.body.aabbNeedsUpdate=true;g.body.wakeUp();
+ const shift=sub(parts[0].p,origin);
+ for(const {body} of assemblerLoadMembers(g)){
+  body.position.vadd(shift,body.position);body.previousPosition?.copy(body.position);body.interpolatedPosition?.copy(body.position);
+  body.velocity.copy(velocity);body.angularVelocity.set(0,0,0);
+  body.force.set(0,0,0);body.torque.set(0,0,0);body.aabbNeedsUpdate=true;body.wakeUp();
+ }
 }
 function assemblerVelocity(belt,point){
  const path=conveyorPathPoses(belt),axis=belt.ports.assemblyLane==='C'?sub(path[1],path[0]):sub(path.at(-2),path.at(-1));axis.normalize();
@@ -4164,76 +4175,325 @@ function assemblerSignal(c,signal,status){
  c.assemblySignal=signal;c.assemblyMessage=status;c.assemblyLast=simTime;
  if(signal==='reject')announce(status);
 }
-function assemblerForward(station,base){
- const {A,B,C}=station,a=assemblerFeed(A,base),b=assemblerFeed(B,base);
- if(!a||!b||a===b){C.assemblyStatus=a?'Esperando la entrada B':b?'Esperando la entrada A':'Esperando piezas en A y B';return;}
- const inputs=[a,b],product=C.ports.product,pattern=QBitsAssembler.pattern(product,looseMaterialShape(a),looseMaterialShape(b));
- const up=base.q.vmult(V(0,1,0)),axis=base.q.vmult(V(1,0,0));
- // Pack front to back under C. Rejected pieces leave in A, B order, with
- // clearance between their actual solids regardless of their orientation.
- let front=add(base.p,base.q.vmult(assemblerLocal(.2,0,0)));
- front.vadd(mul(up,HALF*Math.SQRT2+.004),front);
- const loads=pattern?[inputs.map((g,i)=>{
-  const part=worldParts(g)[0],[p,q]=QBitsAssembler.recipes[product].poses[pattern[i]];
-  part.p=mul(V(...p),CUBE_SIZE);part.q=shelfQuaternion(q);
-  part.mood.assemblyJoint={port:i?'B':'A',mate:inputs[1-i].parts[0].id,product};return part;
- })]:inputs.map(g=>assemblerLoose(g,base));
- const placed=[];
- for(const load of loads){
-  const xs=load.flatMap(corners).map(v=>v.x),max=Math.max(...xs),min=Math.min(...xs);
-  const parts=assemblerPartsAt(load,sub(front,mul(axis,max)),base.q);
-  if(!assemblerClear(parts,inputs)){C.assemblyStatus='Salida C ocupada';return;}
-  placed.push(parts);front=sub(front,mul(axis,max-min+.035));
+// A carrier is claimed on a physically separate inlet. Its tag survives the
+// diagonal and is never inferred from a contact on the common exit skin.
+const ASSEMBLER_WAIT=10;
+function assemblerPathDistance(path,p){
+ let best=Infinity,remaining=0,tail=0;
+ for(let i=path.length-1;i>0;i--){
+  const end=path[i],axis=sub(path[i-1],end),length=axis.normalize();
+  const along=clamp(sub(p,end).dot(axis),0,length),distance=sub(p,add(end,mul(axis,along))).norm2();
+  if(distance<best){remaining=tail+along;best=distance;}
+  tail+=length;
  }
- if(pattern){
-  if(!conveyorSpendTraction(C,1)){C.assemblyStatus='Energía insuficiente para acoplar';return;}
-  for(const g of inputs)removeGroup(g);
-  makeGroup(placed[0],base.q,assemblerVelocity(C,placed[0][0].p));
-  assemblerSignal(C,'success','Acoplado · '+QBitsAssembler.recipes[product].label);
- }else{
-  for(const [i,parts] of placed.entries()){
-   const mood=inputs[i].parts?.[0].mood||inputs[i],route={station:C.baseId,port:i?'B':'A'};
-   mood.assemblyPasses=[...(mood.assemblyPasses||[]).filter(r=>r.station!==C.baseId).slice(1-MAX_QUBITS),route];
-   assemblerTransfer(inputs[i],parts,assemblerVelocity(C,parts[0].p));
+ return remaining;
+}
+function assemblerPointFromEnd(path,distance){
+ for(let i=path.length-1;i>0;i--){
+  const axis=sub(path[i-1],path[i]),length=axis.normalize();
+  if(distance<=length)return add(path[i],mul(axis,distance));
+  distance-=length;
+ }
+ return path[0];
+}
+function assemblerLoadMembers(g){return g.parts&&rotorForGroup(g)?rotorConnectedGroups([g]):[g];}
+function assemblerLoadRoot(g){
+ if(!g||g.body.world!==world||g.pin)return null;
+ if(!g.parts)return g.robotPhysical&&!g.robotHeld&&!g.job?g:null;
+ if(cutterBusy(g))return null;
+ if(!rotorForGroup(g))return g;
+ const members=assemblerLoadMembers(g);
+ if(members.some(m=>m.virtualConveyor||m.pin||cutterBusy(m)||rotorForGroup(m)?.pin))return null;
+ return members.reduce((first,m)=>m.parts[0].id<first.parts[0].id?m:first);
+}
+function assemblerInputs(station,base,dt){
+ const {A,B,C}=station,queue=C.assemblyQueue||=new Map(),seen=new Set(),lanes={A:[],B:[]},inverse=base.q.inverse();
+ if(C.assemblyPending?.length){
+  for(const saved of C.assemblyPending){
+   const g=saved.cargo?cargos.find(c=>c.id===saved.id):rotorPart(saved.id)?.g;
+   if(g&&assemblerLoadRoot(g)===g&&(saved.cargo||g.parts[0].id===saved.id))
+    queue.set(g.body,{g,port:saved.port,wait:saved.wait,bypass:saved.bypass,blocked:saved.blocked||0,stalled:saved.stalled||0});
   }
-  assemblerSignal(C,'reject','Piezas incompatibles · A y B salen intactas por C');
+  C.assemblyPending=[];
+ }
+ for(const belt of [A,B]){
+  const port=belt.ports.assemblyLane,path=conveyorPathPoses(belt);
+  for(const [contactBody,load] of belt.payloads){
+   if(simTime-load.at>.14)continue;
+   const g=assemblerLoadRoot(contactBody.qubitGroup||contactBody.cargoRef);if(!g||seen.has(g.body))continue;
+   const body=g.body,local=inverse.vmult(sub(contactBody.position,base.p)),height=local.y-(HALF*Math.SQRT2+.004);
+   if(height<-.035||height>.34)continue;
+   let entry=queue.get(body);
+   if(entry&&entry.port!==port)continue;
+   if(!entry){
+    // These half-planes exclude C even when a rotating corner touches two skins.
+    const side=(local.z-3*CUBE_SIZE)*(port==='A'?-1:1);
+    if(side<CUBE_SIZE||local.x>-.34)continue;
+    entry={g,port,wait:0,bypass:false,blocked:0,stalled:0};queue.set(body,entry);
+   }
+   seen.add(body);entry.along=assemblerPathDistance(path,body.position);
+   lanes[port].push(entry);
+  }
+ }
+ for(const [body,entry] of queue)if(!seen.has(body)){
+  const at=inverse.vmult(sub(body.position,base.p)),z=Math.abs(at.z-3*CUBE_SIZE);
+  // A known load can slip off the skin under the roof. Recover it there.
+  // Taking it by hand or moving it out of the machine cancels its ticket.
+  if(assemblerLoadRoot(entry.g)!==entry.g||at.x<-.72||at.x>-.15||z>.34||at.y<-.38||at.y>.32){queue.delete(body);continue;}
+  if(!Number.isFinite(entry.along))entry.along=assemblerPathDistance(conveyorPathPoses(station[entry.port]),body.position);
+  lanes[entry.port].push(entry);
+ }
+ for(const belt of [A,B]){
+  const lane=lanes[belt.ports.assemblyLane];lane.sort((a,b)=>a.along-b.along);
+  const stops=belt.assemblyStops||=new Map();stops.clear();
+  let ahead=0;
+  for(const entry of lane){
+   entry.shape=assemblerInputShape(entry.g);
+   const body=entry.g.body,radius=Math.max(.04,body.boundingRadius);
+   const stop=ahead?ahead+radius+.012:.012;
+   stops.set(body,stop);ahead=stop+radius;
+   entry.ready=entry.along<=stop+.084;
+   if(entry.ready)entry.wait=Math.min(ASSEMBLER_WAIT,entry.wait+dt);
+   if(entry.best===undefined)entry.best=entry.along;
+   else if(entry.along<entry.best-.018){entry.best=entry.along;entry.stalled=0;}
+   else entry.stalled=Math.min(ASSEMBLER_WAIT,(entry.stalled||0)+dt);
+  }
+ }
+ return lanes;
+}
+function assemblerOutlet(base,load){
+ const xs=load.flatMap(corners).map(v=>v.x),max=Math.max(...xs),length=max-Math.min(...xs);
+ const at=assemblerLocal(.2,0,0);at.x=Math.max(at.x,length-3.5*CUBE_SIZE)-max;at.y+=HALF*Math.SQRT2+.004;
+ return assemblerPartsAt(load,add(base.p,base.q.vmult(at)),base.q);
+}
+// If C stays obstructed, drop one intact load beside the front of the
+// machine. Check actual solids in both directions before changing the body.
+function assemblerRelief(base,load,g,port){
+ const sign=port==='A'?-1:1;
+ for(const side of [sign,-sign])for(const x of [3.5,6]){
+  const at=add(base.p,base.q.vmult(assemblerLocal(x,1,side*5)));
+  const parts=assemblerPartsAt(load,at,base.q);
+  if(assemblerClear(parts,assemblerLoadMembers(g)))return parts;
+ }
+ return null;
+}
+function assemblerBypass(station,base,entry,status,dt){
+ const {C}=station,{g,port}=entry,load=assemblerLoose(g,base);
+ let parts=assemblerOutlet(base,load),relief=false;
+ if(!assemblerClear(parts,assemblerLoadMembers(g))){
+  entry.blocked=Math.min(ASSEMBLER_WAIT,(entry.blocked||0)+dt);
+  if(entry.blocked>=ASSEMBLER_WAIT)C.assemblyReliefActive=true;
+  parts=C.assemblyReliefActive&&assemblerRelief(base,load,g,port);
+  if(!parts){C.assemblyStatus='Salida C ocupada';return false;}
+  status='Salida C bloqueada · pieza intacta al piso';relief=true;
+ }else C.assemblyReliefActive=false;
+ const mood=g.parts?.[0].mood||g,route={station:C.baseId,port};
+ mood.assemblyPasses=[...(mood.assemblyPasses||[]).filter(r=>r.station!==C.baseId).slice(1-MAX_QUBITS),route];
+ assemblerTransfer(g,parts,relief?C.surfaceBody.getVelocityAtWorldPoint(parts[0].p,V()):assemblerVelocity(C,parts[0].p));
+ C.assemblyQueue.delete(g.body);station[port].payloads.delete(g.body);
+ assemblerSignal(C,'reject',status);return true;
+}
+function assemblerForward(station,base,dt=1/30){
+ const {C}=station,lanes=assemblerInputs(station,base,dt),a=lanes.A[0],b=lanes.B[0];
+ if(!a&&!b){C.assemblyReliefActive=false;C.assemblyStatus='Esperando piezas en A y B';return;}
+ const ready=[a,b].filter(e=>e?.ready);
+ const old=ready.find(e=>e.bypass);
+ if(old){assemblerBypass(station,base,old,'Piezas incompatibles · salen intactas por C',dt);return;}
+ const product=C.ports.product,recipe=assemblerProduct(C),inputs=QBitsAssembler.match(recipe,lanes);
+ if(inputs){
+  const load=inputs.map(({g},i)=>{
+   const part=worldParts(g)[0],[p,q]=recipe.poses[i];
+   part.p=mul(V(...p),CUBE_SIZE);part.q=shelfQuaternion(q);return part;
+  });
+  const parts=assemblerOutlet(base,load),used=inputs.map(e=>e.g);
+  if(!assemblerClear(parts,used)){
+   const lead=inputs[0];lead.blocked=Math.min(ASSEMBLER_WAIT,(lead.blocked||0)+dt);C.assemblyStatus='Salida C ocupada';
+   if(lead.blocked>=ASSEMBLER_WAIT||C.assemblyReliefActive){C.assemblyReliefActive=true;for(const e of inputs)e.bypass=true;assemblerBypass(station,base,lead,'Salida bloqueada · piezas intactas por C',0);}
+   return;
+  }
+  if(externalBatterySummary(base.g).storedJ+1e-9<1){C.assemblyStatus='Energía insuficiente para acoplar';return;}
+  C.assemblyReliefActive=false;assemblerBuild(C,base,recipe,inputs,parts,product);
+  return;
+ }
+ if(a?.ready&&b?.ready&&recipe.inputs.length===2){
+  // A correct companion can already be travelling behind the wrong load.
+  // Keep that material, and release only the piece that is in its way.
+  const nextA=lanes.A.slice(1).some(e=>QBitsAssembler.pattern(recipe,e.shape,b.shape));
+  const nextB=lanes.B.slice(1).some(e=>QBitsAssembler.pattern(recipe,a.shape,e.shape));
+  if(!nextA&&!nextB){a.bypass=true;b.bypass=true;}
+  if(!nextA||!nextB){assemblerBypass(station,base,nextB?b:a,'Piezas incompatibles · salen intactas por C',dt);return;}
+ }
+ const expired=[a,b].filter(e=>e&&(e.wait>=ASSEMBLER_WAIT||e.stalled>=ASSEMBLER_WAIT));
+ if(expired.length){
+  // If all the missing material is already on the belts and still advancing,
+  // reserve its partners. A stalled follower cannot extend the deadline.
+  const arriving=QBitsAssembler.match(recipe,lanes,true);
+  const reserved=arriving?.every(e=>e.ready||e.stalled<ASSEMBLER_WAIT)?arriving:[];
+  const spare=expired.find(e=>!reserved.includes(e));
+  if(spare){assemblerBypass(station,base,spare,'Sin pareja · pieza de '+spare.port+' intacta por C',dt);return;}
+  C.assemblyStatus='Material compatible en camino · esperando en la cámara';return;
+ }
+ C.assemblyStatus=ready.length===2?'Esperando material para '+recipe.label:a?.ready?'Esperando la entrada B':b?.ready?'Esperando la entrada A':'Esperando piezas en A y B';
+}
+function assemblerIngredient(part){
+ if(part.battery)return 'battery';
+ if(part.cutter)return 'cutter';
+ if(part.gripper)return 'gripper';
+ if(part.flight)return 'flight';
+ return part.shape||'cube';
+}
+function assemblerInputShape(g){
+ if(g.parts?.length!==1||rotorForGroup(g))return null;
+ const p=g.parts[0],m=p.mood;
+ if(isExternalBattery(p))return 'battery';
+ if(m.cutter||m.gripper||m.flight)return assemblerIngredient(m);
+ return looseMaterialShape(g);
+}
+// A recipe carries only geometry and settings. Every slot must be filled by a
+// real incoming solid. Reject oversize files before validating their topology.
+function assemblerPlanRecipe(record){
+ const mechanism=Array.isArray(record?.groups),count=mechanism?mechanismPartCount(record):record?.parts?.length;
+ if(!Number.isInteger(count)||count<2||count>8||record.conveyors?.length)return null;
+ if(mechanism?!savedMechanismValid(record):!savedShapeValid(record)||!record.name.trim())return null;
+ const spec=mechanism?record.groups.flatMap(g=>g.parts):record.parts;
+ const raw=spec.map(p=>{const q=shelfQuaternion(p.q);q.normalize();return {shape:p.shape||'cube',p:V(...p.p),q};});
+ if(!mechanism&&!assemblyValid(raw))return null;
+ const verts=raw.flatMap(corners);
+ // Try the authored orientation first. Long or upright mechanisms can also
+ // travel lengthwise on C if all three dimensions clear the actual opening.
+ for(const axis of [V(0,1,0),V(1,0,0),V(0,0,1)]){
+  for(const yaw of [0,Math.PI/2]){
+   const turn=Q(),roll=Q();turn.setFromAxisAngle(V(0,1,0),yaw);
+   if(axis.y===0)roll.setFromAxisAngle(axis,Math.PI/2);
+   const q=turn.mult(roll),vs=verts.map(v=>q.vmult(v));
+   const ext=k=>{const a=vs.map(v=>v[k]);return [Math.min(...a),Math.max(...a)];};
+   const [x,X]=ext('x'),[y,Y]=ext('y'),[z,Z]=ext('z');
+   if(X-x>6*CUBE_SIZE||Y-y>2.7*CUBE_SIZE||Z-z>2.9*CUBE_SIZE)continue;
+   const origin=V((x+X)/2,y,(z+Z)/2);
+   return {label:record.name,inputs:spec.map(assemblerIngredient),
+    poses:raw.map(p=>[mul(sub(q.vmult(p.p),origin),1/CUBE_SIZE).toArray(),q.mult(p.q).toArray()]),
+    blueprint:mechanism?record:{groups:[{parts:spec.map((p,key)=>({key}))}],joints:[]}};
+  }
+ }
+ return null;
+}
+function assemblerProduct(c){
+ const id=c.ports.product,builtin=QBitsAssembler.recipes[id];
+ if(builtin){
+  if(!builtin.servo)return builtin;
+  if(c.assemblyRecipe?.record!==builtin)c.assemblyRecipe={record:builtin,recipe:assemblerPlanRecipe(servoBlueprintTemplate(builtin.servo))};
+  return c.assemblyRecipe.recipe;
+ }
+ const record=c.ports.plans?.[QBitsAssembler.planIndex(id)];
+ if(record&&c.assemblyRecipe?.record===record)return c.assemblyRecipe.recipe;
+ const recipe=assemblerPlanRecipe(record);c.assemblyRecipe={record,recipe};return recipe;
+}
+function assemblerBuild(c,base,recipe,inputs,parts,product){
+ const blueprint=recipe.blueprint,velocity=assemblerVelocity(c,parts[0].p);
+ for(const {mood} of parts)if(mood.assemblyPasses){mood.assemblyPasses=mood.assemblyPasses.filter(r=>r.station!==c.baseId);if(!mood.assemblyPasses.length)delete mood.assemblyPasses;}
+ if(!blueprint){
+  for(const [i,p] of parts.entries())p.mood.assemblyJoint={port:inputs[i].port,mate:parts[1-i].id,product};
+  for(const {g} of inputs){c.assemblyQueue.delete(g.body);removeGroup(g);}
+  makeGroup(parts,base.q,velocity);
+ }else{
+  const batch=Math.min(...parts.map(p=>p.id)),saved=inputs.map(({g})=>({parts:worldParts(g),q:g.body.quaternion.clone(),v:g.body.velocity.clone(),w:g.body.angularVelocity.clone(),drop:feederDrops.get(g)}));
+  const specs=blueprint.groups.flatMap(g=>g.parts),byKey=new Map(specs.map((s,i)=>[s.key,parts[i]])),ids=new Map(specs.map((s,i)=>[s.key,parts[i].id]));
+  const groupsMade=[],joints=[];
+  for(const [i,p] of parts.entries()){
+   p.mood.assemblyJoint={port:inputs[i].port,batch,count:parts.length};
+   if(specs[i].battery){
+    p.mood.assemblyJoint.cellEnabled=p.mood.externalBattery.enabled;
+    Object.assign(p.mood.externalBattery,{packId:ids.get(specs[i].battery.pack),enabled:false});
+   }
+   for(const fitting of ['gripper','flight','cutter'])if(specs[i][fitting]){
+    p.mood.assemblyJoint.original={fitting,config:p.mood[fitting]};
+    p.mood[fitting]=JSON.parse(JSON.stringify(specs[i][fitting]));
+   }
+  }
+  for(const {g} of inputs){c.assemblyQueue.delete(g.body);removeGroup(g);}
+  try{
+   for(const group of blueprint.groups)groupsMade.push(makeGroup(group.parts.map(p=>byKey.get(p.key)),base.q,velocity));
+   for(const j of blueprint.joints){
+    const r=connectRotorTips(ids.get(j.a),ids.get(j.b),{...j,...storedRotorDrive(j),enabled:false});
+    if(!r)throw new Error('Articulación incompatible');joints.push(r);
+   }
+   for(const part of parts)rotorPart(part.id).part.mood.name=part.mood.name;
+   for(const set of blueprint.rotorSets||[])createRotorSet(set.name,set.joints.map(i=>joints[i]));
+   if(blueprint.robotArm)restoreRobotArmTemplate(blueprint.robotArm,ids,joints);
+  }catch{
+   for(const r of joints)disconnectRotor(r);for(const g of groupsMade)removeGroup(g);
+   for(const [i,original] of saved.entries()){
+    const g=makeGroup(original.parts,original.q,original.v,original.w);if(original.drop)feederDrops.set(g,original.drop);
+    c.assemblyQueue.set(g.body,{...inputs[i],g,bypass:true});
+   }
+   assemblerSignal(c,'reject','No encaja la articulación · las piezas salen intactas por C');return;
+  }
+ }
+ conveyorSpendTraction(c,1);assemblerSignal(c,'success','Acoplado · '+recipe.label);
+}
+function assemblerReturnPose(belt,base,load){
+ const path=conveyorPathPoses(belt),end=path.at(-1),out=sub(path.at(-2),end).unit(),axis=base.q.inverse().vmult(out),side=V(-axis.z,0,axis.x);
+ const vertices=load.flatMap(corners),sideways=vertices.map(p=>p.dot(side));
+ // Clear the merge point with the trailing end of the entire object, and
+ // centre its actual width between the rails without rotating its joints.
+ const shift=add(mul(axis,.012-Math.min(...vertices.map(p=>p.dot(axis)))),mul(side,-(Math.max(...sideways)+Math.min(...sideways))/2));
+ return assemblerPartsAt(load,add(end,base.q.vmult(shift)),base.q);
+}
+function assemblerBlockedReturn(c,base,g,port,status,dt){
+ c.assemblyStatus=status;
+ if(c.assemblyReverseHold?.g!==g)c.assemblyReverseHold={g,wait:0};
+ const hold=c.assemblyReverseHold;hold.wait=Math.min(ASSEMBLER_WAIT,hold.wait+dt);
+ if(hold.wait<ASSEMBLER_WAIT)return;
+ const parts=assemblerRelief(base,assemblerLoose(g,base),g,port);
+ if(parts){
+  assemblerTransfer(g,parts,c.surfaceBody.getVelocityAtWorldPoint(parts[0].p,V()));c.assemblyReverseHold=null;
+  assemblerSignal(c,'reject','Retorno bloqueado · carga intacta al piso');
  }
 }
-function assemblerReverse(station,base){
- const {A,B,C}=station,g=assemblerFeed(C,base);if(!g){C.assemblyStatus='Esperando un conjunto en C';return;}
+function assemblerReverse(station,base,dt=1/30){
+ const {A,B,C}=station,g=assemblerFeed(C,base);if(!g){C.assemblyReverseHold=null;C.assemblyStatus='Esperando un conjunto en C';return;}
  const mood=g.parts?.[0].mood||g,previous=mood.assemblyPasses?.find(r=>r.station===C.baseId);
  const originals=!previous&&assemblerOriginals(g);
  if(originals){
-  const saved=worldParts(g);
-  const outputs=originals.map((p,i)=>{
-   const part=saved.find(s=>s.id===p.id);part.p=V();part.q=Q();delete part.mood.assemblyJoint;
-   return assemblerPartsAt([part],assemblerPocket(i?B:A),base.q);
-  });
-  if(outputs.some(parts=>!assemblerClear(parts,[g]))){C.assemblyStatus='Salida A o B ocupada';return;}
+  const members=rotorConnectedGroups([g]),saved=new Map(members.flatMap(worldParts).map(p=>[p.id,p]));
+  const offsets={A:0,B:0},outputs=[];
+  for(const original of originals){
+   const part=saved.get(original.id),port=part.mood.assemblyJoint.port,belt=station[port],path=conveyorPathPoses(belt);
+   const point=assemblerPointFromEnd(path,offsets[port]);
+   part.p=V();part.q=Q();
+   const mark=part.mood.assemblyJoint;
+   if(mark.original)part.mood[mark.original.fitting]=mark.original.config;
+   if(mark.cellEnabled!==undefined&&part.mood.externalBattery)Object.assign(part.mood.externalBattery,{packId:part.id,enabled:mark.cellEnabled});
+   delete part.mood.assemblyJoint;
+   const parts=assemblerPartsAt([part],point,base.q);
+   if(!assemblerClear(parts,members)||outputs.some(out=>obbOverlap(out.parts[0],parts[0]))){assemblerBlockedReturn(C,base,g,port,'Salida A o B ocupada',dt);return;}
+   outputs.push({belt,parts});offsets[port]+=1.75*CUBE_SIZE;
+  }
   if(!conveyorSpendTraction(C,1)){C.assemblyStatus='Energía insuficiente para desacoplar';return;}
-  removeGroup(g);
-  for(const [i,parts] of outputs.entries())makeGroup(parts,base.q,assemblerVelocity(i?B:A,parts[0].p));
-  assemblerSignal(C,'success','Desacoplado · una pieza por A y otra por B');
+  for(const r of [...rotors])if(members.includes(rotorGroups(r)[0]))disconnectRotor(r);
+  for(const group of members)removeGroup(group);
+  for(const {belt,parts} of outputs)makeGroup(parts,base.q,assemblerVelocity(belt,parts[0].p));
+  assemblerSignal(C,'success','Desacoplado · piezas devueltas a sus entradas');
  }else{
   const load=assemblerLoose(g,base);
   for(const belt of previous?[station[previous.port]]:[A,B]){
-   const parts=assemblerPartsAt(load,assemblerPocket(belt),base.q);
-   if(!assemblerClear(parts,[g]))continue;
+   const parts=assemblerReturnPose(belt,base,load);
+   if(!assemblerClear(parts,assemblerLoadMembers(g)))continue;
    assemblerTransfer(g,parts,assemblerVelocity(belt,parts[0].p));
    if(previous){
     mood.assemblyPasses=mood.assemblyPasses.filter(r=>r!==previous);if(!mood.assemblyPasses.length)delete mood.assemblyPasses;
    }
    assemblerSignal(C,'reject','Sin acople · vuelve intacto por '+belt.ports.assemblyLane);return;
   }
-  C.assemblyStatus=previous?'Salida '+previous.port+' ocupada':'Salidas A y B ocupadas';
+  assemblerBlockedReturn(C,base,g,previous?.port||'A',previous?'Salida '+previous.port+' ocupada':'Salidas A y B ocupadas',dt);
  }
 }
-function tickAssemblers(){
+function tickAssemblers(dt){
  for(const station of assemblerStations()){
   const {A,B,C}=station;if(!C.running||!A.running||!B.running||A.direction!==C.direction||B.direction!==C.direction)continue;
-  if(C.assemblyNext>simTime&&C.assemblyNext<simTime+.05)continue;
-  C.assemblyNext=simTime+1/30;const base=rotorPart(C.baseId);
-  if(C.direction>0)assemblerForward(station,base);else assemblerReverse(station,base);
+  C.assemblyClock=(C.assemblyClock||0)+dt;if(C.assemblyClock+TICK_EPS<1/30)continue;
+  const elapsed=C.assemblyClock;C.assemblyClock=0;const base=rotorPart(C.baseId);
+  if(C.direction>0)assemblerForward(station,base,elapsed);else assemblerReverse(station,base,elapsed);
  }
 }
 
@@ -4321,7 +4581,11 @@ function conveyorDriveSurface(conveyor,dt){
  if(conveyor.speed<.002||!conveyor.running)return;conveyor.phase=(conveyor.phase||0)+conveyor.speed*dt*conveyor.direction;
  const loads=conveyorContactLoads(conveyor),load=loads.reduce((sum,item)=>sum+item.weight,0);if(load>conveyor.capacity){stopConveyor(conveyor,'Sobrecarga · retira objetos');return;}
  const hit=rotorPart(conveyor.baseId),pose=partPose(hit.g,hit.part),inverse=pose.q.inverse(),points=conveyor.direction===1?conveyor.path:[...conveyor.path].reverse(),forceBudget=members.reduce((sum,r)=>sum+Math.max(0,r.maxTorque-Math.abs(r.actualTorque||0))/HALF,0);
- for(const item of loads){const body=item.body,local=inverse.vmult(sub(body.position,pose.p));let nearest=null;
+ const station=conveyor.direction===1&&assemblerForBelt(conveyor);
+ for(const item of loads){const body=item.body,queue=station?.C?.assemblyQueue;
+  const owner=queue?.get(body)||(queue?.size&&body.qubitGroup&&rotorForGroup(body.qubitGroup)?queue.get(assemblerLoadRoot(body.qubitGroup)?.body):null);
+  if(owner&&owner.port!==conveyor.ports.assemblyLane)continue;
+  const local=inverse.vmult(sub(body.position,pose.p));let nearest=null;
   for(let i=0;i<points.length-1;i++){const delta=sub(points[i+1],points[i]),length=delta.norm(),axis=mul(delta,1/length),along=clamp(sub(local,points[i]).dot(axis),0,length),point=add(points[i],mul(axis,along)),distance=Math.hypot(local.x-point.x,local.z-point.z);if(!nearest||distance<nearest.distance)nearest={point,axis,length,along,index:i,distance};}
   if(!nearest)continue;const remaining=nearest.length-nearest.along;
   // Follow the visible bend while there is real contact with its skin. A
@@ -4334,8 +4598,11 @@ function conveyorDriveSurface(conveyor,dt){
    const beyond=sub(local,points.at(-1)).dot(nearest.axis);
    if(beyond>0)target.vadd(mul(nearest.axis,beyond),target);
   }
-  const parking=assemblerIntake(conveyor)&&nearest.index===points.length-2&&remaining<.068;
-  if(parking)target=sub(points.at(-1),mul(nearest.axis,.012));
+  const stop=conveyor.direction===1?conveyor.assemblyStops?.get(body)??.012:.012;
+  const intake=assemblerIntake(conveyor);
+  const toEnd=intake&&nearest.index<points.length-2?remaining+points.at(-1).distanceTo(points.at(-2)):remaining;
+  const parking=intake&&toEnd<stop+.056;
+  if(parking)target=assemblerPointFromEnd(points,stop);
   const delta=V(target.x-local.x,0,target.z-local.z),distance=delta.norm();if(distance>1e-8)delta.normalize();
   const speed=parking?Math.min(conveyor.speed,distance*5):conveyor.speed;
   // Belt speed is relative to its carrier. Include translation and rotation
@@ -4455,6 +4722,7 @@ function createConveyor(options={}){
  const moduleParts=options.moduleParts||inferConveyorModuleParts(options.kind,base,required);
  if(!Array.isArray(moduleParts)||moduleParts.length>MAX_QUBITS||new Set(moduleParts).size!==moduleParts.length||required.some(id=>!moduleParts.includes(id))||moduleParts.some(id=>!Number.isSafeInteger(id)||!owned.has(rotorPart(id)?.g)))return null;
  const conveyor={id:++conveyorSerial,baseId:base.part.id,required:[...required],moduleParts:[...moduleParts],joints:members.map((r,i)=>({aId:r.aId,bId:r.bId,forward:drives[i]})),kind:options.kind,direction:options.direction??1,capacity:options.capacity??8,ports:options.ports?JSON.parse(JSON.stringify(options.ports)):null,running:false,status:options.ports?.assemblyLane?'Listo · elige el producto e inicia la línea':'Listo · acopla y enciende una batería',load:0,watts:0,payloads:new Map(),pin:null,surfaces:[],path:[],phase:0,speed:0};
+ if(options.assemblyQueue?.length&&options.ports?.assemblyLane==='C'&&validAssemblerQueue(options.assemblyQueue))conveyor.assemblyPending=options.assemblyQueue.map(r=>({...r}));
  conveyors.push(conveyor);if(!conveyorEnsureSurfaces(conveyor)){conveyorRemoveSurfaces(conveyor);conveyors.splice(conveyors.indexOf(conveyor),1);return null;}for(const rotor of members)configureRotor(rotor,{enabled:false,mount:'wheel'},true);virtualizeConveyor(conveyor);return conveyor;
 }
 function stopConveyor(conveyor,reason='Detenido'){
@@ -4689,7 +4957,17 @@ function pruneConveyors(){
   stopConveyor(conveyor,'Cinta incompleta');conveyorRemoveSurfaces(conveyor);conveyors.splice(conveyors.indexOf(conveyor),1);
  }
 }
-function serializeConveyors(){syncVirtualConveyors(0);pruneConveyors();return conveyors.map(c=>({baseId:c.baseId,required:[...c.required],moduleParts:conveyorModuleParts(c),joints:c.joints.map(j=>({...j})),kind:c.kind,direction:c.direction,capacity:c.capacity,...(c.ports?{ports:JSON.parse(JSON.stringify(c.ports))}:{})}));}
+function validAssemblerQueue(rows){
+ return Array.isArray(rows)&&rows.length<=MAX_QUBITS&&rows.every(r=>r&&Number.isSafeInteger(r.id)&&r.id>0&&typeof r.cargo==='boolean'&&
+  ['A','B'].includes(r.port)&&Number.isFinite(r.wait)&&r.wait>=0&&r.wait<=ASSEMBLER_WAIT&&typeof r.bypass==='boolean'&&[r.stalled,r.blocked].every(t=>t===undefined||Number.isFinite(t)&&t>=0&&t<=ASSEMBLER_WAIT))&&new Set(rows.map(r=>r.cargo+':'+r.id)).size===rows.length;
+}
+function assemblerQueueSnapshot(c){
+ if(c.ports?.assemblyLane!=='C')return {};
+ const rows=[...(c.assemblyPending||[])];
+ for(const [body,{g,port,wait,bypass,stalled,blocked}] of c.assemblyQueue||[])if(body.world===world)rows.push({id:g.parts?.[0].id??g.id,cargo:!g.parts,port,wait,bypass,stalled,blocked});
+ return rows.length?{assemblyQueue:rows}:{};
+}
+function serializeConveyors(){syncVirtualConveyors(0);pruneConveyors();return conveyors.map(c=>({baseId:c.baseId,required:[...c.required],moduleParts:conveyorModuleParts(c),joints:c.joints.map(j=>({...j})),kind:c.kind,direction:c.direction,capacity:c.capacity,...assemblerQueueSnapshot(c),...(c.ports?{ports:JSON.parse(JSON.stringify(c.ports))}:{})}));}
 function restoreConveyors(records){for(const data of Array.isArray(records)?records:[])if(!conveyors.some(c=>c.baseId===data.baseId))createConveyor(data);}
 function conveyorTemplate(subject,idToKey,linkedRotors){
  syncVirtualConveyors(0);
@@ -6825,7 +7103,7 @@ function stepPhysics(dt){
  // The family shell stays outside groups, but follows the same hand speed
  // limits without visiting or activating any of its stored pieces.
  if(held?.family){const b=held.family.body,speed=b.velocity.norm(),spin=b.angularVelocity.norm();if(speed>6)b.velocity.scale(6/speed,b.velocity);if(spin>30)b.angularVelocity.scale(30/spin,b.angularVelocity);}
- updateCampaignPressure(dt);updateButtonPhysics();prepareRotorPower();updateRotorMotors(dt);driveRobotArms(dt);driveConveyors(dt);driveServos(dt);productionForces(dt);updateFlights(dt);wakeMechanicalRest();world.step(dt);if(feederDrops.size)settleFeederFloorPenetration();invalidateConveyorContacts();stabilizeRotors();finishMechanicalRest(dt);updateRotorPower(dt);validateServoMarches();tickContactSensors(dt);tickFlightSensors(dt);tickCutters(dt);if(conveyors.length)tickAssemblers();
+ updateCampaignPressure(dt);updateButtonPhysics();prepareRotorPower();updateRotorMotors(dt);driveRobotArms(dt);driveConveyors(dt);driveServos(dt);productionForces(dt);updateFlights(dt);wakeMechanicalRest();world.step(dt);if(feederDrops.size)settleFeederFloorPenetration();invalidateConveyorContacts();stabilizeRotors();finishMechanicalRest(dt);updateRotorPower(dt);validateServoMarches();tickContactSensors(dt);tickFlightSensors(dt);tickCutters(dt);if(conveyors.length)tickAssemblers(dt);
  // The floor correction must translate a hinged assembly as a whole. Moving
  // a single link stretches its constraints and stores an impulse on release.
  if(held){
@@ -8434,6 +8712,10 @@ function assemblerStatus(station){
  if(!lanes.every(c=>c.running))return lanes.find(c=>!c.running)?.status||'Detenido';
  if(lanes.some(c=>c.direction!==C.direction))return 'Sentidos distintos · sincroniza las tres cintas';
  if(C.assemblySignal&&simTime-C.assemblyLast<2.5)return C.assemblyMessage;
+ if(C.assemblyStatus?.startsWith('Esperando la entrada ')){
+  const first=Array.from(C.assemblyQueue?.values()||[]).find(e=>e.ready);
+  if(first)return C.assemblyStatus+' · la pieza sale sola en '+Math.ceil(ASSEMBLER_WAIT-first.wait)+' s';
+ }
  return C.assemblyStatus||(C.direction>0?'Esperando piezas en A y B':'Esperando un conjunto en C');
 }
 function assemblerSetDirection(station,direction){
@@ -8443,6 +8725,7 @@ function assemblerSetDirection(station,direction){
   if([A,B,C].includes(belt))belt.direction=direction;
   else if(flip)belt.direction*=-1;
  }
+ if(flip){C.assemblyReverseHold=null;C.assemblyReliefActive=false;C.assemblyQueue?.clear();C.assemblyPending=[];A.assemblyStops?.clear();B.assemblyStops?.clear();}
  C.assemblySignal=null;C.assemblyStatus='';
  for(const belt of running)if(!startConveyor(belt)){
   const reason=belt.status;for(const other of running)stopConveyor(other,reason);return false;
@@ -8454,27 +8737,65 @@ function assemblerAction(station,action,value){
  if(!station||story.scene!=='lab'||puzzle.active)return false;
  const {C}=station;let ok=true;
  if(action==='recipe'){
-  if(!Object.hasOwn(QBitsAssembler.recipes,value))return false;
+  if(!Object.hasOwn(QBitsAssembler.recipes,value)&&!C.ports.plans?.[QBitsAssembler.planIndex(value)])return false;
   C.ports.product=value;C.assemblySignal=null;C.assemblyStatus='';
+  for(const entry of C.assemblyQueue?.values()||[])entry.bypass=false;
  }else if(action==='toggle'){
   ok=[station.A,station.B,C].every(c=>c.running)?stopConveyorLine(C):startConveyorLine(C);
  }else if(action==='reverse')ok=assemblerSetDirection(station,-C.direction);
  else return false;
- updateAssemblerPanel();refreshTabletCharge(performance.now(),true);announce(action==='recipe'?'Producto · '+QBitsAssembler.recipes[value].label:assemblerStatus(station));return ok;
+ updateAssemblerPanel();refreshTabletCharge(performance.now(),true);announce(action==='recipe'?'Producto · '+assemblerProduct(C).label:assemblerStatus(station));return ok;
 }
 function openAssemblerPanel(station){
  const base=rotorPart(station.C.baseId);selected={g:base.g,part:base.part};
  closeCommandMenu(false);showTablet();updatePanel();switchPanelTab('mechanisms');
  document.querySelector('#assembler-panel').scrollIntoView?.({block:'start'});
 }
+function assemblerChoices(c){
+ return [...Object.entries(QBitsAssembler.recipes).map(([id,r])=>[id,r.label]),...(c.ports.plans||[]).map((r,i)=>['plan-'+i,r.name])];
+}
+function installAssemblerPlans(station,records){
+ if(!assemblerForBelt(station?.C)||story.scene!=='lab'||puzzle.active)throw new Error('Selecciona un acoplador del banco');
+ if(!Array.isArray(records)||records.length>128)throw new Error('Archivo de planos inválido');
+ const {C}=station,plans=[...(C.ports.plans||[])],keys=plans.map(p=>JSON.stringify(p));let first=null,accepted=0;
+ for(const record of records){
+  if(!assemblerPlanRecipe(record))continue;
+  const copy=record.groups?copySavedMechanism(record):{name:record.name,parts:record.parts.map(p=>({shape:p.shape||'cube',p:[...p.p],q:[...p.q]}))};
+  const key=JSON.stringify(copy);let index=keys.indexOf(key);
+  if(index<0){if(plans.length>=64)throw new Error('La lista del acoplador admite 64 planos');index=plans.length;keys.push(key);plans.push(copy);}
+  first??='plan-'+index;accepted++;
+ }
+ if(!accepted)throw new Error('Se necesita un plano de 2 a 8 piezas que quepa en la salida C');
+ C.ports.plans=plans;assemblerAction(station,'recipe',first);
+ return {accepted,skipped:records.length-accepted};
+}
+function importAssemblerFile(station,onReturn){
+ const input=document.querySelector('#assembler-file');input.value='';
+ const finish=()=>{input.onchange=null;input.oncancel=null;if(assemblerForBelt(station.C))onReturn?.();};
+ input.oncancel=finish;input.onchange=async()=>{
+  try{
+   const file=input.files?.[0];if(!file)return;if(file.size>1000000)throw new Error('Archivo demasiado grande');
+   const data=JSON.parse(await file.text());
+   const records=data?.version===1&&(Array.isArray(data.mechanisms)||Array.isArray(data.shapes))?[...(data.mechanisms||[]),...(data.shapes||[])]:[data];
+   const {accepted,skipped}=installAssemblerPlans(station,records);
+   announce(accepted+' planos en la lista del acoplador'+(skipped?' · '+skipped+' incompatibles':''));
+  }catch(e){announce('Importación del acoplador · '+e.message);}finally{finish();}
+ };input.click();
+}
+function showAssemblerSaved(hit,station){
+ const records=[...savedMechanisms,...savedShapes].filter(assemblerPlanRecipe);
+ const items=records.map(r=>({label:r.name,run:()=>{try{installAssemblerPlans(station,[r]);}catch(e){announce(e.message);}captureMouse();}}));
+ items.push({label:'Importar archivo…',run:()=>importAssemblerFile(station,()=>showAssemblerProducts(hit,station))},{label:'Volver',run:()=>showAssemblerProducts(hit,station)});
+ openCommandMenu(hit.point,'Acoplador · añadir plano guardado',items);
+}
 function showAssemblerProducts(hit,station){
- const items=Object.entries(QBitsAssembler.recipes).map(([id,r])=>({label:r.label+(id===station.C.ports.product?' ✓':''),run:()=>{assemblerAction(station,'recipe',id);captureMouse();}}));
- items.push({label:'Cerrar',run:()=>captureMouse()});
+ const items=assemblerChoices(station.C).map(([id,label])=>({label:label+(id===station.C.ports.product?' ✓':''),run:()=>{assemblerAction(station,'recipe',id);captureMouse();}}));
+ items.push({label:'Añadir plano guardado…',run:()=>showAssemblerSaved(hit,station)},{label:'Importar archivo…',run:()=>importAssemblerFile(station,()=>showAssemblerProducts(hit,station))},{label:'Cerrar',run:()=>captureMouse()});
  openCommandMenu(hit.point,'Acoplador · elegir producto',items);
 }
 function showAssemblerMenu(hit,station){
  const {A,B,C}=station,items=[
-  {label:'Producto · '+QBitsAssembler.recipes[C.ports.product].label+'…',run:()=>showAssemblerProducts(hit,station)},
+  {label:'Producto · '+assemblerProduct(C).label+'…',run:()=>showAssemblerProducts(hit,station)},
   {label:'Abrir Acoplador en la tableta',run:()=>openAssemblerPanel(station)},
   {label:[A,B,C].every(c=>c.running)?'Detener línea':'Iniciar línea',run:()=>{assemblerAction(station,'toggle');captureMouse();}},
   {label:C.direction===1?'Invertir · desacoplar desde C':'Invertir · acoplar desde A y B',run:()=>{assemblerAction(station,'reverse');captureMouse();}},
@@ -8489,7 +8810,18 @@ function updateAssemblerPanel(){
  const station=assemblerAt(tabletSubject()),get=id=>document.querySelector('#assembler-'+id);
  get('panel').hidden=!station;if(!station)return;
  const {A,B,C}=station,running=[A,B,C].every(c=>c.running);
- get('recipe').value=C.ports.product;get('toggle').textContent=running?'Detener línea':'Iniciar línea';
+ const select=get('recipe');
+ if(select.assemblyStation!==C||select.assemblyPlans!==C.ports.plans){
+  const rows=assemblerChoices(C).map(([id,label])=>{const opt=document.createElement('option');opt.value=id;opt.textContent=label;return opt;});
+  select.replaceChildren(...rows);select.assemblyStation=C;select.assemblyPlans=C.ports.plans;
+ }
+ const recipe=assemblerProduct(C);
+ if(select.assemblyProduct!==recipe){
+  const names={cube:'cubo',tetra:'triangular',pyramid:'pirámide',coupler:'enganche',battery:'celda de batería',gripper:'pinza',flight:'hélice',cutter:'cubo láser'};
+  const counts=new Map();for(const shape of recipe.inputs)counts.set(shape,(counts.get(shape)||0)+1);
+  get('materials').textContent=Array.from(counts,([shape,n])=>n+' × '+names[shape]).join(' + ');select.assemblyProduct=recipe;
+ }
+ select.value=C.ports.product;get('toggle').textContent=running?'Detener línea':'Iniciar línea';
  get('toggle').setAttribute('aria-pressed',String(running));
  get('reverse').textContent=C.direction===1?'Invertir para desacoplar':'Invertir para acoplar';
  get('flow').textContent=C.direction===1?'A y B entran · C entrega':'C entra · A y B devuelven';
@@ -8508,6 +8840,10 @@ for(const action of ['toggle','reverse','recipe']){
  const el=document.querySelector('#assembler-'+action);
  el.addEventListener(action==='recipe'?'change':'click',()=>{const s=assemblerAt(tabletSubject());if(s)assemblerAction(s,action,el.value);});
 }
+document.querySelector('#assembler-import').addEventListener('click',()=>{const s=assemblerAt(tabletSubject());if(s)importAssemblerFile(s);});
+document.querySelector('#assembler-saved').addEventListener('click',()=>{
+ const hit=tabletSubject(),s=assemblerAt(hit);if(s)showAssemblerSaved({...hit,point:rotorPart(s.C.baseId).p},s);
+});
 for(const role of ['A','B','C'])document.querySelector('#assembler-extend-'+role).addEventListener('click',()=>{
  const s=assemblerAt(tabletSubject());if(s)extendAssembler(s,role);
 });
@@ -9382,7 +9718,16 @@ function hydrateLabSnapshot(saved){
    if(mood.assemblyPasses!==undefined&&!validAssemblerPasses(mood.assemblyPasses))return invalid();
    if(mood.assemblyJoint!==undefined){
     const link=mood.assemblyJoint;
-    if(!link||!['A','B'].includes(link.port)||!Number.isSafeInteger(link.mate)||link.mate<1||link.mate===record.id||!Object.hasOwn(QBitsAssembler.recipes,link.product))return invalid();
+    if(!link||!['A','B'].includes(link.port))return invalid();
+    if(link.batch!==undefined){if(!Number.isSafeInteger(link.batch)||link.batch<1||!Number.isInteger(link.count)||link.count<2||link.count>8)return invalid();
+     if(link.cellEnabled!==undefined&&(typeof link.cellEnabled!=='boolean'||!mood.externalBattery))return invalid();
+     if(link.original!==undefined){
+      const {fitting,config}=link.original||{};
+      if(!['cutter','gripper','flight'].includes(fitting)||!mood[fitting]||
+       !(fitting==='cutter'?validCutterConfig(config):fitting==='gripper'?validGripperConfig(config):QBitsPropellerPower.validConfig(config)))return invalid();
+     }
+    }
+    else if(!Number.isSafeInteger(link.mate)||link.mate<1||link.mate===record.id||!Object.hasOwn(QBitsAssembler.recipes,link.product))return invalid();
    }
    if(mood.cutEnergyScale!==undefined&&(!finite(mood.cutEnergyScale)||mood.cutEnergyScale<=0||mood.cutEnergyScale>1))return invalid();
    if(mood.gripper&&!validGripperConfig(mood.gripper)||mood.flight&&!QBitsPropellerPower.validConfig(mood.flight)||mood.trajectory&&!QBitsTrajectoryModel.validatePart(mood.trajectory))return invalid();
@@ -9404,6 +9749,11 @@ function hydrateLabSnapshot(saved){
   if(!Number.isSafeInteger(cargo?.id)||cargo.id<1||cargoIds.has(cargo.id)||!Number.isInteger(cargo.side)||cargo.side<1||cargo.side>12||!Number.isInteger(cargo.required)||cargo.required<1||cargo.required>MAX_QUBITS||!/^#[0-9a-f]{6}$/i.test(cargo.color))return invalid();
   if(cargo.assemblyPasses!==undefined&&!validAssemblerPasses(cargo.assemblyPasses))return invalid();
   cargoIds.add(cargo.id);cargo.p=vector(cargo.p);if(cargo.robotPhysical){cargo.q=quaternion(cargo.q);cargo.v=vector(cargo.v);cargo.w=vector(cargo.w);}
+ }
+ if(data.conveyors!==undefined&&!Array.isArray(data.conveyors))return invalid();
+ for(const belt of data.conveyors||[]){
+  if(!belt||!QBitsAssembler.validPorts(belt.ports,assemblerPlanRecipe))return invalid();
+  if(belt.assemblyQueue!==undefined&&(belt.ports?.assemblyLane!=='C'||!validAssemblerQueue(belt.assemblyQueue)))return invalid();
  }
  if(data.ceilingSupply!==undefined&&!QBitsCeilingFeeder.validSnapshot(data.ceilingSupply,data.groups,ROOM_SIZE/2))return invalid();
  if(!getTrajectorySystem().validSnapshot(data.trajectories))return invalid();
@@ -10002,7 +10352,7 @@ function storedRobotArmValid(record,keys){
 }
 function storedConveyorPortsValid(ports){
  if(ports===undefined)return true;
- if(!ports||typeof ports!=='object'||Array.isArray(ports)||!QBitsAssembler.validPorts(ports))return false;
+ if(!ports||typeof ports!=='object'||Array.isArray(ports)||!QBitsAssembler.validPorts(ports,assemblerPlanRecipe))return false;
  return ['entry','exit'].every(key=>{const port=ports[key];return port&&Array.isArray(port.p)&&port.p.length===3&&port.p.every(n=>Number.isFinite(n)&&Math.abs(n)<=10)&&Array.isArray(port.direction)&&port.direction.length===3&&port.direction.every(Number.isFinite)&&Math.abs(Math.hypot(...port.direction)-1)<.0001;});
 }
 // The final belt is a surface of the supplied machine. Imported ports cannot
@@ -13480,7 +13830,7 @@ function showCodex(){
  }
  if(story.scene==='lab'){
   const article=document.createElement('article'),title=document.createElement('h3'),text=document.createElement('p');
-  title.textContent='Acoplador';text.textContent='Dos cintas reciben una pieza cada una. Elige el producto en la cortina o en la tableta. Con energía, el conjunto sale por C. La marcha inversa devuelve por A y B las piezas originales.';
+  title.textContent='Acoplador';text.textContent='Elige un producto o importa un plano desde la lista. Alimenta A y B. Por C salen el producto y los sobrantes por separado. La marcha inversa devuelve las piezas a sus entradas.';
   article.append(title,text);list.appendChild(article);
  }
  const learned=Object.keys(catalogueLessons).filter(key=>story.progress['lore.'+key]).length;
