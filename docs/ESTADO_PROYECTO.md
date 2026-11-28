@@ -8,7 +8,7 @@ En el banco y el editor, la toma rectangular se ancla al techo sobre el punto qu
 
 Cada toma comparte la geometría procedural con las demás de la misma altura y utiliza un cuerpo estático compuesto. La lógica de suministro utiliza el reloj de simulación a 15 Hz. Una boca obstruida espera y las tomas se turnan cuando coinciden. Al retirar el apoyo de una pila, las piezas de encima se despiertan. El guardado y la exportación conservan la fase del suministro y el tiempo transcurrido de las piezas sueltas, incluso al retirar su toma. [Colocación y controles](MANUAL_BANCO_PRUEBAS.md#toma-de-techo).
 
-Con Cannon se verificaron las cuatro formas a 60, 120 y 240 Hz, la entrega a una cinta en marcha, la conservación al tomar una pieza, la caducidad, el bloqueo y la recuperación al llegar a 2.000 piezas. En una prueba de tres minutos simulados, 12 tomas configuradas a 60 piezas/min emitieron 775 piezas de las cuatro formas. El pico fue de 64 piezas sin recoger. Tras retirar las tomas y transcurrir los tiempos de espera quedaron los seis cuerpos estáticos originales de la sala.
+Con Cannon se verificaron las cuatro formas a 60, 120 y 240 Hz, la entrega a una cinta en marcha, el reinicio del plazo al soltar una pieza con la mano o la pinza, la conservación de montajes y la caducidad, el bloqueo y la recuperación al llegar a 2.000 piezas. En una prueba de tres minutos simulados, 12 tomas configuradas a 60 piezas/min emitieron 775 piezas de las cuatro formas. El pico fue de 64 piezas sin recoger. Tras retirar las tomas y transcurrir los tiempos de espera quedaron los seis cuerpos estáticos originales de la sala.
 
 ## Acoplador de dos cintas (28 nov 2026)
 
