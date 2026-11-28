@@ -79,20 +79,49 @@ for(const hz of [60,120,240])test('all four profiles emerge behind the curtain a
  assert.equal(born.body.position.x,0);assert.equal(born.body.position.z,0);
 });
 
-test('the floor clock expires only emitted, unattended matter; holding a body and ordinary pieces survive',()=>{
+test('a hand protects its piece and a released drop gets a fresh floor interval',()=>{
  const {t}=lab(),f=add(t),other=add(t,1);
  settings(t,f,{rate:60,idle:2});settings(t,other,{rate:60,idle:2});
  const handmade=t.addQubit([2,.045,0]);
  run(t,1);settings(t,f,{enabled:false});settings(t,other,{enabled:false});
  const loose=t.groups[1],chosen=t.groups[2];
+ run(t,1.6);assert(t.feederDrops.get(chosen).elapsed>.3);
  t.setLook({camera:[1,1.7,0],pitch:Math.PI/2,yaw:0});
  t.grabQubit({g:chosen,part:chosen.parts[0],point:chosen.body.position.clone(),distance:.9});
- t.releaseQubit();t.setSelected(null);
- assert(!t.feederDrops.has(chosen));
- run(t,2.1);assert(t.groups.includes(loose),'time in free fall is excluded');
- run(t,1.4);assert(!t.groups.includes(loose));
- assert(t.groups.includes(handmade)&&t.groups.includes(chosen));
+ assert.equal(t.feederDrops.get(chosen).elapsed,0);
+ run(t,3.2);assert(t.groups.includes(chosen));assert(!t.groups.includes(loose));
+ t.releaseQubit();t.setSelected(null);t.setMultiSelection([]);
+ run(t,1);assert(t.groups.includes(chosen));
+ run(t,4);assert(!t.groups.includes(chosen));assert(t.groups.includes(handmade));
  assert.equal(t.feederDrops.size,0);assert.equal(loose.body.world,null);
+});
+
+test('the actual gripper holds a floor drop past its timeout, then releases it to a full fresh interval',()=>{
+ const {t,sandbox}=lab(),f=add(t);settings(t,f,{rate:60,idle:2});
+ run(t,1);settings(t,f,{enabled:false});run(t,1.7);
+ const drop=t.groups[0],p=drop.body.position,record=t.feederDrops.get(drop);
+ assert(record.elapsed>.5);
+ const hand=t.addQubit([p.x,p.y+.10,p.z]),id=hand.parts[0].id;
+ hand.body.mass=0;hand.body.type=sandbox.CANNON.Body.STATIC;hand.body.updateMassProperties();
+ assert(t.configureGripper(id,{}));assert(t.gripperGrab(id));
+ run(t,3);assert(t.robotGrips.has(id));assert.equal(record.elapsed,0);
+ assert(t.releaseGripper(id));t.removeGroup(hand);
+ run(t,1.3);assert(t.groups.includes(drop));run(t,1.4);assert(!t.groups.includes(drop));
+});
+
+test('a selection resets sleeping floor pieces, and material joined to a mechanism stays in the room',()=>{
+ const {t}=lab(),f=add(t),other=add(t,1);
+ for(const fixture of [f,other])settings(t,fixture,{rate:60,idle:2});
+ run(t,1);for(const fixture of [f,other])settings(t,fixture,{enabled:false});run(t,1.8);
+ const [first,second]=t.groups;
+ assert(t.selectFromHud(first.body.id));assert(t.selectFromHud(second.body.id,{toggle:true}));
+ run(t,3);assert.equal(t.feederDrops.get(first).elapsed,0);assert.equal(t.feederDrops.get(second).elapsed,0);
+ t.setSelected(null);t.setMultiSelection([]);
+ const pos=second.body.position,part=t.addQubit([pos.x+.09,pos.y,pos.z]);
+ assert(t.weld({source:part,target:second,position:part.body.position.clone(),quaternion:part.body.quaternion.clone()}));
+ t.setSelected(null);t.setMultiSelection([]);run(t,1);assert(t.groups.includes(first));
+ run(t,2);assert(!t.groups.includes(first));assert(t.groups.some(g=>g.parts.length===2));
+ assert.equal(t.feederDrops.size,0);
 });
 
 test('the outlet waits for clearance, freezes with the simulation and never backfills missed pieces',()=>{

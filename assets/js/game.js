@@ -2264,7 +2264,7 @@ function grabQubit(hitOverride=null){
  const list=carrySet(hit),weight=list.reduce((n,g)=>n+totalWeight(g),0);
  if(runningConveyorForGroups(list)){selected=hit;announce('Cinta en funcionamiento · primero apaga o desconecta la cinta para moverla.');return;}
  if(!canCarry(list)){announce('Peso '+formatWeight(weight)+' u · capacidad '+formatWeight(settings.maxCarry)+' u. Ajustable en P.');return;}
- for(const member of list){feederDrops.delete(member);const run=mechanismRuns.get(member);if(run)run.repositioned=true;}
+ for(const member of list){resetFeederIdle(member);const run=mechanismRuns.get(member);if(run)run.repositioned=true;}
  robotStopForGroups(list);
  if(story.ready&&story.scene==='intro'&&hit.g===storyGuide()){hit.g.storyFloat=false;hit.g.body.type=CANNON.Body.DYNAMIC;hit.g.body.updateMassProperties();}
  stopRotorsForManipulation(list);
@@ -3472,7 +3472,7 @@ function gripperGrab(partOrId,feedback=null){
  const constraint=robotLockConstraint(hit.g.body,chosen.body,Math.max(12,config.capacity*5));constraint.collideConnected=false;
  for(const eq of constraint.equations)setPhysicsEquation(eq,1e8,4);
  if(chosen.cargo){chosen.body.material=world.defaultMaterial;chosen.body.mass=chosen.weight*.25;chosen.body.type=CANNON.Body.DYNAMIC;chosen.body.fixedRotation=false;chosen.body.updateMassProperties();chosen.cargo.robotHeld=hit.part.id;chosen.cargo.robotPhysical=true;}
- if(chosen.g){feederDrops.delete(chosen.g);stopRoute(chosen.g);leaveHaul(chosen.g);chosen.g.robotHeld=hit.part.id;}
+ if(chosen.g){resetFeederIdle(chosen.g);stopRoute(chosen.g);leaveHaul(chosen.g);chosen.g.robotHeld=hit.part.id;}
  chosen.body.wakeUp();hit.g.robotGrip=hit.part.id;world.addConstraint(constraint);robotGrips.set(hit.part.id,{id:hit.part.id,...chosen,constraint});return true;
 }
 function updateRobotGrips(dt){
@@ -4116,7 +4116,7 @@ function assemblerFeed(belt,base){
  }
  return nearest;
 }
-function assemblerMaterial(g){
+function looseMaterialShape(g){
  if(g?.parts?.length!==1)return null;
  const p=g.parts[0],m=p.mood;
  return m.gripper||m.flight||m.cutter||m.trajectory||m.externalBattery||m.production||QBitsWorkshop.hasAdaptation(p)?null:p.shape;
@@ -4167,7 +4167,7 @@ function assemblerSignal(c,signal,status){
 function assemblerForward(station,base){
  const {A,B,C}=station,a=assemblerFeed(A,base),b=assemblerFeed(B,base);
  if(!a||!b||a===b){C.assemblyStatus=a?'Esperando la entrada B':b?'Esperando la entrada A':'Esperando piezas en A y B';return;}
- const inputs=[a,b],product=C.ports.product,pattern=QBitsAssembler.pattern(product,assemblerMaterial(a),assemblerMaterial(b));
+ const inputs=[a,b],product=C.ports.product,pattern=QBitsAssembler.pattern(product,looseMaterialShape(a),looseMaterialShape(b));
  const up=base.q.vmult(V(0,1,0)),axis=base.q.vmult(V(1,0,0));
  // Pack front to back under C. Rejected pieces leave in A, B order, with
  // clearance between their actual solids regardless of their orientation.
@@ -6136,7 +6136,7 @@ function startRoute(g,goal,quiet=false,remember=!quiet){
  const wasBlocked=g.pendingMoodOrder?.reason==='bloqueo',changed=!!g.route;
  if(held&&(held.items||[held]).some(item=>item.g===g)){announce('Suelta la estructura antes de marcar su recorrido.');return false;}
  const bb=bounds(g);if(bb.min.y>.025){if(!quiet)announce('Deja la pieza en el piso antes de darle un destino.');return false;}
- feederDrops.delete(g);if(remember)rememberMechanismRun(g,'route',g,goal);
+ resetFeederIdle(g);if(remember)rememberMechanismRun(g,'route',g,goal);
  if(!groupWilling(g)){queueMoodRoute(g,goal);if(!quiet)announce('Necesita descansar · la orden queda pendiente.');return true;}
  stopRoute(g);goal=goal.clone();const source=g.body.position.clone(),sourceQ=g.body.quaternion.clone();
  const pending={goal,reason:'planning',nextTry:Infinity};g.pendingMoodOrder=pending;g.pin={point:goal.clone(),arrived:false};
@@ -7542,7 +7542,7 @@ function selectRectangle(rect){
  const candidates=groups.filter(g=>{const b=screenBounds(g);return b&&b.right>=rect.left&&b.left<=rect.right&&b.bottom>=rect.top&&b.top<=rect.bottom&&visibleFromCamera(g);}).sort((a,b)=>a.body.position.distanceTo(V(...camera))-b.body.position.distanceTo(V(...camera)));
  const accepted=[];let pieces=0,weight=0;
  for(const g of candidates){const w=totalWeight(g);if(pieces+g.parts.length>settings.maxSelect)continue;accepted.push(g);pieces+=g.parts.length;weight+=w;}
- for(const g of accepted)feederDrops.delete(g);
+ for(const g of accepted)resetFeederIdle(g);
  multiSelection=accepted;selected=accepted.length?{g:accepted[0],part:accepted[0].parts[0]}:null;
  const limited=candidates.length>accepted.length;
  announce(accepted.length?pieces+' Q-bits · '+formatWeight(weight)+' u'+(limited?' · selección limitada':weight>settings.maxCarry?' · supera la carga manual, puede recibir órdenes':' · clic derecho en el suelo para dar destino'):limited?'La selección supera el límite de piezas. Ajusta en P.':'Sin Q-bits visibles dentro de la selección.');return accepted;
@@ -7707,7 +7707,7 @@ function selectFromHud(id,{toggle=false}={}){
  clearRotorSelection();
  if(toggle){const team=selectionGroups();multiSelection=team.includes(g)?team.filter(item=>item!==g):[...team,g];selected=multiSelection.length?{g:multiSelection[0],part:multiSelection[0].parts[0]}:null;}
  else {multiSelection=[g];selected={g,part:g.parts[0]};}
- feederDrops.delete(g);selectedCargo=null;redraw=true;return true;
+ resetFeederIdle(g);selectedCargo=null;redraw=true;return true;
 }
 function initSelectionHud(){
  if(selectionHud||!window.QBitsSelectionHUD)return;
@@ -8213,7 +8213,7 @@ function handleSecondary(event){
   items.push({label:'Cerrar',run:()=>captureMouse()});openCommandMenu(c.body.position,'Cuerpo · '+c.required+' u · '+(c.job?.activeCount||0)+' / '+c.required,items);return;
  }
  if(hit){
-  feederDrops.delete(hit.g);selectedCargo=null;pendingCargo=null;selected=hit;if(!multiSelection.includes(hit.g))multiSelection=[];
+  resetFeederIdle(hit.g);selectedCargo=null;pendingCargo=null;selected=hit;if(!multiSelection.includes(hit.g))multiSelection=[];
   if(event.altKey||altDown()){openDetachMenu(hit);return;}
   if(hit.part.mood.cutter){showCutterMenu(hit);return;}
   if(hit.part.mood.trajectory){showTrajectoryMenu(hit);return;}
@@ -12012,12 +12012,16 @@ function emitFeederPart(f){
  feederDrops.set(g,{source:f.id,idle:f.idle,elapsed:0,grounded:false});
  redraw=true;return true;
 }
+function resetFeederIdle(g){
+ const drop=feederDrops.get(g);if(drop)drop.elapsed=0;
+}
 function updateFeederDrops(dt){
+ if(!feederDrops.size)return;
+ const selectedSet=multiSelection.length>1?new Set(multiSelection):null;
  let retired=0;
  for(const [g,p] of feederDrops){
-  // Explicit use gives the piece to its owner. A conveyor merely transports
-  // it: the floor clock stays at zero until it is left idle after delivery.
-  if(g===selected?.g||g.robotHeld||g.route||g.haulJob||g.blueprintJob||g.cooler||g.parts.length!==1){
+  // A joined or adapted part becomes part of the player's inventory.
+  if(!looseMaterialShape(g)||g.parts[0].mood.matter||(rotors.length&&rotorForGroup(g))){
    feederDrops.delete(g);continue;
   }
   const b=g.body;
@@ -12026,7 +12030,10 @@ function updateFeederDrops(dt){
   }
   if(b.aabbNeedsUpdate)b.computeAABB();
   p.grounded=Math.abs(b.aabb.lowerBound.y)<.004&&(!!world.collisionMatrix.get(b,floor)||p.grounded&&b.sleepState===CANNON.Body.SLEEPING);
-  if(!p.grounded){p.elapsed=0;continue;}
+  // Keep observing floor contact through a grip or selection. A body can
+  // already be asleep when it is released, with no new Cannon contact pair.
+  if(!p.grounded||g===selected?.g||g===multiSelection[0]||selectedSet?.has(g)||cubeIsHeld(g)||
+     g.robotHeld||g.route||g.pendingMoodOrder||g.haulJob||g.blueprintJob||g.cooler){p.elapsed=0;continue;}
   p.elapsed=Math.min(p.idle,p.elapsed+dt);
   if(p.elapsed+TICK_EPS>=p.idle&&retired<4){
    // Cannon keeps a sleeping pile asleep when its lowest body is removed.
@@ -12050,7 +12057,7 @@ function tickCeilingFeeders(dt){
   const f=ceilingFeeders[(feederCursor+i)%n];if(!f.enabled)continue;
   f.wait-=dt;if(f.wait>TICK_EPS)continue;
   if(created>=2){f.wait=0;continue;}
-  if(feederDrops.size>=QBitsCeilingFeeder.limits.loose)f.blocked='Esperando que se recojan o retiren piezas';
+  if(feederDrops.size>=QBitsCeilingFeeder.limits.loose)f.blocked='Límite de piezas sueltas · esperando espacio';
   else if(!Number.isSafeInteger(serial+1))f.blocked='No quedan identificadores de pieza disponibles';
   else if((sceneCount??=scenePartCount())>=MAX_QUBITS)f.blocked='Límite de piezas de la sala';
   else if(!emitFeederPart(f))f.blocked='Salida ocupada';
@@ -12074,14 +12081,14 @@ function restoreCeilingFeeders(data){
  for(const {partId,source,idle,elapsed} of data.loose)feederDrops.set(singles.get(partId),{source,idle,elapsed,grounded:elapsed>0});
 }
 
-// Sweep only fast, unclaimed drops near the laboratory floor. Let Cannon solve
+// Sweep only loose drops near the laboratory floor. Let Cannon solve
 // the impact at the current dt and produce its usual contacts on the next step.
 function feederFloorImpacts(dt,solver){
  for(const g of feederDrops.keys()){
   const b=g.body;
   if(b.sleepState===CANNON.Body.SLEEPING||b.type!==CANNON.Body.DYNAMIC||!b.collisionResponse)continue;
   const travel=Math.max(0,-b.velocity.y+Math.abs(world.gravity.y)*dt)*dt;
-  if(b.position.y-b.boundingRadius>travel+.001)continue;
+  if(b.position.y-b.boundingRadius>travel+.001||g.robotHeld||cubeIsHeld(g))continue;
   // Narrowphase can wake the bottom of a pile after it skipped its sleeping
   // floor pair. An impact from above still needs support in this same solve.
   const missingSupport=!world.collisionMatrix.get(b,floor);
@@ -12109,7 +12116,7 @@ function settleFeederFloorPenetration(){
   if(b.position.y>b.boundingRadius||b.type!==CANNON.Body.DYNAMIC||!b.collisionResponse||b.sleepState===CANNON.Body.SLEEPING)continue;
   if(b.aabbNeedsUpdate)b.computeAABB();
   const bottom=b.aabb.lowerBound.y;
-  if(bottom>=-.0015)continue;
+  if(bottom>=-.0015||g.robotHeld||cubeIsHeld(g))continue;
   b.position.y+=-.0005-bottom;
   if(b.velocity.y<0)b.velocity.y=0;
   b.aabbNeedsUpdate=true;world.broadphase.dirty=true;
