@@ -313,7 +313,7 @@ body:not([data-game-mode='playing']) #opening-status,body[data-transitioning='tr
 <link rel="stylesheet" href="assets/css/workshop-panel.css?v=20261116-robot-arm-1">
 <link rel="stylesheet" href="assets/css/trajectory-panel.css?v=20261123-trajectory-circuits-1">
 <link rel="stylesheet" href="assets/css/robot-arm-panel.css?v=20261119-drone-routes">
-<link rel="stylesheet" href="assets/css/conveyor-panel.css?v=20261116-quick-catalogue-1">
+<link rel="stylesheet" href="assets/css/conveyor-panel.css?v=20261128-acoplador-1">
 <link rel="stylesheet" href="assets/css/servo-panel.css?v=20261117-culling-1">
   <link rel="stylesheet" href="assets/css/culling-lab.css?v=20261117-culling-1">
   <link rel="stylesheet" href="assets/css/tablet.css?v=20261124-opening-walk-1">
@@ -477,6 +477,22 @@ body:not([data-game-mode='playing']) #opening-status,body[data-transitioning='tr
     <div class="actions"><button id="create" type="button">Crear Q-bit</button><button id="remove" type="button">Borrar pieza</button><button id="split" type="button">Desarmar estructura</button></div>
     </div>
     <div id="page-mechanisms" role="tabpanel" hidden>
+      <section id="assembler-panel" aria-labelledby="assembler-title" hidden>
+        <h3 id="assembler-title">Acoplador</h3>
+        <p id="assembler-flow">A y B entran · C entrega</p>
+        <label>Producto<select id="assembler-recipe">
+          <option value="double">Doble Q-bit · dos cubos</option>
+          <option value="socket">Q-bit con enganche · cubo + enganche</option>
+          <option value="pyramid">Pirámide · dos triangulares</option>
+          <option value="bipyramid">Bipirámide · dos pirámides</option>
+        </select></label>
+        <div class="conveyor-actions"><button type="button" id="assembler-toggle">Iniciar línea</button><button type="button" id="assembler-reverse">Invertir para desacoplar</button></div>
+        <p id="assembler-status" role="status" aria-live="polite"></p>
+        <details><summary>Conectar otra cinta</summary>
+          <p>Elige el extremo para alinear un plano de cinta recta.</p>
+          <div class="conveyor-actions"><button id="assembler-extend-A">Entrada A</button><button id="assembler-extend-B">Entrada B</button><button id="assembler-extend-C">Salida C</button></div>
+        </details>
+      </section>
       <p id="mechanism-unlock"></p>
       <section id="sensor-panel" hidden>
         <h3>Sensor</h3>
@@ -870,6 +886,6 @@ body:not([data-game-mode='playing']) #opening-status,body[data-transitioning='tr
   <script src="assets/js/families-ui.js?v=20261122-families-1" defer></script>
   <script src="assets/js/scene-files.js?v=20261126-laser-mounted-3" defer></script>
   <script src="assets/js/scene-editor-ui.js?v=20261126-laser-mounted-3" defer></script>
-  <script src="assets/js/boot.js?v=20261127-face-build-1" defer></script>
+  <script src="assets/js/boot.js?v=20261128-acoplador-1" defer></script>
 </body>
 </html>

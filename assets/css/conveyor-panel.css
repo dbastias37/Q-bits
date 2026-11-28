@@ -1,19 +1,19 @@
-#conveyor-panel{margin:14px 0 18px;padding:14px;border:1px solid #aaa38355;border-radius:14px;background:linear-gradient(145deg,#fffdf27d,#e9e4d625);color:#64604b}
+#conveyor-panel,#assembler-panel{margin:14px 0 18px;padding:14px;border:1px solid #aaa38355;border-radius:14px;background:linear-gradient(145deg,#fffdf27d,#e9e4d625);color:#64604b}
 #conveyor-panel [hidden]{display:none!important}
-#panel #conveyor-panel h3{font:13px/1.5 system-ui,sans-serif;letter-spacing:.03em;margin:0 0 7px;color:#635d42}
-#panel #conveyor-panel p{font-size:10px;line-height:1.6;margin:7px 0 10px;color:#7f7a67}
+#panel #conveyor-panel h3,#panel #assembler-panel h3{font:13px/1.5 system-ui,sans-serif;letter-spacing:.03em;margin:0 0 7px;color:#635d42}
+#panel #conveyor-panel p,#panel #assembler-panel p{font-size:10px;line-height:1.6;margin:7px 0 10px;color:#7f7a67}
 #conveyor-panel .conveyor-kicker{font-size:8px!important;letter-spacing:.15em;text-transform:uppercase;color:#9c957e!important;margin:0 0 4px!important}
-#panel #conveyor-panel button{font-size:10px;padding:7px 6px;line-height:1.4;min-height:31px}
+#panel #conveyor-panel button,#panel #assembler-panel button{font-size:10px;padding:7px 6px;line-height:1.4;min-height:31px}
 #conveyor-panel .conveyor-blueprints{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:10px 0}
 #conveyor-panel .conveyor-blueprints>div{min-width:0}
 #conveyor-panel .conveyor-blueprints button{width:100%;min-height:46px!important}
 #conveyor-panel .conveyor-blueprints p{font-size:8px!important;line-height:1.5!important;margin:5px 0 0!important;overflow-wrap:anywhere}
-#conveyor-panel .conveyor-actions{display:flex;gap:6px;margin:9px 0}
-#conveyor-panel .conveyor-actions>button{flex:1}
-#conveyor-panel button[aria-pressed=true]{background:#e9e5d3;color:#655a31;border-color:#b2a46d}
+#conveyor-panel .conveyor-actions,#assembler-panel .conveyor-actions{display:flex;gap:6px;margin:9px 0}
+#conveyor-panel .conveyor-actions>button,#assembler-panel .conveyor-actions>button{flex:1}
+#conveyor-panel button[aria-pressed=true],#assembler-panel button[aria-pressed=true]{background:#e9e5d3;color:#655a31;border-color:#b2a46d}
 #conveyor-panel .conveyor-facts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0 4px;border-top:1px solid #aaa38338;padding-top:10px}
 #conveyor-panel .conveyor-facts dt{font:8px/1.5 system-ui,sans-serif;color:#948d77}
 #conveyor-panel .conveyor-facts dd{font:11px/1.6 system-ui,sans-serif;margin:2px 0 0;color:#696148;font-variant-numeric:tabular-nums}
 #panel #conveyor-feedback:not(:empty){padding:8px;border-radius:7px;background:#efefdf;color:#686339;margin-bottom:0}
 #panel #conveyor-feedback[data-error=true]{background:#f7eee8;color:#936d50}
-@media(max-width:380px){#conveyor-panel{padding:10px}#conveyor-panel .conveyor-blueprints{gap:4px}#panel #conveyor-panel .conveyor-blueprints button{font-size:9px;padding:6px 3px}}
+@media(max-width:380px){#conveyor-panel,#assembler-panel{padding:10px}#conveyor-panel .conveyor-blueprints{gap:4px}#panel #conveyor-panel .conveyor-blueprints button{font-size:9px;padding:6px 3px}}

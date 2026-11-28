@@ -24,6 +24,25 @@ Selecciona un tramo y marca **Al final de la cinta seleccionada** antes de elegi
 
 Las secciones físicamente unidas comparten la batería mediante la red mecánica existente. Al iniciar la marcha arrancan todos los tramos del mismo chasis. Si pegas uno girado, su rodadura se ajusta para continuar el flujo en la unión. El clic derecho permite detener o invertir ese tramo. Un brazo acoplado conserva el límite de carga de su pinza y de sus ejes. La proximidad por sí sola no transmite energía. El tramo debe estar nivelado y apoyado: no se puede encender suspendido sin soporte. Puede funcionar sobre un banco o sobre otra estructura estable; si pierde ese apoyo, se detiene. Un generador de área y su alcance son trabajo posterior; este bloque utiliza baterías externas.
 
+## Acoplador
+
+En el catálogo de mecanismos, **Acoplador** coloca el modelo de dos entradas A y B y una salida central C. En el editor 3D también está en **F8 → Mecanismos**. Cada boca termina en un tramo recto de altura estándar. Para prolongarlo, selecciona la máquina, abre su tableta y elige **Conectar otra cinta** y el extremo que vas a usar. El plano se alinea con ese puerto. Integra sus piezas para completar la unión.
+
+1. Sitúa el mecanismo sobre una superficie estable. Acóplale una batería encendida o aliméntalo por cable desde un depósito con energía.
+2. Haz clic en el centro del techo, la cortina negra o el indicador exterior para elegir el producto. Con clic secundario puedes abrir la tableta del Acoplador y pulsar **Iniciar línea**.
+3. Pon una pieza en A y otra en B. La primera espera a la segunda dentro de la cámara. El indicador se enciende en verde al salir un conjunto compatible por C. Puedes seleccionarlo como cualquier montaje soldado.
+4. Si las piezas no corresponden a la receta, el indicador parpadea en rojo y aparece un aviso. Por C salen primero la pieza de A y después la de B, enteras. Una salida ocupada retiene las piezas hasta que hay espacio.
+5. Con **Invertir para desacoplar**, C recibe el producto y cada pieza sale por su entrada original. Un objeto ajeno al proceso atraviesa entero por una rama libre. Puedes detener e invertir desde el menú secundario o desde la tableta.
+
+| Producto | Piezas que deben entrar |
+| --- | --- |
+| Doble Q-bit | Dos cubos |
+| Q-bit con enganche | Un cubo y un enganche, en cualquier orden |
+| Pirámide de dos triangulares | Dos pirámides triangulares |
+| Bipirámide | Dos pirámides cuadradas |
+
+El guardado de escena conserva la receta, los conjuntos, la procedencia de sus piezas y las piezas que estén esperando en las cintas. Al volver al banco, pulsa **Iniciar línea** para continuar.
+
 ## Seleccionar, mover y separar tramos
 
 Seleccionar la cinta, abrir su menú contextual o consultar su contorno mantiene la producción y el consumo de batería. Si intentas tomar, unir o separar un conjunto que contiene un tramo encendido, se conserva su estado y aparece **Primero apaga o desconecta la cinta**. Detén todos los tramos del conjunto antes de modificar el chasis compartido. El agotamiento de la batería, la sobrecarga y la pérdida de apoyo conservan sus paradas físicas.
