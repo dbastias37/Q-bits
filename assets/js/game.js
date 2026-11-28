@@ -25,8 +25,10 @@ let selectionHud=null;
 const visualRGB=key=>preferences.rgb(visuals[key]);
 function radialOpen(){return !!unitRadial?.isOpen;}
 const storyWorld={walls:[],details:[],door:null,target:null,doorProgress:0};
-const ROOM_SIZE = 28; // Ancho y largo; las cuatro paredes se alejan del centro.
-const ROOM_HEIGHT = 14;
+const room = {...QBitsLabRoom.defaults};
+function roomHalf(axis){return (axis==='x'?room.width:room.length)/2;}
+function inRoomXZ(x,z,margin=0){return QBitsLabRoom.containsXZ(room,x,z,margin);}
+function inRoomFootprint(box,margin=0){return QBitsLabRoom.containsBounds(room,box.min,box.max,margin);}
 const EYE_HEIGHT = 1.68;
 const PLAYER_RADIUS = 0.28;
 const WALK_SPEED = 3.2;
@@ -55,11 +57,11 @@ function movePlayer(position, yaw, forward, sideways, seconds, speedScale=1) {
   const length = Math.hypot(forward, sideways);
   if (!length) return;
   const step = WALK_SPEED * speedScale * Math.min(Math.max(seconds, 0), 0.05) / length;
-  const limit = ROOM_SIZE / 2 - PLAYER_RADIUS;
+  const limitX = room.width / 2 - PLAYER_RADIUS, limitZ = room.length / 2 - PLAYER_RADIUS;
   const dx = (-Math.sin(yaw) * forward + Math.cos(yaw) * sideways) * step;
   const dz = (-Math.cos(yaw) * forward - Math.sin(yaw) * sideways) * step;
-  position[0] = Math.max(-limit, Math.min(limit, position[0] + dx));
-  position[2] = Math.max(-limit, Math.min(limit, position[2] + dz));
+  position[0] = Math.max(-limitX, Math.min(limitX, position[0] + dx));
+  position[2] = Math.max(-limitZ, Math.min(limitZ, position[2] + dz));
 }
 
 
@@ -217,8 +219,7 @@ const fragmentSource = `
   varying vec3 vAffineUV;
   varying vec3 vPosition;
   varying vec3 vNormal;
-  uniform float uSize;
-  uniform float uHeight;
+  uniform vec3 uRoomSize;
   uniform float uKind;
   uniform vec3 uCenter;
   uniform vec3 uDimensions;
@@ -387,17 +388,17 @@ const fragmentSource = `
       gl_FragColor = vec4(markedAlbedo(vec3(black))+accentLight(), 1.0);
       return;
     }
-    float halfSize = uSize * 0.5;
+
     vec3 boundary = vec3(
-      halfSize - abs(vPosition.x),
-      min(vPosition.y, uHeight - vPosition.y),
-      halfSize - abs(vPosition.z)
+      uRoomSize.x * 0.5 - abs(vPosition.x),
+      min(vPosition.y, uRoomSize.y - vPosition.y),
+      uRoomSize.z * 0.5 - abs(vPosition.z)
     );
     // Soft contact shading at the edges makes the all-white volume legible.
-    vec3 edgeDistances = boundary + abs(vNormal) * uSize;
+    vec3 edgeDistances = boundary + abs(vNormal) * uRoomSize;
     float edge = max(0.0, min(edgeDistances.x, min(edgeDistances.y, edgeDistances.z)));
     float contactShade = 0.065 * exp(-edge * 2.7);
-    float heightLight = 0.024 * smoothstep(0.0, uHeight, vPosition.y);
+    float heightLight = 0.024 * smoothstep(0.0, uRoomSize.y, vPosition.y);
     float softLight = 0.948 - 0.024 * vNormal.y
       + 0.012 * vNormal.x + 0.008 * vNormal.z + heightLight;
     float floorBounce = 0.009 * exp(-dot(vPosition.xz, vPosition.xz) / 55.0);
@@ -423,31 +424,31 @@ gl.linkProgram(program);
 if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program));
 gl.useProgram(program);
 
-const vertices = [];
-function face(corners, normal) {
-  for (const index of [0, 1, 2, 0, 2, 3]) vertices.push(...corners[index], ...normal);
+const geometry = gl.createBuffer(),vertices=[];
+function face(corners,normal){
+ for(const i of [0,1,2,0,2,3])vertices.push(...corners[i],...normal);
 }
-const h = ROOM_SIZE / 2, top = ROOM_HEIGHT;
-face([[-h,0,-h], [h,0,-h], [h,0,h], [-h,0,h]], [0,1,0]);
-face([[-h,top,h], [h,top,h], [h,top,-h], [-h,top,-h]], [0,-1,0]);
-face([[-h,0,-h], [-h,0,h], [-h,top,h], [-h,top,-h]], [1,0,0]);
-face([[h,0,h], [h,0,-h], [h,top,-h], [h,top,h]], [-1,0,0]);
-face([[h,0,-h], [-h,0,-h], [-h,top,-h], [h,top,-h]], [0,0,1]);
-face([[-h,0,h], [h,0,h], [h,top,h], [-h,top,h]], [0,0,-1]);
-
-const geometry = gl.createBuffer();
-gl.bindBuffer(gl.ARRAY_BUFFER, geometry);
-gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+function uploadRoomGeometry(){
+ const x=room.width/2, z=room.length/2, y=room.height;vertices.length=0;
+ face([[-x,0,-z],[x,0,-z],[x,0,z],[-x,0,z]],[0,1,0]);
+ face([[-x,y,z],[x,y,z],[x,y,-z],[-x,y,-z]],[0,-1,0]);
+ face([[-x,0,-z],[-x,0,z],[-x,y,z],[-x,y,-z]],[1,0,0]);
+ face([[x,0,z],[x,0,-z],[x,y,-z],[x,y,z]],[-1,0,0]);
+ face([[x,0,-z],[-x,0,-z],[-x,y,-z],[x,y,-z]],[0,0,1]);
+ face([[-x,0,z],[x,0,z],[x,y,z],[-x,y,z]],[0,0,-1]);
+ gl.bindBuffer(gl.ARRAY_BUFFER,geometry);
+ gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.STATIC_DRAW);
+}
+uploadRoomGeometry();
 for (const [name, offset] of [['aPosition', 0], ['aNormal', 12], ['aPiecePosition', 0], ['aPieceNormal', 12]]) {
   const location = gl.getAttribLocation(program, name);
   gl.enableVertexAttribArray(location);
   gl.vertexAttribPointer(location, 3, gl.FLOAT, false, 24, offset);
 }
-const uniforms = Object.fromEntries(['uTrajectoryAtlas','uTrajectoryGlyph','uJitter','uResolution','uSurface','uTextureMix','uTextureScale','uWarp','uCel','uLighting','uShadows','uFocal','uOutlineStroke','uFocusMask','uGlow','uLightPos[0]','uLightColor[0]','uTime','uCamera','uLook','uAspect','uSize','uHeight','uKind','uCenter','uScale','uShadow','uDimensions','uQuaternion','uTint','uLiquidNormal','uLiquidPlane'].map(name => [name, gl.getUniformLocation(program, name)]));
+const uniforms = Object.fromEntries(['uTrajectoryAtlas','uTrajectoryGlyph','uJitter','uResolution','uSurface','uTextureMix','uTextureScale','uWarp','uCel','uLighting','uShadows','uFocal','uOutlineStroke','uFocusMask','uGlow','uLightPos[0]','uLightColor[0]','uTime','uCamera','uLook','uAspect','uRoomSize','uKind','uCenter','uScale','uShadow','uDimensions','uQuaternion','uTint','uLiquidNormal','uLiquidPlane'].map(name => [name, gl.getUniformLocation(program, name)]));
 gl.uniform1f(uniforms.uFocal, heldFocus.focal);
 gl.uniform1f(uniforms.uFocusMask, 0);
-gl.uniform1f(uniforms.uSize, ROOM_SIZE);
-gl.uniform1f(uniforms.uHeight, ROOM_HEIGHT);
+gl.uniform3f(uniforms.uRoomSize,room.width,room.height,room.length);
 gl.enable(gl.DEPTH_TEST);
 gl.clearColor(1, 1, 1, 1);
 
@@ -774,7 +775,7 @@ canvas.addEventListener('webglcontextlost', event => {
 canvas.addEventListener('webglcontextrestored', () => window.location.reload());
 
 // Q-bits lab · rigid bodies, compound structures, face rolling and drop guides.
-const CUBE_SIZE=.09, HALF=.045, MAX_QUBITS=2000;
+const CUBE_SIZE=.09, HALF=.045, MAX_QUBITS=QBitsLabRoom.ranges.partLimit[1];
 let FIXED_STEP=1/savedPreferences.physicsHz;
 // Keep the existing 60/120/240 Hz setting and its constraint recalibration.
 const LOGIC_HZ=15, LOGIC_DT=1/LOGIC_HZ;
@@ -1419,9 +1420,22 @@ const haulMaterial=new CANNON.Material('cooperative-ground');
 world.addContactMaterial(new CANNON.ContactMaterial(haulMaterial,world.defaultMaterial,{friction:0,restitution:0}));
 world.addContactMaterial(new CANNON.ContactMaterial(haulMaterial,haulMaterial,{friction:0,restitution:0}));
 const floor=new CANNON.Body({mass:0,material:world.defaultMaterial});floor.addShape(new CANNON.Plane());floor.quaternion.setFromEuler(-Math.PI/2,0,0);world.addBody(floor);
-for(const [p,h] of [[[0,ROOM_HEIGHT+.1,0],[14,.1,14]],[[14.1,7,0],[.1,7,14]],[[-14.1,7,0],[.1,7,14]],[[0,7,14.1],[14,7,.1]],[[0,7,-14.1],[14,7,.1]]]) {
- const wall=new CANNON.Body({mass:0});wall.addShape(new CANNON.Box(V(...h)));wall.position.set(...p);world.addBody(wall);
+const roomWalls=new Map();
+function buildRoomWalls(){
+ for(const body of roomWalls.keys())world.removeBody(body);
+ roomWalls.clear();
+ const x=room.width/2,z=room.length/2,y=room.height/2;
+ for(const [mount,p,half] of [
+  ['ceiling',[0,room.height+.1,0],[x,.1,z]],
+  ['east',[x+.1,y,0],[.1,y,z]],['west',[-x-.1,y,0],[.1,y,z]],
+  ['south',[0,y,z+.1],[x,y,.1]],['north',[0,y,-z-.1],[x,y,.1]]
+ ]){
+  const wall=new CANNON.Body({mass:0});wall.addShape(new CANNON.Box(V(...half)));
+  wall.position.set(...p);world.addBody(wall);wall.computeAABB();roomWalls.set(wall,mount);
+ }
+ world.broadphase.dirty=true;
 }
+buildRoomWalls();
 const cubeShape=()=>new CANNON.Box(V(HALF,HALF,HALF));
 const axes=[V(1,0,0),V(0,1,0),V(0,0,1)];
 function announce(text){document.querySelector('#notice').textContent=text;clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>document.querySelector('#notice').textContent='',3200);}
@@ -1660,7 +1674,7 @@ function physicalGroupBounds(g,pos=g.body.position,quat=g.body.quaternion){
  }return translatedBounds(box,pos);
 }
 function validPose(g,pos,quat,exclude=[],joiningFrames=null){
- const bb=physicalGroupBounds(g,pos,quat);if(bb.min.y<-.001||bb.max.y>ROOM_HEIGHT||Math.max(Math.abs(bb.min.x),Math.abs(bb.max.x),Math.abs(bb.min.z),Math.abs(bb.max.z))>ROOM_SIZE/2-.001)return false;
+ const bb=physicalGroupBounds(g,pos,quat);if(bb.min.y<-.001||bb.max.y>room.height||!inRoomFootprint(bb,.001))return false;
  const src=rigidQueryPoses(g,pos,quat).concat(conveyorGroupSurfaces(g,pos,quat)),entries=src.map(collisionEntry);
  if(!puzzlePoseClear(g,pos,quat,src,bb)||!alphaPoseClear(g,pos,quat)||!storyPoseClear(g,pos,quat,src,bb))return false;
  if(cargos.some(c=>!exclude.includes(c)&&boundsOverlap(bb,cargoBounds(c))&&src.some(a=>obbOverlap(a,cargoPose(c)))))return false;
@@ -1702,7 +1716,7 @@ function quickCatalogue(){
  ...['pivot','hinge'].map(kind=>({id:'quick-servo-'+kind,title:kind==='pivot'?'Servo pivote':'Servo bisagra',record:servoBlueprintTemplate(kind),subtitle:'Articulación · apagada'})),
  {id:'quick-propeller',title:'Hélice modular',record:propellerBlueprintTemplate()},{id:'quick-drone',title:'Dron de prueba',record:propellerBlueprintTemplate(true),subtitle:'1 hélice + batería I'}, {id:'quick-arm',title:'Brazo Q-bits',record:robotArmBlueprintTemplate()},...['straight','left','right'].map((kind,i)=>({id:'quick-conveyor-'+kind,title:['Cinta recta','Esquina izquierda','Esquina derecha'][i],record:conveyorBlueprintTemplate(kind)})),
  {id:'quick-gripper',title:'Cubo de agarre',record:quickSingleRecord('gripper')},...[1,2,3].map(n=>({id:'quick-battery-'+n,title:'Batería '+['','I','II','III'][n],record:quickSingleRecord('battery',n),subtitle:'100 % · apagada'})),
- {id:'quick-ceiling-feeder',title:'Toma de techo',action:'ceiling-feeder',subtitle:'Suministro vertical · rueda para ajustar la altura'},
+ {id:'quick-ceiling-feeder',title:'Toma de Q-bits',action:'ceiling-feeder',subtitle:'Suministro desde el techo o la pared'},
  {id:'quick-assembler',title:'Acoplador',record:assemblerBlueprintTemplate(),subtitle:'Dos entradas · una salida reversible'},
  {id:'quick-cutter',title:'Láser de corte',record:cutterBlueprintTemplate(),subtitle:'Cubo adaptable · apagado'},
  {id:'quick-sensor',title:'Sensor configurable',action:'sensor'},{id:'quick-cargo',title:'Cuerpo sólido',action:'cargo'},{id:'quick-cooler',title:'Enfriador',action:'cooler'},{id:'quick-shelf',title:'Repisa',action:'shelf',subtitle:'Colocar en pared'},
@@ -1716,7 +1730,7 @@ function quickProfile(entry){
   const vertices=[],faces=[],cube=unitProfile('cube');
   const boxes=QBitsCeilingFeeder.geometry(2.5,3.1).white;
   for(const [x,y,z,w,h,d] of boxes){const offset=vertices.length;for(const v of cube.vertices)vertices.push([x+v.x*w/CUBE_SIZE,y+v.y*h/CUBE_SIZE,z+v.z*d/CUBE_SIZE]);for(const face of cube.faces)faces.push(face.map(i=>i+offset));}
-  return {...entry,section:'quick',vertices,faces,color:[192,204,205],description:'Apunta al piso, a una cinta o al techo. Rueda para ajustar la altura. Haz clic en la boca para configurar el suministro.'};
+  return {...entry,section:'quick',vertices,faces,color:[192,204,205],description:'Apunta a una pared para lanzar piezas, o al techo, al piso o a una cinta para dejarlas caer. La rueda ajusta la altura. Haz clic en la boca para configurar el suministro.'};
  }
  if(entry.action==='power-reservoir'){const vertices=[],faces=[];for(const y of [-1,1])for(let i=0;i<12;i++){const a=i*Math.PI/6;vertices.push([Math.cos(a)*.42,y,Math.sin(a)*.42]);}for(let i=0;i<12;i++)faces.push([i,(i+1)%12,(i+1)%12+12,i+12]);faces.push(Array.from({length:12},(_,i)=>11-i),Array.from({length:12},(_,i)=>i+12));return {id:entry.id,title:entry.title,subtitle:entry.subtitle,section:'quick',vertices,faces,color:[65,145,112],description:'Depósito de suelo con líquido visible. Clic derecho: encender. Conecta una máquina con un cable de Q-bits. La recarga de prueba se hace apagado.'};}
  if(entry.action==='power-cable'){const profile=unitProfile('cube');return {id:entry.id,title:entry.title,subtitle:entry.subtitle,section:'quick',vertices:profile.vertices.map(v=>[v.x/CUBE_SIZE*2,v.y/CUBE_SIZE*.25,v.z/CUBE_SIZE]),faces:profile.faces.map(f=>f.slice()),color:[185,119,44],description:'Crea los cubos y desenróllalos: clic en salida, apoyos opcionales en suelo o pared y clic en entrada. Esc conserva el material; clic derecho deshace.'};}
@@ -1745,8 +1759,8 @@ function beginCreationPlacement(id,plan=null,options={}){
  cancelUnitCreation();const entry=quickEntries.get(id);
  if(entry?.action==='shelf')return beginShelfPlacement(wallAim());
  if(entry?.action==='ceiling-feeder'){
-  pendingUnitCreation=id;creationPreview={id,entry,elevation:options.height??QBitsCeilingFeeder.defaults.height,poses:[],valid:false};
-  updateCreationPlacement();announce('Toma de techo · apunta al lugar de caída · rueda: altura · clic: colocar');return true;
+  pendingUnitCreation=id;creationPreview={id,entry,elevation:options.height??QBitsCeilingFeeder.defaults.height,wallOffset:options.wallOffset??0,poses:[],valid:false};
+  updateCreationPlacement();announce('Toma de Q-bits · apunta a una pared o al lugar de caída · rueda para ajustar la altura');return true;
  }
  const record=plan?.mechanism||creationRecord(id);let local=[];
  if(record){
@@ -1780,7 +1794,7 @@ function creationSurfaceAim(dir=direction(),exclude=[],excludedFamilies=[]){
   for(const k of ['x','y','z']){const d=Math.abs(Math.abs(local[k])-half[k]);if(d<gap){gap=d;axis=k;}}
   const normal=V();normal[axis]=local[axis]<0?-1:1;best=distance;hit={point,normal:ray?.normal||pose.q.vmult(normal)};
  }
- if(dir.y<-.015){const distance=-origin.y/dir.y;if(distance>0&&distance<best){const point=add(origin,mul(dir,distance));if(Math.max(Math.abs(point.x),Math.abs(point.z))<ROOM_SIZE/2)hit={point,normal:V(0,1,0)};}}
+ if(dir.y<-.015){const distance=-origin.y/dir.y;if(distance>0&&distance<best){const point=add(origin,mul(dir,distance));if(inRoomXZ(point.x,point.z))hit={point,normal:V(0,1,0)};}}
  return hit;
 }
 function creationPosesClear(poses,plan=false,exclude={}){
@@ -1791,7 +1805,7 @@ function creationPosesClear(poses,plan=false,exclude={}){
  if(groups.some(g=>!excludedGroups?.has(g)&&boundsOverlap(extent,physicalGroupBounds(g))&&collisionEntriesOverlap(matter,physicalCollisionParts(g),exclude.tolerance??.0005)))return false;
  const obstacles=cargos.map(cargoPose).concat(storyWorld.walls.map(w=>({p:w.p,q:w.q||Q(),half:w.half})),alphaObstacles(),families.filter(f=>!exclude.families?.includes(f)).map(f=>familyPose(f)),puzzleObstacleBounds().map(w=>({p:w.p,q:w.q||Q(),half:w.half})));
  const entries=obstacles.map(collisionEntry).filter(box=>boundsOverlap(extent,box));
- return poses.every(pose=>{const box=collisionPoseBounds(pose);return box.min.y>=-.001&&box.max.y<=ROOM_HEIGHT&&Math.max(Math.abs(box.min.x),Math.abs(box.max.x),Math.abs(box.min.z),Math.abs(box.max.z))<ROOM_SIZE/2-.001&&!entries.some(other=>boundsOverlap(box,other)&&obbOverlap(pose,other.pose,exclude.tolerance??.0005));});
+ return poses.every(pose=>{const box=collisionPoseBounds(pose);return box.min.y>=-.001&&box.max.y<=room.height&&inRoomFootprint(box,.001)&&!entries.some(other=>boundsOverlap(box,other)&&obbOverlap(pose,other.pose,exclude.tolerance??.0005));});
 }
 // A brush stroke lives on one face plane. Its cells are local to the support,
 // so a moving or rotated construction carries the holograms with it.
@@ -1845,7 +1859,7 @@ function strokeCell(stroke,index){
 }
 function faceCellIssue(draft,cell){
  if(draft.keys.has(faceCellKey(cell.offset)))return '';
- if(scenePartCount()+draft.parts.length>=MAX_QUBITS)return 'Límite de piezas alcanzado.';
+ if(scenePartCount()+draft.parts.length>=room.partLimit)return 'Límite de piezas alcanzado.';
  const pose=partPose(cell.host,cell);
  if(!creationPosesClear([pose]))return 'Posición ocupada.';
  // Separate exposed faces can belong to different local grids on a mechanism.
@@ -1919,7 +1933,7 @@ function fillFaceBuild(preview){
  const draft=preview.faceBuild;if(draft?.stroke)updateFaceBuild(preview);endFaceStroke();
  if(!draft?.parts.length){cancelUnitCreation();return null;}
  const issue=faceBuildSupportIssue(draft.host);
- if(issue||!storyActionAllowed()||openingProtected()||!creationPlacementAllowed('cube')||scenePartCount()+draft.parts.length>MAX_QUBITS||!creationPosesClear(faceBuildBoxes(draft))){
+ if(issue||!storyActionAllowed()||openingProtected()||!creationPlacementAllowed('cube')||scenePartCount()+draft.parts.length>room.partLimit||!creationPosesClear(faceBuildBoxes(draft))){
   draft.error=issue||'No se puede rellenar aquí. Revisa el espacio y el límite de piezas.';updateFaceBuild(preview);announce(draft.error);return null;
  }
  const parts=draft.parts.map(cell=>{const {p,q}=partPose(draft.host,cell);return {p,q,shape:'cube',weight:preview.local[0].weight,id:allocateUnitId()};});
@@ -1956,8 +1970,8 @@ function updateCreationPlacement(hit){
  const poses=preview.local.map(transform),surfaces=preview.surfaces.map(transform),drawPoses=preview.compact.map(transform).concat(surfaces);Object.assign(preview,{point,q,poses,surfacePoses:surfaces,drawPoses});
  const count=preview.plan||floorOnly?0:record?mechanismPartCount(record):preview.local.length;
  if(preview.plan&&blueprints.length>=12)preview.reason='Retira un plano antes de colocar otro.';
- else if(scenePartCount()+count>MAX_QUBITS)preview.reason='No caben más piezas. Retira o guarda un montaje.';
- else if(entry?.action==='cargo'&&(cargos.length>=12||!cargoPlacementClear(point,settings.cargoSide*CUBE_SIZE)))preview.reason='No hay espacio o se alcanzó el límite de cuerpos.';
+ else if(count>0&&scenePartCount()+count>room.partLimit)preview.reason='No caben más piezas. Retira o guarda un montaje.';
+ else if(entry?.action==='cargo'&&(cargos.length>=room.cargoLimit||!cargoPlacementClear(point,settings.cargoSide*CUBE_SIZE)))preview.reason='No hay espacio o se alcanzó el límite de cuerpos.';
  else if(entry?.action==='cooler'&&(coolers.length>=12||!cargoPlacementClear(point,.84)||coolers.some(c=>c.p.distanceTo(point)<.9)))preview.reason='Deja espacio libre para el enfriador.';
  else if(entry?.action==='power-reservoir'&&(powerReservoirs.length>=12||!powerReservoirPlacement(point)))preview.reason='Deja espacio libre para el depósito.';
  else if(!creationPosesClear(drawPoses,!!preview.plan))preview.reason='Posición ocupada · mueve la vista previa.';
@@ -1969,7 +1983,7 @@ function confirmCreationPlacement(){
  if(faceBuildActive(creationPreview)){startFaceStroke(creationPreview);endFaceStroke();return null;}
  if(creationPreview.entry?.action==='ceiling-feeder'){
   if(!updateFeederPlacement(creationPreview,undefined,true)){announce(creationPreview.reason);return null;}
-  const fixture=createCeilingFeeder(creationPreview.point);
+  const fixture=createCeilingFeeder(creationPreview.point,creationPreview.mount);
   if(fixture){cancelUnitCreation();announce('Toma instalada · clic en la boca para configurar el suministro');}
   return fixture;
  }
@@ -2095,10 +2109,10 @@ function spawnQubit(){
   const rotor=spawnRotor(undefined,{...mechanismDefaults,enabled:false});if(!rotor){announce('No hay espacio libre para el rotor.');return;}
   const g=rotorGroups(rotor)[0];cancelUnitCreation();selected={g,part:g.parts[0]};multiSelection=[];announce('Rotor creado · clic derecho → Rotación');return g;
  }
- if(scenePartCount()>=MAX_QUBITS){announce('Máximo de '+MAX_QUBITS+' piezas en la sala.');return;}
+ if(scenePartCount()>=room.partLimit){announce('Máximo de '+room.partLimit+' piezas en la sala.');return;}
  for(let row=0;row<6;row++)for(const col of [0,1,-1,2,-2,3,-3]){
   const p=V(position[0]-Math.sin(yaw)*(.95+row*.16)+Math.cos(yaw)*col*.16,unitGroundHeight(shape)+.002,position[2]-Math.cos(yaw)*(.95+row*.16)-Math.sin(yaw)*col*.16);
-  if(Math.max(Math.abs(p.x),Math.abs(p.z))>13.9)continue;
+  if(!inRoomXZ(p.x,p.z,.1))continue;
   if(groups.some(g=>poses(g).some(o=>obbOverlap({p,q:Q(),shape},o,-.012))))continue;
   const g=addQubit([p.x,p.y,p.z],settings.mass,shape);if(!validPose(g,g.body.position,g.body.quaternion)){removeGroup(g);continue;}cancelUnitCreation();selected={g,part:g.parts[0]};multiSelection=[];announce(unitLabel(g.parts[0])+' creado · '+settings.mass+' u');return g;
  }announce('No hay espacio delante. Muévete y vuelve a intentarlo.');
@@ -2466,9 +2480,9 @@ function startFlight(flight){
   announce(flight.status);return false;}
  const config=flightConfig(flight),route=config.route;
  if(route?.points.length){
-  const origin=snapshot.center,bound=ROOM_SIZE/2;
+  const origin=snapshot.center;
   const boxes=flight.component.map(g=>bounds(g));
-  if(route.points.some(p=>boxes.some(b=>b.min.x+p.x< -bound||b.max.x+p.x>bound||b.min.z+p.z< -bound||b.max.z+p.z>bound))){
+  if(route.points.some(p=>boxes.some(b=>b.min.x+p.x< -room.width/2||b.max.x+p.x>room.width/2||b.min.z+p.z< -room.length/2||b.max.z+p.z>room.length/2))){
    flight.status='Trayectoria fuera de la sala · acerca los puntos al origen';announce(flight.status);return false;
   }
   flight.trip={...route,index:0,phase:'lift',origin:origin.clone(),depart:origin.clone(),remaining:0};
@@ -2993,10 +3007,10 @@ function restoreFamilies(records){
 }
 function clearFamilies(){cancelFamilyGrouping();cancelFamilyPlacement();for(const f of [...families])removeFamily(f);familyEffects.length=0;familyActive=null;familyShake=null;familyUi?.clear();}
 function familySpots(count,origin,excludedGroups=[],excludedFamilies=[]){
- const out=[],width=15;for(let i=0;i<900&&out.length<count;i++){
+ const out=[];for(let i=0;i<900&&out.length<count;i++){
   const ring=Math.ceil((Math.sqrt(i+1)-1)/2),side=Math.max(1,ring*2),d=i-(2*ring-1)**2,edge=Math.floor(d/side),step=d%side;let x=0,z=0;
   if(ring){if(edge===0){x=ring;z=-ring+step;}else if(edge===1){x=ring-step;z=ring;}else if(edge===2){x=-ring;z=ring-step;}else{x=-ring+step;z=-ring;}}
-  const p=V(origin.x+x*.24,FAMILY_HALF+.006,origin.z+z*.24);if(Math.abs(p.x)>width||Math.abs(p.z)>width||Math.hypot(position[0]-p.x,position[2]-p.z)<PLAYER_RADIUS+.12)continue;
+  const p=V(origin.x+x*.24,FAMILY_HALF+.006,origin.z+z*.24);if(!inRoomXZ(p.x,p.z,FAMILY_HALF)||Math.hypot(position[0]-p.x,position[2]-p.z)<PLAYER_RADIUS+.12)continue;
   const pose={p,q:Q(),half:V(FAMILY_HALF,FAMILY_HALF,FAMILY_HALF)};
   if(creationPosesClear([pose],false,{groups:excludedGroups,families:excludedFamilies})&&!out.some(v=>Math.hypot(v.x-p.x,v.z-p.z)<.20))out.push(p);
  }return out.length===count?out:null;
@@ -3217,7 +3231,7 @@ function beginStagedDisassembly(members){
 }
 function disassemblyDestination(job,part){
  // A deterministic expanding grid, bounded to 24 candidates in this frame.
- const radius=Math.ceil(ROOM_SIZE/.24),width=radius*2+1;
+ const radius=Math.ceil(Math.max(room.width,room.length)/.24),width=radius*2+1;
  for(let attempt=0;attempt<24;attempt++){
   const index=job.search++%(width*width),ring=Math.ceil((Math.sqrt(index+1)-1)/2),side=Math.max(1,ring*2),d=index-(2*ring-1)**2;
   let x=0,z=0;if(ring){const edge=Math.floor(d/side),step=d%side;if(edge===0){x=ring;z=-ring+step;}else if(edge===1){x=ring-step;z=ring;}else if(edge===2){x=-ring;z=ring-step;}else{x=-ring+step;z=-ring;}}
@@ -3743,7 +3757,7 @@ function robotRouteScene(model,grip){
  const load=grip?{offset:inverse.vmult(sub(grip.body.position,wrist.position)),q:inverse.mult(grip.body.quaternion)}:null;
  return (angles,clearance=0)=>{
   const sample=robotKinematicSample(model,angles),occupied=[];
-  const clear=solids=>!solids.some(e=>e.min.y<-.0015||e.max.y>ROOM_HEIGHT||Math.max(-e.min.x,-e.min.z,e.max.x,e.max.z)>ROOM_SIZE/2)&&!collisionEntriesOverlap(solids,obstacles,.001)&&!occupied.some(previous=>collisionEntriesOverlap(solids,previous,.001));
+  const clear=solids=>!solids.some(e=>e.min.y<-.0015||e.max.y>room.height||!inRoomFootprint(e))&&!collisionEntriesOverlap(solids,obstacles,.001)&&!occupied.some(previous=>collisionEntriesOverlap(solids,previous,.001));
   for(const {link,position,rotation} of sample.links){
    const solids=rigidQueryPoses(link.child,position,rotation).concat(conveyorGroupSurfaces(link.child,position,rotation)).map(collisionEntry);
    if(!clear(solids))return false;
@@ -3880,9 +3894,9 @@ function solveRobotPose(model,target,normal,warm=null){
 }
 
 let robotPoseDraft=null;
-const ROBOT_MAX_POSE_OFFSET_CM=100*Math.hypot(ROOM_SIZE,ROOM_SIZE,ROOM_HEIGHT);
+function robotMaxPoseOffsetCm(){return 100*Math.hypot(room.width,room.length,room.height);}
 function beginRobotPoseDraft(arm,name,heightCm){
- if(!['home','pick','place'].includes(name)||!Number.isFinite(heightCm)||heightCm<0||heightCm>ROBOT_MAX_POSE_OFFSET_CM||held||arm.running||arm.jogging||robotGrips.has(arm.gripperId))return false;
+ if(!['home','pick','place'].includes(name)||!Number.isFinite(heightCm)||heightCm<0||heightCm>robotMaxPoseOffsetCm()||held||arm.running||arm.jogging||robotGrips.has(arm.gripperId))return false;
  const model=robotKinematics(arm);if(!model)return false;
  cancelUnitCreation();cancelShelfPlacement();cancelPowerCable();
  robotPoseDraft={arm,name,model,heightCm,nextUpdate:0};
@@ -4145,7 +4159,7 @@ function assemblerPartsAt(parts,point,rotation){
 function assemblerClear(parts,excluded){
  if(parts[0].half){
   const pose=parts[0],box=collisionPoseBounds(pose);
-  if(box.min.y<-.001||box.max.y>ROOM_HEIGHT||Math.max(Math.abs(box.min.x),Math.abs(box.max.x),Math.abs(box.min.z),Math.abs(box.max.z))>ROOM_SIZE/2-.001)return false;
+  if(box.min.y<-.001||box.max.y>room.height||!inRoomFootprint(box,.001))return false;
   if(!storyPoseClear(null,null,null,parts,box)||!puzzlePoseClear(null,null,null,parts,box)||alphaObstacles().some(p=>obbOverlap(pose,p)))return false;
   if(cargos.some(c=>!excluded.includes(c)&&obbOverlap(pose,cargoPose(c)))||families.some(f=>obbOverlap(pose,familyPose(f))))return false;
   return !groups.some(g=>!g.virtualConveyor&&!excluded.includes(g)&&boundsOverlap(box,physicalGroupBounds(g))&&physicalCollisionParts(g).some(p=>obbOverlap(pose,p.pose)));
@@ -5915,7 +5929,7 @@ function stabilizeRotors(){
 }
 function spawnRotor(p=null,options={}){
  if(certifiedAutomation()){announce('Ensayo certificado: usa el mecanismo del banco.');return null;}
- if(scenePartCount()+2>MAX_QUBITS){announce('No hay capacidad para dos enganches.');return null;}
+ if(scenePartCount()+2>room.partLimit){announce('No hay capacidad para dos enganches.');return null;}
  const positions=p?[p]:Array.from({length:6},(_,row)=>[0,1,-1,2,-2,3,-3].map(col=>V(position[0]-Math.sin(yaw)*(.95+row*.3)+Math.cos(yaw)*col*.3,0,position[2]-Math.cos(yaw)*(.95+row*.3)-Math.sin(yaw)*col*.3))).flat();
  const flip=Q();flip.setFromAxisAngle(V(0,0,1),Math.PI);
  for(const base of positions){
@@ -6058,10 +6072,10 @@ function safeGripTarget(item,target,quaternions){
  for(const q of quaternions){
   const key=q.x+','+q.y+','+q.z+','+q.w;if(visited.has(key))continue;visited.add(key);
   const anchor=q.vmult(item.anchor),center=sub(target,anchor);
-  if(tree){const bb=gripTreeBounds(tree,V(),q);for(const k of ['x','y','z']){const floor=k==='y'?.008:-ROOM_SIZE/2+.003,ceiling=k==='y'?ROOM_HEIGHT-.003:ROOM_SIZE/2-.003;low[k]=Math.max(low[k],floor-bb.min[k]+anchor[k]);high[k]=Math.min(high[k],ceiling-bb.max[k]+anchor[k]);}continue;}
+  if(tree){const bb=gripTreeBounds(tree,V(),q);for(const k of ['x','y','z']){const floor=k==='y'?.008:-roomHalf(k)+.003,ceiling=k==='y'?room.height-.003:roomHalf(k)-.003;low[k]=Math.max(low[k],floor-bb.min[k]+anchor[k]);high[k]=Math.min(high[k],ceiling-bb.max[k]+anchor[k]);}continue;}
   for(const pose of gripDrivenPoses(item,V(),q)){
    const bb=physicalGroupBounds(pose.g,pose.p,pose.q),support=.008+alphaSupport(pose.g,add(center,pose.p),pose.q);
-   for(const k of ['x','y','z']){const floor=k==='y'?support:-ROOM_SIZE/2+.003,ceiling=k==='y'?ROOM_HEIGHT-.003:ROOM_SIZE/2-.003;
+   for(const k of ['x','y','z']){const floor=k==='y'?support:-roomHalf(k)+.003,ceiling=k==='y'?room.height-.003:roomHalf(k)-.003;
     low[k]=Math.max(low[k],floor-bb.min[k]+anchor[k]);high[k]=Math.min(high[k],ceiling-bb.max[k]+anchor[k]);
    }
   }
@@ -6174,7 +6188,7 @@ function gripPoseClear(context,p,q){
  // back into the room without increasing the existing overlap on any face.
  // Otherwise the first sweep sample is rejected and the hand cannot recover.
  for(const k of ['x','y','z']){
-  const low=k==='y'?-.0003:-ROOM_SIZE/2+.001,high=k==='y'?ROOM_HEIGHT-.001:ROOM_SIZE/2-.001;
+  const low=k==='y'?-.0003:-roomHalf(k)+.001,high=k==='y'?room.height-.001:roomHalf(k)-.001;
   if(bb.min[k]<Math.min(low,context.bb.min[k])-1e-7||bb.max[k]>Math.max(high,context.bb.max[k])+1e-7)return false;
  }
  if(coolers.length){drivenPoses=gripDrivenPoses(item,p,q);if(drivenPoses.some(pose=>!alphaPoseClear(pose.g,pose.p,pose.q)))return false;}
@@ -6232,7 +6246,7 @@ function safeGripRotation(item,desired,center=item.g.body.position){
   const envelope={min:V(Infinity,Infinity,Infinity),max:V(-Infinity,-Infinity,-Infinity)},travel=2*radius*Math.sin(angle/2);
   for(const g of context.driven){const box=context.assembly.boxes.get(g);for(const k of ['x','y','z']){envelope.min[k]=Math.min(envelope.min[k],box.min[k]+shift[k]);envelope.max[k]=Math.max(envelope.max[k],box.max[k]+shift[k]);}}
   for(const k of ['x','y','z']){const padding=travel*Math.sqrt(Math.max(0,1-axis[k]*axis[k]))+1e-8;envelope.min[k]-=padding;envelope.max[k]+=padding;}
-  if(envelope.min.y>=Math.min(-.0003,context.bb.min.y)-1e-7&&envelope.max.y<=ROOM_HEIGHT-.001&&Math.max(Math.abs(envelope.min.x),Math.abs(envelope.max.x),Math.abs(envelope.min.z),Math.abs(envelope.max.z))<=ROOM_SIZE/2-.001&&!context.obstacles.some(obstacle=>boundsOverlap(envelope,obstacle.bb)))return desired;
+  if(envelope.min.y>=Math.min(-.0003,context.bb.min.y)-1e-7&&envelope.max.y<=room.height-.001&&inRoomFootprint(envelope,.001)&&!context.obstacles.some(obstacle=>boundsOverlap(envelope,obstacle.bb)))return desired;
  }
  const steps=Math.max(1,Math.min(96,Math.ceil(angle*Math.max(radius,HALF)/.006)));let safe=b.quaternion.clone();
  for(let i=1;i<=steps;i++){const q=slerp(b.quaternion,desired,i/steps);if(!gripPoseClear(context,center,q))break;safe=q;}return safe;
@@ -6303,7 +6317,7 @@ class MinHeap {
 }
 function sweepClear(a,b,height,obstacles){
  const minX=Math.min(a.min.x,b.min.x)-.002,maxX=Math.max(a.max.x,b.max.x)+.002,minZ=Math.min(a.min.z,b.min.z)-.002,maxZ=Math.max(a.max.z,b.max.z)+.002;
- if(minX< -14||maxX>14||minZ< -14||maxZ>14||height>ROOM_HEIGHT)return false;
+ if(minX< -room.width/2||maxX>room.width/2||minZ< -room.length/2||maxZ>room.length/2||height>room.height)return false;
  return !obstacles.some(o=>o.min.y<height+.002&&o.max.y>-.002&&o.min.x<maxX&&o.max.x>minX&&o.min.z<maxZ&&o.max.z>minZ);
 }
 // Follow actual supporting vertices. A concave silhouette may change its
@@ -6420,7 +6434,7 @@ function startRoute(g,goal,quiet=false,remember=!quiet){
  const pending={goal,reason:'planning',nextTry:Infinity};g.pendingMoodOrder=pending;g.pin={point:goal.clone(),arrived:false};
  g.routeSearch=scheduleNavigation(g,planRoute(g,goal),plan=>{
   g.routeSearch=null;
-  if(!plan){if(Math.max(Math.abs(goal.x),Math.abs(goal.z))<13.9)queueMoodRoute(g,goal,'bloqueo');else g.pendingMoodOrder=null;if(!quiet)announce('Camino bloqueado · esperará a que haya paso. Detener selección cancela la orden.');return;}
+  if(!plan){if(inRoomXZ(goal.x,goal.z,.1))queueMoodRoute(g,goal,'bloqueo');else g.pendingMoodOrder=null;if(!quiet)announce('Camino bloqueado · esperará a que haya paso. Detener selección cancela la orden.');return;}
   // A held, moved or reorganized piece must not follow an obsolete start pose.
   const b=g.body,rotation=Math.abs(b.quaternion.x*sourceQ.x+b.quaternion.y*sourceQ.y+b.quaternion.z*sourceQ.z+b.quaternion.w*sourceQ.w);
   if(b.position.distanceTo(source)>.025||rotation<.999){queueMoodRoute(g,goal,'replan');return;}
@@ -6536,7 +6550,7 @@ function powerPort(endpoint){
  const hit=rotorPart(e.id);return powerPartConnectable(hit)?add(hit.p,hit.q.vmult(V(0,0,HALF+.004))):null;
 }
 function powerReservoirPlacement(p){
- const point=powerVector(p);if(!point||Math.abs(point.y)>.02||Math.abs(point.x)>.5*ROOM_SIZE-.42||Math.abs(point.z)>.5*ROOM_SIZE-.42)return null;
+ const point=powerVector(p);if(!point||Math.abs(point.y)>.02||!inRoomXZ(point.x,point.z,.42))return null;
  point.y=0;const half=V(.39,.95,.39),center=add(point,V(0,.95,0)),box={p:center,q:Q(),half,min:sub(center,half),max:add(center,half)};
  if(storyWorld.walls.some(w=>obbOverlap(box,{p:w.p,q:w.q||Q(),half:w.half}))||groups.some(g=>boundsOverlap(box,bounds(g)))||cargos.some(c=>Math.abs(c.body.position.x-point.x)<.39+c.size/2&&Math.abs(c.body.position.z-point.z)<.39+c.size/2))return null;
  return {point,half,center};
@@ -6604,7 +6618,7 @@ function connectPowerCable(from,to,points=[],materials=[]){
  if(powerCables.length>=128)return fail('Límite de 128 cables. Recupera un tramo antes de crear otro.');
  if(powerCables.some(c=>[c.from,c.to].some(e=>powerEndpointKey(e)===powerEndpointKey(a))&&[c.from,c.to].some(e=>powerEndpointKey(e)===powerEndpointKey(b))))return fail('Estos extremos ya tienen cable.');
  if(!Array.isArray(points)||points.length>64)return fail('El circuito supera los 64 puntos de trazado.');
- const route=points.map(powerVector);if(route.some(p=>!p||p.y<-.01||p.y>ROOM_HEIGHT||Math.abs(p.x)>.5*ROOM_SIZE||Math.abs(p.z)>.5*ROOM_SIZE))return fail('El trayecto queda fuera de la sala.');
+ const route=points.map(powerVector);if(route.some(p=>!p||p.y<-.01||p.y>room.height||!inRoomXZ(p.x,p.z)))return fail('El trayecto queda fuera de la sala.');
  const copies=powerCableMaterials(materials);if(!copies)return fail('Usa de 1 a 8 cubos normales, sin repetir material.');
  const cable={id:powerCableSerial+1,from:a,to:b,points:route,materials:copies,maxLength:powerCableLimit(copies),length:0,active:false,status:'',progress:0};
  if(!refreshPowerCable(cable))return fail(cable.status);
@@ -6622,7 +6636,7 @@ function reroutePowerCable(subject,to,points=[]){
  if(cable.from.kind==='part'&&b.kind==='part'&&rotorConnectedGroups([rotorPart(cable.from.id).g]).includes(rotorPart(b.id).g))return {ok:false,error:'Estas piezas ya comparten la conexión interna.'};
  if(powerCables.some(c=>c!==cable&&[c.from,c.to].some(e=>powerEndpointKey(e)===powerEndpointKey(cable.from))&&[c.from,c.to].some(e=>powerEndpointKey(e)===powerEndpointKey(b))))return {ok:false,error:'Estos extremos ya tienen cable.'};
  const route=Array.isArray(points)&&points.length<=64?points.map(powerVector):null;
- if(!route||route.some(p=>!p||p.y<-.01||p.y>ROOM_HEIGHT||Math.abs(p.x)>.5*ROOM_SIZE||Math.abs(p.z)>.5*ROOM_SIZE))return {ok:false,error:'El trayecto queda fuera de la sala.'};
+ if(!route||route.some(p=>!p||p.y<-.01||p.y>room.height||!inRoomXZ(p.x,p.z)))return {ok:false,error:'El trayecto queda fuera de la sala.'};
  const draft={...cable,to:b,points:route,_pathSignature:null};if(!refreshPowerCable(draft))return {ok:false,error:draft.status};
  Object.assign(cable,draft,{progress:0});invalidatePowerSupplyCache();redraw=true;return {ok:true,cable};
 }
@@ -6687,7 +6701,7 @@ function restorePowerNetwork(saved){
  const used=new Set(groups.flatMap(g=>g.parts.map(p=>p.id)));
  for(const record of saved.cables){
   const a=powerEndpoint(record.from),b=powerEndpoint(record.to),materials=powerCableMaterials(record.materials),points=Array.isArray(record.points)&&record.points.length<=64?record.points.map(powerVector):null;
-  if(!a||!b||powerEndpointKey(a)===powerEndpointKey(b)||!materials||!points||points.some(p=>!p||p.y<-.01||p.y>ROOM_HEIGHT||Math.abs(p.x)>.5*ROOM_SIZE||Math.abs(p.z)>.5*ROOM_SIZE)||materials.some(p=>used.has(p.id))||!Number.isSafeInteger(record.id)||record.id<1||powerCables.some(c=>c.id===record.id)){
+  if(!a||!b||powerEndpointKey(a)===powerEndpointKey(b)||!materials||!points||points.some(p=>!p||p.y<-.01||p.y>room.height||!inRoomXZ(p.x,p.z))||materials.some(p=>used.has(p.id))||!Number.isSafeInteger(record.id)||record.id<1||powerCables.some(c=>c.id===record.id)){
    clearPowerNetwork();return false;
   }
   // Broken/moved endpoints are kept as inactive wire, so recovering the lab
@@ -6726,7 +6740,7 @@ function powerSurfaceRoute(from,to,bends=[]){
 function powerCircuitRoute(start,finish,bends=[],surfaceEnd=false){
  if(!start||!finish)return [];
  const route=[powerFloor(start)];
- for(const point of (surfaceEnd?[...bends,finish]:bends)){const previous=route[route.length-1],wallA=Math.abs(previous.x)>.5*ROOM_SIZE-.03||Math.abs(previous.z)>.5*ROOM_SIZE-.03,wallB=Math.abs(point.x)>.5*ROOM_SIZE-.03||Math.abs(point.z)>.5*ROOM_SIZE-.03,sameWall=wallA&&wallB&&(Math.abs(previous.x-point.x)<.025||Math.abs(previous.z-point.z)<.025);
+ for(const point of (surfaceEnd?[...bends,finish]:bends)){const previous=route[route.length-1],wallA=Math.abs(previous.x)>room.width/2-.03||Math.abs(previous.z)>room.length/2-.03,wallB=Math.abs(point.x)>room.width/2-.03||Math.abs(point.z)>room.length/2-.03,sameWall=wallA&&wallB&&(Math.abs(previous.x-point.x)<.025||Math.abs(previous.z-point.z)<.025);
   if(!sameWall){if(previous.y>.02)route.push(powerFloor(previous));if(point.y>.02)route.push(powerFloor(point));}route.push(point.clone());
  }
  if(!surfaceEnd){if(route[route.length-1].y>.02)route.push(powerFloor(route[route.length-1]));route.push(powerFloor(finish));}
@@ -6754,7 +6768,7 @@ function powerAimCable(dir=direction(),max=4){
 function powerSurfaceAim(dir=direction()){
  const wall=wallAim(dir,12);const floor=dir.y<-.0001?add(V(...camera),mul(dir,(.008-camera[1])/dir.y)):null;
  if(wall&&(!floor||wall.distance<floor.distanceTo(V(...camera))))return add(wall.p,mul(wall.normal,.008));
- return floor&&floor.distanceTo(V(...camera))<=12&&Math.abs(floor.x)<ROOM_SIZE/2&&Math.abs(floor.z)<ROOM_SIZE/2?floor:null;
+ return floor&&floor.distanceTo(V(...camera))<=12&&inRoomXZ(floor.x,floor.z)?floor:null;
 }
 function finishPowerCable(endpoint){
  const draft=powerDraft,materials=powerDraftMaterials();if(!draft||!draft.from||!materials){cancelPowerCable();announce('El material cambió. Vuelve a seleccionar los cubos.');return false;}
@@ -6783,7 +6797,7 @@ function addPowerCableMaterial(cable){
 }
 function recoverPowerCable(cable){
  if(!powerCables.includes(cable))return false;
- if(scenePartCount()+cable.materials.length>MAX_QUBITS){announce('No hay espacio para recuperar los cubos. Retira algunas piezas primero.');return false;}
+ if(scenePartCount()+cable.materials.length>room.partLimit){announce('No hay espacio para recuperar los cubos. Retira algunas piezas primero.');return false;}
  const candidates=[];
  for(let row=0;row<6&&candidates.length<cable.materials.length;row++)for(const col of [0,1,-1,2,-2]){
   const p=V(position[0]-Math.sin(yaw)*(1+row*.15)+Math.cos(yaw)*col*.14,HALF+.004,position[2]-Math.cos(yaw)*(1+row*.15)-Math.sin(yaw)*col*.14);
@@ -6851,8 +6865,8 @@ function drawCachedPowerRibbon(cable,points,color,revision=null){
  if(!mesh){mesh={buffer:gl.createBuffer(),count:0,signature:null};powerRibbonCaches.set(cable,mesh);}
  if(mesh.signature!==signature){const data=[];
   for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i],length=a.distanceTo(b);if(length<.0001)continue;const dir=mul(sub(b,a),1/length);let normal=V(0,1,0);
-   if(Math.abs(a.x)>.5*ROOM_SIZE-.03&&Math.abs(a.x-b.x)<.03)normal=V(a.x>0?-1:1,0,0);
-   else if(Math.abs(a.z)>.5*ROOM_SIZE-.03&&Math.abs(a.z-b.z)<.03)normal=V(0,0,a.z>0?-1:1);
+   if(Math.abs(a.x)>room.width/2-.03&&Math.abs(a.x-b.x)<.03)normal=V(a.x>0?-1:1,0,0);
+   else if(Math.abs(a.z)>room.length/2-.03&&Math.abs(a.z-b.z)<.03)normal=V(0,0,a.z>0?-1:1);
    else if(Math.abs(dir.y)>.9)normal=V(0,0,1);
    const side=normal.cross(dir);side.normalize();side.scale(.0125*visuals.pathWidth,side);
    const vertices=[sub(a,side),add(a,side),add(b,side),sub(b,side)],uv=[[-.5,-.5],[.5,-.5],[.5,.5],[-.5,.5]];
@@ -7198,7 +7212,7 @@ function openPanel(){
   if(held){selected=held.family?null:{g:held.g,part:held.part};selectedCargo=null;}
   else if(explicit)selected=explicit;
   else if(!selectedCargo||!cargos.includes(selectedCargo)){
-   const pointed=aimQubit(ROOM_SIZE*1.5),hit=tabletCanInspect(pointed)?pointed:null,cargo=aimCargo(4);
+   const pointed=aimQubit(Math.hypot(room.width,room.length,room.height)),hit=tabletCanInspect(pointed)?pointed:null,cargo=aimCargo(4);
    selected=hit&&(!cargo||hit.distance<=cargo.distance)?hit:null;
    selectedCargo=selected?null:cargo?.cargo||null;
   }else selected=null;
@@ -7241,7 +7255,7 @@ function handleWheel(event){
  if(familyPlacement&&gameInputActive()){event.preventDefault();familyPlacement.turns=(familyPlacement.turns+Math.sign(event.deltaY)*(savedPreferences.invertPieceRotation?-1:1)+4)%4;updateFamilyPlacement();return;}
  if(robotPoseDraft){
   event.preventDefault();const draft=robotPoseDraft;
-  draft.heightCm=clamp(Math.round((draft.heightCm-Math.sign(event.deltaY)*(event.shiftKey?.5:2))*10)/10,0,ROBOT_MAX_POSE_OFFSET_CM);
+  draft.heightCm=clamp(Math.round((draft.heightCm-Math.sign(event.deltaY)*(event.shiftKey?.5:2))*10)/10,0,robotMaxPoseOffsetCm());
   updateRobotPoseDraft(performance.now(),true);updateTarget();return;
  }
  if(cullingLab.benchmark)return;
@@ -7250,8 +7264,14 @@ function handleWheel(event){
  if(creationPreview){
   event.preventDefault();
   if(creationPreview.entry?.action==='ceiling-feeder'){
-   const {minHeight,maxHeight}=QBitsCeilingFeeder.limits;
-   creationPreview.elevation=clamp(Math.round(creationPreview.elevation*10-Math.sign(event.deltaY))/10,minHeight,maxHeight);
+   const preview=creationPreview,step=-Math.sign(event.deltaY);
+   if(QBitsCeilingFeeder.walls[preview.mount] && preview.point){
+    const [low,high]=QBitsCeilingFeeder.heightRange(preview.mount,room);
+    preview.wallOffset=clamp(Math.round(preview.point.y*10+step)/10,low,high)-preview.wallAimHeight;
+   }else{
+    const {minHeight,maxHeight}=QBitsCeilingFeeder.limits;
+    preview.elevation=clamp(Math.round(preview.elevation*10+step)/10,minHeight,maxHeight);
+   }
    updateCreationPlacement();return;
   }
   if(faceBuildActive(creationPreview))return;
@@ -7275,7 +7295,7 @@ function handleKey(event){
  if(sceneAuthoringActive&&sceneAuthoringMarkerDraft&&event.code==='Escape'&&!event.repeat){event.preventDefault();cancelSceneAuthoringMarker();return;}
  if(sceneAuthoringActive&&sceneAuthoringPlacement&&creationPreview?.authoring){
   if(event.code==='Escape'&&!event.repeat){event.preventDefault();cancelSceneAuthoringPlacement();return;}
-  if(event.code==='KeyN'&&!event.repeat){event.preventDefault();const choice=sceneAuthoringPlacement.id,options={height:creationPreview.elevation};const made=confirmCreationPlacement();if(made)beginSceneAuthoringPlacement(choice,options);return;}
+  if(event.code==='KeyN'&&!event.repeat){event.preventDefault();const choice=sceneAuthoringPlacement.id,options={height:creationPreview.elevation,wallOffset:creationPreview.wallOffset};const made=confirmCreationPlacement();if(made)beginSceneAuthoringPlacement(choice,options);return;}
  }
  if(familyUi?.isOpen())return;
  if(held&&shiftDown()&&['KeyQ','KeyE','KeyR'].includes(event.code)&&!event.altKey&&!event.ctrlKey&&!event.metaKey&&gameInputActive()&&storyActionAllowed()&&!storySuspended()&&!story.transition&&!robotPoseDraft&&!trajectoryDraft&&!shelfPreview){
@@ -7353,7 +7373,7 @@ function updateTarget(){
  if(!gameInputActive()){targetLabel.textContent='';crosshair.classList.remove('ready');return;}
  if(creationPreview?.entry?.action==='ceiling-feeder'){crosshair.classList.toggle('ready',creationPreview.valid);targetLabel.textContent=creationPreview.reason;return;}
  if(!held&&!creationPreview&&!familyPlacement&&!shelfPreview&&!powerDraft&&!trajectoryDraft){
-  const feederHit=aimCeilingFeeder();if(feederHit){crosshair.classList.add('ready');targetLabel.textContent='Toma de techo · '+feederStatus(feederHit.feeder)+' · clic: configurar';return;}
+  const feederHit=aimCeilingFeeder();if(feederHit){crosshair.classList.add('ready');targetLabel.textContent='Toma de Q-bits · '+feederStatus(feederHit.feeder)+' · clic: configurar';return;}
  }
  if(faceBuildActive(creationPreview)){crosshair.classList.toggle('ready',!!creationPreview.valid);targetLabel.textContent=creationPreview.reason;return;}
  const familyHit=!held&&aimFamily();if(held?.family||familyPlacement||familyHit){familyActive=held?.family||familyPlacement?.family||familyHit.family;targetLabel.textContent=held?.family?familyHandHint():familyPlacement?.reason||familyActive.name+' · ×'+familyActive.count+' · clic: tomar · clic derecho: familia';crosshair.classList.toggle('ready',familyPlacement?!!familyPlacement.valid:true);return;}
@@ -7866,14 +7886,14 @@ function duplicateSelection(){
  const originals=multiSelection.includes(hit.g)&&multiSelection.length>1?multiSelection.filter(g=>groups.includes(g)):[hit.g];
  if(originals.some(g=>g.parts.some(p=>p.mood?.externalBattery))){if(originals.length===1)return duplicateMechanism(originals[0]);announce('Selecciona un solo montaje para copiarlo con sus baterías. Las copias comienzan vacías.');return;}
  const count=originals.reduce((n,g)=>n+g.parts.length,0),population=scenePartCount();
- if(count+population>MAX_QUBITS){announce('No caben más copias: límite de '+MAX_QUBITS+' piezas.');return;}
+ if(count+population>room.partLimit){announce('No caben más copias: límite de '+room.partLimit+' piezas.');return;}
  const originalParts=originals.map(g=>worldParts(g));const pts=originalParts.flat(),min=V(Infinity,Infinity,Infinity),max=V(-Infinity,-Infinity,-Infinity);
  for(const group of originals){const b=bounds(group);for(const k of ['x','y','z']){min[k]=Math.min(min[k],b.min[k]);max[k]=Math.max(max[k],b.max[k]);}}
  const center=mul(add(min,max),.5),spacing=Math.max(max.x-min.x,max.z-min.z)+.14;
  for(let row=0;row<5;row++)for(const col of [0,1,-1,2,-2]){
   const dest=V(position[0]-Math.sin(yaw)*(1.2+row*spacing)+Math.cos(yaw)*col*spacing,center.y-min.y+.003,position[2]-Math.cos(yaw)*(1.2+row*spacing)-Math.sin(yaw)*col*spacing),delta=sub(dest,center);
   const copies=originalParts.map(parts=>parts.map(p=>({...p,p:add(p.p,delta)})));
-  const all=copies.flat();if(all.some(p=>corners(p).some(v=>v.y<0||v.y>ROOM_HEIGHT||Math.max(Math.abs(v.x),Math.abs(v.z))>13.99)))continue;
+  const all=copies.flat();if(all.some(p=>corners(p).some(v=>v.y<0||v.y>room.height||!inRoomXZ(v.x,v.z,.01))))continue;
   if(groups.some(g=>poses(g).some(o=>all.some(p=>obbOverlap(p,o,-.005)))))continue;
   const made=copies.map((parts,i)=>makeGroup(parts.map(p=>({...p,id:++serial,mood:null})),originals[i].body.quaternion));
   multiSelection=made;selected={g:made[0],part:made[0].parts[0]};announce('Duplicado · '+count+' '+groupUnitLabel({parts:made.flatMap(g=>g.parts)}));return made;
@@ -8030,21 +8050,21 @@ function raycastCargo(max=8,dir=direction()){
  let result=null,best=puzzleRayLimit(max,dir);for(const c of cargos){if(c.intake!==undefined&&c.intake!==null)continue;const hit=rayPart(V(...camera),dir,cargoPose(c),best,c.size/2);if(hit&&hit.distance<best){best=hit.distance;result={...hit,cargo:c};}}return result;
 }
 function aimCargo(max=8,dir=direction()){const c=raycastCargo(max,dir);if(!c)return null;const q=aimQubit(c.distance,dir);return q?null:c;}
-function newCargo(p,side=settings.cargoSide,required=settings.cargoRequired,color=settings.cargoColor){
+function newCargo(p,side=settings.cargoSide,required=settings.cargoRequired,color=settings.cargoColor,limit=room.cargoLimit){
  if(!Number.isInteger(side)||side<1||side>12||!Number.isInteger(required)||required<1||required>MAX_QUBITS||!/^#[0-9a-f]{6}$/i.test(color))return null;
- if(cargos.length>=12)return null;const size=side*CUBE_SIZE;
+ if(cargos.length>=limit)return null;const size=side*CUBE_SIZE;
  const body=new CANNON.Body({mass:0});body.addShape(new CANNON.Box(V(size/2,size/2,size/2)));body.position.set(p.x,size/2,p.z);body.material=world.defaultMaterial;body.fixedRotation=true;body.linearDamping=.08;body.updateMassProperties();world.addBody(body);
  const c={id:++cargoSerial,side,size,required,color,body,job:null,pin:null,lastStatus:'En reposo'};body.cargoRef=c;cargos.push(c);return c;
 }
 function restoreLabCargo(record){
- const cargo=newCargo(record.p,record.side,record.required,record.color);if(!cargo)return null;
+ const cargo=newCargo(record.p,record.side,record.required,record.color,QBitsLabRoom.ranges.cargoLimit[1]);if(!cargo)return null;
  if(Number.isSafeInteger(record.id)&&record.id>0&&!cargos.some(c=>c!==cargo&&c.id===record.id)){cargo.id=record.id;cargoSerial=Math.max(cargoSerial,cargo.id);}
  if(record.assemblyPasses)cargo.assemblyPasses=record.assemblyPasses.map(r=>({...r}));
  if(record.robotPhysical){const body=cargo.body;cargo.robotPhysical=true;body.mass=cargo.required*.25;body.type=CANNON.Body.DYNAMIC;body.fixedRotation=false;body.position.copy(record.p);if(record.q)body.quaternion.copy(record.q);if(record.v)body.velocity.copy(record.v);if(record.w)body.angularVelocity.copy(record.w);body.updateMassProperties();body.aabbNeedsUpdate=true;body.wakeUp();}
  return cargo;
 }
 function cargoPlacementClear(p,size,exclude=null,ignored=[]){
- const half=size/2;if(Math.abs(p.x)+half>13.98||Math.abs(p.z)+half>13.98)return false;
+ const half=size/2;if(!inRoomXZ(p.x,p.z,half+.02))return false;
  const candidate={p:V(p.x,half,p.z),q:Q(),half:V(half,half,half)};
  if(alphaObstacles().some(w=>obbOverlap(candidate,w,-.004)))return false;
  if(puzzleObstacleBounds(exclude).some(w=>obbOverlap(candidate,{p:w.p,q:w.q||Q(),half:w.half},-.004)))return false;
@@ -8053,7 +8073,7 @@ function cargoPlacementClear(p,size,exclude=null,ignored=[]){
 }
 function spawnCargo(){
  if(puzzleBlockedEdit())return;
- if(cargos.length>=12){announce('Límite de 12 cuerpos en la sala.');return null;}
+ if(cargos.length>=room.cargoLimit){announce('Límite de '+room.cargoLimit+' cuerpos en la sala.');return null;}
  const size=settings.cargoSide*CUBE_SIZE,gap=size+.24;
  for(let row=0;row<5;row++)for(const col of [0,1,-1,2,-2]){
   const p=V(position[0]-Math.sin(yaw)*(1.6+row*gap)+Math.cos(yaw)*col*gap,0,position[2]-Math.cos(yaw)*(1.6+row*gap)-Math.sin(yaw)*col*gap);
@@ -8077,7 +8097,7 @@ function stopHaul(c,status='Detenido'){
 }
 function deleteCargo(c,internal=false){if(!internal&&puzzleBlockedEdit())return;if(!c||!cargos.includes(c))return;if(c.robotHeld)releaseGripper(c.robotHeld);stopHaul(c);world.removeBody(c.body);cargos.splice(cargos.indexOf(c),1);if(selectedCargo===c)selectedCargo=null;if(pendingCargo?.cargo===c)pendingCargo=null;announce('Cuerpo borrado');}
 function selectedTeam(){return [...new Set((multiSelection.length?multiSelection:selected?[selected.g]:[]).filter(g=>groups.includes(g)))];}
-function floorAim(d=direction()){if(d.y>=-.015)return null;const t=-camera[1]/d.y;if(t>40||puzzleRayLimit(t,d)<t-.01)return null;const p=add(V(...camera),mul(d,t));return Math.max(Math.abs(p.x),Math.abs(p.z))<=13.95?p:null;}
+function floorAim(d=direction()){if(d.y>=-.015)return null;const t=-camera[1]/d.y;if(t>Math.hypot(room.width,room.length,room.height)||puzzleRayLimit(t,d)<t-.01)return null;const p=add(V(...camera),mul(d,t));return inRoomXZ(p.x,p.z,.05)?p:null;}
 function* planCargoPath(c,goal,crew=[]){
  yield;
  if(!cargoPlacementClear(goal,c.size,c,crew))return null;
@@ -8237,7 +8257,110 @@ function updateHauling(dt){
   if(simTime-job.lastProgress>10){job.phase='bloqueado';setCargoMoving(c,false);}
  }
 }
+function roomDimensionsChange(next){
+ return next.width!==room.width||next.height!==room.height||next.length!==room.length;
+}
+function setRoom(next=QBitsLabRoom.defaults){
+ const resized=roomDimensionsChange(next);
+ if(next.height!==room.height){
+  for(const model of feederGeometryCache.values())for(const mesh of model.meshes||[])deleteRenderBuffer(mesh.buffer);
+  feederGeometryCache.clear();
+ }
+ for(const key of Object.keys(QBitsLabRoom.ranges))room[key]=next[key];
+ if(resized){
+  buildRoomWalls();uploadRoomGeometry();gl.useProgram(program);
+  gl.uniform3f(uniforms.uRoomSize,room.width,room.height,room.length);boundGeometry=null;
+  for(const route of trajectorySystem?.routes.values()||[])trajectorySystem.invalidate(route.id);
+  redraw=true;
+ }
+ const form=document.getElementById('room-settings');
+ for(const key of Object.keys(QBitsLabRoom.ranges))document.getElementById('room-'+key).value=room[key];
+ document.getElementById('room-status').textContent='';
+ form.hidden=story.scene!=='lab'||puzzle.active;
+}
+function roomResizePlan(next){
+ const model=QBitsCeilingFeeder,mounts=[],movingBodies=new Set();
+ const inside=(min,max)=>QBitsLabRoom.containsBounds(next,min,max,-.002)&&max.y<=next.height+.002;
+ const player={min:V(position[0]-PLAYER_RADIUS,0,position[2]-PLAYER_RADIUS),
+  max:V(position[0]+PLAYER_RADIUS,position[1]+.1,position[2]+PLAYER_RADIUS)};
+ if(!inside(player.min,player.max))return {error:'Acércate al centro para que tu personaje quede dentro de la sala.'};
+ for(const f of ceilingFeeders){
+  const target=model.mouth(f.mount,f.x,f.height,f.z,next);
+  if(!model.fits(target,next))return {error:'Una toma quedaría fuera. Cambia su altura o su posición.'};
+  const changed=target.x!==f.x||target.z!==f.z||f.mount==='ceiling'&&next.height!==room.height;
+  mounts.push({fixture:f,target,changed,box:model.bounds(target,next)});movingBodies.add(f.body);
+ }
+ for(const shelf of shelves){
+  const n=model.walls[shelf.wall],delta=V(-n.x*(next.width-room.width)/2,0,-n.z*(next.length-room.length)/2);
+  const box=shelfBounds({...shelf,p:add(shelf.p,delta)});
+  if(!inside(box.min,box.max))return {error:'Una repisa quedaría fuera de la sala.'};
+  mounts.push({shelf,delta,box,changed:delta.norm2()>0});
+  for(const w of shelf.walls)movingBodies.add(w.body);
+ }
+ const occupied=[player];
+ for(const b of world.bodies){
+  if(b===floor||roomWalls.has(b)||movingBodies.has(b)||!b.shapes.length)continue;
+  if(b.aabbNeedsUpdate)b.computeAABB();
+  if(!inside(b.aabb.lowerBound,b.aabb.upperBound))return {error:'Una pieza o un equipo quedaría fuera. Acércalo al centro antes de reducir la sala.'};
+  occupied.push({min:b.aabb.lowerBound,max:b.aabb.upperBound});
+ }
+ for(const bp of blueprints)occupied.push(blueprintBox(bp));
+ if(occupied.some(b=>!inside(b.min,b.max)))return {error:'Un plano quedaría fuera de la sala.'};
+ for(const [i,m] of mounts.entries()){
+  if(!m.changed)continue;
+  if(occupied.some(b=>boundsOverlap(b,m.box))||mounts.some((other,j)=>i!==j&&boundsOverlap(m.box,other.box)))
+   return {error:'Una toma o repisa chocaría al mover su soporte. Despeja ese lugar.'};
+ }
+ for(const cable of powerCables)for(const p of cable.points){
+  if(!inside(p,p)||p.y>.03&&(next.width!==room.width&&Math.abs(p.x)>room.width/2-.03||next.length!==room.length&&Math.abs(p.z)>room.length/2-.03))
+   return {error:'Reubica primero los apoyos del cable en la pared que quieres mover.'};
+ }
+ if(sceneAuthoringActive&&sceneAuthoringMarkers.some(m=>{const p=V(...m.position);return !inside(p,p);}))
+  return {error:'Una marca de la escena quedaría fuera. Reubícala antes de reducir la sala.'};
+ return {mounts};
+}
+function configureRoom(next){
+ if(story.scene!=='lab'||puzzle.active||openingProtected())return 'Las dimensiones se ajustan en el banco o el editor.';
+ if(!QBitsLabRoom.valid(next))return 'Revisa las medidas y los límites indicados.';
+ if(!roomDimensionsChange(next)){setRoom(next);return '';}
+ const plan=roomResizePlan(next);if(plan.error)return plan.error;
+ const oldSupports=[];
+ for(const m of plan.mounts)if(m.changed){
+  if(m.fixture){oldSupports.push(m.fixture.bounds);unmountFeeder(m.fixture);}
+  else oldSupports.push(shelfBounds(m.shelf));
+ }
+ const previous={...room};setRoom(next);
+ for(const m of plan.mounts)if(m.changed){
+  if(m.fixture){Object.assign(m.fixture,m.target);mountFeeder(m.fixture);}
+  else{
+   const s=m.shelf;s.p.vadd(m.delta,s.p);
+   for(const w of s.walls){
+    w.p.vadd(m.delta,w.p);w.body.position.copy(w.p);w.body.aabbNeedsUpdate=true;w.body.computeAABB();
+    w.min.copy(w.body.aabb.lowerBound);w.max.copy(w.body.aabb.upperBound);
+   }
+  }
+ }
+ for(const b of world.bodies)if(b.sleepState===CANNON.Body.SLEEPING&&b.type===CANNON.Body.DYNAMIC){
+  if(b.aabbNeedsUpdate)b.computeAABB();
+  const min=b.aabb.lowerBound,max=b.aabb.upperBound;
+  if(!QBitsLabRoom.containsBounds(previous,min,max,.005)||max.y>=previous.height-.005||
+     oldSupports.some(s=>min.x<=s.max.x+.005&&max.x>=s.min.x-.005&&min.y<=s.max.y+.005&&max.y>=s.min.y-.005&&min.z<=s.max.z+.005&&max.z>=s.min.z-.005))b.wakeUp();
+ }
+ world.broadphase.dirty=true;return '';
+}
+document.getElementById('room-settings').addEventListener('submit',event=>{
+ event.preventDefault();
+ const values={};for(const key of Object.keys(QBitsLabRoom.ranges))values[key]=Number(document.getElementById('room-'+key).value);
+ const issue=configureRoom(values);
+ document.getElementById('room-status').textContent=issue||'Sala actualizada · '+room.width+' × '+room.length+' m de piso y '+room.height+' m de alto.';
+});
+function updateRoomPopulation(){
+ const output=document.getElementById('room-population');
+ const text='En la sala · '+scenePartCount()+' / '+room.partLimit+' piezas · '+cargos.length+' / '+room.cargoLimit+' cuerpos de carga';
+ if(output.textContent!==text)output.textContent=text;
+}
 function updateCargoPanel(){
+ document.getElementById('room-settings').hidden=story.scene!=='lab'||puzzle.active;
  if(selectedCargo&&!cargos.includes(selectedCargo))selectedCargo=null;
  document.querySelector('#cargo-editing').textContent=selectedCargo?'Cuerpo '+selectedCargo.id+' · '+selectedCargo.side+' × '+selectedCargo.side+' × '+selectedCargo.side+' · '+selectedCargo.required+' Q-bits necesarios':'Tamaño y peso se ajustan por separado. El tamaño siempre es cúbico.';
  for(const name of ['cargoSide','cargoRequired','haulSpeed','haulForce']){const input=document.querySelector('#'+name);input.value=name==='cargoRequired'&&selectedCargo?selectedCargo.required:settings[name];document.querySelector('#'+name+'Value').textContent=input.value+({cargoSide:' por lado',cargoRequired:' Q-bits',haulSpeed:' m/s',haulForce:' N / Q-bit'}[name]||'');}
@@ -8309,7 +8432,7 @@ function onCanvasMouseDown(event){
  if(sceneAuthoringActive&&sceneAuthoringPlacement&&creationPreview?.authoring&&[0,2].includes(event.button)){
   event.preventDefault();if(!gameInputActive())return;
   if(event.button===2){cancelSceneAuthoringPlacement();return;}
-  const choice=sceneAuthoringPlacement.id,options={height:creationPreview.elevation};
+  const choice=sceneAuthoringPlacement.id,options={height:creationPreview.elevation,wallOffset:creationPreview.wallOffset};
   const made=confirmCreationPlacement();
   if(made)beginSceneAuthoringPlacement(choice,options);
   return;
@@ -8322,7 +8445,7 @@ function onCanvasMouseDown(event){
  if(powerDraft&&powerCableClick(event))return;
  if(tabletAcceptsSelection()&&event.button===0){
   const rect=canvas.getBoundingClientRect(),dir=screenRay(event.clientX-rect.left,event.clientY-rect.top);
-  const hit=aimQubit(ROOM_SIZE*1.5,dir),cargo=aimCargo(4,dir);
+  const hit=aimQubit(Math.hypot(room.width,room.length,room.height),dir),cargo=aimCargo(4,dir);
   if(workshopPanel?.isOpen){
    if(hit&&onWorkshop(partPose(hit.g,hit.part).p)){
     clearSelection();selected=hit;workshopPanel.refresh();updatePanel();
@@ -8368,7 +8491,7 @@ function onCanvasMouseDown(event){
  }
  if(event.button===2){if(marquee)finishMarquee(true);handleSecondary(event);return;}
  if(!held&&gameInputActive()&&!aimFamily(direction(),2.7)){
-  const hit=aimQubit(ROOM_SIZE*1.5),f=hit&&flightForGroup(hit.g);
+  const hit=aimQubit(Math.hypot(room.width,room.length,room.height)),f=hit&&flightForGroup(hit.g);
   if(hit&&hit.distance<=4&&!altDown()&&conveyors.length){
    const station=assemblerAt(hit);
    if(station){
@@ -8434,10 +8557,10 @@ function openFloorOrders(point){
 }
 function wallAim(dir=direction(),max=4){
  if(story.scene!=='lab'||puzzle.active)return null;
- const origin=V(...camera),half=ROOM_SIZE/2;let found=null;
- for(const [wall,axis,value,normal,angle]of [['north','z',-half,V(0,0,1),0],['south','z',half,V(0,0,-1),Math.PI],['east','x',half,V(-1,0,0),-Math.PI/2],['west','x',-half,V(1,0,0),Math.PI/2]]){
+ const origin=V(...camera);let found=null;
+ for(const [wall,axis,value,normal,angle]of [['north','z',-room.length/2,V(0,0,1),0],['south','z',room.length/2,V(0,0,-1),Math.PI],['east','x',room.width/2,V(-1,0,0),-Math.PI/2],['west','x',-room.width/2,V(1,0,0),Math.PI/2]]){
   if(Math.abs(dir[axis])<1e-9)continue;const distance=(value-origin[axis])/dir[axis];if(distance<=0||distance>max||found&&distance>=found.distance)continue;
-  const p=add(origin,mul(dir,distance));if(p.y<.05||p.y>ROOM_HEIGHT-.05||Math.abs(p[axis==='x'?'z':'x'])>half-.05)continue;
+  const p=add(origin,mul(dir,distance));if(p.y<.05||p.y>room.height-.05||Math.abs(axis==='x'?p.z:p.x)>roomHalf(axis==='x'?'z':'x')-.05)continue;
   if(storyWorld.walls.some(w=>w.furniture!=='shelf'&&(rayPuzzleBox(origin,dir,w,distance)??Infinity)<distance-.01))continue;
   const q=Q();q.setFromAxisAngle(V(0,1,0),angle);found={p,q,normal,wall,distance};
  }return found;
@@ -8465,7 +8588,7 @@ function handleSecondary(event){
  const cargoHit=aimCargo(4,dir),hit=aimQubit(4,dir),shelfHit=aimShelf(dir,4);
  if(shelfHit&&shelfHit.distance<Math.min(cargoHit?.distance??Infinity,hit?.distance??Infinity)){openShelfMenu(shelfHit.shelf,shelfHit.cellIndex);return;}
  if(!cargoHit&&!hit&&!shelfHit){
-  const distant=aimQubit(ROOM_SIZE*1.5,dir),flight=distant&&flightForGroup(distant.g);
+  const distant=aimQubit(Math.hypot(room.width,room.length,room.height),dir),flight=distant&&flightForGroup(distant.g);
   if(flight){showFlightMenu(distant,flight);return;}
  }
  if(selectedRotors().length&&!assemblerAt(hit)){
@@ -8979,7 +9102,8 @@ function moveTeamTo(team,goal){
  const spacing=Math.max(.32,...team.map(g=>{const b=bounds(g);return Math.max(b.size.x,b.size.z)*Math.SQRT2+.16;}));
  const targets=[],columns=Math.ceil(Math.sqrt(team.length)),rows=Math.ceil(team.length/columns);let started=0;
  const largestHalf=Math.max(...team.map(g=>{const b=bounds(g);return Math.max(b.size.x,b.size.z)/2;}));
- const limit=ROOM_SIZE/2-largestHalf-.04,cx=clamp(goal.x,-limit+(columns-1)*spacing/2,limit-(columns-1)*spacing/2),cz=clamp(goal.z,-limit+(rows-1)*spacing/2,limit-(rows-1)*spacing/2);
+ const xLimit=room.width/2-largestHalf-.04,zLimit=room.length/2-largestHalf-.04;
+ const cx=clamp(goal.x,-xLimit+(columns-1)*spacing/2,xLimit-(columns-1)*spacing/2),cz=clamp(goal.z,-zLimit+(rows-1)*spacing/2,zLimit-(rows-1)*spacing/2);
  for(let i=0;i<team.length;i++){
   const p=V(cx+(i%columns-(columns-1)/2)*spacing,0,cz+(Math.floor(i/columns)-(rows-1)/2)*spacing);targets.push(p);
   leaveHaul(team[i]);if(startRoute(team[i],p,true,true)){started++;queueSpeech(team[i],'order',{kind:team[i].body.position.distanceTo(p)>2?'long':''});}
@@ -9029,7 +9153,7 @@ const tabletPages={
  catalog:['Catálogo','Elige un objeto para ver su plano en la sala. Confirma con clic. Shift alinea la posición a la cuadrícula.'],
  cube:['Piezas','Selecciona una pieza en la sala para ver su masa y ajustar el agarre o la física.'],
  route:['Recorrido','Selecciona las piezas que van a moverse. Usa el menú del suelo para indicar el destino.'],
- cargo:['Cuerpos','Selecciona un cuerpo para ajustar sus propiedades y las órdenes de transporte.'],
+ cargo:['Cuerpos','Ajusta la sala del banco, sus límites de población y los cuerpos de carga.'],
  mechanisms:['Mecanismos','Selecciona la máquina en la sala. Los indicadores siguen en vivo mientras ajustas los controles disponibles.'],
  alpha:['Archivo del banco','Consulta las formas guardadas, los planos y las herramientas del banco.'],
  puzzle:['Puzle','Prepara el desafío y consulta sus condiciones antes de iniciarlo.'],
@@ -9235,6 +9359,7 @@ let tabletMeshCharge=-1;
 function refreshTabletCharge(time,immediate=false){
  if(panel.hidden||!immediate&&time<tabletNextChargeRead)return;
  tabletNextChargeRead=time+250;
+ if(tabletTab==='cargo'&&story.scene==='lab'&&!puzzle.active&&!workshopPanel?.isOpen)updateRoomPopulation();
  const hit=tabletSubject(time);
  // The workbench may choose a different physical piece when its contents change.
  // Its display and the original actuator handlers must reference that same piece.
@@ -9314,6 +9439,7 @@ function switchPanelTab(name){
  }
  drawMachineLinks();
  if(name==='catalog'){refreshQuickEntries();drawTabletCatalog();}
+ if(name==='cargo'&&story.scene==='lab'&&!puzzle.active)updateRoomPopulation();
 }
 const machineLinks=[
  ['servo-panel','Servos','Ajusta los límites, la velocidad y la marcha de las articulaciones.'],
@@ -9424,7 +9550,7 @@ function trajectoryAnchor(node,mode){
 }
 function getTrajectorySystem(){
  if(trajectorySystem)return trajectorySystem;
- trajectorySystem=QBitsTrajectoryRuntime.create({pose:trajectoryPose,anchor:trajectoryAnchor,
+ trajectorySystem=QBitsTrajectoryRuntime.create({pose:trajectoryPose,anchor:trajectoryAnchor,insideRoom:p=>inRoomXZ(p.x,p.z,.15),
   held:n=>cubeIsHeld(n.g)||!!n.g.robotHeld||!!n.g.blueprintJob,
   awake:n=>n.g.body.sleepState!==CANNON.Body.SLEEPING,
   start:startTrajectoryFollower,step:stepTrajectoryFollower,stop:stopTrajectoryFollower,
@@ -9629,7 +9755,7 @@ function trajectoryWorldClick(event){
  if(hit?.part.id===route.endId){finishTrajectoryDraft();return true;}
  if(draft.points.length>=QBitsTrajectoryModel.LIMITS.points-2){announce('Máximo de 48 puntos por recorrido.');return true;}
  if(dir.y>=-.0001)return true;const distance=(.012-camera[1])/dir.y;if(distance<=0||distance>12)return true;
- const p=add(V(...camera),mul(dir,distance));if(Math.abs(p.x)>13.85||Math.abs(p.z)>13.85)return true;
+ const p=add(V(...camera),mul(dir,distance));if(!inRoomXZ(p.x,p.z,.15))return true;
  if(storyWorld.walls.concat(puzzle.walls).some(w=>(rayPuzzleBox(V(...camera),dir,w,distance)??Infinity)<distance-.01)){announce('Apunta a un punto del piso que puedas ver.');return true;}
  const point={x:p.x,y:route.mode==='air'?draft.height:.012,z:p.z,action:'pass',wait:0},previous=draft.points[draft.points.length-1]||route.points[0];
  if(Math.hypot(point.x-previous.x,point.z-previous.z)<.035)return true;
@@ -9686,7 +9812,7 @@ function drawTrajectories(){
 // when leaving the challenge; rewards and deliveries use a single transaction.
 const puzzleConfig={frameSeconds:12,energySeconds:8};
 function puzzleBlockedEdit(kind='edit'){if(openingProtected()){announce('Piezas conservadas · las herramientas de creación están en el banco.');return true;}if(certifiedAutomation()){announce('Ensayo certificado: usa las piezas del banco. Reinicia el nivel para restaurarlas.');return true;}if(kind==='mechanism'&&mechanismsAvailable())return false;if(story.ready&&story.scene==='campaign'&&panel.hidden){announce('La materia genera nuevos Q-bits. P abre el banco de herramientas de prueba.');return true;}if(!puzzle.active||kind==='qubit'&&alphaSettings.allowPuzzleSpawn)return false;announce('Puzle activo · los recursos se obtienen en los portales. P → Puzle para volver al banco.');return true;}
-function saveLab(options={}){syncVirtualConveyors(0);if(!options.passive)cancelPowerCable();return {workshop:workshopPlacement&&{...workshopPlacement},families:serializeFamilies(),disassembly:serializeDisassembly(),powerNetwork:serializePowerNetwork(),trajectories:trajectorySystem?.snapshot()||{version:1,serial:0,routes:[]},mechanismDefaults:typeof mechanismDefaults==='undefined'?null:{...mechanismDefaults},rotors:serializeRotorState(),rotorSets:serializeRotorSets(),robotArms:serializeRobotArms(),conveyors:typeof serializeConveyors==='function'?serializeConveyors():[],contacts:serializeContactState(),shelves:serializeShelves(),...(ceilingFeeders.length||feederDrops.size?{ceilingSupply:serializeCeilingFeeders()}:{}),alphaScene:alphaSceneSnapshot(),settings:{...settings},moodSettings:{...moodSettings},position:[...position],yaw,pitch,groups:groups.map(g=>({parts:worldParts(g),q:g.body.quaternion.clone(),v:g.body.velocity.clone(),w:g.body.angularVelocity.clone()})),cargos:cargos.map(c=>({id:c.id,p:c.body.position.clone(),side:c.side,required:c.required,color:c.color,...(c.assemblyPasses?{assemblyPasses:c.assemblyPasses.map(r=>({...r}))}:{}),...(c.robotPhysical?{robotPhysical:true,q:c.body.quaternion.clone(),v:c.body.velocity.clone(),w:c.body.angularVelocity.clone()}:{} )})),runtime:captureLabRuntime()};}
+function saveLab(options={}){syncVirtualConveyors(0);if(!options.passive)cancelPowerCable();return {...(story.scene==='lab'&&!puzzle.active?{room:{...room}}:{}),workshop:workshopPlacement&&{...workshopPlacement},families:serializeFamilies(),disassembly:serializeDisassembly(),powerNetwork:serializePowerNetwork(),trajectories:trajectorySystem?.snapshot()||{version:1,serial:0,routes:[]},mechanismDefaults:typeof mechanismDefaults==='undefined'?null:{...mechanismDefaults},rotors:serializeRotorState(),rotorSets:serializeRotorSets(),robotArms:serializeRobotArms(),conveyors:typeof serializeConveyors==='function'?serializeConveyors():[],contacts:serializeContactState(),shelves:serializeShelves(),...(ceilingFeeders.length||feederDrops.size?{ceilingSupply:serializeCeilingFeeders()}:{}),alphaScene:alphaSceneSnapshot(),settings:{...settings},moodSettings:{...moodSettings},position:[...position],yaw,pitch,groups:groups.map(g=>({parts:worldParts(g),q:g.body.quaternion.clone(),v:g.body.velocity.clone(),w:g.body.angularVelocity.clone()})),cargos:cargos.map(c=>({id:c.id,p:c.body.position.clone(),side:c.side,required:c.required,color:c.color,...(c.assemblyPasses?{assemblyPasses:c.assemblyPasses.map(r=>({...r}))}:{}),...(c.robotPhysical?{robotPhysical:true,q:c.body.quaternion.clone(),v:c.body.velocity.clone(),w:c.body.angularVelocity.clone()}:{} )})),runtime:captureLabRuntime()};}
 // JSON removes Cannon prototypes. Rebuild only the explicitly stored pose and
 // velocity fields, before enterLab clears the current scene. Inventory IDs are
 // unique across bodies, wire, shelves and pending disassembly, not just bodies.
@@ -9701,7 +9827,8 @@ function hydrateLabSnapshot(saved){
  const values=(value,size)=>{const list=Array.isArray(value)?value:value&&['x','y','z','w'].slice(0,size).map(key=>value[key]);if(!Array.isArray(list)||list.length!==size||!list.every(finite))return invalid();return list;};
  const vector=value=>V(...values(value,3));
  const quaternion=value=>{const list=values(value,4),length=Math.hypot(...list);if(!finite(length)||length<1e-8)return invalid();return new CANNON.Quaternion(...list.map(n=>n/length));};
- if(!Array.isArray(data.groups)||data.groups.length>MAX_QUBITS||!Array.isArray(data.cargos)||data.cargos.length>12)return invalid();
+ if(data.room!==undefined&&!QBitsLabRoom.valid(data.room))return invalid();
+ if(!Array.isArray(data.groups)||data.groups.length>MAX_QUBITS||!Array.isArray(data.cargos)||data.cargos.length>(data.room?QBitsLabRoom.ranges.cargoLimit[1]:QBitsLabRoom.defaults.cargoLimit))return invalid();
  if(!data.settings||typeof data.settings!=='object'||Array.isArray(data.settings))return invalid();
  for(const [key,value]of Object.entries(settings))if(typeof value==='number'&&data.settings[key]!==undefined&&!finite(data.settings[key]))return invalid();
  for(const [key,value]of Object.entries(moodSettings))if(typeof value==='number'&&data.moodSettings?.[key]!==undefined&&!finite(data.moodSettings[key]))return invalid();
@@ -9755,7 +9882,7 @@ function hydrateLabSnapshot(saved){
   if(!belt||!QBitsAssembler.validPorts(belt.ports,assemblerPlanRecipe))return invalid();
   if(belt.assemblyQueue!==undefined&&(belt.ports?.assemblyLane!=='C'||!validAssemblerQueue(belt.assemblyQueue)))return invalid();
  }
- if(data.ceilingSupply!==undefined&&!QBitsCeilingFeeder.validSnapshot(data.ceilingSupply,data.groups,ROOM_SIZE/2))return invalid();
+ if(data.ceilingSupply!==undefined&&!QBitsCeilingFeeder.validSnapshot(data.ceilingSupply,data.groups,data.room))return invalid();
  if(!getTrajectorySystem().validSnapshot(data.trajectories))return invalid();
  return data;
 }
@@ -9869,22 +9996,22 @@ function puzzleWall(p,half,portal=null){
 function startPuzzle(){
  if(openingProtected()&&!saveCurrentGame().ok)return;
  if(story.ready&&story.scene!=='lab')enterLab(false);
- if(!puzzle.active)puzzle.savedLab=saveLab();removeWorkshop();contactStates.clear();rotorContactStates.clear();clearPuzzleScene();puzzle.active=true;puzzle.stage=0;puzzle.complete=false;puzzle.delivery=null;puzzle.earned=0;puzzle.run++;
+ if(!puzzle.active)puzzle.savedLab=saveLab();removeWorkshop();contactStates.clear();rotorContactStates.clear();clearPuzzleScene();puzzle.active=true;setRoom();puzzle.stage=0;puzzle.complete=false;puzzle.delivery=null;puzzle.earned=0;puzzle.run++;
  settings.mass=1;settings.maxCarry=Math.max(settings.maxCarry,4);settings.maxSelect=Math.max(settings.maxSelect,12);
  const colors=['#73bdc5','#a69bce','#cdb47b'],names=['Calipso','Violeta','Ámbar'],requirements=[1,5,9],sizes=[3,5,7];
  for(let i=0;i<3;i++){
-  const p={index:i,name:names[i],color:colors[i],rgb:[1,3,5].map(k=>parseInt(colors[i].slice(k,k+2),16)/255),x:-3+i*3,z:-ROOM_SIZE/2+.17,required:requirements[i],frame:i<2?1:0,energy:i<2?1:0,completed:false};puzzle.portals.push(p);
+  const p={index:i,name:names[i],color:colors[i],rgb:[1,3,5].map(k=>parseInt(colors[i].slice(k,k+2),16)/255),x:-3+i*3,z:-room.length/2+.17,required:requirements[i],frame:i<2?1:0,energy:i<2?1:0,completed:false};puzzle.portals.push(p);
   puzzleWall(V(p.x-.96,1.25,p.z),V(.24,1.25,.12));puzzleWall(V(p.x+.96,1.25,p.z),V(.24,1.25,.12));puzzleWall(V(p.x,2.24,p.z),V(.72,.26,.12));
   p.barrier=puzzleWall(V(p.x,.99,p.z),V(.72,.99,.065),p);
   const c=newCargo(V(p.x,0,p.z+3.25),sizes[i],p.required,p.color);c.puzzleStage=i;p.material=c;
  }
- puzzle.buttons=[{kind:'frame',name:'Marco',p:V(2.05,0,-ROOM_SIZE/2+2.07),half:.16,required:1,load:0,pressed:0},{kind:'energy',name:'Energía',p:V(3.95,0,-ROOM_SIZE/2+2.07),half:.21,required:2,load:0,pressed:0}];
- for(let i=0;i<4;i++)addQubit([-3.22+(i%2)*.16,HALF+.003,-ROOM_SIZE/2+4.22+Math.floor(i/2)*.16],1);
- makeButtonPhysics();position[0]=-1.7;position[2]=-ROOM_SIZE/2+5.67;yaw=.18;pitch=-.34;camera.splice(0,3,...position);keys.clear();world.broadphase.dirty=true;
+ puzzle.buttons=[{kind:'frame',name:'Marco',p:V(2.05,0,-room.length/2+2.07),half:.16,required:1,load:0,pressed:0},{kind:'energy',name:'Energía',p:V(3.95,0,-room.length/2+2.07),half:.21,required:2,load:0,pressed:0}];
+ for(let i=0;i<4;i++)addQubit([-3.22+(i%2)*.16,HALF+.003,-room.length/2+4.22+Math.floor(i/2)*.16],1);
+ makeButtonPhysics();position[0]=-1.7;position[2]=-room.length/2+5.67;yaw=.18;pitch=-.34;camera.splice(0,3,...position);keys.clear();world.broadphase.dirty=true;
  updatePuzzleMasks();updatePuzzlePanel();announce('Puzle 01 · entrega los materiales del mismo color. Cada entrega crea cuatro Q-bits.');
 }
 function leavePuzzle(){
- if(!puzzle.active)return;const saved=puzzle.savedLab;clearPuzzleScene();puzzle.active=false;puzzle.savedLab=null;
+ if(!puzzle.active)return;const saved=puzzle.savedLab;clearPuzzleScene();puzzle.active=false;puzzle.savedLab=null;setRoom(saved?.room);
  if(saved){Object.assign(settings,saved.settings);if(saved.moodSettings)Object.assign(moodSettings,saved.moodSettings);position.splice(0,3,...saved.position);yaw=saved.yaw;pitch=saved.pitch;camera.splice(0,3,...position);for(const g of saved.groups)makeGroup(g.parts,g.q,g.v,g.w);restoreLabMechanisms(saved);for(const c of saved.cargos)restoreLabCargo(c);}
  restoreAlphaScene(saved?.alphaScene);world.gravity.y=-settings.gravity;world.defaultContactMaterial.friction=settings.friction;world.defaultContactMaterial.restitution=settings.bounce;
  workshopPlacement=saved?.workshop===undefined?defaultWorkshopPlacement:saved.workshop;setupWorkshop();updatePuzzlePanel();updatePanel();announce('Banco de pruebas restaurado');
@@ -9922,7 +10049,7 @@ function rewardPlacement(){
  for(const distance of [.8,.55,1.05])for(const lift of [-.22,.04,-.45]){
   const center=add(add(V(...camera),mul(flat,distance)),mul(up,lift));const points=[];
   for(let i=0;i<4;i++)points.push(add(center,mul(right,(i-1.5)*.14)));
-  if(points.every(p=>p.y>HALF+.02&&p.y<ROOM_HEIGHT-HALF&&Math.max(Math.abs(p.x),Math.abs(p.z))<13.9&&cargoPlacementClear(p,.1,null,[])&&!groups.some(g=>poses(g).some(o=>obbOverlap(o,{p,q:Q()},-.012)))&&!puzzleObstacleBounds().some(w=>obbOverlap({p,q:Q()},{p:w.p,q:w.q||Q(),half:w.half},-.012))))return points;
+  if(points.every(p=>p.y>HALF+.02&&p.y<room.height-HALF&&inRoomXZ(p.x,p.z,.1)&&cargoPlacementClear(p,.1,null,[])&&!groups.some(g=>poses(g).some(o=>obbOverlap(o,{p,q:Q()},-.012)))&&!puzzleObstacleBounds().some(w=>obbOverlap({p,q:Q()},{p:w.p,q:w.q||Q(),half:w.half},-.012))))return points;
  }return null;
 }
 function givePuzzleReward(){
@@ -10201,7 +10328,7 @@ function createCooler(p){
  if(openingProtected()){announce('Estaciones de este tramo · sin cambios.');return null;}
  if(certifiedAutomation()){announce('El ensayo usa las estaciones existentes.');return null;}
  if(coolers.length>=12){announce('Máximo de 12 enfriadores en esta sala.');return null;}
- if(!p||Math.max(Math.abs(p.x),Math.abs(p.z))>13.4||!cargoPlacementClear(p,.84)||coolers.some(c=>c.p.distanceTo(p)<.9)){announce('Busca un espacio libre para el enfriador.');return null;}
+ if(!p||!inRoomXZ(p.x,p.z,.6)||!cargoPlacementClear(p,.84)||coolers.some(c=>c.p.distanceTo(p)<.9)){announce('Busca un espacio libre para el enfriador.');return null;}
  const c={id:++alphaSerial,p:V(p.x,0,p.z),capacity:alphaSettings.capacity,enabled:true,bodies:[],entries:new Map(),occupants:0};coolers.push(c);
  const floor=new CANNON.Body({mass:0});floor.addShape(new CANNON.Cylinder(.32,.32,.018,20),V(),new CANNON.Quaternion().setFromEuler(-Math.PI/2,0,0));floor.position.set(p.x,.009,p.z);floor.collisionFilterMask=-1;world.addBody(floor);c.bodies.push(floor);
  for(let i=0;i<20;i++){const a=i*Math.PI/10,q=Q();q.setFromAxisAngle(V(0,1,0),-a);addAlphaCollider(c,V(p.x+Math.cos(a)*.36,.077,p.z+Math.sin(a)*.36),V(.042,.077,.061),q);}
@@ -10531,7 +10658,7 @@ function spawnSavedMechanism(record,point,rotation=Q()){
  if(puzzleBlockedEdit('mechanism')||typeof mechanismsAvailable==='function'&&!mechanismsAvailable())return null;
  if(!savedMechanismValid(record)||!point||![point.x,point.y,point.z].every(Number.isFinite)){announce('El mecanismo guardado no es válido.');return null;}
  if(story.scene==='campaign'&&record.groups.some(group=>group.parts.some(part=>part.shape!=='coupler'))){announce('Los mecanismos con Q-bits o T-bits añadidos se crean solo en el banco de pruebas. En campaña, monta esas piezas con los recursos del nivel.');return null;}
- const count=mechanismPartCount(record);if(scenePartCount()+count>MAX_QUBITS){announce('Máximo de '+MAX_QUBITS+' piezas en la sala.');return null;}
+ const count=mechanismPartCount(record);if(scenePartCount()+count>room.partLimit){announce('Máximo de '+room.partLimit+' piezas en la sala.');return null;}
  const origin=V(point.x,point.y+.003,point.z),data=mechanismRecordParts(record).map(parts=>parts.map(part=>({...part,p:add(origin,rotation.vmult(part.p)),q:rotation.mult(part.q)}))),ids=new Map(),made=[],joints=[];
  // Probe candidate space before allocating physics bodies, IDs or GPU state.
  // Placement is exact: failed validation never searches another location.
@@ -10560,7 +10687,7 @@ function duplicateMechanism(subject){
  if(mechanismGroups(subject).some(g=>g.parts.some(QBitsWorkshop.hasAdaptation))){announce('Retira las adaptaciones antes de duplicar el mecanismo.');return null;}
 
  const record=mechanismSnapshot(subject);if(!record){announce('No se puede duplicar este mecanismo hasta ajustar sus puntas.');return null;}
- if(scenePartCount()+mechanismPartCount(record)>MAX_QUBITS){announce('No caben más copias: límite de '+MAX_QUBITS+' piezas.');return null;}
+ if(scenePartCount()+mechanismPartCount(record)>room.partLimit){announce('No caben más copias: límite de '+room.partLimit+' piezas.');return null;}
  const vertices=mechanismRecordParts(record).flat().flatMap(corners),spacing=Math.max(...['x','z'].map(axis=>Math.max(...vertices.map(v=>v[axis]))-Math.min(...vertices.map(v=>v[axis]))))+.18;
  for(let row=0;row<5;row++)for(const col of [0,1,-1,2,-2]){
   const point=V(position[0]-Math.sin(yaw)*(1.2+row*spacing)+Math.cos(yaw)*col*spacing,0,position[2]-Math.cos(yaw)*(1.2+row*spacing)-Math.sin(yaw)*col*spacing);
@@ -10716,7 +10843,7 @@ function blueprintTargets(bp){
 }
 function blueprintBox(bp){const targets=blueprintTargets(bp);if(bp.boxCache?.targets===targets)return bp.boxCache.box;const pts=targets.flatMap(corners),min=V(Infinity,Infinity,Infinity),max=V(-Infinity,-Infinity,-Infinity);for(const p of pts)for(const k of ['x','y','z']){min[k]=Math.min(min[k],p[k]);max[k]=Math.max(max[k],p[k]);}const box={...alphaBox(mul(add(min,max),.5),mul(sub(max,min),.5)),size:sub(max,min)};bp.boxCache={targets,box};return box;}
 function blueprintSiteClear(box){
- return !(box.min.y<-.001||box.max.y>ROOM_HEIGHT||Math.max(Math.abs(box.min.x),Math.abs(box.max.x),Math.abs(box.min.z),Math.abs(box.max.z))>13.85||cargos.some(c=>obbOverlap(box,cargoPose(c)))||puzzleObstacleBounds().some(w=>obbOverlap(box,{p:w.p,q:w.q||Q(),half:w.half}))||alphaObstacles().some(w=>obbOverlap(box,w))||blueprints.some(other=>obbOverlap(box,blueprintBox(other))));
+ return !(box.min.y<-.001||box.max.y>room.height||!inRoomFootprint(box,.15)||cargos.some(c=>obbOverlap(box,cargoPose(c)))||puzzleObstacleBounds().some(w=>obbOverlap(box,{p:w.p,q:w.q||Q(),half:w.half}))||alphaObstacles().some(w=>obbOverlap(box,w))||blueprints.some(other=>obbOverlap(box,blueprintBox(other))));
 }
 function placeBlueprint(shape,p,placement={}){
  if(openingProtected())return null;
@@ -10724,7 +10851,7 @@ function placeBlueprint(shape,p,placement={}){
  automationIntervention();
  if((shape?.mechanism?!savedMechanismValid(shape.mechanism)||!mechanismsAvailable():!savedShapeValid(shape))||!p||![p.x,p.z].every(Number.isFinite)||blueprints.length>=12){announce('No se puede colocar otro blueprint aquí.');return null;}
  if(shape.mechanism)shape=mechanismBlueprintShape(shape.mechanism);
- const elevation=placement.height??0,turns=placement.quarterTurns??0;if(!Number.isFinite(elevation)||elevation<0||elevation>ROOM_HEIGHT||!Number.isInteger(turns)||turns<0||turns>3)return null;
+ const elevation=placement.height??0,turns=placement.quarterTurns??0;if(!Number.isFinite(elevation)||elevation<0||elevation>room.height||!Number.isInteger(turns)||turns<0||turns>3)return null;
  const angle=placement.angle??turns*Math.PI/2;if(!Number.isFinite(angle))return null;
  const rotation=Q();rotation.setFromAxisAngle(V(0,1,0),angle);
  const bp={shape:JSON.parse(JSON.stringify(shape)),p:V(p.x,elevation+.002,p.z),q:rotation,slots:[],active:false,nextScan:0,status:'Esperando unidades'};const box=blueprintBox(bp);
@@ -11262,7 +11389,7 @@ function clearNarrativeScene(){
  closeWorkshopPanel(false);cancelShelfPlacement();cancelUnitCreation();
  workshopBench=null;contactStates.clear();rotorContactStates.clear();
  closeUnitRadial(false);
- releaseQubit();story.preserveGrip=false;clearCampaign();clearStoryWalls();clearPuzzleScene();puzzle.active=false;puzzle.savedLab=null;puzzle.delivery=null;clearSelection();speech.queue.length=0;for(const slot of speech.slots)clearSpeechSlot(slot);hideStoryDialogue();storyObjective('');ui.marker.hidden=true;story.guideId=null;story.phaseTime=0;story.dropAligned=false;story.lost=0;story.arrival=0;story.routeIssued=false;story.phase='idle';ui.top.style.height='0';ui.bottom.style.height='0';canvas.style.filter='none';document.querySelector('#notice').textContent='';document.querySelector('#wake-screen').hidden=true;
+ releaseQubit();story.preserveGrip=false;clearCampaign();clearStoryWalls();clearPuzzleScene();puzzle.active=false;puzzle.savedLab=null;setRoom();puzzle.delivery=null;clearSelection();speech.queue.length=0;for(const slot of speech.slots)clearSpeechSlot(slot);hideStoryDialogue();storyObjective('');ui.marker.hidden=true;story.guideId=null;story.phaseTime=0;story.dropAligned=false;story.lost=0;story.arrival=0;story.routeIssued=false;story.phase='idle';ui.top.style.height='0';ui.bottom.style.height='0';canvas.style.filter='none';document.querySelector('#notice').textContent='';document.querySelector('#wake-screen').hidden=true;
 }
 function rememberLab(){if(story.scene==='lab'&&!(saveSession.labLoaded&&!saveSession.labActive)){if(!saveSession.preparing&&story.started)saveCurrentGame();story.lab=puzzle.active?puzzle.savedLab:saveLab();story.labAlpha={...alphaSettings};}}
 function applyStageDefaults(){Object.assign(settings,{mass:1,gravity:9.8,force:60,maxCarry:2000,maxSelect:2000,speed:.32});world.gravity.set(0,-settings.gravity,0);alphaSettings.coolingOn=true;posture.height=EYE_HEIGHT;bobHeight=0;bobSide=0;world.broadphase.dirty=true;}
@@ -11700,7 +11827,7 @@ function saveStoryProgress(key){story.progress[key]=true;writeLegacyCampaignProg
 function finishFirstLevel(){saveStoryProgress('level1');story.phase='complete';hideStoryDialogue();storyObjective('');gameMode('complete');pause(false);document.querySelector('#complete-repeat').focus({preventScroll:true});}
 function enterLab(capture=true){
  if(story.scene==='lab'){setupWorkshop();gameMode('playing');story.started=true;saveSession.labActive=true;panel.hidden=true;if(capture)captureMouse();return;}
- clearNarrativeScene();gameScene('lab');gameMode('playing');story.started=true;const saved=story.lab;workshopPlacement=saved?.workshop===undefined?defaultWorkshopPlacement:saved.workshop;
+ clearNarrativeScene();gameScene('lab');gameMode('playing');story.started=true;const saved=story.lab;setRoom(saved?.room);workshopPlacement=saved?.workshop===undefined?defaultWorkshopPlacement:saved.workshop;
  if(saved){Object.assign(settings,saved.settings);Object.assign(moodSettings,saved.moodSettings||{});Object.assign(alphaSettings,story.labAlpha||{});position.splice(0,3,...saved.position);yaw=saved.yaw;pitch=saved.pitch;camera.splice(0,3,...position);for(const g of saved.groups)makeGroup(g.parts,g.q,g.v,g.w);restoreLabMechanisms(saved);for(const c of saved.cargos)restoreLabCargo(c);restoreAlphaScene(saved.alphaScene);}else{settings.maxCarry=MAX_QUBITS;settings.maxSelect=MAX_QUBITS;addQubit([0,HALF+.003,0]);}
  world.gravity.y=-settings.gravity;world.defaultContactMaterial.friction=settings.friction;world.defaultContactMaterial.restitution=settings.bounce;world.broadphase.dirty=true;ui.veil.style.opacity='0';setupWorkshop();if(saved?.runtime&&saveSession.restoring)saveSession.restoreWarnings=restoreLabRuntime(saved.runtime).warnings;saveSession.labActive=true;updatePanel();if(!saveSession.restoring&&!saveSession.preparing)saveCurrentGame();if(capture)captureMouse();
 }
@@ -12195,27 +12322,32 @@ function campaignAmbientAllowed(){return story.scene==='campaign'&&story.mode===
 // Workshop research is persistent; fitted modules belong to existing piece IDs.
 let workshopProfile;try{workshopProfile=QBitsWorkshop.normalizeProfile(JSON.parse(localStorage.getItem('qbits.workshop.v1')||'{}'));}catch{workshopProfile=QBitsWorkshop.normalizeProfile({});}
 // Ceiling fixtures share procedural meshes by outlet height. The rubber membrane has no collider.
-function feederGeometry(height){
- let model=feederGeometryCache.get(height);
- if(!model){model=QBitsCeilingFeeder.geometry(height,ROOM_HEIGHT);feederGeometryCache.set(height,model);}
+function feederGeometry(height,mount){
+ const length=QBitsCeilingFeeder.walls[mount]?QBitsCeilingFeeder.wallLength:Math.round((room.height-height)*10)/10;
+ let model=feederGeometryCache.get(length);
+ if(!model){model=QBitsCeilingFeeder.geometry(0,length);feederGeometryCache.set(length,model);}
  return model;
 }
 const feederColors=[[.96,.97,.965,1],[.67,.71,.72,1],[.018,.022,.025,1]];
-const feederRotation=Q(),feederScale=V(1,1,1);
-function drawFeederStructure(point,ghost=null){
- const model=feederGeometry(point.y);
+const feederScale=V(1,1,1),feederRotations={ceiling:Q()};
+for(const [mount,n] of Object.entries(QBitsCeilingFeeder.walls)){
+ const yaw=Q(),tilt=Q();yaw.setFromAxisAngle(V(0,1,0),Math.atan2(n.x,n.z));tilt.setFromAxisAngle(V(1,0,0),-Math.PI/2);
+ feederRotations[mount]=yaw.mult(tilt);
+}
+function drawFeederStructure(point,mount,ghost=null){
+ const model=feederGeometry(point.y,mount);
  if(!model.meshes){
   model.meshes=[model.white,model.metal,model.rubber].map(boxes=>buildBoxAssembly(boxes.map(([x,y,z,w,h,d])=>[V(x,y,z),V(w,h,d)])));
   boundGeometry=null;
  }
- for(let i=0;i<model.meshes.length;i++)drawAsset(model.meshes[i],point,feederRotation,feederScale,ghost||feederColors[i],ghost||i===2?3:5);
+ for(let i=0;i<model.meshes.length;i++)drawAsset(model.meshes[i],point,feederRotations[mount],feederScale,ghost||feederColors[i],ghost||i===2?3:5);
 }
-function drawCeilingFeeders(){for(const f of ceilingFeeders)drawFeederStructure(f.point);}
+function drawCeilingFeeders(){for(const f of ceilingFeeders)drawFeederStructure(f.point,f.mount);}
 function feederVolumeOccupied(lower,upper,ignore=null){
  const query=new CANNON.AABB({lowerBound:lower,upperBound:upper}),near=[];
  world.broadphase.aabbQuery(world,query,near);
  for(const body of near){
-  if(body===ignore||body===floor||!body.collisionResponse||!body.collisionFilterMask)continue;
+  if(body===ignore||body===floor||roomWalls.has(body)||!body.collisionResponse||!body.collisionFilterMask)continue;
   if(body.shapes.length===1)return true;
   const box=new CANNON.AABB(),p=V(),q=Q();
   for(let i=0;i<body.shapes.length;i++){
@@ -12228,60 +12360,85 @@ function feederVolumeOccupied(lower,upper,ignore=null){
  }
  return false;
 }
-function feederPlacementIssue(point,ignore=null){
- const model=QBitsCeilingFeeder;
+function feederPlacementIssue(point,mount='ceiling',ignore=null){
+ const model=QBitsCeilingFeeder,f={x:point.x,z:point.z,height:point.y,mount};
  if(story.scene!=='lab'||puzzle.active||openingProtected())return 'La toma está disponible en el banco y el editor.';
  if(!ignore&&ceilingFeeders.length>=model.limits.fixtures)return 'Se alcanzó el límite de tomas del banco.';
- if(!model.validHeight(point.y)||!model.fitsRoom(point.x,point.z,ROOM_SIZE/2))return 'Acerca la toma al interior de la sala.';
- if(ceilingFeeders.some(f=>f!==ignore&&model.overlap(f.point,point)))return 'Ya hay una toma en ese lugar.';
- const w=model.width/2,d=model.depth/2;
- if(feederVolumeOccupied(V(point.x-w,point.y,point.z-d),V(point.x+w,ROOM_HEIGHT-.003,point.z+d),ignore?.body))
-  return 'La cañería necesita espacio libre hasta el techo.';
+ if(!model.fits(f,room))return 'Deja espacio entre la boca y los bordes de la sala.';
+ if(ceilingFeeders.some(other=>other!==ignore&&model.overlap(other,f,room)))return 'Ya hay una toma en ese lugar.';
+ const {min,max}=model.bounds(f,room);
+ if(feederVolumeOccupied(V(min.x,min.y,min.z),V(max.x,max.y,max.z),ignore?.body))
+  return 'La cañería necesita espacio libre hasta '+(mount==='ceiling'?'el techo.':'la pared.');
  return '';
 }
 function feederSupportAim(){
  const from=V(...camera),dir=direction(),result=new CANNON.RaycastResult();
- if(!world.raycastClosest(from,add(from,mul(dir,ROOM_SIZE*2)),{skipBackfaces:true},result))return null;
- const p=result.hitPointWorld,n=result.hitNormalWorld;
- if(n.y<.7&&!(n.y<-.98&&Math.abs(p.y-ROOM_HEIGHT)<.005))return null;
- return {point:p,normal:n};
+ if(!world.raycastClosest(from,add(from,mul(dir,Math.hypot(room.width,room.height,room.length))),{skipBackfaces:true},result))return null;
+ const mount=roomWalls.get(result.body);
+ if(!mount && result.hitNormalWorld.y<.7)return null;
+ return {point:result.hitPointWorld,normal:result.hitNormalWorld,mount:mount||'ceiling'};
 }
 function updateFeederPlacement(preview,hit,force=false){
  hit=hit===undefined?feederSupportAim():hit;
  preview.poses=[];preview.valid=false;
- if(!hit){preview.point=null;preview.reason='Apunta al piso, a una cinta o al techo.';return false;}
- const p=hit.point.clone();
- preview.deliveryY=hit.normal.y<0?0:p.y;
- p.y=preview.elevation;
+ if(!hit){preview.point=null;preview.reason='Apunta a una pared, al piso, a una cinta o al techo.';return false;}
+ const model=QBitsCeilingFeeder,mount=hit.mount||'ceiling',wall=model.walls[mount],p=hit.point.clone();
  if(shiftDown()){p.x=Math.round(p.x/CUBE_SIZE)*CUBE_SIZE;p.z=Math.round(p.z/CUBE_SIZE)*CUBE_SIZE;}
- if(force||!preview.point?.almostEquals(p,1e-6)||simTime>=preview.nextCheck){
-  preview.issue=feederPlacementIssue(p);preview.nextCheck=simTime+.12;
+ if(wall){
+  const [low,high]=model.heightRange(mount,room);
+  preview.wallAimHeight=clamp(Math.round(p.y*10)/10,low,high);
+  p.y=clamp(Math.round((preview.wallAimHeight+(preview.wallOffset||0))*10)/10,low,high);
+  const mouth=model.mouth(mount,p.x,p.y,p.z,room);p.x=mouth.x;p.z=mouth.z;
+ }else{
+  preview.deliveryY=hit.normal.y<0?0:p.y;p.y=preview.elevation;
  }
- preview.point=p;preview.valid=!preview.issue;
- preview.reason=p.y.toFixed(1)+' m · '+(preview.issue||'Rueda: altura · clic: colocar · Esc: cancelar');
+ if(force||preview.mount!==mount||!preview.point?.almostEquals(p,1e-6)||simTime>=preview.nextCheck){
+  preview.issue=feederPlacementIssue(p,mount);preview.nextCheck=simTime+.12;
+ }
+ preview.point=p;preview.mount=mount;preview.valid=!preview.issue;
+ preview.reason=(wall?'Pared':'Techo')+' · '+p.y.toFixed(1)+' m · '+(preview.issue||'Rueda: altura · clic: colocar');
  redraw=true;return preview.valid;
 }
 function drawFeederPreview(preview){
  const p=preview.point;if(!p)return;
- const tone=preview.valid?[.18,.65,1]:[.93,.22,.16],base=V(p.x,preview.deliveryY+.005,p.z);
+ const tone=preview.valid?[.18,.65,1]:[.93,.22,.16],model=QBitsCeilingFeeder,n=model.walls[preview.mount];
+ const lines=[],base=V(p.x,(preview.deliveryY||0)+.005,p.z);
+ if(n){
+  // Estimate the first floor contact of a cube. Its actual flight and any belt contact use Cannon.
+  const vy=model.wallVerticalSpeed,gravity=Math.max(0,-world.gravity.y);
+  const depth=model.curtainY+HALF+.003,fall=p.y-HALF;
+  const time=2*fall/(Math.sqrt(vy*vy+2*gravity*fall)-vy);
+  let previous=p;
+  const start=depth/model.wallSpeed;
+  for(let i=1;i<=12;i++){
+   const t=start+(time-start)*i/12,dist=model.wallSpeed*t-depth;
+   const next=V(p.x+n.x*dist,Math.max(.005,p.y+vy*t-gravity*t*t/2-HALF),p.z+n.z*dist);
+   if(!inRoomXZ(next.x,next.z))break;
+   lines.push(previous,next);previous=next;
+  }
+  base.copy(previous);
+ }else lines.push(p,base);
  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
- drawFeederStructure(p,[...tone,.40]);drawWideLines([base,p],[...tone,.55],2);
- drawRing(base,CUBE_SIZE*.85,.9,tone);
+ drawFeederStructure(p,preview.mount,[...tone,.40]);if(lines.length)drawWideLines(lines,[...tone,.55],2);
+ if(!n||base.y<=.006)drawRing(base,CUBE_SIZE*.85,.9,tone);
  gl.depthMask(true);gl.disable(gl.BLEND);
 }
 function mountFeeder(f){
+ f.mount??='ceiling';
  const p=f.point=V(f.x,f.height,f.z),body=f.body=new CANNON.Body({mass:0});
+ const model=QBitsCeilingFeeder,geometry=feederGeometry(f.height,f.mount);
  body.position.copy(p);f.walls=[];
- for(const [x,y,z,w,h,d] of feederGeometry(f.height).solid){
-  const local=V(x,y,z),half=V(w/2,h/2,d/2),center=add(p,local);
-  body.addShape(new CANNON.Box(half),local);
-  const wall={p:center,half,body,min:sub(center,half),max:add(center,half),furniture:'ceiling-feeder'};
+ function box(local){
+  const [x,y,z,w,h,d]=model.localBox(f.mount,local),center=add(p,V(x,y,z)),half=V(w/2,h/2,d/2);
+  return {p:center,half,body,min:sub(center,half),max:add(center,half),furniture:'ceiling-feeder'};
+ }
+ for(const local of geometry.solid){
+  const wall=box(local);body.addShape(new CANNON.Box(wall.half),sub(wall.p,p));
   f.walls.push(wall);storyWorld.walls.push(wall);
  }
  world.addBody(body);body.computeAABB();
  f.bounds={min:body.aabb.lowerBound,max:body.aabb.upperBound};
- const y=f.height+QBitsCeilingFeeder.curtainY;
- f.pickBoxes=[...f.walls,{min:V(f.x-.15,y-.002,f.z-.11),max:V(f.x+.15,y+.002,f.z+.11)}];
+ f.pickBoxes=[...f.walls,box(geometry.rubber[0])];
  redraw=true;
 }
 function unmountFeeder(f){
@@ -12289,12 +12446,12 @@ function unmountFeeder(f){
  for(const wall of f.walls){const i=storyWorld.walls.indexOf(wall);if(i>=0)storyWorld.walls.splice(i,1);}
  redraw=true;
 }
-function createCeilingFeeder(point){
- if(feederPlacementIssue(point))return null;
+function createCeilingFeeder(point,mount='ceiling'){
+ if(feederPlacementIssue(point,mount))return null;
  const used=new Set(ceilingFeeders.map(f=>f.id));
  for(const p of feederDrops.values())used.add(p.source);
  let id=1;while(used.has(id))id++;
- const f={...QBitsCeilingFeeder.defaults,id,x:point.x,z:point.z,height:point.y,wait:60/QBitsCeilingFeeder.defaults.rate};
+ const f={...QBitsCeilingFeeder.defaults,id,mount,x:point.x,z:point.z,height:point.y,wait:60/QBitsCeilingFeeder.defaults.rate};
  mountFeeder(f);ceilingFeeders.push(f);return f;
 }
 function removeCeilingFeeder(f){
@@ -12307,8 +12464,8 @@ function clearCeilingFeeders(){
  feederDrops.clear();feederCursor=0;
 }
 function aimCeilingFeeder(dir=direction()){
- if(!ceilingFeeders.length||held||dir.y<=0&&camera[1]<QBitsCeilingFeeder.limits.minHeight)return null;
- const eye=V(...camera);let best=null,distance=5;
+ if(!ceilingFeeders.length||held)return null;
+ const eye=V(...camera);let best=null,distance=Math.hypot(room.width,room.length,room.height);
  for(const f of ceilingFeeders){
   if(rayPuzzleBox(eye,dir,f.bounds,distance)===null)continue;
   for(const box of f.pickBoxes){
@@ -12324,16 +12481,17 @@ function aimCeilingFeeder(dir=direction()){
 function feederStatus(f){return f.enabled?(f.blocked||'En marcha'):'Detenida';}
 function openFeederMenu(hit){
  const f=hit.feeder;clearSelection();
- openCommandMenu(hit.point,'Toma de techo',[]);
+ openCommandMenu(hit.point,'Toma de Q-bits',[]);
  inspectedFeeder=f;const field=id=>document.getElementById('feeder-'+id);
+ const [low,high]=QBitsCeilingFeeder.heightRange(f.mount,room);field('height').min=low;field('height').max=high;
  field('height').value=f.height;field('shape').value=f.shape;field('rate').value=f.rate;field('idle').value=f.idle;
  field('enabled').checked=f.enabled;field('status').textContent=feederStatus(f);field('status').dataset.error='';field('form').hidden=false;
  connectMenu(commandMenu,hit.point);
 }
 function configureFeeder(f,settings){
- if(!ceilingFeeders.includes(f)||!QBitsCeilingFeeder.validSettings(settings))return 'Revisa la altura, el ritmo y el tiempo en el piso.';
+ if(!ceilingFeeders.includes(f)||!QBitsCeilingFeeder.validSettings(settings,f.mount,room))return 'Revisa la altura, el ritmo y el tiempo en el piso.';
  const moved=f.height!==settings.height;
- if(moved){const issue=feederPlacementIssue(V(f.x,settings.height,f.z),f);if(issue)return issue;}
+ if(moved){const issue=feederPlacementIssue(V(f.x,settings.height,f.z),f.mount,f);if(issue)return issue;}
  if(moved)unmountFeeder(f);
  if(f.rate!==settings.rate||f.enabled!==settings.enabled)f.wait=60/settings.rate;
  Object.assign(f,settings,{blocked:''});
@@ -12346,19 +12504,32 @@ document.getElementById('feeder-form').addEventListener('submit',event=>{
  const field=id=>document.getElementById('feeder-'+id);
  const issue=configureFeeder(f,{height:Number(field('height').value),shape:field('shape').value,rate:Number(field('rate').value),idle:Number(field('idle').value),enabled:field('enabled').checked});
  if(issue){field('status').textContent=issue;field('status').dataset.error='true';return;}
- closeCommandMenu(true);announce('Toma de techo · '+feederStatus(f)+' · '+f.rate+' piezas/min');
+ closeCommandMenu(true);announce('Toma de Q-bits · '+feederStatus(f)+' · '+f.rate+' piezas/min');
 });
 document.getElementById('feeder-form').addEventListener('input',()=>{document.getElementById('feeder-status').dataset.error='';});
 document.getElementById('feeder-close').addEventListener('click',()=>closeCommandMenu(true));
 document.getElementById('feeder-remove').addEventListener('click',()=>{if(inspectedFeeder){removeCeilingFeeder(inspectedFeeder);captureMouse();announce('Toma retirada');}});
 
 function emitFeederPart(f){
- const y=f.height+QBitsCeilingFeeder.curtainY,ground=unitGroundHeight(f.shape);
- const p=V(f.x,y+ground+.003,f.z),profile=unitProfile(f.shape);
- const top=p.y+Math.max(...profile.vertices.map(v=>v.y));
- const width=CUBE_SIZE*.65;
- if(feederVolumeOccupied(V(f.x-width,y-CUBE_SIZE,f.z-width),V(f.x+width,top+.002,f.z+width),f.body))return false;
+ const model=QBitsCeilingFeeder,n=model.walls[f.mount],profile=unitProfile(f.shape);
+ let p,lower,upper;
+ if(n){
+  // Start fully behind the curtain and check the entire exit corridor before allocating a part.
+  const front=Math.max(...profile.vertices.map(v=>n.x*v.x+n.z*v.z));
+  const inset=model.curtainY+front+.003,exit=V(f.x+n.x*CUBE_SIZE,f.height,f.z+n.z*CUBE_SIZE);
+  p=V(f.x-n.x*inset,f.height,f.z-n.z*inset);
+  const half=CUBE_SIZE*.65;
+  lower=V(Math.min(p.x,exit.x)-half,p.y-half,Math.min(p.z,exit.z)-half);
+  upper=V(Math.max(p.x,exit.x)+half,p.y+half,Math.max(p.z,exit.z)+half);
+ }else{
+  const y=f.height+model.curtainY,width=CUBE_SIZE*.65;
+  p=V(f.x,y+unitGroundHeight(f.shape)+.003,f.z);
+  lower=V(f.x-width,y-CUBE_SIZE,f.z-width);
+  upper=V(f.x+width,p.y+Math.max(...profile.vertices.map(v=>v.y))+.002,f.z+width);
+ }
+ if(feederVolumeOccupied(lower,upper,f.body))return false;
  const g=addQubit([p.x,p.y,p.z],1,f.shape);
+ if(n)g.body.velocity.set(n.x*model.wallSpeed,model.wallVerticalSpeed,n.z*model.wallSpeed);
  feederDrops.set(g,{source:f.id,idle:f.idle,elapsed:0,grounded:false});
  redraw=true;return true;
 }
@@ -12391,7 +12562,7 @@ function updateFeederDrops(dt){
    const a=b.aabb,near=[];
    world.broadphase.aabbQuery(world,new CANNON.AABB({
     lowerBound:V(a.lowerBound.x-CUBE_SIZE,a.upperBound.y-.005,a.lowerBound.z-CUBE_SIZE),
-    upperBound:V(a.upperBound.x+CUBE_SIZE,ROOM_HEIGHT,a.upperBound.z+CUBE_SIZE)
+    upperBound:V(a.upperBound.x+CUBE_SIZE,room.height,a.upperBound.z+CUBE_SIZE)
    }),near);
    for(const load of near)if(load.type===CANNON.Body.DYNAMIC&&load.sleepState!==CANNON.Body.AWAKE)load.wakeUp();
    removeGroup(g);retired++;redraw=true;
@@ -12409,7 +12580,7 @@ function tickCeilingFeeders(dt){
   if(created>=2){f.wait=0;continue;}
   if(feederDrops.size>=QBitsCeilingFeeder.limits.loose)f.blocked='Límite de piezas sueltas · esperando espacio';
   else if(!Number.isSafeInteger(serial+1))f.blocked='No quedan identificadores de pieza disponibles';
-  else if((sceneCount??=scenePartCount())>=MAX_QUBITS)f.blocked='Límite de piezas de la sala';
+  else if((sceneCount??=scenePartCount())>=room.partLimit)f.blocked='Límite de piezas de la sala';
   else if(!emitFeederPart(f))f.blocked='Salida ocupada';
   else{f.blocked='';created++;sceneCount++;}
   // A blocked outlet retries at 4 Hz. Never queue missed emissions.
@@ -12419,12 +12590,12 @@ function tickCeilingFeeders(dt){
  if(inspectedFeeder){const label=document.getElementById('feeder-status'),status=feederStatus(inspectedFeeder);if(!label.dataset.error&&label.textContent!==status)label.textContent=status;}
 }
 function serializeCeilingFeeders(){
- const fixtures=ceilingFeeders.map(({id,x,z,height,shape,rate,idle,enabled,wait})=>({id,x,z,height,shape,rate,idle,enabled,wait:Math.max(0,wait)}));
+ const fixtures=ceilingFeeders.map(({id,mount,x,z,height,shape,rate,idle,enabled,wait})=>({id,mount,x,z,height,shape,rate,idle,enabled,wait:Math.max(0,wait)}));
  const loose=Array.from(feederDrops,([g,{source,idle,elapsed}])=>({partId:g.parts[0].id,source,idle,elapsed}));
  return {version:1,fixtures,loose};
 }
 function restoreCeilingFeeders(data){
- clearCeilingFeeders();if(!data||story.scene!=='lab'||puzzle.active||!QBitsCeilingFeeder.validSnapshot(data,groups,ROOM_SIZE/2))return;
+ clearCeilingFeeders();if(!data||story.scene!=='lab'||puzzle.active||!QBitsCeilingFeeder.validSnapshot(data,groups,room))return;
  for(const saved of data.fixtures){const f={...saved};mountFeeder(f);ceilingFeeders.push(f);}
  if(!data.loose.length)return;
  const singles=new Map(groups.filter(g=>g.parts.length===1).map(g=>[g.parts[0].id,g]));
@@ -12484,10 +12655,10 @@ function shelfPartPose(placement,part){return {p:add(placement.p,placement.q.vmu
 function shelfBounds(placement){const model=shelfModel(),points=[];for(const x of [model.bounds.min[0],model.bounds.max[0]])for(const y of [model.bounds.min[1],model.bounds.max[1]])for(const z of [model.bounds.min[2],model.bounds.max[2]])points.push(add(placement.p,placement.q.vmult(V(x,y,z))));return {min:V(...['x','y','z'].map(k=>Math.min(...points.map(p=>p[k])))),max:V(...['x','y','z'].map(k=>Math.max(...points.map(p=>p[k]))))};}
 function shelfPlacementValid(placement,ignore=null,restoring=false){
  if(!placement||!['north','south','east','west'].includes(placement.wall)||![placement.p.x,placement.p.y,placement.p.z,placement.q.x,placement.q.y,placement.q.z,placement.q.w].every(Number.isFinite)||Math.abs(Math.hypot(placement.q.x,placement.q.y,placement.q.z,placement.q.w)-1)>.001)return false;
- const model=shelfModel(),half=ROOM_SIZE/2,axis=['north','south'].includes(placement.wall)?'z':'x',sign=['north','west'].includes(placement.wall)?-1:1;
- if(Math.abs(placement.p[axis]-sign*(half-.004))>.02)return false;
+ const model=shelfModel(),axis=['north','south'].includes(placement.wall)?'z':'x',sign=['north','west'].includes(placement.wall)?-1:1;
+ if(Math.abs(placement.p[axis]-sign*(roomHalf(axis)-.004))>.02)return false;
  const normal=placement.q.vmult(V(0,0,1)),expected=V();expected[axis]=-sign;if(normal.dot(expected)<.9999)return false;
- const bb=shelfBounds(placement);if(bb.min.y<.025||bb.max.y>ROOM_HEIGHT-.025||Math.max(Math.abs(bb.min.x),Math.abs(bb.max.x),Math.abs(bb.min.z),Math.abs(bb.max.z))>half-.001)return false;
+ const bb=shelfBounds(placement);if(bb.min.y<.025||bb.max.y>room.height-.025||!inRoomFootprint(bb,.001))return false;
  for(const other of shelves)if(other!==ignore&&boundsOverlap(bb,shelfBounds(other)))return false;
  for(const part of model.parts){const pose=shelfPartPose(placement,part);
   if(storyWorld.walls.some(w=>(!ignore||w.shelfId!==ignore.id)&&obbOverlap(pose,{p:w.p,q:w.q||Q(),half:w.half,shape:'cube'},.00001)))return false;
@@ -12502,8 +12673,8 @@ function beginShelfPlacement(hit){
 function updateShelfPlacement(hit){
  if(!shelfPreview)return false;
  if(!hit){Object.assign(shelfPreview,{valid:false,reason:'Apunta a una pared cercana.'});return false;}
- const model=shelfModel(),width=model.bounds.max[0]-model.bounds.min[0],height=model.bounds.max[1]-model.bounds.min[1],p=add(hit.p,mul(hit.normal,.004));p.y=clamp(p.y-height/2,.03,ROOM_HEIGHT-height-.03);
- const side=['north','south'].includes(hit.wall)?'x':'z';p[side]=clamp(p[side],-ROOM_SIZE/2+width/2+.03,ROOM_SIZE/2-width/2-.03);
+ const model=shelfModel(),width=model.bounds.max[0]-model.bounds.min[0],height=model.bounds.max[1]-model.bounds.min[1],p=add(hit.p,mul(hit.normal,.004));p.y=clamp(p.y-height/2,.03,room.height-height-.03);
+ const side=['north','south'].includes(hit.wall)?'x':'z';p[side]=clamp(p[side],-roomHalf(side)+width/2+.03,roomHalf(side)-width/2-.03);
  let snapped=false,distance=.24;for(const existing of shelves.filter(s=>s.wall===hit.wall))for(const delta of [V(width+.015,0,0),V(-width-.015,0,0),V(0,height+.015,0),V(0,-height-.015,0)]){const target=add(existing.p,existing.q.vmult(delta)),gap=target.distanceTo(p);if(gap<distance){distance=gap;p.copy(target);snapped=true;}}
  const placement={p,q:hit.q.clone(),wall:hit.wall};Object.assign(shelfPreview,{placement,snapped,valid:shelfPlacementValid(placement),reason:''});if(!shelfPreview.valid)shelfPreview.reason='Deja espacio libre para la repisa.';redraw=true;return shelfPreview.valid;
 }
@@ -12563,7 +12734,7 @@ function withdrawShelf(shelf,cellIndex=0,count=1){
  if(story.scene!=='lab'||puzzle.active||!shelves.includes(shelf))return false;const cell=shelf.cells[cellIndex];if(!cell||!Number.isInteger(count)||count<1||count>cell.items.length)return false;
  pruneRobotArms();if(typeof pruneConveyors==='function')pruneConveyors();
  const items=cell.items.slice(0,count),liveIds=new Set(groups.flatMap(g=>g.parts.map(p=>p.id)));if(items.some(item=>!QBitsOrganizers.validItem(item)||!storedShelfConveyorsValid(item)||item.joints.some(j=>!storedRotorOptionsValid(j))||item.groups.some(g=>g.parts.some(p=>{if(liveIds.has(p.id))return true;liveIds.add(p.id);return false;})))){announce('No se puede recuperar este contenido: hay identidades o datos incompatibles.');return false;}
- if(scenePartCount()+items.reduce((n,item)=>n+QBitsOrganizers.count(item),0)>MAX_QUBITS){announce('No hay capacidad libre en el banco. Guarda otras piezas antes de retirar.');return false;}
+ if(scenePartCount()+items.reduce((n,item)=>n+QBitsOrganizers.count(item),0)>room.partLimit){announce('No hay capacidad libre en el banco. Guarda otras piezas antes de retirar.');return false;}
  const made=[],madeRotors=[],oldContacts=serializeContactState(),origin=shelfCellPoint(shelf,cellIndex),normal=shelf.q.vmult(V(0,0,1)),tangent=shelf.q.vmult(V(1,0,0)),sizes=items.map(shelfItemBounds),spacing=Math.max(...sizes.map(b=>Math.hypot(b.max.x-b.min.x,b.max.z-b.min.z)))+.15,columns=Math.min(5,count);
  const rollback=()=>{madeRotors.forEach(disconnectRotor);made.forEach(removeGroup);restoreContactState(oldContacts);announce('No hay espacio libre delante de la repisa. Aparta los objetos o retira una tanda menor.');return false;};
  for(const [index,item]of items.entries()){
@@ -13394,7 +13565,7 @@ function tickCutters(dt){
    if((target.part.mood.cutPasses||[]).some(mark=>cutterSameStripe(mark,beam)))continue;
    const contact=cutterContact(target,beam,previous.get(target.part.id));if(!contact||cutterOccluded(hit,target,beam,contact,opposite))continue;
    const plan=cutterInputPlan(target);if(!plan)continue;const output=cutterOutputPoses(target,plan);
-   if(scenePartCount()-1+output.length>MAX_QUBITS||output.length&&!creationPosesClear(output,false,{groups:[target.g],tolerance:.002})){run.status='Salida ocupada · libera espacio';continue;}
+   if(output.length>1&&scenePartCount()-1+output.length>room.partLimit||output.length&&!creationPosesClear(output,false,{groups:[target.g],tolerance:.002})){run.status='Salida ocupada · libera espacio';continue;}
    if(gripperSupply(hit).storedJ+1e-10<CUTTER_JOULES){run.enabled=false;run.beam=null;run.status='Sin energía · carga y vuelve a iniciar';break;}
    const original=worldParts(target.g),velocity=target.g.body.velocity.clone(),spin=target.g.body.angularVelocity.clone(),center=target.g.body.position.clone(),made=[];
    const marks=[...(target.part.mood.cutPasses||[]),cutterStripeMark(beam)].slice(-2);
@@ -13936,7 +14107,7 @@ function renderSettingsPreview(time){
   restoreSceneProgram();applyVisualUniforms();gl.bindFramebuffer(gl.FRAMEBUFFER,destination);gl.viewport(0,0,canvas.width,canvas.height);gl.clearColor(1,1,1,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.disable(gl.BLEND);
   gl.uniform1f(uniforms.uAspect,w/h);gl.uniform1f(uniforms.uFocal,heldFocus.focal);gl.uniform3fv(uniforms.uCamera,camera);gl.uniform2f(uniforms.uLook,yaw,pitch);gl.uniform1f(uniforms.uTime,time/1000);gl.uniform1f(uniforms.uGlow,1);gl.uniform1f(uniforms.uFocusMask,0);
   gl.uniform3fv(uniforms['uLightPos[0]'],new Float32Array([0,.4,.6,0,0,0,0,0,0,0,0,0]));gl.uniform3fv(uniforms['uLightColor[0]'],new Float32Array([...visualRGB('pathColor'),0,0,0,0,0,0,0,0,0]));
-  bindGeometry(geometry);gl.uniform1f(uniforms.uKind,0);submitDraw(gl.TRIANGLES,0,vertices.length/6);
+  bindGeometry(geometry);gl.uniform1f(uniforms.uKind,0);submitDraw(gl.TRIANGLES,0,36);
   // White panels close the sample room around the rotating specimen.
   drawBox(V(0,1.4,-1.5),Q(),V(5,2.8,.03),[.94,.95,.94,1]);drawBox(V(-1.6,1.4,0),Q(),V(.03,2.8,4),[.91,.93,.92,1]);
   const q=Q();q.setFromAxisAngle(V(0,1,0),time*.00028);const center=V(0,.3,0),size=V(.6,.6,.6);
@@ -14094,7 +14265,7 @@ function beginVisibilityFrame(){
 }
 function cullingObserverView(){
  const right=V(Math.cos(yaw),0,-Math.sin(yaw)),forward=V(-Math.sin(yaw),0,-Math.cos(yaw));
- const eye=[clamp(camera[0]-forward.x*4+right.x*3,-13.5,13.5),clamp(camera[1]+3,.4,13.5),clamp(camera[2]-forward.z*4+right.z*3,-13.5,13.5)];
+ const eye=[clamp(camera[0]-forward.x*4+right.x*3,-room.width/2+.5,room.width/2-.5),clamp(camera[1]+3,.4,room.height-.5),clamp(camera[2]-forward.z*4+right.z*3,-room.length/2+.5,room.length/2-.5)];
  const target=add(V(...camera),mul(forward,1.7)),d=sub(target,V(...eye));d.normalize();const y=Math.atan2(-d.x,-d.z),p=Math.asin(d.y);
  return {eye,yaw:y,pitch:p,basis:{forward:d,right:V(Math.cos(y),0,-Math.sin(y)),up:V(Math.sin(y)*Math.sin(p),Math.cos(p),Math.cos(y)*Math.sin(p))}};
 }
@@ -14185,7 +14356,7 @@ function renderScene(time=performance.now()){
   gl.uniform2f(uniforms.uLook,cullingLab.renderView?.yaw??yaw,cullingLab.renderView?.pitch??pitch);
   bindGeometry(geometry);
   gl.uniform1f(uniforms.uKind,0);
-  submitDraw(gl.TRIANGLES,0,vertices.length/6);
+  submitDraw(gl.TRIANGLES,0,36);
   drawStoryWorld();drawQubits();drawStoryGlass();
   if(cullingLab.renderView)drawCullingObserver();
   if(focused)compositeHeldFocus(destination);
@@ -14335,10 +14506,10 @@ function frame(time=performance.now()) {
   if (Math.abs(nextHeight - bobHeight) + Math.abs(nextSide - bobSide) > 0.000001) redraw = true;
   bobHeight = Math.abs(nextHeight) < 0.000001 ? 0 : nextHeight;
   bobSide = Math.abs(nextSide) < 0.000001 ? 0 : nextSide;
-  const cameraLimit = ROOM_SIZE / 2 - PLAYER_RADIUS;
-  camera[0] = Math.max(-cameraLimit, Math.min(cameraLimit, position[0] + Math.cos(yaw) * bobSide));
+  const cameraLimitX=room.width/2-PLAYER_RADIUS, cameraLimitZ=room.length/2-PLAYER_RADIUS;
+  camera[0] = Math.max(-cameraLimitX, Math.min(cameraLimitX, position[0] + Math.cos(yaw) * bobSide));
   camera[1] = openingFloorHeight() + posture.height + bobHeight;
-  camera[2] = Math.max(-cameraLimit, Math.min(cameraLimit, position[2] - Math.sin(yaw) * bobSide));
+  camera[2] = Math.max(-cameraLimitZ, Math.min(cameraLimitZ, position[2] - Math.sin(yaw) * bobSide));
   updateHeldFocus(dt,active);
   if(shelfPreview&&!frozen){updateShelfPlacement(wallAim());redraw=true;}
   if(creationPreview&&!frozen){updateCreationPlacement();redraw=true;}
@@ -14399,7 +14570,7 @@ const SCENE_AUTHORING_CATALOG=Object.freeze([
  {id:'servo-hinge',label:'Servo bisagra',category:'Mecanismos',kind:'blueprint'},
  {id:'propeller',label:'Hélice de T-bits',category:'Mecanismos',kind:'blueprint'},
  {id:'drone',label:'Dron con batería descargada',category:'Mecanismos',kind:'blueprint'},
- {id:'ceiling-feeder',label:'Toma de techo',category:'Equipo',kind:'fixture'},
+ {id:'ceiling-feeder',label:'Toma de Q-bits',category:'Equipo',kind:'fixture'},
  {id:'assembler',label:'Acoplador',category:'Mecanismos',kind:'blueprint'},
  {id:'belt-straight',label:'Cinta recta con soportes',category:'Mecanismos',kind:'blueprint'},
  {id:'belt-left',label:'Cinta · esquina izquierda',category:'Mecanismos',kind:'blueprint'},
@@ -14504,13 +14675,13 @@ function spawnSceneAuthoringItem(id,xyz,angle=0){
  if(!sceneAuthoringActive||story.scene!=='lab'||story.mode!=='playing'||story.transition)return {ok:false,error:'Entra al Editor de escenas y vuelve a la simulación para colocar piezas.'};
  const item=SCENE_AUTHORING_CATALOG.find(entry=>entry.id===id);
  if(!item)return {ok:false,error:'Elemento desconocido.'};
- if(!Array.isArray(xyz)||xyz.length!==3||xyz.some(n=>!Number.isFinite(n)||Math.abs(n)>12)||!Number.isFinite(angle)||Math.abs(angle)>360)return {ok:false,error:'Posición o giro fuera de límites.'};
+ if(!Array.isArray(xyz)||xyz.length!==3||xyz.some(n=>!Number.isFinite(n))||!inRoomXZ(xyz[0],xyz[2])||xyz[1]<0||xyz[1]>room.height||!Number.isFinite(angle)||Math.abs(angle)>360)return {ok:false,error:'Posición o giro fuera de límites.'};
  if(item.kind==='fixture'){
   const point=V(xyz[0],xyz[1]||QBitsCeilingFeeder.defaults.height,xyz[2]),issue=feederPlacementIssue(point);
   if(issue)return {ok:false,error:issue};
   createCeilingFeeder(point);return {ok:true,name:item.label,pieces:scenePartCount()};
  }
- if(scenePartCount()>=MAX_QUBITS)return {ok:false,error:'Se alcanzó el límite de piezas.'};
+ if(scenePartCount()>=room.partLimit)return {ok:false,error:'Se alcanzó el límite de piezas.'};
  let result;
  if(item.kind==='piece'){
   const shape=id,p=V(xyz[0],xyz[1]+unitGroundHeight(shape)+.003,xyz[2]);

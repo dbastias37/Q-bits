@@ -124,6 +124,11 @@
     check(Array.isArray(snapshot.groups) && Array.isArray(snapshot.cargos), 'Faltan las piezas o los cuerpos del banco.');
     check(record(snapshot.settings) && record(snapshot.moodSettings), 'Falta la configuración del banco.');
     check(arrayVector(snapshot.position, 3) && finite(snapshot.yaw) && finite(snapshot.pitch), 'La posición del jugador no es válida.');
+    if(own(snapshot,'room')){
+      const roomModel=load ? load('./lab-room.js') : root.QBitsLabRoom;
+      check(roomModel?.valid(snapshot.room),'Las medidas o los límites de la sala no son válidos.');
+      check(snapshot.cargos.length<=roomModel.ranges.cargoLimit[1],'Hay demasiados cuerpos de carga.');
+    }
     const unitIds = new Set(), cargoIds = new Set();
     for (const group of snapshot.groups) {
       check(record(group) && Array.isArray(group.parts) && group.parts.length > 0, 'Hay un grupo de piezas inválido.');
@@ -141,7 +146,7 @@
     }
     if (own(snapshot,'ceilingSupply')) {
       const feederModel=load ? load('./ceiling-feeder.js') : root.QBitsCeilingFeeder;
-      check(feederModel?.validSnapshot(snapshot.ceilingSupply,snapshot.groups),'Los datos de la toma de techo no son válidos.');
+      check(feederModel?.validSnapshot(snapshot.ceilingSupply,snapshot.groups,snapshot.room),'Los datos de la toma de Q-bits no son válidos.');
     }
     for (const key of ['rotors', 'rotorSets', 'robotArms', 'conveyors', 'shelves', 'disassembly']) {
       if (own(snapshot, key)) check(Array.isArray(snapshot[key]), 'La colección '+key+' no es válida.');
@@ -179,7 +184,7 @@
       check(record(snapshot[key]), 'El estado de '+key+' del inicio no es válido.');
       for (const list of lists) emptyOpeningList(snapshot[key], list);
     }
-    check(!own(snapshot,'ceilingSupply'), 'El primer ciclo no admite tomas de techo.');
+    check(!own(snapshot,'ceilingSupply')&&!own(snapshot,'room'), 'El primer ciclo utiliza su propia sala de suministro.');
     const live = new Map();
     for (const group of snapshot.groups) {
       live.set(group.parts[0].id, group);

@@ -1,9 +1,9 @@
 (function(root, factory) {
   'use strict';
-  const model = factory();
+  const model = factory(() => typeof module === 'object' && module.exports ? require('./lab-room.js') : root.QBitsLabRoom);
   if (typeof module === 'object' && module.exports) module.exports = model;
   else root.QBitsCeilingFeeder = model;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function() {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function(roomModel) {
   'use strict';
   const limits = Object.freeze({fixtures:12, loose:64, minHeight:2, maxHeight:3, maxRate:60, maxIdle:600});
   const defaults = Object.freeze({height:2.5, shape:'cube', rate:12, idle:30, enabled:true});
@@ -11,23 +11,59 @@
   const width = .42, depth = .34, curtainY = .035;
   const id = n => Number.isSafeInteger(n) && n > 0;
   const integer = (n, max) => Number.isInteger(n) && n >= 1 && n <= max;
-  const validHeight = h => Number.isFinite(h) && h >= limits.minHeight && h <= limits.maxHeight && Math.round(h*10)/10 === h;
-  function validSettings(s) {
-    return !!s && typeof s.shape === 'string' && Object.hasOwn(shapes,s.shape) && validHeight(s.height) &&
+  const wallLength = .42, wallSpeed = 1.65, wallVerticalSpeed = -.08;
+  // The horizontal normal points into the room. Local +Y runs back into the support.
+  const walls = Object.freeze({north:{x:0,z:1}, south:{x:0,z:-1}, west:{x:1,z:0}, east:{x:-1,z:0}});
+  function heightRange(mount,room) {
+    return mount === 'ceiling' ? [limits.minHeight,limits.maxHeight] : [.3,room.height-.3];
+  }
+  function validHeight(h,mount='ceiling',room=roomModel().defaults) {
+    const [min,max]=heightRange(mount,room);
+    return Number.isFinite(h) && h>=min && h<=max && Math.round(h*10)/10===h;
+  }
+  function validSettings(s,mount='ceiling',room=roomModel().defaults) {
+    return !!s && typeof s.shape === 'string' && Object.hasOwn(shapes,s.shape) && validHeight(s.height,mount,room) &&
       integer(s.rate,limits.maxRate) && integer(s.idle,limits.maxIdle) && typeof s.enabled === 'boolean';
   }
-  function fitsRoom(x,z,half) {
-    return Number.isFinite(x) && Number.isFinite(z) && Math.abs(x)+width/2 < half-.002 && Math.abs(z)+depth/2 < half-.002;
+  function mouth(mount,x,height,z,room) {
+    const n=walls[mount];
+    return {mount,height,x:n?.x ? -n.x*(room.width/2-wallLength) : x,
+      z:n?.z ? -n.z*(room.length/2-wallLength) : z};
   }
-  function overlap(a,b) { return Math.abs(a.x-b.x) < width+.002 && Math.abs(a.z-b.z) < depth+.002; }
-  function validSnapshot(data, groups, roomHalf=14) {
+  function localBox(mount,box) {
+    const n=walls[mount];
+    if (!n) return box;
+    const [x,y,z,w,h,d]=box;
+    return [n.z*x-n.x*y,z,-n.x*x-n.z*y,n.x?h:w,d,n.z?h:w];
+  }
+  function bounds(f,room) {
+    const length=walls[f.mount] ? wallLength : room.height-f.height;
+    const [x,y,z,w,h,d]=localBox(f.mount,[0,length/2,0,width,length,depth]);
+    return {min:{x:f.x+x-w/2,y:f.height+y-h/2,z:f.z+z-d/2},
+      max:{x:f.x+x+w/2,y:f.height+y+h/2,z:f.z+z+d/2}};
+  }
+  function fits(f,room) {
+    const mount=f.mount===undefined?'ceiling':f.mount;
+    if (mount!=='ceiling' && !Object.hasOwn(walls,mount) || !validHeight(f.height,mount,room) ||
+        !Number.isFinite(f.x) || !Number.isFinite(f.z)) return false;
+    const p=mouth(mount,f.x,f.height,f.z,room);
+    if (Math.abs(f.x-p.x)>1e-6 || Math.abs(f.z-p.z)>1e-6) return false;
+    const n=walls[mount];
+    if (n) return n.x ? Math.abs(f.z)+width/2 < room.length/2-.002 : Math.abs(f.x)+width/2 < room.width/2-.002;
+    return Math.abs(f.x)+width/2 < room.width/2-.002 && Math.abs(f.z)+depth/2 < room.length/2-.002;
+  }
+  function overlap(a,b,room) {
+    const A=bounds(a,room),B=bounds(b,room);
+    return ['x','y','z'].every(k=>A.min[k]<B.max[k]+.002 && B.min[k]<A.max[k]+.002);
+  }
+  function validSnapshot(data, groups, room=roomModel().defaults) {
     if (!data || data.version !== 1 || !Array.isArray(data.fixtures) || data.fixtures.length > limits.fixtures ||
         !Array.isArray(data.loose) || data.loose.length > limits.loose) return false;
     const seen = new Set();
     for (const [i,f] of data.fixtures.entries()) {
-      if (!validSettings(f) || !id(f.id) || seen.has(f.id) || !fitsRoom(f.x,f.z,roomHalf) ||
+      if (!f || !validSettings(f,f.mount,room) || !id(f.id) || seen.has(f.id) || !fits(f,room) ||
           !Number.isFinite(f.wait) || f.wait < 0 || f.wait > 60/f.rate + 1e-8 ||
-          data.fixtures.slice(0,i).some(other=>overlap(f,other))) return false;
+          data.fixtures.slice(0,i).some(other=>overlap(f,other,room))) return false;
       seen.add(f.id);
     }
     if (!data.loose.length) return true;
@@ -53,5 +89,5 @@
     metal.push(...ring(.394,.314,.302,.222,.029,.008),[0,length-.017,0,width,.034,depth]);
     return {white,metal,rubber,solid:[shaft,...walls,...rim]};
   }
-  return Object.freeze({limits,defaults,shapes,width,depth,curtainY,geometry,validSettings,validHeight,fitsRoom,overlap,validSnapshot});
+  return Object.freeze({limits,defaults,shapes,width,depth,curtainY,geometry,validSettings,validHeight,heightRange,wallLength,wallSpeed,wallVerticalSpeed,walls,mouth,localBox,bounds,fits,overlap,validSnapshot});
 });

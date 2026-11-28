@@ -82,6 +82,11 @@
     #detach-menu button, #command-menu button { display: block; width: 100%; border: 0; background: none; padding: 6px 0; text-align: left; color: #252b2f; font: inherit; text-shadow: inherit; cursor: pointer; }
     #detach-menu button:hover, #command-menu button:hover, #detach-menu button:focus-visible, #command-menu button:focus-visible { background: none; text-decoration: underline; outline: none; }
     #command-menu button:disabled { opacity: .4; cursor: default; text-decoration: none; }
+    #room-settings {padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid #bac5c1;}
+    .room-dimensions,.room-quotas {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+    .room-quotas {grid-template-columns:repeat(2,minmax(0,1fr));}
+    #room-settings input {box-sizing:border-box;min-width:0;padding:4px;}
+    #room-status {display:block;margin-top:5px;}
     #feeder-form {background:#f7f9f7f2;padding:10px 14px;color:#293338;text-shadow:none;}
     #feeder-form label {display:flex;align-items:center;gap:6px;justify-content:space-between;margin:5px 0;font:12px/1.5 Arial,sans-serif;}
     #feeder-form label:has(input[type=checkbox]) {justify-content:flex-start;}
@@ -714,6 +719,23 @@ body:not([data-game-mode='playing']) #opening-status,body[data-transitioning='tr
       <p>R vuelve al punto de partida y reinicia el recorrido. Si un objeto bloquea el paso, se busca otro camino o se detiene.</p><button id="stop" type="button">Detener selección</button>
     </div>
     <div id="page-cargo" role="tabpanel" hidden>
+      <form id="room-settings" aria-labelledby="room-settings-title">
+        <h3 id="room-settings-title">Sala del banco</h3>
+        <div class="room-dimensions">
+          <label>Ancho (m)<input id="room-width" type="number" min="8" max="40" step="1" value="28" required></label>
+          <label>Largo (m)<input id="room-length" type="number" min="8" max="40" step="1" value="28" required></label>
+          <label>Alto (m)<input id="room-height" type="number" min="4" max="18" step="1" value="14" required></label>
+        </div>
+        <p>Ancho y largo de 8 a 40 m. Alto de 4 a 18 m.</p>
+        <div class="room-quotas">
+          <label>Límite de piezas (1–2.000)<input id="room-partLimit" type="number" min="1" max="2000" step="1" value="2000" required></label>
+          <label>Límite de cuerpos de carga (1–64)<input id="room-cargoLimit" type="number" min="1" max="64" step="1" value="12" required></label>
+        </div>
+        <output id="room-population"></output>
+        <p>Las piezas de un montaje cuentan por separado. Al bajar un límite, lo que ya construiste se conserva.</p>
+        <button type="submit">Aplicar a la sala</button>
+        <output id="room-status" aria-live="polite"></output>
+      </form>
       <p id="cargo-editing"></p>
       <label><svg class="tablet-icon" aria-hidden="true"><use href="assets/tablet-instruments.svg#instrument-range"/></svg>Lado de los nuevos cuerpos <output id="cargoSideValue"></output><input id="cargoSide" type="range" min="1" max="12" step="1" value="4"></label>
       <p>Un paso equivale al lado de un Q-bit. Los tres lados siempre tienen la misma longitud.</p>
@@ -763,8 +785,8 @@ body:not([data-game-mode='playing']) #opening-status,body[data-transitioning='tr
         <p>Para prolongar una cinta, apunta cerca de su flecha de salida y mantén Shift. La vista previa se alinea con la conexión: confirma con clic sin soltar Shift. Se unen las bases y se conservan los rodillos. Las repisas se colocan en paredes; depósito, enfriador y cuerpo sólido van en el suelo. La tarjeta Mesa de trabajo permite colocarla o reubicarla. Haz clic derecho en una zona libre de la mesa para retirarla. El clic derecho sobre una pieza abre sus propiedades y E abre el taller.</p>
         <p>Con una pieza en la mano: rueda abajo acerca y rueda arriba aleja. Configuración → Juego permite invertir la distancia y el giro por separado. N, B y los botones Crear también preparan una vista previa.</p>
       </details>
-      <details><summary>Toma de techo · suministro vertical</summary>
-        <p>Abre Q → Equipo → Toma de techo. Apunta al punto de entrega en el piso o sobre una cinta, ajusta la altura con la rueda y coloca con clic. También puedes apuntar directamente al techo.</p>
+      <details><summary>Toma de Q-bits</summary>
+        <p>Abre Q → Equipo → Toma de Q-bits. Apunta a una pared a la altura deseada para lanzar las piezas hacia la sala. El arco azul estima la caída hasta el piso. Apunta al techo, al piso o a una cinta para una entrega vertical. Ajusta la altura con la rueda y coloca con clic.</p>
         <p>Desde el piso, haz clic en la boca negra para elegir la pieza, ajustar las piezas por minuto y el tiempo que puede quedar en el piso. Pulsa Aplicar. La cuenta empieza de nuevo si la mano, una pinza o una cinta dejan la pieza suelta en el piso. Las piezas que incorpores a un montaje se conservan.</p>
       </details>
       <details><summary>Servos · pivote, bisagra y primera extremidad</summary>
@@ -899,8 +921,8 @@ body:not([data-game-mode='playing']) #opening-status,body[data-transitioning='tr
   <script src="assets/js/opening.js?v=20261116-block-joins-1" defer></script>
   <script src="assets/js/servo-panel.js?v=20261119-marcha-2" defer></script>
   <script src="assets/js/families-ui.js?v=20261122-families-1" defer></script>
-  <script src="assets/js/scene-files.js?v=20261126-laser-mounted-3" defer></script>
-  <script src="assets/js/scene-editor-ui.js?v=20261126-laser-mounted-3" defer></script>
-  <script src="assets/js/boot.js?v=20261128-acoplador-flujo-1" defer></script>
+  <script src="assets/js/scene-files.js?v=20261128-toma-sala-1" defer></script>
+  <script src="assets/js/scene-editor-ui.js?v=20261128-toma-sala-1" defer></script>
+  <script src="assets/js/boot.js?v=20261128-toma-sala-2" defer></script>
 </body>
 </html>

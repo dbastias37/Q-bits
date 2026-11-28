@@ -17,14 +17,33 @@ Para alimentar máquinas separadas desde un depósito grande, consulta [Cables y
 
 Las repisas siguen colocándose en paredes. Depósitos, enfriadores y cuerpos sólidos van en el suelo. **Mesa de trabajo** prepara una vista previa para colocarla o reubicarla. Clic derecho sobre una pieza de la mesa abre sus opciones. **E** abre el taller. Para retirarla, haz clic derecho sobre una zona libre de la mesa y elige **Retirar mesa**. Los cables primero colocan sus cubos y después abren el tendido. **N, B y los botones Crear** usan también la colocación previa. Los planos de construcción siguen necesitando material existente.
 
-### Toma de techo
+### Toma de Q-bits
 
-1. Abre **Q → Equipo → Toma de techo**. Apunta a la superficie donde quieras recibir las piezas o al techo sobre ese punto. La línea azul marca la vertical. La rueda ajusta la altura de la boca entre 2 y 3 m, en pasos de 10 cm. **Shift** alinea el centro con la cuadrícula.
-2. Confirma con clic. La toma empieza a entregar cubos a 12 piezas por minuto. Mira la boca desde el piso y haz clic para abrir sus ajustes.
-3. Elige cubo, pirámide cuadrada, T-bit triangular o enganche. Ajusta entre 1 y 60 piezas por minuto y entre 1 y 600 segundos de espera en el piso. **Aplicar** guarda los ajustes. **Emisión activa** permite detener y reanudar el suministro.
-4. La espera inicial es de 30 segundos de reposo en el piso. Una cinta puede llevarse la pieza y descargarla más lejos. La selección, el agarre y las órdenes protegen la pieza mientras la usas. Si vuelve a quedar suelta y quieta en el piso, el plazo empieza desde cero. Una pieza unida a un montaje o adaptada en la mesa se conserva. Retirar la toma deja que las piezas sueltas completen su espera.
+Elige **Toma de Q-bits** en **Q → Equipo** o en el catálogo del editor 3D.
 
-La boca ocupada espera. Caben hasta 12 tomas por sala y 64 piezas sueltas emitidas entre todas. Al liberarse espacio, la emisión se reanuda al ritmo configurado. La partida conserva los ajustes y la espera transcurrida de cada pieza.
+- **En pared**, apunta a la altura donde quieres la boca. La rueda ajusta de 10 en 10 cm. Puedes acercarla hasta 30 cm del piso o del techo. La curva azul estima dónde aterrizará un cubo en el piso con la gravedad actual. Una cinta que se cruce antes puede recogerlo en el aire.
+- **En techo**, apunta al techo o al punto de entrega sobre el piso o una cinta. La línea marca la caída vertical. La rueda ajusta la altura de la boca entre 2 y 3 m. **Shift** alinea la colocación con la cuadrícula.
+
+Confirma con clic. Para empezar una línea, coloca la toma en una pared a **0,8 m**, pon un tramo de cinta con soportes en el sentido del lanzamiento y acerca su entrada a la boca. Enciende la cinta y ajusta la altura mirando dónde toca el primer cubo.
+
+Haz clic en la boca instalada para elegir la forma, ajustar la altura o detener el suministro. Puedes pedir cubos, pirámides cuadradas, T-bits triangulares o enganches. El ritmo inicial es de 12 piezas por minuto y admite de 1 a 60. El tiempo de retiro se mide en reposo sobre el piso y admite de 1 a 600 segundos, con 30 segundos al empezar. Si una mano, pinza o cinta vuelve a dejar suelta la pieza, el plazo empieza de nuevo. Una pieza unida a un montaje o adaptada en la mesa se conserva.
+
+Una boca ocupada espera. Caben 12 tomas y hasta 64 piezas sueltas de suministro entre todas, dentro del límite de piezas de la sala. Cuando se libera espacio, la emisión se reanuda.
+
+### Medidas y población de la sala
+
+En el banco o el editor, abre **P → Cuerpos → Cuerpos** y busca **Sala del banco**. Escribe los valores y pulsa **Aplicar a la sala**.
+
+| Ajuste | Rango | Valor inicial |
+| --- | --- | --- |
+| Ancho y largo, por separado | 8–40 m | 28 m cada uno |
+| Alto | 4–18 m | 14 m |
+| Piezas | 1–2.000 | 2.000 |
+| Cuerpos de carga | 1–64 | 12 |
+
+El contador incluye las piezas de los montajes, las familias y el desarme pendiente. Los cuerpos de carga tienen su propio cupo. Puedes bajar ambos límites con la sala llena. Las piezas y cargas existentes se conservan y vuelves a crear cuando hay cupo.
+
+Al cambiar las medidas, las tomas y repisas siguen su pared o techo. Si un objeto, el jugador o una marca del editor quedara fuera, el panel indica qué despejar y conserva la sala anterior. La partida y el archivo de escena guardan las medidas, los límites y el montaje de cada toma.
 
 ### Construir sobre las caras de un montaje
 

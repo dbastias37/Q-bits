@@ -78,7 +78,7 @@
     }
     if(snap.ceilingSupply){
       systems.ceilingFeeders=snap.ceilingSupply.fixtures.length;
-      for(const f of snap.ceilingSupply.fixtures)mechanisms.push({type:'ceiling-feeder',id:f.id,position:[f.x,f.height,f.z],shape:f.shape,rate:f.rate,idle:f.idle,enabled:f.enabled});
+      for(const f of snap.ceilingSupply.fixtures)mechanisms.push({type:'ceiling-feeder',id:f.id,mount:f.mount||'ceiling',position:[f.x,f.height,f.z],shape:f.shape,rate:f.rate,idle:f.idle,enabled:f.enabled});
     }
     const cargos=(snap.cargos||[]).map(c=>({id:c.id,side:c.side,required:c.required,color:c.color,position:c.p}));
     if(snap.powerNetwork){systems.cables=(snap.powerNetwork.cables||[]).length;systems.reservoirs=(snap.powerNetwork.reservoirs||[]).length;}
