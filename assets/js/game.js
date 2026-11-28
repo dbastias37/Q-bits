@@ -617,7 +617,9 @@ function resetMouseCaptureRequest() {
 }
 
 function lockFailed() {
-  closeUnitRadial(false);
+  // Chromium can deliver an earlier raw-input error after fallback capture.
+  // A placement already chosen in the catalogue still belongs to the player.
+  if(radialOpen())closeUnitRadial(false);
   resetMouseCaptureRequest();
   if (document.pointerLockElement === canvas) return;
   locked = false;
@@ -1222,6 +1224,8 @@ const commandMenu=document.querySelector('#command-menu');
 let multiSelection=[],marquee=null,hoverPointer=null,detachChoice=null;
 let partSelection=null,lastBrushDirection=null;
 const menu=document.querySelector('#detach-menu'),selectionRect=document.querySelector('#selection-rect');
+const ceilingFeeders=[],feederDrops=new Map(),feederGeometryCache=new Map();
+let feederCursor=0,inspectedFeeder=null;
 let serial=0, held=null, selected=null, snap=null, accumulator=0, simTime=0, noticeTimer;
 const panel=document.querySelector('#panel'),targetLabel=document.querySelector('#target'),crosshair=document.querySelector('#crosshair');
 function installCannonGeometryCompatibility(){
@@ -1492,7 +1496,7 @@ function makeGroup(parts,reference=Q(),velocity=V(),spin=V(),retiredShapes=null)
  const g={body,parts:local,partShapes,materialShapeCount,route:null,pin:null};body.qubitGroup=g;body.addEventListener('wakeup',()=>{g.wakeMechanicalComponent=true;});g.block=analyzeBlock(g);groups.push(g);invalidateMechanicalIndex();registerSpeechGroup(g);registerTrajectoryGroup(g);for(const p of local)if(p.mood.cutPasses?.length)cutterPassParts.add(p.id);return g;
 }
 function addQubit(p,weight=settings.mass,shape='cube'){return makeGroup([{id:++serial,weight,shape:normalizeUnitShape(shape),p:V(...p),q:Q()}]);}
-function removeGroup(g){if(partSelection&&(partSelection.root===g||partSelection.members.has(g)))clearPartSelection();trajectoryBeforeRemoveGroup(g);materializeConveyorsForGroup(g);disposeRigidCubeBatch(g);disposeRigidOutline(g);delete g.batteryGeometryCache;delete g.partQueryCache;robotBeforeRemoveGroup(g);invalidateMechanicalIndex();resetBatteryLiquids(g.body);invalidateRotorBody(g);undockCampaignGroup(g);removeSpeechGroup(g);leaveHaul(g);stopRoute(g);world.removeBody(g.body);const i=groups.indexOf(g);if(i>=0)groups.splice(i,1);invalidateMechanicalIndex();if(selected?.g===g)selected=null;multiSelection=multiSelection.filter(item=>item!==g);}
+function removeGroup(g){feederDrops.delete(g);if(partSelection&&(partSelection.root===g||partSelection.members.has(g)))clearPartSelection();trajectoryBeforeRemoveGroup(g);materializeConveyorsForGroup(g);disposeRigidCubeBatch(g);disposeRigidOutline(g);delete g.batteryGeometryCache;delete g.partQueryCache;robotBeforeRemoveGroup(g);invalidateMechanicalIndex();resetBatteryLiquids(g.body);invalidateRotorBody(g);undockCampaignGroup(g);removeSpeechGroup(g);leaveHaul(g);stopRoute(g);world.removeBody(g.body);const i=groups.indexOf(g);if(i>=0)groups.splice(i,1);invalidateMechanicalIndex();if(selected?.g===g)selected=null;multiSelection=multiSelection.filter(item=>item!==g);}
 function corners(pose){if(isTBit(pose))return unitProfile(pose).vertices.map(v=>add(pose.p,pose.q.vmult(v)));const out=[],half=pose.half||V(HALF,HALF,HALF);for(const x of [-half.x,half.x])for(const y of [-half.y,half.y])for(const z of [-half.z,half.z])out.push(add(pose.p,pose.q.vmult(V(x,y,z))));return out;}
 // Rigid geometry is immutable between makeGroup/removeGroup. A translation
 // never changes its rotated extents. Keep a bounded set of exact orientations
@@ -1698,6 +1702,7 @@ function quickCatalogue(){
  ...['pivot','hinge'].map(kind=>({id:'quick-servo-'+kind,title:kind==='pivot'?'Servo pivote':'Servo bisagra',record:servoBlueprintTemplate(kind),subtitle:'Articulación · apagada'})),
  {id:'quick-propeller',title:'Hélice modular',record:propellerBlueprintTemplate()},{id:'quick-drone',title:'Dron de prueba',record:propellerBlueprintTemplate(true),subtitle:'1 hélice + batería I'}, {id:'quick-arm',title:'Brazo Q-bits',record:robotArmBlueprintTemplate()},...['straight','left','right'].map((kind,i)=>({id:'quick-conveyor-'+kind,title:['Cinta recta','Esquina izquierda','Esquina derecha'][i],record:conveyorBlueprintTemplate(kind)})),
  {id:'quick-gripper',title:'Cubo de agarre',record:quickSingleRecord('gripper')},...[1,2,3].map(n=>({id:'quick-battery-'+n,title:'Batería '+['','I','II','III'][n],record:quickSingleRecord('battery',n),subtitle:'100 % · apagada'})),
+ {id:'quick-ceiling-feeder',title:'Toma de techo',action:'ceiling-feeder',subtitle:'Suministro vertical · rueda para ajustar la altura'},
  {id:'quick-assembler',title:'Acoplador',record:assemblerBlueprintTemplate(),subtitle:'Dos entradas · una salida reversible'},
  {id:'quick-cutter',title:'Láser de corte',record:cutterBlueprintTemplate(),subtitle:'Cubo adaptable · apagado'},
  {id:'quick-sensor',title:'Sensor configurable',action:'sensor'},{id:'quick-cargo',title:'Cuerpo sólido',action:'cargo'},{id:'quick-cooler',title:'Enfriador',action:'cooler'},{id:'quick-shelf',title:'Repisa',action:'shelf',subtitle:'Colocar en pared'},
@@ -1707,6 +1712,12 @@ function quickCatalogue(){
  return list;
 }
 function quickProfile(entry){
+ if(entry.action==='ceiling-feeder'){
+  const vertices=[],faces=[],cube=unitProfile('cube');
+  const boxes=QBitsCeilingFeeder.geometry(2.5,3.1).white;
+  for(const [x,y,z,w,h,d] of boxes){const offset=vertices.length;for(const v of cube.vertices)vertices.push([x+v.x*w/CUBE_SIZE,y+v.y*h/CUBE_SIZE,z+v.z*d/CUBE_SIZE]);for(const face of cube.faces)faces.push(face.map(i=>i+offset));}
+  return {...entry,section:'quick',vertices,faces,color:[192,204,205],description:'Apunta al piso, a una cinta o al techo. Rueda para ajustar la altura. Haz clic en la boca para configurar el suministro.'};
+ }
  if(entry.action==='power-reservoir'){const vertices=[],faces=[];for(const y of [-1,1])for(let i=0;i<12;i++){const a=i*Math.PI/6;vertices.push([Math.cos(a)*.42,y,Math.sin(a)*.42]);}for(let i=0;i<12;i++)faces.push([i,(i+1)%12,(i+1)%12+12,i+12]);faces.push(Array.from({length:12},(_,i)=>11-i),Array.from({length:12},(_,i)=>i+12));return {id:entry.id,title:entry.title,subtitle:entry.subtitle,section:'quick',vertices,faces,color:[65,145,112],description:'Depósito de suelo con líquido visible. Clic derecho: encender. Conecta una máquina con un cable de Q-bits. La recarga de prueba se hace apagado.'};}
  if(entry.action==='power-cable'){const profile=unitProfile('cube');return {id:entry.id,title:entry.title,subtitle:entry.subtitle,section:'quick',vertices:profile.vertices.map(v=>[v.x/CUBE_SIZE*2,v.y/CUBE_SIZE*.25,v.z/CUBE_SIZE]),faces:profile.faces.map(f=>f.slice()),color:[185,119,44],description:'Crea los cubos y desenróllalos: clic en salida, apoyos opcionales en suelo o pared y clic en entrada. Esc conserva el material; clic derecho deshace.'};}
  const source=entry.record?.groups.flatMap(g=>g.parts)||entry.shape?.parts||[{shape:'cube',p:[0,0,0],q:[0,0,0,1]}],vertices=[],faces=[];
@@ -1733,6 +1744,10 @@ function beginCreationPlacement(id,plan=null,options={}){
  if(!plan&&!creationPlacementAllowed(id))return false;
  cancelUnitCreation();const entry=quickEntries.get(id);
  if(entry?.action==='shelf')return beginShelfPlacement(wallAim());
+ if(entry?.action==='ceiling-feeder'){
+  pendingUnitCreation=id;creationPreview={id,entry,elevation:options.height??QBitsCeilingFeeder.defaults.height,poses:[],valid:false};
+  updateCreationPlacement();announce('Toma de techo · apunta al lugar de caída · rueda: altura · clic: colocar');return true;
+ }
  const record=plan?.mechanism||creationRecord(id);let local=[];
  if(record){
   if(!plan){for(const joint of record.joints)joint.enabled=false;for(const part of record.groups.flatMap(g=>g.parts))if(part.battery)part.battery.enabled=false;}
@@ -1917,6 +1932,7 @@ function fillFaceBuild(preview){
 }
 function updateCreationPlacement(hit){
  const preview=creationPreview;if(!preview)return false;
+ if(preview.entry?.action==='ceiling-feeder')return updateFeederPlacement(preview,hit);
  if(faceBuildActive(preview))return updateFaceBuild(preview);
  if(preview.faceBuild)delete preview.faceBuild;
  if(hit===undefined)hit=creationSurfaceAim();
@@ -1951,6 +1967,12 @@ function updateCreationPlacement(hit){
 function confirmCreationPlacement(){
  if(!creationPreview||!creationPreview.plan&&!creationPlacementAllowed(creationPreview.id)&&!(sceneAuthoringActive&&creationPreview.authoring))return null;
  if(faceBuildActive(creationPreview)){startFaceStroke(creationPreview);endFaceStroke();return null;}
+ if(creationPreview.entry?.action==='ceiling-feeder'){
+  if(!updateFeederPlacement(creationPreview,undefined,true)){announce(creationPreview.reason);return null;}
+  const fixture=createCeilingFeeder(creationPreview.point);
+  if(fixture){cancelUnitCreation();announce('Toma instalada · clic en la boca para configurar el suministro');}
+  return fixture;
+ }
  // Refresh on the actual click: a moving obstacle or released Shift invalidates old previews.
  if(!updateCreationPlacement()){announce(creationPreview.reason);return null;}
  const preview=creationPreview,{entry,record,point,q}=preview,before=new Set(groups);let made=null;
@@ -1977,6 +1999,7 @@ function confirmCreationPlacement(){
  announce((preview.authoringName||creationTitle(preview.id))+(connected?' colocado y conectado':preview.link?' colocado · no se pudo unir; revisa las caras':' colocado')+(record?' · motores detenidos':''));redraw=true;return made;
 }
 function drawCreationPlacement(){
+ if(creationPreview?.entry?.action==='ceiling-feeder'){drawFeederPreview(creationPreview);return;}
  if(!creationPreview||!creationPreview.poses.length&&!creationPreview.faceBuild?.parts.length)return;
  if(creationPreview.grid){
   const {x,z}=creationPreview.point,y=.001,span=4*CUBE_SIZE,lines=[];
@@ -2241,7 +2264,7 @@ function grabQubit(hitOverride=null){
  const list=carrySet(hit),weight=list.reduce((n,g)=>n+totalWeight(g),0);
  if(runningConveyorForGroups(list)){selected=hit;announce('Cinta en funcionamiento · primero apaga o desconecta la cinta para moverla.');return;}
  if(!canCarry(list)){announce('Peso '+formatWeight(weight)+' u · capacidad '+formatWeight(settings.maxCarry)+' u. Ajustable en P.');return;}
- for(const member of list){const run=mechanismRuns.get(member);if(run)run.repositioned=true;}
+ for(const member of list){feederDrops.delete(member);const run=mechanismRuns.get(member);if(run)run.repositioned=true;}
  robotStopForGroups(list);
  if(story.ready&&story.scene==='intro'&&hit.g===storyGuide()){hit.g.storyFloat=false;hit.g.body.type=CANNON.Body.DYNAMIC;hit.g.body.updateMassProperties();}
  stopRotorsForManipulation(list);
@@ -3449,7 +3472,7 @@ function gripperGrab(partOrId,feedback=null){
  const constraint=robotLockConstraint(hit.g.body,chosen.body,Math.max(12,config.capacity*5));constraint.collideConnected=false;
  for(const eq of constraint.equations)setPhysicsEquation(eq,1e8,4);
  if(chosen.cargo){chosen.body.material=world.defaultMaterial;chosen.body.mass=chosen.weight*.25;chosen.body.type=CANNON.Body.DYNAMIC;chosen.body.fixedRotation=false;chosen.body.updateMassProperties();chosen.cargo.robotHeld=hit.part.id;chosen.cargo.robotPhysical=true;}
- if(chosen.g){stopRoute(chosen.g);leaveHaul(chosen.g);chosen.g.robotHeld=hit.part.id;}
+ if(chosen.g){feederDrops.delete(chosen.g);stopRoute(chosen.g);leaveHaul(chosen.g);chosen.g.robotHeld=hit.part.id;}
  chosen.body.wakeUp();hit.g.robotGrip=hit.part.id;world.addConstraint(constraint);robotGrips.set(hit.part.id,{id:hit.part.id,...chosen,constraint});return true;
 }
 function updateRobotGrips(dt){
@@ -5467,6 +5490,7 @@ world.solver.solve=function(dt,physicsWorld){
  if(story.scene==='lab')settleSupportedGroups(dt,physicsWorld.contacts,driven,articulated);
  const footLimits=walkingFootFriction(physicsWorld,dt),productionLimits=productionContactFriction(physicsWorld,dt),skinPairs=conveyorFrictionPairs(physicsWorld),changed=[];for(const eq of physicsWorld.frictionEquations){if(skinPairs.get(eq.bi)?.has(eq.bj)||skinPairs.get(eq.bj)?.has(eq.bi)){changed.push([eq,eq.minForce,eq.maxForce]);eq.minForce=0;eq.maxForce=0;}else if(footLimits?.has(eq)||productionLimits?.has(eq)){changed.push([eq,eq.minForce,eq.maxForce]);eq.maxForce=footLimits?.get(eq)??productionLimits.get(eq);eq.minForce=-eq.maxForce;}else if(driven.has(eq.bi)||driven.has(eq.bj)){changed.push([eq,eq.minForce,eq.maxForce]);eq.minForce*=dt;eq.maxForce*=dt;}}
  conveyorImpactConstraints(dt,physicsWorld,this);
+ if(feederDrops.size)feederFloorImpacts(dt,this);
  // Refinement also keeps a small held chain's hinge pivots together while
  // its hand turns it. Recheck after predictive contacts; large scenes keep 24.
  const heldChain=(held?.items||[]).some(item=>item.orientationGrip?.equations.some(equation=>equation.enabled));
@@ -6112,7 +6136,7 @@ function startRoute(g,goal,quiet=false,remember=!quiet){
  const wasBlocked=g.pendingMoodOrder?.reason==='bloqueo',changed=!!g.route;
  if(held&&(held.items||[held]).some(item=>item.g===g)){announce('Suelta la estructura antes de marcar su recorrido.');return false;}
  const bb=bounds(g);if(bb.min.y>.025){if(!quiet)announce('Deja la pieza en el piso antes de darle un destino.');return false;}
- if(remember)rememberMechanismRun(g,'route',g,goal);
+ feederDrops.delete(g);if(remember)rememberMechanismRun(g,'route',g,goal);
  if(!groupWilling(g)){queueMoodRoute(g,goal);if(!quiet)announce('Necesita descansar · la orden queda pendiente.');return true;}
  stopRoute(g);goal=goal.clone();const source=g.body.position.clone(),sourceQ=g.body.quaternion.clone();
  const pending={goal,reason:'planning',nextTry:Infinity};g.pendingMoodOrder=pending;g.pin={point:goal.clone(),arrived:false};
@@ -6801,7 +6825,7 @@ function stepPhysics(dt){
  // The family shell stays outside groups, but follows the same hand speed
  // limits without visiting or activating any of its stored pieces.
  if(held?.family){const b=held.family.body,speed=b.velocity.norm(),spin=b.angularVelocity.norm();if(speed>6)b.velocity.scale(6/speed,b.velocity);if(spin>30)b.angularVelocity.scale(30/spin,b.angularVelocity);}
- updateCampaignPressure(dt);updateButtonPhysics();prepareRotorPower();updateRotorMotors(dt);driveRobotArms(dt);driveConveyors(dt);driveServos(dt);productionForces(dt);updateFlights(dt);wakeMechanicalRest();world.step(dt);invalidateConveyorContacts();stabilizeRotors();finishMechanicalRest(dt);updateRotorPower(dt);validateServoMarches();tickContactSensors(dt);tickFlightSensors(dt);tickCutters(dt);if(conveyors.length)tickAssemblers();
+ updateCampaignPressure(dt);updateButtonPhysics();prepareRotorPower();updateRotorMotors(dt);driveRobotArms(dt);driveConveyors(dt);driveServos(dt);productionForces(dt);updateFlights(dt);wakeMechanicalRest();world.step(dt);if(feederDrops.size)settleFeederFloorPenetration();invalidateConveyorContacts();stabilizeRotors();finishMechanicalRest(dt);updateRotorPower(dt);validateServoMarches();tickContactSensors(dt);tickFlightSensors(dt);tickCutters(dt);if(conveyors.length)tickAssemblers();
  // The floor correction must translate a hinged assembly as a whole. Moving
  // a single link stretches its constraints and stores an impulse on release.
  if(held){
@@ -6835,6 +6859,7 @@ function simulationSuspended(){
 function stepLogic(dt){
  if(!Number.isFinite(dt)||dt<=0||simulationSuspended())return;
  tickStats.logic++;
+ if(ceilingFeeders.length||feederDrops.size)tickCeilingFeeders(dt);
  tickReconfiguration(dt);
  if(story.scene==='campaign'&&!story.encounter)tickMoodHints();
  updateSpeechLogic();
@@ -6946,6 +6971,11 @@ function handleWheel(event){
  if(!gameInputActive())return;
  if(creationPreview){
   event.preventDefault();
+  if(creationPreview.entry?.action==='ceiling-feeder'){
+   const {minHeight,maxHeight}=QBitsCeilingFeeder.limits;
+   creationPreview.elevation=clamp(Math.round(creationPreview.elevation*10-Math.sign(event.deltaY))/10,minHeight,maxHeight);
+   updateCreationPlacement();return;
+  }
   if(faceBuildActive(creationPreview))return;
   const delta=event.deltaY*(savedPreferences.invertPieceRotation?-1:1);
   if(!delta)return;
@@ -6967,7 +6997,7 @@ function handleKey(event){
  if(sceneAuthoringActive&&sceneAuthoringMarkerDraft&&event.code==='Escape'&&!event.repeat){event.preventDefault();cancelSceneAuthoringMarker();return;}
  if(sceneAuthoringActive&&sceneAuthoringPlacement&&creationPreview?.authoring){
   if(event.code==='Escape'&&!event.repeat){event.preventDefault();cancelSceneAuthoringPlacement();return;}
-  if(event.code==='KeyN'&&!event.repeat){event.preventDefault();const choice=sceneAuthoringPlacement.id;const made=confirmCreationPlacement();if(made)beginSceneAuthoringPlacement(choice);return;}
+  if(event.code==='KeyN'&&!event.repeat){event.preventDefault();const choice=sceneAuthoringPlacement.id,options={height:creationPreview.elevation};const made=confirmCreationPlacement();if(made)beginSceneAuthoringPlacement(choice,options);return;}
  }
  if(familyUi?.isOpen())return;
  if(held&&shiftDown()&&['KeyQ','KeyE','KeyR'].includes(event.code)&&!event.altKey&&!event.ctrlKey&&!event.metaKey&&gameInputActive()&&storyActionAllowed()&&!storySuspended()&&!story.transition&&!robotPoseDraft&&!trajectoryDraft&&!shelfPreview){
@@ -7043,6 +7073,10 @@ function updateTarget(){
  livePartSelection();
  snap=findSnap();updateCallout();updateCargoCallout();updateMenuConnector();updateInspection();updatePuzzleHUD();updateMoodSelection();updateAlphaHUD();
  if(!gameInputActive()){targetLabel.textContent='';crosshair.classList.remove('ready');return;}
+ if(creationPreview?.entry?.action==='ceiling-feeder'){crosshair.classList.toggle('ready',creationPreview.valid);targetLabel.textContent=creationPreview.reason;return;}
+ if(!held&&!creationPreview&&!familyPlacement&&!shelfPreview&&!powerDraft&&!trajectoryDraft){
+  const feederHit=aimCeilingFeeder();if(feederHit){crosshair.classList.add('ready');targetLabel.textContent='Toma de techo · '+feederStatus(feederHit.feeder)+' · clic: configurar';return;}
+ }
  if(faceBuildActive(creationPreview)){crosshair.classList.toggle('ready',!!creationPreview.valid);targetLabel.textContent=creationPreview.reason;return;}
  const familyHit=!held&&aimFamily();if(held?.family||familyPlacement||familyHit){familyActive=held?.family||familyPlacement?.family||familyHit.family;targetLabel.textContent=held?.family?familyHandHint():familyPlacement?.reason||familyActive.name+' · ×'+familyActive.count+' · clic: tomar · clic derecho: familia';crosshair.classList.toggle('ready',familyPlacement?!!familyPlacement.valid:true);return;}
  if(ctrlDown()&&canBrushParts())brushAssemblyPart();
@@ -7434,7 +7468,7 @@ function drawQubits(){
  }}
  gl.depthMask(true);gl.disable(gl.BLEND);
  for(const g of groups){if(!renderGroupVisible(g))continue;if(g.parts.some(p=>p.mood.production)){for(const p of poses(g))drawBox(p.p,p.q,V(CUBE_SIZE-.002,CUBE_SIZE-.002,CUBE_SIZE-.002),partSelection?.members.get(g)?.has(p.part.id)?[.12,.28,.43,1]:p.part.mood.production?.kind==='A'?[.27,.56,.67,1]:p.part.mood.production?[.72,.53,.26,1]:[.12,.14,.13,1]);if(g.parts.length===2)drawOutline(g.body.position,g.body.quaternion,sub(bounds(g,V(),Q()).max,bounds(g,V(),Q()).min),.8,false);}else drawGroupSolid(g);}
- drawConveyors();drawCargos();drawPuzzle();drawAlpha();drawWorkshop();drawShelves();drawFamilies();drawDisassembly();drawCreationPlacement();drawSceneAuthoringMarkers();drawFamilyPlacement();drawRobotArmLights();drawRobotPoseDraft();drawPowerReservoirs();drawPowerCables();drawTrajectories();drawBatteriesTransparent();drawFamilyGlass();drawStructureOutlines();drawServoGuides();drawGuides();drawTaskGuides();
+ drawCeilingFeeders();drawConveyors();drawCargos();drawPuzzle();drawAlpha();drawWorkshop();drawShelves();drawFamilies();drawDisassembly();drawCreationPlacement();drawSceneAuthoringMarkers();drawFamilyPlacement();drawRobotArmLights();drawRobotPoseDraft();drawPowerReservoirs();drawPowerCables();drawTrajectories();drawBatteriesTransparent();drawFamilyGlass();drawStructureOutlines();drawServoGuides();drawGuides();drawTaskGuides();
 }
 addQubit([position[0]-Math.sin(yaw)*1.25,HALF+.003,position[2]-Math.cos(yaw)*1.25]);
 
@@ -7508,6 +7542,7 @@ function selectRectangle(rect){
  const candidates=groups.filter(g=>{const b=screenBounds(g);return b&&b.right>=rect.left&&b.left<=rect.right&&b.bottom>=rect.top&&b.top<=rect.bottom&&visibleFromCamera(g);}).sort((a,b)=>a.body.position.distanceTo(V(...camera))-b.body.position.distanceTo(V(...camera)));
  const accepted=[];let pieces=0,weight=0;
  for(const g of candidates){const w=totalWeight(g);if(pieces+g.parts.length>settings.maxSelect)continue;accepted.push(g);pieces+=g.parts.length;weight+=w;}
+ for(const g of accepted)feederDrops.delete(g);
  multiSelection=accepted;selected=accepted.length?{g:accepted[0],part:accepted[0].parts[0]}:null;
  const limited=candidates.length>accepted.length;
  announce(accepted.length?pieces+' Q-bits · '+formatWeight(weight)+' u'+(limited?' · selección limitada':weight>settings.maxCarry?' · supera la carga manual, puede recibir órdenes':' · clic derecho en el suelo para dar destino'):limited?'La selección supera el límite de piezas. Ajusta en P.':'Sin Q-bits visibles dentro de la selección.');return accepted;
@@ -7672,7 +7707,7 @@ function selectFromHud(id,{toggle=false}={}){
  clearRotorSelection();
  if(toggle){const team=selectionGroups();multiSelection=team.includes(g)?team.filter(item=>item!==g):[...team,g];selected=multiSelection.length?{g:multiSelection[0],part:multiSelection[0].parts[0]}:null;}
  else {multiSelection=[g];selected={g,part:g.parts[0]};}
- selectedCargo=null;redraw=true;return true;
+ feederDrops.delete(g);selectedCargo=null;redraw=true;return true;
 }
 function initSelectionHud(){
  if(selectionHud||!window.QBitsSelectionHUD)return;
@@ -7940,7 +7975,7 @@ document.querySelector('#cargoColor').addEventListener('input',e=>{if(puzzle.act
 document.querySelector('#create-cargo').addEventListener('click',()=>startCreationTool('quick-cargo'));
 document.querySelector('#delete-cargo').addEventListener('click',()=>{deleteCargo(selectedCargo);updateCargoPanel();});
 
-function closeCommandMenu(resume=false){commandMenu.hidden=true;commandState=null;menuConnector=null;document.querySelector('#menu-link').style.opacity='0';if(resume)captureMouse();}
+function closeCommandMenu(resume=false){if(inspectedFeeder){inspectedFeeder=null;document.getElementById('feeder-form').hidden=true;}commandMenu.hidden=true;commandState=null;menuConnector=null;document.querySelector('#menu-link').style.opacity='0';if(resume)captureMouse();}
 function connectMenu(element,point){
  const p=project(point)||{x:canvas.clientWidth/2,y:canvas.clientHeight/2},side=p.x<canvas.clientWidth/2?1:-1;
  element.style.left=clamp(p.x+(side>0?115:-285),16,Math.max(16,canvas.clientWidth-225))+'px';element.hidden=false;const menuHeight=element.offsetHeight||250;element.style.top=clamp(p.y-25,20,Math.max(20,canvas.clientHeight-menuHeight-20))+'px';
@@ -7996,9 +8031,9 @@ function onCanvasMouseDown(event){
  if(sceneAuthoringActive&&sceneAuthoringPlacement&&creationPreview?.authoring&&[0,2].includes(event.button)){
   event.preventDefault();if(!gameInputActive())return;
   if(event.button===2){cancelSceneAuthoringPlacement();return;}
-  const choice=sceneAuthoringPlacement.id;
+  const choice=sceneAuthoringPlacement.id,options={height:creationPreview.elevation};
   const made=confirmCreationPlacement();
-  if(made)beginSceneAuthoringPlacement(choice);
+  if(made)beginSceneAuthoringPlacement(choice,options);
   return;
  }
  if(familyGroupingJob||familyUi?.isOpen())return;
@@ -8031,6 +8066,7 @@ function onCanvasMouseDown(event){
  if(story.scene==='intro'&&event.button===2)return;
  event.preventDefault();speech.lastInput=simTime;
  if(pendingUnitCreation){
+  if(creationPreview?.entry?.action==='ceiling-feeder'&&event.button===0&&!gameInputActive()&&panel.hidden&&menu.hidden&&commandMenu.hidden){captureMouse();return;}
   if(!unitRadialAllowed()&&!(creationPreview?.plan&&gameInputActive()&&panel.hidden&&!held&&!story.transition)&&!(puzzle.active&&alphaSettings.allowPuzzleSpawn&&creationPreview&&gameInputActive()&&panel.hidden&&!held)){cancelUnitCreation();return;}
   if(event.button===2){cancelUnitCreation();announce('Creación cancelada');return;}
   if(!creationPreview?.plan&&!pendingUnitCreation.startsWith('quick-'))settings.unitShape=pendingUnitCreation;
@@ -8045,6 +8081,7 @@ function onCanvasMouseDown(event){
   if(!keepSelection)clearSelection();
   return;
  }
+ if(!held&&event.button===0&&gameInputActive()){const hit=aimCeilingFeeder();if(hit){openFeederMenu(hit);return;}}
  if(!held&&event.button===0&&(event.ctrlKey||event.metaKey||ctrlDown())&&gameInputActive()){
   const hit=aimQubit(4),rotor=hit&&rotorForPart(hit.part.id);
   if(rotor){toggleRotorSelection(rotor);announce(selectedRotors().length+' rotores seleccionados · clic derecho o P para crear un conjunto');}
@@ -8144,6 +8181,7 @@ function handleSecondary(event){
  if(held?.family){const f=held.family;releaseQubit();clearSelection();openFamilyMenu(f);return;}
  const rect=canvas.getBoundingClientRect();
  const dir=gameInputActive()?direction():screenRay(clamp(event.clientX-rect.left,0,canvas.clientWidth),clamp(event.clientY-rect.top,0,canvas.clientHeight));
+ const feederHit=aimCeilingFeeder(dir);if(feederHit){openFeederMenu(feederHit);return;}
  const familyHit=aimFamily(dir);if(familyHit){clearSelection();openFamilyMenu(familyHit.family);return;}
  if(powerSecondary(dir))return;
  const cargoHit=aimCargo(4,dir),hit=aimQubit(4,dir),shelfHit=aimShelf(dir,4);
@@ -8175,7 +8213,7 @@ function handleSecondary(event){
   items.push({label:'Cerrar',run:()=>captureMouse()});openCommandMenu(c.body.position,'Cuerpo · '+c.required+' u · '+(c.job?.activeCount||0)+' / '+c.required,items);return;
  }
  if(hit){
-  selectedCargo=null;pendingCargo=null;selected=hit;if(!multiSelection.includes(hit.g))multiSelection=[];
+  feederDrops.delete(hit.g);selectedCargo=null;pendingCargo=null;selected=hit;if(!multiSelection.includes(hit.g))multiSelection=[];
   if(event.altKey||altDown()){openDetachMenu(hit);return;}
   if(hit.part.mood.cutter){showCutterMenu(hit);return;}
   if(hit.part.mood.trajectory){showTrajectoryMenu(hit);return;}
@@ -8904,7 +8942,7 @@ function toggleTablet(){
 }
 function catalogCategory(id){
  if(id.startsWith('quick-saved-'))return 'Guardados';
- if(/^quick-(battery|cable|power|workshop|shelf|cooler)/.test(id))return 'Equipo';
+ if(/^quick-(battery|cable|power|workshop|shelf|cooler|ceiling-feeder)/.test(id))return 'Equipo';
  if(['cube','tetra','pyramid','coupler','quick-cargo','quick-gripper'].includes(id))return 'Piezas';
  return 'Máquinas';
 }
@@ -9312,7 +9350,7 @@ function drawTrajectories(){
 // when leaving the challenge; rewards and deliveries use a single transaction.
 const puzzleConfig={frameSeconds:12,energySeconds:8};
 function puzzleBlockedEdit(kind='edit'){if(openingProtected()){announce('Piezas conservadas · las herramientas de creación están en el banco.');return true;}if(certifiedAutomation()){announce('Ensayo certificado: usa las piezas del banco. Reinicia el nivel para restaurarlas.');return true;}if(kind==='mechanism'&&mechanismsAvailable())return false;if(story.ready&&story.scene==='campaign'&&panel.hidden){announce('La materia genera nuevos Q-bits. P abre el banco de herramientas de prueba.');return true;}if(!puzzle.active||kind==='qubit'&&alphaSettings.allowPuzzleSpawn)return false;announce('Puzle activo · los recursos se obtienen en los portales. P → Puzle para volver al banco.');return true;}
-function saveLab(options={}){syncVirtualConveyors(0);if(!options.passive)cancelPowerCable();return {workshop:workshopPlacement&&{...workshopPlacement},families:serializeFamilies(),disassembly:serializeDisassembly(),powerNetwork:serializePowerNetwork(),trajectories:trajectorySystem?.snapshot()||{version:1,serial:0,routes:[]},mechanismDefaults:typeof mechanismDefaults==='undefined'?null:{...mechanismDefaults},rotors:serializeRotorState(),rotorSets:serializeRotorSets(),robotArms:serializeRobotArms(),conveyors:typeof serializeConveyors==='function'?serializeConveyors():[],contacts:serializeContactState(),shelves:serializeShelves(),alphaScene:alphaSceneSnapshot(),settings:{...settings},moodSettings:{...moodSettings},position:[...position],yaw,pitch,groups:groups.map(g=>({parts:worldParts(g),q:g.body.quaternion.clone(),v:g.body.velocity.clone(),w:g.body.angularVelocity.clone()})),cargos:cargos.map(c=>({id:c.id,p:c.body.position.clone(),side:c.side,required:c.required,color:c.color,...(c.assemblyPasses?{assemblyPasses:c.assemblyPasses.map(r=>({...r}))}:{}),...(c.robotPhysical?{robotPhysical:true,q:c.body.quaternion.clone(),v:c.body.velocity.clone(),w:c.body.angularVelocity.clone()}:{} )})),runtime:captureLabRuntime()};}
+function saveLab(options={}){syncVirtualConveyors(0);if(!options.passive)cancelPowerCable();return {workshop:workshopPlacement&&{...workshopPlacement},families:serializeFamilies(),disassembly:serializeDisassembly(),powerNetwork:serializePowerNetwork(),trajectories:trajectorySystem?.snapshot()||{version:1,serial:0,routes:[]},mechanismDefaults:typeof mechanismDefaults==='undefined'?null:{...mechanismDefaults},rotors:serializeRotorState(),rotorSets:serializeRotorSets(),robotArms:serializeRobotArms(),conveyors:typeof serializeConveyors==='function'?serializeConveyors():[],contacts:serializeContactState(),shelves:serializeShelves(),...(ceilingFeeders.length||feederDrops.size?{ceilingSupply:serializeCeilingFeeders()}:{}),alphaScene:alphaSceneSnapshot(),settings:{...settings},moodSettings:{...moodSettings},position:[...position],yaw,pitch,groups:groups.map(g=>({parts:worldParts(g),q:g.body.quaternion.clone(),v:g.body.velocity.clone(),w:g.body.angularVelocity.clone()})),cargos:cargos.map(c=>({id:c.id,p:c.body.position.clone(),side:c.side,required:c.required,color:c.color,...(c.assemblyPasses?{assemblyPasses:c.assemblyPasses.map(r=>({...r}))}:{}),...(c.robotPhysical?{robotPhysical:true,q:c.body.quaternion.clone(),v:c.body.velocity.clone(),w:c.body.angularVelocity.clone()}:{} )})),runtime:captureLabRuntime()};}
 // JSON removes Cannon prototypes. Rebuild only the explicitly stored pose and
 // velocity fields, before enterLab clears the current scene. Inventory IDs are
 // unique across bodies, wire, shelves and pending disassembly, not just bodies.
@@ -9367,6 +9405,7 @@ function hydrateLabSnapshot(saved){
   if(cargo.assemblyPasses!==undefined&&!validAssemblerPasses(cargo.assemblyPasses))return invalid();
   cargoIds.add(cargo.id);cargo.p=vector(cargo.p);if(cargo.robotPhysical){cargo.q=quaternion(cargo.q);cargo.v=vector(cargo.v);cargo.w=vector(cargo.w);}
  }
+ if(data.ceilingSupply!==undefined&&!QBitsCeilingFeeder.validSnapshot(data.ceilingSupply,data.groups,ROOM_SIZE/2))return invalid();
  if(!getTrajectorySystem().validSnapshot(data.trajectories))return invalid();
  return data;
 }
@@ -9467,7 +9506,7 @@ function clearPuzzleScene(){
  clearDisassembly();cancelUnitCreation();clearFamilies();
  cancelPowerCable();clearPowerNetwork();
  flightStates.clear();resetBatteryLiquids();
- clearShelves();
+ clearCeilingFeeders();clearShelves();
  clearAlphaScene();releaseQubit();closeCommandMenu(false);closeDetachMenu(false);pendingCargo=null;moveChoice=null;routeInspection=null;multiSelection=[];selected=null;selectedCargo=null;
  for(const r of (typeof rotors==='undefined'?[]:[...rotors]))disconnectRotor(r);
  for(const c of [...cargos])deleteCargo(c,true);for(const g of [...groups])removeGroup(g);
@@ -9906,7 +9945,7 @@ function restoreLabMechanisms(saved){
    if(storedRotorOptionsValid(candidate))mechanismDefaults[key]=storedRotorDrive(candidate)[key]??candidate[key];
   }
  }
- restorePowerNetwork(saved?.powerNetwork);const restored=restoreRotorState(saved?.rotors);restoreRotorSets(saved?.rotorSets);restoreContactState(saved?.contacts);restoreShelves(saved?.shelves);restoreFamilies(saved?.families);if(typeof restoreRobotArms==='function')restoreRobotArms(saved?.robotArms);if(typeof restoreConveyors==='function')restoreConveyors(saved?.conveyors);getTrajectorySystem().restore(saved?.trajectories);return restored;
+ restorePowerNetwork(saved?.powerNetwork);const restored=restoreRotorState(saved?.rotors);restoreRotorSets(saved?.rotorSets);restoreContactState(saved?.contacts);restoreShelves(saved?.shelves);restoreCeilingFeeders(saved?.ceilingSupply);restoreFamilies(saved?.families);if(typeof restoreRobotArms==='function')restoreRobotArms(saved?.robotArms);if(typeof restoreConveyors==='function')restoreConveyors(saved?.conveyors);getTrajectorySystem().restore(saved?.trajectories);return restored;
 }
 function mechanismGroups(subject){
  if(typeof rotors==='undefined')return [];
@@ -10829,7 +10868,7 @@ function beginCreationNarration(){
 function storyWall(p,half,{glass=false,color=[.91,.935,.92],door=false,q=Q()}={}){
  const body=new CANNON.Body({mass:0});body.addShape(new CANNON.Box(half));body.position.copy(p);body.quaternion.copy(q);body.collisionFilterMask=-1;world.addBody(body);body.computeAABB();const wall={p,half,q:body.quaternion,body,min:body.aabb.lowerBound.clone(),max:body.aabb.upperBound.clone(),glass,color,door,initialY:p.y};storyWorld.walls.push(wall);return wall;
 }
-function clearStoryWalls(){for(const w of storyWorld.walls)world.removeBody(w.body);storyWorld.walls.length=0;storyWorld.door=null;storyWorld.target=null;}
+function clearStoryWalls(){clearCeilingFeeders();for(const w of storyWorld.walls)world.removeBody(w.body);storyWorld.walls.length=0;storyWorld.door=null;storyWorld.target=null;}
 function buildWhiteRooms(){
  const white=[.938,.95,.938],edge=[.86,.895,.87];
  storyWall(V(-3.3,1.8,-1.95),V(.10,1.8,5.6),{color:white});storyWall(V(3.3,1.8,-1.95),V(.10,1.8,5.6),{color:white});storyWall(V(0,1.8,3.65),V(3.4,1.8,.10),{color:white});storyWall(V(0,1.8,-7.55),V(3.4,1.8,.10),{color:white});storyWall(V(0,3.55,-1.95),V(3.4,.10,5.6),{color:[.965,.97,.96]});
@@ -10847,7 +10886,7 @@ function drawStoryWorld(){
  if(story.passage){drawFactoryPassage(false);return;}
  if(!storyWorld.walls.length)return;
  gl.disable(gl.BLEND);gl.depthMask(true);
- for(const w of storyWorld.walls)if(!w.glass&&w.furniture!=='power-reservoir')drawAsset({buffer:cubeGeometry,count:36},w.p,w.q||Q(),mul(w.half,2),[...w.color.slice(0,3),1]);
+ for(const w of storyWorld.walls)if(!w.glass&&w.furniture!=='power-reservoir'&&w.furniture!=='ceiling-feeder')drawAsset({buffer:cubeGeometry,count:36},w.p,w.q||Q(),mul(w.half,2),[...w.color.slice(0,3),1]);
  for(const d of storyWorld.details)drawAsset({buffer:cubeGeometry,count:36},d.p,Q(),d.size,[...d.color,1]);
  const door=storyWorld.door;if(door)drawBox(add(door.p,V(.66,.45,.059)),Q(),V(.012,.28,.004),storyWorld.doorProgress>.8?[.37,.68,.55,1]:[.68,.74,.70,1]);
  drawCampaignOpaque();
@@ -11805,6 +11844,278 @@ function campaignAmbientAllowed(){return story.scene==='campaign'&&story.mode===
 
 // Workshop research is persistent; fitted modules belong to existing piece IDs.
 let workshopProfile;try{workshopProfile=QBitsWorkshop.normalizeProfile(JSON.parse(localStorage.getItem('qbits.workshop.v1')||'{}'));}catch{workshopProfile=QBitsWorkshop.normalizeProfile({});}
+// Ceiling fixtures share procedural meshes by outlet height. The rubber membrane has no collider.
+function feederGeometry(height){
+ let model=feederGeometryCache.get(height);
+ if(!model){model=QBitsCeilingFeeder.geometry(height,ROOM_HEIGHT);feederGeometryCache.set(height,model);}
+ return model;
+}
+const feederColors=[[.96,.97,.965,1],[.67,.71,.72,1],[.018,.022,.025,1]];
+const feederRotation=Q(),feederScale=V(1,1,1);
+function drawFeederStructure(point,ghost=null){
+ const model=feederGeometry(point.y);
+ if(!model.meshes){
+  model.meshes=[model.white,model.metal,model.rubber].map(boxes=>buildBoxAssembly(boxes.map(([x,y,z,w,h,d])=>[V(x,y,z),V(w,h,d)])));
+  boundGeometry=null;
+ }
+ for(let i=0;i<model.meshes.length;i++)drawAsset(model.meshes[i],point,feederRotation,feederScale,ghost||feederColors[i],ghost||i===2?3:5);
+}
+function drawCeilingFeeders(){for(const f of ceilingFeeders)drawFeederStructure(f.point);}
+function feederVolumeOccupied(lower,upper,ignore=null){
+ const query=new CANNON.AABB({lowerBound:lower,upperBound:upper}),near=[];
+ world.broadphase.aabbQuery(world,query,near);
+ for(const body of near){
+  if(body===ignore||body===floor||!body.collisionResponse||!body.collisionFilterMask)continue;
+  if(body.shapes.length===1)return true;
+  const box=new CANNON.AABB(),p=V(),q=Q();
+  for(let i=0;i<body.shapes.length;i++){
+   if(body.shapes[i].collisionResponse===false)continue;
+   body.quaternion.vmult(body.shapeOffsets[i],p);p.vadd(body.position,p);
+   body.quaternion.mult(body.shapeOrientations[i],q);
+   body.shapes[i].calculateWorldAABB(p,q,box.lowerBound,box.upperBound);
+   if(query.overlaps(box))return true;
+  }
+ }
+ return false;
+}
+function feederPlacementIssue(point,ignore=null){
+ const model=QBitsCeilingFeeder;
+ if(story.scene!=='lab'||puzzle.active||openingProtected())return 'La toma está disponible en el banco y el editor.';
+ if(!ignore&&ceilingFeeders.length>=model.limits.fixtures)return 'Se alcanzó el límite de tomas del banco.';
+ if(!model.validHeight(point.y)||!model.fitsRoom(point.x,point.z,ROOM_SIZE/2))return 'Acerca la toma al interior de la sala.';
+ if(ceilingFeeders.some(f=>f!==ignore&&model.overlap(f.point,point)))return 'Ya hay una toma en ese lugar.';
+ const w=model.width/2,d=model.depth/2;
+ if(feederVolumeOccupied(V(point.x-w,point.y,point.z-d),V(point.x+w,ROOM_HEIGHT-.003,point.z+d),ignore?.body))
+  return 'La cañería necesita espacio libre hasta el techo.';
+ return '';
+}
+function feederSupportAim(){
+ const from=V(...camera),dir=direction(),result=new CANNON.RaycastResult();
+ if(!world.raycastClosest(from,add(from,mul(dir,ROOM_SIZE*2)),{skipBackfaces:true},result))return null;
+ const p=result.hitPointWorld,n=result.hitNormalWorld;
+ if(n.y<.7&&!(n.y<-.98&&Math.abs(p.y-ROOM_HEIGHT)<.005))return null;
+ return {point:p,normal:n};
+}
+function updateFeederPlacement(preview,hit,force=false){
+ hit=hit===undefined?feederSupportAim():hit;
+ preview.poses=[];preview.valid=false;
+ if(!hit){preview.point=null;preview.reason='Apunta al piso, a una cinta o al techo.';return false;}
+ const p=hit.point.clone();
+ preview.deliveryY=hit.normal.y<0?0:p.y;
+ p.y=preview.elevation;
+ if(shiftDown()){p.x=Math.round(p.x/CUBE_SIZE)*CUBE_SIZE;p.z=Math.round(p.z/CUBE_SIZE)*CUBE_SIZE;}
+ if(force||!preview.point?.almostEquals(p,1e-6)||simTime>=preview.nextCheck){
+  preview.issue=feederPlacementIssue(p);preview.nextCheck=simTime+.12;
+ }
+ preview.point=p;preview.valid=!preview.issue;
+ preview.reason=p.y.toFixed(1)+' m · '+(preview.issue||'Rueda: altura · clic: colocar · Esc: cancelar');
+ redraw=true;return preview.valid;
+}
+function drawFeederPreview(preview){
+ const p=preview.point;if(!p)return;
+ const tone=preview.valid?[.18,.65,1]:[.93,.22,.16],base=V(p.x,preview.deliveryY+.005,p.z);
+ gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
+ drawFeederStructure(p,[...tone,.40]);drawWideLines([base,p],[...tone,.55],2);
+ drawRing(base,CUBE_SIZE*.85,.9,tone);
+ gl.depthMask(true);gl.disable(gl.BLEND);
+}
+function mountFeeder(f){
+ const p=f.point=V(f.x,f.height,f.z),body=f.body=new CANNON.Body({mass:0});
+ body.position.copy(p);f.walls=[];
+ for(const [x,y,z,w,h,d] of feederGeometry(f.height).solid){
+  const local=V(x,y,z),half=V(w/2,h/2,d/2),center=add(p,local);
+  body.addShape(new CANNON.Box(half),local);
+  const wall={p:center,half,body,min:sub(center,half),max:add(center,half),furniture:'ceiling-feeder'};
+  f.walls.push(wall);storyWorld.walls.push(wall);
+ }
+ world.addBody(body);body.computeAABB();
+ f.bounds={min:body.aabb.lowerBound,max:body.aabb.upperBound};
+ const y=f.height+QBitsCeilingFeeder.curtainY;
+ f.pickBoxes=[...f.walls,{min:V(f.x-.15,y-.002,f.z-.11),max:V(f.x+.15,y+.002,f.z+.11)}];
+ redraw=true;
+}
+function unmountFeeder(f){
+ world.removeBody(f.body);
+ for(const wall of f.walls){const i=storyWorld.walls.indexOf(wall);if(i>=0)storyWorld.walls.splice(i,1);}
+ redraw=true;
+}
+function createCeilingFeeder(point){
+ if(feederPlacementIssue(point))return null;
+ const used=new Set(ceilingFeeders.map(f=>f.id));
+ for(const p of feederDrops.values())used.add(p.source);
+ let id=1;while(used.has(id))id++;
+ const f={...QBitsCeilingFeeder.defaults,id,x:point.x,z:point.z,height:point.y,wait:60/QBitsCeilingFeeder.defaults.rate};
+ mountFeeder(f);ceilingFeeders.push(f);return f;
+}
+function removeCeilingFeeder(f){
+ const i=ceilingFeeders.indexOf(f);if(i<0)return;
+ unmountFeeder(f);ceilingFeeders.splice(i,1);
+ if(inspectedFeeder===f)closeCommandMenu();
+}
+function clearCeilingFeeders(){
+ for(const f of [...ceilingFeeders])removeCeilingFeeder(f);
+ feederDrops.clear();feederCursor=0;
+}
+function aimCeilingFeeder(dir=direction()){
+ if(!ceilingFeeders.length||held||dir.y<=0&&camera[1]<QBitsCeilingFeeder.limits.minHeight)return null;
+ const eye=V(...camera);let best=null,distance=5;
+ for(const f of ceilingFeeders){
+  if(rayPuzzleBox(eye,dir,f.bounds,distance)===null)continue;
+  for(const box of f.pickBoxes){
+   const d=rayPuzzleBox(eye,dir,box,distance);
+   if(d!==null&&d<distance){distance=d;best=f;}
+  }
+ }
+ if(!best)return null;
+ const point=add(eye,mul(dir,distance)),result=new CANNON.RaycastResult();
+ if(world.raycastClosest(eye,point,{skipBackfaces:true},result)&&result.body!==best.body&&result.distance<distance-.001)return null;
+ return {feeder:best,point,distance};
+}
+function feederStatus(f){return f.enabled?(f.blocked||'En marcha'):'Detenida';}
+function openFeederMenu(hit){
+ const f=hit.feeder;clearSelection();
+ openCommandMenu(hit.point,'Toma de techo',[]);
+ inspectedFeeder=f;const field=id=>document.getElementById('feeder-'+id);
+ field('height').value=f.height;field('shape').value=f.shape;field('rate').value=f.rate;field('idle').value=f.idle;
+ field('enabled').checked=f.enabled;field('status').textContent=feederStatus(f);field('status').dataset.error='';field('form').hidden=false;
+ connectMenu(commandMenu,hit.point);
+}
+function configureFeeder(f,settings){
+ if(!ceilingFeeders.includes(f)||!QBitsCeilingFeeder.validSettings(settings))return 'Revisa la altura, el ritmo y el tiempo en el piso.';
+ const moved=f.height!==settings.height;
+ if(moved){const issue=feederPlacementIssue(V(f.x,settings.height,f.z),f);if(issue)return issue;}
+ if(moved)unmountFeeder(f);
+ if(f.rate!==settings.rate||f.enabled!==settings.enabled)f.wait=60/settings.rate;
+ Object.assign(f,settings,{blocked:''});
+ if(moved)mountFeeder(f);
+ for(const p of feederDrops.values())if(p.source===f.id){p.idle=f.idle;p.elapsed=Math.min(p.elapsed,f.idle);}
+ return '';
+}
+document.getElementById('feeder-form').addEventListener('submit',event=>{
+ event.preventDefault();const f=inspectedFeeder;if(!f)return;
+ const field=id=>document.getElementById('feeder-'+id);
+ const issue=configureFeeder(f,{height:Number(field('height').value),shape:field('shape').value,rate:Number(field('rate').value),idle:Number(field('idle').value),enabled:field('enabled').checked});
+ if(issue){field('status').textContent=issue;field('status').dataset.error='true';return;}
+ closeCommandMenu(true);announce('Toma de techo · '+feederStatus(f)+' · '+f.rate+' piezas/min');
+});
+document.getElementById('feeder-form').addEventListener('input',()=>{document.getElementById('feeder-status').dataset.error='';});
+document.getElementById('feeder-close').addEventListener('click',()=>closeCommandMenu(true));
+document.getElementById('feeder-remove').addEventListener('click',()=>{if(inspectedFeeder){removeCeilingFeeder(inspectedFeeder);captureMouse();announce('Toma retirada');}});
+
+function emitFeederPart(f){
+ const y=f.height+QBitsCeilingFeeder.curtainY,ground=unitGroundHeight(f.shape);
+ const p=V(f.x,y+ground+.003,f.z),profile=unitProfile(f.shape);
+ const top=p.y+Math.max(...profile.vertices.map(v=>v.y));
+ const width=CUBE_SIZE*.65;
+ if(feederVolumeOccupied(V(f.x-width,y-CUBE_SIZE,f.z-width),V(f.x+width,top+.002,f.z+width),f.body))return false;
+ const g=addQubit([p.x,p.y,p.z],1,f.shape);
+ feederDrops.set(g,{source:f.id,idle:f.idle,elapsed:0,grounded:false});
+ redraw=true;return true;
+}
+function updateFeederDrops(dt){
+ let retired=0;
+ for(const [g,p] of feederDrops){
+  // Explicit use gives the piece to its owner. A conveyor merely transports
+  // it: the floor clock stays at zero until it is left idle after delivery.
+  if(g===selected?.g||g.robotHeld||g.route||g.haulJob||g.blueprintJob||g.cooler||g.parts.length!==1){
+   feederDrops.delete(g);continue;
+  }
+  const b=g.body;
+  if(b.position.y>b.boundingRadius+.004||b.velocity.norm2()>.0025||b.angularVelocity.norm2()>.04){
+   p.elapsed=0;p.grounded=false;continue;
+  }
+  if(b.aabbNeedsUpdate)b.computeAABB();
+  p.grounded=Math.abs(b.aabb.lowerBound.y)<.004&&(!!world.collisionMatrix.get(b,floor)||p.grounded&&b.sleepState===CANNON.Body.SLEEPING);
+  if(!p.grounded){p.elapsed=0;continue;}
+  p.elapsed=Math.min(p.idle,p.elapsed+dt);
+  if(p.elapsed+TICK_EPS>=p.idle&&retired<4){
+   // Cannon keeps a sleeping pile asleep when its lowest body is removed.
+   // Wake possible loads in this column once, when their support actually goes away.
+   const a=b.aabb,near=[];
+   world.broadphase.aabbQuery(world,new CANNON.AABB({
+    lowerBound:V(a.lowerBound.x-CUBE_SIZE,a.upperBound.y-.005,a.lowerBound.z-CUBE_SIZE),
+    upperBound:V(a.upperBound.x+CUBE_SIZE,ROOM_HEIGHT,a.upperBound.z+CUBE_SIZE)
+   }),near);
+   for(const load of near)if(load.type===CANNON.Body.DYNAMIC&&load.sleepState!==CANNON.Body.AWAKE)load.wakeUp();
+   removeGroup(g);retired++;redraw=true;
+  }
+ }
+}
+function tickCeilingFeeders(dt){
+ if(story.scene!=='lab'||puzzle.active||openingProtected())return;
+ updateFeederDrops(dt);
+ const n=ceilingFeeders.length;if(!n)return;
+ let created=0,sceneCount=null;
+ for(let i=0;i<n;i++){
+  const f=ceilingFeeders[(feederCursor+i)%n];if(!f.enabled)continue;
+  f.wait-=dt;if(f.wait>TICK_EPS)continue;
+  if(created>=2){f.wait=0;continue;}
+  if(feederDrops.size>=QBitsCeilingFeeder.limits.loose)f.blocked='Esperando que se recojan o retiren piezas';
+  else if(!Number.isSafeInteger(serial+1))f.blocked='No quedan identificadores de pieza disponibles';
+  else if((sceneCount??=scenePartCount())>=MAX_QUBITS)f.blocked='Límite de piezas de la sala';
+  else if(!emitFeederPart(f))f.blocked='Salida ocupada';
+  else{f.blocked='';created++;sceneCount++;}
+  // A blocked outlet retries at 4 Hz. Never queue missed emissions.
+  f.wait=f.blocked ? .25 : 60/f.rate+Math.min(0,f.wait);
+ }
+ feederCursor=(feederCursor+1)%n;
+ if(inspectedFeeder){const label=document.getElementById('feeder-status'),status=feederStatus(inspectedFeeder);if(!label.dataset.error&&label.textContent!==status)label.textContent=status;}
+}
+function serializeCeilingFeeders(){
+ const fixtures=ceilingFeeders.map(({id,x,z,height,shape,rate,idle,enabled,wait})=>({id,x,z,height,shape,rate,idle,enabled,wait:Math.max(0,wait)}));
+ const loose=Array.from(feederDrops,([g,{source,idle,elapsed}])=>({partId:g.parts[0].id,source,idle,elapsed}));
+ return {version:1,fixtures,loose};
+}
+function restoreCeilingFeeders(data){
+ clearCeilingFeeders();if(!data||story.scene!=='lab'||puzzle.active||!QBitsCeilingFeeder.validSnapshot(data,groups,ROOM_SIZE/2))return;
+ for(const saved of data.fixtures){const f={...saved};mountFeeder(f);ceilingFeeders.push(f);}
+ if(!data.loose.length)return;
+ const singles=new Map(groups.filter(g=>g.parts.length===1).map(g=>[g.parts[0].id,g]));
+ for(const {partId,source,idle,elapsed} of data.loose)feederDrops.set(singles.get(partId),{source,idle,elapsed,grounded:elapsed>0});
+}
+
+// Sweep only fast, unclaimed drops near the laboratory floor. Let Cannon solve
+// the impact at the current dt and produce its usual contacts on the next step.
+function feederFloorImpacts(dt,solver){
+ for(const g of feederDrops.keys()){
+  const b=g.body;
+  if(b.sleepState===CANNON.Body.SLEEPING||b.type!==CANNON.Body.DYNAMIC||!b.collisionResponse)continue;
+  const travel=Math.max(0,-b.velocity.y+Math.abs(world.gravity.y)*dt)*dt;
+  if(b.position.y-b.boundingRadius>travel+.001)continue;
+  // Narrowphase can wake the bottom of a pile after it skipped its sleeping
+  // floor pair. An impact from above still needs support in this same solve.
+  const missingSupport=!world.collisionMatrix.get(b,floor);
+  if(!missingSupport&&b.velocity.y>=-.35)continue;
+  const velocity=conveyorImpactVelocity(b,dt),pose=partPose(g,g.parts[0]);
+  for(const v of unitProfile(g.parts[0].shape).vertices){
+   const p=add(pose.p,pose.q.vmult(v)),r=sub(p,b.position);
+   const vy=velocity.linear.y+velocity.angular.cross(r).y;
+   const resting=missingSupport&&p.y<=.001;
+   if(!resting&&(p.y<0||vy>=0||p.y+vy*dt>=0))continue;
+   const equation=new CANNON.ContactEquation(b,floor);
+   equation.ni.set(0,-1,0);equation.ri.copy(r);equation.rj.set(p.x,-.0005,p.z);
+   equation.si=b.shapes[0];equation.sj=floor.shapes[0];
+   equation.restitution=0;equation.a=1/dt;equation.b=1;equation.eps=1e-8;
+   solver.addEquation(equation);
+  }
+ }
+}
+
+// Correct the residual of a rotating corner or a simultaneous stack impact
+// against the actual floor plane. Keep half a millimetre of contact for Cannon.
+function settleFeederFloorPenetration(){
+ for(const g of feederDrops.keys()){
+  const b=g.body;
+  if(b.position.y>b.boundingRadius||b.type!==CANNON.Body.DYNAMIC||!b.collisionResponse||b.sleepState===CANNON.Body.SLEEPING)continue;
+  if(b.aabbNeedsUpdate)b.computeAABB();
+  const bottom=b.aabb.lowerBound.y;
+  if(bottom>=-.0015)continue;
+  b.position.y+=-.0005-bottom;
+  if(b.velocity.y<0)b.velocity.y=0;
+  b.aabbNeedsUpdate=true;world.broadphase.dirty=true;
+ }
+}
+
 // Organizers suspend actual world objects; catalogue templates never enter here.
 const shelves=[];
 let shelfSerial=0,shelfPreview=null,shelfModelCache=null;
@@ -13731,6 +14042,7 @@ const SCENE_AUTHORING_CATALOG=Object.freeze([
  {id:'servo-hinge',label:'Servo bisagra',category:'Mecanismos',kind:'blueprint'},
  {id:'propeller',label:'Hélice de T-bits',category:'Mecanismos',kind:'blueprint'},
  {id:'drone',label:'Dron con batería descargada',category:'Mecanismos',kind:'blueprint'},
+ {id:'ceiling-feeder',label:'Toma de techo',category:'Equipo',kind:'fixture'},
  {id:'assembler',label:'Acoplador',category:'Mecanismos',kind:'blueprint'},
  {id:'belt-straight',label:'Cinta recta con soportes',category:'Mecanismos',kind:'blueprint'},
  {id:'belt-left',label:'Cinta · esquina izquierda',category:'Mecanismos',kind:'blueprint'},
@@ -13748,7 +14060,7 @@ function sceneAuthoringRecipe(id){
   id==='belt-left'?conveyorBlueprintTemplate('left',true):
   id==='belt-right'?conveyorBlueprintTemplate('right',true):null;
 }
-function beginSceneAuthoringPlacement(id){
+function beginSceneAuthoringPlacement(id,options={}){
  if(!sceneAuthoringActive||story.scene!=='lab'||story.mode!=='playing'||story.transition)
   return {ok:false,error:'Abre la escena antes de seleccionar una construcción.'};
  const item=SCENE_AUTHORING_CATALOG.find(entry=>entry.id===id);
@@ -13756,7 +14068,8 @@ function beginSceneAuthoringPlacement(id){
  if(held||familyPlacement||powerDraft||robotPoseDraft||trajectoryDraft||workshopPanel?.isOpen)
   return {ok:false,error:'Termina el agarre o la herramienta anterior antes de construir.'};
  let started=false;
- if(item.kind==='piece')started=beginCreationPlacement(id);
+ if(item.kind==='fixture'){refreshQuickEntries();started=beginCreationPlacement('quick-ceiling-feeder',null,options);}
+ else if(item.kind==='piece')started=beginCreationPlacement(id);
  else{
   const recipe=sceneAuthoringRecipe(id);
   if(!recipe||!savedMechanismValid(recipe))return {ok:false,error:'El blueprint nativo no es válido.'};
@@ -13775,8 +14088,9 @@ function beginSceneAuthoringPlacement(id){
  sceneAuthoringPlacement={id,name:item.label};
  updateCreationPlacement();
  captureMouse();
- announce(item.label+' · mueve la cámara para ubicar · rueda para girar · clic para colocar · clic derecho o Esc para salir');
- return {ok:true,name:item.label};
+ const wheel=item.kind==='fixture'?'altura':'girar';
+ announce(item.label+' · rueda: '+wheel+' · clic para colocar · clic derecho o Esc para salir');
+ return {ok:true,name:item.label,wheel};
 }
 function cancelSceneAuthoringPlacement(){
  if(!sceneAuthoringPlacement)return false;
@@ -13834,6 +14148,11 @@ function spawnSceneAuthoringItem(id,xyz,angle=0){
  const item=SCENE_AUTHORING_CATALOG.find(entry=>entry.id===id);
  if(!item)return {ok:false,error:'Elemento desconocido.'};
  if(!Array.isArray(xyz)||xyz.length!==3||xyz.some(n=>!Number.isFinite(n)||Math.abs(n)>12)||!Number.isFinite(angle)||Math.abs(angle)>360)return {ok:false,error:'Posición o giro fuera de límites.'};
+ if(item.kind==='fixture'){
+  const point=V(xyz[0],xyz[1]||QBitsCeilingFeeder.defaults.height,xyz[2]),issue=feederPlacementIssue(point);
+  if(issue)return {ok:false,error:issue};
+  createCeilingFeeder(point);return {ok:true,name:item.label,pieces:scenePartCount()};
+ }
  if(scenePartCount()>=MAX_QUBITS)return {ok:false,error:'Se alcanzó el límite de piezas.'};
  let result;
  if(item.kind==='piece'){

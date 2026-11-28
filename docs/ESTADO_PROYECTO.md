@@ -2,6 +2,14 @@
 
 Actualizado el 28 de noviembre de 2026 para `dbastias37/Q-bits`.
 
+## Toma de techo · suministro vertical (28 nov 2026)
+
+En el banco y el editor, la toma rectangular se ancla al techo sobre el punto que marca la mira. La rueda regula la altura de salida de 2 a 3 m. El menú de la boca permite cambiar la altura instalada, la pieza, la cadencia y el tiempo de retiro en el piso. La cortina negra oculta la aparición del cuerpo antes de su caída por gravedad. La configuración inicial entrega 12 Q-bits por minuto desde 2,5 m y retira las piezas abandonadas tras 30 segundos de reposo en el piso.
+
+Cada toma comparte la geometría procedural con las demás de la misma altura y utiliza un cuerpo estático compuesto. La lógica de suministro utiliza el reloj de simulación a 15 Hz. Una boca obstruida espera y las tomas se turnan cuando coinciden. Al retirar el apoyo de una pila, las piezas de encima se despiertan. El guardado y la exportación conservan la fase del suministro y el tiempo transcurrido de las piezas sueltas, incluso al retirar su toma. [Colocación y controles](MANUAL_BANCO_PRUEBAS.md#toma-de-techo).
+
+Con Cannon se verificaron las cuatro formas a 60, 120 y 240 Hz, la entrega a una cinta en marcha, la conservación al tomar una pieza, la caducidad, el bloqueo y la recuperación al llegar a 2.000 piezas. En una prueba de tres minutos simulados, 12 tomas configuradas a 60 piezas/min emitieron 775 piezas de las cuatro formas. El pico fue de 64 piezas sin recoger. Tras retirar las tomas y transcurrir los tiempos de espera quedaron los seis cuerpos estáticos originales de la sala.
+
 ## Acoplador de dos cintas (28 nov 2026)
 
 El mecanismo del catálogo parte de la escena **MAQUINA MERGE DI** (`QBSC1-8087B1C8D28E1DB6`). Mantiene el techo, los pilares y las guías diagonales del prototipo. A y B conservan un tramo de entrada cada una y C un tramo de salida. Los dos diagonales llevan rodillos transversales y la banda animada de las cintas rectas. Las tres bocas tienen una cortina negra y comparten un indicador exterior.

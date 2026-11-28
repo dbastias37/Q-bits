@@ -82,6 +82,10 @@
     #detach-menu button, #command-menu button { display: block; width: 100%; border: 0; background: none; padding: 6px 0; text-align: left; color: #252b2f; font: inherit; text-shadow: inherit; cursor: pointer; }
     #detach-menu button:hover, #command-menu button:hover, #detach-menu button:focus-visible, #command-menu button:focus-visible { background: none; text-decoration: underline; outline: none; }
     #command-menu button:disabled { opacity: .4; cursor: default; text-decoration: none; }
+    #feeder-form {background:#f7f9f7f2;padding:10px 14px;color:#293338;text-shadow:none;}
+    #feeder-form label {display:flex;align-items:center;gap:6px;justify-content:space-between;margin:5px 0;font:12px/1.5 Arial,sans-serif;}
+    #feeder-form label:has(input[type=checkbox]) {justify-content:flex-start;}
+    #feeder-form input[type=number] {width:55px;} #feeder-form output {display:block;font-size:11px;}
     #command-title, #detach-title { font-size: 11px; color: #70777c; margin: 0 0 6px; }
     #menu-link { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; z-index: 4; }
     #menu-link path { stroke: #2b3236; stroke-width: .8; fill: none; }
@@ -420,7 +424,16 @@ body:not([data-game-mode='playing']) #opening-status,body[data-transitioning='tr
   <p id="hint" role="status">Clic para entrar · WASD para caminar · Esc para liberar el mouse</p>
   <div id="tools" aria-label="Tableta y catálogo"><span id="tablet-hud-hint">M3 · Tableta</span><div id="selection"></div><div id="mood-selection" hidden><div id="mood-selection-label"></div><div class="mood-segments"><i id="mood-segment-neutral"></i><i id="mood-segment-excited"></i><i id="mood-segment-restless"></i></div></div></div><div id="mood-held-labels" aria-live="off"></div>
   <svg id="menu-link" aria-hidden="true"><path id="menu-link-path" d=""/></svg>
-  <div id="command-menu" hidden role="dialog" aria-label="Órdenes"><div id="command-title"></div><div id="command-actions"></div></div>
+  <div id="command-menu" hidden role="dialog" aria-label="Órdenes"><div id="command-title"></div><div id="command-actions"></div>
+    <form id="feeder-form" hidden>
+      <label>Pieza<select id="feeder-shape"><option value="cube">Q-bit · cubo</option><option value="pyramid">Pirámide cuadrada</option><option value="tetra">T-bit triangular</option><option value="coupler">Enganche</option></select></label>
+      <label>Piezas por minuto<input id="feeder-rate" type="number" min="1" max="60" step="1" required></label>
+      <label>Altura de salida (m)<input id="feeder-height" type="number" min="2" max="3" step="0.1" required></label>
+      <label>Retirar tras (s en el piso)<input id="feeder-idle" type="number" min="1" max="600" step="1" required></label>
+      <label><input id="feeder-enabled" type="checkbox"> Emisión activa</label>
+      <output id="feeder-status" aria-live="polite"></output>
+      <button type="submit">Aplicar</button><button id="feeder-close" type="button">Cerrar</button><button id="feeder-remove" type="button">Retirar toma</button>
+    </form></div>
   <div id="route-readout" hidden></div>
   <div id="selection-rect" hidden aria-hidden="true"></div>
   <div id="callout"><svg aria-hidden="true"><path id="callout-path" d=""/></svg><div id="callout-text"><span id="callout-count"></span><small id="callout-weight"></small><div id="mood-callout" hidden><span id="mood-name"><span id="mood-unit-name"></span><span id="mood-state-description"></span></span><div id="mood-energy-track" role="progressbar" aria-label="Energía del Q-bit" aria-valuemin="0" aria-valuemax="100"><i id="mood-energy-fill"></i></div><span id="mood-energy-label"></span><span id="mood-group-count"></span></div></div></div>
@@ -752,6 +765,10 @@ body:not([data-game-mode='playing']) #opening-status,body[data-transitioning='tr
         <p>Para prolongar una cinta, apunta cerca de su flecha de salida y mantén Shift. La vista previa se alinea con la conexión: confirma con clic sin soltar Shift. Se unen las bases y se conservan los rodillos. Las repisas se colocan en paredes; depósito, enfriador y cuerpo sólido van en el suelo. La tarjeta Mesa de trabajo permite colocarla o reubicarla. Haz clic derecho en una zona libre de la mesa para retirarla. El clic derecho sobre una pieza abre sus propiedades y E abre el taller.</p>
         <p>Con una pieza en la mano: rueda abajo acerca y rueda arriba aleja. Configuración → Juego permite invertir la distancia y el giro por separado. N, B y los botones Crear también preparan una vista previa.</p>
       </details>
+      <details><summary>Toma de techo · suministro vertical</summary>
+        <p>Abre Q → Equipo → Toma de techo. Apunta al punto de entrega en el piso o sobre una cinta, ajusta la altura con la rueda y coloca con clic. También puedes apuntar directamente al techo.</p>
+        <p>Desde el piso, haz clic en la boca negra para elegir la pieza, ajustar las piezas por minuto y el tiempo que puede quedar en el piso. Pulsa Aplicar. La cinta puede transportar la pieza. Tomarla con la mano o una pinza la conserva.</p>
+      </details>
       <details><summary>Servos · pivote, bisagra y primera extremidad</summary>
         <ol>
           <li>Abre Q → Máquinas y elige Servo pivote o Servo bisagra. Confirma la vista previa con clic.</li>
@@ -886,6 +903,6 @@ body:not([data-game-mode='playing']) #opening-status,body[data-transitioning='tr
   <script src="assets/js/families-ui.js?v=20261122-families-1" defer></script>
   <script src="assets/js/scene-files.js?v=20261126-laser-mounted-3" defer></script>
   <script src="assets/js/scene-editor-ui.js?v=20261126-laser-mounted-3" defer></script>
-  <script src="assets/js/boot.js?v=20261128-acoplador-1" defer></script>
+  <script src="assets/js/boot.js?v=20261128-toma-techo-1" defer></script>
 </body>
 </html>

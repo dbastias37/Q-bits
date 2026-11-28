@@ -172,7 +172,7 @@ function assertBlocked(e) {
 const dependencies=[
   'radial-menu.js','rotor-power.js','propeller-power.js','campaign-reconfiguration.js',
   'progression.js','campaign-automation.js','campaign-production.js','workshop.js',
-  'furniture-models.js','tablet-model.js','tablet-view.js','organizers.js','families.js',
+  'furniture-models.js','tablet-model.js','tablet-view.js','ceiling-feeder.js','organizers.js','families.js',
   'workshop-panel.js','robot-arm-panel.js','conveyor-panel.js','assembler.js','battery-liquid.js',
   'reservoir-model.js','contact-sensors.js','controls.js','subtitles.js','dialogue-timing.js',
   'guide-audio.js','footsteps.js','join-audio.js','selection-hud.js','preferences.js',
