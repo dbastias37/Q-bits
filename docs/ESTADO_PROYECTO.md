@@ -1,6 +1,14 @@
 # Q-bits — punto de continuación
 
-Actualizado: 27 de noviembre de 2026. Repositorio: `dbastias37/Q-bits`.
+Actualizado el 28 de noviembre de 2026 para `dbastias37/Q-bits`.
+
+## Acoplador de dos cintas (28 nov 2026)
+
+El mecanismo del catálogo parte de la escena **MAQUINA MERGE DI** (`QBSC1-8087B1C8D28E1DB6`). Mantiene el techo, los pilares y las guías diagonales del prototipo. A y B conservan un tramo de entrada cada una y C un tramo de salida. Los dos diagonales llevan rodillos transversales y la banda animada de las cintas rectas. Las tres bocas tienen una cortina negra y comparten un indicador exterior.
+
+El centro abre la elección del producto. La tableta y el clic secundario controlan la marcha y el sentido. Con energía, la máquina espera una pieza por rama y entrega un conjunto seleccionable por C. La luz verde confirma el acople. Ante una pareja incompatible, la luz roja parpadea y ambas piezas salen intactas. La marcha inversa reconoce los conjuntos fabricados y devuelve sus piezas originales a A y B. El guardado conserva el producto elegido y los objetos a medio recorrido.
+
+Se verificaron las cuatro recetas con Cannon, el rechazo, la pérdida de energía, el guardado, el bloqueo de salida y el cruce de empalmes con cintas reales en los tres puertos. En Chromium se comprobó el menú y la tableta con WebGL 1 y 2, y un ciclo completo de acople y desacople con WebGL 2. [Controles, conexiones y recetas](CINTAS_QBITS.md#acoplador).
 
 ## Construcción por caras con N y Ctrl (27 nov 2026)
 
