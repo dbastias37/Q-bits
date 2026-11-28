@@ -30,18 +30,30 @@ En el catálogo de mecanismos, **Acoplador** coloca el modelo de dos entradas A 
 
 1. Sitúa el mecanismo sobre una superficie estable. Acóplale una batería encendida o aliméntalo por cable desde un depósito con energía.
 2. Haz clic en el centro del techo, la cortina negra o el indicador exterior para elegir el producto. Con clic secundario puedes abrir la tableta del Acoplador y pulsar **Iniciar línea**.
-3. Pon una pieza en A y otra en B. La primera espera a la segunda dentro de la cámara. El indicador se enciende en verde al salir un conjunto compatible por C. Puedes seleccionarlo como cualquier montaje soldado.
-4. Si las piezas no corresponden a la receta, el indicador parpadea en rojo y aparece un aviso. Por C salen primero la pieza de A y después la de B, enteras. Una salida ocupada retiene las piezas hasta que hay espacio.
-5. Con **Invertir para desacoplar**, C recibe el producto y cada pieza sale por su entrada original. Un objeto ajeno al proceso atraviesa entero por una rama libre. Puedes detener e invertir desde el menú secundario o desde la tableta.
+3. Alimenta las entradas A y B. El acoplador recuerda por cuál entró cada pieza, incluso si otra la empuja cerca de la unión. Para fabricar un producto necesita al menos un ingrediente de cada entrada.
+4. Las piezas guardan distancia en la cinta. Al llegar a su posición de espera disponen de **10 segundos de marcha** para completar la receta. Si todos los ingredientes ya vienen avanzando por las cintas, la máquina reserva sus compañeros hasta que lleguen. La tableta indica cuánto falta para que una pieza sin pareja siga sola. Detener la línea o cortar la energía suspende el plazo.
+5. El conjunto terminado sale por C con luz verde. Los sobrantes y las cargas incompatibles salen intactos, en serie, con señal roja. Dos cubos que entran solo por A llegan separados a C. Para una receta de dos triangulares, un cubo intercalado puede salir solo mientras se acoplan los dos triangulares que llegaron por ramas distintas.
+6. Una obstrucción temporal de C conserva la tanda. Si la descarga sigue bloqueada durante 10 segundos de marcha, el mecanismo busca espacio junto a la salida y deja caer la carga intacta. Si ambos costados también están ocupados, conserva la carga y vuelve a comprobar el espacio. Las piezas quedan disponibles para recogerlas.
+7. En **Invertir para desacoplar**, C recibe el producto y cada pieza vuelve por su rama original. Una carga que atravesó el acoplador entera regresa entera, incluso si tiene una articulación. Una obstrucción prolongada de las salidas de retorno también puede dejar la carga intacta junto al frente de la máquina.
 
-| Producto | Piezas que deben entrar |
+| Producto de la lista | Ingredientes |
 | --- | --- |
-| Doble Q-bit | Dos cubos |
-| Q-bit con enganche | Un cubo y un enganche, en cualquier orden |
-| Pirámide de dos triangulares | Dos pirámides triangulares |
-| Bipirámide | Dos pirámides cuadradas |
+| Doble Q-bit | 2 cubos |
+| Q-bit con enganche | 1 cubo y 1 enganche |
+| Q-bit con punta piramidal | 1 cubo y 1 pirámide cuadrada, soldados por sus caras |
+| Pirámide de dos triangulares | 2 pirámides triangulares |
+| Bipirámide | 2 pirámides cuadradas |
+| Rotor de dos enganches | 2 enganches, articulados por sus puntas |
+| Servo pivote | 3 cubos y 1 pirámide cuadrada |
+| Servo bisagra | 3 cubos y 2 pirámides cuadradas |
 
-El guardado de escena conserva la receta, los conjuntos, la procedencia de sus piezas y las piezas que estén esperando en las cintas. Al volver al banco, pulsa **Iniciar línea** para continuar.
+### Añadir productos a la lista
+
+Haz clic en el centro del acoplador o abre su tableta. **Añadir plano guardado…** muestra las formas y mecanismos compatibles de tu catálogo. **Importar archivo…** acepta los JSON exportados con **Exportar formas** o **Exportar mecanismos**. Si un archivo contiene varios planos, la máquina añade los compatibles e indica cuántos pudo usar. Las recetas se guardan en ese acoplador y viajan con él al exportar la escena o guardar el mecanismo.
+
+Elige un diseño compacto de **2 a 8 piezas** que quepa por C. La tableta indica los ingredientes. Coloca las piezas sueltas en las dos ramas, en cualquier reparto que utilice ambas. Para un diseño con batería, pinza, hélice o láser, entrega las piezas que ya tengan esa adaptación. Los motores salen detenidos. Cada sólido conserva su identidad, masa y carga. Al invertir, cada pieza vuelve con su configuración original.
+
+El guardado conserva el producto, la procedencia y el tiempo de espera de las piezas en las entradas. En el editor o al volver al banco puedes reanudar la línea desde la tableta.
 
 ## Seleccionar, mover y separar tramos
 

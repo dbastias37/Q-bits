@@ -493,12 +493,10 @@ body:not([data-game-mode='playing']) #opening-status,body[data-transitioning='tr
       <section id="assembler-panel" aria-labelledby="assembler-title" hidden>
         <h3 id="assembler-title">Acoplador</h3>
         <p id="assembler-flow">A y B entran · C entrega</p>
-        <label>Producto<select id="assembler-recipe">
-          <option value="double">Doble Q-bit · dos cubos</option>
-          <option value="socket">Q-bit con enganche · cubo + enganche</option>
-          <option value="pyramid">Pirámide · dos triangulares</option>
-          <option value="bipyramid">Bipirámide · dos pirámides</option>
-        </select></label>
+        <label>Producto<select id="assembler-recipe" aria-describedby="assembler-materials"></select></label>
+        <p id="assembler-materials"></p>
+        <div class="conveyor-actions"><button type="button" id="assembler-saved">Añadir plano guardado…</button><button type="button" id="assembler-import">Importar archivo…</button></div>
+        <input type="file" id="assembler-file" accept=".json,application/json" hidden>
         <div class="conveyor-actions"><button type="button" id="assembler-toggle">Iniciar línea</button><button type="button" id="assembler-reverse">Invertir para desacoplar</button></div>
         <p id="assembler-status" role="status" aria-live="polite"></p>
         <details><summary>Conectar otra cinta</summary>
@@ -903,6 +901,6 @@ body:not([data-game-mode='playing']) #opening-status,body[data-transitioning='tr
   <script src="assets/js/families-ui.js?v=20261122-families-1" defer></script>
   <script src="assets/js/scene-files.js?v=20261126-laser-mounted-3" defer></script>
   <script src="assets/js/scene-editor-ui.js?v=20261126-laser-mounted-3" defer></script>
-  <script src="assets/js/boot.js?v=20261128-toma-techo-2" defer></script>
+  <script src="assets/js/boot.js?v=20261128-acoplador-flujo-1" defer></script>
 </body>
 </html>
